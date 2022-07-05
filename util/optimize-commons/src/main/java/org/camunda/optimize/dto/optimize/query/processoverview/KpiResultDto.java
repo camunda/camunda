@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.targe
 @FieldNameConstants
 @AllArgsConstructor
 @NoArgsConstructor
-public class KpiResponseDto {
+public class KpiResultDto {
 
   private String reportId;
   private String reportName;

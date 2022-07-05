@@ -431,7 +431,7 @@ alerting:
 email:
   # A switch to control email sending process.
   enabled: false
-  # Email address that can be used to send alerts
+  # Email address that can be used to send alerts or email digests
   address: ''
   # The smtp server name
   hostname: ''

@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.goals.ProcessGoalsDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -26,8 +26,12 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.schema.index.ProcessOverviewIndex.DIGEST;
+import static org.camunda.optimize.service.es.schema.index.ProcessOverviewIndex.ENABLED;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_OVERVIEW_INDEX_NAME;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @AllArgsConstructor
 @Component
@@ -68,5 +72,28 @@ public class ProcessOverviewReader {
     final Map<String, ProcessOverviewDto> goalsForProcessesByKey =
       getProcessOverviewsByKey(Collections.singleton(processDefinitionKey));
     return Optional.ofNullable(goalsForProcessesByKey.get(processDefinitionKey));
+  }
+
+  public Map<String, ProcessDigestResponseDto> getAllActiveProcessDigestsByKey() {
+    log.debug("Fetching all available process overviews.");
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder
+      .query(boolQuery().must(termQuery(DIGEST + "." + ENABLED, true)))
+      .size(LIST_FETCH_LIMIT);
+    SearchRequest searchRequest = new SearchRequest(PROCESS_OVERVIEW_INDEX_NAME).source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest);
+    } catch (IOException e) {
+      final String reason = "Was not able to fetch process overviews.";
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), ProcessOverviewDto.class, objectMapper)
+      .stream()
+      .collect(Collectors.toMap(ProcessOverviewDto::getProcessDefinitionKey, ProcessOverviewDto::getDigest));
   }
 }

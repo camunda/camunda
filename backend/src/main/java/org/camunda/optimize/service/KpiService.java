@@ -8,7 +8,7 @@ package org.camunda.optimize.service;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.processoverview.KpiResponseDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.KpiResultDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.KpiType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
@@ -34,7 +34,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NoIn
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonCanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonSuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.OpenIncidentFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ResolvedIncidentFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
@@ -50,9 +49,12 @@ import org.springframework.stereotype.Component;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 @Component
 @Slf4j
@@ -79,11 +81,11 @@ public class KpiService {
       .collect(toList());
   }
 
-  public List<KpiResponseDto> getKpiResultsForProcessDefinition(final String processDefinitionKey,
+  public List<KpiResultDto> getKpiResultsForProcessDefinition(final String processDefinitionKey,
                                                                 final ZoneId timezone) {
     final List<SingleProcessReportDefinitionRequestDto> kpiReports = getKpiReportsForProcessDefinition(
       processDefinitionKey);
-    final List<KpiResponseDto> kpiResponseDtos = new ArrayList<>();
+    final List<KpiResultDto> kpiResponseDtos = new ArrayList<>();
     for (SingleProcessReportDefinitionRequestDto report : kpiReports) {
       if (!report.getData().getGroupBy().equals(new NoneGroupByDto())) {
         continue;
@@ -92,7 +94,7 @@ public class KpiService {
           = (SingleReportEvaluationResult<Double>) reportEvaluationHandler
           .evaluateReport(ReportEvaluationInfo.builder(report).timezone(timezone).build()).getEvaluationResult();
         final Double evaluationValue = evaluationResult.getFirstCommandResult().getFirstMeasureData();
-        KpiResponseDto kpiResponseDto = new KpiResponseDto();
+        KpiResultDto kpiResponseDto = new KpiResultDto();
         getTargetAndUnit(report)
           .ifPresent(targetAndUnit -> {
             kpiResponseDto.setTarget(targetAndUnit.getTarget());
@@ -101,14 +103,20 @@ public class KpiService {
         kpiResponseDto.setReportId(report.getId());
         kpiResponseDto.setReportName(report.getName());
         kpiResponseDto.setValue(evaluationValue.toString());
-        kpiResponseDto.setTarget(getTarget(report));
         kpiResponseDto.setBelow(getIsBelow(report));
         kpiResponseDto.setType(getKpiType(report));
-        kpiResponseDto.setMeasure(getMeasure(report));
+        kpiResponseDto.setMeasure(getViewProperty(report).orElse(null));
         kpiResponseDtos.add(kpiResponseDto);
       }
     }
     return kpiResponseDtos;
+  }
+
+  public Map<String, KpiResultDto> getKpiResultsForProcessDefinitionByReportId(final String processDefinitionKey,
+                                                                               final ZoneId timezone) {
+    return getKpiResultsForProcessDefinition(processDefinitionKey, timezone)
+      .stream()
+      .collect(toMap(KpiResultDto::getReportId, Function.identity()));
   }
 
   private KpiType getKpiType(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
@@ -117,80 +125,6 @@ public class KpiService {
         && !containsQualityFilter(singleProcessReportDefinitionRequestDto))))
       .map(measure -> KpiType.TIME)
       .orElse(KpiType.QUALITY);
-  }
-
-  private boolean timeKpiFilters(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    boolean timeKpiFilters = false;
-    for (ProcessFilterDto<?> processFilter : singleProcessReportDefinitionRequestDto.getData().getFilter()) {
-      if ((processFilter instanceof FlowNodeStartDateFilterDto) ||
-        (processFilter instanceof FlowNodeEndDateFilterDto) ||
-        (processFilter instanceof VariableFilterDto) ||
-        (processFilter instanceof MultipleVariableFilterDto) ||
-        (processFilter instanceof ExecutedFlowNodeFilterDto) ||
-        (processFilter instanceof ExecutingFlowNodeFilterDto) ||
-        (processFilter instanceof CanceledFlowNodeFilterDto) ||
-        (processFilter instanceof RunningInstancesOnlyFilterDto) ||
-        (processFilter instanceof CompletedInstancesOnlyFilterDto) ||
-        (processFilter instanceof CanceledInstancesOnlyFilterDto) ||
-        (processFilter instanceof NonCanceledInstancesOnlyFilterDto) ||
-        (processFilter instanceof SuspendedInstancesOnlyFilterDto) ||
-        (processFilter instanceof NonSuspendedInstancesOnlyFilterDto) ||
-        (processFilter instanceof FlowNodeDurationFilterDto) ||
-        (processFilter instanceof OpenIncidentFilterDto) ||
-        (processFilter instanceof DeletedIncidentFilterDto) ||
-        (processFilter instanceof ResolvedIncidentFilterDto) ||
-        (processFilter instanceof NoIncidentFilterDto) ||
-        (processFilter instanceof RunningFlowNodesOnlyFilterDto) ||
-        (processFilter instanceof CompletedFlowNodesOnlyFilterDto) ||
-        (processFilter instanceof CanceledFlowNodesOnlyFilterDto) ||
-        (processFilter instanceof CompletedOrCanceledFlowNodesOnlyFilterDto)) {
-        return timeKpiFilters;
-      } else {
-        timeKpiFilters = true;
-      }
-    }
-    return timeKpiFilters;
-  }
-
-  private ViewProperty getMeasure(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    List<ViewProperty> viewProperties = singleProcessReportDefinitionRequestDto.getData().getViewProperties();
-    if (viewProperties.contains(ViewProperty.DURATION)) {
-      return ViewProperty.DURATION;
-    } else if (viewProperties.contains(ViewProperty.FREQUENCY)) {
-      return ViewProperty.FREQUENCY;
-    } else if (viewProperties.contains(ViewProperty.PERCENTAGE)) {
-      return ViewProperty.PERCENTAGE;
-    } else {
-      return null;
-    }
-  }
-
-  private boolean getIsBelow(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    SingleReportTargetValueDto targetValue = singleProcessReportDefinitionRequestDto.getData()
-      .getConfiguration()
-      .getTargetValue();
-    ViewProperty viewProperty = getMeasure(singleProcessReportDefinitionRequestDto);
-    if (viewProperty == null) {
-      return false;
-    } else if (viewProperty.equals(ViewProperty.DURATION)) {
-      return targetValue.getDurationProgress().getTarget().getIsBelow();
-    } else {
-      return targetValue.getCountProgress().getIsBelow();
-    }
-  }
-
-  private String getTarget(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    SingleReportTargetValueDto targetValue = singleProcessReportDefinitionRequestDto.getData()
-      .getConfiguration()
-      .getTargetValue();
-    ViewProperty viewProperty = getMeasure(singleProcessReportDefinitionRequestDto);
-    if (viewProperty == null) {
-      return null;
-    } else if (viewProperty.equals(ViewProperty.DURATION)) {
-      return targetValue.getDurationProgress().getTarget().getValue();
-    } else {
-      return targetValue.getCountProgress().getTarget();
-    }
   }
 
   private boolean containsQualityFilter(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
@@ -218,6 +152,20 @@ public class KpiService {
         (processFilter instanceof CompletedFlowNodesOnlyFilterDto) ||
         (processFilter instanceof CanceledFlowNodesOnlyFilterDto) ||
         (processFilter instanceof CompletedOrCanceledFlowNodesOnlyFilterDto)));
+  }
+
+  private boolean getIsBelow(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+    SingleReportTargetValueDto targetValue = singleProcessReportDefinitionRequestDto.getData()
+      .getConfiguration()
+      .getTargetValue();
+    return getViewProperty(singleProcessReportDefinitionRequestDto)
+      .map(measure -> {
+        if (measure.equals(ViewProperty.DURATION)) {
+          return targetValue.getDurationProgress().getTarget().getIsBelow();
+        } else {
+          return targetValue.getCountProgress().getIsBelow();
+        }
+      }).orElse(false);
   }
 
   private Optional<ViewProperty> getViewProperty(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {

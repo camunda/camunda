@@ -11,11 +11,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
-import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 
 @Data
 @FieldNameConstants
 @AllArgsConstructor
+@NoArgsConstructor
 public class ProcessDigestResponseDto {
 
   // needed to allow inheritance of field name constants
@@ -24,11 +24,5 @@ public class ProcessDigestResponseDto {
   }
 
   protected AlertInterval checkInterval;
-  protected boolean enabled;
-
-  public ProcessDigestResponseDto() {
-    this.checkInterval = new AlertInterval(1, AlertIntervalUnit.WEEKS);
-    this.enabled = false;
-  }
-
+  protected Boolean enabled;
 }

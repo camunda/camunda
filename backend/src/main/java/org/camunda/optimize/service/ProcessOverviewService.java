@@ -10,14 +10,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerResponseDto;
-import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.es.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.es.writer.ProcessOverviewWriter;
@@ -29,6 +29,7 @@ import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 import java.time.ZoneId;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -82,11 +83,15 @@ public class ProcessOverviewService {
             .map(owner -> new ProcessOwnerResponseDto(owner, identityService.getIdentityNameById(owner).orElse(owner)))
           ).orElse(new ProcessOwnerResponseDto()),
           overviewForKey.map(ProcessOverviewDto::getDigest)
-            .orElse(new ProcessDigestDto()),
+            .orElse(new ProcessDigestDto(new AlertInterval(1, AlertIntervalUnit.WEEKS), false, new HashMap<>())),
           kpiService.getKpiResultsForProcessDefinition(procDefKey, timezone),
           magicLinkToDashboard
         );
       }).collect(Collectors.toList());
+  }
+
+  public Optional<ProcessOverviewDto> getProcessOverviewByKey(final String processDefinitionKey) {
+    return processOverviewReader.getProcessOverviewByKey(processDefinitionKey);
   }
 
   private boolean collectionAlreadyCreatedForProcess(final String procDefKey) {
@@ -95,19 +100,6 @@ public class ProcessOverviewService {
     } catch (NotFoundException e) {
       // Doesn't exist yet, return false
       return false;
-    }
-  }
-
-  private Optional<ViewProperty> geViewProperty(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    List<ViewProperty> viewProperties = singleProcessReportDefinitionRequestDto.getData().getViewProperties();
-    if (viewProperties.contains(ViewProperty.DURATION)) {
-      return Optional.of(ViewProperty.DURATION);
-    } else if (viewProperties.contains(ViewProperty.FREQUENCY)) {
-      return Optional.of(ViewProperty.FREQUENCY);
-    } else if (viewProperties.contains(ViewProperty.PERCENTAGE)) {
-      return Optional.of(ViewProperty.PERCENTAGE);
-    } else {
-      return Optional.empty();
     }
   }
 
@@ -170,4 +162,5 @@ public class ProcessOverviewService {
         throw new NotFoundException("Process definition with key " + processDefKey + " does not exist.");
       });
   }
+
 }

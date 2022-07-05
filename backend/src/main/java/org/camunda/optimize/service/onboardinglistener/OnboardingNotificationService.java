@@ -8,7 +8,7 @@ package org.camunda.optimize.service.onboardinglistener;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.alert.EmailNotificationService;
+import org.camunda.optimize.service.EmailSendingService;
 import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
@@ -21,8 +21,9 @@ public class OnboardingNotificationService {
     "Congratulations! Your first process instance for the process %s has completed! " +
       "Ready for some insights? Our systems have crunched the data and we have some valuable information to " +
       "share with you. Curious? Please follow this link to learn more: %s";
+  public static final String EMAIL_SUBJECT = "You've got insights from Optimize for your new process";
 
-  private EmailNotificationService emailNotificationService;
+  private EmailSendingService emailSendingService;
 
   public void notifyOnboarding(@NonNull final String processKey) {
     notifyOnboarding(processKey, retrieveEmailRecipient(processKey));
@@ -35,7 +36,11 @@ public class OnboardingNotificationService {
   }
 
   public void notifyOnboarding(@NonNull final String processKey, @NonNull final String emailRecipient) {
-    emailNotificationService.notifyRecipient(createEmailText(processKey), emailRecipient);
+    emailSendingService.sendEmailWithErrorHandling(
+      emailRecipient,
+      createEmailText(processKey),
+      EMAIL_SUBJECT
+    );
   }
 
   private String createEmailText(final String processKey) {

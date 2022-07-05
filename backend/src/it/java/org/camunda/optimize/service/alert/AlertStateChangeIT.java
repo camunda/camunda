@@ -142,7 +142,7 @@ public class AlertStateChangeIT extends AbstractAlertEmailIT {
     assertWebhookRequestReceived(client, 1);
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
-    String branding = embeddedOptimizeExtension.getConfigurationService().getAlertEmailCompanyBranding();
+    String branding = embeddedOptimizeExtension.getConfigurationService().getNotificationEmailCompanyBranding();
     assertThat(emails[0].getSubject()).isEqualTo(
       "[" + branding + "-Optimize] - Report status");
     String content = emails[0].getContent().toString();

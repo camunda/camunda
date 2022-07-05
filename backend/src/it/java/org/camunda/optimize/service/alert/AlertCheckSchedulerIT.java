@@ -158,7 +158,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
-    String branding = embeddedOptimizeExtension.getConfigurationService().getAlertEmailCompanyBranding();
+    String branding = embeddedOptimizeExtension.getConfigurationService().getNotificationEmailCompanyBranding();
     assertThat(emails[0].getSubject()).isEqualTo(
       "[" + branding + "-Optimize] - Report status");
     String content = emails[0].getContent().toString();
@@ -180,7 +180,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
     String testBrandingName = "Your name here";
-    embeddedOptimizeExtension.getConfigurationService().setAlertEmailCompanyBranding(testBrandingName);
+    embeddedOptimizeExtension.getConfigurationService().setNotificationEmailCompanyBranding(testBrandingName);
 
     final String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
     final String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
@@ -223,7 +223,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
-    String branding = embeddedOptimizeExtension.getConfigurationService().getAlertEmailCompanyBranding();
+    String branding = embeddedOptimizeExtension.getConfigurationService().getNotificationEmailCompanyBranding();
     assertThat(emails[0].getSubject()).isEqualTo(
       "[" + branding + "-Optimize] - Report status");
     String content = emails[0].getContent().toString();

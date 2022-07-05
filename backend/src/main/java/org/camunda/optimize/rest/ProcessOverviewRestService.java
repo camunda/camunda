@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewRe
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 import org.camunda.optimize.service.ProcessOverviewService;
+import org.camunda.optimize.service.digest.DigestService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -38,6 +39,7 @@ import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 public class ProcessOverviewRestService {
 
   private final ProcessOverviewService processOverviewService;
+  private final DigestService digestService;
   private final SessionService sessionService;
 
   @GET
@@ -58,7 +60,7 @@ public class ProcessOverviewRestService {
                                     @PathParam("processDefinitionKey") final String processDefKey,
                                     @NotNull @Valid @RequestBody ProcessDigestRequestDto processDigest) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    processOverviewService.updateProcessDigest(userId, processDefKey, processDigest);
+    digestService.updateProcessDigest(userId, processDefKey, processDigest);
   }
 
   @PUT

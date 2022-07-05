@@ -309,9 +309,9 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
   private void setupEmailAlerting(boolean authenticationEnabled, String username, String password,
                                   EmailSecurityProtocol securityProtocol) {
     configurationService.setEmailEnabled(true);
-    configurationService.setAlertEmailAddress("from@localhost.com");
-    configurationService.setAlertEmailHostname("127.0.0.1");
-    configurationService.setAlertEmailPort(4444);
+    configurationService.setNotificationEmailAddress("from@localhost.com");
+    configurationService.setNotificationEmailHostname("127.0.0.1");
+    configurationService.setNotificationEmailPort(4444);
     EmailAuthenticationConfiguration emailAuthenticationConfiguration =
       configurationService.getEmailAuthenticationConfiguration();
     emailAuthenticationConfiguration.setEnabled(authenticationEnabled);

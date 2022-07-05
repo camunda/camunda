@@ -171,10 +171,10 @@ public class ConfigurationService {
   private Integer maxStatusConnections;
 
   private Boolean emailEnabled;
-  private String alertEmailAddress;
-  private String alertEmailHostname;
-  private Integer alertEmailPort;
-  private String alertEmailCompanyBranding;
+  private String notificationEmailAddress;
+  private String notificationEmailHostname;
+  private Integer notificationEmailPort;
+  private String notificationEmailCompanyBranding;
   private EmailAuthenticationConfiguration emailAuthenticationConfiguration;
 
   private Map<String, WebhookConfiguration> configuredWebhooks;
@@ -927,32 +927,32 @@ public class ConfigurationService {
     return getImportUserTaskWorkerDataEnabled();
   }
 
-  public String getAlertEmailAddress() {
-    if (alertEmailAddress == null) {
-      alertEmailAddress = configJsonContext.read(ConfigurationServiceConstants.EMAIL_ADDRESS);
+  public String getNotificationEmailAddress() {
+    if (notificationEmailAddress == null) {
+      notificationEmailAddress = configJsonContext.read(ConfigurationServiceConstants.EMAIL_ADDRESS);
     }
-    return alertEmailAddress;
+    return notificationEmailAddress;
   }
 
-  public String getAlertEmailHostname() {
-    if (alertEmailHostname == null) {
-      alertEmailHostname = configJsonContext.read(ConfigurationServiceConstants.EMAIL_HOSTNAME);
+  public String getNotificationEmailHostname() {
+    if (notificationEmailHostname == null) {
+      notificationEmailHostname = configJsonContext.read(ConfigurationServiceConstants.EMAIL_HOSTNAME);
     }
-    return alertEmailHostname;
+    return notificationEmailHostname;
   }
 
-  public Integer getAlertEmailPort() {
-    if (alertEmailPort == null) {
-      alertEmailPort = configJsonContext.read(ConfigurationServiceConstants.EMAIL_PORT, Integer.class);
+  public Integer getNotificationEmailPort() {
+    if (notificationEmailPort == null) {
+      notificationEmailPort = configJsonContext.read(ConfigurationServiceConstants.EMAIL_PORT, Integer.class);
     }
-    return alertEmailPort;
+    return notificationEmailPort;
   }
 
-  public String getAlertEmailCompanyBranding() {
-    if (alertEmailCompanyBranding == null) {
-      alertEmailCompanyBranding = configJsonContext.read(ConfigurationServiceConstants.EMAIL_BRANDING, String.class);
+  public String getNotificationEmailCompanyBranding() {
+    if (notificationEmailCompanyBranding == null) {
+      notificationEmailCompanyBranding = configJsonContext.read(ConfigurationServiceConstants.EMAIL_BRANDING, String.class);
     }
-    return alertEmailCompanyBranding;
+    return notificationEmailCompanyBranding;
   }
 
   public Map<String, WebhookConfiguration> getConfiguredWebhooks() {

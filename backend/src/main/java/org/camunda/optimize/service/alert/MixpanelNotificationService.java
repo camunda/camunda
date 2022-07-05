@@ -20,7 +20,7 @@ import java.util.Optional;
 @Component
 @Conditional(CCSaaSCondition.class)
 @AllArgsConstructor
-public class MixpanelNotificationService implements NotificationService {
+public class MixpanelNotificationService implements AlertNotificationService {
 
   private final MixpanelReportingService mixpanelReportingService;
 

@@ -7,6 +7,6 @@ package org.camunda.optimize.service.alert;
 
 import org.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
 
-public interface NotificationService {
+public interface AlertNotificationService {
   void notify(AlertNotificationDto notification);
 }

@@ -331,7 +331,7 @@ public class AlertWebhookIT extends AbstractAlertIT {
     setWebhookConfiguration(client.getPort());
     setEmailConfiguration();
     embeddedOptimizeExtension.getConfigurationService()
-      .setAlertEmailPort(9999); // set to incorrect port so that email notifications fail
+      .setNotificationEmailPort(9999); // set to incorrect port so that email notifications fail
 
     String alertId = setupWebhookAlert(TEST_WEBHOOK_NAME);
 

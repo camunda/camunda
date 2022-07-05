@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -22,6 +23,7 @@ import org.elasticsearch.script.ScriptType;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -65,7 +67,11 @@ public class ProcessOverviewWriter {
 
   public void upsertProcessOwner(final String processDefinitionKey, final String owner) {
     final ProcessOverviewDto newProcessOverview =
-      new ProcessOverviewDto(owner, processDefinitionKey, new ProcessDigestDto());
+      new ProcessOverviewDto(
+        owner,
+        processDefinitionKey,
+        new ProcessDigestDto(new AlertInterval(1, AlertIntervalUnit.WEEKS), false, new HashMap<>())
+      );
     try {
       final UpdateRequest updateRequest = new UpdateRequest()
         .index(PROCESS_OVERVIEW_INDEX_NAME)
@@ -99,8 +105,6 @@ public class ProcessOverviewWriter {
       ImmutableMap.<String, String>builder()
         .put("digestField", ProcessOverviewDto.Fields.digest)
         .put("checkIntervalField", ProcessDigestDto.Fields.checkInterval)
-        .put("valueField", AlertInterval.Fields.value)
-        .put("unitField", AlertInterval.Fields.unit)
         .put("enabledField", ProcessDigestDto.Fields.enabled)
         .put("kpiReportResults", ProcessDigestDto.Fields.kpiReportResults)
         .build()

@@ -349,10 +349,10 @@ public abstract class AbstractAlertIT extends AbstractIT {
 
   protected void setEmailConfiguration() {
     embeddedOptimizeExtension.getConfigurationService().setEmailEnabled(true);
-    embeddedOptimizeExtension.getConfigurationService().setAlertEmailAddress("from@localhost.com");
-    embeddedOptimizeExtension.getConfigurationService().setAlertEmailHostname("127.0.0.1");
+    embeddedOptimizeExtension.getConfigurationService().setNotificationEmailAddress("from@localhost.com");
+    embeddedOptimizeExtension.getConfigurationService().setNotificationEmailHostname("127.0.0.1");
     embeddedOptimizeExtension.getConfigurationService()
-      .setAlertEmailPort(IntegrationTestConfigurationUtil.getSmtpPort());
+      .setNotificationEmailPort(IntegrationTestConfigurationUtil.getSmtpPort());
     EmailAuthenticationConfiguration emailAuthenticationConfiguration =
       embeddedOptimizeExtension.getConfigurationService()
         .getEmailAuthenticationConfiguration();

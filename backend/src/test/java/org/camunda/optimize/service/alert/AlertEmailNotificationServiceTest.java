@@ -9,6 +9,7 @@ import com.icegreen.greenmail.util.DummySSLSocketFactory;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.GreenMailUtil;
 import com.icegreen.greenmail.util.ServerSetup;
+import org.camunda.optimize.service.EmailSendingService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
@@ -35,11 +36,12 @@ import static org.camunda.optimize.service.util.configuration.EmailSecurityProto
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.STARTTLS;
 
 @ExtendWith(MockitoExtension.class)
-public class EmailNotificationServiceTest {
+public class AlertEmailNotificationServiceTest {
 
   private ConfigurationService configurationService;
 
-  private EmailNotificationService notificationService;
+  private AlertEmailNotificationService notificationService;
+  private EmailSendingService emailSendingService;
 
   private GreenMail greenMail;
 
@@ -49,10 +51,11 @@ public class EmailNotificationServiceTest {
       .loadConfigurationFrom("service-config.yaml")
       .build();
     configurationService.setEmailEnabled(true);
-    configurationService.setAlertEmailAddress("from@localhost.com");
-    configurationService.setAlertEmailHostname("127.0.0.1");
-    configurationService.setAlertEmailPort(4444);
-    this.notificationService = new EmailNotificationService(configurationService);
+    configurationService.setNotificationEmailAddress("from@localhost.com");
+    configurationService.setNotificationEmailHostname("127.0.0.1");
+    configurationService.setNotificationEmailPort(4444);
+    this.emailSendingService = new EmailSendingService(configurationService);
+    this.notificationService = new AlertEmailNotificationService(configurationService, emailSendingService);
   }
 
   @AfterEach

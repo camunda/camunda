@@ -40,7 +40,7 @@ import java.util.Map;
 
 @Component
 @Slf4j
-public class WebhookNotificationService implements NotificationService, ConfigurationReloadable {
+public class WebhookNotificationService implements AlertNotificationService, ConfigurationReloadable {
 
   private final ConfigurationService configurationService;
   private Map<String, CloseableHttpClient> webhookClientsByWebhookName;

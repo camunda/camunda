@@ -7,7 +7,7 @@ package org.camunda.optimize.service.process.kpi;
 
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.processoverview.KpiResponseDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.KpiResultDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.KpiType;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
@@ -179,7 +179,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
 
     // then
     assertThat(processes).hasSize(1);
-    assertThat(processes.get(0).getKpis()).extracting(KpiResponseDto::getReportId, KpiResponseDto::getType)
+    assertThat(processes.get(0).getKpis()).extracting(KpiResultDto::getReportId, KpiResultDto::getType)
       .containsExactlyInAnyOrder(
         Tuple.tuple(reportId1, KpiType.QUALITY),
         Tuple.tuple(reportId2, KpiType.TIME),
@@ -203,7 +203,7 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     executedFlowNodeFilterDto.setFilterLevel(FilterApplicationLevel.INSTANCE);
     String reportId1 = createKpiReportWithDurationProgress();
 
-    KpiResponseDto expectedResponse = new KpiResponseDto();
+    KpiResultDto expectedResponse = new KpiResultDto();
     expectedResponse.setReportId(reportId1);
     expectedResponse.setReportName("My test report");
     expectedResponse.setValue("0.0");
@@ -287,8 +287,8 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     assertThat(processes.get(0).getKpis().get(0).getTarget()).isEqualTo("9999999");
   }
 
-  private KpiResponseDto createExpectedKpiResponse(final String reportId, final String target) {
-    KpiResponseDto kpiResponseDto = new KpiResponseDto();
+  private KpiResultDto createExpectedKpiResponse(final String reportId, final String target) {
+    KpiResultDto kpiResponseDto = new KpiResultDto();
     kpiResponseDto.setReportId(reportId);
     kpiResponseDto.setReportName("My test report");
     kpiResponseDto.setValue("1.0");
