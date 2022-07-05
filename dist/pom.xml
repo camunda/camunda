@@ -222,7 +222,8 @@
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <extraJvmArguments>-Xms128m
             -XX:+ExitOnOutOfMemoryError
-            -Dfile.encoding=UTF-8</extraJvmArguments>
+            -Dfile.encoding=UTF-8
+            --add-opens=java.base/java.io=ALL-UNNAMED</extraJvmArguments>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
           <platforms>
             <platform>windows</platform>
