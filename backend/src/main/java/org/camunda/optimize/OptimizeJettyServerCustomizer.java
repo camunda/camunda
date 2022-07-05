@@ -16,6 +16,7 @@ import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -23,6 +24,8 @@ import org.springframework.boot.web.embedded.jetty.JettyServerCustomizer;
 import org.springframework.boot.web.embedded.jetty.JettyServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 import static com.google.common.net.HttpHeaders.CONTENT_SECURITY_POLICY;
 import static com.google.common.net.HttpHeaders.X_CONTENT_TYPE_OPTIONS;
@@ -33,9 +36,8 @@ import static org.camunda.optimize.JettyConfig.getResponseHeadersConfiguration;
 @RequiredArgsConstructor
 public class OptimizeJettyServerCustomizer implements WebServerFactoryCustomizer<JettyServletWebServerFactory> {
   public static final String EXTERNAL_SUB_PATH = "/external";
-  private final ConfigurationService configurationService;
-
   public static final String SUB_PATH_PATTERN_TEMPLATE = "^%s(/?)(.*)$";
+  private final ConfigurationService configurationService;
 
   @Override
   public void customize(JettyServletWebServerFactory factory) {
@@ -75,12 +77,26 @@ public class OptimizeJettyServerCustomizer implements WebServerFactoryCustomizer
 
   private void overwriteJettyErrorHandler(Server server) {
     // https://github.com/spring-projects/spring-boot/issues/19520#issuecomment-574213270
-    WebAppContext context = (WebAppContext) server.getHandler();
-    Configuration[] configurations = context.getConfigurations();
-    Configuration[] modifiedConfigurations = new Configuration[configurations.length + 1];
-    System.arraycopy(configurations, 0, modifiedConfigurations, 0, configurations.length);
-    modifiedConfigurations[configurations.length] = new CustomErrorHandlerConfiguration();
-    context.setConfigurations(modifiedConfigurations);
+    getWebAppContext(server).ifPresent(context -> {
+      Configuration[] configurations = context.getConfigurations();
+      Configuration[] modifiedConfigurations = new Configuration[configurations.length + 1];
+      System.arraycopy(configurations, 0, modifiedConfigurations, 0, configurations.length);
+      modifiedConfigurations[configurations.length] = new CustomErrorHandlerConfiguration();
+      context.setConfigurations(modifiedConfigurations);
+    });
+  }
+
+  private Optional<WebAppContext> getWebAppContext(final Server server) {
+    WebAppContext context = null;
+    HandlerWrapper handlerWrapper = server;
+    while (context == null && handlerWrapper.getHandler() instanceof HandlerWrapper) {
+      handlerWrapper = (HandlerWrapper) handlerWrapper.getHandler();
+      if (handlerWrapper instanceof WebAppContext) {
+        context = (WebAppContext) handlerWrapper;
+      }
+    }
+
+    return Optional.ofNullable(context);
   }
 
   private RewriteHandler createSecurityHeaderHandlers(final ConfigurationService configurationService) {
@@ -96,17 +112,13 @@ public class OptimizeJettyServerCustomizer implements WebServerFactoryCustomizer
     }
 
     final HeaderPatternRule contentSecurityPolicy =
-      new HeaderPatternRule("*", CONTENT_SECURITY_POLICY, getResponseHeadersConfiguration(configurationService).getContentSecurityPolicy());
+      new HeaderPatternRule(
+        "*",
+        CONTENT_SECURITY_POLICY,
+        getResponseHeadersConfiguration(configurationService).getContentSecurityPolicy()
+      );
     rewriteHandler.addRule(contentSecurityPolicy);
     return rewriteHandler;
-  }
-
-  private static class CustomErrorHandlerConfiguration extends AbstractConfiguration {
-    @Override
-    public void configure(WebAppContext context) throws Exception {
-      context.setErrorHandler(new NotFoundErrorHandler());
-    }
-
   }
 
   private Handler replacePathSectionRewriteHandler(final Handler handler,
@@ -141,5 +153,13 @@ public class OptimizeJettyServerCustomizer implements WebServerFactoryCustomizer
     rewriteHandler.addRule(alternativeRootPathEraserRegexRule);
     rewriteHandler.setHandler(handler);
     return rewriteHandler;
+  }
+
+  private static class CustomErrorHandlerConfiguration extends AbstractConfiguration {
+    @Override
+    public void configure(WebAppContext context) throws Exception {
+      context.setErrorHandler(new NotFoundErrorHandler());
+    }
+
   }
 }
