@@ -254,7 +254,8 @@ public final class VariableMappingTransformer {
                     final var key = entry.getKey();
                     final var value = entry.getValue();
 
-                    if (value instanceof final MappingContext nestedContext) {
+                    if (value instanceof MappingContext) {
+                      final var nestedContext = (MappingContext) value;
                       final var contextValue = nestedContext.visit(visitor);
 
                       return visitor.onContextEntry(key, contextValue, nestedContext.path);
