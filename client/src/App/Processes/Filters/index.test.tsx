@@ -119,7 +119,9 @@ describe('Filters', () => {
     ]);
 
     expect(screen.getByTestId('filter-process-version')).toBeEnabled();
-    expect(screen.getByText('Version 1')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('filter-process-version')).getByText('1')
+    ).toBeInTheDocument();
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
@@ -158,7 +160,9 @@ describe('Filters', () => {
       expect(screen.getByTestId('filter-process-name')).toBeEnabled()
     );
 
-    expect(await screen.findByText('Version 1')).toBeInTheDocument();
+    expect(
+      await within(screen.getByTestId('filter-process-version')).findByText('1')
+    ).toBeInTheDocument();
 
     expect(await screen.findByText(MOCK_PARAMS.flowNodeId)).toBeInTheDocument();
 
@@ -230,16 +234,16 @@ describe('Filters', () => {
     ]);
 
     await user.click(screen.getByText(/^more filters$/i));
-    await user.click(screen.getByText('Instance Id(s)'));
+    await user.click(screen.getByText('Process Instance Key(s)'));
     await user.type(
-      screen.getByLabelText(/instance id\(s\)/i),
+      screen.getByLabelText(/process instance key\(s\)/i),
       MOCK_VALUES.ids
     );
 
     await user.click(screen.getByText(/^more filters$/i));
-    await user.click(screen.getByText('Parent Instance Id'));
+    await user.click(screen.getByText('Parent Process Instance Key'));
     await user.type(
-      screen.getByLabelText(/parent instance id/i),
+      screen.getByLabelText(/Parent Process Instance Key/i),
       MOCK_VALUES.parentInstanceId
     );
 
@@ -320,7 +324,7 @@ describe('Filters', () => {
   });
 
   describe('Validations', () => {
-    it('should validate instance ids', async () => {
+    it('should validate process instance keys', async () => {
       const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
@@ -328,87 +332,93 @@ describe('Filters', () => {
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Instance Id(s)'));
-      await user.type(screen.getByLabelText(/instance id\(s\)/i), 'a');
+      await user.click(screen.getByText('Process Instance Key(s)'));
+      await user.type(screen.getByLabelText(/process instance key\(s\)/i), 'a');
 
       expect(
         await screen.findByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      await user.clear(screen.getByLabelText(/instance id\(s\)/i));
+      await user.clear(screen.getByLabelText(/process instance key\(s\)/i));
 
       expect(
         screen.queryByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).not.toBeInTheDocument();
 
-      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
+      await user.type(screen.getByLabelText(/process instance key\(s\)/i), '1');
 
       expect(
         await screen.findByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
-      await user.clear(screen.getByLabelText(/instance id\(s\)/i));
+      await user.clear(screen.getByLabelText(/process instance key\(s\)/i));
 
       expect(
         screen.queryByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).not.toBeInTheDocument();
     });
 
-    it('should validate parent instance id', async () => {
+    it('should validate Parent Process Instance Key', async () => {
       const {user} = render(<Filters />, {
         wrapper: getWrapper(),
       });
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
       await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Parent Instance Id'));
-      await user.type(screen.getByLabelText(/parent instance id/i), 'a');
+      await user.click(screen.getByText('Parent Process Instance Key'));
+      await user.type(
+        screen.getByLabelText(/Parent Process Instance Key/i),
+        'a'
+      );
 
       expect(
-        await screen.findByText('Id has to be a 16 to 19 digit number')
+        await screen.findByText('Key has to be a 16 to 19 digit number')
       ).toBeInTheDocument();
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      await user.clear(screen.getByLabelText(/parent instance id/i));
+      await user.clear(screen.getByLabelText(/Parent Process Instance Key/i));
 
       expect(
-        screen.queryByText('Id has to be a 16 to 19 digit number')
-      ).not.toBeInTheDocument();
-
-      await user.type(screen.getByLabelText(/parent instance id/i), '1');
-
-      expect(
-        await screen.findByText('Id has to be a 16 to 19 digit number')
-      ).toBeInTheDocument();
-
-      await user.clear(screen.getByLabelText(/parent instance id/i));
-
-      expect(
-        screen.queryByText('Id has to be a 16 to 19 digit number')
+        screen.queryByText('Key has to be a 16 to 19 digit number')
       ).not.toBeInTheDocument();
 
       await user.type(
-        screen.getByLabelText(/parent instance id/i),
+        screen.getByLabelText(/Parent Process Instance Key/i),
+        '1'
+      );
+
+      expect(
+        await screen.findByText('Key has to be a 16 to 19 digit number')
+      ).toBeInTheDocument();
+
+      await user.clear(screen.getByLabelText(/Parent Process Instance Key/i));
+
+      expect(
+        screen.queryByText('Key has to be a 16 to 19 digit number')
+      ).not.toBeInTheDocument();
+
+      await user.type(
+        screen.getByLabelText(/Parent Process Instance Key/i),
         '1111111111111111, 2222222222222222'
       );
 
       expect(
-        await screen.findByText('Id has to be a 16 to 19 digit number')
+        await screen.findByText('Key has to be a 16 to 19 digit number')
       ).toBeInTheDocument();
 
-      await user.clear(screen.getByLabelText(/parent instance id/i));
+      await user.clear(screen.getByLabelText(/Parent Process Instance Key/i));
 
       expect(
-        screen.queryByText('Id has to be a 16 to 19 digit number')
+        screen.queryByText('Key has to be a 16 to 19 digit number')
       ).not.toBeInTheDocument();
     });
 
@@ -667,15 +677,15 @@ describe('Filters', () => {
       ).toBeInTheDocument();
 
       await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Instance Id(s)'));
+      await user.click(screen.getByText('Process Instance Key(s)'));
 
-      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
+      await user.type(screen.getByLabelText(/process instance key\(s\)/i), '1');
 
       expect(screen.getByText('Id has to be a UUID')).toBeInTheDocument();
 
       expect(
         await screen.findByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -688,12 +698,12 @@ describe('Filters', () => {
       });
 
       await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Instance Id(s)'));
-      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
+      await user.click(screen.getByText('Process Instance Key(s)'));
+      await user.type(screen.getByLabelText(/process instance key\(s\)/i), '1');
 
       expect(
         await screen.findByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -703,7 +713,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -713,7 +723,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
     });
@@ -724,12 +734,12 @@ describe('Filters', () => {
       });
 
       await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Instance Id(s)'));
-      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
+      await user.click(screen.getByText('Process Instance Key(s)'));
+      await user.type(screen.getByLabelText(/process instance key\(s\)/i), '1');
 
       expect(
         await screen.findByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -739,7 +749,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -749,7 +759,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
     });
@@ -760,12 +770,12 @@ describe('Filters', () => {
       });
 
       await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Instance Id(s)'));
-      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
+      await user.click(screen.getByText('Process Instance Key(s)'));
+      await user.type(screen.getByLabelText(/process instance key\(s\)/i), '1');
 
       expect(
         await screen.findByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -775,7 +785,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -785,7 +795,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
     });
@@ -796,12 +806,12 @@ describe('Filters', () => {
       });
 
       await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Instance Id(s)'));
-      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
+      await user.click(screen.getByText('Process Instance Key(s)'));
+      await user.type(screen.getByLabelText(/process instance key\(s\)/i), '1');
 
       expect(
         await screen.findByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -811,7 +821,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -825,7 +835,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
     });
@@ -836,12 +846,12 @@ describe('Filters', () => {
       });
 
       await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Instance Id(s)'));
-      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
+      await user.click(screen.getByText('Process Instance Key(s)'));
+      await user.type(screen.getByLabelText(/process instance key\(s\)/i), '1');
 
       expect(
         await screen.findByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -851,7 +861,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -861,7 +871,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
     });
@@ -872,12 +882,12 @@ describe('Filters', () => {
       });
 
       await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Instance Id(s)'));
-      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
+      await user.click(screen.getByText('Process Instance Key(s)'));
+      await user.type(screen.getByLabelText(/process instance key\(s\)/i), '1');
 
       expect(
         await screen.findByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -889,17 +899,17 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
       await user.selectOptions(screen.getByTestId('filter-process-version'), [
-        'Version 2',
+        '2',
       ]);
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -909,7 +919,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
     });
@@ -920,12 +930,12 @@ describe('Filters', () => {
       });
 
       await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Instance Id(s)'));
-      await user.type(screen.getByLabelText(/instance id\(s\)/i), '1');
+      await user.click(screen.getByText('Process Instance Key(s)'));
+      await user.type(screen.getByLabelText(/process instance key\(s\)/i), '1');
 
       expect(
         await screen.findByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -933,7 +943,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -941,7 +951,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -949,7 +959,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -957,7 +967,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -965,7 +975,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
 
@@ -973,7 +983,7 @@ describe('Filters', () => {
 
       expect(
         screen.getByText(
-          'Id has to be a 16 to 19 digit number, separated by space or comma'
+          'Key has to be a 16 to 19 digit number, separated by space or comma'
         )
       ).toBeInTheDocument();
     });
@@ -1008,13 +1018,13 @@ describe('Filters', () => {
         ).not.toBeInTheDocument();
         expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
         expect(
-          screen.queryByLabelText(/instance id\(s\)/i)
+          screen.queryByLabelText(/process instance key\(s\)/i)
         ).not.toBeInTheDocument();
         expect(
           screen.queryByLabelText(/operation id/i)
         ).not.toBeInTheDocument();
         expect(
-          screen.queryByLabelText(/parent instance id/i)
+          screen.queryByLabelText(/Parent Process Instance Key/i)
         ).not.toBeInTheDocument();
         expect(
           screen.queryByLabelText(/error message/i)
@@ -1050,14 +1060,16 @@ describe('Filters', () => {
         });
 
         await user.click(screen.getByText(/^more filters$/i));
-        await user.click(screen.getByText('Instance Id(s)'));
+        await user.click(screen.getByText('Process Instance Key(s)'));
         await user.click(screen.getByText(/^more filters$/i));
 
-        expect(screen.getByLabelText(/instance id\(s\)/i)).toBeInTheDocument();
+        expect(
+          screen.getByLabelText(/process instance key\(s\)/i)
+        ).toBeInTheDocument();
         expect(
           // eslint-disable-next-line testing-library/prefer-presence-queries
           within(screen.getByTestId('more-filters-dropdown')).queryByText(
-            'Instance Id(s)'
+            'Process Instance Key(s)'
           )
         ).not.toBeInTheDocument();
       });
@@ -1080,22 +1092,22 @@ describe('Filters', () => {
         ).not.toBeInTheDocument();
       });
 
-      it('should display parent instance id field on click', async () => {
+      it('should display Parent Process Instance Key field on click', async () => {
         const {user} = render(<Filters />, {
           wrapper: getWrapper(),
         });
 
         await user.click(screen.getByText(/^more filters$/i));
-        await user.click(screen.getByText('Parent Instance Id'));
+        await user.click(screen.getByText('Parent Process Instance Key'));
         await user.click(screen.getByText(/^more filters$/i));
 
         expect(
-          screen.getByLabelText(/parent instance id/i)
+          screen.getByLabelText(/Parent Process Instance Key/i)
         ).toBeInTheDocument();
         expect(
           // eslint-disable-next-line testing-library/prefer-presence-queries
           within(screen.getByTestId('more-filters-dropdown')).queryByText(
-            'Parent Instance Id'
+            'Parent Process Instance Key'
           )
         ).not.toBeInTheDocument();
       });
@@ -1162,11 +1174,11 @@ describe('Filters', () => {
         await user.click(screen.getByText(/^more filters$/i));
         await user.click(screen.getByText('Variable'));
         await user.click(screen.getByText(/^more filters$/i));
-        await user.click(screen.getByText('Instance Id(s)'));
+        await user.click(screen.getByText('Process Instance Key(s)'));
         await user.click(screen.getByText(/^more filters$/i));
         await user.click(screen.getByText('Operation Id'));
         await user.click(screen.getByText(/^more filters$/i));
-        await user.click(screen.getByText('Parent Instance Id'));
+        await user.click(screen.getByText('Parent Process Instance Key'));
         await user.click(screen.getByText(/^more filters$/i));
         await user.click(screen.getByText('Error Message'));
         await user.click(screen.getByText(/^more filters$/i));
@@ -1212,9 +1224,11 @@ describe('Filters', () => {
           `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
         );
 
-        expect(screen.getByLabelText(/instance id\(s\)/i)).toBeInTheDocument();
         expect(
-          screen.getByLabelText(/parent instance id/i)
+          screen.getByLabelText(/process instance key\(s\)/i)
+        ).toBeInTheDocument();
+        expect(
+          screen.getByLabelText(/Parent Process Instance Key/i)
         ).toBeInTheDocument();
         expect(screen.getByLabelText(/error message/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/start date/i)).toBeInTheDocument();
@@ -1251,7 +1265,7 @@ describe('Filters', () => {
         );
 
         expect(
-          screen.queryByLabelText(/instance id\(s\)/i)
+          screen.queryByLabelText(/process instance key\(s\)/i)
         ).not.toBeInTheDocument();
 
         await user.click(screen.getByTestId('delete-parentInstanceId'));
@@ -1278,7 +1292,7 @@ describe('Filters', () => {
           )
         );
         expect(
-          screen.queryByLabelText(/parent instance id/i)
+          screen.queryByLabelText(/Parent Process Instance Key/i)
         ).not.toBeInTheDocument();
 
         await user.click(screen.getByTestId('delete-errorMessage'));
@@ -1426,9 +1440,11 @@ describe('Filters', () => {
           `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
         );
 
-        expect(screen.getByLabelText(/instance id\(s\)/i)).toBeInTheDocument();
         expect(
-          screen.getByLabelText(/parent instance id/i)
+          screen.getByLabelText(/process instance key\(s\)/i)
+        ).toBeInTheDocument();
+        expect(
+          screen.getByLabelText(/Parent Process Instance Key/i)
         ).toBeInTheDocument();
         expect(screen.getByLabelText(/error message/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/start date/i)).toBeInTheDocument();
@@ -1448,10 +1464,10 @@ describe('Filters', () => {
         );
 
         expect(
-          screen.queryByLabelText(/instance id\(s\)/i)
+          screen.queryByLabelText(/process instance key\(s\)/i)
         ).not.toBeInTheDocument();
         expect(
-          screen.queryByLabelText(/parent instance id/i)
+          screen.queryByLabelText(/Parent Process Instance Key/i)
         ).not.toBeInTheDocument();
         expect(
           screen.queryByLabelText(/error message/i)
@@ -1476,11 +1492,14 @@ describe('Filters', () => {
 
     const optionalFilters: Array<{name: string; fields: string[]}> = [
       {name: 'Error Message', fields: ['Error Message']},
-      {name: 'Parent Instance Id', fields: ['Parent Instance Id']},
+      {
+        name: 'Parent Process Instance Key',
+        fields: ['Parent Process Instance Key'],
+      },
       {name: 'End Date', fields: ['End Date']},
       {name: 'Variable', fields: ['Name', 'Value']},
       {name: 'Start Date', fields: ['Start Date']},
-      {name: 'Instance Id(s)', fields: ['Instance Id(s)']},
+      {name: 'Process Instance Key(s)', fields: ['Process Instance Key(s)']},
       {name: 'Operation Id', fields: ['Operation Id']},
     ];
 

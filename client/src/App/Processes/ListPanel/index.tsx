@@ -17,7 +17,7 @@ const ListPanel: React.FC = () => {
       <Observer>
         {() => (
           <PanelHeader
-            title="Instances"
+            title="Process Instances"
             count={processInstancesStore.state.filteredProcessInstancesCount}
           />
         )}

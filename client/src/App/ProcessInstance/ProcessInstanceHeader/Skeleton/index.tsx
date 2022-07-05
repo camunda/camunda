@@ -24,7 +24,7 @@ export default React.memo(function Skeleton(props) {
             <Header.Th>Version</Header.Th>
             <Header.Th>Start Date</Header.Th>
             <Header.Th>End Date</Header.Th>
-            <Header.Th>Parent Instance Id</Header.Th>
+            <Header.Th>Parent Process Instance Key</Header.Th>
             <Header.Th>Called Instances</Header.Th>
           </tr>
         </thead>

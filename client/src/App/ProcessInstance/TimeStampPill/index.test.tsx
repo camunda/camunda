@@ -38,9 +38,9 @@ describe('TimeStampPill', () => {
   it('should render "Show" / "Hide" label', () => {
     render(<TimeStampPill />, {wrapper: ThemeProvider});
 
-    expect(screen.getByText('Show End Time')).toBeInTheDocument();
+    expect(screen.getByText('Show End Date')).toBeInTheDocument();
     flowNodeTimeStampStore.toggleTimeStampVisibility();
-    expect(screen.getByText('Hide End Time')).toBeInTheDocument();
+    expect(screen.getByText('Hide End Date')).toBeInTheDocument();
   });
 
   it('should be disabled if diagram and instance execution history is not loaded', async () => {

@@ -191,7 +191,7 @@ describe('Instances', () => {
       screen.getByLabelText(/select instance 2251799813685594/i)
     ).toBeChecked();
 
-    await user.click(screen.getByRole('button', {name: 'Sort by Process'}));
+    await user.click(screen.getByRole('button', {name: 'Sort by Name'}));
     await waitForElementToBeRemoved(screen.getByTestId('instances-loader'));
 
     expect(

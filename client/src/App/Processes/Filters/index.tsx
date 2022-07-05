@@ -97,7 +97,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
   },
   ids: {
     keys: ['ids'],
-    label: 'Instance Id(s)',
+    label: 'Process Instance Key(s)',
     type: 'multiline',
     placeholder: 'separated by space or comma',
     rows: 1,
@@ -118,7 +118,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
   },
   parentInstanceId: {
     keys: ['parentInstanceId'],
-    label: 'Parent Instance Id',
+    label: 'Parent Process Instance Key',
     type: 'text',
     validate: mergeValidators(
       validateParentInstanceIdComplete,

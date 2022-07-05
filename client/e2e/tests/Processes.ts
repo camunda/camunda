@@ -68,7 +68,7 @@ test('Processes Page Initial Load', async (t) => {
     )
     .ok();
 
-  await displayOptionalFilter('Instance Id(s)');
+  await displayOptionalFilter('Process Instance Key(s)');
 
   await ProcessesPage.typeText(
     ProcessesPage.Filters.instanceIds.field,
@@ -105,9 +105,9 @@ test('Select flow node in diagram', async (t) => {
     })
   );
 
-  await displayOptionalFilter('Instance Id(s)');
+  await displayOptionalFilter('Process Instance Key(s)');
 
-  // Filter by Instance ID
+  // Filter by Process Instance Key
   await ProcessesPage.typeText(
     ProcessesPage.Filters.instanceIds.field,
     instance.processInstanceKey,

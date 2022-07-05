@@ -90,16 +90,19 @@ const InstancesTable: React.FC = observer(() => {
 
   return (
     <Container>
-      <PanelHeader title="Instances" count={filteredProcessInstancesCount} />
+      <PanelHeader
+        title="Decision Instances"
+        count={filteredProcessInstancesCount}
+      />
       <SortableTable
         state={getTableState()}
         headerColumns={[
           {
-            content: 'Decision',
+            content: 'Name',
             sortKey: 'decisionName',
           },
           {
-            content: 'Decision Instance Id',
+            content: 'Decision Instance Key',
             sortKey: 'id',
           },
           {
@@ -112,7 +115,7 @@ const InstancesTable: React.FC = observer(() => {
             isDefault: true,
           },
           {
-            content: 'Process Instance Id',
+            content: 'Process Instance Key',
             sortKey: 'processInstanceId',
           },
         ]}

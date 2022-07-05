@@ -18,9 +18,9 @@ import {isValid} from 'date-fns';
 
 const ERRORS = {
   decisionsIds:
-    'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
-  ids: 'Id has to be a 16 to 19 digit number, separated by space or comma',
-  parentInstanceId: 'Id has to be a 16 to 19 digit number',
+    'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+  ids: 'Key has to be a 16 to 19 digit number, separated by space or comma',
+  parentInstanceId: 'Key has to be a 16 to 19 digit number',
   date: 'Date has to be in format YYYY-MM-DD hh:mm:ss',
   operationId: 'Id has to be a UUID',
   variables: {

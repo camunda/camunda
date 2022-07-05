@@ -25,11 +25,11 @@ const Details: React.FC<Props> = ({decisionInstance, ...props}) => {
     <Table data-testid={props['data-testid']}>
       <thead>
         <tr>
-          <TH>Decision</TH>
-          <TH>Decision Instance ID</TH>
+          <TH>Decision Name</TH>
+          <TH>Decision Instance Key</TH>
           <TH>Version</TH>
           <TH>Evaluation Date</TH>
-          <TH>Process Instance ID</TH>
+          <TH>Process Instance Key</TH>
         </tr>
       </thead>
       <tbody>

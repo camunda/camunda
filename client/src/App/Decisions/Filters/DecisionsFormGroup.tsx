@@ -75,7 +75,7 @@ const DecisionsFormGroup: React.FC = observer(() => {
                 options:
                   versions.length === 1
                     ? versions.map((version) => ({
-                        label: `Version ${version}`,
+                        label: version.toString(),
                         value: version.toString(),
                       }))
                     : [
@@ -84,7 +84,7 @@ const DecisionsFormGroup: React.FC = observer(() => {
                           value: 'all',
                         },
                         ...(versions.map((version) => ({
-                          label: `Version ${version}`,
+                          label: version.toString(),
                           value: version.toString(),
                         })) ?? []),
                       ],

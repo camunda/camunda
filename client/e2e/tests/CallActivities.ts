@@ -103,13 +103,13 @@ test('Navigate to called and parent process instances', async (t) => {
     )
     .ok();
 
-  // Navigate to called instance
+  // Navigate to called process instance
   await t.click(
     within(screen.queryByTestId('diagram')).getByText('Call Activity')
   );
   const withinPopover = within(screen.queryByTestId('popover'));
   await t
-    .expect(withinPopover.queryByText(/Called Instance/).exists)
+    .expect(withinPopover.queryByText(/Called Process Instance/).exists)
     .ok()
     .click(
       withinPopover.getByRole('link', {name: /view called process instance/i})

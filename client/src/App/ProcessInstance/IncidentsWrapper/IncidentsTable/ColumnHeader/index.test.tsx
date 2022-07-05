@@ -21,7 +21,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 describe('ColumnHeader', () => {
   const mockPropsWithSorting = {
     active: false,
-    label: 'Start Time',
+    label: 'Start Date',
     onSort: jest.fn(),
     sortKey: 'startDate',
   };
@@ -37,8 +37,8 @@ describe('ColumnHeader', () => {
   });
 
   it('should only render the text if the column is not sortable', () => {
-    render(<ColumnHeader label="Start time" />, {wrapper: Wrapper});
-    expect(screen.getByText('Start time')).toBeInTheDocument();
+    render(<ColumnHeader label="Start Date" />, {wrapper: Wrapper});
+    expect(screen.getByText('Start Date')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: 'Sort by startDate'})
     ).not.toBeInTheDocument();

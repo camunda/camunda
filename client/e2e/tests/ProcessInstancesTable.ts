@@ -44,7 +44,7 @@ test('Sorting', async (t) => {
     instances.processB_v_2[0].processInstanceKey,
   ].sort();
 
-  await displayOptionalFilter('Instance Id(s)');
+  await displayOptionalFilter('Process Instance Key(s)');
 
   await ProcessesPage.typeText(
     ProcessesPage.Filters.instanceIds.field,
@@ -60,7 +60,7 @@ test('Sorting', async (t) => {
     'row'
   );
 
-  // test default start time sorting
+  // test default Start Date sorting
 
   await t
     .expect(instanceRows.nth(0).innerText)
@@ -71,7 +71,7 @@ test('Sorting', async (t) => {
     .contains(instanceIds[0]);
 
   await t
-    .click(screen.queryByRole('button', {name: 'Sort by Start Time'}))
+    .click(screen.queryByRole('button', {name: 'Sort by Start Date'}))
     .expect(instanceRows.nth(0).innerText)
     .contains(instanceIds[0])
     .expect(instanceRows.nth(1).innerText)
@@ -80,7 +80,7 @@ test('Sorting', async (t) => {
     .contains(instanceIds[2]);
 
   await t
-    .click(screen.queryByRole('button', {name: 'Sort by Start Time'}))
+    .click(screen.queryByRole('button', {name: 'Sort by Start Date'}))
     .expect(instanceRows.nth(0).innerText)
     .contains(instanceIds[2])
     .expect(instanceRows.nth(1).innerText)
@@ -89,7 +89,7 @@ test('Sorting', async (t) => {
     .contains(instanceIds[0]);
 
   await t
-    .click(screen.queryByRole('button', {name: 'Sort by Instance Id'}))
+    .click(screen.queryByRole('button', {name: 'Sort by Process Instance Key'}))
     .expect(instanceRows.nth(0).innerText)
     .contains(instanceIds[2])
     .expect(instanceRows.nth(1).innerText)
@@ -98,7 +98,7 @@ test('Sorting', async (t) => {
     .contains(instanceIds[0]);
 
   await t
-    .click(screen.queryByRole('button', {name: 'Sort by Instance Id'}))
+    .click(screen.queryByRole('button', {name: 'Sort by Process Instance Key'}))
     .expect(instanceRows.nth(0).innerText)
     .contains(instanceIds[0])
     .expect(instanceRows.nth(1).innerText)
@@ -125,7 +125,7 @@ test('Sorting', async (t) => {
     .contains(instanceIds[2]);
 
   await t
-    .click(screen.queryByRole('button', {name: 'Sort by Process'}))
+    .click(screen.queryByRole('button', {name: 'Sort by Name'}))
     .expect(instanceRows.nth(0).innerText)
     .contains('instancesTableProcessB')
     .expect(instanceRows.nth(1).innerText)
@@ -134,7 +134,7 @@ test('Sorting', async (t) => {
     .contains('instancesTableProcessA');
 
   await t
-    .click(screen.queryByRole('button', {name: 'Sort by Process'}))
+    .click(screen.queryByRole('button', {name: 'Sort by Name'}))
     .expect(instanceRows.nth(0).innerText)
     .contains('instancesTableProcessA')
     .expect(instanceRows.nth(1).innerText)
@@ -157,7 +157,9 @@ test('Scrolling', async (t) => {
   await t.click(ProcessesPage.Filters.processName.field);
   await ProcessesPage.selectProcess('Process For Infinite Scroll');
 
-  await t.click(screen.queryByRole('button', {name: /Sort by Instance Id/}));
+  await t.click(
+    screen.queryByRole('button', {name: /Sort by Process Instance Key/})
+  );
 
   const instanceRows = within(screen.queryByTestId('data-list')).getAllByRole(
     'row'

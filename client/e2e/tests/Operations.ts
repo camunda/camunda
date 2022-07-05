@@ -47,9 +47,9 @@ test('Retry and Cancel single instance ', async (t) => {
   // ensure page is loaded
   await t.expect(screen.queryByTestId('data-list').exists).ok();
 
-  await displayOptionalFilter('Instance Id(s)');
+  await displayOptionalFilter('Process Instance Key(s)');
 
-  // filter by instance id
+  // filter by Process Instance Key
   await ProcessesPage.typeText(
     ProcessesPage.Filters.instanceIds.field,
     instance.processInstanceKey,
@@ -141,9 +141,9 @@ test('Retry and cancel multiple instances ', async (t) => {
     screen.queryByTestId('operations-list')
   ).getAllByRole('listitem');
 
-  await displayOptionalFilter('Instance Id(s)');
+  await displayOptionalFilter('Process Instance Key(s)');
 
-  // filter by instance ids
+  // filter by Process Instance Keys
   await ProcessesPage.typeText(
     ProcessesPage.Filters.instanceIds.field,
     // @ts-ignore I had to use ignore instead of expect-error here because Testcafe would not run the tests with it

@@ -57,13 +57,13 @@ const ProcessInstanceHeader: React.FC = observer(() => {
       <Styled.Table>
         <thead>
           <tr>
-            <Styled.Th>Process</Styled.Th>
-            <Styled.Th>Instance Id</Styled.Th>
+            <Styled.Th>Process Name</Styled.Th>
+            <Styled.Th>Process Instance Key</Styled.Th>
             <Styled.Th>Version</Styled.Th>
             <Styled.Th>Start Date</Styled.Th>
             <Styled.Th>End Date</Styled.Th>
-            <Styled.Th>Parent Instance Id</Styled.Th>
-            <Styled.Th>Called Instances</Styled.Th>
+            <Styled.Th>Parent Process Instance Key</Styled.Th>
+            <Styled.Th>Called Process Instances</Styled.Th>
           </tr>
         </thead>
         <tbody>

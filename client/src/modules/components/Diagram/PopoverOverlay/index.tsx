@@ -135,7 +135,7 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                   </LinkButton>
                 </Header>
 
-                <SummaryDataKey>Flow Node Instance Id</SummaryDataKey>
+                <SummaryDataKey>Flow Node Instance Key</SummaryDataKey>
                 <SummaryDataValue>
                   {metaData.breadcrumb.map((item) => (
                     <Fragment key={`${flowNodeId}-${item.flowNodeType}`}>
@@ -168,7 +168,7 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                 {flowNodeMetaData?.type.elementType === 'TASK_CALL_ACTIVITY' &&
                   flowNodeType !== 'MULTI_INSTANCE_BODY' && (
                     <>
-                      <SummaryDataKey>Called Instance</SummaryDataKey>
+                      <SummaryDataKey>Called Process Instance</SummaryDataKey>
                       <SummaryDataValue>
                         {calledProcessInstanceId ? (
                           <Link
@@ -186,7 +186,7 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                 {flowNodeMetaData?.type.elementType ===
                   'TASK_BUSINESS_RULE' && (
                   <>
-                    <SummaryDataKey>Called Decision</SummaryDataKey>
+                    <SummaryDataKey>Called Decision Instance</SummaryDataKey>
                     <SummaryDataValue>
                       {calledDecisionInstanceId ? (
                         <Link
@@ -235,7 +235,9 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                     )}
                     {rootCauseInstance !== null && rootCauseDecision === null && (
                       <>
-                        <SummaryDataKey>Root Cause Instance</SummaryDataKey>
+                        <SummaryDataKey>
+                          Root Cause Process Instance
+                        </SummaryDataKey>
                         <SummaryDataValue>
                           {rootCauseInstance.instanceId ===
                           processInstanceId ? (
@@ -255,7 +257,9 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                     )}
                     {rootCauseDecision !== null && (
                       <>
-                        <SummaryDataKey>Root Cause Decision</SummaryDataKey>
+                        <SummaryDataKey>
+                          Root Cause Decision Instance
+                        </SummaryDataKey>
                         <SummaryDataValue>
                           <Link
                             to={Paths.decisionInstance(

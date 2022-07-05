@@ -34,7 +34,7 @@ const TimeStampPill = observer(function TimeStampPill() {
         type={PILL_TYPE.TIMESTAMP}
         isDisabled={isDisabled}
       >
-        {`${isTimeStampVisible ? 'Hide' : 'Show'} End Time`}
+        {`${isTimeStampVisible ? 'Hide' : 'Show'} End Date`}
       </Pill>
     </Container>
   );

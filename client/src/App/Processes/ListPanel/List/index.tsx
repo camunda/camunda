@@ -116,22 +116,22 @@ const List: React.FC = observer(() => {
       onSelectAll={processInstancesSelectionStore.selectAllProcessInstances}
       headerColumns={[
         {
-          content: 'Process',
+          content: 'Name',
           sortKey: 'processName',
         },
-        {content: 'Instance Id', sortKey: 'id'},
+        {content: 'Process Instance Key', sortKey: 'id'},
         {
           content: 'Version',
           sortKey: 'processVersion',
         },
-        {content: 'Start Time', sortKey: 'startDate', isDefault: true},
+        {content: 'Start Date', sortKey: 'startDate', isDefault: true},
         {
-          content: 'End Time',
+          content: 'End Date',
           sortKey: 'endDate',
           isDisabled: !listHasFinishedInstances,
         },
         {
-          content: 'Parent Instance Id',
+          content: 'Parent Process Instance Key',
           sortKey: 'parentInstanceId',
         },
 

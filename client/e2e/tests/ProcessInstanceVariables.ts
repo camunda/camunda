@@ -129,7 +129,7 @@ test('Add variables', async (t) => {
     })
   );
 
-  await displayOptionalFilter('Instance Id(s)');
+  await displayOptionalFilter('Process Instance Key(s)');
   await displayOptionalFilter('Variable');
 
   await ProcessesPage.typeText(

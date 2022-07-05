@@ -23,22 +23,22 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('ColumnHeader', () => {
   it('should render a button if the column is sortable', () => {
-    render(<ColumnHeader label="Start Time" sortKey="startDate" />, {
+    render(<ColumnHeader label="Start Date" sortKey="startDate" />, {
       wrapper: Wrapper,
     });
-    expect(screen.getByText('Start Time')).toBeInTheDocument();
+    expect(screen.getByText('Start Date')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: 'Sort by Start Time'})
+      screen.getByRole('button', {name: 'Sort by Start Date'})
     ).toBeInTheDocument();
   });
 
   it('should only render the text if the column is not sortable', () => {
-    render(<ColumnHeader label="Start Time" />, {
+    render(<ColumnHeader label="Start Date" />, {
       wrapper: Wrapper,
     });
-    expect(screen.getByText('Start Time')).toBeInTheDocument();
+    expect(screen.getByText('Start Date')).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: 'Sort by Start Time'})
+      screen.queryByRole('button', {name: 'Sort by Start Date'})
     ).not.toBeInTheDocument();
   });
 

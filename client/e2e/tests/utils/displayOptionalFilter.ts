@@ -10,8 +10,8 @@ import {screen, within} from '@testing-library/testcafe';
 
 type OptionalFilter =
   | 'Variable'
-  | 'Instance Id(s)'
-  | 'Parent Instance Id'
+  | 'Process Instance Key(s)'
+  | 'Parent Process Instance Key'
   | 'Operation Id'
   | 'Error Message'
   | 'Start Date'

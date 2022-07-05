@@ -69,10 +69,10 @@ describe('<Header />', () => {
       screen.getByRole('button', {name: /open decision requirements diagram/i})
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /^decision$/i})
+      screen.getByRole('columnheader', {name: /^decision name$/i})
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /decision instance id/i})
+      screen.getByRole('columnheader', {name: /decision instance key/i})
     ).toBeInTheDocument();
     expect(
       screen.getByRole('columnheader', {name: /version/i})
@@ -81,7 +81,7 @@ describe('<Header />', () => {
       screen.getByRole('columnheader', {name: /evaluation date/i})
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /process instance id/i})
+      screen.getByRole('columnheader', {name: /process instance key/i})
     ).toBeInTheDocument();
     expect(
       await screen.findByRole('cell', {

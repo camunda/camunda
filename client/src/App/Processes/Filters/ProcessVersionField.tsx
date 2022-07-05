@@ -21,7 +21,7 @@ const ProcessVersionField: React.FC = observer(() => {
   const mappedVersions =
     versions?.map(({version}) => ({
       value: version.toString(),
-      label: `Version ${version}`,
+      label: version.toString(),
     })) ?? [];
 
   const options = [

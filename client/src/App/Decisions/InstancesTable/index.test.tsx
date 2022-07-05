@@ -149,13 +149,13 @@ describe('<InstancesTable />', () => {
 
     expect(
       screen.getByRole('columnheader', {
-        name: 'Decision',
+        name: 'Name',
       })
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole('columnheader', {
-        name: 'Decision Instance Id',
+        name: 'Decision Instance Key',
       })
     ).toBeInTheDocument();
 
@@ -173,7 +173,7 @@ describe('<InstancesTable />', () => {
 
     expect(
       screen.getByRole('columnheader', {
-        name: 'Process Instance Id',
+        name: 'Process Instance Key',
       })
     ).toBeInTheDocument();
 
@@ -285,7 +285,7 @@ describe('<InstancesTable />', () => {
       )
     );
 
-    await user.click(screen.getByRole('button', {name: 'Sort by Decision'}));
+    await user.click(screen.getByRole('button', {name: 'Sort by Name'}));
 
     expect(screen.getByTestId('instances-loader')).toBeInTheDocument();
 

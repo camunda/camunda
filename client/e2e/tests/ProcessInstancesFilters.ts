@@ -41,7 +41,7 @@ test('Apply Filters', async (t) => {
     initialData: {callActivityProcessInstance},
   } = t.fixtureCtx;
 
-  await displayOptionalFilter('Parent Instance Id');
+  await displayOptionalFilter('Parent Process Instance Key');
   await ProcessesPage.typeText(
     ProcessesPage.Filters.parentInstanceId.field,
     callActivityProcessInstance.processInstanceKey,
@@ -147,17 +147,14 @@ test('Interaction between diagram and filters', async (t) => {
 
   await ProcessesPage.selectProcess('Process With Multiple Versions');
 
-  await validateSelectValue(
-    ProcessesPage.Filters.processVersion.field,
-    'Version 2'
-  );
+  await validateSelectValue(ProcessesPage.Filters.processVersion.field, '2');
 
   await t.click(ProcessesPage.Filters.flowNode.field);
   await ProcessesPage.selectFlowNode('StartEvent_1');
 
   // change version and see flow node filter has been reset
   await t.click(ProcessesPage.Filters.processVersion.field);
-  await ProcessesPage.selectVersion('Version 1');
+  await ProcessesPage.selectVersion('1');
   await validateSelectValue(ProcessesPage.Filters.flowNode.field, '--');
 
   await t.click(ProcessesPage.Filters.flowNode.field);

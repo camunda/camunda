@@ -75,10 +75,10 @@ describe('<Filters />', () => {
     expect(screen.getByLabelText(/failed/i)).toBeInTheDocument();
     expect(screen.getByText(/^more filters$/i)).toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/decision instance id\(s\)/i)
+      screen.queryByLabelText(/decision instance key\(s\)/i)
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/process instance id/i)
+      screen.queryByLabelText(/process instance key/i)
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
   });
@@ -99,16 +99,16 @@ describe('<Filters />', () => {
     await user.click(screen.getByLabelText(/failed/i));
 
     await user.click(screen.getByText(/^more filters$/i));
-    await user.click(screen.getByText(/decision instance id\(s\)/i));
+    await user.click(screen.getByText(/decision instance key\(s\)/i));
     await user.type(
-      screen.getByText(/decision instance id\(s\)/i),
+      screen.getByText(/decision instance key\(s\)/i),
       '2251799813689540-1'
     );
 
     await user.click(screen.getByText(/^more filters$/i));
-    await user.click(screen.getByText(/process instance id/i));
+    await user.click(screen.getByText(/process instance key/i));
     await user.type(
-      screen.getByText(/process instance id/i),
+      screen.getByText(/process instance key/i),
       '2251799813689549'
     );
 
@@ -143,7 +143,9 @@ describe('<Filters />', () => {
     expect(
       screen.getByDisplayValue(/assign approver group/i)
     ).toBeInTheDocument();
-    expect(screen.getByDisplayValue(/version 2/i)).toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText(/version/i)).getByRole('option', {name: '2'})
+    ).toBeInTheDocument();
     expect(screen.getByLabelText(/evaluated/i)).toBeChecked();
     expect(screen.getByLabelText(/failed/i)).toBeChecked();
     expect(screen.getByDisplayValue(/2251799813689540-1/i)).toBeInTheDocument();
@@ -157,18 +159,18 @@ describe('<Filters />', () => {
     });
 
     expect(
-      screen.queryByLabelText(/decision instance id\(s\)/i)
+      screen.queryByLabelText(/decision instance key\(s\)/i)
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/process instance id/i)
+      screen.queryByLabelText(/process instance key/i)
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByText(/^more filters$/i));
-    await user.click(screen.getByText(/decision instance id\(s\)/i));
+    await user.click(screen.getByText(/decision instance key\(s\)/i));
 
     await user.click(screen.getByText(/^more filters$/i));
-    await user.click(screen.getByText(/process instance id/i));
+    await user.click(screen.getByText(/process instance key/i));
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText(/evaluation date/i));
@@ -180,10 +182,10 @@ describe('<Filters />', () => {
     });
 
     expect(
-      screen.queryByLabelText(/decision instance id\(s\)/i)
+      screen.queryByLabelText(/decision instance key\(s\)/i)
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/process instance id/i)
+      screen.queryByLabelText(/process instance key/i)
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
   });
@@ -194,18 +196,18 @@ describe('<Filters />', () => {
     });
 
     await user.click(screen.getByText(/^more filters$/i));
-    await user.click(screen.getByText(/decision instance id\(s\)/i));
+    await user.click(screen.getByText(/decision instance key\(s\)/i));
 
     await user.click(screen.getByText(/^more filters$/i));
-    await user.click(screen.getByText(/process instance id/i));
+    await user.click(screen.getByText(/process instance key/i));
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText(/evaluation date/i));
 
     expect(
-      screen.getByLabelText(/decision instance id\(s\)/i)
+      screen.getByLabelText(/decision instance key\(s\)/i)
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/process instance id/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/process instance key/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
 
     await user.click(screen.getByTestId('delete-decisionInstanceIds'));
@@ -213,10 +215,10 @@ describe('<Filters />', () => {
     await user.click(screen.getByTestId('delete-evaluationDate'));
 
     expect(
-      screen.queryByLabelText(/decision instance id\(s\)/i)
+      screen.queryByLabelText(/decision instance key\(s\)/i)
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/process instance id/i)
+      screen.queryByLabelText(/process instance key/i)
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
   });
@@ -226,8 +228,14 @@ describe('<Filters />', () => {
       wrapper: getWrapper(),
     });
 
-    expect(screen.queryByDisplayValue(/version 1/i)).not.toBeInTheDocument();
-    expect(screen.queryByDisplayValue(/version 2/i)).not.toBeInTheDocument();
+    const withinVersionField = within(screen.getByLabelText(/version/i));
+
+    expect(
+      withinVersionField.queryByRole('option', {name: '1'})
+    ).not.toBeInTheDocument();
+    expect(
+      withinVersionField.queryByRole('option', {name: '2'})
+    ).not.toBeInTheDocument();
     expect(screen.getAllByDisplayValue(/all/i)).toHaveLength(2);
     expect(screen.getByLabelText(/version/i)).toBeDisabled();
 
@@ -235,24 +243,32 @@ describe('<Filters />', () => {
       'invoice-assign-approver',
     ]);
 
-    expect(screen.getByDisplayValue(/version 2/i)).toBeInTheDocument();
+    expect(
+      withinVersionField.getByRole('option', {name: '2'})
+    ).toBeInTheDocument();
     expect(screen.getByLabelText(/version/i)).not.toBeDisabled();
     expect(screen.queryByDisplayValue(/all/i)).not.toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText(/version/i), ['1']);
 
-    expect(screen.getByDisplayValue(/version 1/i)).toBeInTheDocument();
+    expect(
+      withinVersionField.getByRole('option', {name: '1'})
+    ).toBeInTheDocument();
     expect(screen.getByLabelText(/version/i)).not.toBeDisabled();
 
     await user.selectOptions(screen.getByLabelText(/name/i), ['']);
 
-    expect(screen.queryByDisplayValue(/version 1/i)).not.toBeInTheDocument();
-    expect(screen.queryByDisplayValue(/version 2/i)).not.toBeInTheDocument();
+    expect(
+      withinVersionField.queryByRole('option', {name: '1'})
+    ).not.toBeInTheDocument();
+    expect(
+      withinVersionField.queryByRole('option', {name: '2'})
+    ).not.toBeInTheDocument();
     expect(screen.getAllByDisplayValue(/all/i)).toHaveLength(2);
     expect(screen.getByLabelText(/version/i)).toBeDisabled();
   });
 
-  it('should validate decision instance ids', async () => {
+  it('should validate decision instance keys', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
@@ -260,106 +276,106 @@ describe('<Filters />', () => {
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.click(screen.getByText(/^more filters$/i));
-    await user.click(screen.getByText(/decision instance id\(s\)/i));
-    await user.type(screen.getByLabelText(/decision instance id\(s\)/i), 'a');
+    await user.click(screen.getByText(/decision instance key\(s\)/i));
+    await user.type(screen.getByLabelText(/decision instance key\(s\)/i), 'a');
 
     expect(
       await screen.findByText(
-        'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
       )
     ).toBeInTheDocument();
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    await user.clear(screen.getByLabelText(/decision instance id\(s\)/i));
+    await user.clear(screen.getByLabelText(/decision instance key\(s\)/i));
 
     expect(
       screen.queryByText(
-        'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
       )
     ).not.toBeInTheDocument();
 
-    await user.type(screen.getByLabelText(/decision instance id\(s\)/i), '1');
+    await user.type(screen.getByLabelText(/decision instance key\(s\)/i), '1');
 
     expect(
       await screen.findByText(
-        'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
       )
     ).toBeInTheDocument();
 
-    await user.clear(screen.getByLabelText(/decision instance id\(s\)/i));
+    await user.clear(screen.getByLabelText(/decision instance key\(s\)/i));
 
     expect(
       screen.queryByText(
-        'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
       )
     ).not.toBeInTheDocument();
 
     await user.type(
-      screen.getByLabelText(/decision instance id/i),
+      screen.getByLabelText(/decision instance key/i),
       '2251799813689549'
     );
 
     expect(
       await screen.findByText(
-        'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
       )
     ).toBeInTheDocument();
 
-    await user.clear(screen.getByLabelText(/decision instance id\(s\)/i));
+    await user.clear(screen.getByLabelText(/decision instance key\(s\)/i));
 
     expect(
       screen.queryByText(
-        'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
       )
     ).not.toBeInTheDocument();
   });
 
-  it('should validate process instance id', async () => {
+  it('should validate process instance key', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.click(screen.getByText(/^more filters$/i));
-    await user.click(screen.getByText(/process instance id/i));
-    await user.type(screen.getByLabelText(/process instance id/i), 'a');
+    await user.click(screen.getByText(/process instance key/i));
+    await user.type(screen.getByLabelText(/process instance key/i), 'a');
 
     expect(
-      await screen.findByText('Id has to be a 16 to 19 digit number')
+      await screen.findByText('Key has to be a 16 to 19 digit number')
     ).toBeInTheDocument();
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    await user.clear(screen.getByLabelText(/process instance id/i));
+    await user.clear(screen.getByLabelText(/process instance key/i));
 
     expect(
-      screen.queryByText('Id has to be a 16 to 19 digit number')
+      screen.queryByText('Key has to be a 16 to 19 digit number')
     ).not.toBeInTheDocument();
 
-    await user.type(screen.getByLabelText(/process instance id/i), '1');
+    await user.type(screen.getByLabelText(/process instance key/i), '1');
 
     expect(
-      await screen.findByText('Id has to be a 16 to 19 digit number')
+      await screen.findByText('Key has to be a 16 to 19 digit number')
     ).toBeInTheDocument();
 
-    await user.clear(screen.getByLabelText(/process instance id/i));
+    await user.clear(screen.getByLabelText(/process instance key/i));
 
     expect(
-      screen.queryByText('Id has to be a 16 to 19 digit number')
+      screen.queryByText('Key has to be a 16 to 19 digit number')
     ).not.toBeInTheDocument();
 
     await user.type(
-      screen.getByLabelText(/process instance id/i),
+      screen.getByLabelText(/process instance key/i),
       '1111111111111111, 2222222222222222'
     );
 
     expect(
-      await screen.findByText('Id has to be a 16 to 19 digit number')
+      await screen.findByText('Key has to be a 16 to 19 digit number')
     ).toBeInTheDocument();
 
-    await user.clear(screen.getByLabelText(/process instance id/i));
+    await user.clear(screen.getByLabelText(/process instance key/i));
 
     expect(
-      screen.queryByText('Id has to be a 16 to 19 digit number')
+      screen.queryByText('Key has to be a 16 to 19 digit number')
     ).not.toBeInTheDocument();
   });
 
@@ -401,9 +417,9 @@ describe('<Filters />', () => {
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.click(screen.getByText(/^more filters$/i));
-    await user.click(screen.getByText(/process instance id/i));
+    await user.click(screen.getByText(/process instance key/i));
     await user.type(
-      screen.getByLabelText(/process instance id/i),
+      screen.getByLabelText(/process instance key/i),
       '2251799813729387'
     );
 

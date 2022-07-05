@@ -132,13 +132,13 @@ describe('InstanceHeader', () => {
     expect(
       screen.getByTestId(`${mockInstanceWithActiveOperation.state}-icon`)
     ).toBeInTheDocument();
-    expect(screen.getByText('Process')).toBeInTheDocument();
-    expect(screen.getByText('Instance Id')).toBeInTheDocument();
+    expect(screen.getByText('Process Name')).toBeInTheDocument();
+    expect(screen.getByText('Process Instance Key')).toBeInTheDocument();
     expect(screen.getByText('Version')).toBeInTheDocument();
     expect(screen.getByText('Start Date')).toBeInTheDocument();
     expect(screen.getByText('End Date')).toBeInTheDocument();
-    expect(screen.getByText('Parent Instance Id')).toBeInTheDocument();
-    expect(screen.getByText('Called Instances')).toBeInTheDocument();
+    expect(screen.getByText('Parent Process Instance Key')).toBeInTheDocument();
+    expect(screen.getByText('Called Process Instances')).toBeInTheDocument();
     expect(screen.getAllByText('None').length).toBe(2);
     expect(
       screen.queryByRole('link', {name: /view all/i})
@@ -202,7 +202,7 @@ describe('InstanceHeader', () => {
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 
-  it('should render parent instance id', async () => {
+  it('should render parent Process Instance Key', async () => {
     mockServer.use(
       rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(mockInstanceWithParentInstance))

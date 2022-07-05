@@ -110,14 +110,16 @@ describe('PopoverOverlay', () => {
     renderPopover();
 
     expect(
-      await screen.findByText(/Flow Node Instance Id/)
+      await screen.findByText(/Flow Node Instance Key/)
     ).toBeInTheDocument();
     expect(screen.getByText(/Start Date/)).toBeInTheDocument();
     expect(screen.getByText(/End Date/)).toBeInTheDocument();
     expect(screen.getByText(/Type/)).toBeInTheDocument();
     expect(screen.getByText(/Error Message/)).toBeInTheDocument();
     expect(screen.getAllByText(/View/)).toHaveLength(2);
-    expect(screen.queryByText(/Called Instance/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Called Process Instance/)
+    ).not.toBeInTheDocument();
 
     const {incident, instanceMetadata} = incidentFlowNodeMetaData;
 
@@ -157,11 +159,11 @@ describe('PopoverOverlay', () => {
     renderPopover();
 
     expect(
-      await screen.findByText(/Flow Node Instance Id/)
+      await screen.findByText(/Flow Node Instance Key/)
     ).toBeInTheDocument();
     expect(screen.getByText(/Start Date/)).toBeInTheDocument();
     expect(screen.getByText(/End Date/)).toBeInTheDocument();
-    expect(screen.getByText(/Called Instance/)).toBeInTheDocument();
+    expect(screen.getByText(/Called Process Instance/)).toBeInTheDocument();
     expect(screen.getByText(/View/)).toBeInTheDocument();
 
     expect(
@@ -205,7 +207,7 @@ describe('PopoverOverlay', () => {
     const {user} = renderPopover();
 
     expect(
-      await screen.findByText(/Flow Node Instance Id/)
+      await screen.findByText(/Flow Node Instance Key/)
     ).toBeInTheDocument();
 
     const [firstViewLink] = screen.getAllByText(/View/);
@@ -224,7 +226,7 @@ describe('PopoverOverlay', () => {
       screen.getByText(/"flowNodeId": "Activity_0zqism7"/)
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/"flowNodeInstanceId": "2251799813699889"/)
+      screen.getByText(/"flowNodeInstanceKey": "2251799813699889"/)
     ).toBeInTheDocument();
     expect(
       screen.getByText(/"flowNodeType": "TASK_CALL_ACTIVITY"/)
@@ -248,7 +250,7 @@ describe('PopoverOverlay', () => {
     expect(screen.getByText(/"jobWorker": null/)).toBeInTheDocument();
     expect(screen.getByText(/"jobCustomHeaders": null/)).toBeInTheDocument();
     expect(
-      screen.getByText(/"calledProcessInstanceId": "229843728748927482"/)
+      screen.getByText(/"calledProcessInstanceKey": "229843728748927482"/)
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Close Modal'}));
@@ -289,7 +291,9 @@ describe('PopoverOverlay', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/3 incidents occured/)).toBeInTheDocument();
     expect(screen.getByText(/View/)).toBeInTheDocument();
-    expect(screen.queryByText(/Flow Node Instance Id/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Flow Node Instance Key/)
+    ).not.toBeInTheDocument();
   });
 
   it('should not render called instances for multi instance call activities', async () => {
@@ -315,9 +319,11 @@ describe('PopoverOverlay', () => {
     renderPopover();
 
     expect(
-      await screen.findByText(/Flow Node Instance Id/)
+      await screen.findByText(/Flow Node Instance Key/)
     ).toBeInTheDocument();
-    expect(screen.queryByText(/Called Instance/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Called Process Instance/)
+    ).not.toBeInTheDocument();
   });
 
   it('should not render root cause instance link when instance is root', async () => {
@@ -348,7 +354,9 @@ describe('PopoverOverlay', () => {
 
     renderPopover();
 
-    expect(await screen.findByText(/Root Cause Instance/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Root Cause Process Instance/)
+    ).toBeInTheDocument();
     expect(screen.getByText(/Current Instance/)).toBeInTheDocument();
     expect(
       screen.queryByText(

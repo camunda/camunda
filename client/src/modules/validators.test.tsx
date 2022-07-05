@@ -46,14 +46,14 @@ describe('validators', () => {
     expect(validateIdsCharacters('2251799813685543000', {})).toBeUndefined();
 
     expect(validateIdsCharacters('2251799813685543a', {})).toBe(
-      'Id has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma'
     );
     expect(validateIdsCharacters('a', {})).toBe(
-      'Id has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma'
     );
 
     expect(validateIdsCharacters('-', {})).toBe(
-      'Id has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma'
     );
 
     expect(
@@ -77,29 +77,39 @@ describe('validators', () => {
 
     expect(
       validateIdsCharacters('2251799813685543 a 2251799813685543 ', {})
-    ).toBe('Id has to be a 16 to 19 digit number, separated by space or comma');
+    ).toBe(
+      'Key has to be a 16 to 19 digit number, separated by space or comma'
+    );
 
     expect(
       validateIdsCharacters('225179a9813685543 2251799813685543 ', {})
-    ).toBe('Id has to be a 16 to 19 digit number, separated by space or comma');
+    ).toBe(
+      'Key has to be a 16 to 19 digit number, separated by space or comma'
+    );
 
     expect(
       validateIdsCharacters('225179$9813685543 2251799813685543 ', {})
-    ).toBe('Id has to be a 16 to 19 digit number, separated by space or comma');
+    ).toBe(
+      'Key has to be a 16 to 19 digit number, separated by space or comma'
+    );
 
     expect(
       validateIdsLength(
         '2251799813685543 2251799813685543 11111111111111111111',
         {}
       )
-    ).toBe('Id has to be a 16 to 19 digit number, separated by space or comma');
+    ).toBe(
+      'Key has to be a 16 to 19 digit number, separated by space or comma'
+    );
 
     expect(
       validateIdsLength(
         '2251799813685543, 2251799813685543, 11111111111111111111',
         {}
       )
-    ).toBe('Id has to be a 16 to 19 digit number, separated by space or comma');
+    ).toBe(
+      'Key has to be a 16 to 19 digit number, separated by space or comma'
+    );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
   });
@@ -111,23 +121,23 @@ describe('validators', () => {
         {}
       )
     ).resolves.toBe(
-      'Id has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma'
     );
 
     expect(validatesIdsComplete('1', {})).resolves.toBe(
-      'Id has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma'
     );
 
     expect(validatesIdsComplete('1 1 1 ', {})).resolves.toBe(
-      'Id has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma'
     );
 
     expect(validatesIdsComplete('1', {})).resolves.toBe(
-      'Id has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma'
     );
 
     expect(validatesIdsComplete('225179981368554', {})).resolves.toBe(
-      'Id has to be a 16 to 19 digit number, separated by space or comma'
+      'Key has to be a 16 to 19 digit number, separated by space or comma'
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(5);
@@ -150,14 +160,14 @@ describe('validators', () => {
     ).toBeUndefined();
 
     expect(validateParentInstanceIdCharacters('2251799813685543a', {})).toBe(
-      'Id has to be a 16 to 19 digit number'
+      'Key has to be a 16 to 19 digit number'
     );
     expect(validateParentInstanceIdCharacters('a', {})).toBe(
-      'Id has to be a 16 to 19 digit number'
+      'Key has to be a 16 to 19 digit number'
     );
 
     expect(validateParentInstanceIdCharacters('-', {})).toBe(
-      'Id has to be a 16 to 19 digit number'
+      'Key has to be a 16 to 19 digit number'
     );
 
     expect(
@@ -165,17 +175,17 @@ describe('validators', () => {
         '2251799813685543 2251799813685543',
         {}
       )
-    ).toBe('Id has to be a 16 to 19 digit number');
+    ).toBe('Key has to be a 16 to 19 digit number');
 
     expect(
       validateParentInstanceIdCharacters(
         '2251799813685543,2251799813685543',
         {}
       )
-    ).toBe('Id has to be a 16 to 19 digit number');
+    ).toBe('Key has to be a 16 to 19 digit number');
 
     expect(validateParentInstanceIdNotTooLong('11111111111111111111', {})).toBe(
-      'Id has to be a 16 to 19 digit number'
+      'Key has to be a 16 to 19 digit number'
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
@@ -183,12 +193,12 @@ describe('validators', () => {
 
   it('should validate parent instance id with delay', async () => {
     expect(validateParentInstanceIdComplete('1', {})).resolves.toBe(
-      'Id has to be a 16 to 19 digit number'
+      'Key has to be a 16 to 19 digit number'
     );
 
     expect(
       validateParentInstanceIdComplete('225179981368554', {})
-    ).resolves.toBe('Id has to be a 16 to 19 digit number');
+    ).resolves.toBe('Key has to be a 16 to 19 digit number');
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
   });
@@ -422,7 +432,7 @@ describe('validators', () => {
 
     ['2251799813685543a', 'a', '!', ' '].forEach((decisionId) => {
       expect(validateDecisionIdsCharacters(decisionId, {})).toBe(
-        'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
       );
     });
 
@@ -440,7 +450,7 @@ describe('validators', () => {
     ['225179981368554332130-1', '225179981368554332130-999'].forEach(
       (decisionId) => {
         expect(validateDecisionIdsLength(decisionId, {})).toBe(
-          'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+          'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
         );
       }
     );
@@ -467,7 +477,7 @@ describe('validators', () => {
       '2251799813685542-1 225179981368554212',
     ].forEach((decisionId) => {
       expect(validatesDecisionIdsComplete(decisionId, {})).resolves.toBe(
-        'Id has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
+        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1'
       );
     });
 

@@ -67,7 +67,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
   }
 > = {
   decisionInstanceIds: {
-    label: 'Decision Instance Id(s)',
+    label: 'Decision Instance Key(s)',
     type: 'multiline',
     placeholder: 'separated by space or comma',
     rows: 1,
@@ -78,7 +78,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     ),
   },
   processInstanceId: {
-    label: 'Process Instance Id',
+    label: 'Process Instance Key',
     type: 'text',
     validate: mergeValidators(
       validateParentInstanceIdComplete,

@@ -15,11 +15,21 @@ export const beautifyMetadata = (
     return '';
   }
 
+  const {
+    flowNodeInstanceId,
+    calledProcessInstanceId,
+    calledDecisionInstanceId,
+    ...metadataSubset
+  } = metadata;
+
   return JSON.stringify(
     {
-      ...metadata,
+      ...metadataSubset,
       incidentErrorType: incident?.errorType.name || null,
       incidentErrorMessage: incident?.errorMessage || null,
+      flowNodeInstanceKey: flowNodeInstanceId,
+      calledProcessInstanceKey: calledProcessInstanceId,
+      calledDecisionInstanceKey: calledDecisionInstanceId,
     },
     null,
     '\t'
