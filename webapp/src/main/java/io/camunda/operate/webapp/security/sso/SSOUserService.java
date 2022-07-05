@@ -40,7 +40,7 @@ public class SSOUserService implements UserService<TokenAuthentication> {
         .setDisplayName(name)
         .setCanLogout(false)
         .setPermissions(authentication.getPermissions())
-        .setRoles(authentication.getRoles(operateProperties.getAuth0().getRolesKey()))
+        .setRoles(authentication.getRoles(operateProperties.getAuth0().getOrganizationsKey()))
         .setSalesPlanType(authentication.getSalesPlanType());
   }
 }

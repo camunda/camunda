@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
-import static io.camunda.operate.property.Auth0Properties.DEFAULT_ROLES_KEY;
+import static io.camunda.operate.property.Auth0Properties.DEFAULT_ORGANIZATIONS_KEY;
 import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
@@ -14,7 +14,6 @@ import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 import static io.camunda.operate.webapp.security.OperateProfileService.SSO_AUTH_PROFILE;
-import static io.camunda.operate.webapp.security.sso.AuthenticationIT.OPERATE_TEST_ROLES;
 import static io.camunda.operate.webapp.security.sso.AuthenticationIT.OPERATE_TEST_SALESPLAN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -313,7 +312,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThat(response.getBody()).contains("\"username\":\"operate-testuser\"");
     assertThat(response.getBody()).contains("\"displayName\":\"operate-testuser\"");
     assertThat(response.getBody()).contains("\"salesPlanType\":\"test\"");
-    assertThat(response.getBody()).contains("\"roles\":[\"owner\",\"admin\"]");
+    assertThat(response.getBody()).contains("\"roles\":[\"user\",\"analyst\"]");
   }
 
   private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
@@ -349,7 +348,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
         claim, List.of(orgMap),
         "exp", expiresInSeconds,
         "name", "operate-testuser",
-        DEFAULT_ROLES_KEY, OPERATE_TEST_ROLES
+            DEFAULT_ORGANIZATIONS_KEY, List.of(Map.of("id","3", "roles",List.of("user","analyst")))
     ));
     return new Tokens("accessToken", emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
         "refreshToken", "type", 5L);

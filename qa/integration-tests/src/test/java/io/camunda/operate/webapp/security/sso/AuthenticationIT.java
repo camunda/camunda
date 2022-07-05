@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
-import static io.camunda.operate.property.Auth0Properties.DEFAULT_ROLES_KEY;
+import static io.camunda.operate.property.Auth0Properties.DEFAULT_ORGANIZATIONS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
@@ -104,7 +104,6 @@ import org.springframework.web.client.RestTemplate;
 public class AuthenticationIT implements AuthenticationTestable {
 
   public static final SalesPlan OPERATE_TEST_SALESPLAN = new SalesPlan("test");
-  public static final List<String> OPERATE_TEST_ROLES = List.of("owner", "admin");
 
   public final static String CONTEXT_PATH = "/operate-test";
   @ClassRule
@@ -394,7 +393,7 @@ public class AuthenticationIT implements AuthenticationTestable {
     assertThat(response.getBody()).contains("\"displayName\":\"operate-testuser\"");
     assertThat(response.getBody()).contains("\"username\":\"operate-testuser\"");
     assertThat(response.getBody()).contains("\"salesPlanType\":\"test\"");
-    assertThat(response.getBody()).contains("\"roles\":[\"owner\",\"admin\"]");
+    assertThat(response.getBody()).contains("\"roles\":[\"user\",\"analyst\"]");
   }
 
   private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
@@ -430,7 +429,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         claim, List.of(orgMap),
         "exp", expiresInSeconds,
         "name", "operate-testuser",
-        DEFAULT_ROLES_KEY, OPERATE_TEST_ROLES
+            DEFAULT_ORGANIZATIONS_KEY, List.of(Map.of("id","3", "roles",List.of("user","analyst")))
     ));
     return new Tokens("accessToken", emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
         "refreshToken", "type", 5L);
