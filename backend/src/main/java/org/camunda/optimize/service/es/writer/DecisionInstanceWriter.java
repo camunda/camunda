@@ -9,7 +9,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -26,7 +25,6 @@ import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import java.security.InvalidParameterException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -105,12 +103,7 @@ public class DecisionInstanceWriter implements ConfigurationReloadable {
   }
 
   private void addImportDecisionInstanceRequest(final BulkRequest bulkRequest,
-                                                final OptimizeDto optimizeDto) {
-    if (!(optimizeDto instanceof DecisionInstanceDto)) {
-      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
-    }
-    DecisionInstanceDto decisionInstanceDto = (DecisionInstanceDto) optimizeDto;
-
+                                                final DecisionInstanceDto decisionInstanceDto) {
     final String decisionInstanceId = decisionInstanceDto.getDecisionInstanceId();
     String source = "";
     try {
