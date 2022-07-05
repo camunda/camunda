@@ -380,7 +380,7 @@ pipeline {
             docker push ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${VERSION}
 
             # major and minor versions are always tagged as latest
-            if [ "${MAJOR_OR_MINOR}" = true || "${DOCKER_LATEST} ]; then
+            if [ "${MAJOR_OR_MINOR}" = true || "${DOCKER_LATEST}" ]; then
               docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:latest
               docker push ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:latest
             fi
@@ -390,7 +390,7 @@ pipeline {
               docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${DOCKERHUB_IMAGE()}:${VERSION}
               docker push ${DOCKERHUB_IMAGE()}:${VERSION}
               # major and minor versions are always tagged as latest
-              if [ "${MAJOR_OR_MINOR}" = true || "${DOCKER_LATEST} ]; then
+              if [ "${MAJOR_OR_MINOR}" = true || "${DOCKER_LATEST}" ]; then
                 docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${DOCKERHUB_IMAGE()}:latest
                 docker push ${DOCKERHUB_IMAGE()}:latest
               fi
