@@ -9,7 +9,7 @@ import {formatDate} from 'modules/utils/date';
 import {getProcessName} from 'modules/utils/instance';
 import {Operations} from 'modules/components/Operations';
 import Skeleton from './Skeleton';
-import {observer} from 'mobx-react';
+import {Observer, observer} from 'mobx-react';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import * as Styled from './styled';
@@ -19,7 +19,9 @@ import {Link} from 'modules/components/Link';
 import {Locations, Paths} from 'modules/routes';
 import {Restricted} from 'modules/components/Restricted';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {modificationsStore} from 'modules/stores/modifications';
 import {tracking} from 'modules/tracking';
+import {IS_MODIFICATION_MODE_ENABLED} from 'modules/feature-flags';
 
 const ProcessInstanceHeader: React.FC = observer(() => {
   const {processInstance} = processInstanceDetailsStore.state;
@@ -150,22 +152,49 @@ const ProcessInstanceHeader: React.FC = observer(() => {
         </tbody>
       </Styled.Table>
       <Restricted scopes={['write']}>
-        <Operations
-          instance={processInstance}
-          onOperation={(operationType: OperationEntityType) =>
-            processInstanceDetailsStore.activateOperation(operationType)
-          }
-          onError={(operationType) => {
-            processInstanceDetailsStore.deactivateOperation(operationType);
-            notifications.displayNotification('error', {
-              headline: 'Operation could not be created',
-            });
-          }}
-          forceSpinner={
-            variablesStore.hasActiveOperation ||
-            processInstance?.hasActiveOperation
-          }
-        />
+        <>
+          <Operations
+            instance={processInstance}
+            onOperation={(operationType: OperationEntityType) =>
+              processInstanceDetailsStore.activateOperation(operationType)
+            }
+            onError={(operationType) => {
+              processInstanceDetailsStore.deactivateOperation(operationType);
+              notifications.displayNotification('error', {
+                headline: 'Operation could not be created',
+              });
+            }}
+            forceSpinner={
+              variablesStore.hasActiveOperation ||
+              processInstance?.hasActiveOperation
+            }
+          />
+          {IS_MODIFICATION_MODE_ENABLED && (
+            <Observer>
+              {() => (
+                <>
+                  {modificationsStore.state.isModificationModeEnabled ? (
+                    <button
+                      onClick={() => {
+                        modificationsStore.disableModificationMode();
+                      }}
+                    >
+                      Disable Modification Mode
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        modificationsStore.enableModificationMode();
+                      }}
+                    >
+                      Enable Modification Mode
+                    </button>
+                  )}
+                </>
+              )}
+            </Observer>
+          )}
+        </>
       </Restricted>
     </Styled.Container>
   );
