@@ -95,7 +95,7 @@
     "react-scripts": "4.0.3",
     "react-test-renderer": "17.0.2",
     "source-map-explorer": "2.5.2",
-    "testcafe": "1.18.6",
+    "testcafe": "1.19.0",
     "testcafe-browser-provider-browserstack": "1.13.2",
     "ts-toolbelt": "9.6.0",
     "typescript": "4.7.3",
