@@ -17,6 +17,9 @@
   </parent>
 
   <artifactId>zeebe-scheduler</artifactId>
+  <packaging>jar</packaging>
+
+  <name>Zeebe Scheduler</name>
 
   <properties>
     <maven.compiler.source>17</maven.compiler.source>
