@@ -9,6 +9,8 @@ import org.awaitility.Awaitility;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
@@ -44,6 +46,61 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
   private final String SECOND_PROCESS_DEFINITION_KEY = "secondDefKey";
   private final String DEFAULT_USERNAME = "DEFAULT_USERNAME";
   private final ProcessOwnerDto PROCESS_OWNER_DTO = new ProcessOwnerDto("DEFAULT_USERNAME");
+
+  @Test
+  public void getProcessOverview_notPossibleForUnauthenticatedUser() {
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetProcessOverviewRequest(null)
+      .withoutAuthentication()
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void getProcessOverview_noProcessDefinitionFound() {
+    // when
+    final List<ProcessOverviewResponseDto> processes = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetProcessOverviewRequest(null)
+      .executeAndReturnList(ProcessOverviewResponseDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(processes).isEmpty();
+  }
+
+  @Test
+  public void getProcessOverview_userCanOnlySeeAuthorizedProcesses() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    deploySimpleProcessDefinition(FIRST_PROCESS_DEFINITION_KEY);
+    deploySimpleProcessDefinition(SECOND_PROCESS_DEFINITION_KEY);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<ProcessOverviewResponseDto> processes = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetProcessOverviewRequest(null)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .executeAndReturnList(ProcessOverviewResponseDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(processes).isEmpty();
+  }
+
+  @Test
+  public void getProcessOverview_eventBasedProcessedNotShownOnProcessOverview() {
+    // given
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      SECOND_PROCESS_DEFINITION_KEY, new IdentityDto(DEFAULT_USERNAME, IdentityType.USER));
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
+
+    // then
+    assertThat(processes).hasSize(0);
+  }
 
   @Test
   public void getProcessOverview_fetchedAccordingToAscendingOrderWhenSortOrderIsNull() {
@@ -246,13 +303,16 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
     return Stream.of(
       Arguments.of(
         SortOrder.ASC,
-        Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName)),
+        Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName)
+      ),
       Arguments.of(
         null,
-        Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName)),
+        Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName)
+      ),
       Arguments.of(
         SortOrder.DESC,
-        Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName).reversed())
+        Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName).reversed()
+      )
     );
   }
 
