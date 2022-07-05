@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 public interface StreamProcessor extends StreamProcessorLifecycleAware {
 
-  void init(ProcessingContext context);
+  void init(EngineProcessingContext context);
 
   void apply(TypedRecord typedEvent);
 

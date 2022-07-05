@@ -24,7 +24,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.function.BooleanSupplier;
 
-public final class ProcessingContext implements ReadonlyProcessingContext {
+public final class ProcessingContext implements ReadonlyProcessingContext, EngineProcessingContext {
 
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
 
@@ -60,16 +60,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public ProcessingContext eventCache(final RecordValues recordValues) {
     this.recordValues = recordValues;
-    return this;
-  }
-
-  public ProcessingContext zeebeState(final ZeebeDbState zeebeState) {
-    this.zeebeState = zeebeState;
-    return this;
-  }
-
-  public ProcessingContext transactionContext(final TransactionContext transactionContext) {
-    this.transactionContext = transactionContext;
     return this;
   }
 
@@ -171,16 +161,32 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return streamProcessorMode;
   }
 
+  public void processingSchedulingService(
+      final ProcessingSchedulingServiceImpl processingSchedulingService) {
+    this.processingSchedulingService = processingSchedulingService;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return getLogStream().getPartitionId();
+  }
+
+  @Override
+  public void transactionContext(final TransactionContext transactionContext) {
+    this.transactionContext = transactionContext;
+  }
+
+  @Override
+  public void zeebeState(final ZeebeDbState zeebeState) {
+    this.zeebeState = zeebeState;
+  }
+
+  @Override
   public void initBuilders(final RecordsBuilder recordsBuilder, final EventApplier eventApplier) {
     builders =
         new Builders(
             recordsBuilder,
             eventApplier,
             new TypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId()));
-  }
-
-  public void processingSchedulingService(
-      final ProcessingSchedulingServiceImpl processingSchedulingService) {
-    this.processingSchedulingService = processingSchedulingService;
   }
 }

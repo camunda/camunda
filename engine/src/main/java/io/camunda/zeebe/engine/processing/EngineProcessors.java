@@ -25,7 +25,7 @@ import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.EngineProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
@@ -35,7 +35,6 @@ import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationController;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
@@ -46,7 +45,7 @@ import java.util.function.Consumer;
 public final class EngineProcessors {
 
   public static TypedRecordProcessors createEngineProcessors(
-      final ProcessingContext processingContext,
+      final EngineProcessingContext processingContext,
       final int partitionsCount,
       final SubscriptionCommandSender subscriptionCommandSender,
       final DeploymentDistributor deploymentDistributor,
@@ -64,8 +63,7 @@ public final class EngineProcessors {
 
     typedRecordProcessors.withListener(processingContext.getZeebeState());
 
-    final LogStream stream = processingContext.getLogStream();
-    final int partitionId = stream.getPartitionId();
+    final int partitionId = processingContext.getPartitionId();
 
     final var variablesState = zeebeState.getVariableState();
     final var expressionProcessor =

@@ -53,10 +53,10 @@ public final class Engine implements StreamProcessor {
   }
 
   @Override
-  public void init(final ProcessingContext context) {
+  public void init(final EngineProcessingContext context) {
     final TransactionContext transactionContext = zeebeDb.createContext();
 
-    final var partitionId = context.getLogStream().getPartitionId();
+    final var partitionId = context.getPartitionId();
     zeebeState = new ZeebeDbState(partitionId, zeebeDb, transactionContext);
 
     context.transactionContext(transactionContext);
