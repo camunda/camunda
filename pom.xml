@@ -45,7 +45,7 @@
     <!--the ElasticSearch version of the previous Optimize version -->
     <previous.optimize.elasticsearch.version>7.10.0</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
-    <elasticsearch.log4j.version>2.17.2</elasticsearch.log4j.version>
+    <elasticsearch.log4j.version>2.18.0</elasticsearch.log4j.version>
     <guava.version>31.1-jre</guava.version>
     <spring.boot.version>2.7.1</spring.boot.version>
     <spring.version>5.3.21</spring.version>
