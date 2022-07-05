@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.sun.jna.platform.linux.ErrNo;
 import io.camunda.zeebe.util.fs.LibC.InvalidLibC;
 import io.camunda.zeebe.util.fs.NativeFS;
 import java.io.File;
@@ -20,6 +19,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import jnr.constants.platform.Errno;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -131,7 +131,7 @@ final class FileUtilTest {
             new InvalidLibC() {
               @Override
               public int posix_fallocate(final int fd, final long offset, final long len) {
-                return ErrNo.EINVAL;
+                return Errno.EINVAL.intValue();
               }
             });
 

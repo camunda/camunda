@@ -10,7 +10,6 @@ package io.camunda.zeebe.util.fs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import com.sun.jna.platform.linux.ErrNo;
 import io.camunda.zeebe.util.error.OutOfDiskSpaceException;
 import io.camunda.zeebe.util.fs.LibC.InvalidLibC;
 import java.io.IOException;
@@ -18,6 +17,7 @@ import java.io.InterruptedIOException;
 import java.io.RandomAccessFile;
 import java.nio.file.Path;
 import java.util.stream.Stream;
+import jnr.constants.platform.Errno;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -88,7 +88,7 @@ final class NativeFSTest {
 
   @ParameterizedTest(name = "{0} => {1}")
   @MethodSource("provideErrorPairs")
-  void shouldMapErrNoToException(final int errno, final Class<? extends Exception> exception)
+  void shouldMapErrNoToException(final Errno errno, final Class<? extends Exception> exception)
       throws IOException {
     // given
     final var libC = new NativeFS(new FailingPosixFallocate(errno));
@@ -104,7 +104,7 @@ final class NativeFSTest {
   @Test
   void shouldDisablePosixFallocateOnInvalidFS() throws IOException {
     // given
-    final var libC = new NativeFS(new FailingPosixFallocate(ErrNo.EINVAL));
+    final var libC = new NativeFS(new FailingPosixFallocate(Errno.EINVAL));
     final var path = tmpDir.resolve("file");
 
     // when
@@ -119,25 +119,25 @@ final class NativeFSTest {
 
   private static Stream<Arguments> provideErrorPairs() {
     return Stream.of(
-        Arguments.of(ErrNo.EBADF, IOException.class),
-        Arguments.of(ErrNo.EFBIG, IOException.class),
-        Arguments.of(ErrNo.EINTR, InterruptedIOException.class),
-        Arguments.of(ErrNo.EINVAL, UnsupportedOperationException.class),
-        Arguments.of(ErrNo.ENODEV, IOException.class),
-        Arguments.of(ErrNo.ESPIPE, IOException.class),
-        Arguments.of(ErrNo.ENOSPC, OutOfDiskSpaceException.class));
+        Arguments.of(Errno.EBADF, IOException.class),
+        Arguments.of(Errno.EFBIG, IOException.class),
+        Arguments.of(Errno.EINTR, InterruptedIOException.class),
+        Arguments.of(Errno.EINVAL, UnsupportedOperationException.class),
+        Arguments.of(Errno.ENODEV, IOException.class),
+        Arguments.of(Errno.ESPIPE, IOException.class),
+        Arguments.of(Errno.ENOSPC, OutOfDiskSpaceException.class));
   }
 
   private static final class FailingPosixFallocate extends InvalidLibC {
-    private final int errno;
+    private final Errno errno;
 
-    private FailingPosixFallocate(final int errno) {
+    private FailingPosixFallocate(final Errno errno) {
       this.errno = errno;
     }
 
     @Override
     public int posix_fallocate(final int fd, final long offset, final long len) {
-      return errno;
+      return errno.intValue();
     }
   }
 }

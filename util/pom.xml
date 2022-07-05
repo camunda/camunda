@@ -87,13 +87,15 @@
     </dependency>
 
     <dependency>
-      <groupId>net.java.dev.jna</groupId>
-      <artifactId>jna</artifactId>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jnr-ffi</artifactId>
+      <version>${version.jnr-ffi}</version>
     </dependency>
 
     <dependency>
-      <groupId>net.java.dev.jna</groupId>
-      <artifactId>jna-platform</artifactId>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jnr-constants</artifactId>
+      <version>${version.jnr-constants}</version>
     </dependency>
 
     <dependency>
@@ -153,17 +155,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <ignoredNonTestScopedDependencies>
-            <!-- false positive - this is definitely used in NativeFS -->
-            <ignoredNonTestScopedDependency>net.java.dev.jna:jna-platform:jar</ignoredNonTestScopedDependency>
-          </ignoredNonTestScopedDependencies>
-        </configuration>
       </plugin>
     </plugins>
   </build>

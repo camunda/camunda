@@ -9,7 +9,6 @@ package io.camunda.zeebe.util;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
 
-import com.sun.jna.Platform;
 import io.camunda.zeebe.util.error.OutOfDiskSpaceException;
 import io.camunda.zeebe.util.fs.NativeFS;
 import java.io.IOException;
@@ -28,6 +27,7 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
 import org.agrona.IoUtil;
+import org.agrona.SystemUtil;
 import org.slf4j.Logger;
 
 public final class FileUtil {
@@ -64,7 +64,7 @@ public final class FileUtil {
     // Windows does not allow flushing a directory except under very specific conditions which are
     // not possible to produce with the standard JDK; it's also not necessary to flush a directory
     // in Windows
-    if (Platform.isWindows()) {
+    if (SystemUtil.isWindows()) {
       return;
     }
 

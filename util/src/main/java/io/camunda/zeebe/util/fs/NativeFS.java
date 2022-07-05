@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.util.fs;
 
-import com.sun.jna.LastErrorException;
-import com.sun.jna.Platform;
-import com.sun.jna.platform.linux.ErrNo;
 import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.error.OutOfDiskSpaceException;
 import java.io.FileDescriptor;
@@ -17,6 +14,8 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import jnr.constants.platform.Errno;
+import jnr.ffi.Platform;
 import org.slf4j.Logger;
 
 /**
@@ -49,7 +48,7 @@ public final class NativeFS {
   //
   // note that this flag assumes there is only one underlying filesystem for the whole application
   private volatile boolean supportsPosixFallocate =
-      FILE_DESCRIPTOR_FD != null && (Platform.isLinux() || Platform.isMac());
+      FILE_DESCRIPTOR_FD != null && Platform.getNativePlatform().isUnix();
 
   private final LibC libC;
 
@@ -94,7 +93,6 @@ public final class NativeFS {
    * @throws OutOfDiskSpaceException if there is not enough disk space to allocate the file
    * @throws IOException if the file descriptor is invalid (e.g. not opened for writing, not
    *     pointing to a regular file, etc.)
-   * @throws LastErrorException if the return error code is not one we know from the documentation
    */
   public void posixFallocate(final FileDescriptor descriptor, final long offset, final long length)
       throws IOException {
@@ -110,33 +108,33 @@ public final class NativeFS {
 
     final int fd = (int) FILE_DESCRIPTOR_FD.get(descriptor);
     final int result = libC.posix_fallocate(fd, offset, length);
+    final Errno error = Errno.valueOf(result);
 
-    switch (result) {
-      case 0: // success
-        return;
-      case ErrNo.EBADF:
-        throw new IOException(
-            "Failed to pre-allocate file: it doesn't have a valid file descriptor, or it's not "
-                + "opened for writing");
-      case ErrNo.EFBIG:
-        throw new IOException(
-            String.format(
-                "Failed to pre-allocate file: it's length [%d] would exceed the system's maximum "
-                    + "file length",
-                offset + length));
-      case ErrNo.EINTR:
-        throw new InterruptedIOException("Failed to pre-allocate file interrupted during call");
-      case ErrNo.EINVAL:
+    // success
+    if (result == 0) {
+      return;
+    }
+
+    switch (error) {
+      case EBADF -> throw new IOException(
+          "Failed to pre-allocate file: it doesn't have a valid file descriptor, or it's not "
+              + "opened for writing");
+      case EFBIG -> throw new IOException(
+          String.format(
+              "Failed to pre-allocate file: it's length [%d] would exceed the system's maximum "
+                  + "file length",
+              offset + length));
+      case EINTR -> throw new InterruptedIOException(
+          "Failed to pre-allocate file interrupted during call");
+      case ENODEV, ESPIPE -> throw new IOException(
+          "Failed to pre-allocate file: the descriptor does not point to a regular file");
+      case ENOSPC -> throw new OutOfDiskSpaceException(
+          "Failed to pre-allocate file: there is not enough space");
+      default -> {
         disablePosixFallocate();
         throw new UnsupportedOperationException(
             "Failed to pre-allocate file: the underlying filesystem does not support this operation");
-      case ErrNo.ENODEV, ErrNo.ESPIPE:
-        throw new IOException(
-            "Failed to pre-allocate file: the descriptor does not point to a regular file");
-      case ErrNo.ENOSPC:
-        throw new OutOfDiskSpaceException("Failed to pre-allocate file: there is not enough space");
-      default: // unexpected error
-        throw new LastErrorException(result);
+      }
     }
   }
 }

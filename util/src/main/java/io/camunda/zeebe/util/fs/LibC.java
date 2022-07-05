@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.util.fs;
 
-import com.sun.jna.Library;
-import com.sun.jna.Native;
-import com.sun.jna.Platform;
 import io.camunda.zeebe.util.Loggers;
+import java.util.Map;
+import jnr.ffi.LibraryLoader;
+import jnr.ffi.LibraryOption;
+import jnr.ffi.Platform;
+import jnr.ffi.annotations.In;
+import jnr.ffi.types.off_t;
 
 /**
  * Used to bind certain calls from libc to Java methods via JNA.
@@ -21,8 +24,8 @@ import io.camunda.zeebe.util.Loggers;
  * <p>See {@link #ofNativeLibrary()} for an example of how to use this.
  */
 @SuppressWarnings({"checkstyle:methodname", "java:S100"})
-public interface LibC extends Library {
-  int posix_fallocate(final int fd, final long offset, final long len);
+public interface LibC {
+  int posix_fallocate(final @In int fd, final @In @off_t long offset, final @In @off_t long len);
 
   /**
    * Returns an instance of LibC bound to the system's C library (e.g. glibc, musl, etc.).
@@ -34,7 +37,10 @@ public interface LibC extends Library {
    */
   static LibC ofNativeLibrary() {
     try {
-      return Native.load(Platform.C_LIBRARY_NAME, LibC.class);
+      return LibraryLoader.loadLibrary(
+          LibC.class,
+          Map.of(LibraryOption.LoadNow, true),
+          Platform.getNativePlatform().getStandardCLibraryName());
     } catch (final UnsatisfiedLinkError e) {
       Loggers.FILE_LOGGER.warn(
           "Failed to load C library; any native calls will not be available", e);
