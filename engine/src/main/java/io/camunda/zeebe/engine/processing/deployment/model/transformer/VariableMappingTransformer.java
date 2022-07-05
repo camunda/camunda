@@ -50,8 +50,8 @@ import java.util.stream.Collectors;
  * </pre>
  *
  * <p>Output variable mappings differ from input mappings that the result variables needs to be
- * merged with the existing variables if the variable is a JSON object. The merging is done by
- * calling the FEEL function 'put all()' and referencing the variable.
+ * merged with the existing variables if the variable is a JSON object. The merging is done, as a
+ * first draft, by calling the FEEL function 'put all()' and referencing the variable.
  *
  * <pre>
  *   {
@@ -67,6 +67,27 @@ import java.util.stream.Collectors;
  *       })
  *   }
  * </pre>
+ *
+ * <p>There is one edge case, though, which was revealed in #9543: At the time of this writing the
+ * two branches of the if statement behave differently with respect to evaluation errors. The first
+ * branch (if the target variable is null) will propagate any error that occurs to the result of the
+ * evaluation. However, the second branch uses the put all(...) method which will transform any
+ * error in one of its parameters into a null as result. Therefore, the two branches will produce
+ * inconsistent results if there are errors in the expression.
+ *
+ * <p>To account for this the expression, was amended to
+ *
+ * <pre>
+ *  if (targetVar != null and is defined(outputMappingResult))
+ *    then put all(targetVar,outputMappingResult)
+ *    else outputMappingResult
+ * </pre>
+ *
+ * <p>This is a workaround which hopefully can be removed in the future. It first checks whether the
+ * result of the output mapping is defined, and the target variable exists. If this is true, the put
+ * all(...) method is called to merge the result into the existing target variable. In all other
+ * cases the output mapping result is returned as is. If it evaluates to en error, this error is
+ * propagated to the final result of the evaluation
  */
 public final class VariableMappingTransformer {
 
@@ -173,8 +194,8 @@ public final class VariableMappingTransformer {
     // example: x = 1 and a = {'c':2} results in a = {'b':1, 'c':2}
     final var existingContext = String.join(".", contextPath);
     return String.format(
-        "if (%s = null) then %s else put all(%s,%s)",
-        existingContext, nestedContext, existingContext, nestedContext);
+        "if (%s != null and is defined(%s)) then put all(%s,%s) else %s",
+        existingContext, nestedContext, existingContext, nestedContext, nestedContext);
   }
 
   private Expression parseExpression(
