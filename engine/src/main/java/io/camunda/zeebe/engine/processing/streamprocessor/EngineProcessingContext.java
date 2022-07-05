@@ -7,11 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilder;
 import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 
 public interface EngineProcessingContext {
@@ -21,10 +19,6 @@ public interface EngineProcessingContext {
   Builders getWriters();
 
   int getPartitionId();
-
-  void transactionContext(TransactionContext transactionContext);
-
-  void zeebeState(ZeebeDbState zeebeState);
 
   void initBuilders(RecordsBuilder recordsBuilder, EventApplier eventApplier);
 }

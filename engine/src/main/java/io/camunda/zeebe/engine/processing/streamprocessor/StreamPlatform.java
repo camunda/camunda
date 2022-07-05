@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
+import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
+import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.processing.DbLastProcessedPositionState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
@@ -151,6 +153,14 @@ public class StreamPlatform extends Actor implements HealthMonitorable, LogRecor
       LOG.debug("Recovering state of partition {} from snapshot", partitionId);
       final var startRecoveryTimer = metrics.startRecoveryTimer();
       final long snapshotPosition = recoverFromSnapshot();
+
+      final TransactionContext transactionContext = zeebeDb.createContext();
+
+      final var partitionId = processingContext.getPartitionId();
+      final var zeebeState = new ZeebeDbState(partitionId, zeebeDb, transactionContext);
+
+      processingContext.transactionContext(transactionContext);
+      processingContext.zeebeState(zeebeState);
 
       processor.init(processingContext);
 

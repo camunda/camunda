@@ -172,21 +172,19 @@ public final class ProcessingContext implements ReadonlyProcessingContext, Engin
   }
 
   @Override
-  public void transactionContext(final TransactionContext transactionContext) {
-    this.transactionContext = transactionContext;
-  }
-
-  @Override
-  public void zeebeState(final ZeebeDbState zeebeState) {
-    this.zeebeState = zeebeState;
-  }
-
-  @Override
   public void initBuilders(final RecordsBuilder recordsBuilder, final EventApplier eventApplier) {
     builders =
         new Builders(
             recordsBuilder,
             eventApplier,
             new TypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId()));
+  }
+
+  public void transactionContext(final TransactionContext transactionContext) {
+    this.transactionContext = transactionContext;
+  }
+
+  public void zeebeState(final ZeebeDbState zeebeState) {
+    this.zeebeState = zeebeState;
   }
 }

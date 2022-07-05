@@ -7,13 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Builders;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordBatchBuilderImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.RecordsBuilderImpl;
 import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -40,7 +38,7 @@ public final class Engine implements StreamProcessor {
   private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private final ErrorRecord errorRecord = new ErrorRecord();
 
-  private ZeebeDbState zeebeState;
+  private MutableZeebeState zeebeState;
   private EventApplier eventApplier;
   private RecordsBuilderImpl recordsBuilder;
   private Builders builders;
@@ -54,13 +52,7 @@ public final class Engine implements StreamProcessor {
 
   @Override
   public void init(final EngineProcessingContext context) {
-    final TransactionContext transactionContext = zeebeDb.createContext();
-
-    final var partitionId = context.getPartitionId();
-    zeebeState = new ZeebeDbState(partitionId, zeebeDb, transactionContext);
-
-    context.transactionContext(transactionContext);
-    context.zeebeState(zeebeState);
+    zeebeState = context.getZeebeState();
     eventApplier = eventApplierFactory.apply(zeebeState);
     recordsBuilder = new RecordsBuilderImpl(new RecordBatchBuilderImpl());
     context.initBuilders(recordsBuilder, eventApplier);
