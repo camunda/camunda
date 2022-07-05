@@ -69,7 +69,7 @@ describe('<Login />', () => {
     );
   });
 
-  it('should show a loading spinner', async () => {
+  it.skip('should show a loading spinner', async () => {
     mockServer.use(
       rest.post('/api/login', (_, res, ctx) =>
         res.once(ctx.status(500), ctx.text(''))

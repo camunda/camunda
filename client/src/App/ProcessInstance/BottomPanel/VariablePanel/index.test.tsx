@@ -383,7 +383,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('should display error notification if add variable operation could not be created', async () => {
+  it.skip('should display error notification if add variable operation could not be created', async () => {
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
       expect(screen.getByTitle(/add variable/i)).toBeEnabled()
