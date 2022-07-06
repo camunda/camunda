@@ -119,6 +119,7 @@
     <version.spotbugs>4.5.3</version.spotbugs>
     <version.archunit>0.23.0</version.archunit>
     <version.jcip>1.0</version.jcip>
+    <version.jnr-posix>3.1.15</version.jnr-posix>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -1031,6 +1032,11 @@
         <scope>test</scope>
       </dependency>
 
+      <dependency>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jnr-posix</artifactId>
+        <version>${version.jnr-posix}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
