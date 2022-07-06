@@ -18,7 +18,7 @@ import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep.LogStorageTermMissmatchException;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep.NotLeaderException;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.Optional;
@@ -55,7 +55,7 @@ class LogStoragePartitionTransitionStepTest {
   @EnumSource(
       value = Role.class,
       names = {"INACTIVE", "FOLLOWER", "CANDIDATE"})
-  void shouldThrowTermMissmatchException(final Role currentRole) {
+  void shouldThrowRecoverableExceptionOnTermMismatch(final Role currentRole) {
     // given
     initializeContext(currentRole);
     step.prepareTransition(transitionContext, 1, Role.LEADER);
@@ -65,7 +65,24 @@ class LogStoragePartitionTransitionStepTest {
 
     // when + then
     assertThatThrownBy(() -> step.transitionTo(transitionContext, 1, Role.LEADER).join())
-        .hasCauseInstanceOf(LogStorageTermMissmatchException.class);
+        .hasCauseInstanceOf(NotLeaderException.class);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = Role.class,
+      names = {"INACTIVE", "FOLLOWER", "CANDIDATE"})
+  void shouldThrowRecoverableExceptionWhenNoAppender(final Role currentRole) {
+    // given
+    initializeContext(currentRole);
+    step.prepareTransition(transitionContext, 1, Role.LEADER);
+
+    // simulate term change in Raft
+    when(raftServer.getAppender()).thenReturn(Optional.empty());
+
+    // when + then
+    assertThatThrownBy(() -> step.transitionTo(transitionContext, 1, Role.LEADER).join())
+        .hasCauseInstanceOf(NotLeaderException.class);
   }
 
   @ParameterizedTest
