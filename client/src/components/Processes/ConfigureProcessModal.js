@@ -14,6 +14,7 @@ import {
   Icon,
   Input,
   Labeled,
+  MessageBox,
   Modal,
   Select,
   Switch,
@@ -21,17 +22,19 @@ import {
   UserTypeahead,
 } from 'components';
 import {t} from 'translation';
-import {getOptimizeProfile} from 'config';
+import {getOptimizeProfile, isEmailEnabled} from 'config';
+import {withDocs} from 'HOC';
 
 import './ConfigureProcessModal.scss';
 
-export default function ConfigureProcessModal({
+export function ConfigureProcessModal({
   initialConfig: {
     owner,
     digest: {enabled, checkInterval},
   },
   onClose,
   onConfirm,
+  docsLink,
 }) {
   const [selectedUser, setSelectedUser] = useState(
     owner?.id ? {id: 'USER:' + owner.id, identity: owner} : null
@@ -39,6 +42,7 @@ export default function ConfigureProcessModal({
   const [digestEnabled, setDigestEnabled] = useState(enabled);
   const [digestInterval, setDigestInterval] = useState(checkInterval);
   const [optimizeProfile, setOptimizeProfile] = useState();
+  const [emailEnabled, setEmailEnabled] = useState();
 
   const noChangesHappened =
     digestEnabled === enabled &&
@@ -48,6 +52,7 @@ export default function ConfigureProcessModal({
   useEffect(() => {
     (async () => {
       setOptimizeProfile(await getOptimizeProfile());
+      setEmailEnabled(await isEmailEnabled());
     })();
   }, []);
 
@@ -55,6 +60,16 @@ export default function ConfigureProcessModal({
     <Modal open onClose={onClose} className="ConfigureProcessModal">
       <Modal.Header>{t('processes.configureProcess')}</Modal.Header>
       <Modal.Content>
+        {!emailEnabled && (
+          <MessageBox
+            type="warning"
+            dangerouslySetInnerHTML={{
+              __html: t('alert.emailWarning', {
+                docsLink: docsLink + 'technical-guide/setup/configuration/#email',
+              }),
+            }}
+          />
+        )}
         <Labeled
           className="ownerConfig"
           label={
@@ -145,3 +160,5 @@ export default function ConfigureProcessModal({
     </Modal>
   );
 }
+
+export default withDocs(ConfigureProcessModal);

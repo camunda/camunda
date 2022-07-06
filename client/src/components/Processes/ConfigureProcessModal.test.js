@@ -8,9 +8,15 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {isEmailEnabled} from 'config';
 import {Input, Select, UserTypeahead} from 'components';
 
-import ConfigureProcessModal from './ConfigureProcessModal';
+import {ConfigureProcessModal} from './ConfigureProcessModal';
+
+jest.mock('config', () => ({
+  isEmailEnabled: jest.fn().mockReturnValue(true),
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+}));
 
 const digest = {enabled: false, checkInterval: {value: 1, unit: 'week'}};
 const props = {
@@ -82,4 +88,11 @@ it('should disable the confirm button if no changes to the modal were applied', 
   );
 
   expect(node.find('.confirm').prop('disabled')).toBe(true);
+});
+
+it('should show warning that email is not configured', async () => {
+  isEmailEnabled.mockReturnValueOnce(false);
+  const node = shallow(<ConfigureProcessModal {...props} />);
+
+  expect(node.find('MessageBox').exists()).toBe(true);
 });
