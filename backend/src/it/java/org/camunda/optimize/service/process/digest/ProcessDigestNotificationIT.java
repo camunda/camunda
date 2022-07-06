@@ -74,8 +74,8 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     processOverviewClient.updateProcessDigest(DEF_KEY, new ProcessDigestRequestDto(new AlertInterval(1, SECONDS), true));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // then
-    assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
+    // then we receive one email straight away and a second email after the interval of 1 second has passed
+    assertThat(greenMail.waitForIncomingEmail(1000, 2)).isTrue();
   }
 
   @Test
@@ -87,15 +87,15 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     processOverviewClient.updateProcessDigest(DEF_KEY, new ProcessDigestRequestDto(new AlertInterval(1, SECONDS), true));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // then
-    assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
+    // then receiving one email upon update and one after 1 second
+    assertThat(greenMail.waitForIncomingEmail(1000, 2)).isTrue();
 
     // when
     processOverviewClient.updateProcessDigest(DEF_KEY, new ProcessDigestRequestDto(new AlertInterval(5, SECONDS), true));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // then
-    assertThat(greenMail.waitForIncomingEmail(5000, 1)).isTrue();
+    // then receiving one email upon update and one after 5 seconds
+    assertThat(greenMail.waitForIncomingEmail(5000, 2)).isTrue();
   }
 
   @Test
@@ -110,8 +110,10 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     processOverviewClient.updateProcessDigest(DEF_KEY + "2", new ProcessDigestRequestDto(new AlertInterval(1, SECONDS), false));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // then
-    assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
+    // then wait for however many email arrive within 1 second (could be 2 or 3 depending on run) and assert none of them are for process 2
+    assertThat(greenMail.waitForIncomingEmail(1000, 4)).isFalse();
+    final MimeMessage[] emails = greenMail.getReceivedMessages();
+    assertThat(emails).noneMatch(email -> GreenMailUtil.getBody(email).contains(DEF_KEY + "2"));
   }
 
   @Test
@@ -173,13 +175,13 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     createKpiReport("KPI Report 2");
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcessOwner(DEF_KEY, DEFAULT_USERNAME);
-    processOverviewClient.updateProcessDigest(DEF_KEY, new ProcessDigestRequestDto(new AlertInterval(1, SECONDS), true));
+    processOverviewClient.updateProcessDigest(DEF_KEY, new ProcessDigestRequestDto(new AlertInterval(4, SECONDS), true));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertThat(greenMail.waitForIncomingEmail(2000, 2)).isTrue();
+    assertThat(greenMail.waitForIncomingEmail(8000, 3)).isTrue();
     MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(GreenMailUtil.getBody(emails[0]))
+    assertThat(GreenMailUtil.getBody(emails[1]))
       .isEqualTo("Hello firstName lastName, \r\n" +
                    "Here is your KPI digest for the Process \"aProcessDefKey\":\r\n" +
                    "There are currently 2 KPI reports defined for this process.\r\n" +
@@ -192,7 +194,7 @@ public class ProcessDigestNotificationIT extends AbstractIT {
                    "Target: 1\r\n" +
                    "Current Value: 1.0\r\n" +
                    "Previous Value: -");
-    assertThat(GreenMailUtil.getBody(emails[1]))
+    assertThat(GreenMailUtil.getBody(emails[2]))
       .isEqualTo("Hello firstName lastName, \r\n" +
                    "Here is your KPI digest for the Process \"aProcessDefKey\":\r\n" +
                    "There are currently 2 KPI reports defined for this process.\r\n" +

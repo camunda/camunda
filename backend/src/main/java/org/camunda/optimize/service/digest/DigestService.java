@@ -128,6 +128,9 @@ public class DigestService implements ConfigurationReloadable {
     processOverviewWriter.updateProcessDigest(processDefKey, digest);
     unscheduleDigest(processDefKey);
     scheduleDigest(processDefKey, digest);
+    if (Boolean.TRUE == digest.getEnabled()) {
+      handleDigestTask(processDefKey); // if digest is enabled, send out immediate test email
+    }
   }
 
   private void initTaskScheduler() {
