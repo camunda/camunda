@@ -27,9 +27,17 @@ export function Onboarding({user}) {
   }, []);
 
   useEffect(() => {
-    if (user) {
-      window.Appcues?.identify(user.id);
-    }
+    (async () => {
+      if (user) {
+        const {orgId, clusterId, salesPlanType} = await getOnboardingConfig();
+        window.Appcues?.identify(user.id, {
+          roles: user.roles?.join('|'),
+          orgId,
+          clusters: clusterId,
+          salesPlanType,
+        });
+      }
+    })();
   }, [user]);
 
   useEffect(() => {
