@@ -6,6 +6,7 @@
 package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -33,6 +34,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
@@ -45,6 +48,7 @@ import static org.camunda.optimize.service.onboardinglistener.OnboardingNotifica
 public class ProcessOverviewService {
 
   public static final String APP_CUE_DASHBOARD_SUFFIX = "?appcue=7c293dbb-3957-4187-a079-f0237161c489";
+  public static final String PENDING_OWNER_UPDATE_TEMPLATE = "pendingauthcheck#%s#%s";
 
   private final DefinitionService definitionService;
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
@@ -105,6 +109,12 @@ public class ProcessOverviewService {
 
   public void updateProcessOwner(final String userId, final String processDefKey, final String ownerId) {
     validateProcessDefinitionAuthorization(userId, processDefKey);
+    String ownerIdToSave = resolveUserId(userId, ownerId);
+    processOverviewWriter.upsertProcessOwner(processDefKey, ownerIdToSave);
+  }
+
+  @SneakyThrows
+  private String resolveUserId(final String userId, final String ownerId) {
     String ownerIdToSave = null;
     if (ownerId != null) {
       final Optional<String> ownerUserId = identityService.getUserById(ownerId).map(IdentityDto::getId);
@@ -116,8 +126,69 @@ public class ProcessOverviewService {
         ownerIdToSave = ownerUserId.get();
       }
     }
-    processOverviewWriter.upsertProcessOwner(processDefKey, ownerIdToSave);
+    return ownerIdToSave;
   }
+
+  public void updateProcessOwnerIfNotSet(final String userId, final String processDefinitionKey, final String ownerId) {
+    final Optional<ProcessOverviewDto> overviewForProcess = processOverviewReader.getProcessOverviewByKey(
+      processDefinitionKey);
+    overviewForProcess.ifPresentOrElse(processOverviewDto -> {
+      String owner = Optional.ofNullable(processOverviewDto.getOwner()).orElse("");
+      if (owner.isEmpty()) {
+        processOverviewWriter.upsertProcessOwner(processDefinitionKey, ownerId);
+      } else {
+        log.info(String.format("Not updating process owner for process definition %s because owner has already been " +
+                                 "set manually", processDefinitionKey));
+      }
+    }, () -> {
+      try {
+        updateProcessOwner(userId, processDefinitionKey, ownerId);
+      } catch (NotFoundException e) {
+        // If this happens, it means that Optimize did not import the process definition yet. So we save the
+        // information but mark it as pending authorization check
+        String ownerIdToSave = resolveUserId(userId, ownerId);
+        log.info(String.format("Process definition %s has not been imported to optimize yet, so saving the " +
+                                 "prospective owner %s as pending", processDefinitionKey, ownerIdToSave));
+        String pendingProcessKey = String.format(PENDING_OWNER_UPDATE_TEMPLATE, userId, processDefinitionKey);
+        processOverviewWriter.upsertProcessOwner(pendingProcessKey, ownerIdToSave);
+      }
+    });
+  }
+
+  public void confirmOrDenyOwnershipData(final String processToBeOnboarded) {
+    Map<String, ProcessOverviewDto> pendingProcesses = processOverviewReader.getProcessOverviewsWithPendingOwnershipData();
+    pendingProcesses
+      .keySet()
+      .stream()
+      .filter(completeDefKey -> {
+        Pattern pattern = Pattern.compile(String.format(PENDING_OWNER_UPDATE_TEMPLATE, "(.*)", "(.*)$"));
+        return pattern.matcher(completeDefKey).matches();
+      })
+      .forEach(completeDefKey -> {
+        String userIdFromRequester = extractUserIdFromPendingDefKey(completeDefKey);
+        String ownerId = pendingProcesses.get(completeDefKey).getOwner();
+        try {
+          updateProcessOwner(userIdFromRequester, processToBeOnboarded, ownerId);
+          removePendingEntryFromDatabase(completeDefKey);
+        } catch (Exception exc) {
+          log.warn(exc.getMessage(), exc);
+        }
+      });
+  }
+
+  private void removePendingEntryFromDatabase(final String completeDefKey) {
+    processOverviewWriter.deleteProcessOwnerEntry(completeDefKey);
+  }
+
+  private String extractUserIdFromPendingDefKey(final String defKey) {
+    Pattern pattern = Pattern.compile(String.format(PENDING_OWNER_UPDATE_TEMPLATE, "(.*)", "(.*)$"));
+    Matcher matcher = pattern.matcher(defKey);
+    if (matcher.find()) {
+      return matcher.group(1);
+    }
+    return "";
+  }
+
 
   public void updateProcessDigest(final String userId,
                                   final String processDefKey,
@@ -162,5 +233,4 @@ public class ProcessOverviewService {
         throw new NotFoundException("Process definition with key " + processDefKey + " does not exist.");
       });
   }
-
 }

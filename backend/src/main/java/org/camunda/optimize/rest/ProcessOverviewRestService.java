@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.processoverview.InitialProcessOwnerDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
@@ -21,6 +22,7 @@ import javax.validation.constraints.NotNull;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -71,5 +73,14 @@ public class ProcessOverviewRestService {
                                  @NotNull @Valid @RequestBody ProcessOwnerDto ownerDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     processOverviewService.updateProcessOwner(userId, processDefKey, ownerDto.getId());
+  }
+
+  @POST
+  @Path("/initial-owner")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void setInitialProcessOwner(@Context final ContainerRequestContext requestContext,
+                                     @NotNull @Valid @RequestBody InitialProcessOwnerDto ownerDto) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    processOverviewService.updateProcessOwnerIfNotSet(userId, ownerDto.getProcessDefinitionKey(), ownerDto.getOwner());
   }
 }

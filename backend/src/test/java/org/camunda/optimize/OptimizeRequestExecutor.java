@@ -31,6 +31,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.InitialProcessOwnerDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
@@ -246,6 +247,13 @@ public class OptimizeRequestExecutor {
     // consume the response entity so the server can write the response
     response.bufferEntity();
     return response;
+  }
+
+  public OptimizeRequestExecutor buildSetInitialProcessOwnerRequest(final InitialProcessOwnerDto processOwnerDto) {
+    this.path = "process/initial-owner";
+    this.method = POST;
+    this.body = getBody(processOwnerDto);
+    return this;
   }
 
   private Invocation.Builder prepareRequest() {

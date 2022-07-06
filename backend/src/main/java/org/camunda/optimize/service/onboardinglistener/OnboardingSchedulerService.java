@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.AbstractScheduledService;
+import org.camunda.optimize.service.ProcessOverviewService;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.reader.ProcessInstanceReader;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -40,6 +41,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
   private final ProcessInstanceReader processInstanceReader;
   private final ConfigurationService configurationService;
   private final OnboardingNotificationService onboardingNotificationService;
+  private final ProcessOverviewService processOverviewService;
 
   private Set<String> onboardedProcessDefinitions = new HashSet<>();
   private int intervalToCheckForOnboardingDataInSeconds = 1800; // Check every 30min
@@ -83,12 +85,17 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
   public void checkIfNewOnboardingDataIsPresent() {
     Set<String> processesNotYetOnboarded = getAllCamundaEngineProcessDefinitionKeys();
     processesNotYetOnboarded.removeAll(onboardedProcessDefinitions);
-    for(String processToBeOnboarded : processesNotYetOnboarded) {
-      if(processHasCompletedInstance(processToBeOnboarded)) {
+    for (String processToBeOnboarded : processesNotYetOnboarded) {
+      resolveAnyPendingOwnerAuthorizations(processToBeOnboarded);
+      if (processHasCompletedInstance(processToBeOnboarded)) {
         triggerOnboardingForProcess(processToBeOnboarded);
         onboardedProcessDefinitions.add(processToBeOnboarded);
       }
     }
+  }
+
+  private void resolveAnyPendingOwnerAuthorizations(final String processToBeOnboarded) {
+    processOverviewService.confirmOrDenyOwnershipData(processToBeOnboarded);
   }
 
   private void triggerOnboardingForProcess(final String processToBeOnboarded) {

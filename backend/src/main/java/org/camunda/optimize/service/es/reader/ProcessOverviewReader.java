@@ -96,4 +96,32 @@ public class ProcessOverviewReader {
       .stream()
       .collect(Collectors.toMap(ProcessOverviewDto::getProcessDefinitionKey, ProcessOverviewDto::getDigest));
   }
+
+  public Map<String, ProcessOverviewDto> getProcessOverviewsWithPendingOwnershipData() {
+    log.debug("Fetching pending process overviews");
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder
+      .query(QueryBuilders.prefixQuery(ProcessOverviewDto.Fields.processDefinitionKey, "pendingauthcheck"))
+      .size(LIST_FETCH_LIMIT);
+    SearchRequest searchRequest = new SearchRequest(PROCESS_OVERVIEW_INDEX_NAME)
+      .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest);
+    } catch (IOException e) {
+      String reason = "Was not able to fetch pending processes";
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    return ElasticsearchReaderUtil.mapHits(
+        searchResponse.getHits(),
+        ProcessOverviewDto.class,
+        objectMapper
+      )
+      .stream()
+      .collect(Collectors.toMap(ProcessOverviewDto::getProcessDefinitionKey, Function.identity()));
+  }
 }

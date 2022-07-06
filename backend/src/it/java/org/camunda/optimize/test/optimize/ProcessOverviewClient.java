@@ -7,6 +7,7 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
+import org.camunda.optimize.dto.optimize.query.processoverview.InitialProcessOwnerDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
@@ -42,6 +43,13 @@ public class ProcessOverviewClient {
                                      final String ownerId) {
     return getRequestExecutor()
       .buildSetProcessOwnerRequest(definitionKey, new ProcessOwnerDto(ownerId))
+      .execute();
+  }
+
+  public Response setInitialProcessOwner(final String definitionKey,
+                                         final String ownerId) {
+    return getRequestExecutor()
+      .buildSetInitialProcessOwnerRequest(new InitialProcessOwnerDto(definitionKey, ownerId))
       .execute();
   }
 

@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -93,6 +94,23 @@ public class ProcessOverviewWriter {
         String.format(
           "There was a problem while writing %s as the owner for goals of process: %s",
           owner,
+          processDefinitionKey
+        );
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  public void deleteProcessOwnerEntry(final String processDefinitionKey) {
+    try {
+      final DeleteRequest deleteRequest = new DeleteRequest()
+        .index(PROCESS_OVERVIEW_INDEX_NAME)
+        .id(processDefinitionKey);
+      esClient.delete(deleteRequest);
+    } catch (IOException e) {
+      final String errorMessage =
+        String.format(
+          "There was a problem while deleting process overview for %s",
           processDefinitionKey
         );
       log.error(errorMessage, e);
