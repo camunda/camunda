@@ -4059,10 +4059,10 @@ bowser@^2.8.1:
   resolved "https://registry.yarnpkg.com/bowser/-/bowser-2.9.0.tgz#3bed854233b419b9a7422d9ee3e85504373821c9"
   integrity sha512-2ld76tuLBNFekRgmJfT2+3j5MIrP6bFict8WAIT3beq+srz1gcKNAdNKMqHqauQt63NmAa88HfP1/Ypa9Er3HA==
 
-bpmn-js-disable-collapsed-subprocess@^0.1.4:
-  version "0.1.4"
-  resolved "https://registry.yarnpkg.com/bpmn-js-disable-collapsed-subprocess/-/bpmn-js-disable-collapsed-subprocess-0.1.4.tgz#7f25801a57be899eb650f949a912a2e39c5c48ed"
-  integrity sha512-baDI8hx+ZlAvTUevtlJV0rR0sjL4VdBnSuIvp7OiAeLPo+01xAjrncxU3tpviPo2M2CMsS1N3B40QvpwY3Ro2w==
+bpmn-js-disable-collapsed-subprocess@^0.1.5:
+  version "0.1.5"
+  resolved "https://registry.yarnpkg.com/bpmn-js-disable-collapsed-subprocess/-/bpmn-js-disable-collapsed-subprocess-0.1.5.tgz#bc1d4685ef2fa4120b1f96b51cc51b7726c8cdfa"
+  integrity sha512-OydebFC1js0BKa+4C01WiauWStmVKZuoC1aiAQ68NvSLqtVTwbgCewN1I/wiHPJsa9XHCqKX6+EJdA+x/iUVlw==
   dependencies:
     min-dash "^3.5.2"
 
