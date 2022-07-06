@@ -18,11 +18,7 @@ import com.auth0.net.TokenRequest;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,6 +32,9 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class TokenAuthentication extends AbstractAuthenticationToken {
+
+  public static final String ORGANIZATION_ID = "id";
+  public static final String ROLES_KEY = "roles";
 
   private transient Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -174,14 +173,35 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     return JWT.decode(idToken).getClaims();
   }
 
-  public List<String> getRoles(final String rolesKey) {
+  public List<String> getRoles(final String organizationsKey) {
     try {
       final Map<String, Claim> claims = getClaims();
-      if (claims.containsKey(rolesKey)) {
-        return claims.get(rolesKey).asList(String.class);
-      }
+      return findRolesForOrganization(claims, organizationsKey, organization);
     } catch (Exception e) {
       getLogger().error("Could not get roles. Return empty roles list.", e);
+    }
+    return List.of();
+  }
+
+  private List<String> findRolesForOrganization(
+      final Map<String, Claim> claims, final String organizationsKey, final String organization) {
+    try {
+      final List<Map> orgInfos = claims.get(organizationsKey).asList(Map.class);
+      if (orgInfos != null) {
+        final Optional<Map> orgInfo =
+            orgInfos.stream()
+                .filter(oi -> oi.get(ORGANIZATION_ID).equals(organization))
+                .findFirst();
+        if (orgInfo.isPresent()) {
+          return (List<String>) orgInfo.get().get(ROLES_KEY);
+        }
+      }
+    } catch (Exception e) {
+      logger.error(
+          String.format(
+              "Couldn't extract roles for organization '%s' in JWT claims. Return empty roles list.",
+              organization),
+          e);
     }
     return List.of();
   }

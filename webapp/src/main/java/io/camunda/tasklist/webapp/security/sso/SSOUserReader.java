@@ -44,11 +44,12 @@ public class SSOUserReader implements UserReader {
       final String email = claims.get(tasklistProperties.getAuth0().getEmailKey()).asString();
       return Optional.of(
           new UserDTO()
-              .setUserId(email)
+              .setUserId(authentication.getName())
               .setDisplayName(name)
               .setApiUser(false)
               .setPermissions(tokenAuthentication.getPermissions())
-              .setRoles(tokenAuthentication.getRoles(tasklistProperties.getAuth0().getRolesKey()))
+              .setRoles(
+                  tokenAuthentication.getRoles(tasklistProperties.getAuth0().getOrganizationsKey()))
               .setSalesPlanType(tokenAuthentication.getSalesPlanType()));
     } else if (authentication instanceof JwtAuthenticationToken) {
       final JwtAuthenticationToken jwtAuthentication = ((JwtAuthenticationToken) authentication);

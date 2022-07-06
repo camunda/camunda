@@ -8,7 +8,7 @@ package io.camunda.tasklist.property;
 
 public class Auth0Properties {
 
-  public static final String DEFAULT_ROLES_KEY = "https://camunda.com/roles";
+  public static final String DEFAULT_ORGANIZATIONS_KEY = "https://camunda.com/organizations";
 
   /**
    * Defines the domain which the user always sees<br>
@@ -46,14 +46,15 @@ public class Auth0Properties {
   /** Key for claim to retrieve the user email */
   private String emailKey = "email";
 
-  private String rolesKey = DEFAULT_ROLES_KEY;
+  /* Key for claim to retrieve organization info */
+  private String organizationsKey = DEFAULT_ORGANIZATIONS_KEY;
 
-  public String getRolesKey() {
-    return rolesKey;
+  public void setOrganizationsKey(final String organizationsKey) {
+    this.organizationsKey = organizationsKey;
   }
 
-  public void setRolesKey(final String rolesKey) {
-    this.rolesKey = rolesKey;
+  public String getOrganizationsKey() {
+    return organizationsKey;
   }
 
   public String getDomain() {

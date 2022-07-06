@@ -6,25 +6,16 @@
  */
 package io.camunda.tasklist.webapp.security.sso;
 
-import static io.camunda.tasklist.property.Auth0Properties.DEFAULT_ROLES_KEY;
+import static io.camunda.tasklist.property.Auth0Properties.DEFAULT_ORGANIZATIONS_KEY;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.NO_PERMISSION;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_CALLBACK;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.*;
 import static io.camunda.tasklist.webapp.security.sso.AuthenticationIT.TASKLIST_TEST_ROLES;
 import static io.camunda.tasklist.webapp.security.sso.AuthenticationIT.TASKLIST_TEST_SALESPLAN;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNotNull;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import com.auth0.AuthenticationController;
@@ -37,11 +28,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.sso.AuthSSOApplication;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterInfo;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import org.json.JSONObject;
@@ -58,11 +45,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.rules.SpringClassRule;
 import org.springframework.test.context.junit4.rules.SpringMethodRule;
@@ -94,21 +77,17 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   private static final String TASKLIST_TESTUSER = "tasklist-testuser";
   private static final String TASKLIST_TESTUSER_EMAIL = "testuser@tasklist.io";
   @Rule public final SpringMethodRule springMethodRule = new SpringMethodRule();
-
-  @LocalServerPort int randomServerPort;
-
-  @Autowired TestRestTemplate testRestTemplate;
-
-  @Autowired TasklistProperties tasklistProperties;
-
-  @MockBean AuthenticationController authenticationController;
+  private final BiFunction<String, String, Tokens> orgExtractor;
+  @LocalServerPort private int randomServerPort;
+  @Autowired private TestRestTemplate testRestTemplate;
+  @Autowired private TasklistProperties tasklistProperties;
+  @MockBean private AuthenticationController authenticationController;
 
   @MockBean
   @Qualifier("auth0_restTemplate")
   private RestTemplate restTemplate;
 
   @Autowired private ObjectMapper objectMapper;
-  private final BiFunction<String, String, Tokens> orgExtractor;
 
   public AuthenticationWithPersistentSessionsIT(BiFunction<String, String, Tokens> orgExtractor) {
     this.orgExtractor = orgExtractor;
@@ -117,6 +96,45 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @Parameters
   public static Collection<BiFunction<String, String, Tokens>> orgExtractors() {
     return List.of(AuthenticationWithPersistentSessionsIT::tokensWithOrgAsMapFrom);
+  }
+
+  private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
+    final String emptyJSONEncoded = toEncodedToken(Map.of());
+    final long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
+    final Map<String, Object> orgMap = Map.of("id", organization);
+    final String accountData =
+        toEncodedToken(
+            asMap(
+                claim,
+                List.of(orgMap),
+                "sub",
+                TASKLIST_TESTUSER,
+                "exp",
+                expiresInSeconds,
+                "name",
+                TASKLIST_TESTUSER,
+                "email",
+                TASKLIST_TESTUSER_EMAIL,
+                DEFAULT_ORGANIZATIONS_KEY,
+                List.of(Map.of("id", "3", "roles", List.of("user", "analyst")))));
+    return new Tokens(
+        "accessToken",
+        emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
+        "refreshToken",
+        "type",
+        5L);
+  }
+
+  private static String toEncodedToken(Map<String, ?> map) {
+    return toBase64(toJSON(map));
+  }
+
+  private static String toBase64(String input) {
+    return new String(Base64.getEncoder().encode(input.getBytes()));
+  }
+
+  private static String toJSON(Map<String, ?> map) {
+    return new JSONObject(map).toString();
   }
 
   @Before
@@ -248,7 +266,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     // then
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
     final GraphQLResponse graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
-    assertThat(graphQLResponse.get("$.data.currentUser.userId")).isEqualTo(TASKLIST_TESTUSER_EMAIL);
+    assertThat(graphQLResponse.get("$.data.currentUser.userId")).isEqualTo(TASKLIST_TESTUSER);
     assertThat(graphQLResponse.get("$.data.currentUser.displayName")).isEqualTo(TASKLIST_TESTUSER);
     assertThat(graphQLResponse.get("$.data.currentUser.salesPlanType"))
         .isEqualTo(TASKLIST_TEST_SALESPLAN.getType());
@@ -274,43 +292,6 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
   private String urlFor(String path) {
     return "http://localhost:" + randomServerPort + path;
-  }
-
-  private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
-    final String emptyJSONEncoded = toEncodedToken(Map.of());
-    final long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
-    final Map<String, Object> orgMap = Map.of("id", organization);
-    final String accountData =
-        toEncodedToken(
-            asMap(
-                claim,
-                List.of(orgMap),
-                "exp",
-                expiresInSeconds,
-                "name",
-                TASKLIST_TESTUSER,
-                "email",
-                TASKLIST_TESTUSER_EMAIL,
-                DEFAULT_ROLES_KEY,
-                TASKLIST_TEST_ROLES));
-    return new Tokens(
-        "accessToken",
-        emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
-        "refreshToken",
-        "type",
-        5L);
-  }
-
-  private static String toEncodedToken(Map<String, ?> map) {
-    return toBase64(toJSON(map));
-  }
-
-  private static String toBase64(String input) {
-    return new String(Base64.getEncoder().encode(input.getBytes()));
-  }
-
-  private static String toJSON(Map<String, ?> map) {
-    return new JSONObject(map).toString();
   }
 
   private HttpEntity<?> loginWithSSO() throws Exception {
