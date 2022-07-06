@@ -905,6 +905,7 @@
     "download": "Download",
     "view": "View",
     "viewDocumentation": "View documentation",
+    "viewMore": "View More",
     "process": {
       "label": "Process",
       "label-plural": "Processes"

@@ -48,7 +48,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
   let options;
   switch (visualization) {
     case 'pie':
-      options = createPieOptions(isDark);
+      options = createPieOptions(isDark, groupBy?.type === 'duration');
       break;
     case 'line':
     case 'bar':
@@ -96,35 +96,6 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
   if (visualization === 'pie' && !isPersistedTooltips && !groupedByDurationMaxValue) {
     tooltipCallbacks.title = (tooltipItems) => {
       return formatTooltipTitle(tooltipItems?.[0].label, tooltipItems?.[0]?.chart.chartArea.width);
-    };
-  }
-
-  if (visualization === 'pie') {
-    options.plugins.legend.labels.generateLabels = (chart) => {
-      // we need to adjust the generate labels function to convert milliseconds to nicely formatted duration strings
-      // we also need it to render the legends based on the hovered dataset in order to fade out only non hovered legends
-      // taken and adjusted from https://github.com/chartjs/Chart.js/blob/2.9/src/controllers/controller.doughnut.js#L48-L66
-      const data = chart.data;
-      if (data.labels.length && data.datasets.length) {
-        return data.labels.map(function (label, i) {
-          // the 'hovered' property is provided by a plugin
-          const hoveredDatasetIdx = data.datasets.findIndex((dataset) => dataset.hovered);
-          const meta = chart.getDatasetMeta(hoveredDatasetIdx > 0 ? hoveredDatasetIdx : 0);
-          const style = meta.controller.getStyle(i);
-
-          return {
-            text: groupedByDurationMaxValue ? duration(label) : label,
-            fillStyle: style.backgroundColor,
-            strokeStyle: style.borderColor,
-            lineWidth: style.borderWidth,
-            hidden: isNaN(data.datasets[0].data[i]) || meta.data[i].hidden,
-
-            // Extra data used for toggling the correct item
-            index: i,
-          };
-        });
-      }
-      return [];
     };
   }
 
@@ -299,13 +270,43 @@ export function createBarOptions({
   };
 }
 
-function createPieOptions(isDark) {
+function createPieOptions(isDark, isGroupedByDuration) {
+  const generateLabels = (chart) => {
+    // we need to adjust the generate labels function to convert milliseconds to nicely formatted duration strings
+    // we also need it to render the legends based on the hovered dataset in order to fade out only non hovered legends
+    // taken and adjusted from https://github.com/chartjs/Chart.js/blob/2.9/src/controllers/controller.doughnut.js#L48-L66
+    const data = chart.data;
+    let labels = data.labels;
+
+    if (data.labels.length && data.datasets.length) {
+      return labels.map(function (label, i) {
+        // the 'hovered' property is provided by a plugin
+        const hoveredDatasetIdx = data.datasets.findIndex((dataset) => dataset.hovered);
+        const meta = chart.getDatasetMeta(hoveredDatasetIdx > 0 ? hoveredDatasetIdx : 0);
+        const style = meta.controller.getStyle(i);
+
+        return {
+          text: isGroupedByDuration ? duration(label) : label,
+          fillStyle: style.backgroundColor,
+          strokeStyle: style.borderColor,
+          lineWidth: style.borderWidth,
+          hidden: isNaN(data.datasets[0].data[i]) || meta.data[i].hidden,
+
+          // Extra data used for toggling the correct item
+          index: i,
+        };
+      });
+    }
+    return [];
+  };
+
   return {
     emptyBackgroundColor: getColorFor('emptyPie', isDark),
     plugins: {
       legend: {
         display: true,
-        labels: {color: getColorFor('label', isDark)},
+        autoCollapse: true,
+        labels: {color: getColorFor('label', isDark), generateLabels},
       },
       datalabels: {
         align: 'start',
