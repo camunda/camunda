@@ -25,6 +25,19 @@ zeebe:
     capabilities:
       add: ["NET_ADMIN"]
 
+  # PodAntiAffinity defines that brokers shouldn't share nodes since this leads to performance issues
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: "app.kubernetes.io/component"
+                operator: In
+                values:
+                  - zeebe-broker
+          topologyKey: kubernetes.io/hostname
+          namespaceSelector: {} # Affinity across all namespaces
+
   # JavaOpts can be used to set java options for the zeebe brokers
   javaOpts: >-
     -XX:MaxRAMPercentage=25.0
