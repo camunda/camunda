@@ -210,6 +210,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   }
 
   private void stopPartition(final ZeebePartition partition) {
+    diskSpaceUsageMonitor.removeDiskUsageListener(partition);
     healthCheckService.removeMonitoredPartition(partition.getPartitionId());
     partition.close();
   }
