@@ -13,6 +13,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import java.util.Map;
+import java.util.Set;
 
 public final class LogDeletionService extends Actor implements PersistedSnapshotListener {
   private final LogCompactor logCompactor;
@@ -55,11 +56,33 @@ public final class LogDeletionService extends Actor implements PersistedSnapshot
 
   @Override
   public void onNewSnapshot(final PersistedSnapshot newPersistedSnapshot) {
-    actor.run(() -> delegateDeletion(newPersistedSnapshot));
+    actor.run(
+        () ->
+            persistedSnapshotStore
+                .getAvailableSnapshots()
+                .onComplete(
+                    (availableSnapshots, error) -> {
+                      if (error == null) {
+                        delegateDeletion(getCompactionBoundOfOldestSnapshot(availableSnapshots));
+                      } else {
+                        Loggers.DELETION_SERVICE.error(
+                            "Expected to compact logs, but could not get list of available snapshots.",
+                            error);
+                      }
+                    }));
   }
 
-  private void delegateDeletion(final PersistedSnapshot persistedSnapshot) {
-    final var compactionBound = persistedSnapshot.getCompactionBound();
+  private long getCompactionBoundOfOldestSnapshot(final Set<PersistedSnapshot> availableSnapshots) {
+    return availableSnapshots.stream()
+        .map(PersistedSnapshot::getCompactionBound)
+        .min(Long::compareTo)
+        .orElse(0L);
+  }
+
+  private void delegateDeletion(final long compactionBound) {
+    if (compactionBound <= 0) {
+      return;
+    }
     logCompactor
         .compactLog(compactionBound)
         .exceptionally(error -> logCompactionError(compactionBound, error))
