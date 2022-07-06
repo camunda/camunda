@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
@@ -52,6 +53,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private AsyncSnapshotDirector snapshotDirector;
   private QueryService queryService;
   private ConcurrencyControl concurrencyControl;
+  private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
 
   @Override
   public int getPartitionId() {
@@ -157,6 +159,15 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public void setQueryService(final QueryService queryService) {
     this.queryService = queryService;
+  }
+
+  @Override
+  public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
+    return diskSpaceUsageMonitor;
+  }
+
+  public void setDiskSpaceUsageMonitor(final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
+    this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
   }
 
   public void setBrokerCfg(final BrokerCfg brokerCfg) {

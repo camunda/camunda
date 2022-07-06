@@ -22,7 +22,6 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
-import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
@@ -139,20 +138,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setClusterServices(final ClusterServicesImpl clusterServices) {
     this.clusterServices = clusterServices;
-  }
-
-  @Override
-  public void addDiskSpaceUsageListener(final DiskSpaceUsageListener listener) {
-    if (diskSpaceUsageMonitor != null) {
-      diskSpaceUsageMonitor.addDiskUsageListener(listener);
-    }
-  }
-
-  @Override
-  public void removeDiskSpaceUsageListener(final DiskSpaceUsageListener listener) {
-    if (diskSpaceUsageMonitor != null) {
-      diskSpaceUsageMonitor.removeDiskUsageListener(listener);
-    }
   }
 
   @Override
