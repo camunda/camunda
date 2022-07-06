@@ -179,7 +179,9 @@ class CommandApiServiceStepTest {
       testBrokerStartupContext.setCommandApiServerTransport(mockAtomixServerTransport);
       testBrokerStartupContext.setCommandApiService(mockCommandApiService);
       testBrokerStartupContext.addPartitionListener(mockCommandApiService);
-      testBrokerStartupContext.addDiskSpaceUsageListener(mockCommandApiService);
+      testBrokerStartupContext
+          .getDiskSpaceUsageMonitor()
+          .addDiskUsageListener(mockCommandApiService);
 
       shutdownFuture = CONCURRENCY_CONTROL.createFuture();
     }

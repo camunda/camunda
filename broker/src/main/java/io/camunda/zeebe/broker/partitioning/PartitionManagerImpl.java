@@ -21,7 +21,7 @@ import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListener;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
-import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.PartitionHealthBroadcaster;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
@@ -33,7 +33,6 @@ import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +51,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   private TopologyManagerImpl topologyManager;
 
   private final List<ZeebePartition> partitions = new ArrayList<>();
-  private final Consumer<DiskSpaceUsageListener> diskSpaceUsageListenerRegistry;
+  private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
   private final FileBasedSnapshotStoreFactory snapshotStoreFactory;
@@ -69,7 +68,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
       final ClusterServices clusterServices,
       final BrokerHealthCheckService healthCheckService,
       final PushDeploymentRequestHandler deploymentRequestHandler,
-      final Consumer<DiskSpaceUsageListener> diskSpaceUsageListenerRegistry,
+      final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final List<PartitionListener> partitionListeners,
       final CommandApiService commandApiService,
       final ExporterRepository exporterRepository) {
@@ -83,7 +82,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     this.clusterServices = clusterServices;
     this.healthCheckService = healthCheckService;
     this.deploymentRequestHandler = deploymentRequestHandler;
-    this.diskSpaceUsageListenerRegistry = diskSpaceUsageListenerRegistry;
+    this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.commandApiService = commandApiService;
     this.exporterRepository = exporterRepository;
 
@@ -145,7 +144,8 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                       snapshotStoreFactory,
                       clusterServices,
                       exporterRepository,
-                      healthCheckService);
+                      healthCheckService,
+                      diskSpaceUsageMonitor);
 
               partitions.addAll(
                   partitionFactory.constructPartitions(
@@ -169,7 +169,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     actorSchedulingService.submitActor(zeebePartition).join();
     zeebePartition.addFailureListener(
         new PartitionHealthBroadcaster(zeebePartition.getPartitionId(), this::onHealthChanged));
-    diskSpaceUsageListenerRegistry.accept(zeebePartition);
+    diskSpaceUsageMonitor.addDiskUsageListener(zeebePartition);
   }
 
   public CompletableFuture<Void> stop() {

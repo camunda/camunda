@@ -24,6 +24,7 @@ import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerIm
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransition;
@@ -88,6 +89,7 @@ final class PartitionFactory {
   private final ClusterServices clusterServices;
   private final ExporterRepository exporterRepository;
   private final BrokerHealthCheckService healthCheckService;
+  private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
 
   PartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -98,7 +100,8 @@ final class PartitionFactory {
       final FileBasedSnapshotStoreFactory snapshotStoreFactory,
       final ClusterServices clusterServices,
       final ExporterRepository exporterRepository,
-      final BrokerHealthCheckService healthCheckService) {
+      final BrokerHealthCheckService healthCheckService,
+      final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -108,6 +111,7 @@ final class PartitionFactory {
     this.clusterServices = clusterServices;
     this.exporterRepository = exporterRepository;
     this.healthCheckService = healthCheckService;
+    this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
   }
 
   List<ZeebePartition> constructPartitions(
@@ -163,7 +167,8 @@ final class PartitionFactory {
               stateController,
               typedRecordProcessorsFactory,
               exporterRepository,
-              new PartitionProcessingState(owningPartition));
+              new PartitionProcessingState(owningPartition),
+              diskSpaceUsageMonitor);
 
       final PartitionTransition newTransitionBehavior =
           new PartitionTransitionImpl(TRANSITION_STEPS);

@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.logstreams.LogDeletionService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -64,6 +65,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final int maxFragmentSize;
   private final ExporterRepository exporterRepository;
   private final PartitionProcessingState partitionProcessingState;
+  private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final StateController stateController;
 
   private StreamProcessor streamProcessor;
@@ -96,7 +98,8 @@ public class PartitionStartupAndTransitionContextImpl
       final StateController stateController,
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory,
       final ExporterRepository exporterRepository,
-      final PartitionProcessingState partitionProcessingState) {
+      final PartitionProcessingState partitionProcessingState,
+      final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
     this.nodeId = nodeId;
     this.raftPartition = raftPartition;
     this.messagingService = messagingService;
@@ -113,6 +116,7 @@ public class PartitionStartupAndTransitionContextImpl
     maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSizeInBytes();
     this.exporterRepository = exporterRepository;
     this.partitionProcessingState = partitionProcessingState;
+    this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
   }
 
   public PartitionAdminControl getPartitionAdminControl() {
@@ -234,6 +238,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setQueryService(final QueryService queryService) {
     this.queryService = queryService;
+  }
+
+  @Override
+  public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
+    return diskSpaceUsageMonitor;
   }
 
   @Override

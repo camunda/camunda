@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -99,6 +100,8 @@ class SubscriptionApiStepTest {
   @Test
   void shouldRegisterSubscriptionApiAsDiskSpaceUsageListenerOnStartup() {
     // when
+    final var diskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
+    when(mockBrokerStartupContext.getDiskSpaceUsageMonitor()).thenReturn(diskSpaceUsageMonitor);
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
     await().until(future::isDone);
 
@@ -106,7 +109,7 @@ class SubscriptionApiStepTest {
     final var argumentCaptor =
         ArgumentCaptor.forClass(SubscriptionApiCommandMessageHandlerService.class);
     verify(mockBrokerStartupContext).setSubscriptionApiService(argumentCaptor.capture());
-    verify(mockBrokerStartupContext).addDiskSpaceUsageListener(argumentCaptor.getValue());
+    verify(diskSpaceUsageMonitor).addDiskUsageListener(argumentCaptor.getValue());
   }
 
   @Test
@@ -143,10 +146,12 @@ class SubscriptionApiStepTest {
   @Test
   void shouldUnregisterSubscriptionApiAsDiskSpaceUsageListenerOnShutdown() {
     // when
+    final var diskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
+    when(mockBrokerStartupContext.getDiskSpaceUsageMonitor()).thenReturn(diskSpaceUsageMonitor);
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
     await().until(future::isDone);
 
     // then
-    verify(mockBrokerStartupContext).removeDiskSpaceUsageListener(mockSubscriptionApiService);
+    verify(diskSpaceUsageMonitor).removeDiskUsageListener(mockSubscriptionApiService);
   }
 }

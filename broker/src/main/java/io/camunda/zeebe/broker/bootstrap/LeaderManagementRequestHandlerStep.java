@@ -47,7 +47,9 @@ final class LeaderManagementRequestHandlerStep extends AbstractBrokerStartupStep
           forwardExceptions(
               () -> {
                 brokerStartupContext.addPartitionListener(managementRequestHandler);
-                brokerStartupContext.addDiskSpaceUsageListener(managementRequestHandler);
+                brokerStartupContext
+                    .getDiskSpaceUsageMonitor()
+                    .addDiskUsageListener(managementRequestHandler);
 
                 brokerStartupContext.setLeaderManagementRequestHandler(managementRequestHandler);
 
@@ -82,7 +84,7 @@ final class LeaderManagementRequestHandlerStep extends AbstractBrokerStartupStep
 
           forwardExceptions(
               () -> {
-                brokerShutdownContext.removeDiskSpaceUsageListener(handler);
+                brokerShutdownContext.getDiskSpaceUsageMonitor().removeDiskUsageListener(handler);
                 brokerShutdownContext.removePartitionListener(handler);
                 brokerShutdownContext.setLeaderManagementRequestHandler(null);
 

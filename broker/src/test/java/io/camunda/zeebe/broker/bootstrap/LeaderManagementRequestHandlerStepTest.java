@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -107,7 +108,9 @@ class LeaderManagementRequestHandlerStepTest {
     // then
     final var argumentCaptor = ArgumentCaptor.forClass(LeaderManagementRequestHandler.class);
     verify(mockBrokerStartupContext).setLeaderManagementRequestHandler(argumentCaptor.capture());
-    verify(mockBrokerStartupContext).addDiskSpaceUsageListener(argumentCaptor.getValue());
+    verify(mockBrokerStartupContext)
+        .getDiskSpaceUsageMonitor()
+        .addDiskUsageListener(argumentCaptor.getValue());
   }
 
   @Test
@@ -144,11 +147,12 @@ class LeaderManagementRequestHandlerStepTest {
   @Test
   void shouldRemoveLeaderRequestManagementHandlerAsDiskSpaceListenerOnStartup() {
     // when
+    final var diskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
+    when(mockBrokerStartupContext.getDiskSpaceUsageMonitor()).thenReturn(diskSpaceUsageMonitor);
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
     await().until(future::isDone);
 
     // then
-    verify(mockBrokerStartupContext)
-        .removeDiskSpaceUsageListener(mockLeaderManagementRequestHandler);
+    verify(diskSpaceUsageMonitor).removeDiskUsageListener(mockLeaderManagementRequestHandler);
   }
 }
