@@ -12,7 +12,7 @@ security:
       organizationId: ${CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION:}
       clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:}
       audience: ${CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE:}
-      userAccessTokenAudience: ${CAMUNDA_OPTIMIZE_USER_TOKEN_AUDIENCE:null}
+      userAccessTokenAudience: ${CAMUNDA_OPTIMIZE_M2M_AUTH0_AUDIENCE:null}
     ccsm:
       issuerUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL:}
       issuerBackendUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:}
@@ -620,8 +620,8 @@ onboarding:
   # How often (in seconds) shall optimize check whether process instances from new processes completed?
   intervalForCheckingTriggerForOnboardingEmails: ${CAMUNDA_OPTIMIZE_ONBOARDING_INTERVAL_CHECK_DATA:1800}
   properties:
-    organizationId: ${CAMUNDA_OPTIMIZE_ONBOARDING_ORGANIZATION:dev}
-    clusterId: ${CAMUNDA_OPTIMIZE_ONBOARDING_CLUSTER_ID:dev}
+    organizationId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_ORGANIZATION:dev}
+    clusterId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_CLUSTER_ID:dev}
 
 # Configuration of application internal in-memory caches
 caches:
