@@ -180,6 +180,8 @@
     "processOverview": "Process Overview",
     "configureProcess": "Configure Process",
     "emailDigest": "Email Digest",
+    "digestInfo": "The process digest sends periodic emails with the existing KPI status to the Process Owner.",
+    "digestConfigured": "Your process digest has been successfully configured. An email has been sent to {name}.",
     "timeGoals": {
       "label": "Time goals",
       "configure": "Configure duration goals",

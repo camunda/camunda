@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
 import {isEmailEnabled} from 'config';
@@ -36,9 +36,12 @@ it('should load the initial user into the user dropdown', () => {
   ]);
 });
 
-it('should invoke the onConfirm with the updated config', () => {
+it('should invoke the onConfirm with the updated config', async () => {
   const spy = jest.fn();
   const node = shallow(<ConfigureProcessModal onConfirm={spy} {...props} />);
+
+  await runLastEffect();
+  await node.update();
 
   node
     .find(UserTypeahead)
@@ -50,16 +53,20 @@ it('should invoke the onConfirm with the updated config', () => {
 
   node.find('.confirm').simulate('click');
 
-  expect(spy).toHaveBeenCalledWith({
-    ownerId: 'test',
-    processDigest: {
-      enabled: true,
-      checkInterval: {
-        value: 2,
-        unit: 'months',
+  expect(spy).toHaveBeenCalledWith(
+    {
+      ownerId: 'test',
+      processDigest: {
+        enabled: true,
+        checkInterval: {
+          value: 2,
+          unit: 'months',
+        },
       },
     },
-  });
+    true,
+    'testName'
+  );
 });
 
 it('should disable the digest when removing the owner', () => {

@@ -11,7 +11,7 @@ import {Link} from 'react-router-dom';
 import {Button, EntityList, Icon, Tooltip} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
-import {showError} from 'notifications';
+import {addNotification, showError} from 'notifications';
 import {getOptimizeProfile} from 'config';
 
 import {DashboardView} from '../Dashboards/DashboardView';
@@ -138,10 +138,16 @@ export function Processes({mightFail}) {
         <ConfigureProcessModal
           initialConfig={editProcessConfig}
           onClose={() => setEditProcessConfig()}
-          onConfirm={async (newConfig) => {
+          onConfirm={async (newConfig, emailEnabled, ownerName) => {
             await mightFail(
               updateProcess(editProcessConfig.processDefinitionKey, newConfig),
               () => {
+                if (emailEnabled && newConfig.processDigest.enabled) {
+                  addNotification({
+                    type: 'success',
+                    text: t('processes.digestConfigured', {name: ownerName}),
+                  });
+                }
                 setEditProcessConfig();
                 loadProcessesList();
               },

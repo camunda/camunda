@@ -71,14 +71,13 @@ export function ConfigureProcessModal({
           />
         )}
         <Labeled
-          className="ownerConfig"
           label={
-            <>
+            <div className="infoContainer">
               {t('processes.processOwner')}{' '}
               <Tooltip align="center" content={t('processes.ownerInfo')}>
                 <Icon type="info" />
               </Tooltip>
-            </>
+            </div>
           }
         >
           <UserTypeahead
@@ -98,7 +97,14 @@ export function ConfigureProcessModal({
         <fieldset className="digestConfig" disabled={!selectedUser}>
           <legend>
             <Switch
-              label={t('processes.emailDigest')}
+              label={
+                <div className="infoContainer">
+                  {t('processes.emailDigest')}{' '}
+                  <Tooltip align="center" content={t('processes.digestInfo')}>
+                    <Icon type="info" />
+                  </Tooltip>
+                </div>
+              }
               checked={digestEnabled}
               onChange={({target}) => {
                 if (target.checked && selectedUser) {
@@ -149,10 +155,14 @@ export function ConfigureProcessModal({
           className="confirm"
           onClick={() => {
             const ownerId = selectedUser?.identity.id || null;
-            onConfirm({
-              ownerId,
-              processDigest: {enabled: digestEnabled, checkInterval: digestInterval},
-            });
+            onConfirm(
+              {
+                ownerId,
+                processDigest: {enabled: digestEnabled, checkInterval: digestInterval},
+              },
+              emailEnabled,
+              selectedUser?.identity.name
+            );
           }}
         >
           {t('common.save')}

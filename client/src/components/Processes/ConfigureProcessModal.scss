@@ -1,5 +1,5 @@
 .ConfigureProcessModal {
-  .ownerConfig .label .Icon {
+  .infoContainer .Icon {
     opacity: 0.26;
 
     &:hover {
@@ -12,6 +12,10 @@
     border: 1px solid var(--silver-darken-87);
     margin-top: 40px;
     padding: 20px;
+
+    > legend {
+      font-size: 14px;
+    }
 
     &:disabled {
       color: var(--grey-lighten-56);

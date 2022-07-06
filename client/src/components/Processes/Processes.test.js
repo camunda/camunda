@@ -8,12 +8,15 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
+import {addNotification} from 'notifications';
 import {EntityList} from 'components';
 import {getOptimizeProfile} from 'config';
 
 import {Processes} from './Processes';
 import {loadProcesses, updateProcess, loadManagementDashboard} from './service';
 import ConfigureProcessModal from './ConfigureProcessModal';
+
+jest.mock('notifications', () => ({addNotification: jest.fn()}));
 
 jest.mock('./service', () => ({
   loadProcesses: jest.fn().mockReturnValue([
@@ -93,6 +96,22 @@ it('should edit a process config', async () => {
 
   node.find(ConfigureProcessModal).simulate('confirm', testConfig);
   expect(updateProcess).toHaveBeenCalledWith('defKey', testConfig);
+});
+
+it('should show process update notification if digest & email are enabled', async () => {
+  const testConfig = {
+    ownerId: 'testId',
+    processDigest: {enabled: true, checkInterval: {value: 1, unit: 'months'}},
+  };
+
+  const node = shallow(<Processes {...props} />);
+  await runAllEffects();
+
+  const configureProcessBtn = node.find(EntityList).prop('data')[0].meta[4];
+  configureProcessBtn.props.onClick();
+
+  node.find(ConfigureProcessModal).simulate('confirm', testConfig, true, 'testName');
+  expect(addNotification).toHaveBeenCalled();
 });
 
 it('should pass loaded reports and filters to the management dashboard view component', async () => {
