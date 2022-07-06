@@ -92,6 +92,7 @@ export function ConfigureProcessModal({
             }}
             excludeGroups
             optionsOnly={optimizeProfile === 'cloud'}
+            persistMenu={false}
           />
         </Labeled>
         <fieldset className="digestConfig" disabled={!selectedUser}>

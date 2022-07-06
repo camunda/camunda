@@ -23,6 +23,7 @@ export function UserTypeahead({
   fetchUsers,
   optionsOnly,
   excludeGroups = false,
+  persistMenu,
 }) {
   const getSelectedUser = (user, cb) => {
     const {id, name} = user;
@@ -72,6 +73,7 @@ export function UserTypeahead({
       onClear={() => onChange([])}
       optionsOnly={optionsOnly}
       excludeGroups={excludeGroups}
+      persistMenu={persistMenu}
     />
   );
 }
