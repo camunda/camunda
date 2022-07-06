@@ -11,6 +11,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.rest.security.AuthenticationCookieFilter;
 import org.camunda.optimize.rest.security.AuthenticationCookieRefreshFilter;
 import org.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
+import org.camunda.optimize.rest.security.oauth.AudienceValidator;
+import org.camunda.optimize.rest.security.oauth.ScopeValidator;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -29,9 +31,14 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.session.SessionManagementFilter;
@@ -131,8 +138,27 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
       .and()
       .addFilterBefore(authenticationCookieFilter(), OAuth2AuthorizationRequestRedirectFilter.class)
       .addFilterAfter(authenticationCookieRefreshFilter, SessionManagementFilter.class)
-      .exceptionHandling().authenticationEntryPoint(new AddClusterIdSubPathToRedirectAuthenticationEntryPoint(OAUTH_AUTH_ENDPOINT + "/auth0"));
+      .exceptionHandling().authenticationEntryPoint(new AddClusterIdSubPathToRedirectAuthenticationEntryPoint(OAUTH_AUTH_ENDPOINT + "/auth0"))
+      .and()
+      .oauth2ResourceServer()
+      .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()));
     //@formatter:on
+  }
+
+  public JwtDecoder jwtDecoder() {
+    NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(readJwtSetUriFromConfig()).build();
+    OAuth2TokenValidator<Jwt> audienceValidator =
+      new AudienceValidator(
+        configurationService.getAuthConfiguration().getCloudAuthConfiguration().getUserAccessTokenAudience().orElse(""));
+    OAuth2TokenValidator<Jwt> clusterIdValidator = new ScopeValidator("profile");
+    OAuth2TokenValidator<Jwt> audienceAndClusterIdValidation =
+      new DelegatingOAuth2TokenValidator<>(audienceValidator, clusterIdValidator);
+    jwtDecoder.setJwtValidator(audienceAndClusterIdValidation);
+    return jwtDecoder;
+  }
+
+  private String readJwtSetUriFromConfig() {
+    return Optional.ofNullable(configurationService.getOptimizeApiConfiguration().getJwtSetUri()).orElse("");
   }
 
   private AuthenticationSuccessHandler getAuthenticationSuccessHandler() {

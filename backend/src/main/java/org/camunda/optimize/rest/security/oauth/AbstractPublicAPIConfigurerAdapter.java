@@ -7,7 +7,6 @@ package org.camunda.optimize.rest.security.oauth;
 
 import lombok.Getter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -30,8 +29,7 @@ public abstract class AbstractPublicAPIConfigurerAdapter extends WebSecurityConf
     this.jwtSetUri = readJwtSetUriFromConfig();
   }
 
-  @Bean
-  public abstract JwtDecoder jwtDecoder();
+  protected abstract JwtDecoder jwtDecoder();
 
   @Override
   public void configure(HttpSecurity http) throws Exception {
@@ -53,7 +51,7 @@ public abstract class AbstractPublicAPIConfigurerAdapter extends WebSecurityConf
       .anyRequest().authenticated()
       .and()
       .oauth2ResourceServer()
-      .jwt();
+      .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()));
   }
 
   private String readJwtSetUriFromConfig() {

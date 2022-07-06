@@ -22,6 +22,7 @@ import javax.validation.constraints.NotNull;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -32,6 +33,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 
@@ -80,7 +82,16 @@ public class ProcessOverviewRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void setInitialProcessOwner(@Context final ContainerRequestContext requestContext,
                                      @NotNull @Valid @RequestBody InitialProcessOwnerDto ownerDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    String userId;
+    try {
+      userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    } catch (NotAuthorizedException e) {
+      // If we are using a CloudSaaS Token
+      userId = Optional.ofNullable(requestContext.getSecurityContext().getUserPrincipal().getName()).orElse("");
+    }
+    if (userId.isEmpty()) {
+      throw new NotAuthorizedException("Could not resolve user for this request");
+    }
     processOverviewService.updateProcessOwnerIfNotSet(userId, ownerDto.getProcessDefinitionKey(), ownerDto.getOwner());
   }
 }

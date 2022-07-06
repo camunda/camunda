@@ -10,7 +10,6 @@ import org.camunda.optimize.rest.security.oauth.AbstractPublicAPIConfigurerAdapt
 import org.camunda.optimize.rest.security.oauth.AudienceValidator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -47,7 +46,6 @@ public class PlatformPublicAPIConfigurerAdapter extends AbstractPublicAPIConfigu
     }
   }
 
-  @Bean
   @Override
   public JwtDecoder jwtDecoder() {
     if (this.getJwtDecodingMethod().equals(JWT_DECODING_STATIC_TOKEN_METHOD)) {
@@ -85,7 +83,7 @@ public class PlatformPublicAPIConfigurerAdapter extends AbstractPublicAPIConfigu
       .anyRequest().authenticated()
       .and()
       .oauth2ResourceServer()
-      .jwt();
+      .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()));
   }
 
   private String getAudienceFromConfiguration() {

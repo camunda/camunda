@@ -16,36 +16,36 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import java.util.Map;
 
 @AllArgsConstructor
-public class ClusterIdValidator implements OAuth2TokenValidator<Jwt> {
-    private final String clusterId;
+public class ScopeValidator implements OAuth2TokenValidator<Jwt> {
+    private final String expectedScope;
     private final JwtAuthenticationConverter delegate = new JwtAuthenticationConverter();
 
-    public OAuth2TokenValidatorResult validate(Jwt jwt) {
+    public OAuth2TokenValidatorResult validate (Jwt jwt) {
       final JwtAuthenticationToken auth = (JwtAuthenticationToken) delegate.convert(jwt);
       final Map<String, Object> payload = auth.getTokenAttributes();
-      return isClusterIdValid(payload);
+      return isScopeValid(payload);
     }
 
-  private OAuth2TokenValidatorResult isClusterIdValid(final Map<String, Object> payload) {
+  private OAuth2TokenValidatorResult isScopeValid (final Map<String, Object> payload) {
       final String scope = getScope(payload);
       if (scope != null && !scope.isBlank()) {
-        if (clusterId.equals(scope)) {
+        if (scope.contains(expectedScope)) {
           return OAuth2TokenValidatorResult.success();
         } else {
           return OAuth2TokenValidatorResult.failure(new OAuth2Error(
             "invalid_token",
-            "The Cluster ID (scope) provided in the token does not match the current Cluster ID",
+            "The scope provided in the token does not match the expected scope",
             null
           ));
         }
       }
       else {
-        return OAuth2TokenValidatorResult.failure(new OAuth2Error("missing_token", "The required Cluster ID (scope) is" +
+        return OAuth2TokenValidatorResult.failure(new OAuth2Error("missing_token", "The required scope is" +
           " missing", null));
       }
   }
 
-  private String getScope(final Map<String, Object> payload) {
+  private String getScope (final Map<String, Object> payload) {
     return (String) payload.get("scope");
   }
 }
