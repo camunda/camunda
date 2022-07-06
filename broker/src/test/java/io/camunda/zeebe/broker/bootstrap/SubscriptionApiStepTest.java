@@ -54,6 +54,8 @@ class SubscriptionApiStepTest {
         .thenReturn(mockActorSchedulingService);
     when(mockBrokerStartupContext.getClusterServices()).thenReturn(mock(ClusterServicesImpl.class));
     when(mockBrokerStartupContext.getBrokerInfo()).thenReturn(mock(BrokerInfo.class));
+    when(mockBrokerStartupContext.getDiskSpaceUsageMonitor())
+        .thenReturn(mock(DiskSpaceUsageMonitor.class));
 
     when(mockActorSchedulingService.submitActor(any()))
         .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));

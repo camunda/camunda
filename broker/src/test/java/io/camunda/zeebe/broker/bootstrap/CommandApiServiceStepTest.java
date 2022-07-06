@@ -65,6 +65,7 @@ class CommandApiServiceStepTest {
             mock(ExporterRepository.class),
             Collections.emptyList());
     testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
+    testBrokerStartupContext.setDiskSpaceUsageMonitor(mock(DiskSpaceUsageMonitor.class));
   }
 
   @Test
@@ -179,6 +180,7 @@ class CommandApiServiceStepTest {
       testBrokerStartupContext.setCommandApiServerTransport(mockAtomixServerTransport);
       testBrokerStartupContext.setCommandApiService(mockCommandApiService);
       testBrokerStartupContext.addPartitionListener(mockCommandApiService);
+      testBrokerStartupContext.setDiskSpaceUsageMonitor(mock(DiskSpaceUsageMonitor.class));
       testBrokerStartupContext
           .getDiskSpaceUsageMonitor()
           .addDiskUsageListener(mockCommandApiService);

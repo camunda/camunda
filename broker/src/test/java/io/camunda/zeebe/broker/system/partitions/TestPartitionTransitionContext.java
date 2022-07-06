@@ -53,6 +53,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private AsyncSnapshotDirector snapshotDirector;
   private QueryService queryService;
   private ConcurrencyControl concurrencyControl;
+  private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
 
   @Override
   public int getPartitionId() {
@@ -162,7 +163,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
-    return null;
+    return diskSpaceUsageMonitor;
+  }
+
+  public void setDiskSpaceUsageMonitor(final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
+    this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
   }
 
   public void setBrokerCfg(final BrokerCfg brokerCfg) {

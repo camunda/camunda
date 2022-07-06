@@ -58,7 +58,8 @@ class LeaderManagementRequestHandlerStepTest {
         .thenReturn(mockActorSchedulingService);
     when(mockBrokerStartupContext.getLeaderManagementRequestHandler())
         .thenReturn(mockLeaderManagementRequestHandler);
-
+    when(mockBrokerStartupContext.getDiskSpaceUsageMonitor())
+        .thenReturn(mock(DiskSpaceUsageMonitor.class));
     when(mockBrokerStartupContext.getClusterServices())
         .thenReturn(mock(ClusterServicesImpl.class, Mockito.RETURNS_DEEP_STUBS));
 
@@ -108,8 +109,7 @@ class LeaderManagementRequestHandlerStepTest {
     // then
     final var argumentCaptor = ArgumentCaptor.forClass(LeaderManagementRequestHandler.class);
     verify(mockBrokerStartupContext).setLeaderManagementRequestHandler(argumentCaptor.capture());
-    verify(mockBrokerStartupContext)
-        .getDiskSpaceUsageMonitor()
+    verify(mockBrokerStartupContext.getDiskSpaceUsageMonitor())
         .addDiskUsageListener(argumentCaptor.getValue());
   }
 
