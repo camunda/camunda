@@ -398,8 +398,8 @@ public class ActorControl implements ConcurrencyControl {
   }
 
   /** Mark actor as failed. This sets the lifecycle phase to 'FAILED' and discards all jobs. */
-  public void fail() {
+  public void fail(final Throwable error) {
     ensureCalledFromWithinActor("fail()");
-    task.fail();
+    task.fail(error);
   }
 }

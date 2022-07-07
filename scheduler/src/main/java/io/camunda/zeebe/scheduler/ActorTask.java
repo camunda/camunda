@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,8 +30,11 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings("restriction")
 public class ActorTask {
-
   private static final Logger LOG = LoggerFactory.getLogger(ActorTask.class);
+  private static final AtomicReferenceFieldUpdater<ActorTask, ActorLifecyclePhase>
+      LIFECYCLE_UPDATER =
+          AtomicReferenceFieldUpdater.newUpdater(
+              ActorTask.class, ActorLifecyclePhase.class, "lifecyclePhase");
 
   public final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
   final Actor actor;
@@ -276,27 +280,28 @@ public class ActorTask {
 
   public void onFailure(final Throwable failure) {
     switch (lifecyclePhase) {
-      case STARTING:
+      case STARTING -> {
         Loggers.ACTOR_LOGGER.error(
-            "Actor failed in phase 'STARTING'. Discard all jobs and stop immediatly.", failure);
-
+            "Actor failed in phase 'STARTING'. Discard all jobs and stop immediately.", failure);
         lifecyclePhase = ActorLifecyclePhase.FAILED;
         discardNextJobs();
         startingFuture.completeExceptionally(failure);
-        break;
-
-      case CLOSING:
+        closeFuture.complete(null);
+      }
+      case CLOSING -> {
         Loggers.ACTOR_LOGGER.error(
-            "Actor failed in phase 'CLOSING'. Discard all jobs and stop immediatly.", failure);
-
+            "Actor failed in phase 'CLOSING'. Discard all jobs and stop immediately.", failure);
         lifecyclePhase = ActorLifecyclePhase.FAILED;
         discardNextJobs();
         closeFuture.completeExceptionally(failure);
-        break;
-
-      default:
+      }
+      case STARTED -> {
         actor.handleFailure(failure);
         currentJob.failFuture(failure);
+      }
+      default -> {
+        // do nothing
+      }
     }
   }
 
@@ -500,8 +505,21 @@ public class ActorTask {
     fastLaneJobs.addFirst(job);
   }
 
-  public void fail() {
-    lifecyclePhase = ActorLifecyclePhase.FAILED;
+  public void fail(final Throwable error) {
+    final var previousPhase = LIFECYCLE_UPDATER.getAndSet(this, ActorLifecyclePhase.FAILED);
+
+    if (previousPhase == ActorLifecyclePhase.FAILED) {
+      return;
+    }
+
+    if (previousPhase == ActorLifecyclePhase.STARTING) {
+      startingFuture.completeExceptionally(error);
+    }
+
+    if (previousPhase != ActorLifecyclePhase.CLOSED) {
+      closeFuture.complete(null);
+    }
+
     discardNextJobs();
     actor.onActorFailed();
   }
