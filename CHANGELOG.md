@@ -1,3 +1,34 @@
+# v8.1.0-alpha3
+## 🚀 New Features
+* configure docker-compose to enable testing of Identity integration ([#2899](https://github.com/camunda/operate/issues/2899))
+
+## 💊 Bugfixes
+* **backend**: use roles in organizations part of JWT ([#2975](https://github.com/camunda/operate/issues/2975))
+* **deps**: update dependency bpmn-js to v9.2.2 ([#2898](https://github.com/camunda/operate/issues/2898))
+* import resolved incident when operation update fails (#2913) ([#2966](https://github.com/camunda/operate/issues/2966))
+* **backend**: retry on conflict when updating operation (#2907) ([#2910](https://github.com/camunda/operate/issues/2910))
+* **backend**: reuse Identity config params for Spring params ([#2904](https://github.com/camunda/operate/issues/2904))
+* **deps**: update dependency @carbon/elements to v11.4.0 ([#2895](https://github.com/camunda/operate/issues/2895))
+* **deps**: update dependency @bpmn-io/element-templates-icons-renderer to v0.2.0 ([#2894](https://github.com/camunda/operate/issues/2894))
+* **deps**: update all non-major dependencies ([#2882](https://github.com/camunda/operate/issues/2882))
+
+## 🧹 Chore
+* update Zeebe and Identity to 8.1.0-alpha3 ([#2982](https://github.com/camunda/operate/issues/2982))
+* Skip flaky tests
+* Align terminology in UI ([#2867](https://github.com/camunda/operate/issues/2867))
+* **deps**: update all non-major dependencies ([#2971](https://github.com/camunda/operate/issues/2971))
+* add feature toggle for process instance modification mode ([#2963](https://github.com/camunda/operate/issues/2963))
+* **deps**: update dependency testcafe to v1.19.0 ([#2890](https://github.com/camunda/operate/issues/2890))
+* create modifications store ([#2962](https://github.com/camunda/operate/issues/2962))
+* **deps**: bump version.micrometer from 1.9.0 to 1.9.1 ([#2905](https://github.com/camunda/operate/issues/2905))
+* **deps**: bump java-jwt from 3.19.2 to 4.0.0 ([#2915](https://github.com/camunda/operate/issues/2915))
+* **deps**: bump version.elasticsearch from 7.17.4 to 7.17.5 ([#2945](https://github.com/camunda/operate/issues/2945))
+* **project**: update issue template
+* **deps**: update dependency typescript to v4.7.3 ([#2892](https://github.com/camunda/operate/issues/2892))
+* Add modification icons to repo ([#2889](https://github.com/camunda/operate/issues/2889))
+* **deps**: update dependency lint-staged to v12.5.0 ([#2886](https://github.com/camunda/operate/issues/2886))
+* **deps**: update dependency msw to v0.42.1 ([#2887](https://github.com/camunda/operate/issues/2887))
+* **deps**: update dependency @testing-library/user-event to v14.2.0 ([#2883](https://github.com/camunda/operate/issues/2883))
 # v8.1.0-alpha2
 ## 🚀 New Features
 * Add salesPlanType and roles to User data ([#2858](https://github.com/camunda/operate/issues/2858))
