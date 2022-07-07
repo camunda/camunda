@@ -9,6 +9,8 @@ package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.EngineImpl;
+import io.camunda.zeebe.engine.api.Engine;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.LastProcessingPositions;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
@@ -117,6 +119,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
   private final Function<LogStreamBatchWriter, TypedStreamWriter> typedStreamWriterFactory;
 
+  private final Engine engine;
+
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
     lifecycleAwareListeners = processorBuilder.getLifecycleListeners();
@@ -136,6 +140,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     partitionId = logStream.getPartitionId();
     actorName = buildActorName(processorBuilder.getNodeId(), "StreamProcessor", partitionId);
     metrics = new StreamProcessorMetrics(partitionId);
+
+    engine = new EngineImpl(partitionId, zeebeDb, processorBuilder.getEventApplierFactory());
   }
 
   public static StreamProcessorBuilder builder() {
@@ -171,7 +177,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       healthCheckTick();
 
-      replayStateMachine = new ReplayStateMachine(processingContext, this::shouldProcessNext);
+      replayStateMachine =
+          new ReplayStateMachine(engine, processingContext, this::shouldProcessNext);
       // disable writing to the log stream
       processingContext.disableLogStreamWriter();
 
