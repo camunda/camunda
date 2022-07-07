@@ -14,13 +14,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
-import io.camunda.zeebe.snapshots.SnapshotChunkReader;
-import io.camunda.zeebe.snapshots.SnapshotReservation;
-import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,75 +50,24 @@ class LogDeletionServiceTest {
   @Test
   void shouldCompactOldestSnapshotIndex() {
     // given
-    final Set<PersistedSnapshot> availableSnapshots =
-        Set.of(
-            new TestPersistedSnapshot(10),
-            new TestPersistedSnapshot(5),
-            new TestPersistedSnapshot(11));
+    final Set<PersistedSnapshot> availableSnapshots = getAvailableSnapshotsWithIndices(10, 5, 11);
     final var actorFuture = CompletableActorFuture.completed(availableSnapshots);
     when(snapshotStore.getAvailableSnapshots()).thenReturn(actorFuture);
 
     // when
-    service.onNewSnapshot(new TestPersistedSnapshot(11));
+    service.onNewSnapshot(mock(PersistedSnapshot.class));
 
     // then
     verify(compactor, timeout(1000).times(1)).compactLog(5);
   }
 
-  static class TestPersistedSnapshot implements PersistedSnapshot {
-
-    private final long compactionBound;
-
-    TestPersistedSnapshot(final long compactionBound) {
-      this.compactionBound = compactionBound;
+  private Set<PersistedSnapshot> getAvailableSnapshotsWithIndices(final long... indices) {
+    final var snapshots = new HashSet<PersistedSnapshot>();
+    for (final long index : indices) {
+      final PersistedSnapshot snapshot = mock(PersistedSnapshot.class);
+      when(snapshot.getCompactionBound()).thenReturn(index);
+      snapshots.add(snapshot);
     }
-
-    @Override
-    public int version() {
-      return 0;
-    }
-
-    @Override
-    public long getIndex() {
-      return 0;
-    }
-
-    @Override
-    public long getTerm() {
-      return 0;
-    }
-
-    @Override
-    public SnapshotChunkReader newChunkReader() {
-      return null;
-    }
-
-    @Override
-    public Path getPath() {
-      return null;
-    }
-
-    @Override
-    public long getCompactionBound() {
-      return compactionBound;
-    }
-
-    @Override
-    public String getId() {
-      return null;
-    }
-
-    @Override
-    public long getChecksum() {
-      return 0;
-    }
-
-    @Override
-    public ActorFuture<SnapshotReservation> reserve() {
-      return null;
-    }
-
-    @Override
-    public void close() {}
+    return snapshots;
   }
 }
