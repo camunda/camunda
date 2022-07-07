@@ -12,16 +12,14 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.KpiResultDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.EmailSendingService;
 import org.camunda.optimize.service.KpiService;
-import org.camunda.optimize.service.ProcessOverviewService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.es.writer.ProcessOverviewWriter;
@@ -38,13 +36,10 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -56,7 +51,6 @@ import java.util.concurrent.TimeUnit;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 
 @RequiredArgsConstructor
@@ -71,7 +65,6 @@ public class DigestService implements ConfigurationReloadable {
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final KpiService kpiService;
   private final DefinitionService definitionService;
-  private final ProcessOverviewService processOverviewService;
   private final ProcessOverviewWriter processOverviewWriter;
   private final ProcessOverviewReader processOverviewReader;
 
@@ -100,14 +93,14 @@ public class DigestService implements ConfigurationReloadable {
 
   public void handleDigestTask(final String processDefinitionKey) {
     log.debug("Checking for active digests on process [{}].", processDefinitionKey);
-    final ProcessOverviewDto overviewDto = processOverviewService.getProcessOverviewByKey(processDefinitionKey)
+    final ProcessOverviewDto overviewDto = processOverviewReader.getProcessOverviewByKey(processDefinitionKey)
       .orElseThrow(() -> {
         unscheduleDigest(processDefinitionKey);
         return new OptimizeRuntimeException("Overview for process [" + processDefinitionKey + "] no longer exists. Unscheduling" +
                                               " respective digest.");
       });
 
-    if (Boolean.TRUE.equals(overviewDto.getDigest().getEnabled())) {
+    if (overviewDto.getDigest().isEnabled()) {
       log.info("Creating KPI digest for process [{}].", processDefinitionKey);
       sendDigestAndUpdateLatestKpiResults(overviewDto);
     } else {
@@ -115,20 +108,19 @@ public class DigestService implements ConfigurationReloadable {
     }
   }
 
-  public void updateProcessDigest(final String userId,
-                                  final String processDefKey,
-                                  final ProcessDigestRequestDto digestRequestDto) {
-    validateProcessDefinitionAuthorization(userId, processDefKey);
-    validateIsAuthorizedToUpdateDigest(userId, processDefKey);
-    final ProcessDigestDto digest = new ProcessDigestDto(
-      digestRequestDto.getCheckInterval(),
-      digestRequestDto.getEnabled(),
-      Collections.emptyMap()
-    );
-    processOverviewWriter.updateProcessDigest(processDefKey, digest);
+  public void handleProcessUpdate(final String processDefKey, final ProcessUpdateDto processUpdateDto) {
+    if (processUpdateDto.getProcessDigest().isEnabled()) {
+      rescheduleDigest(processDefKey, processUpdateDto.getProcessDigest());
+    } else {
+      unscheduleDigest(processDefKey);
+    }
+  }
+
+  private void rescheduleDigest(final String processDefKey,
+                                final ProcessDigestRequestDto digestRequestDto) {
     unscheduleDigest(processDefKey);
-    scheduleDigest(processDefKey, digest);
-    if (Boolean.TRUE == digest.getEnabled()) {
+    scheduleDigest(processDefKey, digestRequestDto.getCheckInterval());
+    if (digestRequestDto.isEnabled()) {
       handleDigestTask(processDefKey); // if digest is enabled, send out immediate test email
     }
   }
@@ -145,13 +137,16 @@ public class DigestService implements ConfigurationReloadable {
 
   private void initExistingDigests() {
     log.debug("Scheduling digest tasks for all existing enabled process digests.");
-    processOverviewReader.getAllActiveProcessDigestsByKey().forEach(this::scheduleDigest);
+    processOverviewReader.getAllActiveProcessDigestsByKey().forEach((processDefinitionKey, digest) -> scheduleDigest(
+      processDefinitionKey,
+      digest.getCheckInterval()
+    ));
   }
 
-  private void scheduleDigest(final String processDefinitionKey, final ProcessDigestResponseDto digest) {
+  private void scheduleDigest(final String processDefinitionKey, final AlertInterval interval) {
     scheduledDigestTasks.put(
       processDefinitionKey,
-      digestTaskScheduler.schedule(createDigestTask(processDefinitionKey), createDigestTrigger(digest.getCheckInterval()))
+      digestTaskScheduler.schedule(createDigestTask(processDefinitionKey), createDigestTrigger(interval))
     );
   }
 
@@ -197,11 +192,11 @@ public class DigestService implements ConfigurationReloadable {
     return String.format(
       "Hello %s, %n" +
         "Here is your KPI digest for the Process \"%s\":%n" +
-        "There are currently %s KPI reports defined for this process.%n" +
-        composeKpiReportSummaryText(currentKpiReportResults, previousKpiReportResults),
+        "There are currently %s KPI reports defined for this process.%n%s",
       ownerName,
       processDefinitionKey,
-      currentKpiReportResults.keySet().size()
+      currentKpiReportResults.keySet().size(),
+      composeKpiReportSummaryText(currentKpiReportResults, previousKpiReportResults)
     );
   }
 
@@ -238,7 +233,7 @@ public class DigestService implements ConfigurationReloadable {
 
   private void updateLastProcessDigestKpiResults(final String processDefKey,
                                                  final Map<String, String> previousKpiReportResults) {
-    processOverviewWriter.updateProcessDigest(
+    processOverviewWriter.updateProcessDigestResults(
       processDefKey,
       new ProcessDigestDto(previousKpiReportResults)
     );
@@ -258,33 +253,6 @@ public class DigestService implements ConfigurationReloadable {
       OffsetDateTime.now(),
       OffsetDateTime.now().plus(checkInterval.getValue(), parsedUnit)
     ).toMillis();
-  }
-
-  private void validateIsAuthorizedToUpdateDigest(final String userId,
-                                                  final String processDefinitionKey) {
-    final Optional<ProcessOverviewDto> processOverview =
-      processOverviewReader.getProcessOverviewByKey(processDefinitionKey);
-    if (processOverview.isEmpty() || !processOverview.get().getOwner().equals(userId)) {
-      throw new ForbiddenException(String.format(
-        "User [%s] is not authorized to update digest for process definition with key [%s]. " +
-          "Only process owners are permitted to update process digest settings.",
-        userId,
-        processDefinitionKey
-      )
-      );
-    }
-  }
-
-  private void validateProcessDefinitionAuthorization(final String userId, final String processDefKey) {
-    final Optional<DefinitionWithTenantIdsDto> definitionForKey =
-      definitionService.getProcessDefinitionWithTenants(processDefKey);
-    if (definitionForKey.isEmpty()) {
-      throw new NotFoundException("Process definition with key " + processDefKey + " does not exist.");
-    }
-    if (!definitionAuthorizationService.isAuthorizedToAccessDefinition(
-      userId, PROCESS, definitionForKey.get().getKey(), definitionForKey.get().getTenantIds())) {
-      throw new ForbiddenException("User is not authorized to access the process definition with key " + processDefKey);
-    }
   }
 
 }

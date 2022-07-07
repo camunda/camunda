@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.process;
 
+import org.assertj.core.groups.Tuple;
 import org.awaitility.Awaitility;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -13,8 +14,12 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
@@ -32,9 +37,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.ProcessOverviewService.APP_CUE_DASHBOARD_SUFFIX;
 import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.MAGIC_LINK_TEMPLATE;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.engine.AuthorizationClient.SPIDERMAN_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
@@ -44,8 +51,6 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
 
   private final String FIRST_PROCESS_DEFINITION_KEY = "firstDefKey";
   private final String SECOND_PROCESS_DEFINITION_KEY = "secondDefKey";
-  private final String DEFAULT_USERNAME = "DEFAULT_USERNAME";
-  private final ProcessOwnerDto PROCESS_OWNER_DTO = new ProcessOwnerDto("DEFAULT_USERNAME");
 
   @Test
   public void getProcessOverview_notPossibleForUnauthenticatedUser() {
@@ -132,9 +137,8 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
     final ProcessDefinitionEngineDto firstDef = deploySimpleProcessDefinition(FIRST_PROCESS_DEFINITION_KEY);
     final ProcessDefinitionEngineDto secondDef = deploySimpleProcessDefinition(SECOND_PROCESS_DEFINITION_KEY);
     importAllEngineEntitiesFromScratch();
-    setProcessOwner(firstDef.getKey(), PROCESS_OWNER_DTO);
-    ProcessOwnerDto kermitOwnerDto = new ProcessOwnerDto(KERMIT_USER);
-    setProcessOwner(secondDef.getKey(), kermitOwnerDto);
+    setProcessOwner(firstDef.getKey(), DEFAULT_USERNAME);
+    setProcessOwner(secondDef.getKey(), KERMIT_USER);
 
     // when
     ProcessOverviewSorter sorter = new ProcessOverviewSorter(sortBy, sortingOrder);
@@ -172,10 +176,10 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
                                                                                                                       final List<String> processDefinitionKeys) {
     // given
     authorizationClient.addSpidermanUserAndGrantAccessToOptimize();
-    processDefinitionKeys.forEach(key -> deploySimpleProcessDefinition(key));
+    processDefinitionKeys.forEach(this::deploySimpleProcessDefinition);
     importAllEngineEntitiesFromScratch();
-    setProcessOwner("firstDefWithOwner", new ProcessOwnerDto(DEFAULT_USERNAME));
-    setProcessOwner("secondDefWithOwner", new ProcessOwnerDto(SPIDERMAN_USER));
+    setProcessOwner("firstDefWithOwner", DEFAULT_USERNAME);
+    setProcessOwner("secondDefWithOwner", SPIDERMAN_USER);
     importAllEngineEntitiesFromLastIndex();
 
     // when
@@ -199,8 +203,8 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
     deploySimpleProcessDefinition("a");
     deploySimpleProcessDefinition("b");
     importAllEngineEntitiesFromScratch();
-    setProcessOwner("a", new ProcessOwnerDto(DEFAULT_USERNAME));
-    setProcessOwner("b", new ProcessOwnerDto(DEFAULT_USERNAME));
+    setProcessOwner("a", DEFAULT_USERNAME);
+    setProcessOwner("b", DEFAULT_USERNAME);
 
     // when
     ProcessOverviewSorter sorter = new ProcessOverviewSorter(
@@ -269,6 +273,48 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
         String.format(MAGIC_LINK_TEMPLATE, SECOND_PROCESS_DEFINITION_KEY, SECOND_PROCESS_DEFINITION_KEY)));
   }
 
+  @Test
+  public void getProcessDigests() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.grantSingleResourceAuthorizationsForUser(
+      DEFAULT_USERNAME,
+      "kermit",
+      RESOURCE_TYPE_USER
+    );
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(FIRST_PROCESS_DEFINITION_KEY));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram("anotherProcess"));
+    importAllEngineEntitiesFromScratch();
+    processOverviewClient.updateProcess(
+      FIRST_PROCESS_DEFINITION_KEY,
+      DEFAULT_USERNAME,
+      new ProcessDigestRequestDto(new AlertInterval(1, AlertIntervalUnit.WEEKS), false)
+    );
+    processOverviewClient.updateProcess(
+      "anotherProcess",
+      "kermit",
+      new ProcessDigestRequestDto(new AlertInterval(1, AlertIntervalUnit.WEEKS), false)
+    );
+
+    // when
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
+
+    // then
+    assertThat(processes).hasSize(2)
+      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey, ProcessOverviewResponseDto::getDigest)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(
+          FIRST_PROCESS_DEFINITION_KEY,
+          new ProcessDigestResponseDto(new AlertInterval(1, AlertIntervalUnit.WEEKS), false
+          )
+        ),
+        Tuple.tuple(
+          "anotherProcess",
+          new ProcessDigestResponseDto(new AlertInterval(1, AlertIntervalUnit.WEEKS), false)
+        )
+      );
+  }
+
   private ProcessDefinitionOptimizeDto createProcessDefinition(String definitionKey, String name) {
     return ProcessDefinitionOptimizeDto.builder()
       .id(IdGenerator.getNextId())
@@ -289,9 +335,9 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
-  private void setProcessOwner(final String processDefKey, final ProcessOwnerDto processOwnerDto) {
+  private void setProcessOwner(final String processDefKey, final String ownerId) {
     embeddedOptimizeExtension.getRequestExecutor()
-      .buildSetProcessOwnerRequest(processDefKey, processOwnerDto)
+      .buildUpdateProcessRequest(processDefKey, new ProcessUpdateDto(ownerId, new ProcessDigestRequestDto()))
       .execute();
   }
 

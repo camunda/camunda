@@ -7,12 +7,10 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.processoverview.InitialProcessOwnerDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 import org.camunda.optimize.service.ProcessOverviewService;
-import org.camunda.optimize.service.digest.DigestService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -43,7 +41,6 @@ import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 public class ProcessOverviewRestService {
 
   private final ProcessOverviewService processOverviewService;
-  private final DigestService digestService;
   private final SessionService sessionService;
 
   @GET
@@ -53,28 +50,19 @@ public class ProcessOverviewRestService {
                                                               @BeanParam final ProcessOverviewSorter processOverviewSorter) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final ZoneId timezone = extractTimezone(requestContext);
-    List<ProcessOverviewResponseDto> processOverviewResponseDtos = processOverviewService.getAllProcessOverviews(userId, timezone);
+    List<ProcessOverviewResponseDto> processOverviewResponseDtos =
+      processOverviewService.getAllProcessOverviews(userId, timezone);
     return processOverviewSorter.applySort(processOverviewResponseDtos);
   }
 
   @PUT
-  @Path("/{processDefinitionKey}/digest")
+  @Path("/{processDefinitionKey}")
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateProcessesDigest(@Context final ContainerRequestContext requestContext,
-                                    @PathParam("processDefinitionKey") final String processDefKey,
-                                    @NotNull @Valid @RequestBody ProcessDigestRequestDto processDigest) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    digestService.updateProcessDigest(userId, processDefKey, processDigest);
-  }
-
-  @PUT
-  @Path("/{processDefinitionKey}/owner")
-  @Consumes(MediaType.APPLICATION_JSON)
-  public void updateProcessOwner(@Context final ContainerRequestContext requestContext,
-                                 @PathParam("processDefinitionKey") final String processDefKey,
-                                 @NotNull @Valid @RequestBody ProcessOwnerDto ownerDto) {
+  public void updateProcess(@Context final ContainerRequestContext requestContext,
+                            @PathParam("processDefinitionKey") final String processDefKey,
+                            @NotNull @Valid @RequestBody ProcessUpdateDto processUpdateDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    processOverviewService.updateProcessOwner(userId, processDefKey, ownerDto.getId());
+    processOverviewService.updateProcess(userId, processDefKey, processUpdateDto);
   }
 
   @POST
@@ -94,4 +82,5 @@ public class ProcessOverviewRestService {
     }
     processOverviewService.updateProcessOwnerIfNotSet(userId, ownerDto.getProcessDefinitionKey(), ownerDto.getOwner());
   }
+
 }

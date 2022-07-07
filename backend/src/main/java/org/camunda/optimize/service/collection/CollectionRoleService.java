@@ -152,9 +152,9 @@ public class CollectionRoleService {
     }
   }
 
-  public void verifyCollectionExists(String collectionId) {
+  private void verifyCollectionExists(String collectionId) {
     final Optional<CollectionDefinitionDto> collectionDefinition = collectionReader.getCollection(collectionId);
-    if (!collectionDefinition.isPresent()) {
+    if (collectionDefinition.isEmpty()) {
       log.error("Was not able to retrieve collection with id [{}] from Elasticsearch.", collectionId);
       throw new NotFoundException("Collection does not exist! Tried to retrieve collection with id " + collectionId);
     }

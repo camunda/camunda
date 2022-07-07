@@ -10,7 +10,7 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.processoverview.InitialProcessOwnerDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 
 import javax.ws.rs.core.Response;
@@ -32,18 +32,10 @@ public class ProcessOverviewClient {
       .executeAndReturnList(ProcessOverviewResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public Response updateProcessDigest(final String definitionKey,
-                                      final ProcessDigestRequestDto digest) {
-    return getRequestExecutor()
-      .buildUpdateProcessDigestRequest(definitionKey, digest)
-      .execute();
-  }
-
-  public Response updateProcessOwner(final String definitionKey,
-                                     final String ownerId) {
-    return getRequestExecutor()
-      .buildSetProcessOwnerRequest(definitionKey, new ProcessOwnerDto(ownerId))
-      .execute();
+  public void updateProcess(final String definitionKey, final String ownerId, final ProcessDigestRequestDto digestConfig) {
+    getRequestExecutor()
+      .buildUpdateProcessRequest(definitionKey, new ProcessUpdateDto(ownerId, digestConfig))
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public Response setInitialProcessOwner(final String definitionKey,

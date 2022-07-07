@@ -5,18 +5,20 @@
  */
 package org.camunda.optimize.dto.optimize.query.processoverview;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 
 @Data
 @FieldNameConstants
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProcessDigestResponseDto {
+public class ProcessDigestResponseDto implements OptimizeDto {
 
   // needed to allow inheritance of field name constants
   @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -24,5 +26,6 @@ public class ProcessDigestResponseDto {
   }
 
   protected AlertInterval checkInterval;
-  protected Boolean enabled;
+  @JsonProperty("enabled")
+  protected boolean enabled;
 }

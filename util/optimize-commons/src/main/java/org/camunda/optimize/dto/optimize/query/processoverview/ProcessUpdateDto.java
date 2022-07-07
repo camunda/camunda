@@ -10,11 +10,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
+import javax.validation.constraints.NotNull;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProcessOwnerDto implements OptimizeDto {
+public class ProcessUpdateDto implements OptimizeDto {
 
-  private String id;
+  private String ownerId;
+  @NotNull
+  private ProcessDigestRequestDto processDigest;
 
 }
