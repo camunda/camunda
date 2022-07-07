@@ -13,7 +13,7 @@ public interface Engine {
 
   void init(EngineContext engineContext);
 
-  void replay(TypedRecord record, ReplayContext replayContext);
+  void replay(TypedRecord record);
 
   ProcessingResult process(TypedRecord record, ProcessingContext processingContext);
 
