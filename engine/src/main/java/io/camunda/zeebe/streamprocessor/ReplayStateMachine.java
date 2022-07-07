@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.RecordProtocolVersionF
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;

@@ -19,7 +19,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProtocolVersionFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;

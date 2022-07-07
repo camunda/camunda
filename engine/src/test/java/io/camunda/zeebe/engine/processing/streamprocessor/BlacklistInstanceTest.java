@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import io.camunda.zeebe.streamprocessor.TypedEventImpl;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Before;
 import org.junit.ClassRule;
