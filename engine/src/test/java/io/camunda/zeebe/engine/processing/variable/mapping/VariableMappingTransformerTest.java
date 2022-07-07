@@ -67,12 +67,12 @@ public final class VariableMappingTransformerTest {
   @Test
   public void failToTransformWithInvalidTargetExpression() {
     // given
-    final var mappings = List.of(mapping("=x", "a?"));
+    final var mappings = List.of(mapping("=x", "a,"));
 
     // when
     assertThatThrownBy(() -> transformer.transformInputMappings(mappings, expressionLanguage))
         .hasMessageStartingWith(
-            "Failed to build variable mapping expression: failed to parse expression '{a?:x}'");
+            "Failed to build variable mapping expression: failed to parse expression '{a,:x}'");
   }
 
   @Test
