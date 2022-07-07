@@ -16,6 +16,8 @@ import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.util.unit.DataSize;
 
 class RaftPartitionGroupFactoryTest {
@@ -151,6 +153,19 @@ class RaftPartitionGroupFactoryTest {
 
     // then
     assertThat(config.getPartitionConfig().getPreferSnapshotReplicationThreshold()).isEqualTo(1000);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldSetSegmentFilesPreallocation(final boolean value) {
+    // given
+    brokerCfg.getExperimental().getRaft().setPreallocateSegmentFiles(value);
+
+    // when
+    final var config = buildRaftPartitionGroup();
+
+    // then
+    assertThat(config.getStorageConfig().isPreallocateSegmentFiles()).isEqualTo(value);
   }
 
   private RaftPartitionGroupConfig buildRaftPartitionGroup() {
