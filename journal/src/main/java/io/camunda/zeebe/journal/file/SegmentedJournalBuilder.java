@@ -146,12 +146,15 @@ public class SegmentedJournalBuilder {
 
   public SegmentedJournal build() {
     final JournalIndex journalIndex = new SparseJournalIndex(journalIndexDensity);
+    final var segmentsManager =
+        new SegmentsManager(
+            journalIndex,
+            maxSegmentSize,
+            directory,
+            lastWrittenIndex,
+            name,
+            preallocateSegmentFiles);
     return new SegmentedJournal(
-        name,
-        directory,
-        maxSegmentSize,
-        freeDiskSpace,
-        journalIndex,
-        new SegmentsManager(journalIndex, maxSegmentSize, directory, lastWrittenIndex, name));
+        name, directory, maxSegmentSize, freeDiskSpace, journalIndex, segmentsManager);
   }
 }
