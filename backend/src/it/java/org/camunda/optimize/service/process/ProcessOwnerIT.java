@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.process;
 
+import org.awaitility.Awaitility;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -22,6 +23,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -385,6 +387,33 @@ public class ProcessOwnerIT extends AbstractIT {
     assertThat(responseInitialOwner.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
+  @Test
+  public void ifOnboardingEmailServiceIsDeactivatedPendingOwnerDataIsStillProcessed() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().getOnboarding().setEnableOnboardingEmails(false);
+    final String defKey = "unborn_process";
+
+    // when
+    // Make sure process definition is not there yet
+    assertThat(definitionClient.getAllDefinitions()).isEmpty();
+    final Response responseInitialOwner = processOverviewClient.setInitialProcessOwner(defKey, DEFAULT_USERNAME);
+    assertThat(responseInitialOwner.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    final OnboardingSchedulerService onboardingSchedulerService =
+      embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
+    onboardingSchedulerService.stopOnboardingScheduling();
+    onboardingSchedulerService.setIntervalToCheckForOnboardingDataInSeconds(1); // Set interval to 1s
+    onboardingSchedulerService.startOnboardingScheduling();
+    // Only now we deploy the process
+    deploySimpleProcessDefinition(defKey);
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    // The new process is now there, and we're checking every second, let's check if our process
+    // definition was picked up
+    Awaitility.given().ignoreExceptions()
+      .timeout(10, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertExpectedProcessOwner(defKey, DEFAULT_USERNAME));
+  }
 
   private ProcessDefinitionEngineDto deploySimpleProcessDefinition(String processDefinitionKey) {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(processDefinitionKey));
