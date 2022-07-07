@@ -14,6 +14,7 @@ import {
   Icon,
   Input,
   Labeled,
+  Message,
   MessageBox,
   Modal,
   Select,
@@ -24,6 +25,7 @@ import {
 import {t} from 'translation';
 import {getOptimizeProfile, isEmailEnabled} from 'config';
 import {withDocs} from 'HOC';
+import {numberParser} from 'services';
 
 import './ConfigureProcessModal.scss';
 
@@ -47,7 +49,7 @@ export function ConfigureProcessModal({
   const noChangesHappened =
     digestEnabled === enabled &&
     equal(digestInterval, checkInterval) &&
-    selectedUser?.identity.id === owner.id;
+    ((!selectedUser?.identity.id && !owner?.id) || selectedUser?.identity.id === owner?.id);
 
   useEffect(() => {
     (async () => {
@@ -141,6 +143,9 @@ export function ConfigureProcessModal({
                 </Select>
               </Form.InputGroup>
             </Labeled>
+            {!numberParser.isPositiveInt(digestInterval.value) && (
+              <Message error>{t('common.errors.positiveInt')}</Message>
+            )}
           </Form.Group>
         </fieldset>
       </Modal.Content>
@@ -151,7 +156,7 @@ export function ConfigureProcessModal({
         <Button
           main
           primary
-          disabled={noChangesHappened}
+          disabled={!numberParser.isPositiveInt(digestInterval.value) || noChangesHappened}
           className="confirm"
           onClick={() => {
             const ownerId = selectedUser?.identity.id || null;
