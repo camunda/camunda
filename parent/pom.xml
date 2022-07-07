@@ -1394,6 +1394,7 @@
                   <dep>org.bouncycastle:bcprov-jdk15on</dep>
                   <dep>org.junit.jupiter:junit-jupiter-engine</dep>
                   <dep>org.junit.vintage:junit-vintage-engine</dep>
+                  <dep>com.tngtech.archunit:archunit-junit5-engine</dep>
                 </ignoredUnusedDeclaredDependencies>
               </configuration>
             </execution>

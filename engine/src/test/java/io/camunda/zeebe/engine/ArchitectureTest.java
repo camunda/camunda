@@ -9,11 +9,12 @@ package io.camunda.zeebe.engine;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
+import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 
-@AnalyzeClasses(packages = "io.camunda.zeebe")
+@AnalyzeClasses(packages = "io.camunda.zeebe", importOptions = ImportOption.DoNotIncludeTests.class)
 public class ArchitectureTest {
 
   @ArchTest

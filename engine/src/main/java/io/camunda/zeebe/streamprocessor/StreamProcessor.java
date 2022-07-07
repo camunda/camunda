@@ -5,11 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
+import io.camunda.zeebe.engine.processing.streamprocessor.LastProcessingPositions;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
+import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;

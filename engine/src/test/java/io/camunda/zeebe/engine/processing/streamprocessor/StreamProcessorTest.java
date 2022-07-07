@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import java.util.Optional;

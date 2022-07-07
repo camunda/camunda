@@ -5,9 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriterImpl;

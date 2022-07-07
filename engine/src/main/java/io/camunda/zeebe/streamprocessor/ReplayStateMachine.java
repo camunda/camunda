@@ -5,11 +5,23 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.engine.metrics.ReplayMetrics;
+import io.camunda.zeebe.engine.processing.streamprocessor.EventFilter;
+import io.camunda.zeebe.engine.processing.streamprocessor.LastProcessingPositions;
+import io.camunda.zeebe.engine.processing.streamprocessor.MetadataEventFilter;
+import io.camunda.zeebe.engine.processing.streamprocessor.MetadataFilter;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingException;
+import io.camunda.zeebe.engine.processing.streamprocessor.RecordProtocolVersionFilter;
+import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventImpl;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;

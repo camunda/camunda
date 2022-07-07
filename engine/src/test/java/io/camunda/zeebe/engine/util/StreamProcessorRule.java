@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.util;
 import static io.camunda.zeebe.engine.util.StreamProcessingComposite.getLogName;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -31,6 +30,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.allocation.DirectBufferAllocator;

@@ -11,7 +11,6 @@ import static io.camunda.zeebe.engine.util.Records.processInstance;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -26,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 

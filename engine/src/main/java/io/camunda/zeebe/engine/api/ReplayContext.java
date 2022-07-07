@@ -7,6 +7,4 @@
  */
 package io.camunda.zeebe.engine.api;
 
-public interface ReplayContext {
-
-}
+public interface ReplayContext {}
