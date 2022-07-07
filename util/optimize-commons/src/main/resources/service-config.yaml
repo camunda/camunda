@@ -12,7 +12,7 @@ security:
       organizationId: ${CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION:}
       clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:}
       audience: ${CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE:}
-      userAccessTokenAudience: ${CAMUNDA_OPTIMIZE_M2M_AUTH0_AUDIENCE:null}
+      userAccessTokenAudience: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE:null}
     ccsm:
       issuerUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL:}
       issuerBackendUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:}
@@ -115,11 +115,11 @@ container:
 users:
   cloud:
     # The URL at which access tokens can be retrieved
-    tokenUrl: ${CAMUNDA_OPTIMIZE_M2M_AUTH0_URL:}
-    clientId: ${CAMUNDA_OPTIMIZE_M2M_AUTH0_CLIENTID:}
-    clientSecret: ${CAMUNDA_OPTIMIZE_M2M_AUTH0_CLIENTSECRET:}
-    audience: ${CAMUNDA_OPTIMIZE_M2M_AUTH0_AUDIENCE:}
-    usersUrl: ${CAMUNDA_OPTIMIZE_ACCOUNTS_URL:}
+    tokenUrl: ${CAMUNDA_OPTIMIZE_AUTH0_TOKEN_URL:}
+    clientId: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_CLIENTID:}
+    clientSecret: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_CLIENTSECRET:}
+    audience: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE:}
+    usersUrl: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_URL:}
 
 # Configuration for engines used to import data. Please note that you have to have at
 # least one engine configured at all times.
