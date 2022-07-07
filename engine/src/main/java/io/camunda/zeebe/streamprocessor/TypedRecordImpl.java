@@ -21,13 +21,13 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.StringUtil;
 
-public final class TypedEventImpl implements TypedRecord {
+public final class TypedRecordImpl implements TypedRecord {
   private final int partitionId;
   private LoggedEvent rawEvent;
   private RecordMetadata metadata;
   private UnifiedRecordValue value;
 
-  public TypedEventImpl(final int partitionId) {
+  public TypedRecordImpl(final int partitionId) {
     this.partitionId = partitionId;
   }
 

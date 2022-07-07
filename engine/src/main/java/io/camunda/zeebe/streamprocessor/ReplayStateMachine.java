@@ -63,7 +63,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private final KeyGeneratorControls keyGeneratorControls;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final ActorControl actor;
-  private final TypedEventImpl typedEvent;
+  private final TypedRecordImpl typedEvent;
 
   private final RecordValues recordValues;
 
@@ -108,7 +108,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     lastProcessedPositionState = context.getLastProcessedPositionState();
     streamProcessorListener = context.getStreamProcessorListener();
 
-    typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
+    typedEvent = new TypedRecordImpl(context.getLogStream().getPartitionId());
     replayStrategy = new RecoverableRetryStrategy(actor);
     streamProcessorMode = context.getProcessorMode();
     logStream = context.getLogStream();

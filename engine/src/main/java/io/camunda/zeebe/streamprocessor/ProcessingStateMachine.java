@@ -140,7 +140,7 @@ public final class ProcessingStateMachine {
   private final ErrorRecord errorRecord = new ErrorRecord();
   private final RecordValues recordValues;
   private final RecordProcessorMap recordProcessorMap;
-  private final TypedEventImpl typedCommand;
+  private final TypedRecordImpl typedCommand;
   private final StreamProcessorMetrics metrics;
   private final StreamProcessorListener streamProcessorListener;
 
@@ -178,7 +178,7 @@ public final class ProcessingStateMachine {
     this.shouldProcessNext = shouldProcessNext;
 
     final int partitionId = logStream.getPartitionId();
-    typedCommand = new TypedEventImpl(partitionId);
+    typedCommand = new TypedRecordImpl(partitionId);
     responseWriter = context.getWriters().response();
 
     metrics = new StreamProcessorMetrics(partitionId);
@@ -296,7 +296,7 @@ public final class ProcessingStateMachine {
     return typedRecordProcessor;
   }
 
-  private void processInTransaction(final TypedEventImpl typedRecord) throws Exception {
+  private void processInTransaction(final TypedRecordImpl typedRecord) throws Exception {
     zeebeDbTransaction = transactionContext.getCurrentTransaction();
     zeebeDbTransaction.run(
         () -> {

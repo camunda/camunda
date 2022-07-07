@@ -24,7 +24,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.streamprocessor.TypedEventImpl;
+import io.camunda.zeebe.streamprocessor.TypedRecordImpl;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -105,7 +105,7 @@ public final class BlackListStateTest {
     metadata.intent(ProcessInstanceIntent.CANCEL);
     metadata.valueType(ValueType.PROCESS_INSTANCE);
 
-    final TypedEventImpl typedEvent = new TypedEventImpl(1);
+    final TypedRecordImpl typedEvent = new TypedRecordImpl(1);
     final LoggedEvent loggedEvent = mock(LoggedEvent.class);
     when(loggedEvent.getPosition()).thenReturn(1024L);
 
@@ -134,11 +134,11 @@ public final class BlackListStateTest {
     assertThat(blackListState.isOnBlacklist(differentProcessInstanceRecord)).isFalse();
   }
 
-  private TypedEventImpl createRecord() {
+  private TypedRecordImpl createRecord() {
     return createRecord(1000L);
   }
 
-  private TypedEventImpl createRecord(final long processInstanceKey) {
+  private TypedRecordImpl createRecord(final long processInstanceKey) {
     final ProcessInstanceRecord processInstanceRecord = new ProcessInstanceRecord();
     processInstanceRecord.setElementId("startEvent");
     processInstanceRecord.setBpmnProcessId(wrapString("process1"));
@@ -152,7 +152,7 @@ public final class BlackListStateTest {
     metadata.intent(ProcessInstanceIntent.ACTIVATE_ELEMENT);
     metadata.valueType(ValueType.PROCESS_INSTANCE);
 
-    final TypedEventImpl typedEvent = new TypedEventImpl(1);
+    final TypedRecordImpl typedEvent = new TypedRecordImpl(1);
     final LoggedEvent loggedEvent = mock(LoggedEvent.class);
     when(loggedEvent.getPosition()).thenReturn(1024L);
 
