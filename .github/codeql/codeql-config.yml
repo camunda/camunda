@@ -1,0 +1,7 @@
+name: "Zeebe CodeQL Configuration"
+queries:
+  - uses: security-and-quality
+paths-ignore:
+  # ignore generated sources during code scanning
+  - '**/target/generated-sources/**/*.java'
+  - '**/target/generated-test-sources/**/*.java'
