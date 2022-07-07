@@ -234,7 +234,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         actor.getLifecyclePhase(),
         failure,
         failure);
-    actor.fail();
+    actor.fail(failure);
 
     if (failure instanceof UnrecoverableException) {
       healthReport = HealthReport.dead(this).withIssue(failure);
