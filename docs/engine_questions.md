@@ -87,3 +87,7 @@ this way to ask when will the joining gateway _Join_ be activated:
 format we need for executing the process.
 
 _Note:_ The cache is not evicting any entries right now which can in theory lead to out of memory errors.
+
+## How does deployment distribution work?
+**A:**
+![Deployment distribution](assets/deployment_distribution.png)
