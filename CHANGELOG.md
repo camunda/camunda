@@ -1,3 +1,12 @@
+# v8.1.0-alpha3
+## 💊 Bugfixes
+* **backend**: use roles in organizations part of JWT ([#1916](https://github.com/camunda/tasklist/issues/1916))
+
+## 🧹 Chore
+* update Zeebe and Identity to 8.1.0-alpha3 ([#1920](https://github.com/camunda/tasklist/issues/1920))
+* bump netty-bom from 4.1.77.Final to 4.1.78.Final ([#1904](https://github.com/camunda/tasklist/issues/1904))
+* **project**: update issue template
+* **TaskDetails**: align terminology ([#1877](https://github.com/camunda/tasklist/issues/1877))
 # v8.1.0-alpha2
 ## 🚀 New Features
 * Add salesPlanType and roles to User data ([#1888](https://github.com/camunda/tasklist/issues/1888))
