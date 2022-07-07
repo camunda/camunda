@@ -57,6 +57,7 @@ public final class RaftStorage {
   private final boolean flushExplicitly;
   private final ReceivableSnapshotStore persistedSnapshotStore;
   private final int journalIndexDensity;
+  private final boolean preallocateSegmentFiles;
 
   private RaftStorage(
       final String prefix,
@@ -65,7 +66,8 @@ public final class RaftStorage {
       final long freeDiskSpace,
       final boolean flushExplicitly,
       final ReceivableSnapshotStore persistedSnapshotStore,
-      final int journalIndexDensity) {
+      final int journalIndexDensity,
+      final boolean preallocateSegmentFiles) {
     this.prefix = prefix;
     this.directory = directory;
     this.maxSegmentSize = maxSegmentSize;
@@ -73,6 +75,7 @@ public final class RaftStorage {
     this.flushExplicitly = flushExplicitly;
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.journalIndexDensity = journalIndexDensity;
+    this.preallocateSegmentFiles = preallocateSegmentFiles;
 
     try {
       FileUtil.ensureDirectoryExists(directory.toPath());
@@ -172,6 +175,7 @@ public final class RaftStorage {
         .withFlushExplicitly(flushExplicitly)
         .withJournalIndexDensity(journalIndexDensity)
         .withLastWrittenIndex(lastWrittenIndex)
+        .withPreallocateSegmentFiles(preallocateSegmentFiles)
         .build();
   }
 
@@ -218,6 +222,7 @@ public final class RaftStorage {
     private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024;
     private static final boolean DEFAULT_FLUSH_EXPLICITLY = true;
     private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
+    private static final boolean DEFAULT_PREALLOCATE_SEGMENT_FILES = true;
 
     private String prefix = DEFAULT_PREFIX;
     private File directory = new File(DEFAULT_DIRECTORY);
@@ -226,6 +231,7 @@ public final class RaftStorage {
     private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
     private ReceivableSnapshotStore persistedSnapshotStore;
     private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
+    private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
 
     private Builder() {}
 
@@ -317,6 +323,19 @@ public final class RaftStorage {
     }
 
     /**
+     * Sets whether segment files are pre-allocated at creation. If true, segment files are
+     * pre-allocated to the maximum segment size (see {@link #withMaxSegmentSize(int)}}) at creation
+     * before any writes happen.
+     *
+     * @param preallocateSegmentFiles true to preallocate files, false otherwise
+     * @return this builder for chaining
+     */
+    public Builder withPreallocateSegmentFiles(final boolean preallocateSegmentFiles) {
+      this.preallocateSegmentFiles = preallocateSegmentFiles;
+      return this;
+    }
+
+    /**
      * Builds the {@link RaftStorage} object.
      *
      * @return The built storage configuration.
@@ -330,7 +349,8 @@ public final class RaftStorage {
           freeDiskSpace,
           flushExplicitly,
           persistedSnapshotStore,
-          journalIndexDensity);
+          journalIndexDensity,
+          preallocateSegmentFiles);
     }
   }
 }
