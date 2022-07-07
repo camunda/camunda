@@ -508,6 +508,19 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
       return this;
     }
 
+    /**
+     * Sets whether segment files are pre-allocated at creation. If true, segment files are
+     * pre-allocated to the maximum segment size (see {@link #withSegmentSize(long)}) at creation
+     * before any writes happen.
+     *
+     * @param preallocateSegmentFiles true to preallocate files, false otherwise
+     * @return this builder for chaining
+     */
+    public Builder withPreallocateSegmentFiles(final boolean preallocateSegmentFiles) {
+      config.getStorageConfig().setPreallocateSegmentFiles(preallocateSegmentFiles);
+      return this;
+    }
+
     @Override
     public RaftPartitionGroup build() {
       return new RaftPartitionGroup(config);
