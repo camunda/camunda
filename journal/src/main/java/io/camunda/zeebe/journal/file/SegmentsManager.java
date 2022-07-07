@@ -56,14 +56,16 @@ final class SegmentsManager {
       final int maxSegmentSize,
       final File directory,
       final long lastWrittenIndex,
-      final String name) {
+      final String name,
+      final boolean preallocateFiles) {
     this.name = checkNotNull(name, "name cannot be null");
     journalMetrics = new JournalMetrics(name);
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
     this.directory = directory;
     this.lastWrittenIndex = lastWrittenIndex;
-    segmentLoader = new SegmentLoader(lastWrittenIndex, this.journalIndex);
+
+    segmentLoader = new SegmentLoader(lastWrittenIndex, this.journalIndex, preallocateFiles);
   }
 
   void close() {
@@ -264,7 +266,7 @@ final class SegmentsManager {
 
   private JournalSegment createSegment(final JournalSegmentDescriptor descriptor) {
     final var segmentFile = JournalSegmentFile.createSegmentFile(name, directory, descriptor.id());
-    return segmentLoader.createSegment(descriptor, segmentFile);
+    return segmentLoader.createSegment(segmentFile.toPath(), descriptor);
   }
 
   /**
@@ -283,7 +285,7 @@ final class SegmentsManager {
 
       try {
         LOG.debug("Found segment file: {}", file.getName());
-        final JournalSegment segment = segmentLoader.loadExistingSegment(file);
+        final JournalSegment segment = segmentLoader.loadExistingSegment(file.toPath());
 
         if (i > 0) {
           checkForIndexGaps(segments.get(i - 1), segment);
