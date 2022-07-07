@@ -17,9 +17,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.util.Records;
@@ -81,7 +81,6 @@ public final class StreamProcessorReplayModeTest {
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor, eventApplier);
     inOrder.verify(eventApplier, TIMEOUT).applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT)
         .processRecord(anyLong(), any(), any(), any(), any());
@@ -103,12 +102,9 @@ public final class StreamProcessorReplayModeTest {
         event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
 
     // then
-    final InOrder inOrder = inOrder(typedRecordProcessor, eventApplier);
-    inOrder
-        .verify(eventApplier, TIMEOUT.times(2))
-        .applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
-    inOrder.verify(typedRecordProcessor, never()).onRecovered(any());
-    inOrder.verifyNoMoreInteractions();
+    verify(eventApplier, TIMEOUT.times(2)).applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
+
+    verifyNoMoreInteractions(eventApplier);
 
     assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.REPLAY);
   }
@@ -203,12 +199,9 @@ public final class StreamProcessorReplayModeTest {
     replayContinuously.resumeProcessing(1);
 
     // then
-    final var inOrder = inOrder(typedRecordProcessor, eventApplier);
-    inOrder
-        .verify(eventApplier, TIMEOUT.times(1))
-        .applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
-    inOrder.verify(typedRecordProcessor, never()).onRecovered(any());
-    inOrder.verifyNoMoreInteractions();
+    verify(eventApplier, TIMEOUT.times(1)).applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
+
+    verifyNoMoreInteractions(eventApplier);
 
     assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.REPLAY);
   }

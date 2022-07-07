@@ -20,6 +20,8 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.util.Records;
@@ -42,8 +44,6 @@ public final class StreamProcessorReplayTest {
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
 
-  private static final int EXPECTED_ON_RECOVERED_INVOCATIONS = 1;
-
   private static final ProcessInstanceRecord RECORD = Records.processInstance(1);
 
   @Rule public final StreamProcessorRule streamProcessorRule = new StreamProcessorRule();
@@ -64,15 +64,9 @@ public final class StreamProcessorReplayTest {
     startStreamProcessor(typedRecordProcessor, eventApplier);
 
     // then
-    final InOrder inOrder = inOrder(typedRecordProcessor, eventApplier);
-    inOrder.verify(eventApplier, TIMEOUT).applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
-    inOrder
-        .verify(typedRecordProcessor, never())
-        .processRecord(anyLong(), any(), any(), any(), any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(EXPECTED_ON_RECOVERED_INVOCATIONS))
-        .onRecovered(any());
-    inOrder.verifyNoMoreInteractions();
+    verify(eventApplier, TIMEOUT).applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
+    verifyNoMoreInteractions(eventApplier);
+    verifyNoInteractions(typedRecordProcessor);
   }
 
   @Test
@@ -86,15 +80,8 @@ public final class StreamProcessorReplayTest {
     startStreamProcessor(typedRecordProcessor, eventApplier);
 
     // then
-    final InOrder inOrder = inOrder(typedRecordProcessor, eventApplier);
-    inOrder
-        .verify(typedRecordProcessor, never())
-        .processRecord(anyLong(), any(), any(), any(), any());
-    inOrder.verify(eventApplier, never()).applyState(anyLong(), eq(ACTIVATE_ELEMENT), any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(EXPECTED_ON_RECOVERED_INVOCATIONS))
-        .onRecovered(any());
-    inOrder.verifyNoMoreInteractions();
+    verify(eventApplier, never()).applyState(anyLong(), eq(ACTIVATE_ELEMENT), any());
+    verifyNoInteractions(typedRecordProcessor);
   }
 
   @Test
@@ -108,15 +95,7 @@ public final class StreamProcessorReplayTest {
     startStreamProcessor(typedRecordProcessor, eventApplier);
 
     // then
-    final InOrder inOrder = inOrder(typedRecordProcessor, eventApplier);
-    inOrder
-        .verify(typedRecordProcessor, never())
-        .processRecord(anyLong(), any(), any(), any(), any());
-    inOrder.verify(eventApplier, never()).applyState(anyLong(), eq(ACTIVATE_ELEMENT), any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(EXPECTED_ON_RECOVERED_INVOCATIONS))
-        .onRecovered(any());
-    inOrder.verifyNoMoreInteractions();
+    verifyNoInteractions(typedRecordProcessor, eventApplier);
   }
 
   @Test
@@ -171,9 +150,6 @@ public final class StreamProcessorReplayTest {
     startStreamProcessor(typedRecordProcessor, eventApplier);
 
     // then
-    verify(typedRecordProcessor, TIMEOUT.times(EXPECTED_ON_RECOVERED_INVOCATIONS))
-        .onRecovered(any());
-
     final var keyGenerator = streamProcessorRule.getZeebeState().getKeyGenerator();
     assertThat(keyGenerator.nextKey()).isEqualTo(lastGeneratedKey + 1);
   }
@@ -194,9 +170,6 @@ public final class StreamProcessorReplayTest {
     startStreamProcessor(typedRecordProcessor, eventApplier);
 
     // then
-    verify(typedRecordProcessor, TIMEOUT.times(EXPECTED_ON_RECOVERED_INVOCATIONS))
-        .onRecovered(any());
-
     final var keyGenerator = streamProcessorRule.getZeebeState().getKeyGenerator();
     assertThat(keyGenerator.nextKey()).isEqualTo(keyOfThisPartition + 1);
   }

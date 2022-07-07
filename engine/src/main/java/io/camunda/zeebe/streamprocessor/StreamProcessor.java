@@ -329,7 +329,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
     lifecycleAwareListeners.addAll(typedRecordProcessors.getLifecycleListeners());
     final RecordProcessorMap recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
-    recordProcessorMap.values().forEachRemaining(lifecycleAwareListeners::add);
 
     processingContext.recordProcessorMap(recordProcessorMap);
   }

@@ -19,6 +19,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
@@ -118,38 +119,6 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldCallRecordProcessorLifecycle() throws Exception {
-    // given
-    final var typedRecordProcessor = mock(TypedRecordProcessor.class);
-    final var recoveredLatch = new CountDownLatch(1);
-    streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
-            processors
-                .onCommand(
-                    ValueType.PROCESS_INSTANCE,
-                    ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                    typedRecordProcessor)
-                .withListener(
-                    new StreamProcessorLifecycleAware() {
-                      @Override
-                      public void onRecovered(final ReadonlyProcessingContext context) {
-                        recoveredLatch.countDown();
-                      }
-                    }));
-
-    // when
-    recoveredLatch.await();
-    streamProcessorRule.closeStreamProcessor();
-
-    // then
-    final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, times(1)).onRecovered(any());
-    inOrder.verify(typedRecordProcessor, times(1)).onClose();
-
-    inOrder.verifyNoMoreInteractions();
-  }
-
-  @Test
   public void shouldProcessRecord() {
     // given
     final TypedRecordProcessor<?> typedRecordProcessor = mock(TypedRecordProcessor.class);
@@ -166,13 +135,10 @@ public final class StreamProcessorTest {
             ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1));
 
     // then
-    final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(1))
+    verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(position), any(), any(), any(), any());
 
-    inOrder.verifyNoMoreInteractions();
+    verifyNoMoreInteractions(typedRecordProcessor);
 
     Awaitility.await()
         .untilAsserted(
@@ -210,13 +176,10 @@ public final class StreamProcessorTest {
             ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
-    final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(2))
+    verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(position), any(), any(), any(), any());
 
-    inOrder.verifyNoMoreInteractions();
+    verifyNoMoreInteractions(typedRecordProcessor);
   }
 
   @Test
@@ -239,16 +202,10 @@ public final class StreamProcessorTest {
             ProcessInstanceIntent.TERMINATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
-    final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(1))
+    verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(firstPosition), any(), any(), any(), any());
-    inOrder
-        .verify(typedRecordProcessor, never())
-        .processRecord(eq(secondPosition), any(), any(), any(), any());
 
-    inOrder.verifyNoMoreInteractions();
+    verifyNoMoreInteractions(typedRecordProcessor);
   }
 
   @Test
@@ -281,7 +238,6 @@ public final class StreamProcessorTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT).onRecovered(any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT)
         .processRecord(eq(commandPosition), any(), any(), any(), any());

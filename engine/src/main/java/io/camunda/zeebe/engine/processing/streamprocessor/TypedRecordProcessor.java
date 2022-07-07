@@ -16,8 +16,7 @@ import java.util.function.Consumer;
 // todo (#8002): remove TypedStreamWriter from this interface's method signatures
 // After the migration, none of these should be in use anymore and replaced by the CommandWriter and
 // StateWriter passed along to the constructors of the concrete processors.
-public interface TypedRecordProcessor<T extends UnifiedRecordValue>
-    extends StreamProcessorLifecycleAware {
+public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
 
   /**
    * @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer)
