@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import io.camunda.zeebe.streamprocessor.TypedRecordImpl;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -199,7 +200,7 @@ public final class BlacklistInstanceTest {
     final RecordMetadata metadata = new RecordMetadata();
     metadata.intent(recordIntent);
     metadata.valueType(recordValueType);
-    final TypedEventImpl typedEvent = new TypedEventImpl(1);
+    final TypedRecordImpl typedEvent = new TypedRecordImpl(1);
     final LoggedEvent loggedEvent = mock(LoggedEvent.class);
     when(loggedEvent.getPosition()).thenReturn(1024L);
 

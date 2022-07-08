@@ -5,9 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.streamprocessor;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.engine.processing.streamprocessor.CopiedRecords;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -19,13 +21,13 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.StringUtil;
 
-public final class TypedEventImpl implements TypedRecord {
+public final class TypedRecordImpl implements TypedRecord {
   private final int partitionId;
   private LoggedEvent rawEvent;
   private RecordMetadata metadata;
   private UnifiedRecordValue value;
 
-  public TypedEventImpl(final int partitionId) {
+  public TypedRecordImpl(final int partitionId) {
     this.partitionId = partitionId;
   }
 

@@ -13,7 +13,6 @@ import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.EventFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventImpl;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -31,6 +30,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.BackOffRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.EndlessRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
+import io.camunda.zeebe.streamprocessor.TypedRecordImpl;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -467,7 +467,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     private final RecordValues recordValues = new RecordValues();
     private final RecordMetadata rawMetadata = new RecordMetadata();
     private final List<ExporterContainer> containers;
-    private final TypedEventImpl typedEvent;
+    private final TypedRecordImpl typedEvent;
     private final ExporterMetrics exporterMetrics;
 
     private boolean shouldExport;
@@ -478,7 +478,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         final List<ExporterContainer> containers,
         final int partitionId) {
       this.containers = containers;
-      typedEvent = new TypedEventImpl(partitionId);
+      typedEvent = new TypedRecordImpl(partitionId);
       this.exporterMetrics = exporterMetrics;
     }
 
@@ -518,7 +518,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return true;
     }
 
-    TypedEventImpl getTypedEvent() {
+    TypedRecordImpl getTypedEvent() {
       return typedEvent;
     }
   }
