@@ -31,8 +31,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
-import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.Collection;
 import java.util.Collections;
@@ -59,8 +58,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final TypedRecordProcessorsFactory typedRecordProcessorsFactory;
   private final Supplier<CommandResponseWriter> commandResponseWriterSupplier;
   private final Supplier<Consumer<TypedRecord<?>>> onProcessedListenerSupplier;
-  private final ConstructableSnapshotStore constructableSnapshotStore;
-  private final ReceivableSnapshotStore receivableSnapshotStore;
+  private final PersistedSnapshotStore persistedSnapshotStore;
   private final Integer partitionId;
   private final int maxFragmentSize;
   private final ExporterRepository exporterRepository;
@@ -93,8 +91,7 @@ public class PartitionStartupAndTransitionContextImpl
       final BrokerCfg brokerCfg,
       final Supplier<CommandResponseWriter> commandResponseWriterSupplier,
       final Supplier<Consumer<TypedRecord<?>>> onProcessedListenerSupplier,
-      final ConstructableSnapshotStore constructableSnapshotStore,
-      final ReceivableSnapshotStore receivableSnapshotStore,
+      final PersistedSnapshotStore persistedSnapshotStore,
       final StateController stateController,
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory,
       final ExporterRepository exporterRepository,
@@ -108,8 +105,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
     this.onProcessedListenerSupplier = onProcessedListenerSupplier;
     this.commandResponseWriterSupplier = commandResponseWriterSupplier;
-    this.constructableSnapshotStore = constructableSnapshotStore;
-    this.receivableSnapshotStore = receivableSnapshotStore;
+    this.persistedSnapshotStore = persistedSnapshotStore;
     this.partitionListeners = Collections.unmodifiableList(partitionListeners);
     partitionId = raftPartition.id().id();
     this.actorSchedulingService = actorSchedulingService;
@@ -311,13 +307,8 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public ConstructableSnapshotStore getConstructableSnapshotStore() {
-    return constructableSnapshotStore;
-  }
-
-  @Override
-  public ReceivableSnapshotStore getReceivableSnapshotStore() {
-    return receivableSnapshotStore;
+  public PersistedSnapshotStore getPersistedSnapshotStore() {
+    return persistedSnapshotStore;
   }
 
   @Override

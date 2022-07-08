@@ -163,7 +163,6 @@ final class PartitionFactory {
               commandApiService::newCommandResponseWriter,
               () -> commandApiService.getOnProcessedListener(partitionId),
               constructableSnapshotStore,
-              snapshotStoreFactory.getReceivableSnapshotStore(partitionId),
               stateController,
               typedRecordProcessorsFactory,
               exporterRepository,
