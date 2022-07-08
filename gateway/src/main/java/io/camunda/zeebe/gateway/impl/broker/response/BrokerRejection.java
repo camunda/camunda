@@ -12,39 +12,17 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public final class BrokerRejection {
-
-  private final Intent intent;
-  private final long key;
-  private final RejectionType type;
-  private final String reason;
-
+/**
+ * Represents a command rejection from the broker.
+ *
+ * @param intent the intent of the command that was rejected
+ * @param key the key of the command that was rejected
+ * @param type the type of the rejection
+ * @param reason the reason for the rejection
+ */
+public record BrokerRejection(Intent intent, long key, RejectionType type, String reason) {
   public BrokerRejection(
       final Intent intent, final long key, final RejectionType type, final DirectBuffer reason) {
     this(intent, key, type, BufferUtil.bufferAsString(reason));
-  }
-
-  public BrokerRejection(
-      final Intent intent, final long key, final RejectionType type, final String reason) {
-    this.intent = intent;
-    this.key = key;
-    this.type = type;
-    this.reason = reason;
-  }
-
-  public RejectionType getType() {
-    return type;
-  }
-
-  public String getReason() {
-    return reason;
-  }
-
-  public Intent getIntent() {
-    return intent;
-  }
-
-  public long getKey() {
-    return key;
   }
 }

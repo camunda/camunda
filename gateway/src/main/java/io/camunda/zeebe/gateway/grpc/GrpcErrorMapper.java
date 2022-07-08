@@ -156,10 +156,10 @@ public final class GrpcErrorMapper {
     final String message =
         String.format(
             "Command '%s' rejected with code '%s': %s",
-            rejection.getIntent(), rejection.getType(), rejection.getReason());
+            rejection.intent(), rejection.type(), rejection.reason());
     final Builder builder = Status.newBuilder().setMessage(message);
 
-    switch (rejection.getType()) {
+    switch (rejection.type()) {
       case INVALID_ARGUMENT:
         builder.setCode(Code.INVALID_ARGUMENT_VALUE);
         break;
