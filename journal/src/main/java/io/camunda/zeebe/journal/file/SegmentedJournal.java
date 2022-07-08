@@ -52,16 +52,14 @@ public final class SegmentedJournal implements Journal {
       final int maxSegmentSize,
       final long minFreeSpace,
       final JournalIndex journalIndex,
-      final long lastWrittenIndex) {
+      final SegmentsManager segmentsManager) {
     this.name = checkNotNull(name, "name cannot be null");
     this.directory = checkNotNull(directory, "directory cannot be null");
     this.maxSegmentSize = maxSegmentSize;
     journalMetrics = new JournalMetrics(name);
     minFreeDiskSpace = minFreeSpace;
     this.journalIndex = journalIndex;
-    segments =
-        new SegmentsManager(
-            journalMetrics, journalIndex, maxSegmentSize, directory, lastWrittenIndex, name);
+    segments = segmentsManager;
     segments.open();
     writer = new SegmentedJournalWriter(this);
   }
