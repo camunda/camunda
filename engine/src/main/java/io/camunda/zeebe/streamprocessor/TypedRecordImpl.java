@@ -128,7 +128,7 @@ public final class TypedRecordImpl implements TypedRecord {
 
   @Override
   public String toString() {
-    return "TypedEventImpl{"
+    return "TypedRecordImpl{"
         + "metadata="
         + metadata
         + ", value="
