@@ -15,32 +15,30 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
-import io.camunda.zeebe.model.bpmn.instance.ExclusiveGateway;
-import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.InclusiveGateway;
+import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
-public class FlowNodeValidator implements ModelElementValidator<FlowNode> {
+public class InclusiveGatewayValidator implements ModelElementValidator<InclusiveGateway> {
 
   @Override
-  public Class<FlowNode> getElementType() {
-    return FlowNode.class;
+  public Class<InclusiveGateway> getElementType() {
+    return InclusiveGateway.class;
   }
 
   @Override
   public void validate(
-      final FlowNode element, final ValidationResultCollector validationResultCollector) {
-    if (!(element instanceof ExclusiveGateway) && !(element instanceof InclusiveGateway)) {
-      final boolean hasAnyConditionalFlow =
-          element.getOutgoing().stream()
-              .filter(s -> s.getConditionExpression() != null)
-              .findAny()
-              .isPresent();
+      final InclusiveGateway element, final ValidationResultCollector validationResultCollector) {
 
-      if (hasAnyConditionalFlow) {
-        validationResultCollector.addError(
-            0, "Conditional sequence flows are only supported at exclusive or inclusive gateway");
+    final SequenceFlow defaultFlow = element.getDefault();
+
+    if (defaultFlow != null) {
+      //      if (defaultFlow.getConditionExpression() != null) {
+      //        validationResultCollector.addError(0, "Default flow must not have a condition");
+      //      }
+      if (defaultFlow.getSource() != element) {
+        validationResultCollector.addError(0, "Default flow must start at gateway");
       }
     }
   }

@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -47,6 +48,7 @@ public final class BpmnStateTransitionBehavior {
   private final ProcessEngineMetrics metrics;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
+  private final ElementInstanceState elementInstanceState;
 
   public BpmnStateTransitionBehavior(
       final KeyGenerator keyGenerator,
@@ -54,13 +56,15 @@ public final class BpmnStateTransitionBehavior {
       final ProcessEngineMetrics metrics,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookUp,
-      final Writers writers) {
+      final Writers writers,
+      final ElementInstanceState elementInstanceState) {
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
     this.metrics = metrics;
     this.processorLookUp = processorLookUp;
     stateWriter = writers.state();
     commandWriter = writers.command();
+    this.elementInstanceState = elementInstanceState;
   }
 
   /**

@@ -69,7 +69,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processEngineMetrics);
 
     stateBehavior = new BpmnStateBehavior(zeebeState, variableBehavior);
-    stateTransitionGuard = new ProcessInstanceStateTransitionGuard(stateBehavior);
+    stateTransitionGuard =
+        new ProcessInstanceStateTransitionGuard(
+            stateBehavior, zeebeState.getElementInstanceState(), zeebeState.getProcessState());
     variableMappingBehavior =
         new BpmnVariableMappingBehavior(expressionBehavior, zeebeState, variableBehavior);
     stateTransitionBehavior =
@@ -78,7 +80,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             stateBehavior,
             processEngineMetrics,
             processorLookup,
-            writers);
+            writers,
+            zeebeState.getElementInstanceState());
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
             catchEventBehavior,

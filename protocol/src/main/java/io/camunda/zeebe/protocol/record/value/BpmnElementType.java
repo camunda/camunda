@@ -45,6 +45,7 @@ public enum BpmnElementType {
   EXCLUSIVE_GATEWAY("exclusiveGateway"),
   PARALLEL_GATEWAY("parallelGateway"),
   EVENT_BASED_GATEWAY("eventBasedGateway"),
+  INCLUSIVE_GATEWAY("inclusiveGateway"),
 
   // Other
   SEQUENCE_FLOW("sequenceFlow"),

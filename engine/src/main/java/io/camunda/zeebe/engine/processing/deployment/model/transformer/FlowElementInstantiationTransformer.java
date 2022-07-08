@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEve
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableExclusiveGateway;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableInclusiveGateway;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableIntermediateThrowEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.EventBasedGateway;
 import io.camunda.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
+import io.camunda.zeebe.model.bpmn.instance.InclusiveGateway;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.camunda.zeebe.model.bpmn.instance.ManualTask;
@@ -66,6 +68,7 @@ public final class FlowElementInstantiationTransformer
     ELEMENT_FACTORIES.put(EndEvent.class, ExecutableEndEvent::new);
     ELEMENT_FACTORIES.put(EventBasedGateway.class, ExecutableEventBasedGateway::new);
     ELEMENT_FACTORIES.put(ExclusiveGateway.class, ExecutableExclusiveGateway::new);
+    ELEMENT_FACTORIES.put(InclusiveGateway.class, ExecutableInclusiveGateway::new);
     ELEMENT_FACTORIES.put(IntermediateCatchEvent.class, ExecutableCatchEventElement::new);
     ELEMENT_FACTORIES.put(IntermediateThrowEvent.class, ExecutableIntermediateThrowEvent::new);
     ELEMENT_FACTORIES.put(ManualTask.class, ExecutableActivity::new);
