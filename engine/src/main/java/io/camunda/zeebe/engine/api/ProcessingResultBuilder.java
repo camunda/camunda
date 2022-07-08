@@ -9,5 +9,11 @@ package io.camunda.zeebe.engine.api;
 
 public interface ProcessingResultBuilder {
 
+  /**
+   * Resets the processing result build to its initial states (removes all follow up records,
+   * responses and commit tasks
+   */
+  void reset();
+
   ProcessingResult build();
 }
