@@ -8,8 +8,8 @@
 package io.camunda.zeebe.streamprocessor;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.CopiedRecords;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -128,7 +128,7 @@ public final class TypedRecordImpl implements TypedRecord {
 
   @Override
   public String toString() {
-    return "TypedEventImpl{"
+    return "TypedRecordImpl{"
         + "metadata="
         + metadata
         + ", value="

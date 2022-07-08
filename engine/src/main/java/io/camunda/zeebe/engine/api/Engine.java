@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.api;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
-
 public interface Engine {
 
   void init(EngineContext engineContext);
