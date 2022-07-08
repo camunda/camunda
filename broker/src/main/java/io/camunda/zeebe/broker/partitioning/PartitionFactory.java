@@ -50,7 +50,7 @@ import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -209,10 +209,10 @@ final class PartitionFactory {
       final ClusterEventService eventService,
       final PushDeploymentRequestHandler deploymentRequestHandler,
       final FeatureFlags featureFlags) {
-    return (ProcessingContext processingContext) -> {
-      final var actor = processingContext.getActor();
+    return (StreamProcessorContext streamProcessorContext) -> {
+      final var actor = streamProcessorContext.getActor();
 
-      final LogStream stream = processingContext.getLogStream();
+      final LogStream stream = streamProcessorContext.getLogStream();
 
       final TopologyPartitionListenerImpl partitionListener =
           new TopologyPartitionListenerImpl(actor);
@@ -232,7 +232,7 @@ final class PartitionFactory {
 
       final var processor =
           EngineProcessors.createEngineProcessors(
-              processingContext,
+              streamProcessorContext,
               localBroker.getPartitionsCount(),
               subscriptionCommandSender,
               deploymentDistributor,

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
@@ -28,7 +28,7 @@ import java.util.function.Function;
 
 public final class StreamProcessorBuilder {
 
-  private final ProcessingContext processingContext;
+  private final StreamProcessorContext streamProcessorContext;
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private TypedRecordProcessorFactory typedRecordProcessorFactory;
   private ActorSchedulingService actorSchedulingService;
@@ -39,7 +39,7 @@ public final class StreamProcessorBuilder {
       TypedStreamWriterImpl::new;
 
   public StreamProcessorBuilder() {
-    processingContext = new ProcessingContext();
+    streamProcessorContext = new StreamProcessorContext();
   }
 
   public StreamProcessorBuilder streamProcessorFactory(
@@ -60,18 +60,18 @@ public final class StreamProcessorBuilder {
   }
 
   public StreamProcessorBuilder logStream(final LogStream stream) {
-    processingContext.logStream(stream);
+    streamProcessorContext.logStream(stream);
     return this;
   }
 
   public StreamProcessorBuilder commandResponseWriter(
       final CommandResponseWriter commandResponseWriter) {
-    processingContext.commandResponseWriter(commandResponseWriter);
+    streamProcessorContext.commandResponseWriter(commandResponseWriter);
     return this;
   }
 
   public StreamProcessorBuilder listener(final StreamProcessorListener listener) {
-    processingContext.listener(listener);
+    streamProcessorContext.listener(listener);
     return this;
   }
 
@@ -87,7 +87,7 @@ public final class StreamProcessorBuilder {
   }
 
   public StreamProcessorBuilder streamProcessorMode(final StreamProcessorMode streamProcessorMode) {
-    processingContext.processorMode(streamProcessorMode);
+    streamProcessorContext.processorMode(streamProcessorMode);
     return this;
   }
 
@@ -95,8 +95,8 @@ public final class StreamProcessorBuilder {
     return typedRecordProcessorFactory;
   }
 
-  public ProcessingContext getProcessingContext() {
-    return processingContext;
+  public StreamProcessorContext getProcessingContext() {
+    return streamProcessorContext;
   }
 
   public ActorSchedulingService getActorSchedulingService() {
@@ -128,9 +128,9 @@ public final class StreamProcessorBuilder {
   private void validate() {
     Objects.requireNonNull(typedRecordProcessorFactory, "No stream processor factory provided.");
     Objects.requireNonNull(actorSchedulingService, "No task scheduler provided.");
-    Objects.requireNonNull(processingContext.getLogStream(), "No log stream provided.");
+    Objects.requireNonNull(streamProcessorContext.getLogStream(), "No log stream provided.");
     Objects.requireNonNull(
-        processingContext.getWriters().response(), "No command response writer provided.");
+        streamProcessorContext.getWriters().response(), "No command response writer provided.");
     Objects.requireNonNull(zeebeDb, "No database provided.");
     Objects.requireNonNull(eventApplierFactory, "No factory for the event supplier provided.");
   }

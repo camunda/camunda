@@ -25,7 +25,7 @@ import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -47,7 +47,7 @@ import java.util.function.Consumer;
 public final class EngineProcessors {
 
   public static TypedRecordProcessors createEngineProcessors(
-      final ProcessingContext processingContext,
+      final StreamProcessorContext streamProcessorContext,
       final int partitionsCount,
       final SubscriptionCommandSender subscriptionCommandSender,
       final DeploymentDistributor deploymentDistributor,
@@ -55,18 +55,18 @@ public final class EngineProcessors {
       final Consumer<String> onJobsAvailableCallback,
       final FeatureFlags featureFlags) {
 
-    final var actor = processingContext.getActor();
-    final MutableZeebeState zeebeState = processingContext.getZeebeState();
-    final var writers = processingContext.getWriters();
+    final var actor = streamProcessorContext.getActor();
+    final MutableZeebeState zeebeState = streamProcessorContext.getZeebeState();
+    final var writers = streamProcessorContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =
         TypedRecordProcessors.processors(zeebeState.getKeyGenerator(), writers);
 
     // register listener that handles migrations immediately, so it is the first to be called
     typedRecordProcessors.withListener(new DbMigrationController());
 
-    typedRecordProcessors.withListener(processingContext.getZeebeState());
+    typedRecordProcessors.withListener(streamProcessorContext.getZeebeState());
 
-    final LogStream stream = processingContext.getLogStream();
+    final LogStream stream = streamProcessorContext.getLogStream();
     final int partitionId = stream.getPartitionId();
 
     final var variablesState = zeebeState.getVariableState();
