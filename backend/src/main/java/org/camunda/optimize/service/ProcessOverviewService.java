@@ -7,7 +7,6 @@ package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
@@ -65,6 +64,11 @@ public class ProcessOverviewService {
       .filter(def -> !def.getIsEventProcess())
       .filter(
         def -> definitionAuthorizationService.isAuthorizedToAccessDefinition(userId, PROCESS, def.getKey(), def.getTenantIds()))
+      .peek(def -> {
+        if (def.getName() == null || def.getName().isEmpty()) {
+          def.setName(def.getKey());
+        }
+      })
       .collect(toMap(DefinitionWithTenantIdsDto::getKey, DefinitionWithTenantIdsDto::getName));
 
     final Map<String, ProcessOverviewDto> processOverviewByKey =
@@ -78,7 +82,7 @@ public class ProcessOverviewService {
         String magicLinkToDashboard = String.format(MAGIC_LINK_TEMPLATE, procDefKey, procDefKey) + appCueSuffix;
         final Optional<ProcessOverviewDto> overviewForKey = Optional.ofNullable(processOverviewByKey.get(procDefKey));
         return new ProcessOverviewResponseDto(
-          StringUtils.isEmpty(entry.getValue()) ? procDefKey : entry.getValue(),
+          entry.getValue(),
           procDefKey,
           overviewForKey.flatMap(overview -> Optional.ofNullable(overview.getOwner())
             .map(owner -> new ProcessOwnerResponseDto(owner, identityService.getIdentityNameById(owner).orElse(owner)))

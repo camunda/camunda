@@ -170,6 +170,29 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
     assertThat(processes).hasSize(3).isSortedAccordingTo(comparator);
   }
 
+  @Test
+  public void getProcessOverview_sortByProcessNameWhenProcessHasNoName() {
+    // given
+    final String firstProcessName = "aProcessName";
+    addProcessDefinitionWithGivenNameAndKeyToElasticSearch(firstProcessName, "a");
+    addProcessDefinitionWithGivenNameAndKeyToElasticSearch(null, "b");
+    final String thirdProcessName = "cProcessName";
+    addProcessDefinitionWithGivenNameAndKeyToElasticSearch(thirdProcessName, "c");
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessOverviewSorter sorter = new ProcessOverviewSorter(
+      ProcessOverviewResponseDto.Fields.processDefinitionName,
+      SortOrder.ASC
+    );
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(sorter);
+
+    // then
+    assertThat(processes).hasSize(3).extracting(ProcessOverviewResponseDto::getProcessDefinitionName)
+      .containsExactly(firstProcessName, "b", thirdProcessName);
+  }
+
   @ParameterizedTest
   @MethodSource("getDefinitionNameAndExpectedSortOrder")
   public void getProcessOverview_processesGetOrderedByOwnerAndDefinitionNameWhenOwnerNameIsMissingFromSomeDefinitions(final SortOrder sortOrder,
