@@ -20,7 +20,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
-import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import io.camunda.zeebe.journal.file.record.RecordData;
 import io.camunda.zeebe.journal.file.record.SBESerializer;
 import java.io.File;
@@ -378,7 +377,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldHandlePartiallyWrittenDescriptor() throws Exception {
+  void shouldContinueAppendAfterDetectingPartiallyWrittenDescriptor() throws Exception {
     // given
     final File dataFile = getJournalDirectory();
     assertThat(dataFile.mkdirs()).isTrue();
@@ -398,7 +397,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldHandleCorruptionAtDescriptorWithoutAckedEntries() throws Exception {
+  void shouldContinueWritingAfterDetectingCorruptedDescriptorWithOutAckEntries() throws Exception {
     // given
     var journal = openJournal(1);
     journal.close();
@@ -443,30 +442,6 @@ class SegmentedJournalTest {
     assertThat(reader.next()).isEqualTo(firstRecord);
     assertThat(reader.next()).isEqualTo(lastRecord);
     assertThat(reader.hasNext()).isFalse();
-  }
-
-  @Test
-  void shouldDetectCorruptionAtDescriptorWithAckedEntries() throws Exception {
-    // given
-    final var journal = openJournal(1);
-    final long index = journal.append(data).index();
-
-    journal.close();
-    final File dataFile = getJournalDirectory();
-    final File logFile =
-        Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith(".log")))[0];
-    LogCorrupter.corruptDescriptor(logFile);
-
-    // when/then
-    assertThatThrownBy(
-            () ->
-                SegmentedJournal.builder()
-                    .withDirectory(getJournalDirectory())
-                    .withMaxSegmentSize(entrySize + JournalSegmentDescriptor.getEncodingLength())
-                    .withJournalIndexDensity(journalIndexDensity)
-                    .withLastWrittenIndex(index)
-                    .build())
-        .isInstanceOf(CorruptedLogException.class);
   }
 
   @Test
@@ -581,28 +556,6 @@ class SegmentedJournalTest {
             file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
         .isDirectoryContaining(
             file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
-  }
-
-  @Test
-  void shouldDeleteFilesMarkedForDeletionsOnLoad() {
-    // given
-    final var journal = openJournal(2);
-    journal.append(data);
-    journal.openReader();
-    journal.reset(100);
-
-    // when
-    // if we close the current journal, it will delete the files on closing. So we cannot test this
-    // scenario.
-    try (final var ignored = openJournal(2)) {
-      // then
-      final File logDirectory = getJournalDirectory();
-      assertThat(logDirectory)
-          .isDirectoryNotContaining(
-              file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-          .isDirectoryContaining(
-              file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
-    }
   }
 
   @Test
