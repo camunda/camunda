@@ -372,7 +372,9 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldNotReturnCanceledTasksInInterruptingBoundaryEvent() throws IOException {
-    final String processId = "interruptingBoundaryEvent", flowNodeBPMNId = "task1";
+    final String processId = "interruptingBoundaryEvent",
+        flowNodeBPMNId = "task1",
+        flowNodeBPMNId2 = "task2";
     final GraphQLResponse response =
         tester
             .having()
@@ -384,6 +386,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
             .when()
             .waitUntil()
             .taskIsCanceled(flowNodeBPMNId)
+            .waitUntil()
+            .taskIsCreated(flowNodeBPMNId2)
             .then()
             .getAllTasks();
     assertThat(response.get("$.data.tasks.length()")).isEqualTo("1");
