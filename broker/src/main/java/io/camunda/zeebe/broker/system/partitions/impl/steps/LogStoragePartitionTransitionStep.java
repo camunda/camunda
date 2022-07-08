@@ -107,8 +107,8 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
         .orElseGet(
             () ->
                 left(
-                    new IllegalStateException(
-                        "Not leader of partition " + context.getPartitionId())));
+                    new NotLeaderException(
+                        "Expected to get writable log storage, but the node is not the leader for the partition anymore. Failing installation of 'LogStoragePartitionStep'.")));
   }
 
   private Either<Exception, AtomixLogStorage> checkAndCreateAtomixLogStorage(
@@ -120,18 +120,18 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
 
     if (raftTerm != targetTerm) {
       return left(
-          new LogStorageTermMissmatchException(targetTerm, raftTerm, context.getPartitionId()));
+          new NotLeaderException(
+              String.format(WRONG_TERM_ERROR_MSG, targetTerm, raftTerm, context.getPartitionId())));
     } else {
       final var logStorage = AtomixLogStorage.ofPartition(server::openReader, logAppender);
       return right(logStorage);
     }
   }
 
-  public static final class LogStorageTermMissmatchException
-      extends RecoverablePartitionTransitionException {
-    private LogStorageTermMissmatchException(
-        final long expectedTerm, final long actualTerm, final int partitionId) {
-      super(String.format(WRONG_TERM_ERROR_MSG, expectedTerm, actualTerm, partitionId));
+  public static final class NotLeaderException extends RecoverablePartitionTransitionException {
+
+    private NotLeaderException(final String message) {
+      super(message);
     }
   }
 
