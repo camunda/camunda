@@ -440,7 +440,7 @@ public final class EngineRule extends ExternalResource {
 
     @Override
     public void onRecovered(final ReadonlyStreamProcessorContext context) {
-      final int partitionId = context.getLogStream().getPartitionId();
+      final int partitionId = context.getPartitionId();
       typedEvent = new TypedRecordImpl(partitionId);
       final ActorControl actor = context.getActor();
 

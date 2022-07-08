@@ -43,7 +43,6 @@ public final class StreamProcessorContext
   private LogStream logStream;
   private LogStreamReader logStreamReader;
   private TypedStreamWriter logStreamWriter = noopTypedStreamWriter;
-  private CommandResponseWriter commandResponseWriter;
   private TypedResponseWriterImpl typedResponseWriter;
 
   private RecordValues recordValues;
@@ -109,14 +108,9 @@ public final class StreamProcessorContext
 
   public StreamProcessorContext commandResponseWriter(
       final CommandResponseWriter commandResponseWriter) {
-    this.commandResponseWriter = commandResponseWriter;
     typedResponseWriter =
         new TypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId());
     return this;
-  }
-
-  public CommandResponseWriter getCommandResponseWriter() {
-    return commandResponseWriter;
   }
 
   public StreamProcessorContext maxFragmentSize(final int maxFragmentSize) {
@@ -136,11 +130,6 @@ public final class StreamProcessorContext
 
   public KeyGeneratorControls getKeyGeneratorControls() {
     return zeebeState.getKeyGeneratorControls();
-  }
-
-  @Override
-  public int getPartitionId() {
-    return getLogStream().getPartitionId();
   }
 
   @Override
@@ -165,16 +154,6 @@ public final class StreamProcessorContext
   }
 
   @Override
-  public LogStreamReader getLogStreamReader() {
-    return logStreamReader;
-  }
-
-  @Override
-  public int getMaxFragmentSize() {
-    return maxFragmentSize;
-  }
-
-  @Override
   public TypedStreamWriter getLogStreamWriter() {
     return streamWriterProxy;
   }
@@ -188,33 +167,33 @@ public final class StreamProcessorContext
   }
 
   @Override
-  public RecordValues getRecordValues() {
-    return recordValues;
-  }
-
-  @Override
-  public RecordProcessorMap getRecordProcessorMap() {
-    return recordProcessorMap;
-  }
-
-  @Override
   public MutableZeebeState getZeebeState() {
     return zeebeState;
   }
 
   @Override
+  public int getPartitionId() {
+    return getLogStream().getPartitionId();
+  }
+
+  public LogStreamReader getLogStreamReader() {
+    return logStreamReader;
+  }
+
+  public RecordValues getRecordValues() {
+    return recordValues;
+  }
+
+  public RecordProcessorMap getRecordProcessorMap() {
+    return recordProcessorMap;
+  }
+
   public TransactionContext getTransactionContext() {
     return transactionContext;
   }
 
-  @Override
   public BooleanSupplier getAbortCondition() {
     return abortCondition;
-  }
-
-  @Override
-  public EventApplier getEventApplier() {
-    return eventApplier;
   }
 
   public StreamProcessorListener getStreamProcessorListener() {
