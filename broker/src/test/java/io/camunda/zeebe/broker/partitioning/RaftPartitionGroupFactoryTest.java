@@ -20,8 +20,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.util.unit.DataSize;
 
-class RaftPartitionGroupFactoryTest {
-
+final class RaftPartitionGroupFactoryTest {
   private static final ReceivableSnapshotStoreFactory SNAPSHOT_STORE_FACTORY =
       (directory, partitionId) -> mock(ReceivableSnapshotStore.class);
 
