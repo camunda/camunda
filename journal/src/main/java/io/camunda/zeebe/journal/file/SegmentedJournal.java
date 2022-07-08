@@ -16,7 +16,6 @@
  */
 package io.camunda.zeebe.journal.file;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.Sets;
@@ -26,6 +25,7 @@ import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import java.io.File;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.locks.StampedLock;
 import org.agrona.DirectBuffer;
 
@@ -43,23 +43,22 @@ public final class SegmentedJournal implements Journal {
   private final SegmentedJournalWriter writer;
   private final StampedLock rwlock = new StampedLock();
   private final SegmentsManager segments;
-  private final String name;
 
   public SegmentedJournal(
-      final String name,
       final File directory,
       final int maxSegmentSize,
-      final long minFreeSpace,
+      final long minFreeDiskSpace,
       final JournalIndex journalIndex,
-      final SegmentsManager segmentsManager) {
-    this.name = checkNotNull(name, "name cannot be null");
-    this.directory = checkNotNull(directory, "directory cannot be null");
+      final SegmentsManager segments,
+      final JournalMetrics journalMetrics) {
+    this.directory = Objects.requireNonNull(directory, "must specify a journal directory");
     this.maxSegmentSize = maxSegmentSize;
-    journalMetrics = new JournalMetrics(name);
-    minFreeDiskSpace = minFreeSpace;
-    this.journalIndex = journalIndex;
-    segments = segmentsManager;
-    segments.open();
+    this.minFreeDiskSpace = minFreeDiskSpace;
+    this.journalMetrics = Objects.requireNonNull(journalMetrics, "must specify journal metrics");
+    this.journalIndex = Objects.requireNonNull(journalIndex, "must specify a journal index");
+    this.segments = Objects.requireNonNull(segments, "must specify a journal segments manager");
+
+    this.segments.open();
     writer = new SegmentedJournalWriter(this);
   }
 

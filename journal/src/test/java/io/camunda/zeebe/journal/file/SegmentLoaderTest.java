@@ -30,13 +30,13 @@ final class SegmentLoaderTest {
   void shouldPreallocateSegmentFiles(final @TempDir Path tmpDir) {
     // given
     final var segmentSize = 4 * 1024 * 1024;
-    final var segmentLoader = new SegmentLoader(0, new SparseJournalIndex(1), true);
+    final var segmentLoader = new SegmentLoader(true);
     final var segmentFile = tmpDir.resolve("segment.log");
     final var descriptor =
         JournalSegmentDescriptor.builder().withId(1).withMaxSegmentSize(segmentSize).build();
 
     // when
-    final var segment = segmentLoader.createSegment(segmentFile, descriptor);
+    segmentLoader.createSegment(segmentFile, descriptor, 1, new SparseJournalIndex(1));
 
     // then
     final var realSize = getRealSize(segmentFile);
@@ -52,13 +52,13 @@ final class SegmentLoaderTest {
   void shouldNotPreallocateSegmentFiles(final @TempDir Path tmpDir) {
     // given
     final var segmentSize = 4 * 1024 * 1024;
-    final var segmentLoader = new SegmentLoader(0, new SparseJournalIndex(1), false);
+    final var segmentLoader = new SegmentLoader(false);
     final var segmentFile = tmpDir.resolve("segment.log");
     final var descriptor =
         JournalSegmentDescriptor.builder().withId(1).withMaxSegmentSize(segmentSize).build();
 
     // when
-    final var segment = segmentLoader.createSegment(segmentFile, descriptor);
+    segmentLoader.createSegment(segmentFile, descriptor, 1, new SparseJournalIndex(1));
 
     // then
     final var realSize = getRealSize(segmentFile);
@@ -81,13 +81,14 @@ final class SegmentLoaderTest {
             .withMaxSegmentSize(segmentSize)
             .build();
     final var lastWrittenIndex = descriptor.index() - 1;
-    final var segmentLoader = new SegmentLoader(lastWrittenIndex, new SparseJournalIndex(1), true);
+    final var segmentLoader = new SegmentLoader(true);
     final var segmentFile = tmpDir.resolve("segment.log");
 
     // when - the segment is "unused" if the lastWrittenIndex is less than the expected first index
     // this can happen if we crashed in the middle of creating the new segment
     Files.writeString(segmentFile, "foo");
-    final var segment = segmentLoader.createSegment(segmentFile, descriptor);
+    segmentLoader.createSegment(
+        segmentFile, descriptor, lastWrittenIndex, new SparseJournalIndex(1));
 
     // then
     final var realSize = getRealSize(segmentFile);
