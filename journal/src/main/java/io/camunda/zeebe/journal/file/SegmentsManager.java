@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import java.io.File;
@@ -52,18 +54,17 @@ final class SegmentsManager {
   private final String name;
 
   public SegmentsManager(
-      final JournalMetrics journalMetrics,
       final JournalIndex journalIndex,
       final int maxSegmentSize,
       final File directory,
       final long lastWrittenIndex,
       final String name) {
-    this.journalMetrics = journalMetrics;
+    this.name = checkNotNull(name, "name cannot be null");
+    journalMetrics = new JournalMetrics(name);
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
     this.directory = directory;
     this.lastWrittenIndex = lastWrittenIndex;
-    this.name = name;
     segmentLoader = new SegmentLoader(lastWrittenIndex, this.journalIndex);
   }
 
