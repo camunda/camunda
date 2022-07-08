@@ -152,7 +152,6 @@ public class SegmentedJournalBuilder {
         maxSegmentSize,
         freeDiskSpace,
         journalIndex,
-        lastWrittenIndex,
-        preallocateSegmentFiles);
+        new SegmentsManager(journalIndex, maxSegmentSize, directory, lastWrittenIndex, name));
   }
 }

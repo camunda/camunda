@@ -42,8 +42,6 @@ public final class SegmentedJournal implements Journal {
   private final JournalIndex journalIndex;
   private final SegmentedJournalWriter writer;
   private final StampedLock rwlock = new StampedLock();
-  private final boolean preallocateSegmentFiles;
-
   private final SegmentsManager segments;
   private final String name;
 
@@ -53,19 +51,15 @@ public final class SegmentedJournal implements Journal {
       final int maxSegmentSize,
       final long minFreeSpace,
       final JournalIndex journalIndex,
-      final long lastWrittenIndex,
-      final boolean preallocateSegmentFiles) {
+      final SegmentsManager segmentsManager) {
     this.name = checkNotNull(name, "name cannot be null");
     this.directory = checkNotNull(directory, "directory cannot be null");
     this.maxSegmentSize = maxSegmentSize;
     journalMetrics = new JournalMetrics(name);
     minFreeDiskSpace = minFreeSpace;
     this.journalIndex = journalIndex;
-    segments =
-        new SegmentsManager(
-            journalMetrics, journalIndex, maxSegmentSize, directory, lastWrittenIndex, name);
+    segments = segmentsManager;
     segments.open();
-    this.preallocateSegmentFiles = preallocateSegmentFiles;
     writer = new SegmentedJournalWriter(this);
   }
 
