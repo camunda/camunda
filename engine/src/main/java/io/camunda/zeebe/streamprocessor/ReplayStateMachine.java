@@ -9,7 +9,7 @@ package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
-import io.camunda.zeebe.engine.api.Engine;
+import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.ReplayMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.EventFilter;
@@ -92,10 +92,10 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private State currentState = State.AWAIT_RECORD;
   private final BooleanSupplier shouldPause;
   private final ReplayMetrics replayMetrics;
-  private final Engine engine;
+  private final RecordProcessor engine;
 
   public ReplayStateMachine(
-      final Engine engine,
+      final RecordProcessor engine,
       final StreamProcessorContext context,
       final BooleanSupplier shouldReplayNext) {
     this.engine = engine;

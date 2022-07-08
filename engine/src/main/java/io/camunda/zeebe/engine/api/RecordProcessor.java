@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.api;
 
-public interface Engine {
+public interface RecordProcessor {
 
-  void init(EngineContext engineContext);
+  void init(RecordProcessorContext recordProcessorContext);
 
   void replay(TypedRecord record);
 
