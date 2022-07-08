@@ -28,24 +28,25 @@ final class SegmentLoader {
   private static final Logger LOGGER = LoggerFactory.getLogger(SegmentLoader.class);
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
 
-  private final long lastWrittenIndex;
-  private final JournalIndex journalIndex;
   private final boolean preallocateFiles;
 
-  SegmentLoader(
-      final long lastWrittenIndex,
-      final JournalIndex journalIndex,
-      final boolean preallocateFiles) {
-    this.lastWrittenIndex = lastWrittenIndex;
-    this.journalIndex = journalIndex;
+  SegmentLoader() {
+    this(true);
+  }
+
+  SegmentLoader(final boolean preallocateFiles) {
     this.preallocateFiles = preallocateFiles;
   }
 
-  JournalSegment createSegment(final Path segmentFile, final JournalSegmentDescriptor descriptor) {
+  JournalSegment createSegment(
+      final Path segmentFile,
+      final JournalSegmentDescriptor descriptor,
+      final long lastWrittenIndex,
+      final JournalIndex journalIndex) {
     final MappedByteBuffer mappedSegment;
 
     try {
-      mappedSegment = mapNewSegment(segmentFile, descriptor);
+      mappedSegment = mapNewSegment(segmentFile, descriptor, lastWrittenIndex);
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to create new segment file %s", segmentFile), e);
@@ -73,10 +74,11 @@ final class SegmentLoader {
           e);
     }
 
-    return loadSegment(segmentFile, mappedSegment, descriptor);
+    return loadSegment(segmentFile, mappedSegment, descriptor, lastWrittenIndex, journalIndex);
   }
 
-  JournalSegment loadExistingSegment(final Path segmentFile) {
+  JournalSegment loadExistingSegment(
+      final Path segmentFile, final long lastWrittenIndex, final JournalIndex journalIndex) {
     final var descriptor = readDescriptor(segmentFile);
     final MappedByteBuffer mappedSegment;
 
@@ -88,12 +90,16 @@ final class SegmentLoader {
           String.format("Failed to load existing segment %s", segmentFile), e);
     }
 
-    return loadSegment(segmentFile, mappedSegment, descriptor);
+    return loadSegment(segmentFile, mappedSegment, descriptor, lastWrittenIndex, journalIndex);
   }
 
   /* ---- Internal methods ------ */
   private JournalSegment loadSegment(
-      final Path file, final MappedByteBuffer buffer, final JournalSegmentDescriptor descriptor) {
+      final Path file,
+      final MappedByteBuffer buffer,
+      final JournalSegmentDescriptor descriptor,
+      final long lastWrittenIndex,
+      final JournalIndex journalIndex) {
     final JournalSegmentFile segmentFile = new JournalSegmentFile(file.toFile());
     return new JournalSegment(segmentFile, descriptor, buffer, lastWrittenIndex, journalIndex);
   }
@@ -165,7 +171,10 @@ final class SegmentLoader {
   }
 
   private MappedByteBuffer mapNewSegment(
-      final Path segmentPath, final JournalSegmentDescriptor descriptor) throws IOException {
+      final Path segmentPath,
+      final JournalSegmentDescriptor descriptor,
+      final long lastWrittenIndex)
+      throws IOException {
     try (final var channel =
         FileChannel.open(
             segmentPath,
@@ -193,7 +202,7 @@ final class SegmentLoader {
           segmentPath,
           e);
       Files.delete(segmentPath);
-      return mapNewSegment(segmentPath, descriptor);
+      return mapNewSegment(segmentPath, descriptor, lastWrittenIndex);
     }
   }
 }
