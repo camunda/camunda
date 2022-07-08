@@ -59,7 +59,7 @@ it('should add "success" className to the report value if the kpi is successful'
   expect(node.find('.reportValue')).toHaveClassName('success');
 });
 
-it('should format the kpi values based on the report measure', () => {
+it('should display kpi value and target in correct format', () => {
   const node = shallow(
     <KpiResult
       kpis={[
@@ -67,6 +67,7 @@ it('should format the kpi values based on the report measure', () => {
           reportName: 'report Name',
           value: '123',
           target: '300',
+          unit: 'days',
           isBelow: true,
           measure: 'percentage',
         },
@@ -74,6 +75,6 @@ it('should format the kpi values based on the report measure', () => {
     />
   );
 
-  expect(node.find('.reportValues span').at(0)).toIncludeText('%');
-  expect(node.find('.reportValues span').at(1)).toIncludeText('%');
+  expect(node.find('.reportValues span').at(0)).toIncludeText('123%');
+  expect(node.find('.reportValues span').at(1)).toIncludeText('300 days');
 });
