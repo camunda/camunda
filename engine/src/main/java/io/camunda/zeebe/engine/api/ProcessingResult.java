@@ -7,4 +7,17 @@
  */
 package io.camunda.zeebe.engine.api;
 
-public interface ProcessingResult {}
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+
+/**
+ * Here the interface is just a suggestion. Can be whatever PDT teams thinks is best to work with
+ */
+public interface ProcessingResult {
+
+  long writeRecordsToStream(LogStreamRecordWriter logStreamRecordWriter);
+
+  boolean writeResponse(CommandResponseWriter commandResponseWriter);
+
+  void executePostCommitTasks();
+}

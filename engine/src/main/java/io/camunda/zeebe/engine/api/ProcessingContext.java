@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.engine.api;
 
+// TODO Wait whether this interface will get more stuff (e.g. an object to schedule tasks), or
+// whether it is just the result builder, in which case the interface is obsolete
 public interface ProcessingContext {
-
   ProcessingResultBuilder getProcessingResultBuilder();
 }

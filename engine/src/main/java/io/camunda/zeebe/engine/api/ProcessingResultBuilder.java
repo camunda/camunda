@@ -7,13 +7,48 @@
  */
 package io.camunda.zeebe.engine.api;
 
+import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+
+/**
+ * Low level interface to capture the processing result. On engine side, this will probably be
+ * decorated with Writers or something like that
+ */
 public interface ProcessingResultBuilder {
 
+  /** Appends a record to the result */
+  ProcessingResultBuilder appendRecord(
+      final long key,
+      final RecordType type,
+      final Intent intent,
+      final RejectionType rejectionType,
+      final String rejectionReason,
+      final RecordValue value);
+
+  /** Sets the response for the result; will be overwritten if called more than once */
+  ProcessingResultBuilder withResponse(
+      final long eventKey,
+      final Intent eventState,
+      final UnpackedObject eventValue,
+      final ValueType valueType,
+      final long requestId,
+      final int requestStreamId);
+
   /**
-   * Resets the processing result build to its initial states (removes all follow up records,
-   * responses and commit tasks
+   * Appends a task to be executed after a successful commit ProcessingResultBuilder (replacement
+   * for side effects)
    */
-  void reset();
+  ProcessingResultBuilder appendPostCommitTask(Runnable r);
+
+  /**
+   * Resets the processing result build to its initial states (removes all follow up records, the
+   * response and post commit tasks)
+   */
+  ProcessingResultBuilder reset();
 
   ProcessingResult build();
 }
