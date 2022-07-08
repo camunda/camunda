@@ -636,4 +636,29 @@ public final class FileBasedSnapshotStore extends Actor
   void onSnapshotDeleted(final FileBasedSnapshot snapshot) {
     availableSnapshots.remove(snapshot);
   }
+
+  @Override
+  public String toString() {
+    return "FileBasedSnapshotStore{"
+        + "snapshotsDirectory="
+        + snapshotsDirectory
+        + ", pendingDirectory="
+        + pendingDirectory
+        + ", listeners="
+        + listeners
+        + ", currentPersistedSnapshotRef="
+        + currentPersistedSnapshotRef
+        + ", receivingSnapshotStartCount="
+        + receivingSnapshotStartCount
+        + ", pendingSnapshots="
+        + pendingSnapshots
+        + ", availableSnapshots="
+        + availableSnapshots
+        + ", actorName='"
+        + actorName
+        + '\''
+        + ", partitionId="
+        + partitionId
+        + "}";
+  }
 }
