@@ -33,7 +33,7 @@
     <version.spring.boot>2.6.7</version.spring.boot>
     <version.spring.session.bom>2021.2.0</version.spring.session.bom>
     <log4j2.version>2.17.1</log4j2.version> <!-- Override from spring -->
-    <version.log4j>2.17.2</version.log4j>
+    <version.log4j>2.18.0</version.log4j>
     <version.junit>4.13.2</version.junit>
     <version.javax.json>1.1.4</version.javax.json>
     <version.micrometer>1.9.0</version.micrometer>
