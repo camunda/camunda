@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
@@ -140,6 +141,9 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
 
   @Override
   protected String[] getIndexNames(final ExecutionContext<ProcessReportDataDto> context) {
+    if (context.getReportData().isManagementReport()) {
+      return new String[]{PROCESS_INSTANCE_MULTI_ALIAS};
+    }
     return InstanceIndexUtil.getProcessInstanceIndexAliasNames(context.getReportData());
   }
 

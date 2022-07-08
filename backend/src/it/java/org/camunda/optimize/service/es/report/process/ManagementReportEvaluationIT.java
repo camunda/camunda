@@ -130,8 +130,7 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
   @Test
   public void savedManagementReportCanBeEvaluatedAndIncludesAllProcesses() {
     // given
-    final ProcessInstanceEngineDto firstInstance =
-      engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(FIRST_DEF_KEY));
+    engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(FIRST_DEF_KEY));
     engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(SECOND_DEF_KEY));
     importAllEngineEntitiesFromScratch();
     final String reportId = getIdForManagementReport();
@@ -148,6 +147,45 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
       .containsExactlyInAnyOrder(
         Tuple.tuple(FIRST_DEF_KEY, List.of(ALL_VERSIONS), DEFAULT_TENANT_IDS),
         Tuple.tuple(SECOND_DEF_KEY, List.of(ALL_VERSIONS), DEFAULT_TENANT_IDS)
+      );
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.START_DATE);
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(MapResultUtil.getEntryForKey(
+      resultDto.getFirstMeasureData(), embeddedOptimizeExtension.getDateTimeFormatter()
+        .format(truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS))
+    )).isPresent().get().extracting(MapResultEntryDto::getValue).isEqualTo(2.);
+  }
+
+  @Test
+  public void savedManagementReportCanBeEvaluatedAndIncludesAllProcessesEvenIfProcessHasNoInstanceData() {
+    // given
+    engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(FIRST_DEF_KEY));
+    engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(SECOND_DEF_KEY));
+    final String defKeyNoInstanceData = "defKeyNoInstanceData";
+    engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram(defKeyNoInstanceData));
+    // The xml import size is two, so we need to run the import twice to get all the data
+    importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromLastIndex();
+    final String reportId = getIdForManagementReport();
+
+    // when
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse = evaluateReport(reportId);
+
+    // then
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    assertThat(resultReportDataDto.isManagementReport()).isTrue();
+    // all available definitions are included in the report definition as it is a management report
+    assertThat(resultReportDataDto.getDefinitions()).hasSize(3)
+      .extracting(ReportDataDefinitionDto::getKey, ReportDataDefinitionDto::getVersions, ReportDataDefinitionDto::getTenantIds)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(FIRST_DEF_KEY, List.of(ALL_VERSIONS), DEFAULT_TENANT_IDS),
+        Tuple.tuple(SECOND_DEF_KEY, List.of(ALL_VERSIONS), DEFAULT_TENANT_IDS),
+        Tuple.tuple(defKeyNoInstanceData, List.of(ALL_VERSIONS), DEFAULT_TENANT_IDS)
       );
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
