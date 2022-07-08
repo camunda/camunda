@@ -10,8 +10,7 @@ package io.camunda.zeebe.engine.util;
 import static io.camunda.zeebe.engine.util.Records.processInstance;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorContext;
+import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -65,13 +64,13 @@ public class StreamProcessingComposite {
 
   private TypedRecordProcessors createTypedRecordProcessors(
       final StreamProcessorTestFactory factory,
-      final StreamProcessorContext streamProcessorContext) {
-    zeebeState = streamProcessorContext.getZeebeState();
-    lastProcessedPositionState = streamProcessorContext.getLastProcessedPositionState();
+      final RecordProcessorContext recordProcessorContext) {
+    zeebeState = recordProcessorContext.getZeebeState();
+    lastProcessedPositionState = recordProcessorContext.getLastProcessedPositionState();
     return factory.build(
         TypedRecordProcessors.processors(
-            zeebeState.getKeyGenerator(), streamProcessorContext.getWriters()),
-        streamProcessorContext);
+            zeebeState.getKeyGenerator(), recordProcessorContext.getWriters()),
+        recordProcessorContext);
   }
 
   public StreamProcessor startTypedStreamProcessor(final TypedRecordProcessorFactory factory) {
@@ -296,6 +295,6 @@ public class StreamProcessingComposite {
   @FunctionalInterface
   public interface StreamProcessorTestFactory {
     TypedRecordProcessors build(
-        TypedRecordProcessors builder, ReadonlyProcessingContext processingContext);
+        TypedRecordProcessors builder, RecordProcessorContext recordProcessorContext);
   }
 }

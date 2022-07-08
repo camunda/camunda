@@ -77,7 +77,7 @@ public final class StreamProcessorTest {
                 .withListener(
                     new StreamProcessorLifecycleAware() {
                       @Override
-                      public void onRecovered(final ReadonlyProcessingContext context) {
+                      public void onRecovered(final ReadonlyStreamProcessorContext context) {
                         recoveredLatch.countDown();
                       }
                     }));
@@ -104,7 +104,7 @@ public final class StreamProcessorTest {
                 new StreamProcessorLifecycleAware() {
 
                   @Override
-                  public void onRecovered(final ReadonlyProcessingContext context) {
+                  public void onRecovered(final ReadonlyStreamProcessorContext context) {
                     throw new RuntimeException("force fail");
                   }
 

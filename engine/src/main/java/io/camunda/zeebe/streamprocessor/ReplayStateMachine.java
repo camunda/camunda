@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.MetadataFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingException;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProtocolVersionFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;

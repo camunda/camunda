@@ -12,13 +12,13 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.util.ZeebeStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.streamprocessor.StreamProcessorContext;
 import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Rule;

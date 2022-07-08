@@ -5,10 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
+import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
@@ -25,7 +31,8 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.scheduler.ActorControl;
 import java.util.function.BooleanSupplier;
 
-public final class StreamProcessorContext implements ReadonlyProcessingContext {
+public final class StreamProcessorContext
+    implements ReadonlyStreamProcessorContext, RecordProcessorContext {
 
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
 
@@ -112,11 +119,6 @@ public final class StreamProcessorContext implements ReadonlyProcessingContext {
     return commandResponseWriter;
   }
 
-  public StreamProcessorContext listener(final StreamProcessorListener streamProcessorListener) {
-    this.streamProcessorListener = streamProcessorListener;
-    return this;
-  }
-
   public StreamProcessorContext maxFragmentSize(final int maxFragmentSize) {
     this.maxFragmentSize = maxFragmentSize;
     return this;
@@ -136,8 +138,20 @@ public final class StreamProcessorContext implements ReadonlyProcessingContext {
     return zeebeState.getKeyGeneratorControls();
   }
 
+  @Override
+  public int getPartitionId() {
+    return getLogStream().getPartitionId();
+  }
+
+  @Override
   public MutableLastProcessedPositionState getLastProcessedPositionState() {
     return zeebeState.getLastProcessedPositionState();
+  }
+
+  @Override
+  public StreamProcessorContext listener(final StreamProcessorListener streamProcessorListener) {
+    this.streamProcessorListener = streamProcessorListener;
+    return this;
   }
 
   @Override

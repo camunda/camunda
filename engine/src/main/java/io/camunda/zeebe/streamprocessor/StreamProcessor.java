@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.LastProcessingPositions;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;

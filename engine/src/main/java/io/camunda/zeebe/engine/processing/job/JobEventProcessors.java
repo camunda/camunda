@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -75,7 +75,7 @@ public final class JobEventProcessors {
         .withListener(
             new StreamProcessorLifecycleAware() {
               @Override
-              public void onRecovered(final ReadonlyProcessingContext context) {
+              public void onRecovered(final ReadonlyStreamProcessorContext context) {
                 jobState.setJobsAvailableCallback(onJobsAvailableCallback);
               }
             });

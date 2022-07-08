@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing;
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
@@ -25,7 +26,6 @@ import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -35,7 +35,6 @@ import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationController;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
@@ -47,7 +46,7 @@ import java.util.function.Consumer;
 public final class EngineProcessors {
 
   public static TypedRecordProcessors createEngineProcessors(
-      final StreamProcessorContext streamProcessorContext,
+      final RecordProcessorContext recordProcessorContext,
       final int partitionsCount,
       final SubscriptionCommandSender subscriptionCommandSender,
       final DeploymentDistributor deploymentDistributor,
@@ -55,19 +54,18 @@ public final class EngineProcessors {
       final Consumer<String> onJobsAvailableCallback,
       final FeatureFlags featureFlags) {
 
-    final var actor = streamProcessorContext.getActor();
-    final MutableZeebeState zeebeState = streamProcessorContext.getZeebeState();
-    final var writers = streamProcessorContext.getWriters();
+    final var actor = recordProcessorContext.getActor();
+    final MutableZeebeState zeebeState = recordProcessorContext.getZeebeState();
+    final var writers = recordProcessorContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =
         TypedRecordProcessors.processors(zeebeState.getKeyGenerator(), writers);
 
     // register listener that handles migrations immediately, so it is the first to be called
     typedRecordProcessors.withListener(new DbMigrationController());
 
-    typedRecordProcessors.withListener(streamProcessorContext.getZeebeState());
+    typedRecordProcessors.withListener(zeebeState);
 
-    final LogStream stream = streamProcessorContext.getLogStream();
-    final int partitionId = stream.getPartitionId();
+    final int partitionId = recordProcessorContext.getPartitionId();
 
     final var variablesState = zeebeState.getVariableState();
     final var expressionProcessor =

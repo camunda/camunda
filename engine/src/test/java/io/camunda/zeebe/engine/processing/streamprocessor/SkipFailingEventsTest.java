@@ -285,7 +285,7 @@ public final class SkipFailingEventsTest {
               .withListener(
                   new StreamProcessorLifecycleAware() {
                     @Override
-                    public void onRecovered(final ReadonlyProcessingContext ctx) {
+                    public void onRecovered(final ReadonlyStreamProcessorContext ctx) {
                       latch.countDown();
                     }
                   })

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
