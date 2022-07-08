@@ -157,6 +157,7 @@ public final class ProcessingStateMachine {
   // Used for processing duration metrics
   private Histogram.Timer processingTimer;
   private boolean reachedEnd = true;
+  private boolean inProcessing;
 
   public ProcessingStateMachine(
       final ProcessingContext context, final BooleanSupplier shouldProcessNext) {
@@ -217,7 +218,7 @@ public final class ProcessingStateMachine {
               && lastWrittenPosition <= previousRecord.getPosition();
     }
 
-    if (shouldProcessNext.getAsBoolean() && hasNext && currentProcessor == null) {
+    if (shouldProcessNext.getAsBoolean() && hasNext && !inProcessing) {
       currentRecord = logStreamReader.next();
 
       if (eventFilter.applies(currentRecord)) {
@@ -240,6 +241,10 @@ public final class ProcessingStateMachine {
   }
 
   private void processCommand(final LoggedEvent command) {
+    // we have to mark ourself has inProcessing to not interfere with readNext calls, which
+    // are triggered from commit listener
+    inProcessing = true;
+
     metadata.reset();
     command.readMetadata(metadata);
 
@@ -462,7 +467,7 @@ public final class ProcessingStateMachine {
           processingTimer.close();
 
           // continue with next record
-          currentProcessor = null;
+          inProcessing = false;
           actor.submit(this::readNextRecord);
         });
   }
