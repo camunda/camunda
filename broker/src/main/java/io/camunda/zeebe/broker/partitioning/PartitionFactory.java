@@ -48,11 +48,9 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTrans
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -209,10 +207,8 @@ final class PartitionFactory {
       final ClusterEventService eventService,
       final PushDeploymentRequestHandler deploymentRequestHandler,
       final FeatureFlags featureFlags) {
-    return (ProcessingContext processingContext) -> {
-      final var actor = processingContext.getActor();
-
-      final LogStream stream = processingContext.getLogStream();
+    return (recordProcessorContext) -> {
+      final var actor = recordProcessorContext.getActor();
 
       final TopologyPartitionListenerImpl partitionListener =
           new TopologyPartitionListenerImpl(actor);
@@ -225,14 +221,15 @@ final class PartitionFactory {
       final PartitionCommandSenderImpl partitionCommandSender =
           new PartitionCommandSenderImpl(communicationService, partitionListener);
       final SubscriptionCommandSender subscriptionCommandSender =
-          new SubscriptionCommandSender(stream.getPartitionId(), partitionCommandSender);
+          new SubscriptionCommandSender(
+              recordProcessorContext.getPartitionId(), partitionCommandSender);
 
       final LongPollingJobNotification jobsAvailableNotification =
           new LongPollingJobNotification(eventService);
 
       final var processor =
           EngineProcessors.createEngineProcessors(
-              processingContext,
+              recordProcessorContext,
               localBroker.getPartitionsCount(),
               subscriptionCommandSender,
               deploymentDistributor,

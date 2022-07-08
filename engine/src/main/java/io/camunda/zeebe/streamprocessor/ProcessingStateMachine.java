@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.EventFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.LastProcessingPositions;
 import io.camunda.zeebe.engine.processing.streamprocessor.MetadataEventFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.MetadataFilter;
-import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProtocolVersionFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
@@ -160,7 +159,7 @@ public final class ProcessingStateMachine {
   private boolean inProcessing;
 
   public ProcessingStateMachine(
-      final ProcessingContext context, final BooleanSupplier shouldProcessNext) {
+      final StreamProcessorContext context, final BooleanSupplier shouldProcessNext) {
 
     actor = context.getActor();
     recordProcessorMap = context.getRecordProcessorMap();

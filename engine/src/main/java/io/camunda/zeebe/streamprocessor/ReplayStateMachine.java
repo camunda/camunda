@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.EventFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.LastProcessingPositions;
 import io.camunda.zeebe.engine.processing.streamprocessor.MetadataEventFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.MetadataFilter;
-import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingException;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProtocolVersionFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
@@ -97,7 +96,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
 
   public ReplayStateMachine(
       final Engine engine,
-      final ProcessingContext context,
+      final StreamProcessorContext context,
       final BooleanSupplier shouldReplayNext) {
     this.engine = engine;
     shouldPause = () -> !shouldReplayNext.getAsBoolean();

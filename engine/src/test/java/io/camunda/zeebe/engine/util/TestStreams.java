@@ -17,8 +17,8 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.Loggers;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry;
@@ -262,7 +262,7 @@ public final class TestStreams {
     final var recoveredAwaiter =
         new StreamProcessorLifecycleAware() {
           @Override
-          public void onRecovered(final ReadonlyProcessingContext context) {
+          public void onRecovered(final ReadonlyStreamProcessorContext context) {
             recoveredLatch.countDown();
           }
         };

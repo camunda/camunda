@@ -5,10 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
+import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
+import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
@@ -25,7 +31,8 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.scheduler.ActorControl;
 import java.util.function.BooleanSupplier;
 
-public final class ProcessingContext implements ReadonlyProcessingContext {
+public final class StreamProcessorContext
+    implements ReadonlyStreamProcessorContext, RecordProcessorContext {
 
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
 
@@ -36,7 +43,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private LogStream logStream;
   private LogStreamReader logStreamReader;
   private TypedStreamWriter logStreamWriter = noopTypedStreamWriter;
-  private CommandResponseWriter commandResponseWriter;
   private TypedResponseWriterImpl typedResponseWriter;
 
   private RecordValues recordValues;
@@ -51,83 +57,73 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private int maxFragmentSize;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
 
-  public ProcessingContext() {
+  public StreamProcessorContext() {
     streamWriterProxy.wrap(logStreamWriter);
   }
 
-  public ProcessingContext actor(final ActorControl actor) {
+  public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
     return this;
   }
 
-  public ProcessingContext logStream(final LogStream logStream) {
+  public StreamProcessorContext logStream(final LogStream logStream) {
     this.logStream = logStream;
     return this;
   }
 
-  public ProcessingContext logStreamReader(final LogStreamReader logStreamReader) {
+  public StreamProcessorContext logStreamReader(final LogStreamReader logStreamReader) {
     this.logStreamReader = logStreamReader;
     return this;
   }
 
-  public ProcessingContext eventCache(final RecordValues recordValues) {
+  public StreamProcessorContext eventCache(final RecordValues recordValues) {
     this.recordValues = recordValues;
     return this;
   }
 
-  public ProcessingContext recordProcessorMap(final RecordProcessorMap recordProcessorMap) {
+  public StreamProcessorContext recordProcessorMap(final RecordProcessorMap recordProcessorMap) {
     this.recordProcessorMap = recordProcessorMap;
     return this;
   }
 
-  public ProcessingContext zeebeState(final ZeebeDbState zeebeState) {
+  public StreamProcessorContext zeebeState(final ZeebeDbState zeebeState) {
     this.zeebeState = zeebeState;
     return this;
   }
 
-  public ProcessingContext transactionContext(final TransactionContext transactionContext) {
+  public StreamProcessorContext transactionContext(final TransactionContext transactionContext) {
     this.transactionContext = transactionContext;
     return this;
   }
 
-  public ProcessingContext abortCondition(final BooleanSupplier abortCondition) {
+  public StreamProcessorContext abortCondition(final BooleanSupplier abortCondition) {
     this.abortCondition = abortCondition;
     return this;
   }
 
-  public ProcessingContext logStreamWriter(final TypedStreamWriter logStreamWriter) {
+  public StreamProcessorContext logStreamWriter(final TypedStreamWriter logStreamWriter) {
     this.logStreamWriter = logStreamWriter;
     return this;
   }
 
-  public ProcessingContext commandResponseWriter(
+  public StreamProcessorContext commandResponseWriter(
       final CommandResponseWriter commandResponseWriter) {
-    this.commandResponseWriter = commandResponseWriter;
     typedResponseWriter =
         new TypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId());
     return this;
   }
 
-  public CommandResponseWriter getCommandResponseWriter() {
-    return commandResponseWriter;
-  }
-
-  public ProcessingContext listener(final StreamProcessorListener streamProcessorListener) {
-    this.streamProcessorListener = streamProcessorListener;
-    return this;
-  }
-
-  public ProcessingContext maxFragmentSize(final int maxFragmentSize) {
+  public StreamProcessorContext maxFragmentSize(final int maxFragmentSize) {
     this.maxFragmentSize = maxFragmentSize;
     return this;
   }
 
-  public ProcessingContext eventApplier(final EventApplier eventApplier) {
+  public StreamProcessorContext eventApplier(final EventApplier eventApplier) {
     this.eventApplier = eventApplier;
     return this;
   }
 
-  public ProcessingContext processorMode(final StreamProcessorMode streamProcessorMode) {
+  public StreamProcessorContext processorMode(final StreamProcessorMode streamProcessorMode) {
     this.streamProcessorMode = streamProcessorMode;
     return this;
   }
@@ -136,8 +132,15 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return zeebeState.getKeyGeneratorControls();
   }
 
+  @Override
   public MutableLastProcessedPositionState getLastProcessedPositionState() {
     return zeebeState.getLastProcessedPositionState();
+  }
+
+  @Override
+  public StreamProcessorContext listener(final StreamProcessorListener streamProcessorListener) {
+    this.streamProcessorListener = streamProcessorListener;
+    return this;
   }
 
   @Override
@@ -148,16 +151,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   @Override
   public LogStream getLogStream() {
     return logStream;
-  }
-
-  @Override
-  public LogStreamReader getLogStreamReader() {
-    return logStreamReader;
-  }
-
-  @Override
-  public int getMaxFragmentSize() {
-    return maxFragmentSize;
   }
 
   @Override
@@ -174,33 +167,33 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   }
 
   @Override
-  public RecordValues getRecordValues() {
-    return recordValues;
-  }
-
-  @Override
-  public RecordProcessorMap getRecordProcessorMap() {
-    return recordProcessorMap;
-  }
-
-  @Override
   public MutableZeebeState getZeebeState() {
     return zeebeState;
   }
 
   @Override
+  public int getPartitionId() {
+    return getLogStream().getPartitionId();
+  }
+
+  public LogStreamReader getLogStreamReader() {
+    return logStreamReader;
+  }
+
+  public RecordValues getRecordValues() {
+    return recordValues;
+  }
+
+  public RecordProcessorMap getRecordProcessorMap() {
+    return recordProcessorMap;
+  }
+
   public TransactionContext getTransactionContext() {
     return transactionContext;
   }
 
-  @Override
   public BooleanSupplier getAbortCondition() {
     return abortCondition;
-  }
-
-  @Override
-  public EventApplier getEventApplier() {
-    return eventApplier;
   }
 
   public StreamProcessorListener getStreamProcessorListener() {

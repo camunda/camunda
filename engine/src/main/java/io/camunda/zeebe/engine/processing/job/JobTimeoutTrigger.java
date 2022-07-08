@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -23,14 +23,14 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
 
   private ScheduledTimer timer;
   private TypedCommandWriter writer;
-  private ReadonlyProcessingContext processingContext;
+  private ReadonlyStreamProcessorContext processingContext;
 
   public JobTimeoutTrigger(final JobState state) {
     this.state = state;
   }
 
   @Override
-  public void onRecovered(final ReadonlyProcessingContext processingContext) {
+  public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
     this.processingContext = processingContext;
     timer =
         this.processingContext

@@ -19,6 +19,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -90,7 +92,7 @@ public final class StreamProcessorReprocessingTest {
                     .withListener(
                         new StreamProcessorLifecycleAware() {
                           @Override
-                          public void onRecovered(final ReadonlyProcessingContext context) {
+                          public void onRecovered(final ReadonlyStreamProcessorContext context) {
                             onRecoveredLatch.countDown();
                           }
                         }));
@@ -144,7 +146,7 @@ public final class StreamProcessorReprocessingTest {
                     .withListener(
                         new StreamProcessorLifecycleAware() {
                           @Override
-                          public void onRecovered(final ReadonlyProcessingContext context) {
+                          public void onRecovered(final ReadonlyStreamProcessorContext context) {
                             countDownLatch.countDown();
                           }
                         }));
@@ -330,7 +332,7 @@ public final class StreamProcessorReprocessingTest {
                 processors.withListener(
                     new StreamProcessorLifecycleAware() {
                       @Override
-                      public void onRecovered(final ReadonlyProcessingContext context) {
+                      public void onRecovered(final ReadonlyStreamProcessorContext context) {
                         recoveredLatch.countDown();
                       }
                     }));
@@ -372,7 +374,7 @@ public final class StreamProcessorReprocessingTest {
                 processors.withListener(
                     new StreamProcessorLifecycleAware() {
                       @Override
-                      public void onRecovered(final ReadonlyProcessingContext context) {
+                      public void onRecovered(final ReadonlyStreamProcessorContext context) {
                         recoveredLatch.countDown();
                       }
                     }));
@@ -422,7 +424,7 @@ public final class StreamProcessorReprocessingTest {
                 processors.withListener(
                     new StreamProcessorLifecycleAware() {
                       @Override
-                      public void onRecovered(final ReadonlyProcessingContext context) {
+                      public void onRecovered(final ReadonlyStreamProcessorContext context) {
                         recoveredLatch.countDown();
                       }
                     }));

@@ -12,14 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
 import io.camunda.zeebe.engine.processing.message.command.PartitionCommandSender;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandMessageHandler;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
@@ -195,9 +195,9 @@ public final class EngineRule extends ExternalResource {
 
           environmentRule.startTypedStreamProcessor(
               partitionId,
-              (processingContext) ->
+              (recordPRocessorContext) ->
                   EngineProcessors.createEngineProcessors(
-                          processingContext.listener(
+                          recordPRocessorContext.listener(
                               new StreamProcessorListener() {
                                 @Override
                                 public void onProcessed(final TypedRecord<?> processedCommand) {
@@ -439,8 +439,8 @@ public final class EngineRule extends ExternalResource {
     private TypedRecordImpl typedEvent;
 
     @Override
-    public void onRecovered(final ReadonlyProcessingContext context) {
-      final int partitionId = context.getLogStream().getPartitionId();
+    public void onRecovered(final ReadonlyStreamProcessorContext context) {
+      final int partitionId = context.getPartitionId();
       typedEvent = new TypedRecordImpl(partitionId);
       final ActorControl actor = context.getActor();
 
@@ -480,7 +480,7 @@ public final class EngineRule extends ExternalResource {
     private final ActorFuture<Void> reprocessingComplete = new CompletableActorFuture<>();
 
     @Override
-    public void onRecovered(final ReadonlyProcessingContext context) {
+    public void onRecovered(final ReadonlyStreamProcessorContext context) {
       reprocessingComplete.complete(null);
     }
 
