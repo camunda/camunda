@@ -88,8 +88,8 @@ public final class GatewayIntegrationTest {
     final var error = errorResponse.get();
     assertThat(error).isInstanceOf(BrokerRejectionException.class);
     final BrokerRejection rejection = ((BrokerRejectionException) error).getRejection();
-    assertThat(rejection.getType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getReason())
+    assertThat(rejection.type()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.reason())
         .isEqualTo("Expected at least a bpmnProcessId or a key greater than -1, but none given");
   }
 }
