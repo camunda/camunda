@@ -350,7 +350,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>3.0.0-M6</version>
+          <version>3.0.0-M7</version>
           <configuration>
             <forkCount>${env.LIMITS_CPU}</forkCount>
             <reuseForks>true</reuseForks>
