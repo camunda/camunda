@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.io.File;
 
 /** Raft log builder. */
+@SuppressWarnings("UnusedReturnValue")
 public class SegmentedJournalBuilder {
 
   private static final String DEFAULT_NAME = "journal";
@@ -145,16 +146,14 @@ public class SegmentedJournalBuilder {
   }
 
   public SegmentedJournal build() {
-    final JournalIndex journalIndex = new SparseJournalIndex(journalIndexDensity);
+    final var journalIndex = new SparseJournalIndex(journalIndexDensity);
+    final var segmentLoader = new SegmentLoader(preallocateSegmentFiles);
     final var segmentsManager =
         new SegmentsManager(
-            journalIndex,
-            maxSegmentSize,
-            directory,
-            lastWrittenIndex,
-            name,
-            preallocateSegmentFiles);
+            journalIndex, maxSegmentSize, directory, lastWrittenIndex, name, segmentLoader);
+    final var journalMetrics = new JournalMetrics(name);
+
     return new SegmentedJournal(
-        name, directory, maxSegmentSize, freeDiskSpace, journalIndex, segmentsManager);
+        directory, maxSegmentSize, freeDiskSpace, journalIndex, segmentsManager, journalMetrics);
   }
 }
