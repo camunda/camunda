@@ -28,15 +28,13 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Create new segments. Load existing segments from the segment file. Keep track of all segments.
- */
+/** Create new segments. Load existing segments from the disk. Keep track of all segments. */
 final class SegmentsManager {
 
   private static final int FIRST_SEGMENT_ID = 1;
   private static final int INITIAL_INDEX = 1;
 
-  private static final Logger log = LoggerFactory.getLogger(SegmentsManager.class);
+  private static final Logger LOG = LoggerFactory.getLogger(SegmentsManager.class);
 
   private final JournalMetrics journalMetrics;
   private final NavigableMap<Long, JournalSegment> segments = new ConcurrentSkipListMap<>();
@@ -53,7 +51,7 @@ final class SegmentsManager {
 
   private final String name;
 
-  public SegmentsManager(
+  SegmentsManager(
       final JournalIndex journalIndex,
       final int maxSegmentSize,
       final File directory,
@@ -73,7 +71,7 @@ final class SegmentsManager {
         .values()
         .forEach(
             segment -> {
-              log.debug("Closing segment: {}", segment);
+              LOG.debug("Closing segment: {}", segment);
               segment.close();
             });
     currentSegment = null;
@@ -147,21 +145,21 @@ final class SegmentsManager {
       final SortedMap<Long, JournalSegment> compactSegments =
           segments.headMap(segmentEntry.getValue().index());
       if (compactSegments.isEmpty()) {
-        log.debug(
+        LOG.debug(
             "No segments can be deleted with index < {} (first log index: {})",
             index,
             getFirstIndex());
         return;
       }
 
-      log.debug(
+      LOG.debug(
           "{} - Deleting log up from {} up to {} (removing {} segments)",
           name,
           getFirstIndex(),
           compactSegments.get(compactSegments.lastKey()).index(),
           compactSegments.size());
       for (final JournalSegment segment : compactSegments.values()) {
-        log.trace("{} - Deleting segment: {}", name, segment);
+        LOG.trace("{} - Deleting segment: {}", name, segment);
         segment.delete();
         journalMetrics.decSegmentCount();
       }
@@ -230,6 +228,7 @@ final class SegmentsManager {
     }
   }
 
+  /** Loads existing segments from the disk * */
   void open() {
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
@@ -283,7 +282,7 @@ final class SegmentsManager {
       final File file = files.get(i);
 
       try {
-        log.debug("Found segment file: {}", file.getName());
+        LOG.debug("Found segment file: {}", file.getName());
         final JournalSegment segment = segmentLoader.loadExistingSegment(file);
 
         if (i > 0) {
@@ -326,7 +325,7 @@ final class SegmentsManager {
       return false;
     }
 
-    log.debug(
+    LOG.debug(
         "Found corrupted segment after last ack'ed index {}. Deleting segments {} - {}",
         lastWrittenIndex,
         files.get(failedIndex).getName(),
@@ -372,7 +371,7 @@ final class SegmentsManager {
             path -> JournalSegmentFile.isDeletedSegmentFile(name, path.getFileName().toString()))) {
       segmentsToDelete.forEach(this::deleteDeferredFile);
     } catch (final IOException e) {
-      log.warn(
+      LOG.warn(
           "Could not delete segment files marked for deletion in {}. This can result in unnecessary disk usage.",
           directory.toPath(),
           e);
@@ -383,7 +382,7 @@ final class SegmentsManager {
     try {
       Files.deleteIfExists(segmentFileToDelete);
     } catch (final IOException e) {
-      log.warn(
+      LOG.warn(
           "Could not delete file {} which is marked for deletion. This can result in unnecessary disk usage.",
           segmentFileToDelete,
           e);

@@ -25,13 +25,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 /** Create a segment file. Load a segment from the segment file. */
-public class SegmentLoader {
+final class SegmentLoader {
 
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
   private final long lastWrittenIndex;
   private final JournalIndex journalIndex;
 
-  public SegmentLoader(final long lastWrittenIndex, final JournalIndex journalIndex) {
+  SegmentLoader(final long lastWrittenIndex, final JournalIndex journalIndex) {
     this.lastWrittenIndex = lastWrittenIndex;
     this.journalIndex = journalIndex;
   }
