@@ -285,18 +285,21 @@ public class ActorTask {
   }
 
   public void onFailure(final Throwable failure) {
-    switch (lifecyclePhase) {
+    final var currentPhase = lifecyclePhase;
+    switch (currentPhase) {
       case STARTING -> {
         Loggers.ACTOR_LOGGER.error(
             "Actor failed in phase 'STARTING'. Discard all jobs and stop immediately.", failure);
         lifecyclePhase = ActorLifecyclePhase.FAILED;
         discardNextJobs();
         startingFuture.completeExceptionally(failure);
-        closeFuture.complete(null);
+        closeFuture.completeExceptionally(failure);
       }
-      case CLOSING -> {
+      case CLOSING, CLOSE_REQUESTED -> {
         Loggers.ACTOR_LOGGER.error(
-            "Actor failed in phase 'CLOSING'. Discard all jobs and stop immediately.", failure);
+            "Actor failed in phase '{}'. Discard all jobs and stop immediately.",
+            currentPhase,
+            failure);
         lifecyclePhase = ActorLifecyclePhase.FAILED;
         discardNextJobs();
         closeFuture.completeExceptionally(failure);
@@ -548,7 +551,7 @@ public class ActorTask {
     }
 
     if (previousPhase != ActorLifecyclePhase.CLOSED) {
-      closeFuture.complete(null);
+      closeFuture.completeExceptionally(error);
     }
 
     discardNextJobs();
