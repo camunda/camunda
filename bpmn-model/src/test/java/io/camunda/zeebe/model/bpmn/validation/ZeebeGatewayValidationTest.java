@@ -42,6 +42,19 @@ public class ZeebeGatewayValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
+            .inclusiveGateway("gateway")
+            .sequenceFlowId("flow1")
+            .endEvent()
+            .moveToLastInclusiveGateway()
+            .sequenceFlowId("flow2")
+            .conditionExpression("condition")
+            .endEvent()
+            .done(),
+        singletonList(expect("flow1", "Must have a condition or be default flow"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
             .exclusiveGateway("gateway")
             .sequenceFlowId("flow")
             .condition("name", "foo")
@@ -51,6 +64,10 @@ public class ZeebeGatewayValidationTest extends AbstractZeebeValidationTest {
         singletonList(expect("gateway", "Default flow must not have a condition"))
       },
       {"default-flow.bpmn", singletonList(expect("gateway", "Default flow must start at gateway"))},
+      {
+        "default-flow-inclusive-gateway.bpmn",
+        singletonList(expect("inclusiveGateway", "Default flow must start at gateway"))
+      },
       {
         Bpmn.createExecutableProcess("process")
             .startEvent("start")

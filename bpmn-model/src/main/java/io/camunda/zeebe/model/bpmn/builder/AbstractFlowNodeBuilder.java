@@ -408,6 +408,10 @@ public abstract class AbstractFlowNodeBuilder<
     return findLastGateway(ExclusiveGateway.class).builder();
   }
 
+  public AbstractInclusiveGatewayBuilder<?> moveToLastInclusiveGateway() {
+    return findLastGateway(InclusiveGateway.class).builder();
+  }
+
   public AbstractFlowNodeBuilder<?, ?> moveToNode(final String identifier) {
     final ModelElementInstance instance = modelInstance.getModelElementById(identifier);
     if (instance instanceof FlowNode) {

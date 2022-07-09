@@ -16,6 +16,7 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.ExclusiveGateway;
+import io.camunda.zeebe.model.bpmn.instance.InclusiveGateway;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
@@ -33,6 +34,15 @@ public class SequenceFlowValidator implements ModelElementValidator<SequenceFlow
 
     if (element.getSource() instanceof ExclusiveGateway) {
       final ExclusiveGateway gateway = (ExclusiveGateway) element.getSource();
+      if (gateway.getOutgoing().size() > 1
+          && gateway.getDefault() != element
+          && element.getConditionExpression() == null) {
+        validationResultCollector.addError(0, "Must have a condition or be default flow");
+      }
+    }
+
+    if (element.getSource() instanceof InclusiveGateway) {
+      final InclusiveGateway gateway = (InclusiveGateway) element.getSource();
       if (gateway.getOutgoing().size() > 1
           && gateway.getDefault() != element
           && element.getConditionExpression() == null) {

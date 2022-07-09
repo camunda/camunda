@@ -31,17 +31,16 @@ public class FlowNodeValidator implements ModelElementValidator<FlowNode> {
   @Override
   public void validate(
       final FlowNode element, final ValidationResultCollector validationResultCollector) {
-    if (!(element instanceof ExclusiveGateway) && !(element instanceof InclusiveGateway)) {
-      final boolean hasAnyConditionalFlow =
-          element.getOutgoing().stream()
-              .filter(s -> s.getConditionExpression() != null)
-              .findAny()
-              .isPresent();
+    if (element instanceof ExclusiveGateway || element instanceof InclusiveGateway) {
+      return;
+    }
 
-      if (hasAnyConditionalFlow) {
-        validationResultCollector.addError(
-            0, "Conditional sequence flows are only supported at exclusive or inclusive gateway");
-      }
+    final boolean hasAnyConditionalFlow =
+        element.getOutgoing().stream().anyMatch(s -> s.getConditionExpression() != null);
+
+    if (hasAnyConditionalFlow) {
+      validationResultCollector.addError(
+          0, "Conditional sequence flows are only supported at exclusive or inclusive gateway");
     }
   }
 }
