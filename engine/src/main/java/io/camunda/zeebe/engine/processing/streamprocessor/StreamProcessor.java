@@ -360,7 +360,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   private void onFailure(final Throwable throwable) {
     LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), throwable);
-    actor.fail();
+    actor.fail(throwable);
     if (!openFuture.isDone()) {
       openFuture.completeExceptionally(throwable);
     }
