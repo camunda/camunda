@@ -78,7 +78,7 @@ final class RootlessImageTest {
             .build()) {
       // when
       client
-          .newDeployResourceCommand()
+          .newDeployCommand()
           .addProcessModel(process, "process.bpmn")
           .send()
           .join(10, TimeUnit.SECONDS);
