@@ -1,4 +1,5 @@
 # Event scopes
+
 To understand what event scopes are, we first need to understand what events are. This description provides a summary of the BPMN 2.0 specification and combines it with how it works in Zeebe.
 
 In BPMN, **events** are flow nodes that represent that something can happen that affects the flow of the process.
