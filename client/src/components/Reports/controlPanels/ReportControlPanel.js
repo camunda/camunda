@@ -260,6 +260,7 @@ export default withErrorHandling(
           tableColumns: {columnOrder, includedColumns, excludedColumns},
           processPart,
           heatmapTargetValue: {values},
+          targetValue,
         },
         definitions,
       } = this.props.report.data;
@@ -318,6 +319,11 @@ export default withErrorHandling(
         !checkAllFlowNodesExist(this.state.flowNodeNames, targetFlowNodes)
       ) {
         change.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
+      }
+
+      // disable isKpi when adding more than one definition since it is not supported
+      if (newDefinitions.length > 1 && targetValue?.isKpi) {
+        change.configuration.targetValue = {isKpi: {$set: false}};
       }
 
       return change;

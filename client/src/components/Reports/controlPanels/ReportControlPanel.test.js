@@ -67,6 +67,7 @@ const report = {
       heatmapTargetValue: {values: {}},
       customBucket: {active: false},
       distributeByCustomBucket: {active: false},
+      targetValue: {isKpi: false},
     },
   },
   result: {instanceCount: 3, instanceCountWithoutFilters: 5},
@@ -701,4 +702,43 @@ it('should disable bucket size configuration when changing definitions', async (
   expect(spy.mock.calls[0][0].configuration.distributeByCustomBucket).toEqual({
     active: {$set: false},
   });
+});
+
+it('should reset kpi status when having more than one definition', async () => {
+  const reportWithConfig = update(report, {
+    data: {
+      definitions: {
+        $set: [
+          {
+            key: 'aKey',
+            versions: ['aVersion'],
+            tenantIds: [],
+            identifier: 'def1',
+          },
+          {
+            key: 'aKey',
+            versions: ['aVersion'],
+            tenantIds: [],
+            identifier: 'def2',
+          },
+        ],
+      },
+      configuration: {
+        targetValue: {
+          isKpi: {
+            $set: true,
+          },
+        },
+      },
+    },
+  });
+
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
+  );
+
+  await node.find(DefinitionList).prop('onChange')({}, 0);
+
+  expect(spy.mock.calls[0][0].configuration.targetValue.isKpi).toBeDefined();
 });
