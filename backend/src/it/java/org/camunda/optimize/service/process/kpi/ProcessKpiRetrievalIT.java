@@ -409,6 +409,36 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
     assertThat(processes.get(0).getKpis()).hasSize(1);
   }
 
+  @Test
+  public void multiProcessGroupByProcessReportDoesNotGetReturned() {
+    // given
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram("secondDefinitionKey"));
+    importAllEngineEntitiesFromScratch();
+    ProcessReportDataDto multiProcessReport = TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE_BY_PROCESS)
+      .definitions(List.of(
+        new ReportDataDefinitionDto(PROCESS_DEFINITION_KEY),
+        new ReportDataDefinitionDto("secondDefinitionKey")
+      )).build();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto =
+      new SingleProcessReportDefinitionRequestDto();
+    multiProcessReport.getConfiguration().getTargetValue().setIsKpi(true);
+    multiProcessReport.getConfiguration().getTargetValue().getCountProgress().setIsBelow(true);
+    multiProcessReport.getConfiguration().getTargetValue().getCountProgress().setTarget("9999999");
+    singleProcessReportDefinitionRequestDto.setData(multiProcessReport);
+    reportClient.createSingleProcessReport(singleProcessReportDefinitionRequestDto);
+
+    // when
+    final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews();
+
+    // then
+    assertThat(processes).hasSize(2);
+    assertThat(processes).hasSize(2)
+      .flatMap(ProcessOverviewResponseDto::getKpis)
+      .isEmpty();
+  }
+
   private KpiResultDto createExpectedKpiResponse(final String reportId, final String target) {
     KpiResultDto kpiResponseDto = new KpiResultDto();
     kpiResponseDto.setReportId(reportId);

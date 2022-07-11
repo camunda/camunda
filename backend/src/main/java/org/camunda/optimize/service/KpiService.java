@@ -94,22 +94,25 @@ public class KpiService {
         @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final SingleReportEvaluationResult<Double> evaluationResult
           = (SingleReportEvaluationResult<Double>) reportEvaluationHandler
           .evaluateReport(ReportEvaluationInfo.builder(report).timezone(timezone).build()).getEvaluationResult();
-        final Double evaluationValue = evaluationResult.getFirstCommandResult().getFirstMeasureData();
-        KpiResultDto kpiResponseDto = new KpiResultDto();
-        getTargetAndUnit(report)
-          .ifPresent(targetAndUnit -> {
-            kpiResponseDto.setTarget(targetAndUnit.getTarget());
-            kpiResponseDto.setUnit(targetAndUnit.getTargetValueUnit());
-          });
-        kpiResponseDto.setReportId(report.getId());
-        kpiResponseDto.setReportName(report.getName());
-        if (evaluationValue != null) {
-          kpiResponseDto.setValue(evaluationValue.toString());
+        if (evaluationResult.getFirstCommandResult().getFirstMeasureData() instanceof Double
+          || evaluationResult.getFirstCommandResult().getFirstMeasureData() == null) {
+          final Double evaluationValue = evaluationResult.getFirstCommandResult().getFirstMeasureData();
+          KpiResultDto kpiResponseDto = new KpiResultDto();
+          getTargetAndUnit(report)
+            .ifPresent(targetAndUnit -> {
+              kpiResponseDto.setTarget(targetAndUnit.getTarget());
+              kpiResponseDto.setUnit(targetAndUnit.getTargetValueUnit());
+            });
+          kpiResponseDto.setReportId(report.getId());
+          kpiResponseDto.setReportName(report.getName());
+          if (evaluationValue != null) {
+            kpiResponseDto.setValue(evaluationValue.toString());
+          }
+          kpiResponseDto.setBelow(getIsBelow(report));
+          kpiResponseDto.setType(getKpiType(report));
+          kpiResponseDto.setMeasure(getViewProperty(report).orElse(null));
+          kpiResponseDtos.add(kpiResponseDto);
         }
-        kpiResponseDto.setBelow(getIsBelow(report));
-        kpiResponseDto.setType(getKpiType(report));
-        kpiResponseDto.setMeasure(getViewProperty(report).orElse(null));
-        kpiResponseDtos.add(kpiResponseDto);
       }
     }
     return kpiResponseDtos;
