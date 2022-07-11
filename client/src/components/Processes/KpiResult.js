@@ -42,14 +42,15 @@ export default function KpiResult({kpis, displayTip}) {
             <div className="reportValues">
               <span
                 className={classnames(
-                  {success: isSuccessful({target, value, isBelow})},
+                  {success: isSuccessful({target, unit, value, isBelow, measure})},
                   'reportValue'
                 )}
               >
                 {t('common.value')}: {formatters[measure](value)}
               </span>
               <span>
-                {t('report.config.goal.target')}: {target} {unit}
+                {t('report.config.goal.target')}: {target}
+                {measure === 'percentage' && '%'} {unit}
               </span>
             </div>
           </div>

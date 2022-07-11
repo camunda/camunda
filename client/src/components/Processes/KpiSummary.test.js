@@ -36,12 +36,6 @@ it('should not display the summary if no goals are defined', () => {
   expect(node.isEmptyRender()).toBe(true);
 });
 
-it('should display no data if all goals has no value', () => {
-  const node = shallow(<KpiSummary kpis={[{value: null}, {value: null}]} />);
-
-  expect(node).toIncludeText('No Data');
-});
-
 it('should display two indicators if one goal succeeds and the other fails', () => {
   const node = shallow(<KpiSummary kpis={[succeededKpi, failedKpi]} />);
 

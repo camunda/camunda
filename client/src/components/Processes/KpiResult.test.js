@@ -12,6 +12,14 @@ import {isSuccessful} from './service';
 import KpiResult from './KpiResult';
 
 jest.mock('./service', () => ({isSuccessful: jest.fn()}));
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  formatters: {
+    duration: (value) => value + 'ms',
+    percentage: (value) => value + '%',
+    frequency: (value) => value,
+  },
+}));
 
 const kpis = [
   {
@@ -67,7 +75,7 @@ it('should display kpi value and target in correct format', () => {
           reportName: 'report Name',
           value: '123',
           target: '300',
-          unit: 'days',
+          unit: null,
           isBelow: true,
           measure: 'percentage',
         },
@@ -76,5 +84,21 @@ it('should display kpi value and target in correct format', () => {
   );
 
   expect(node.find('.reportValues span').at(0)).toIncludeText('123%');
-  expect(node.find('.reportValues span').at(1)).toIncludeText('300 days');
+  expect(node.find('.reportValues span').at(1)).toIncludeText('300%');
+
+  node.setProps({
+    kpis: [
+      {
+        reportName: 'report Name',
+        value: '12',
+        target: '4',
+        unit: 'days',
+        isBelow: true,
+        measure: 'duration',
+      },
+    ],
+  });
+
+  expect(node.find('.reportValues span').at(0)).toIncludeText('12ms');
+  expect(node.find('.reportValues span').at(1)).toIncludeText('4 days');
 });

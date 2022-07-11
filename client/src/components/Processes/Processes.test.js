@@ -128,3 +128,37 @@ it('should pass loaded reports and filters to the management dashboard view comp
     testDashboard.availableFilters
   );
 });
+
+it('should filter out invalid kpis', async () => {
+  const validKpi = {
+    reportName: 'report Name',
+    type: 'quality',
+    value: '123',
+    target: '300',
+    isBelow: true,
+    measure: 'frequency',
+  };
+
+  loadProcesses.mockReturnValueOnce([
+    {
+      kpis: [
+        {
+          ...validKpi,
+          value: null,
+        },
+        {
+          ...validKpi,
+          target: null,
+        },
+        validKpi,
+      ],
+      linkToDashboard: 'dashboardLink',
+    },
+  ]);
+  const node = shallow(<Processes {...props} />);
+
+  await runAllEffects();
+
+  const entityData = node.find(EntityList).prop('data');
+  expect(entityData[0].meta[2].props.content.props.kpis).toEqual([validKpi]);
+});
