@@ -95,7 +95,9 @@ class ProcessDiagram extends NetworkReconnectionHandler {
     });
   };
 
-  fetchProcessDiagram = this.retryOnConnectionLost(
+  fetchProcessDiagram: (
+    processId: ProcessInstanceEntity['processId']
+  ) => Promise<void> = this.retryOnConnectionLost(
     async (processId: ProcessInstanceEntity['processId']) => {
       try {
         this.startFetching();

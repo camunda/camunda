@@ -25,8 +25,7 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {processInstancesDiagramStore} from 'modules/stores/processInstancesDiagram';
-import {processStatisticsStore} from 'modules/stores/processStatistics';
+import {processDiagramStore} from 'modules/stores/processDiagram';
 import {operationsStore} from 'modules/stores/operations';
 import {processesStore} from 'modules/stores/processes';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -80,8 +79,7 @@ describe('Instances', () => {
   afterEach(() => {
     processInstancesSelectionStore.reset();
     processInstancesStore.reset();
-    processInstancesDiagramStore.reset();
-    processStatisticsStore.reset();
+    processDiagramStore.reset();
     operationsStore.reset();
     processesStore.reset();
   });
@@ -227,32 +225,25 @@ describe('Instances', () => {
     });
 
     await waitFor(() =>
-      expect(processInstancesDiagramStore.state.status).toBe('fetched')
+      expect(processDiagramStore.state.status).toBe('fetched')
     );
-    await waitFor(() =>
-      expect(processStatisticsStore.state.isLoading).toBe(false)
-    );
-    expect(processInstancesDiagramStore.state.diagramModel).not.toBe(null);
-    expect(processStatisticsStore.state.statistics).toEqual(
+
+    expect(processDiagramStore.state.diagramModel).not.toBe(null);
+    expect(processDiagramStore.state.statistics).toEqual(
       firstProcessStatisticsResponse
     );
 
     await user.click(screen.getByText(/go to event based/i));
 
     await waitFor(() =>
-      expect(processInstancesDiagramStore.state.status).toBe('fetching')
-    );
-    await waitFor(() =>
-      expect(processStatisticsStore.state.isLoading).toBe(true)
+      expect(processDiagramStore.state.status).toBe('fetching')
     );
 
     await waitFor(() =>
-      expect(processInstancesDiagramStore.state.status).toBe('fetched')
+      expect(processDiagramStore.state.status).toBe('fetched')
     );
-    expect(processInstancesDiagramStore.state.diagramModel).not.toBe(null);
-    expect(processStatisticsStore.state.statistics).toEqual(
-      mockProcessStatistics
-    );
+    expect(processDiagramStore.state.diagramModel).not.toBe(null);
+    expect(processDiagramStore.state.statistics).toEqual(mockProcessStatistics);
 
     mockServer.use(
       rest.post('/api/process-instances', (_, res, ctx) =>
@@ -263,7 +254,7 @@ describe('Instances', () => {
     await user.click(screen.getByText(/go to no filters/i));
 
     await waitFor(() =>
-      expect(processStatisticsStore.state.statistics).toEqual([])
+      expect(processDiagramStore.state.statistics).toEqual([])
     );
   });
 

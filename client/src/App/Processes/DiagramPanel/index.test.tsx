@@ -19,9 +19,9 @@ import {
 } from 'modules/testUtils';
 import {DiagramPanel} from './index';
 import {processesStore} from 'modules/stores/processes';
-import {processInstancesDiagramStore} from 'modules/stores/processInstancesDiagram';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {processDiagramStore} from 'modules/stores/processDiagram';
 
 jest.mock('modules/utils/bpmn');
 
@@ -58,7 +58,7 @@ describe('DiagramPanel', () => {
   });
 
   afterEach(() => {
-    processInstancesDiagramStore.reset();
+    processDiagramStore.reset();
     processesStore.reset();
   });
 
@@ -68,20 +68,19 @@ describe('DiagramPanel', () => {
     });
 
     expect(await screen.findByText('Big variable process')).toBeInTheDocument();
+    expect(await screen.findByTestId('diagram')).toBeInTheDocument();
   });
 
   it('should show the loading indicator, when diagram is loading', async () => {
     render(<DiagramPanel />, {
-      wrapper: getWrapper(),
+      wrapper: getWrapper('/processes?process=bigVarProcess&version=1'),
     });
-    processInstancesDiagramStore.fetchProcessXml('1');
 
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
     expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
 
     await waitForElementToBeRemoved(screen.getByTestId('diagram-spinner'));
-
-    expect(screen.getByTestId('diagram')).toBeInTheDocument();
+    expect(await screen.findByTestId('diagram')).toBeInTheDocument();
   });
 
   it('should show an empty state message when no process is selected', async () => {
@@ -135,6 +134,9 @@ describe('DiagramPanel', () => {
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res) =>
         res.networkError('A network error')
+      ),
+      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessStatistics))
       )
     );
 
@@ -142,7 +144,7 @@ describe('DiagramPanel', () => {
       wrapper: getWrapper(),
     });
 
-    processInstancesDiagramStore.fetchProcessXml('1');
+    processDiagramStore.fetchProcessDiagram('1');
 
     expect(
       await screen.findByText('Diagram could not be fetched')
@@ -154,10 +156,13 @@ describe('DiagramPanel', () => {
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
+      ),
+      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessStatistics))
       )
     );
 
-    processInstancesDiagramStore.fetchProcessXml('1');
+    processDiagramStore.fetchProcessDiagram('2');
 
     await waitForElementToBeRemoved(screen.getByTestId('diagram-spinner'));
 
@@ -168,10 +173,13 @@ describe('DiagramPanel', () => {
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''), ctx.status(500))
+      ),
+      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessStatistics))
       )
     );
 
-    processInstancesDiagramStore.fetchProcessXml('1');
+    processDiagramStore.fetchProcessDiagram('3');
 
     expect(
       await screen.findByText('Diagram could not be fetched')

@@ -12,9 +12,7 @@ import {DiagramPanel} from './DiagramPanel';
 import {ListPanel} from './ListPanel';
 import {OperationsPanel} from './OperationsPanel';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {processStatisticsStore} from 'modules/stores/processStatistics';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processInstancesDiagramStore} from 'modules/stores/processInstancesDiagram';
 import {processesStore} from 'modules/stores/processes';
 import {Filters} from './Filters';
 import {
@@ -40,13 +38,8 @@ const Processes: React.FC = observer(() => {
   const navigate = useNavigate();
 
   const filters = getProcessInstanceFilters(location.search);
-  const {process, version} = filters;
-  const processId =
-    process !== undefined && version !== undefined
-      ? processesStore.versionsByProcess?.[process]?.[parseInt(version) - 1]?.id
-      : undefined;
+  const {process} = filters;
   const {status: processesStatus} = processesStore.state;
-  const isSingleProcessSelected = processId !== undefined;
   const filtersJSON = JSON.stringify(filters);
 
   const notifications = useNotifications();
@@ -63,15 +56,12 @@ const Processes: React.FC = observer(() => {
   useEffect(() => {
     processInstancesSelectionStore.init();
     processInstancesStore.init();
-    processStatisticsStore.init();
     processesStore.fetchProcesses();
 
     document.title = PAGE_TITLE.INSTANCES;
 
     return () => {
       processInstancesSelectionStore.reset();
-      processInstancesDiagramStore.reset();
-      processStatisticsStore.reset();
       processInstancesStore.reset();
       processesStore.reset();
     };
@@ -89,31 +79,18 @@ const Processes: React.FC = observer(() => {
 
   useEffect(() => {
     if (processesStatus === 'fetched') {
-      if (processId === undefined) {
-        processInstancesDiagramStore.reset();
-        processStatisticsStore.reset();
-
-        if (
-          process !== undefined &&
-          processesStore.processes.filter((item) => item.value === process)
-            .length === 0
-        ) {
-          navigate(deleteSearchParams(location, ['process', 'version']));
-          notifications.displayNotification('error', {
-            headline: `Process could not be found`,
-          });
-        }
-      } else {
-        processInstancesDiagramStore.fetchProcessXml(processId);
+      if (
+        process !== undefined &&
+        processesStore.processes.filter((item) => item.value === process)
+          .length === 0
+      ) {
+        navigate(deleteSearchParams(location, ['process', 'version']));
+        notifications.displayNotification('error', {
+          headline: `Process could not be found`,
+        });
       }
     }
-  }, [process, processId, navigate, processesStatus, notifications, location]);
-
-  useEffect(() => {
-    if (isSingleProcessSelected) {
-      processStatisticsStore.fetchProcessStatistics();
-    }
-  }, [location.search, isSingleProcessSelected]);
+  }, [process, navigate, processesStatus, notifications, location]);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [clientHeight, setClientHeight] = useState(0);

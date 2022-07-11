@@ -11,6 +11,7 @@ import {NotificationProvider} from 'modules/notifications';
 import {Login} from './Login';
 import {Dashboard} from './Dashboard';
 import {Processes} from './Processes';
+import {Processes as ProcessesLegacy} from './Processes/index.legacy';
 import {ProcessInstance} from './ProcessInstance';
 import {Decisions} from './Decisions';
 import {DecisionInstance} from './DecisionInstance';
@@ -26,6 +27,7 @@ import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {useEffect} from 'react';
 import {tracking} from 'modules/tracking';
 import {currentTheme} from 'modules/stores/currentTheme';
+import {IS_NEXT_DIAGRAM} from 'modules/feature-flags';
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -56,7 +58,10 @@ const App: React.FC = () => {
               }
             >
               <Route index element={<Dashboard />} />
-              <Route path={Paths.processes()} element={<Processes />} />
+              <Route
+                path={Paths.processes()}
+                element={IS_NEXT_DIAGRAM ? <Processes /> : <ProcessesLegacy />}
+              />
               <Route
                 path={Paths.processInstance()}
                 element={<ProcessInstance />}

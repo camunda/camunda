@@ -8,12 +8,15 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import {Field} from 'react-final-form';
-
 import {processInstancesDiagramStore} from 'modules/stores/processInstancesDiagram';
+import {processDiagramStore} from 'modules/stores/processDiagram';
 import {Select} from './styled';
+import {IS_NEXT_DIAGRAM} from 'modules/feature-flags';
 
 const FlowNodeField: React.FC = observer(() => {
-  const {flowNodeFilterOptions} = processInstancesDiagramStore;
+  const {flowNodeFilterOptions} = IS_NEXT_DIAGRAM
+    ? processDiagramStore
+    : processInstancesDiagramStore;
   const options = [
     {
       options: [{label: '--', value: ''}, ...flowNodeFilterOptions],

@@ -6,21 +6,18 @@
  */
 
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
-import {
-  render,
-  screen,
-  waitFor,
-  within,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen, waitFor, within} from 'modules/testing-library';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {Filters} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {processesStore} from 'modules/stores/processes';
 import {processInstancesDiagramStore} from 'modules/stores/processInstancesDiagram';
+import {processDiagramStore} from 'modules/stores/processDiagram';
 import {mockProcessXML} from 'modules/testUtils';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {IS_NEXT_DIAGRAM} from 'modules/feature-flags';
+import {processInstancesStore} from 'modules/stores/processInstances';
 
 const GROUPED_BIG_VARIABLE_PROCESS = {
   bpmnProcessId: 'bigVarProcess',
@@ -88,18 +85,30 @@ describe('Filters', () => {
       ),
       rest.get('/api/processes/grouped', (_, res, ctx) =>
         res.once(ctx.json(GROUPED_PROCESSES))
+      ),
+      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
+        res.once(ctx.json({}))
       )
     );
 
     processesStore.fetchProcesses();
-    processInstancesDiagramStore.fetchProcessXml('bigVarProcess');
 
+    if (IS_NEXT_DIAGRAM) {
+      await processDiagramStore.fetchProcessDiagram('bigVarProcess');
+    } else {
+      await processInstancesDiagramStore.fetchProcessXml('bigVarProcess');
+    }
     jest.useFakeTimers();
   });
 
   afterEach(() => {
     processesStore.reset();
-    processInstancesDiagramStore.reset();
+    processInstancesStore.reset();
+    if (IS_NEXT_DIAGRAM) {
+      processDiagramStore.reset();
+    } else {
+      processInstancesDiagramStore.reset();
+    }
 
     jest.clearAllTimers();
     jest.useRealTimers();
@@ -1560,11 +1569,19 @@ describe('Filters', () => {
       ),
       rest.get('/api/processes/grouped', (_, res, ctx) =>
         res.once(ctx.json([GROUPED_BIG_VARIABLE_PROCESS]))
+      ),
+      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
+        res.once(ctx.json({}))
       )
     );
 
     processesStore.fetchProcesses();
-    processInstancesDiagramStore.fetchProcessXml('bigVarProcess');
+
+    if (!IS_NEXT_DIAGRAM) {
+      processInstancesDiagramStore.fetchProcessXml('bigVarProcess');
+    } else {
+      processDiagramStore.fetchProcessDiagram('bigVarProcess');
+    }
 
     jest.useFakeTimers();
 
@@ -1581,11 +1598,11 @@ describe('Filters', () => {
 
     await user.click(screen.getByLabelText(/version/i));
 
-    await waitForElementToBeRemoved(() =>
-      within(screen.queryByLabelText(/version/i)!).queryByRole('option', {
-        name: /all/i,
+    expect(
+      within(screen.getByLabelText(/version/i)!).getByRole('option', {
+        name: '1',
       })
-    );
+    ).toBeInTheDocument();
 
     expect(
       within(screen.queryByLabelText(/version/i)!).queryByRole('option', {

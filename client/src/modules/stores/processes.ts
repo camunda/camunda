@@ -141,6 +141,18 @@ class Processes extends NetworkReconnectionHandler {
     );
   }
 
+  getProcessId = (process?: string, version?: string) => {
+    if (process === undefined || version === undefined || version === 'all') {
+      return undefined;
+    }
+
+    const processVersions = this.versionsByProcess[process] ?? [];
+
+    return processVersions.find(
+      (processVersion) => processVersion.version === parseInt(version)
+    )?.id;
+  };
+
   resetRetryProcessesFetch = () => {
     if (this.retryProcessesFetchTimeout !== null) {
       clearTimeout(this.retryProcessesFetchTimeout);

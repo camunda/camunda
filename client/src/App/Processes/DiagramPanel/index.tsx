@@ -6,10 +6,9 @@
  */
 
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
-import DiagramLegacy, {Diagram} from 'modules/components/Diagram';
+import {Diagram} from 'modules/components/Diagram';
 import {DiagramContainer, DiagramEmptyMessage, Container} from './styled';
-import {processInstancesDiagramStore} from 'modules/stores/processInstancesDiagram';
-import {processStatisticsStore} from 'modules/stores/processStatistics';
+import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {useLocation, useNavigate, Location} from 'react-router-dom';
@@ -18,8 +17,13 @@ import {
   deleteSearchParams,
 } from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes';
-import {IS_NEXT_DIAGRAM} from 'modules/feature-flags';
 import {PanelHeader} from 'modules/components/PanelHeader';
+import {StatisticsOverlay} from './StatisticsOverlay';
+import {useEffect} from 'react';
+import {
+  processDiagramStore,
+  FlowNodeState,
+} from 'modules/stores/processDiagram';
 
 type Props = {
   children: React.ReactNode;
@@ -46,14 +50,14 @@ function setSearchParam(
 const DiagramPanel: React.FC = observer(() => {
   const navigate = useNavigate();
   const location = useLocation();
-  const {status, diagramModel, xml} = processInstancesDiagramStore.state;
-  const {selectableIds} = processInstancesDiagramStore;
-  const {statistics} = processStatisticsStore.state;
   const {process, version, flowNodeId} = getProcessInstanceFilters(
     location.search
   );
-  const isNoProcessSelected = status !== 'error' && process === undefined;
-  const isNoVersionSelected = status !== 'error' && version === 'all';
+  const isNoProcessSelected =
+    processDiagramStore.state.status !== 'error' && process === undefined;
+
+  const isNoVersionSelected =
+    processDiagramStore.state.status !== 'error' && version === 'all';
 
   const selectedProcess = processesStore.state.processes.find(
     ({bpmnProcessId}) => bpmnProcessId === process
@@ -61,10 +65,33 @@ const DiagramPanel: React.FC = observer(() => {
 
   const processName = selectedProcess?.name || selectedProcess?.bpmnProcessId;
   const isDiagramLoading =
-    processStatisticsStore.state.isLoading ||
-    status === 'fetching' ||
+    processDiagramStore.state.status === 'fetching' ||
     processesStore.state.status === 'initial' ||
     processesStore.state.status === 'fetching';
+
+  const statisticsOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type.match(/^statistics/) !== null
+  );
+
+  const processId = processesStore.getProcessId(process, version);
+
+  useEffect(() => {
+    processDiagramStore.init();
+    return () => {
+      processDiagramStore.reset();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (processId === undefined) {
+      processDiagramStore.reset();
+      return;
+    }
+
+    processDiagramStore.fetchProcessDiagram(processId);
+  }, [processId, location.search]);
+
+  const {xml} = processDiagramStore.state;
 
   return (
     <Container>
@@ -74,7 +101,7 @@ const DiagramPanel: React.FC = observer(() => {
         {isDiagramLoading ? (
           <SpinnerSkeleton data-testid="diagram-spinner" />
         ) : (
-          status === 'error' && (
+          processDiagramStore.state.status === 'error' && (
             <Message>
               <StatusMessage variant="error">
                 Diagram could not be fetched
@@ -97,28 +124,11 @@ const DiagramPanel: React.FC = observer(() => {
           </Message>
         ) : null}
 
-        {IS_NEXT_DIAGRAM ? (
-          xml !== null && (
-            <Diagram
-              xml={xml}
-              selectableFlowNodes={selectableIds}
-              selectedFlowNodeId={flowNodeId}
-              onFlowNodeSelection={(flowNodeId) => {
-                if (flowNodeId === null || flowNodeId === undefined) {
-                  navigate(deleteSearchParams(location, ['flowNodeId']));
-                } else {
-                  navigate(
-                    setSearchParam(location, ['flowNodeId', flowNodeId])
-                  );
-                }
-              }}
-            />
-          )
-        ) : // @ts-expect-error ts-migrate(2339) FIXME: Property 'definitions' does not exist on type 'nev... Remove this comment to see the full error message
-        !isNoVersionSelected && diagramModel?.definitions ? (
-          <DiagramLegacy
-            // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-            definitions={diagramModel.definitions}
+        {xml !== null && (
+          <Diagram
+            xml={xml}
+            selectableFlowNodes={processDiagramStore.selectableIds}
+            selectedFlowNodeId={flowNodeId}
             onFlowNodeSelection={(flowNodeId) => {
               if (flowNodeId === null || flowNodeId === undefined) {
                 navigate(deleteSearchParams(location, ['flowNodeId']));
@@ -126,11 +136,25 @@ const DiagramPanel: React.FC = observer(() => {
                 navigate(setSearchParam(location, ['flowNodeId', flowNodeId]));
               }
             }}
-            flowNodesStatistics={statistics}
-            selectedFlowNodeId={flowNodeId}
-            selectableFlowNodes={selectableIds}
-          />
-        ) : null}
+            overlaysData={processDiagramStore.overlaysData}
+          >
+            {statisticsOverlays?.map((overlay) => {
+              const payload = overlay.payload as {
+                flowNodeState: FlowNodeState;
+                count: number;
+              };
+
+              return (
+                <StatisticsOverlay
+                  key={`${overlay.flowNodeId}-${payload.flowNodeState}`}
+                  flowNodeState={payload.flowNodeState}
+                  count={payload.count}
+                  container={overlay.container}
+                />
+              );
+            })}
+          </Diagram>
+        )}
       </DiagramContainer>
     </Container>
   );
