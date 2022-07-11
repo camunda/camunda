@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
-import io.camunda.zeebe.scheduler.ActorControl;
 import java.time.Duration;
 
 public final class MessageObserver implements StreamProcessorLifecycleAware {
@@ -37,15 +36,15 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    final ActorControl actor = context.getActor();
+    final var scheduleService = context.getScheduleService();
     // it is safe to reuse the write because we running in the same actor/thread
     final MessageTimeToLiveChecker timeToLiveChecker =
         new MessageTimeToLiveChecker(context.getLogStreamWriter(), messageState);
-    context.getActor().runAtFixedRate(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
+    scheduleService.runAtFixedRate(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
 
     final PendingMessageSubscriptionChecker pendingSubscriptionChecker =
         new PendingMessageSubscriptionChecker(
             subscriptionCommandSender, pendingState, SUBSCRIPTION_TIMEOUT.toMillis());
-    actor.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
+    scheduleService.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
   }
 }

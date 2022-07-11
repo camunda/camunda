@@ -7,22 +7,21 @@
  */
 package io.camunda.zeebe.engine.processing.scheduled;
 
+import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.camunda.zeebe.scheduler.ActorControl;
-import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.time.Duration;
 import java.util.function.Function;
 
 public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
-  private ActorControl actor;
+  private ProcessingScheduleService scheduleService;
   private TypedStreamWriter streamWriter;
 
-  private ScheduledTimer scheduledTimer;
+  private boolean checkerRunning;
   private long nextDueDate = -1L;
   private final long timerResolution;
   private final Function<TypedCommandWriter, Long> nextDueDateSupplier;
@@ -44,14 +43,12 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
     final Duration delay = calculateDelayForNextRun(dueDate);
 
-    if (scheduledTimer == null) {
-      scheduledTimer = actor.runDelayed(delay, this::triggerEntities);
+    if (!checkerRunning) {
+      scheduleService.runDelayed(delay, this::triggerEntities);
       nextDueDate = dueDate;
 
     } else if (nextDueDate - dueDate > timerResolution) {
-      scheduledTimer.cancel();
-
-      scheduledTimer = actor.runDelayed(delay, this::triggerEntities);
+      scheduleService.runDelayed(delay, this::triggerEntities);
       nextDueDate = dueDate;
     }
   }
@@ -63,10 +60,9 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
     if (nextDueDate > 0) {
       final Duration delay = calculateDelayForNextRun(nextDueDate);
-      scheduledTimer = actor.runDelayed(delay, this::triggerEntities);
-
+      scheduleService.runDelayed(delay, this::triggerEntities);
     } else {
-      scheduledTimer = null;
+      checkerRunning = false;
     }
   }
 
@@ -86,7 +82,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
-    actor = processingContext.getActor();
+    scheduleService = processingContext.getScheduleService();
     streamWriter = processingContext.getLogStreamWriter();
     // check if timers are due after restart
     triggerEntities();
@@ -94,15 +90,12 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
   @Override
   public void onPaused() {
-    if (scheduledTimer != null) {
-      scheduledTimer.cancel();
-      scheduledTimer = null;
-    }
+    checkerRunning = false;
   }
 
   @Override
   public void onResumed() {
-    if (scheduledTimer == null) {
+    if (!checkerRunning) {
       triggerEntities();
     }
   }

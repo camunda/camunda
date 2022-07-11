@@ -21,6 +21,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.api.TypedRecord;
@@ -39,7 +40,6 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.util.exception.RecoverableException;
@@ -66,7 +66,7 @@ public final class StreamProcessorTest {
   private static final JobRecord JOB_RECORD = Records.job(1).setType("test");
 
   @Rule public final StreamProcessorRule streamProcessorRule = new StreamProcessorRule();
-  private ActorControl processingContextActor;
+  private ProcessingScheduleService scheduleService;
 
   @Test
   public void shouldCallStreamProcessorLifecycle() throws Exception {
@@ -406,7 +406,7 @@ public final class StreamProcessorTest {
 
     streamProcessorRule.startTypedStreamProcessor(
         (builder, processingContext) -> {
-          processingContextActor = processingContext.getActor();
+          scheduleService = processingContext.getScheduleService();
           final MutableZeebeState state = processingContext.getZeebeState();
           return builder.onCommand(
               ValueType.PROCESS_INSTANCE,
@@ -437,7 +437,7 @@ public final class StreamProcessorTest {
     verify(streamProcessorRule.getMockStreamProcessorListener(), TIMEOUT.times(2))
         .onProcessed(any());
 
-    processingContextActor
+    scheduleService
         .call(
             () -> {
               final var jobState = streamProcessorRule.getZeebeState().getJobState();
@@ -455,7 +455,7 @@ public final class StreamProcessorTest {
 
     streamProcessorRule.startTypedStreamProcessor(
         (builder, processingContext) -> {
-          processingContextActor = processingContext.getActor();
+          scheduleService = processingContext.getScheduleService();
           final MutableZeebeState state = processingContext.getZeebeState();
           return builder.onCommand(
               ValueType.PROCESS_INSTANCE,
@@ -481,7 +481,7 @@ public final class StreamProcessorTest {
     // then
     verify(streamProcessorRule.getMockStreamProcessorListener(), TIMEOUT).onProcessed(any());
 
-    processingContextActor
+    scheduleService
         .call(
             () -> {
               final var jobState = streamProcessorRule.getZeebeState().getJobState();

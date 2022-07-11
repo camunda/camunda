@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
+import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -15,9 +16,10 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistribu
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
-import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
@@ -30,7 +32,7 @@ public final class DeploymentDistributionBehavior {
 
   private final List<Integer> otherPartitions;
   private final DeploymentDistributor deploymentDistributor;
-  private final ActorControl processingActor;
+  private final ProcessingScheduleService scheduleService;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
 
@@ -38,14 +40,14 @@ public final class DeploymentDistributionBehavior {
       final Writers writers,
       final int partitionsCount,
       final DeploymentDistributor deploymentDistributor,
-      final ActorControl processingActor) {
+      final ProcessingScheduleService scheduleService) {
     otherPartitions =
         IntStream.range(Protocol.START_PARTITION_ID, Protocol.START_PARTITION_ID + partitionsCount)
             .filter(partition -> partition != Protocol.DEPLOYMENT_PARTITION)
             .boxed()
             .collect(Collectors.toList());
     this.deploymentDistributor = deploymentDistributor;
-    this.processingActor = processingActor;
+    this.scheduleService = scheduleService;
 
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -78,21 +80,37 @@ public final class DeploymentDistributionBehavior {
     final var deploymentPushedFuture =
         deploymentDistributor.pushDeploymentToPartition(key, partitionId, copiedDeploymentBuffer);
 
-    deploymentPushedFuture.onComplete(
-        (v, t) ->
-            processingActor.runUntilDone(
-                () -> {
-                  deploymentDistributionRecord.setPartition(partitionId);
-                  commandWriter.reset();
-                  commandWriter.appendFollowUpCommand(
-                      key, DeploymentDistributionIntent.COMPLETE, deploymentDistributionRecord);
+    scheduleService.runOnSuccess(
+        deploymentPushedFuture, new WriteDeploymentDistributionCompleteTask(partitionId, key));
+  }
 
-                  final long pos = commandWriter.flush();
-                  if (pos < 0) {
-                    processingActor.yieldThread();
-                  } else {
-                    processingActor.done();
-                  }
-                }));
+  private final class WriteDeploymentDistributionCompleteTask
+      implements Runnable, BiConsumer<Void, Throwable> {
+
+    private final int partitionId;
+    private final long key;
+
+    private WriteDeploymentDistributionCompleteTask(final int partitionId, final long key) {
+      this.partitionId = partitionId;
+      this.key = key;
+    }
+
+    @Override
+    public void run() {
+      deploymentDistributionRecord.setPartition(partitionId);
+      commandWriter.reset();
+      commandWriter.appendFollowUpCommand(
+          key, DeploymentDistributionIntent.COMPLETE, deploymentDistributionRecord);
+
+      final long pos = commandWriter.flush();
+      if (pos < 0) {
+        scheduleService.runDelayed(Duration.ofMillis(100), this);
+      }
+    }
+
+    @Override
+    public void accept(final Void unused, final Throwable throwable) {
+      run();
+    }
   }
 }

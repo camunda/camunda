@@ -11,13 +11,12 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListene
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.LastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.scheduler.ActorControl;
 
 public interface RecordProcessorContext {
 
   int getPartitionId();
 
-  ActorControl getActor();
+  ProcessingScheduleService getScheduleService();
 
   MutableZeebeState getZeebeState();
 
