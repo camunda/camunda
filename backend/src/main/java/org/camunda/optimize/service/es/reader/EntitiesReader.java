@@ -52,7 +52,7 @@ import static org.camunda.optimize.service.es.reader.ReportReader.REPORT_DATA_XM
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.OWNER;
-import static org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex.*;
+import static org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
@@ -191,7 +191,9 @@ public class EntitiesReader {
         CollectionEntity entity = readCollectionEntity(response, entityId);
         if (entityId.equals(requestDto.getCollectionId())) {
           result.setCollectionName(entity.getName());
-        } else if (entityId.equals(requestDto.getDashboardId())) {
+        }
+
+        if (entityId.equals(requestDto.getDashboardId())) { // no "else if" here in case request comes from a magic link
           result.setDashboardName(entity.getName());
         } else if (entityId.equals(requestDto.getReportId())) {
           result.setReportName(entity.getName());
@@ -221,7 +223,7 @@ public class EntitiesReader {
       throw new OptimizeRuntimeException("Cannot fetch the document count for indices created from template");
     }
     return Optional.ofNullable(byIndexNameTerms.getBucketByKey(
-        optimizeIndexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(indexMapper)))
+      optimizeIndexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(indexMapper)))
       .map(MultiBucketsAggregation.Bucket::getDocCount)
       .orElse(0L);
   }

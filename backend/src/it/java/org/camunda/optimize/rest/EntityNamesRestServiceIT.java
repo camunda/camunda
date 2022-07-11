@@ -18,6 +18,7 @@ import javax.ws.rs.core.Response;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 
 public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
@@ -137,6 +138,20 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void getEntityNames_usingMagicLinkReturnsCollectionAndDashboardNames() {
+    // given
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram("aDefinitionKey"));
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final EntityNameResponseDto response = entitiesClient.getEntityNames("aDefinitionKey", "aDefinitionKey", null, null);
+
+    // then
+    assertThat(response.getCollectionName()).isNotNull();
+    assertThat(response.getCollectionName()).isEqualTo(response.getDashboardName());
   }
 
   @SuppressWarnings(SAME_PARAM_VALUE)
