@@ -38,7 +38,15 @@ void runRelease(params) {
 def githubRelease = '''\
 #!/bin/bash
 
-ARTIFACT="camunda-operate"
+CURRENT_BRANCH=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+
+if [[ $CURRENT_BRANCH =~ ^1.3..*-SNAPSHOT$ ]]
+then
+    ARTIFACT="camunda-cloud-operate"
+else
+    ARTIFACT="camunda-operate"
+fi
+
 ZEEBE_VERSION=$(mvn help:evaluate -Dexpression=version.zeebe -q -DforceStdout)
 
 cd target/checkout/distro/target
