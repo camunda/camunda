@@ -180,7 +180,7 @@
     "processOverview": "Prozessübersicht",
     "configureProcess": "Prozess konfigurieren",
     "emailDigest": "Email Digest",
-    "digestInfo": "Der Prozess Digest sendet regelmäßige E-Mails mit dem vorhandenen KPI-Status an den Prozesseigentümer.",
+    "digestInfo": "Der Prozess Digest sendet regelmäßige E-Mails mit dem KPI-Status an den Prozesseigentümer.",
     "digestConfigured": "Ihr Prozess Digest wurde erfolgreich konfiguriert. Eine E-Mail wurde an {Name} gesendet.",
     "timeGoals": {
       "label": "Zeitziele",
