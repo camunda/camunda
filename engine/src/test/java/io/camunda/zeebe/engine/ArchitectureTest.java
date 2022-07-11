@@ -33,5 +33,5 @@ public class ArchitectureTest {
           .resideInAPackage("io.camunda.zeebe.engine..")
           .should()
           .dependOnClassesThat()
-          .resideInAPackage("io.camunda.zeebe.scheduler..");
+          .resideInAPackage("io.camunda.zeebe.scheduler");
 }
