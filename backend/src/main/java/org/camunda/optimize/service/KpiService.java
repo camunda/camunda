@@ -77,12 +77,13 @@ public class KpiService {
     return reportService.getAllReportsForProcessDefinitionKeyOmitXml(processDefinitionKey).stream()
       .filter(SingleProcessReportDefinitionRequestDto.class::isInstance)
       .map(SingleProcessReportDefinitionRequestDto.class::cast)
-      .filter(processReport -> processReport.getData().getConfiguration().getTargetValue().getIsKpi().equals(true))
+      .filter(processReport -> processReport.getData().getConfiguration().getTargetValue() != null
+        && processReport.getData().getConfiguration().getTargetValue().getIsKpi() == Boolean.TRUE)
       .collect(toList());
   }
 
   public List<KpiResultDto> getKpiResultsForProcessDefinition(final String processDefinitionKey,
-                                                                final ZoneId timezone) {
+                                                              final ZoneId timezone) {
     final List<SingleProcessReportDefinitionRequestDto> kpiReports = getKpiReportsForProcessDefinition(
       processDefinitionKey);
     final List<KpiResultDto> kpiResponseDtos = new ArrayList<>();
@@ -102,7 +103,9 @@ public class KpiService {
           });
         kpiResponseDto.setReportId(report.getId());
         kpiResponseDto.setReportName(report.getName());
-        kpiResponseDto.setValue(evaluationValue.toString());
+        if (evaluationValue != null) {
+          kpiResponseDto.setValue(evaluationValue.toString());
+        }
         kpiResponseDto.setBelow(getIsBelow(report));
         kpiResponseDto.setType(getKpiType(report));
         kpiResponseDto.setMeasure(getViewProperty(report).orElse(null));
@@ -158,6 +161,9 @@ public class KpiService {
     SingleReportTargetValueDto targetValue = singleProcessReportDefinitionRequestDto.getData()
       .getConfiguration()
       .getTargetValue();
+    if (targetValue == null) {
+      return false;
+    }
     return getViewProperty(singleProcessReportDefinitionRequestDto)
       .map(measure -> {
         if (measure.equals(ViewProperty.DURATION)) {
