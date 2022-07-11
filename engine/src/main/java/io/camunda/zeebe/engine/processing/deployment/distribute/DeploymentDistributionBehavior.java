@@ -80,7 +80,7 @@ public final class DeploymentDistributionBehavior {
     final var deploymentPushedFuture =
         deploymentDistributor.pushDeploymentToPartition(key, partitionId, copiedDeploymentBuffer);
 
-    scheduleService.runOnSuccess(
+    scheduleService.runOnCompletion(
         deploymentPushedFuture, new WriteDeploymentDistributionCompleteTask(partitionId, key));
   }
 

@@ -15,7 +15,7 @@ public interface ProcessingScheduleService {
 
   void runDelayed(Duration delay, Runnable followUpTask);
 
-  <T> void runOnSuccess(ActorFuture<T> precedingTask, BiConsumer<T, Throwable> followUpTask);
+  <T> void runOnCompletion(ActorFuture<T> precedingTask, BiConsumer<T, Throwable> followUpTask);
 
   default void runAtFixedRate(final Duration delay, final Runnable task) {
     runDelayed(

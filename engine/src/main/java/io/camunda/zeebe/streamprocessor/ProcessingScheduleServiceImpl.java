@@ -27,7 +27,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
   }
 
   @Override
-  public <T> void runOnSuccess(
+  public <T> void runOnCompletion(
       final ActorFuture<T> precedingTask, final BiConsumer<T, Throwable> followUpTask) {
     scheduleOnActor(() -> actorControl.runOnCompletion(precedingTask, followUpTask));
   }
