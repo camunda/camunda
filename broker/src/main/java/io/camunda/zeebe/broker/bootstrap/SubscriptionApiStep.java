@@ -37,7 +37,9 @@ class SubscriptionApiStep extends AbstractBrokerStartupStep {
         proceed(
             () -> {
               brokerStartupContext.addPartitionListener(subscriptionApiService);
-              brokerStartupContext.addDiskSpaceUsageListener(subscriptionApiService);
+              brokerStartupContext
+                  .getDiskSpaceUsageMonitor()
+                  .addDiskUsageListener(subscriptionApiService);
 
               brokerStartupContext.setSubscriptionApiService(subscriptionApiService);
               startupFuture.complete(brokerStartupContext);
@@ -63,7 +65,9 @@ class SubscriptionApiStep extends AbstractBrokerStartupStep {
         proceed(
             () -> {
               brokerShutdownContext.removePartitionListener(subscriptionApiService);
-              brokerShutdownContext.removeDiskSpaceUsageListener(subscriptionApiService);
+              brokerShutdownContext
+                  .getDiskSpaceUsageMonitor()
+                  .removeDiskUsageListener(subscriptionApiService);
 
               brokerShutdownContext.setSubscriptionApiService(null);
               shutdownFuture.complete(brokerShutdownContext);

@@ -26,7 +26,7 @@ zeebe:
       add: ["NET_ADMIN"]
 
   # JavaOpts can be used to set java options for the zeebe brokers
-  JavaOpts: >-
+  javaOpts: >-
     -XX:MaxRAMPercentage=25.0
     -XX:+ExitOnOutOfMemoryError
     -XX:+HeapDumpOnOutOfMemoryError

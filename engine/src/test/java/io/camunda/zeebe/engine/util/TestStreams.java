@@ -17,9 +17,8 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.Loggers;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry;
@@ -45,6 +44,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -262,7 +262,7 @@ public final class TestStreams {
     final var recoveredAwaiter =
         new StreamProcessorLifecycleAware() {
           @Override
-          public void onRecovered(final ReadonlyProcessingContext context) {
+          public void onRecovered(final ReadonlyStreamProcessorContext context) {
             recoveredLatch.countDown();
           }
         };

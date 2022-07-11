@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util;
 
+import io.camunda.zeebe.engine.util.client.ProcessInstanceClient.ProcessInstanceCreationClient;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -248,11 +249,15 @@ public class ProcessExecutor {
   }
 
   private void createProcessInstance(final StepStartProcessInstance startProcess) {
-    engineRule
-        .processInstance()
-        .ofBpmnProcessId(startProcess.getProcessId())
-        .withVariables(startProcess.getProcessVariables())
-        .create();
+    final ProcessInstanceCreationClient processInstanceCreationClient =
+        engineRule
+            .processInstance()
+            .ofBpmnProcessId(startProcess.getProcessId())
+            .withVariables(startProcess.getProcessVariables());
+
+    startProcess.getStartElementIds().forEach(processInstanceCreationClient::withStartInstruction);
+
+    processInstanceCreationClient.create();
   }
 
   private void triggerTimerStartEvent(final StepTriggerTimerStartEvent timerStep) {

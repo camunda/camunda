@@ -19,30 +19,17 @@ import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public final class VariableOutputMappingTransformerTest {
-
-  @Parameter(0)
-  public List<ZeebeMapping> mappings;
-
-  @Parameter(1)
-  public Map<String, DirectBuffer> variables;
-
-  @Parameter(2)
-  public String expectedOutput;
 
   private final VariableMappingTransformer transformer = new VariableMappingTransformer();
   private final ExpressionLanguage expressionLanguage =
       ExpressionLanguageFactory.createExpressionLanguage();
 
-  @Parameters(name = "with {0} to {2}")
-  public static Object[][] parameters() {
+  public static Object[][] parametersSuccessfulEvaluationToObject() {
     return new Object[][] {
       // no mappings
       {List.of(), Map.of(), "{}"},
@@ -143,8 +130,22 @@ public final class VariableOutputMappingTransformerTest {
     };
   }
 
-  @Test
-  public void shouldApplyMappings() {
+  public static Object[][] parametersEvaluationToFailure() {
+    return new Object[][] {
+      {
+        List.of(mapping("x", "a.b")),
+        Map.of(),
+        "failed to evaluate expression '{a:if (a != null and is defined({b: x})) then put all(a,{b: x}) else {b: x}}': no variable found for name 'x'"
+      }, // #9543
+    };
+  }
+
+  @ParameterizedTest(name = "{index}: with {0} to {2}")
+  @MethodSource("parametersSuccessfulEvaluationToObject")
+  public void shouldEvaluateToObject(
+      final List<ZeebeMapping> mappings,
+      final Map<String, DirectBuffer> variables,
+      final String expectedOutput) {
     // given
     final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
 
@@ -159,6 +160,28 @@ public final class VariableOutputMappingTransformerTest {
     assertThat(result.getType()).isEqualTo(ResultType.OBJECT);
 
     MsgPackUtil.assertEquality(result.toBuffer(), expectedOutput);
+  }
+
+  @ParameterizedTest(name = "{index}: mapping {0} fails with: {2}")
+  @MethodSource("parametersEvaluationToFailure")
+  public void shouldEvaluateToFailure(
+      final List<ZeebeMapping> mappings,
+      final Map<String, DirectBuffer> variables,
+      final String failureMessage) {
+    // given
+    final var expression = transformer.transformOutputMappings(mappings, expressionLanguage);
+
+    assertThat(expression.isValid())
+        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
+        .isTrue();
+
+    // when
+    final var result = expressionLanguage.evaluateExpression(expression, variables::get);
+
+    // then
+    assertThat(result.isFailure()).isTrue();
+
+    Assertions.assertThat(result.getFailureMessage()).isEqualTo(failureMessage);
   }
 
   private static ZeebeMapping mapping(final String source, final String target) {

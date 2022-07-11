@@ -7,15 +7,17 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
+import io.camunda.zeebe.engine.api.RecordProcessorContext;
+
 @FunctionalInterface
 public interface TypedRecordProcessorFactory {
 
   /**
    * Creates typed record processors with the given context.
    *
-   * @param processingContext the processing context which contains value information to create
+   * @param recordProcessorContext the processing context which contains value information to create
    *     record processors
    * @return the created typed record processors
    */
-  TypedRecordProcessors createProcessors(ProcessingContext processingContext);
+  TypedRecordProcessors createProcessors(RecordProcessorContext recordProcessorContext);
 }

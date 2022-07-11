@@ -24,9 +24,9 @@ public class BrokerRejectionException extends BrokerException {
     super(
         String.format(
             ERROR_MESSAGE_FORMAT,
-            rejection.getIntent().name(),
-            rejection.getType().name(),
-            rejection.getReason()),
+            rejection.intent().name(),
+            rejection.type().name(),
+            rejection.reason()),
         cause);
     this.rejection = rejection;
   }

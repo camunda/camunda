@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.scheduler.ActorControl;
@@ -39,7 +39,7 @@ public final class PendingProcessMessageSubscriptionChecker
   }
 
   @Override
-  public void onRecovered(final ReadonlyProcessingContext context) {
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
     actor = context.getActor();
     scheduleTimer();
   }

@@ -16,11 +16,11 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.logstreams.LogDeletionService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.state.QueryService;
@@ -30,8 +30,8 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
-import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.Collection;
 import java.util.Collections;
@@ -58,12 +58,12 @@ public class PartitionStartupAndTransitionContextImpl
   private final TypedRecordProcessorsFactory typedRecordProcessorsFactory;
   private final Supplier<CommandResponseWriter> commandResponseWriterSupplier;
   private final Supplier<Consumer<TypedRecord<?>>> onProcessedListenerSupplier;
-  private final ConstructableSnapshotStore constructableSnapshotStore;
-  private final ReceivableSnapshotStore receivableSnapshotStore;
+  private final PersistedSnapshotStore persistedSnapshotStore;
   private final Integer partitionId;
   private final int maxFragmentSize;
   private final ExporterRepository exporterRepository;
   private final PartitionProcessingState partitionProcessingState;
+  private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final StateController stateController;
 
   private StreamProcessor streamProcessor;
@@ -91,12 +91,12 @@ public class PartitionStartupAndTransitionContextImpl
       final BrokerCfg brokerCfg,
       final Supplier<CommandResponseWriter> commandResponseWriterSupplier,
       final Supplier<Consumer<TypedRecord<?>>> onProcessedListenerSupplier,
-      final ConstructableSnapshotStore constructableSnapshotStore,
-      final ReceivableSnapshotStore receivableSnapshotStore,
+      final PersistedSnapshotStore persistedSnapshotStore,
       final StateController stateController,
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory,
       final ExporterRepository exporterRepository,
-      final PartitionProcessingState partitionProcessingState) {
+      final PartitionProcessingState partitionProcessingState,
+      final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
     this.nodeId = nodeId;
     this.raftPartition = raftPartition;
     this.messagingService = messagingService;
@@ -105,14 +105,14 @@ public class PartitionStartupAndTransitionContextImpl
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
     this.onProcessedListenerSupplier = onProcessedListenerSupplier;
     this.commandResponseWriterSupplier = commandResponseWriterSupplier;
-    this.constructableSnapshotStore = constructableSnapshotStore;
-    this.receivableSnapshotStore = receivableSnapshotStore;
+    this.persistedSnapshotStore = persistedSnapshotStore;
     this.partitionListeners = Collections.unmodifiableList(partitionListeners);
     partitionId = raftPartition.id().id();
     this.actorSchedulingService = actorSchedulingService;
     maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSizeInBytes();
     this.exporterRepository = exporterRepository;
     this.partitionProcessingState = partitionProcessingState;
+    this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
   }
 
   public PartitionAdminControl getPartitionAdminControl() {
@@ -237,6 +237,11 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
+    return diskSpaceUsageMonitor;
+  }
+
+  @Override
   public boolean shouldProcess() {
     return partitionProcessingState.shouldProcess();
   }
@@ -302,13 +307,8 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public ConstructableSnapshotStore getConstructableSnapshotStore() {
-    return constructableSnapshotStore;
-  }
-
-  @Override
-  public ReceivableSnapshotStore getReceivableSnapshotStore() {
-    return receivableSnapshotStore;
+  public PersistedSnapshotStore getPersistedSnapshotStore() {
+    return persistedSnapshotStore;
   }
 
   @Override

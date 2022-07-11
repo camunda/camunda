@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
@@ -73,7 +72,16 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
 
   @Override
   public List<ProcessInstanceCreationStartInstructionValue> getStartInstructions() {
-    return startInstructionsProperty.stream().collect(Collectors.toList());
+    // we need to make a copy of each element in the ArrayProperty while iterating it because the
+    // inner values are updated during the iteration
+    return startInstructionsProperty.stream()
+        .map(
+            element -> {
+              final var elementCopy = new ProcessInstanceCreationStartInstruction();
+              elementCopy.copy(element);
+              return (ProcessInstanceCreationStartInstructionValue) elementCopy;
+            })
+        .toList();
   }
 
   public ProcessInstanceCreationRecord setVersion(final int version) {
@@ -89,6 +97,11 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   public ProcessInstanceCreationRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
+  }
+
+  @JsonIgnore
+  public boolean hasStartInstructions() {
+    return !startInstructionsProperty.isEmpty();
   }
 
   @Override

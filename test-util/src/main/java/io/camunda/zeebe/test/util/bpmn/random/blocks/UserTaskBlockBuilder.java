@@ -12,8 +12,8 @@ import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
-import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.RandomProcessGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
@@ -23,9 +23,8 @@ import io.camunda.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEven
 import java.util.Random;
 
 /** Generates a user task */
-public class UserTaskBlockBuilder implements BlockBuilder {
+public class UserTaskBlockBuilder extends AbstractBlockBuilder {
 
-  private final String taskId;
   private final String boundaryErrorEventId;
   private final String boundaryTimerEventId;
   private final String errorCode;
@@ -34,13 +33,12 @@ public class UserTaskBlockBuilder implements BlockBuilder {
   private final boolean hasBoundaryTimerEvent;
 
   public UserTaskBlockBuilder(final ConstructionContext context) {
-    final IDGenerator idGenerator = context.getIdGenerator();
+    super(context.getIdGenerator().nextId());
     final Random random = context.getRandom();
 
-    taskId = idGenerator.nextId();
-    boundaryErrorEventId = "boundary_error_" + taskId;
-    boundaryTimerEventId = "boundary_timer_" + taskId;
-    errorCode = "error_" + taskId;
+    boundaryErrorEventId = "boundary_error_" + elementId;
+    boundaryTimerEventId = "boundary_timer_" + elementId;
+    errorCode = "error_" + elementId;
 
     hasBoundaryErrorEvent =
         random.nextDouble() < RandomProcessGenerator.PROBABILITY_BOUNDARY_ERROR_EVENT;
@@ -52,12 +50,12 @@ public class UserTaskBlockBuilder implements BlockBuilder {
   @Override
   public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
       final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
-    final UserTaskBuilder taskBuilder = nodeBuilder.userTask(taskId).name(taskId);
+    final UserTaskBuilder taskBuilder = nodeBuilder.userTask(getElementId()).name(getElementId());
     AbstractFlowNodeBuilder<?, ?> result = taskBuilder;
 
     if (hasBoundaryEvents) {
       final BoundaryEventBuilder boundaryEventBuilder =
-          new BoundaryEventBuilder(taskId, taskBuilder);
+          new BoundaryEventBuilder(getElementId(), taskBuilder);
 
       if (hasBoundaryErrorEvent) {
         result = boundaryEventBuilder.connectBoundaryErrorEvent(boundaryErrorEventId, errorCode);
@@ -72,9 +70,11 @@ public class UserTaskBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(final Random random) {
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
-    final var activateStep = new StepActivateBPMNElement(taskId);
+    final Random random = context.getRandom();
+
+    final var activateStep = new StepActivateBPMNElement(getElementId());
     result.appendDirectSuccessor(activateStep);
 
     if (hasBoundaryTimerEvent) {
@@ -87,9 +87,9 @@ public class UserTaskBlockBuilder implements BlockBuilder {
       result.appendExecutionSuccessor(
           new StepTriggerTimerBoundaryEvent(boundaryTimerEventId), activateStep);
     } else if (hasBoundaryErrorEvent && random.nextBoolean()) {
-      result.appendExecutionSuccessor(new StepThrowError(taskId, errorCode), activateStep);
+      result.appendExecutionSuccessor(new StepThrowError(getElementId(), errorCode), activateStep);
     } else {
-      result.appendExecutionSuccessor(new StepCompleteUserTask(taskId), activateStep);
+      result.appendExecutionSuccessor(new StepCompleteUserTask(getElementId()), activateStep);
     }
 
     return result;

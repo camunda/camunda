@@ -44,7 +44,7 @@ public final class ProcessInstanceCreationStartInstruction extends ObjectValue
     return this;
   }
 
-  public void copy(final ProcessInstanceCreationStartInstruction startInstruction) {
+  public void copy(final ProcessInstanceCreationStartInstructionValue startInstruction) {
     setElementId(startInstruction.getElementId());
   }
 }

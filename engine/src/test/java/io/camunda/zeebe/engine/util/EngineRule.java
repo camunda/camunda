@@ -12,24 +12,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
 import io.camunda.zeebe.engine.processing.message.command.PartitionCommandSender;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandMessageHandler;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventImpl;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
@@ -55,6 +53,8 @@ import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.TypedRecordImpl;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -195,9 +195,9 @@ public final class EngineRule extends ExternalResource {
 
           environmentRule.startTypedStreamProcessor(
               partitionId,
-              (processingContext) ->
+              (recordPRocessorContext) ->
                   EngineProcessors.createEngineProcessors(
-                          processingContext.listener(
+                          recordPRocessorContext.listener(
                               new StreamProcessorListener() {
                                 @Override
                                 public void onProcessed(final TypedRecord<?> processedCommand) {
@@ -278,7 +278,7 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.getClock();
   }
 
-  public MutableZeebeState getZeebeState() {
+  public ZeebeState getZeebeState() {
     return environmentRule.getZeebeState();
   }
 
@@ -436,12 +436,12 @@ public final class EngineRule extends ExternalResource {
     private final RecordMetadata metadata = new RecordMetadata();
 
     private LogStreamReader logStreamReader;
-    private TypedEventImpl typedEvent;
+    private TypedRecordImpl typedEvent;
 
     @Override
-    public void onRecovered(final ReadonlyProcessingContext context) {
-      final int partitionId = context.getLogStream().getPartitionId();
-      typedEvent = new TypedEventImpl(partitionId);
+    public void onRecovered(final ReadonlyStreamProcessorContext context) {
+      final int partitionId = context.getPartitionId();
+      typedEvent = new TypedRecordImpl(partitionId);
       final ActorControl actor = context.getActor();
 
       final LogStream logStream = context.getLogStream();
@@ -480,7 +480,7 @@ public final class EngineRule extends ExternalResource {
     private final ActorFuture<Void> reprocessingComplete = new CompletableActorFuture<>();
 
     @Override
-    public void onRecovered(final ReadonlyProcessingContext context) {
+    public void onRecovered(final ReadonlyStreamProcessorContext context) {
       reprocessingComplete.complete(null);
     }
 

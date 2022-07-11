@@ -11,7 +11,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
@@ -112,7 +112,7 @@ public class ZeebeDbState implements MutableZeebeState {
   }
 
   @Override
-  public void onRecovered(final ReadonlyProcessingContext context) {
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
     messageSubscriptionState.onRecovered(context);
     processMessageSubscriptionState.onRecovered(context);
   }
@@ -188,11 +188,6 @@ public class ZeebeDbState implements MutableZeebeState {
   }
 
   @Override
-  public KeyGenerator getKeyGenerator() {
-    return keyGenerator;
-  }
-
-  @Override
   public MutablePendingMessageSubscriptionState getPendingMessageSubscriptionState() {
     return messageSubscriptionState;
   }
@@ -200,6 +195,21 @@ public class ZeebeDbState implements MutableZeebeState {
   @Override
   public MutablePendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState() {
     return processMessageSubscriptionState;
+  }
+
+  @Override
+  public KeyGenerator getKeyGenerator() {
+    return keyGenerator;
+  }
+
+  @Override
+  public MutableLastProcessedPositionState getLastProcessedPositionState() {
+    return lastProcessedPositionState;
+  }
+
+  @Override
+  public MutableDecisionState getDecisionState() {
+    return decisionState;
   }
 
   @Override
@@ -240,15 +250,5 @@ public class ZeebeDbState implements MutableZeebeState {
 
   public KeyGeneratorControls getKeyGeneratorControls() {
     return keyGenerator;
-  }
-
-  @Override
-  public MutableLastProcessedPositionState getLastProcessedPositionState() {
-    return lastProcessedPositionState;
-  }
-
-  @Override
-  public MutableDecisionState getDecisionState() {
-    return decisionState;
   }
 }

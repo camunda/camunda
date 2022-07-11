@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
 
 public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
@@ -27,7 +27,7 @@ public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
   }
 
   @Override
-  public void onRecovered(final ReadonlyProcessingContext context) {
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
     final var actor = context.getActor();
     final var writers = context.getWriters();
 

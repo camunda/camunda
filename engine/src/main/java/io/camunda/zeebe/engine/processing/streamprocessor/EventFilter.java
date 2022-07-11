@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import java.util.Objects;
 
 /** Implement to control which events should be handled by a {@link StreamProcessor}. */

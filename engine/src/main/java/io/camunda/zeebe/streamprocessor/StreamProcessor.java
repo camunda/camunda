@@ -5,11 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.EngineImpl;
+import io.camunda.zeebe.engine.api.Engine;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
+import io.camunda.zeebe.engine.processing.streamprocessor.LastProcessingPositions;
+import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
+import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
@@ -93,7 +102,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   // snapshotting
   private final ZeebeDb zeebeDb;
   // processing
-  private final ProcessingContext processingContext;
+  private final StreamProcessorContext streamProcessorContext;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private final String actorName;
   private LogStreamReader logStreamReader;
@@ -109,6 +118,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
   private final Function<LogStreamBatchWriter, TypedStreamWriter> typedStreamWriterFactory;
 
+  private final Engine engine;
+
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
     lifecycleAwareListeners = processorBuilder.getLifecycleListeners();
@@ -118,16 +129,18 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     zeebeDb = processorBuilder.getZeebeDb();
     eventApplierFactory = processorBuilder.getEventApplierFactory();
 
-    processingContext =
+    streamProcessorContext =
         processorBuilder
             .getProcessingContext()
             .eventCache(new RecordValues())
             .actor(actor)
             .abortCondition(this::isClosed);
-    logStream = processingContext.getLogStream();
+    logStream = streamProcessorContext.getLogStream();
     partitionId = logStream.getPartitionId();
     actorName = buildActorName(processorBuilder.getNodeId(), "StreamProcessor", partitionId);
     metrics = new StreamProcessorMetrics(partitionId);
+
+    engine = new EngineImpl(partitionId, zeebeDb, processorBuilder.getEventApplierFactory());
   }
 
   public static StreamProcessorBuilder builder() {
@@ -163,9 +176,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       healthCheckTick();
 
-      replayStateMachine = new ReplayStateMachine(processingContext, this::shouldProcessNext);
+      replayStateMachine =
+          new ReplayStateMachine(engine, streamProcessorContext, this::shouldProcessNext);
       // disable writing to the log stream
-      processingContext.disableLogStreamWriter();
+      streamProcessorContext.disableLogStreamWriter();
 
       openFuture.complete(null);
       replayCompletedFuture = replayStateMachine.startRecover(snapshotPosition);
@@ -247,7 +261,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void tearDown() {
-    processingContext.getLogStreamReader().close();
+    streamProcessorContext.getLogStreamReader().close();
     logStream.removeRecordAvailableListener(this);
     replayStateMachine.close();
   }
@@ -263,22 +277,22 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       final LastProcessingPositions lastProcessingPositions) {
 
     if (errorOnReceivingWriter == null) {
-      processingContext
+      streamProcessorContext
           .maxFragmentSize(batchWriter.getMaxFragmentLength())
           .logStreamWriter(typedStreamWriterFactory.apply(batchWriter));
 
       phase = Phase.PROCESSING;
 
       // enable writing records to the stream
-      processingContext.enableLogStreamWriter();
+      streamProcessorContext.enableLogStreamWriter();
 
       processingStateMachine =
-          new ProcessingStateMachine(processingContext, this::shouldProcessNext);
+          new ProcessingStateMachine(streamProcessorContext, this::shouldProcessNext);
 
       logStream.registerRecordAvailableListener(this);
 
       // start reading
-      lifecycleAwareListeners.forEach(l -> l.onRecovered(processingContext));
+      lifecycleAwareListeners.forEach(l -> l.onRecovered(streamProcessorContext));
       processingStateMachine.startProcessing(lastProcessingPositions);
       if (!shouldProcess) {
         setStateToPausedAndNotifyListeners();
@@ -292,7 +306,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       final LogStreamReader reader, final Throwable errorOnReceivingReader) {
     if (errorOnReceivingReader == null) {
       logStreamReader = reader;
-      processingContext.logStreamReader(reader);
+      streamProcessorContext.logStreamReader(reader);
     } else {
       LOG.error("Unexpected error on retrieving reader from log stream.", errorOnReceivingReader);
       actor.close();
@@ -310,13 +324,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   private void initProcessors() {
     final TypedRecordProcessors typedRecordProcessors =
-        typedRecordProcessorFactory.createProcessors(processingContext);
+        typedRecordProcessorFactory.createProcessors(streamProcessorContext);
 
     lifecycleAwareListeners.addAll(typedRecordProcessors.getLifecycleListeners());
     final RecordProcessorMap recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
-    recordProcessorMap.values().forEachRemaining(lifecycleAwareListeners::add);
 
-    processingContext.recordProcessorMap(recordProcessorMap);
+    streamProcessorContext.recordProcessorMap(recordProcessorMap);
   }
 
   private long recoverFromSnapshot() {
@@ -327,7 +340,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
     final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
     if (failedToRecoverReader
-        && processingContext.getProcessorMode() == StreamProcessorMode.PROCESSING) {
+        && streamProcessorContext.getProcessorMode() == StreamProcessorMode.PROCESSING) {
       throw new IllegalStateException(
           String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, snapshotPosition, getName()));
     }
@@ -343,9 +356,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     final TransactionContext transactionContext = zeebeDb.createContext();
     final ZeebeDbState zeebeState = new ZeebeDbState(partitionId, zeebeDb, transactionContext);
 
-    processingContext.transactionContext(transactionContext);
-    processingContext.zeebeState(zeebeState);
-    processingContext.eventApplier(eventApplierFactory.apply(zeebeState));
+    streamProcessorContext.transactionContext(transactionContext);
+    streamProcessorContext.zeebeState(zeebeState);
+    streamProcessorContext.eventApplier(eventApplierFactory.apply(zeebeState));
 
     return zeebeState;
   }
@@ -401,7 +414,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private boolean isInReplayOnlyMode() {
-    return processingContext.getProcessorMode() == StreamProcessorMode.REPLAY;
+    return streamProcessorContext.getProcessorMode() == StreamProcessorMode.REPLAY;
   }
 
   public ActorFuture<Long> getLastWrittenPositionAsync() {

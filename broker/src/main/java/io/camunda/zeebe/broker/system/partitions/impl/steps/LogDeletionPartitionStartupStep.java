@@ -15,7 +15,6 @@ import io.camunda.zeebe.broker.system.partitions.PartitionStartupStep;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import java.util.List;
 
 public class LogDeletionPartitionStartupStep implements PartitionStartupStep {
 
@@ -34,9 +33,7 @@ public class LogDeletionPartitionStartupStep implements PartitionStartupStep {
             partitionStartupContext.getNodeId(),
             partitionStartupContext.getPartitionId(),
             logCompactor,
-            List.of(
-                partitionStartupContext.getConstructableSnapshotStore(),
-                partitionStartupContext.getReceivableSnapshotStore()));
+            partitionStartupContext.getPersistedSnapshotStore());
 
     partitionStartupContext.setLogDeletionService(deletionService);
     final ActorFuture<PartitionStartupContext> startupFuture = new CompletableActorFuture<>();

@@ -19,7 +19,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -36,6 +40,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import java.util.Optional;
@@ -75,7 +80,7 @@ public final class StreamProcessorTest {
                 .withListener(
                     new StreamProcessorLifecycleAware() {
                       @Override
-                      public void onRecovered(final ReadonlyProcessingContext context) {
+                      public void onRecovered(final ReadonlyStreamProcessorContext context) {
                         recoveredLatch.countDown();
                       }
                     }));
@@ -102,7 +107,7 @@ public final class StreamProcessorTest {
                 new StreamProcessorLifecycleAware() {
 
                   @Override
-                  public void onRecovered(final ReadonlyProcessingContext context) {
+                  public void onRecovered(final ReadonlyStreamProcessorContext context) {
                     throw new RuntimeException("force fail");
                   }
 
@@ -114,38 +119,6 @@ public final class StreamProcessorTest {
 
     // then
     assertThat(failedLatch.await(1000, TimeUnit.MILLISECONDS)).isTrue();
-  }
-
-  @Test
-  public void shouldCallRecordProcessorLifecycle() throws Exception {
-    // given
-    final var typedRecordProcessor = mock(TypedRecordProcessor.class);
-    final var recoveredLatch = new CountDownLatch(1);
-    streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
-            processors
-                .onCommand(
-                    ValueType.PROCESS_INSTANCE,
-                    ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                    typedRecordProcessor)
-                .withListener(
-                    new StreamProcessorLifecycleAware() {
-                      @Override
-                      public void onRecovered(final ReadonlyProcessingContext context) {
-                        recoveredLatch.countDown();
-                      }
-                    }));
-
-    // when
-    recoveredLatch.await();
-    streamProcessorRule.closeStreamProcessor();
-
-    // then
-    final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, times(1)).onRecovered(any());
-    inOrder.verify(typedRecordProcessor, times(1)).onClose();
-
-    inOrder.verifyNoMoreInteractions();
   }
 
   @Test
@@ -165,13 +138,10 @@ public final class StreamProcessorTest {
             ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1));
 
     // then
-    final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(1))
+    verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(position), any(), any(), any(), any());
 
-    inOrder.verifyNoMoreInteractions();
+    verifyNoMoreInteractions(typedRecordProcessor);
 
     Awaitility.await()
         .untilAsserted(
@@ -209,13 +179,10 @@ public final class StreamProcessorTest {
             ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
-    final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(2))
+    verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(position), any(), any(), any(), any());
 
-    inOrder.verifyNoMoreInteractions();
+    verifyNoMoreInteractions(typedRecordProcessor);
   }
 
   @Test
@@ -238,16 +205,10 @@ public final class StreamProcessorTest {
             ProcessInstanceIntent.TERMINATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
-    final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(1))
+    verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(firstPosition), any(), any(), any(), any());
-    inOrder
-        .verify(typedRecordProcessor, never())
-        .processRecord(eq(secondPosition), any(), any(), any(), any());
 
-    inOrder.verifyNoMoreInteractions();
+    verifyNoMoreInteractions(typedRecordProcessor);
   }
 
   @Test
@@ -280,7 +241,6 @@ public final class StreamProcessorTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT).onRecovered(any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT)
         .processRecord(eq(commandPosition), any(), any(), any(), any());

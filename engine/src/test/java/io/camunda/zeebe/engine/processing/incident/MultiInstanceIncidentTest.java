@@ -430,7 +430,6 @@ public final class MultiInstanceIncidentTest {
             .withElementType(BpmnElementType.SERVICE_TASK)
             .getFirst();
     final var job = findNthJob(processInstanceKey, 1);
-    final var nextKey = ENGINE.getZeebeState().getKeyGenerator().nextKey();
     ENGINE.stop();
     RecordingExporter.reset();
 
@@ -470,7 +469,7 @@ public final class MultiInstanceIncidentTest {
             .processInstance(ProcessInstanceIntent.ELEMENT_COMPLETED, serviceTask.getValue()),
         RecordToWrite.event()
             .causedBy(2)
-            .key(nextKey)
+            .key(-1L)
             .processInstance(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, sequenceFlow),
         RecordToWrite.command()
             .causedBy(2)

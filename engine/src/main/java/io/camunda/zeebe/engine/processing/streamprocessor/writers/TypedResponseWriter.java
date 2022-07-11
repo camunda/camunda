@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -36,6 +36,7 @@ public interface TypedResponseWriter extends SideEffectProducer {
    *
    * @return false in case of backpressure, else true
    */
+  @Override
   boolean flush();
 
   void reset();

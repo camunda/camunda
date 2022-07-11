@@ -169,7 +169,9 @@ public class FileBasedReceivedSnapshotTest {
             persistedSnapshot.getDirectory(),
             persistedSnapshot.getChecksumFile(),
             0xDEADBEEFL,
-            persistedSnapshot.getMetadata());
+            persistedSnapshot.getMetadata(),
+            s -> {},
+            null);
 
     // when
     final var receivedSnapshot = receiveSnapshot(corruptedSnapshot);

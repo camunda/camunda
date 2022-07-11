@@ -11,7 +11,7 @@ import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.processing.message.MessageObserver;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -46,7 +46,7 @@ public final class ProcessExecutionCleanStateTest {
 
   @Rule public EngineRule engineRule = EngineRule.singlePartition();
 
-  private MutableZeebeState zeebeState;
+  private ZeebeState zeebeState;
 
   @Before
   public void init() {

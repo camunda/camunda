@@ -39,9 +39,7 @@ public interface ProcessInstanceCreationRecordValue
    */
   long getProcessDefinitionKey();
 
-  /**
-   * @return list of start instructions (if available), or an empty list
-   */
+  /** Returns a list of start instructions (if available), or an empty list. */
   List<ProcessInstanceCreationStartInstructionValue> getStartInstructions();
 
   @Value.Immutable

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions;
 
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import java.io.IOException;
 
 public interface PartitionAdminControl {

@@ -5,11 +5,21 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
+import io.camunda.zeebe.engine.processing.streamprocessor.EventFilter;
+import io.camunda.zeebe.engine.processing.streamprocessor.LastProcessingPositions;
+import io.camunda.zeebe.engine.processing.streamprocessor.MetadataEventFilter;
+import io.camunda.zeebe.engine.processing.streamprocessor.MetadataFilter;
+import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
+import io.camunda.zeebe.engine.processing.streamprocessor.RecordProtocolVersionFilter;
+import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -129,7 +139,7 @@ public final class ProcessingStateMachine {
   private final ErrorRecord errorRecord = new ErrorRecord();
   private final RecordValues recordValues;
   private final RecordProcessorMap recordProcessorMap;
-  private final TypedEventImpl typedCommand;
+  private final TypedRecordImpl typedCommand;
   private final StreamProcessorMetrics metrics;
   private final StreamProcessorListener streamProcessorListener;
 
@@ -146,9 +156,10 @@ public final class ProcessingStateMachine {
   // Used for processing duration metrics
   private Histogram.Timer processingTimer;
   private boolean reachedEnd = true;
+  private boolean inProcessing;
 
   public ProcessingStateMachine(
-      final ProcessingContext context, final BooleanSupplier shouldProcessNext) {
+      final StreamProcessorContext context, final BooleanSupplier shouldProcessNext) {
 
     actor = context.getActor();
     recordProcessorMap = context.getRecordProcessorMap();
@@ -167,7 +178,7 @@ public final class ProcessingStateMachine {
     this.shouldProcessNext = shouldProcessNext;
 
     final int partitionId = logStream.getPartitionId();
-    typedCommand = new TypedEventImpl(partitionId);
+    typedCommand = new TypedRecordImpl(partitionId);
     responseWriter = context.getWriters().response();
 
     metrics = new StreamProcessorMetrics(partitionId);
@@ -206,7 +217,7 @@ public final class ProcessingStateMachine {
               && lastWrittenPosition <= previousRecord.getPosition();
     }
 
-    if (shouldProcessNext.getAsBoolean() && hasNext && currentProcessor == null) {
+    if (shouldProcessNext.getAsBoolean() && hasNext && !inProcessing) {
       currentRecord = logStreamReader.next();
 
       if (eventFilter.applies(currentRecord)) {
@@ -229,6 +240,10 @@ public final class ProcessingStateMachine {
   }
 
   private void processCommand(final LoggedEvent command) {
+    // we have to mark ourself has inProcessing to not interfere with readNext calls, which
+    // are triggered from commit listener
+    inProcessing = true;
+
     metadata.reset();
     command.readMetadata(metadata);
 
@@ -285,7 +300,7 @@ public final class ProcessingStateMachine {
     return typedRecordProcessor;
   }
 
-  private void processInTransaction(final TypedEventImpl typedRecord) throws Exception {
+  private void processInTransaction(final TypedRecordImpl typedRecord) throws Exception {
     zeebeDbTransaction = transactionContext.getCurrentTransaction();
     zeebeDbTransaction.run(
         () -> {
@@ -451,7 +466,7 @@ public final class ProcessingStateMachine {
           processingTimer.close();
 
           // continue with next record
-          currentProcessor = null;
+          inProcessing = false;
           actor.submit(this::readNextRecord);
         });
   }

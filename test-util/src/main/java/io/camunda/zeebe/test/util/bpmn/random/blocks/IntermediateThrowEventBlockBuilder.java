@@ -11,30 +11,26 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
-import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
-import java.util.Random;
 
-public class IntermediateThrowEventBlockBuilder implements BlockBuilder {
-
-  private final String taskId;
+public class IntermediateThrowEventBlockBuilder extends AbstractBlockBuilder {
 
   public IntermediateThrowEventBlockBuilder(final ConstructionContext context) {
-    final IDGenerator idGenerator = context.getIdGenerator();
-    taskId = idGenerator.nextId();
+    super(context.getIdGenerator().nextId());
   }
 
   @Override
   public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
       final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
-    return nodeBuilder.intermediateThrowEvent(taskId).name(taskId);
+    return nodeBuilder.intermediateThrowEvent(getElementId()).name(getElementId());
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(final Random random) {
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
-    result.appendDirectSuccessor(new StepActivateBPMNElement(taskId));
+    result.appendDirectSuccessor(new StepActivateBPMNElement(getElementId()));
     return result;
   }
 
