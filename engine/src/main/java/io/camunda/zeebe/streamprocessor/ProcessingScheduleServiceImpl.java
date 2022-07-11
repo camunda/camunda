@@ -23,17 +23,21 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
 
   @Override
   public void runDelayed(final Duration delay, final Runnable followUpTask) {
-    actorControl.runDelayed(delay, followUpTask);
+    scheduleOnActor(() -> actorControl.runDelayed(delay, followUpTask));
   }
 
   @Override
   public <T> void runOnSuccess(
       final ActorFuture<T> precedingTask, final BiConsumer<T, Throwable> followUpTask) {
-    actorControl.runOnCompletion(precedingTask, followUpTask);
+    scheduleOnActor(() -> actorControl.runOnCompletion(precedingTask, followUpTask));
   }
 
   @Override
   public ActorFuture<Void> call(final Runnable action) {
     return actorControl.call(action);
+  }
+
+  private void scheduleOnActor(final Runnable task) {
+    actorControl.submit(task);
   }
 }
