@@ -247,7 +247,7 @@ final class LogStorageAppender extends Actor implements HealthMonitorable {
 
   private void onFailure(final Throwable error) {
     LOG.error("Actor {} failed in phase {}.", name, actor.getLifecyclePhase(), error);
-    actor.fail();
+    actor.fail(error);
     final var report = HealthReport.unhealthy(this).withIssue(error);
     failureListeners.forEach(l -> l.onFailure(report));
   }
