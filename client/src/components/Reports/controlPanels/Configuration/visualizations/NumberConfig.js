@@ -64,7 +64,7 @@ export default function NumberConfig({report, onChange}) {
               }
             />
           )}
-          {report.reportType !== 'decision' && isSingleProcessReport && (
+          {view.entity !== 'variable' && report.reportType !== 'decision' && isSingleProcessReport && (
             <>
               <LabeledInput
                 disabled={!targetValue.active}

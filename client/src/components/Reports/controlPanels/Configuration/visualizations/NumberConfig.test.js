@@ -115,6 +115,17 @@ it('should set the report as kpi report', () => {
   expect(spy).toHaveBeenCalledWith({targetValue: {isKpi: {$set: true}}});
 });
 
+it('should not show kpi config for reports with variable view', () => {
+  const node = shallow(
+    <NumberConfig
+      {...props}
+      report={update(props.report, {data: {view: {entity: {$set: 'variable'}}}})}
+    />
+  );
+
+  expect(node.find({label: 'Display as a process KPI'})).not.toExist();
+});
+
 it('should not show kpi config for decision reports', () => {
   const node = shallow(
     <NumberConfig {...props} report={update(props.report, {reportType: {$set: 'decision'}})} />
