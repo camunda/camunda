@@ -46,10 +46,12 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     if (!checkerRunning) {
       scheduleService.runDelayed(delay, this::triggerEntities);
       nextDueDate = dueDate;
+      checkerRunning = true;
 
     } else if (nextDueDate - dueDate > timerResolution) {
       scheduleService.runDelayed(delay, this::triggerEntities);
       nextDueDate = dueDate;
+      checkerRunning = true;
     }
   }
 
@@ -61,6 +63,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     if (nextDueDate > 0) {
       final Duration delay = calculateDelayForNextRun(nextDueDate);
       scheduleService.runDelayed(delay, this::triggerEntities);
+      checkerRunning = true;
     } else {
       checkerRunning = false;
     }
