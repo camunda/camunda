@@ -132,6 +132,7 @@ public class ProcessOverviewWriter {
   }
 
   public void deleteProcessOwnerEntry(final String processDefinitionKey) {
+    log.info("Removing pending entry " + processDefinitionKey);
     try {
       final DeleteRequest deleteRequest = new DeleteRequest()
         .index(PROCESS_OVERVIEW_INDEX_NAME)

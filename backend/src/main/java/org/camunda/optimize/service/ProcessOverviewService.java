@@ -112,9 +112,13 @@ public class ProcessOverviewService {
 
   public void updateProcessOwnerIfNotSet(final String userId, final String processDefinitionKey, final String ownerId) {
     final String ownerIdToSave = getValidatedOwnerId(userId, ownerId);
+    if(ownerIdToSave == null || ownerIdToSave.isEmpty()) {
+      throw new BadRequestException("Owner ID cannot be empty!");
+    }
     if (definitionHasBeenImported(processDefinitionKey)) {
+      log.info("Updating owner of process " + processDefinitionKey + " to " + ownerIdToSave);
       validateProcessDefinitionAuthorization(userId, processDefinitionKey);
-      processOverviewWriter.updateProcessOwnerIfNotSet(processDefinitionKey, ownerId);
+      processOverviewWriter.updateProcessOwnerIfNotSet(processDefinitionKey, ownerIdToSave);
     } else {
       // If this happens, it means that Optimize did not import the process definition yet. So we save the
       // information but mark it as pending authorization check
@@ -161,15 +165,11 @@ public class ProcessOverviewService {
         String ownerId = pendingProcesses.get(completeDefKey).getOwner();
         try {
           updateProcessOwnerIfNotSet(userIdFromRequester, processToBeOnboarded, ownerId);
-          removePendingEntryFromDatabase(completeDefKey);
+          processOverviewWriter.deleteProcessOwnerEntry(completeDefKey);
         } catch (Exception exc) {
           log.warn(exc.getMessage(), exc);
         }
       });
-  }
-
-  private void removePendingEntryFromDatabase(final String completeDefKey) {
-    processOverviewWriter.deleteProcessOwnerEntry(completeDefKey);
   }
 
   private Optional<String> extractUserIdFromPendingDefKey(final String defKey) {
