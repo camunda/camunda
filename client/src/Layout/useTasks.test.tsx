@@ -5,12 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
+import React from 'react';
 import {
   render,
   screen,
   waitForElementToBeRemoved,
   fireEvent,
-  act,
 } from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {ApolloProvider} from '@apollo/client';
@@ -105,7 +105,7 @@ describe('useTasks', () => {
 
     fireEvent.click(screen.getByRole('button', {name: 'fetch-next'}));
 
-    expect(screen.queryByText('can fetch more tasks')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByText('can fetch more tasks'));
     expect(await screen.findByText('can fetch more tasks')).toBeInTheDocument();
 
     expect(screen.queryByText('TASK 1')).not.toBeInTheDocument();
@@ -125,7 +125,7 @@ describe('useTasks', () => {
 
     fireEvent.click(screen.getByRole('button', {name: 'fetch-next'}));
 
-    expect(screen.queryByText('can fetch more tasks')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByText('can fetch more tasks'));
     expect(await screen.findByText('can fetch more tasks')).toBeInTheDocument();
 
     expect(screen.queryByText('TASK 1')).not.toBeInTheDocument();
@@ -147,7 +147,7 @@ describe('useTasks', () => {
 
     fireEvent.click(screen.getByRole('button', {name: 'fetch-previous'}));
 
-    expect(screen.queryByText('can fetch more tasks')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByText('can fetch more tasks'));
     expect(await screen.findByText('can fetch more tasks')).toBeInTheDocument();
 
     expect(screen.queryByText('TASK 1')).not.toBeInTheDocument();
@@ -273,11 +273,9 @@ describe('useTasks', () => {
     expect(screen.getByText('TASK 1')).toBeInTheDocument();
     expect(screen.getByText('TASK 2')).toBeInTheDocument();
 
-    act(() => {
-      jest.runOnlyPendingTimers();
-    });
+    jest.advanceTimersByTime(5000);
 
-    expect(screen.queryByText('can fetch more tasks')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByText('can fetch more tasks'));
     expect(await screen.findByText('can fetch more tasks')).toBeInTheDocument();
 
     expect(screen.getByText('task1-updated')).toBeInTheDocument();
@@ -286,18 +284,16 @@ describe('useTasks', () => {
     // fetch next tasks
     fireEvent.click(screen.getByRole('button', {name: 'fetch-next'}));
 
-    expect(screen.queryByText('can fetch more tasks')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByText('can fetch more tasks'));
     expect(await screen.findByText('can fetch more tasks')).toBeInTheDocument();
 
     expect(screen.getByText('task2-updated')).toBeInTheDocument();
     expect(screen.getByText('TASK 3')).toBeInTheDocument();
     expect(screen.getByText('TASK 4')).toBeInTheDocument();
 
-    act(() => {
-      jest.runOnlyPendingTimers();
-    });
+    jest.advanceTimersByTime(5000);
 
-    expect(screen.queryByText('can fetch more tasks')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByText('can fetch more tasks'));
     expect(await screen.findByText('can fetch more tasks')).toBeInTheDocument();
 
     expect(screen.getByText('task2-updated3')).toBeInTheDocument();
@@ -307,17 +303,15 @@ describe('useTasks', () => {
     // fetch previous tasks
     fireEvent.click(screen.getByRole('button', {name: 'fetch-previous'}));
 
-    expect(screen.queryByText('can fetch more tasks')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByText('can fetch more tasks'));
     expect(await screen.findByText('can fetch more tasks')).toBeInTheDocument();
     expect(screen.getByText('TASK 1')).toBeInTheDocument();
     expect(screen.getByText('task2-updated3')).toBeInTheDocument();
     expect(screen.getByText('task3-updated3')).toBeInTheDocument();
 
-    act(() => {
-      jest.runOnlyPendingTimers();
-    });
+    jest.advanceTimersByTime(5000);
 
-    expect(screen.queryByText('can fetch more tasks')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByText('can fetch more tasks'));
     expect(await screen.findByText('can fetch more tasks')).toBeInTheDocument();
     expect(screen.getByText('task1-updated2')).toBeInTheDocument();
     expect(screen.getByText('task2-updated2')).toBeInTheDocument();
