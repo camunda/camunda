@@ -38,7 +38,7 @@
   <parent>
     <artifactId>qa</artifactId>
     <groupId>org.camunda.optimize</groupId>
-    <version>3.9.0-preview-1-RC4</version>
+    <version>3.9.0-preview-1-SNAPSHOT</version>
   </parent>
 
   <artifactId>zeebe-data-generation</artifactId>
