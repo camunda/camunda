@@ -70,6 +70,6 @@ prometheus:
             - ReadWriteOnce
           resources:
             requests:
-              storage: 50Gi
+              storage: 150Gi
           storageClassName: ssd
 
