@@ -6,6 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 const Option = styled.div`
   ${({theme}) => {
@@ -17,9 +18,6 @@ const Option = styled.div`
       height: 36px;
       width: 100%;
       text-align: left;
-      font-size: 15px;
-      font-weight: 600;
-      line-height: 36px;
 
       &:not(:last-child) {
         border-bottom: 1px solid ${colors.borderColor};
@@ -43,9 +41,8 @@ const OptionButton = styled.button`
       background: none;
       color: ${disabled ? colors.disabled.color : colors.default.color};
       text-align: left;
-      font-size: 15px;
+      ${styles.bodyShort01};
       font-weight: 600;
-      line-height: 36px;
 
       ${disabled
         ? ''

@@ -8,6 +8,7 @@
 import styled, {css} from 'styled-components';
 
 import Menu from './Menu';
+import {styles} from '@carbon/elements';
 
 type Props = {
   $transitionTiming: Record<'enter' | 'exit', number>;
@@ -55,8 +56,7 @@ const Button = styled.button<ButtonProps>`
       padding-right: 0px;
       color: ${disabled ? colors.disabled.color : colors.default.color};
       background: none;
-      font-family: IBM Plex Sans;
-      font-size: 15px;
+      ${styles.bodyShort01};
       font-weight: 600;
       cursor: ${disabled ? 'default' : 'pointer'};
 
