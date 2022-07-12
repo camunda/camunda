@@ -65,6 +65,12 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jnr-posix</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
