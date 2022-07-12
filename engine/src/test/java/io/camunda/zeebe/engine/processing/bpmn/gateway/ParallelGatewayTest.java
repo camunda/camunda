@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -347,6 +348,45 @@ public final class ParallelGatewayTest {
         .extracting(e -> e.getValue().getElementId())
         .containsExactlyInAnyOrder("task1", "task2");
     assertThat(taskEvents.get(0).getKey()).isNotEqualTo(taskEvents.get(1).getKey());
+  }
+
+  // Regression test for https://github.com/camunda/zeebe/issues/6778
+  @Test
+  public void shouldRejectActivateCommandWhenSequenceFlowIsTakenTwice() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .parallelGateway("splitting")
+            .parallelGateway("joining")
+            .moveToNode("splitting")
+            .exclusiveGateway("exclusive")
+            .moveToNode("splitting")
+            .connectTo("exclusive")
+            .moveToNode("exclusive")
+            .connectTo("joining")
+            .moveToNode("joining")
+            .endEvent()
+            .done();
+    engine.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long key = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final var rejection =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(key)
+            .onlyCommandRejections()
+            .limit(1)
+            .getFirst();
+
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected to be able to activate "
+                + "parallel gateway 'joining', but not all sequence flows have been taken. "
+                + "This could occur when a sequence flow is taken multiple times.");
   }
 
   private static boolean isServiceTaskInProcess(
