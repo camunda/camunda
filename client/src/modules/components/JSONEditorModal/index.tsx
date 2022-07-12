@@ -6,106 +6,100 @@
  */
 
 import Modal, {SIZES} from 'modules/components/Modal';
-import {useLayoutEffect, useRef, useState} from 'react';
-import JSONEditor from 'jsoneditor';
-import 'jsoneditor/dist/jsoneditor.css';
-import {JSONEditorStyles, Body} from './styled';
-import 'brace/theme/tomorrow_night';
-import 'brace/theme/tomorrow';
+import {useEffect, useRef, useState} from 'react';
+import {Body} from './styled';
 import {observer} from 'mobx-react';
-import {currentTheme} from 'modules/stores/currentTheme';
-import {isValidJSON} from 'modules/utils';
+import {JSONEditor} from 'modules/components/JSONEditor';
+import {U} from 'ts-toolbelt';
+
+type EditorFirstParam = Parameters<
+  U.NonNullable<React.ComponentProps<typeof JSONEditor>['onMount']>
+>[0];
+
 type Props = {
+  value: string;
+  isVisible: boolean;
   onClose?: () => void;
-  onSave?: (value: string | undefined) => void;
-  value: string | undefined;
+  onApply?: (value: string | undefined) => void;
   title?: string;
-  isModalVisible: boolean;
+  readOnly?: boolean;
 };
 
 const JSONEditorModal: React.FC<Props> = observer(
-  ({onClose, onSave, value = '', isModalVisible, title}) => {
-    const containerRef = useRef<HTMLElement | null>(null);
-    const editorRef = useRef<JSONEditor | null>(null);
-    const {
-      state: {selectedTheme},
-    } = currentTheme;
-    const [isJSONValid, setIsJSONValid] = useState(true);
-
-    function checkIfJSONIsValid(editor: JSONEditor) {
-      try {
-        editor.get();
-        setIsJSONValid(true);
-      } catch {
-        setIsJSONValid(false);
+  ({value, isVisible, onClose, onApply, title, readOnly = false}) => {
+    const [editedValue, setEditedValue] = useState(value);
+    const [isValid, setIsValid] = useState(true);
+    const editorRef = useRef<EditorFirstParam | null>(null);
+    useEffect(() => {
+      if (isVisible) {
+        setEditedValue(value);
+      } else {
+        setEditedValue('');
       }
-    }
+    }, [isVisible, value]);
 
-    useLayoutEffect(() => {
-      if (editorRef.current === null && containerRef.current !== null) {
-        const editor = new JSONEditor(containerRef.current, {
-          mode: 'code',
-          mainMenuBar: false,
-          statusBar: false,
-          theme:
-            selectedTheme === 'dark'
-              ? 'ace/theme/tomorrow_night'
-              : 'ace/theme/tomorrow',
-          onChange() {
-            checkIfJSONIsValid(editor);
-          },
-        });
-
-        if (isValidJSON(value)) {
-          editor.set(JSON.parse(value));
-        } else {
-          editor.updateText(value);
-        }
-
-        checkIfJSONIsValid(editor);
-
-        editorRef.current = editor;
+    useEffect(() => {
+      if (isValid) {
+        editorRef.current?.hideMarkers();
       }
-
-      return () => {
-        editorRef.current?.destroy();
-        editorRef.current = null;
-      };
-    }, [value, isModalVisible, selectedTheme]);
+    }, [isValid]);
 
     return (
       <>
-        <JSONEditorStyles />
         <Modal
           onModalClose={() => {
             onClose?.();
           }}
-          isVisible={isModalVisible}
           size={SIZES.BIG}
-          preventKeyboardEvents={true}
+          isVisible={isVisible}
+          preventKeyboardEvents
         >
-          <Modal.Header>{title}</Modal.Header>
-          <Body ref={containerRef} data-testid="json-editor-container" />
+          <Modal.Header aria-label={title}>{title}</Modal.Header>
+          <Body data-testid="json-editor-container">
+            <JSONEditor
+              value={editedValue}
+              onChange={setEditedValue}
+              readOnly={readOnly}
+              onValidate={setIsValid}
+              onMount={(editor) => {
+                editorRef.current = editor;
+              }}
+            />
+          </Body>
           <Modal.Footer>
-            <Modal.SecondaryButton
-              title="Close modal"
-              onClick={() => {
-                onClose?.();
-              }}
-              type="button"
-            >
-              Cancel
-            </Modal.SecondaryButton>
-            <Modal.PrimaryButton
-              title="Save"
-              onClick={() => {
-                onSave?.(JSON.stringify(editorRef.current?.get()));
-              }}
-              type="button"
-              disabled={!isJSONValid}
-            >
-              Apply
-            </Modal.PrimaryButton>
+            {readOnly ? (
+              <Modal.PrimaryButton
+                onClick={() => {
+                  onClose?.();
+                }}
+                type="button"
+              >
+                Close
+              </Modal.PrimaryButton>
+            ) : (
+              <>
+                <Modal.SecondaryButton
+                  onClick={() => {
+                    onClose?.();
+                  }}
+                  type="button"
+                >
+                  Cancel
+                </Modal.SecondaryButton>
+                <Modal.PrimaryButton
+                  onClick={() => {
+                    if (isValid) {
+                      onApply?.(editedValue);
+                    } else {
+                      editorRef.current?.showMarkers();
+                    }
+                  }}
+                  type="button"
+                >
+                  Apply
+                </Modal.PrimaryButton>
+              </>
+            )}
           </Modal.Footer>
         </Modal>
       </>

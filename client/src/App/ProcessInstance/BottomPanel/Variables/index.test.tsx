@@ -1095,10 +1095,10 @@ describe('Variables', () => {
     await user.click(screen.getByTitle(/open json editor modal/i));
 
     expect(
-      within(screen.getByTestId('modal')).getByTitle(/close/i)
+      within(screen.getByTestId('modal')).getByRole('button', {name: /cancel/i})
     ).toBeEnabled();
     expect(
-      within(screen.getByTestId('modal')).getByTitle(/save/i)
+      within(screen.getByTestId('modal')).getByRole('button', {name: /apply/i})
     ).toBeEnabled();
     expect(
       within(screen.getByTestId('modal')).getByTestId('json-editor-container')
@@ -1126,10 +1126,10 @@ describe('Variables', () => {
     await user.click(screen.getByTitle(/open json editor modal/i));
 
     expect(
-      within(screen.getByTestId('modal')).getByTitle(/close/i)
+      within(screen.getByTestId('modal')).getByRole('button', {name: /cancel/i})
     ).toBeEnabled();
     expect(
-      within(screen.getByTestId('modal')).getByTitle(/save/i)
+      within(screen.getByTestId('modal')).getByRole('button', {name: /apply/i})
     ).toBeEnabled();
     expect(
       within(screen.getByTestId('modal')).getByTestId('json-editor-container')

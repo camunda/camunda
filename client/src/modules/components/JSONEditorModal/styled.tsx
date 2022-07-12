@@ -5,17 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import styled, {createGlobalStyle} from 'styled-components';
+import styled from 'styled-components';
 import Modal from 'modules/components/Modal';
-
-const JSONEditorStyles = createGlobalStyle`
-  div.jsoneditor {
-    border: none;
-  }
-`;
 
 const Body = styled(Modal.Body)`
   padding: 0;
 `;
 
-export {JSONEditorStyles, Body};
+export {Body};

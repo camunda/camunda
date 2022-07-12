@@ -7,7 +7,7 @@
 
 import {usePopper} from 'react-popper';
 import {createPortal} from 'react-dom';
-import CodeModal from 'modules/components/CodeModal';
+import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {LinkButton} from 'modules/components/LinkButton';
 import {Fragment, useRef, useState} from 'react';
 import {
@@ -274,16 +274,12 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                     )}
                   </>
                 )}
-
-                <CodeModal
-                  handleModalClose={() => setIsModalVisible(false)}
-                  isModalVisible={isModalVisible}
-                  headline={getModalHeadline({flowNodeName, metaData})}
-                  initialValue={beautifyMetadata(
-                    metaData.instanceMetadata,
-                    incident
-                  )}
-                  mode="view"
+                <JSONEditorModal
+                  isVisible={isModalVisible}
+                  onClose={() => setIsModalVisible(false)}
+                  title={getModalHeadline({flowNodeName, metaData})}
+                  value={beautifyMetadata(metaData.instanceMetadata, incident)}
+                  readOnly
                 />
               </>
             )}

@@ -14,7 +14,6 @@ import {sortIncidents} from './service';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
-import {ErrorMessageModal} from './ErrorMessageModal';
 import {FlexContainer, ErrorMessageCell} from './styled';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {Incident, incidentsStore} from 'modules/stores/incidents';
@@ -24,6 +23,7 @@ import {useLocation} from 'react-router-dom';
 import {tracking} from 'modules/tracking';
 import {authenticationStore} from 'modules/stores/authentication';
 import {SortableTable} from 'modules/components/SortableTable';
+import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 
 const IncidentsTable: React.FC = observer(function IncidentsTable() {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -214,12 +214,13 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
             },
           };
         })}
-      ></SortableTable>
-      <ErrorMessageModal
+      />
+      <JSONEditorModal
         isVisible={isModalVisible}
         title={modalTitle}
-        content={modalContent}
-        onModalClose={handleModalClose}
+        value={modalContent}
+        onClose={handleModalClose}
+        readOnly
       />
     </>
   );

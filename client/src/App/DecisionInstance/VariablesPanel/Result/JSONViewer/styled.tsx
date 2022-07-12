@@ -5,21 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import styled, {createGlobalStyle} from 'styled-components';
-
-const JSONEditorStyles = createGlobalStyle`
-  div.jsoneditor {
-    border: none;
-
-    & .ace_error {
-      background-image: none;
-    }
-  }
-`;
+import styled from 'styled-components';
 
 const Container = styled.div`
   width: 100%;
   height: 100%;
 `;
 
-export {Container, JSONEditorStyles};
+export {Container};

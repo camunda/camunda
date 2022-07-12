@@ -16,13 +16,6 @@ import {Select as MockSelect} from 'modules/mocks/common-ui/Select';
 import {Dropdown as MockDropdown} from 'modules/mocks/common-ui/Dropdown';
 import MockSplitter from 'modules/mocks/Splitter';
 
-class MockJSONEditor {
-  updateText() {}
-  destroy() {}
-  set() {}
-  get() {}
-}
-
 jest.mock('@devbookhq/splitter', () => {
   return {
     __esModule: true,
@@ -30,11 +23,6 @@ jest.mock('@devbookhq/splitter', () => {
     default: MockSplitter,
   };
 });
-
-jest.mock('jsoneditor', () => MockJSONEditor);
-jest.mock('jsoneditor/dist/jsoneditor.css', () => undefined);
-jest.mock('brace/theme/tomorrow_night', () => undefined);
-jest.mock('brace/theme/tomorrow', () => undefined);
 jest.mock('modules/utils/date/formatDate');
 jest.mock('@camunda-cloud/common-ui-react', () => {
   const React = require('react');

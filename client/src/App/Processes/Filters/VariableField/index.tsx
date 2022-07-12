@@ -69,7 +69,8 @@ const Variable: React.FC = observer(() => {
         )}
       </Field>
       <JSONEditorModal
-        title={`Edit Variable Value`}
+        isVisible={isModalVisible}
+        title="Edit Variable Value"
         value={formState.values?.variableValue}
         onClose={() => {
           setIsModalVisible(false);
@@ -78,7 +79,7 @@ const Variable: React.FC = observer(() => {
             variant: 'search-variable',
           });
         }}
-        onSave={(value) => {
+        onApply={(value) => {
           form.change('variableValue', value);
           setIsModalVisible(false);
           tracking.track({
@@ -86,7 +87,6 @@ const Variable: React.FC = observer(() => {
             variant: 'search-variable',
           });
         }}
-        isModalVisible={isModalVisible}
       />
     </>
   );

@@ -28,8 +28,7 @@ const ExistingVariable: React.FC<Props> = ({variableName, variableValue}) => {
   const formState = useFormState();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const form = useForm();
-
-  const editInputTDRef = useRef<HTMLTableDataCellElement>(null);
+  const editInputTDRef = useRef<HTMLTableCellElement | null>(null);
 
   return (
     <>
@@ -78,6 +77,7 @@ const ExistingVariable: React.FC<Props> = ({variableName, variableValue}) => {
         <EditButtons />
       </EditButtonsTD>
       <JSONEditorModal
+        isVisible={isModalVisible}
         title={`Edit Variable "${variableName}"`}
         value={formState.values?.value}
         onClose={() => {
@@ -87,7 +87,7 @@ const ExistingVariable: React.FC<Props> = ({variableName, variableValue}) => {
             variant: 'edit-variable',
           });
         }}
-        onSave={(value) => {
+        onApply={(value) => {
           form.change('value', value);
           setIsModalVisible(false);
           tracking.track({
@@ -95,7 +95,6 @@ const ExistingVariable: React.FC<Props> = ({variableName, variableValue}) => {
             variant: 'edit-variable',
           });
         }}
-        isModalVisible={isModalVisible}
       />
     </>
   );

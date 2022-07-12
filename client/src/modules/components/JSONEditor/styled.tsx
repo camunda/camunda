@@ -5,16 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-const mockProps = {
-  content: 'some modal content',
-  title: 'modal title',
-  isVisible: true,
-  onModalClose: jest.fn(),
-};
+import {createGlobalStyle} from 'styled-components';
 
-const mockHiddenModalProps = {
-  ...mockProps,
-  isVisible: false,
-};
+const EditorStyles = createGlobalStyle`
+  .monaco-editor textarea:focus {
+    box-shadow: none !important;
+  }
+`;
 
-export {mockProps, mockHiddenModalProps};
+export {EditorStyles};

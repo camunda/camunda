@@ -218,9 +218,7 @@ describe('PopoverOverlay', () => {
     expect(
       screen.getByText(/Flow Node "Activity_0zqism7" Metadata/)
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: 'Close Modal'})
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
 
     expect(
       screen.getByText(/"flowNodeId": "Activity_0zqism7"/)
@@ -253,7 +251,7 @@ describe('PopoverOverlay', () => {
       screen.getByText(/"calledProcessInstanceKey": "229843728748927482"/)
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: 'Close Modal'}));
+    await user.click(screen.getByRole('button', {name: 'Close'}));
     await waitForElementToBeRemoved(
       screen.getByText(/Flow Node "Activity_0zqism7" Metadata/)
     );

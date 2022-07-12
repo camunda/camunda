@@ -73,6 +73,7 @@ const NewVariable: React.FC = () => {
         <EditButtons />
       </EditButtonsContainer>
       <JSONEditorModal
+        isVisible={isModalVisible}
         title={
           formState.values?.name
             ? `Edit Variable "${formState.values?.name}"`
@@ -86,7 +87,7 @@ const NewVariable: React.FC = () => {
             variant: 'add-variable',
           });
         }}
-        onSave={(value) => {
+        onApply={(value) => {
           form.change('value', value);
           setIsModalVisible(false);
           tracking.track({
@@ -94,7 +95,6 @@ const NewVariable: React.FC = () => {
             variant: 'add-variable',
           });
         }}
-        isModalVisible={isModalVisible}
       />
     </Container>
   );

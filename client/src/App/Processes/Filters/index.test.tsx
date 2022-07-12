@@ -321,11 +321,11 @@ describe('Filters', () => {
 
     expect(
       within(screen.getByTestId('modal')).getByRole('button', {
-        name: /close/i,
+        name: /cancel/i,
       })
     ).toBeEnabled();
     expect(
-      within(screen.getByTestId('modal')).getByRole('button', {name: /save/i})
+      within(screen.getByTestId('modal')).getByRole('button', {name: /apply/i})
     ).toBeEnabled();
     expect(
       within(screen.getByTestId('modal')).getByTestId('json-editor-container')
