@@ -127,12 +127,14 @@ class SegmentsManagerTest {
   }
 
   private SegmentsManager createSegmentsManager(final long lastWrittenIndex) {
+    final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     return new SegmentsManager(
-        new SparseJournalIndex(journalIndexDensity),
+        journalIndex,
         entrySize + JournalSegmentDescriptor.getEncodingLength(),
         directory.resolve("data").toFile(),
         lastWrittenIndex,
-        JOURNAL_NAME);
+        JOURNAL_NAME,
+        new SegmentLoader());
   }
 
   private SegmentedJournal openJournal(final float entriesPerSegment) {

@@ -109,6 +109,7 @@
     <version.archunit>0.23.1</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
+    <version.jnr-posix>3.1.15</version.jnr-posix>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -871,6 +872,12 @@
         <artifactId>bcprov-jdk15on</artifactId>
         <version>${version.bouncycastle}</version>
         <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jnr-posix</artifactId>
+        <version>${version.jnr-posix}</version>
       </dependency>
 
       <!-- Dependencies present for convergence only -->

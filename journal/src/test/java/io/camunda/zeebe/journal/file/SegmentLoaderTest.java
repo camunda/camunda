@@ -5,119 +5,99 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.util;
+package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.channels.FileChannel;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import jnr.posix.FileStat;
 import jnr.posix.POSIX;
 import jnr.posix.POSIXFactory;
 import jnr.posix.util.Platform;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
-final class FileUtilTest {
-  private @TempDir Path tmpDir;
-
+@SuppressWarnings("resource")
+@Execution(ExecutionMode.CONCURRENT)
+final class SegmentLoaderTest {
   @Test
-  void shouldDeleteFolder() throws IOException {
-    Files.createFile(tmpDir.resolve("file1"));
-    Files.createFile(tmpDir.resolve("file2"));
-    Files.createDirectory(tmpDir.resolve("testFolder"));
-
-    FileUtil.deleteFolder(tmpDir);
-
-    assertThat(tmpDir).doesNotExist();
-  }
-
-  @Test
-  void shouldThrowExceptionForNonExistingFolder() throws IOException {
-    final Path root = Files.createDirectory(tmpDir.resolve("other"));
-    Files.delete(root);
-
-    assertThatThrownBy(() -> FileUtil.deleteFolder(root)).isInstanceOf(NoSuchFileException.class);
-  }
-
-  // regression test
-  @Test
-  void shouldNotThrowErrorIfFolderDoesNotExist() {
+  void shouldPreallocateSegmentFiles(final @TempDir Path tmpDir) {
     // given
-    final Path nonExistent = tmpDir.resolve("something");
-
-    // when - then
-    assertThatCode(() -> FileUtil.deleteFolderIfExists(nonExistent))
-        .as("no error if folder does not exist")
-        .doesNotThrowAnyException();
-  }
-
-  @Test
-  void shouldThrowExceptionWhenCopySnapshotForNonExistingFolder() {
-    // given
-    final File source = tmpDir.resolve("src").toFile();
-    final File target = tmpDir.resolve("target").toFile();
-
-    // when - then
-    assertThatThrownBy(() -> FileUtil.copySnapshot(source.toPath(), target.toPath()))
-        .isInstanceOf(NoSuchFileException.class);
-  }
-
-  @Test
-  void shouldThrowExceptionWhenyCopySnapshotIfTargetAlreadyExists() throws IOException {
-    // given
-    final Path source = Files.createDirectory(tmpDir.resolve("src"));
-    final Path target = Files.createDirectory(tmpDir.resolve("target"));
-
-    // when -then
-    assertThatThrownBy(() -> FileUtil.copySnapshot(source, target))
-        .isInstanceOf(FileAlreadyExistsException.class);
-  }
-
-  @Test
-  void shouldCopySnapshot() throws Exception {
-    // given
-    final var snapshotFile = "file1";
-    final Path source = Files.createDirectory(tmpDir.resolve("src"));
-    final Path target = tmpDir.resolve("target");
-    Files.createFile(source.resolve(snapshotFile));
+    final var segmentSize = 4 * 1024 * 1024;
+    final var segmentLoader = new SegmentLoader(true);
+    final var segmentFile = tmpDir.resolve("segment.log");
+    final var descriptor =
+        JournalSegmentDescriptor.builder().withId(1).withMaxSegmentSize(segmentSize).build();
 
     // when
-    FileUtil.copySnapshot(source, target);
+    segmentLoader.createSegment(segmentFile, descriptor, 1, new SparseJournalIndex(1));
 
     // then
-    assertThat(Files.list(target)).contains(target.resolve(snapshotFile));
-  }
-
-  @Test
-  void shouldPreallocateFile() throws IOException {
-    // given
-    final var path = tmpDir.resolve("file");
-    final var length = 1024 * 1024L;
-
-    // when
-    try (final FileChannel channel =
-        FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
-      FileUtil.preallocate(channel, length);
-    }
-
-    // then
-    final var realSize = getRealSize(path);
-    final var maxRealSize = length + getBlockSize(path);
+    final var realSize = getRealSize(segmentFile);
+    final var maxRealSize = segmentSize + getBlockSize(segmentFile);
     assertThat(realSize)
         .as(
             "Expected <%s> to have a real size between <%d> and <%d> bytes, but it had <%d>",
-            path, length, maxRealSize, realSize)
-        .isBetween(length, maxRealSize);
+            segmentFile, segmentSize, maxRealSize, realSize)
+        .isBetween((long) segmentSize, maxRealSize);
+  }
+
+  @Test
+  void shouldNotPreallocateSegmentFiles(final @TempDir Path tmpDir) {
+    // given
+    final var segmentSize = 4 * 1024 * 1024;
+    final var segmentLoader = new SegmentLoader(false);
+    final var segmentFile = tmpDir.resolve("segment.log");
+    final var descriptor =
+        JournalSegmentDescriptor.builder().withId(1).withMaxSegmentSize(segmentSize).build();
+
+    // when
+    segmentLoader.createSegment(segmentFile, descriptor, 1, new SparseJournalIndex(1));
+
+    // then
+    final var realSize = getRealSize(segmentFile);
+    assertThat(realSize)
+        .as(
+            "Expected <%s> to have a real size less than <%d> bytes, but it had <%d>",
+            segmentFile, segmentSize, realSize)
+        .isLessThan(segmentSize);
+  }
+
+  @Test
+  void shouldPreallocateNewFileIfUnusedSegmentAlreadyExists(final @TempDir Path tmpDir)
+      throws IOException {
+    // given
+    final var segmentSize = 4 * 1024 * 1024;
+    final var descriptor =
+        JournalSegmentDescriptor.builder()
+            .withId(1)
+            .withIndex(1)
+            .withMaxSegmentSize(segmentSize)
+            .build();
+    final var lastWrittenIndex = descriptor.index() - 1;
+    final var segmentLoader = new SegmentLoader(true);
+    final var segmentFile = tmpDir.resolve("segment.log");
+
+    // when - the segment is "unused" if the lastWrittenIndex is less than the expected first index
+    // this can happen if we crashed in the middle of creating the new segment
+    Files.writeString(segmentFile, "foo");
+    segmentLoader.createSegment(
+        segmentFile, descriptor, lastWrittenIndex, new SparseJournalIndex(1));
+
+    // then
+    final var realSize = getRealSize(segmentFile);
+    final var maxRealSize = segmentSize + getBlockSize(segmentFile);
+    assertThat(realSize)
+        .as(
+            "Expected <%s> to have a real size between <%d> and <%d> bytes, but it had <%d>",
+            segmentFile, segmentSize, maxRealSize, realSize)
+        .isBetween((long) segmentSize, maxRealSize);
   }
 
   /**

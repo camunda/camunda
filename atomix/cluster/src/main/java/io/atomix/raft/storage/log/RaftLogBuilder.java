@@ -118,6 +118,19 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
     return this;
   }
 
+  /**
+   * Sets whether segment files are pre-allocated at creation. If true, segment files are
+   * pre-allocated to the maximum segment size (see {@link #withMaxSegmentSize(int)}}) at creation
+   * before any writes happen.
+   *
+   * @param preallocateSegmentFiles true to preallocate files, false otherwise
+   * @return this builder for chaining
+   */
+  public RaftLogBuilder withPreallocateSegmentFiles(final boolean preallocateSegmentFiles) {
+    journalBuilder.withPreallocateSegmentFiles(preallocateSegmentFiles);
+    return this;
+  }
+
   @Override
   public RaftLog build() {
     final Journal journal = journalBuilder.build();
