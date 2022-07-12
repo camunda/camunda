@@ -10,13 +10,13 @@ import styled, {css} from 'styled-components';
 import {ReactComponent as BaseLogo} from 'modules/components/Icon/logo.svg';
 import {Copyright as BasicCopyright} from 'modules/components/Copyright';
 import {Input} from './Input';
+import {styles} from '@carbon/elements';
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   padding-top: 128px;
-  font-family: IBM Plex Sans;
   height: 100%;
   min-width: auto;
   min-height: auto;
@@ -43,9 +43,7 @@ const Logo = styled(BaseLogo)`
 const LoginTitle = styled.span`
   ${({theme}) => {
     return css`
-      font-family: IBM Plex Sans;
-      font-size: 28px;
-      font-weight: normal;
+      ${styles.productiveHeading04};
       color: ${theme.colors.text02};
     `;
   }}
@@ -60,8 +58,7 @@ const LoginForm = styled.form`
 const FormError = styled.div`
   ${({theme}) => {
     return css`
-      font-size: 15px;
-      font-weight: 500;
+      ${styles.label02};
       color: ${theme.colors.incidentsAndErrors};
       margin-bottom: 10px;
       height: 15px;

@@ -6,6 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 const Container = styled.div`
   position: relative;
@@ -22,8 +23,7 @@ const Input = styled.input`
 
       border-radius: 3px;
       border: solid 1px ${colors.borderColor};
-      font-family: IBM Plex Sans;
-      font-size: 15px;
+      ${styles.bodyShort02};
       color: ${theme.colors.text01};
 
       background-color: ${colors.backgroundColor};
@@ -37,7 +37,7 @@ const Input = styled.input`
 
         transform: translate(9px, 5px);
 
-        font-size: 11px;
+        ${styles.label01};
         color: ${colors.labelColor};
 
         transition: all ease-in-out 150ms;
@@ -45,7 +45,7 @@ const Input = styled.input`
 
       &:placeholder-shown:not(:focus-within) + label {
         transform: translate(9px, 14px);
-        font-size: 15px;
+        ${styles.label02};
         font-style: italic;
       }
 

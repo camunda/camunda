@@ -6,6 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 const Container = styled.div`
   ${({theme}) => {
@@ -14,7 +15,7 @@ const Container = styled.div`
     return css`
       color: ${colors.color};
       opacity: 0.9;
-      font-size: 12px;
+      ${styles.legal01};
       margin-top: 35px;
       max-width: 489px;
     `;
