@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.ClassRule;
@@ -104,34 +103,141 @@ public final class InclusiveGatewayTest {
 
     // when
     final long processInstance1 =
-        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "a,b").create();
-    final long processInstance2 =
-        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "a,b,c").create();
-    final long processInstance3 =
-        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "d").create();
-
-    final List<Long> processInstanceKeys =
-        Arrays.asList(processInstance1, processInstance2, processInstance3);
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "a").create();
 
     // then
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
-                .valueFilter(r -> processInstanceKeys.contains(r.getProcessInstanceKey()))
+                .withProcessInstanceKey(processInstance1)
+                .limitToProcessInstanceCompleted()
                 .withElementType(BpmnElementType.END_EVENT)
-                .limit(6))
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs("when s1's condition is true,then s1 sequence flow is taken")
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getProcessInstanceKey(), v.getElementId()))
+        .contains(tuple(processInstance1, "end1"));
+
+    // when
+    final long processInstance2 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "b").create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstance2)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.END_EVENT)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs("when s2's condition is true,then s2 sequence flow is taken")
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getProcessInstanceKey(), v.getElementId()))
+        .contains(tuple(processInstance2, "end2"));
+
+    // when
+    final long processInstance3 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "c").create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstance3)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.END_EVENT)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs("when s3's condition is true,then s3 sequence flow is taken")
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getProcessInstanceKey(), v.getElementId()))
+        .contains(tuple(processInstance3, "end3"));
+
+    // when
+    final long processInstance4 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "d").create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstance4)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.END_EVENT)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs("when none condition is true,then the default sequence flow is taken")
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getProcessInstanceKey(), v.getElementId()))
+        .contains(tuple(processInstance4, "end3"));
+
+    // when
+    final long processInstance5 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "a,b").create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstance5)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.END_EVENT)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .extracting(Record::getValue)
+        .describedAs(
+            "when s1 and s2's conditions are true,then s1 and s2's sequence flows are taken")
+        .extracting(v -> tuple(v.getProcessInstanceKey(), v.getElementId()))
+        .contains(tuple(processInstance5, "end1"), tuple(processInstance5, "end2"));
+
+    // when
+    final long processInstance6 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "b,c").create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstance6)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.END_EVENT)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs(
+            "when s2 and s3's conditions are true,then s2 and s3's sequence flows are taken")
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getProcessInstanceKey(), v.getElementId()))
+        .contains(tuple(processInstance6, "end2"), tuple(processInstance6, "end3"));
+
+    // when
+    final long processInstance7 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "a,c").create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstance7)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.END_EVENT)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs(
+            "when s1 and s3's conditions are true,then s1 and s3's sequence flows are taken")
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getProcessInstanceKey(), v.getElementId()))
+        .contains(tuple(processInstance7, "end1"), tuple(processInstance7, "end3"));
+
+    // when
+    final long processInstance8 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "a,b,c").create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstance8)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.END_EVENT)
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs("when all conditions are true,then all sequence flows are taken")
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getProcessInstanceKey(), v.getElementId()))
         .contains(
-            tuple(processInstance1, "end1"),
-            tuple(processInstance1, "end2"),
-            tuple(processInstance2, "end1"),
-            tuple(processInstance2, "end2"),
-            tuple(processInstance2, "end3"),
-            tuple(processInstance3, "end3"));
+            tuple(processInstance8, "end1"),
+            tuple(processInstance8, "end2"),
+            tuple(processInstance8, "end3"));
   }
 
   @Test
-  public void shouldJoinOnInclusiveGateway() {
+  public void shouldTakeTheRightSequence() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
     final BpmnModelInstance processDefinition =
@@ -154,22 +260,25 @@ public final class InclusiveGatewayTest {
     // when
     final long processInstance1 =
         ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "a,b").create();
-    final long processInstance2 =
-        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "d").create();
-    final long processInstance3 =
-        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "b,c").create();
 
     // then
-
     List<String> takenSequenceFlows =
         RecordingExporter.processInstanceRecords()
-            .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
             .withProcessInstanceKey(processInstance1)
-            .limit(4)
+            .limitToProcessInstanceCompleted()
+            .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
             .map(s -> s.getValue().getElementId())
             .collect(Collectors.toList());
-    assertThat(takenSequenceFlows).contains("s1").contains("s2");
+    assertThat(takenSequenceFlows)
+        .describedAs("when all conditions are true,then all sequence flows is taken")
+        .contains("s1")
+        .contains("s2");
 
+    // when
+    final long processInstance2 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "a").create();
+
+    // then
     takenSequenceFlows =
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstance2)
@@ -177,16 +286,44 @@ public final class InclusiveGatewayTest {
             .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
             .map(s -> s.getValue().getElementId())
             .collect(Collectors.toList());
-    assertThat(takenSequenceFlows).contains("s2").doesNotContain("s1");
+    assertThat(takenSequenceFlows)
+        .describedAs("when the s1's is true,then s1's sequence flow is taken")
+        .contains("s1")
+        .doesNotContain("s2");
 
+    // when
+    final long processInstance3 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "b,c").create();
+
+    // then
     takenSequenceFlows =
         RecordingExporter.processInstanceRecords()
-            .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
             .withProcessInstanceKey(processInstance3)
-            .limit(4)
+            .limitToProcessInstanceCompleted()
+            .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
             .map(s -> s.getValue().getElementId())
             .collect(Collectors.toList());
-    assertThat(takenSequenceFlows).contains("s2").doesNotContain("s1");
+    assertThat(takenSequenceFlows)
+        .describedAs("when the s2's is true,then s2's sequence flow is taken")
+        .contains("s2")
+        .doesNotContain("s1");
+
+    // when
+    final long processInstance4 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "d").create();
+
+    // then
+    takenSequenceFlows =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstance4)
+            .limitToProcessInstanceCompleted()
+            .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
+            .map(s -> s.getValue().getElementId())
+            .collect(Collectors.toList());
+    assertThat(takenSequenceFlows)
+        .describedAs("when none condition is true,then the default s2's sequence flow is taken")
+        .contains("s2")
+        .doesNotContain("s1");
   }
 
   @Test
@@ -216,25 +353,24 @@ public final class InclusiveGatewayTest {
     // then
     List<Record<ProcessInstanceRecordValue>> sequenceFlows =
         RecordingExporter.processInstanceRecords()
-            .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
             .withProcessInstanceKey(processInstance1)
-            .limit(4)
+            .limitToProcessInstanceCompleted()
+            .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
             .asList();
 
     List<Record<ProcessInstanceRecordValue>> gateWays =
         RecordingExporter.processInstanceRecords()
-            .withIntent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
-            .withElementType(BpmnElementType.INCLUSIVE_GATEWAY)
             .withProcessInstanceKey(processInstance1)
-            .limit(2)
+            .limitToProcessInstanceCompleted()
+            .withElementId("joinRequest")
             .asList();
 
     // assert that gateway activation originates from the same command as the sequence flow taken
     // and that the correct flow was taken
     assertThat(gateWays.get(0).getSourceRecordPosition())
-        .isEqualTo(sequenceFlows.get(0).getSourceRecordPosition());
-    assertThat(gateWays.get(1).getSourceRecordPosition())
         .isEqualTo(sequenceFlows.get(1).getSourceRecordPosition());
+    assertThat(gateWays.get(0).getSourceRecordPosition())
+        .isEqualTo(sequenceFlows.get(2).getSourceRecordPosition());
     assertThat(sequenceFlows.get(1).getValue().getElementId()).isEqualTo("s2");
     assertThat(sequenceFlows.get(2).getValue().getElementId()).isEqualTo("s1");
 
@@ -244,22 +380,19 @@ public final class InclusiveGatewayTest {
     // then
     sequenceFlows =
         RecordingExporter.processInstanceRecords()
-            .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
             .withProcessInstanceKey(processInstance2)
-            .limit(3)
-            .collect(Collectors.toList());
+            .limitToProcessInstanceCompleted()
+            .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
+            .asList();
 
     gateWays =
         RecordingExporter.processInstanceRecords()
-            .withIntent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
-            .withElementType(BpmnElementType.INCLUSIVE_GATEWAY)
             .withProcessInstanceKey(processInstance2)
-            .limit(2)
-            .collect(Collectors.toList());
+            .limitToProcessInstanceCompleted()
+            .withElementId("joinRequest")
+            .asList();
 
     assertThat(gateWays.get(0).getSourceRecordPosition())
-        .isEqualTo(sequenceFlows.get(0).getSourceRecordPosition());
-    assertThat(gateWays.get(1).getSourceRecordPosition())
         .isEqualTo(sequenceFlows.get(1).getSourceRecordPosition());
     assertThat(sequenceFlows.get(1).getValue().getElementId()).isEqualTo("s2");
 
@@ -269,24 +402,43 @@ public final class InclusiveGatewayTest {
     // then
     sequenceFlows =
         RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstance3)
+            .limitToProcessInstanceCompleted()
             .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
-            .withProcessInstanceKey(processInstance2)
-            .limit(3)
-            .collect(Collectors.toList());
+            .asList();
 
     gateWays =
         RecordingExporter.processInstanceRecords()
-            .withIntent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
-            .withElementType(BpmnElementType.INCLUSIVE_GATEWAY)
-            .withProcessInstanceKey(processInstance2)
-            .limit(2)
-            .collect(Collectors.toList());
+            .withProcessInstanceKey(processInstance3)
+            .limitToProcessInstanceCompleted()
+            .withElementId("joinRequest")
+            .asList();
 
     assertThat(gateWays.get(0).getSourceRecordPosition())
-        .isEqualTo(sequenceFlows.get(0).getSourceRecordPosition());
-    assertThat(gateWays.get(1).getSourceRecordPosition())
         .isEqualTo(sequenceFlows.get(1).getSourceRecordPosition());
     assertThat(sequenceFlows.get(1).getValue().getElementId()).isEqualTo("s2");
+
+    // when
+    final long processInstance4 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "a").create();
+    // then
+    sequenceFlows =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstance4)
+            .limitToProcessInstanceCompleted()
+            .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
+            .asList();
+
+    gateWays =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstance4)
+            .limitToProcessInstanceCompleted()
+            .withElementId("joinRequest")
+            .asList();
+
+    assertThat(gateWays.get(0).getSourceRecordPosition())
+        .isEqualTo(sequenceFlows.get(1).getSourceRecordPosition());
+    assertThat(sequenceFlows.get(1).getValue().getElementId()).isEqualTo("s1");
   }
 
   @Test
@@ -437,72 +589,6 @@ public final class InclusiveGatewayTest {
   }
 
   @Test
-  public void shouldSplitTakingTheDefaultFlowIfNoConditionsAreTrue() {
-    // given
-    final String processId = Strings.newRandomValidBpmnId();
-    final BpmnModelInstance processDefinition =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent()
-            .inclusiveGateway()
-            .defaultFlow()
-            .endEvent("a")
-            .moveToLastInclusiveGateway()
-            .conditionExpression("= contains(str,\"b\")")
-            .endEvent("b")
-            .done();
-
-    ENGINE.deployment().withXmlResource(processDefinition).deploy();
-
-    // when
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "a").create();
-
-    // then
-    final List<Record<ProcessInstanceRecordValue>> completedEvents =
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .limitToProcessInstanceCompleted()
-            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-            .withElementType(BpmnElementType.END_EVENT)
-            .collect(Collectors.toList());
-
-    assertThat(completedEvents).extracting(r -> r.getValue().getElementId()).containsExactly("a");
-  }
-
-  @Test
-  public void shouldEndScopeIfGatewayHasNoOutgoingFlows() {
-    // given
-    final String processId = Strings.newRandomValidBpmnId();
-    final BpmnModelInstance processDefinition =
-        Bpmn.createExecutableProcess(processId).startEvent().inclusiveGateway("inclusive").done();
-
-    ENGINE.deployment().withXmlResource(processDefinition).deploy();
-
-    // when
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "a,b").create();
-
-    // then
-    final List<Record<ProcessInstanceRecordValue>> completedEvents =
-        RecordingExporter.processInstanceRecords()
-            .onlyEvents()
-            .withProcessInstanceKey(processInstanceKey)
-            .skipUntil(r -> r.getValue().getElementId().equals("inclusive"))
-            .limitToProcessInstanceCompleted()
-            .collect(Collectors.toList());
-
-    assertThat(completedEvents)
-        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
-        .containsExactly(
-            tuple(BpmnElementType.INCLUSIVE_GATEWAY, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.INCLUSIVE_GATEWAY, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.INCLUSIVE_GATEWAY, ProcessInstanceIntent.ELEMENT_COMPLETING),
-            tuple(BpmnElementType.INCLUSIVE_GATEWAY, ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
-  }
-
-  @Test
   public void shouldResolveIncidentsWhenTerminating() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
@@ -562,10 +648,10 @@ public final class InclusiveGatewayTest {
     List<Record<ProcessInstanceRecordValue>> taskEvents =
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey1)
+            .limitToProcessInstanceCompleted()
             .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .filter(e -> isServiceTaskInProcess(e.getValue().getElementId(), INCLUSIVE_PROCESS))
-            .limit(3)
-            .collect(Collectors.toList());
+            .asList();
 
     assertThat(taskEvents).hasSize(3);
     assertThat(taskEvents)
@@ -583,10 +669,10 @@ public final class InclusiveGatewayTest {
     taskEvents =
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey2)
+            .limitToProcessInstanceCompleted()
             .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .filter(e -> isServiceTaskInProcess(e.getValue().getElementId(), INCLUSIVE_PROCESS))
-            .limit(3)
-            .collect(Collectors.toList());
+            .asList();
 
     assertThat(taskEvents).hasSize(2);
     assertThat(taskEvents)
@@ -601,10 +687,10 @@ public final class InclusiveGatewayTest {
     taskEvents =
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey3)
+            .limitToProcessInstanceCompleted()
             .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .filter(e -> isServiceTaskInProcess(e.getValue().getElementId(), INCLUSIVE_PROCESS))
-            .limit(3)
-            .collect(Collectors.toList());
+            .asList();
 
     assertThat(taskEvents).hasSize(1);
     assertThat(taskEvents).extracting(e -> e.getValue().getElementId()).containsExactly("task3");
@@ -626,10 +712,10 @@ public final class InclusiveGatewayTest {
     List<Record<ProcessInstanceRecordValue>> completedEvents =
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey1)
+            .limitToProcessInstanceCompleted()
             .withElementType(BpmnElementType.END_EVENT)
             .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-            .limit(3)
-            .collect(Collectors.toList());
+            .asList();
 
     assertThat(completedEvents)
         .extracting(e -> e.getValue().getElementId())
@@ -651,10 +737,10 @@ public final class InclusiveGatewayTest {
     completedEvents =
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey2)
+            .limitToProcessInstanceCompleted()
             .withElementType(BpmnElementType.END_EVENT)
             .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-            .limit(2)
-            .collect(Collectors.toList());
+            .asList();
 
     assertThat(completedEvents)
         .extracting(e -> e.getValue().getElementId())
@@ -675,10 +761,10 @@ public final class InclusiveGatewayTest {
     completedEvents =
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey3)
+            .limitToProcessInstanceCompleted()
             .withElementType(BpmnElementType.END_EVENT)
             .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-            .limit(2)
-            .collect(Collectors.toList());
+            .asList();
 
     assertThat(completedEvents)
         .extracting(e -> e.getValue().getElementId())
@@ -706,11 +792,12 @@ public final class InclusiveGatewayTest {
     ENGINE.deployment().withXmlResource(process).deploy();
 
     // when
-    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<ProcessInstanceRecordValue>> processInstanceEvents =
         RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
             .limitToProcessInstanceCompleted()
             .collect(Collectors.toList());
 
@@ -737,11 +824,12 @@ public final class InclusiveGatewayTest {
     ENGINE.deployment().withXmlResource(process).deploy();
 
     // when
-    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     final List<Record<ProcessInstanceRecordValue>> processInstanceEvents =
         RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
             .limitToProcessInstanceCompleted()
             .collect(Collectors.toList());
 
@@ -784,7 +872,7 @@ public final class InclusiveGatewayTest {
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
             .limitToProcessInstanceCompleted()
-            .collect(Collectors.toList());
+            .asList();
 
     assertThat(processInstanceEvents)
         .extracting(e -> e.getValue().getElementId(), Record::getIntent)
@@ -794,7 +882,7 @@ public final class InclusiveGatewayTest {
   }
 
   @Test
-  public void shouldMergeInclusiveBranches() {
+  public void shouldMergeInclusiveBranchesWithServiceTasks() {
     // given
     ENGINE.deployment().withXmlResource(INCLUSIVE_JOIN_PROCESS).deploy();
 
@@ -810,9 +898,11 @@ public final class InclusiveGatewayTest {
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey1)
             .limitToProcessInstanceCompleted()
-            .collect(Collectors.toList());
+            .asList();
 
     assertThat(events)
+        .describedAs(
+            "after all sequence flows are taken, the joining inclusive gateway is activated exactly once")
         .extracting(e -> e.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
             tuple("flow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
@@ -864,11 +954,9 @@ public final class InclusiveGatewayTest {
     // then
     final List<Record<ProcessInstanceRecordValue>> events =
         RecordingExporter.processInstanceRecords()
-            .limit(
-                r ->
-                    "join".equals(r.getValue().getElementId())
-                        && ProcessInstanceIntent.ELEMENT_COMPLETED == r.getIntent())
-            .collect(Collectors.toList());
+            .withProcessInstanceKey(processInstanceKey)
+            .limitToProcessInstanceCompleted()
+            .asList();
 
     assertThat(events)
         .extracting(e -> e.getValue().getElementId(), Record::getIntent)
@@ -876,7 +964,8 @@ public final class InclusiveGatewayTest {
             tuple("joinFlow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple("joinFlow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple("joinFlow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
   }
 
   @Test
@@ -886,63 +975,310 @@ public final class InclusiveGatewayTest {
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent("start")
             .inclusiveGateway("fork")
-            .inclusiveGateway("join-fork")
+            .sequenceFlowId("s1")
+            .inclusiveGateway("join")
             .moveToNode("fork")
-            .connectTo("join-fork")
+            .sequenceFlowId("s2")
+            .connectTo("join")
+            .sequenceFlowId("s3")
             .serviceTask("task1", b -> b.zeebeJobType("type1"))
             .moveToLastGateway()
+            .sequenceFlowId("s4")
             .serviceTask("task2", b -> b.zeebeJobType("type2"))
             .done();
 
     ENGINE.deployment().withXmlResource(process).deploy();
 
     // when
-    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
+    ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("type2").complete();
     // then
     final List<Record<ProcessInstanceRecordValue>> elementInstances =
         RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .limitToProcessInstanceCompleted()
             .filter(
                 r ->
                     r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED
                         && r.getValue().getBpmnElementType() == BpmnElementType.SERVICE_TASK)
-            .limit(2)
-            .collect(Collectors.toList());
+            .asList();
 
     assertThat(elementInstances)
         .extracting(e -> e.getValue().getElementId())
-        .contains("task1", "task2");
+        .containsExactlyInAnyOrder("task1", "task2");
   }
 
   @Test
-  public void shouldSplitWithUncontrolledFlow() {
+  public void shouldMergeInclusiveBranchesWithManualTask() {
     // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess(PROCESS_ID)
+    final String processId = Strings.newRandomValidBpmnId();
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess(processId)
             .startEvent("start")
-            .serviceTask("task1", b -> b.zeebeJobType("type1"))
-            .moveToNode("start")
-            .serviceTask("task2", b -> b.zeebeJobType("type2"))
+            .inclusiveGateway("fork")
+            .sequenceFlowId("flow1")
+            .inclusiveGateway("join")
+            .endEvent("end")
+            .moveToNode("fork")
+            .sequenceFlowId("flow2")
+            .manualTask("m2")
+            .connectTo("join")
+            .moveToNode("fork")
+            .sequenceFlowId("flow3")
+            .manualTask("m3")
+            .connectTo("join")
             .done();
-
-    ENGINE.deployment().withXmlResource(process).deploy();
+    // given
+    ENGINE.deployment().withXmlResource(processDefinition).deploy();
 
     // when
-    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // then
-    final List<Record<ProcessInstanceRecordValue>> taskEvents =
+    final List<Record<ProcessInstanceRecordValue>> events =
         RecordingExporter.processInstanceRecords()
-            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .filter(e -> isServiceTaskInProcess(e.getValue().getElementId(), process))
-            .limit(2)
+            .withProcessInstanceKey(processInstanceKey)
+            .limitToProcessInstanceCompleted()
+            .asList();
+
+    assertThat(events)
+        .describedAs(
+            "when there is no any task,after all sequence flows are taken, the joining inclusive gateway is activated exactly once")
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("flow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsSubsequence(
+            tuple("flow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsSubsequence(
+            tuple("flow3", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+  }
+
+  @Test
+  public void shouldMergeInclusiveBranchesWithSomeServiceTask() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .inclusiveGateway("fork")
+            .defaultFlow()
+            .sequenceFlowId("flow1")
+            .conditionExpression("= contains(str,\"a\")")
+            .serviceTask("task1", b -> b.zeebeJobType("type1"))
+            .inclusiveGateway("join")
+            .endEvent("end")
+            .moveToNode("fork")
+            .sequenceFlowId("flow2")
+            .conditionExpression("= contains(str,\"b\")")
+            .connectTo("join")
+            .moveToNode("fork")
+            .sequenceFlowId("flow3")
+            .conditionExpression("= contains(str,\"c\")")
+            .serviceTask("task3", b -> b.zeebeJobType("type3"))
+            .connectTo("join")
+            .done();
+    // given
+    ENGINE.deployment().withXmlResource(processDefinition).deploy();
+
+    // when
+    final long processInstanceKey1 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "a,b,c").create();
+
+    // then
+    ENGINE.job().ofInstance(processInstanceKey1).withType("type1").complete();
+    ENGINE.job().ofInstance(processInstanceKey1).withType("type3").complete();
+    List<Record<ProcessInstanceRecordValue>> events =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey1)
+            .limitToProcessInstanceCompleted()
             .collect(Collectors.toList());
 
-    assertThat(taskEvents).hasSize(2);
-    assertThat(taskEvents)
-        .extracting(e -> e.getValue().getElementId())
-        .containsExactlyInAnyOrder("task1", "task2");
-    assertThat(taskEvents.get(0).getKey()).isNotEqualTo(taskEvents.get(1).getKey());
+    assertThat(events)
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("flow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsSubsequence(
+            tuple("flow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsSubsequence(
+            tuple("flow3", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+
+    // when
+    final long processInstanceKey2 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "a,c").create();
+
+    // then
+    ENGINE.job().ofInstance(processInstanceKey2).withType("type1").complete();
+    ENGINE.job().ofInstance(processInstanceKey2).withType("type3").complete();
+
+    events =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey2)
+            .limitToProcessInstanceCompleted()
+            .collect(Collectors.toList());
+
+    assertThat(events)
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("flow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsSubsequence(
+            tuple("flow3", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+
+    // when
+    final long processInstanceKey3 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "b").create();
+
+    events =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey3)
+            .limitToProcessInstanceCompleted()
+            .asList();
+
+    assertThat(events)
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("flow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+
+    // when
+    final long processInstanceKey4 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "a").create();
+
+    // then
+    ENGINE.job().ofInstance(processInstanceKey4).withType("type1").complete();
+
+    events =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey4)
+            .limitToProcessInstanceCompleted()
+            .asList();
+
+    assertThat(events)
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("flow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+
+    // when
+    final long processInstanceKey5 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "b,c").create();
+
+    // then
+    ENGINE.job().ofInstance(processInstanceKey5).withType("type3").complete();
+
+    events =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey5)
+            .limitToProcessInstanceCompleted()
+            .collect(Collectors.toList());
+
+    assertThat(events)
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("flow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsSubsequence(
+            tuple("flow3", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+
+    // when
+    final long processInstanceKey6 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "c").create();
+
+    // then
+    ENGINE.job().ofInstance(processInstanceKey6).withType("type3").complete();
+
+    events =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey6)
+            .limitToProcessInstanceCompleted()
+            .asList();
+
+    assertThat(events)
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("flow3", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+
+    // when
+    final long processInstanceKey7 =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "d").create();
+
+    // then
+    ENGINE.job().ofInstance(processInstanceKey7).withType("type1").complete();
+
+    events =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey7)
+            .limitToProcessInstanceCompleted()
+            .asList();
+
+    assertThat(events)
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("flow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+  }
+
+  @Test
+  public void shouldMergeInclusiveBranchesWithParallelGateway() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .parallelGateway("parallel-fork")
+            .inclusiveGateway("inclusive-fork")
+            .manualTask("manual1")
+            .inclusiveGateway("inclusive-join")
+            .parallelGateway("parallel-join")
+            .endEvent("end")
+            .moveToNode("parallel-fork")
+            .serviceTask("task1", b -> b.zeebeJobType("type1"))
+            .connectTo("parallel-join")
+            .moveToNode("inclusive-fork")
+            .manualTask("manual2")
+            .connectTo("inclusive-join")
+            .done();
+    // given
+    ENGINE.deployment().withXmlResource(processDefinition).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
+    final List<Record<ProcessInstanceRecordValue>> events =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .limitToProcessInstanceCompleted()
+            .asList();
+
+    assertThat(events)
+        .describedAs(
+            "after all sequence flows are taken, the joining inclusive and parallel gateway is activated exactly once")
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
+        .containsOnlyOnce(
+            tuple("inclusive-join", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("parallel-join", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("end", ProcessInstanceIntent.ELEMENT_ACTIVATING));
   }
 
   private static boolean isServiceTaskInProcess(
