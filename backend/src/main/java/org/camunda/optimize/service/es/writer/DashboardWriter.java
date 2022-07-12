@@ -53,15 +53,22 @@ public class DashboardWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public IdResponseDto createNewDashboard(final String userId,
+  public IdResponseDto createNewDashboard(@NonNull final String userId,
                                           @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
+    return createNewDashboard(userId, dashboardDefinitionDto, IdGenerator.getNextId());
+  }
+
+  public IdResponseDto createNewDashboard(@NonNull final String userId,
+                                          @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto,
+                                          @NonNull final String id) {
+
     log.debug("Writing new dashboard to Elasticsearch");
 
     dashboardDefinitionDto.setOwner(userId);
     dashboardDefinitionDto.setName(
       Optional.ofNullable(dashboardDefinitionDto.getName()).orElse(DEFAULT_DASHBOARD_NAME));
     dashboardDefinitionDto.setLastModifier(userId);
-    dashboardDefinitionDto.setId(IdGenerator.getNextId());
+    dashboardDefinitionDto.setId(id);
     return saveDashboard(dashboardDefinitionDto);
   }
 

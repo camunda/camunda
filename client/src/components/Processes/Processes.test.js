@@ -8,12 +8,15 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
+import {addNotification} from 'notifications';
 import {EntityList} from 'components';
 import {getOptimizeProfile} from 'config';
 
 import {Processes} from './Processes';
-import {loadProcesses, updateOwner, loadManagementDashboard} from './service';
-import EditOwnerModal from './EditOwnerModal';
+import {loadProcesses, updateProcess, loadManagementDashboard} from './service';
+import ConfigureProcessModal from './ConfigureProcessModal';
+
+jest.mock('notifications', () => ({addNotification: jest.fn()}));
 
 jest.mock('./service', () => ({
   loadProcesses: jest.fn().mockReturnValue([
@@ -22,9 +25,10 @@ jest.mock('./service', () => ({
       processDefinitionName: 'defName',
       kpis: [],
       owner: {id: null},
+      linkToDashboard: 'dashboardLink',
     },
   ]),
-  updateOwner: jest.fn(),
+  updateProcess: jest.fn(),
   loadManagementDashboard: jest.fn(),
 }));
 
@@ -52,7 +56,7 @@ it('should load processes', async () => {
     {
       icon: 'data-source',
       id: 'defKey',
-      meta: [expect.any(Object), expect.any(Object), expect.any(Object)],
+      meta: expect.any(Array),
       name: 'defName',
       type: 'Process',
     },
@@ -68,29 +72,49 @@ it('should load processes with sort parameters', () => {
   expect(node.find('EntityList').prop('sorting')).toEqual({key: 'lastModifier', order: 'desc'});
 });
 
-it('should hide owner column in ccsm mode', async () => {
+it('should hide owner column and process config button in ccsm mode', async () => {
   getOptimizeProfile.mockReturnValueOnce('ccsm');
   const node = shallow(<Processes {...props} />);
 
   await runAllEffects();
 
   expect(node.find(EntityList).prop('columns')[1].key).not.toBe('owner');
-  expect(node.find(EntityList).prop('data')[0].meta.length).toBe(2);
+  expect(node.find(EntityList).prop('data')[0].meta.length).toBe(3);
 });
 
-it('should edit a process owner', async () => {
-  const node = shallow(<Processes {...props} />);
+it('should edit a process config', async () => {
+  const testConfig = {
+    ownerId: 'testId',
+    processDigest: {enabled: true, checkInterval: {value: 1, unit: 'months'}},
+  };
 
+  const node = shallow(<Processes {...props} />);
   await runAllEffects();
 
-  const addOwnerBtn = node.find(EntityList).prop('data')[0].meta[0].props.children[1];
-  addOwnerBtn.props.onClick();
-  node.find(EditOwnerModal).simulate('confirm', 'userId');
+  const configureProcessBtn = node.find(EntityList).prop('data')[0].meta[4];
+  configureProcessBtn.props.onClick();
 
-  expect(updateOwner).toHaveBeenCalledWith('defKey', 'userId');
+  node.find(ConfigureProcessModal).simulate('confirm', testConfig);
+  expect(updateProcess).toHaveBeenCalledWith('defKey', testConfig);
 });
 
-it('should hide owner column in ccsm mode', async () => {
+it('should show process update notification if digest & email are enabled', async () => {
+  const testConfig = {
+    ownerId: 'testId',
+    processDigest: {enabled: true, checkInterval: {value: 1, unit: 'months'}},
+  };
+
+  const node = shallow(<Processes {...props} />);
+  await runAllEffects();
+
+  const configureProcessBtn = node.find(EntityList).prop('data')[0].meta[4];
+  configureProcessBtn.props.onClick();
+
+  node.find(ConfigureProcessModal).simulate('confirm', testConfig, true, 'testName');
+  expect(addNotification).toHaveBeenCalled();
+});
+
+it('should pass loaded reports and filters to the management dashboard view component', async () => {
   const testDashboard = {reports: [], availableFilters: []};
   loadManagementDashboard.mockReturnValueOnce(testDashboard);
   const node = shallow(<Processes {...props} />);
@@ -103,4 +127,38 @@ it('should hide owner column in ccsm mode', async () => {
   expect(node.find('DashboardView').prop('availableFilters')).toEqual(
     testDashboard.availableFilters
   );
+});
+
+it('should filter out invalid kpis', async () => {
+  const validKpi = {
+    reportName: 'report Name',
+    type: 'quality',
+    value: '123',
+    target: '300',
+    isBelow: true,
+    measure: 'frequency',
+  };
+
+  loadProcesses.mockReturnValueOnce([
+    {
+      kpis: [
+        {
+          ...validKpi,
+          value: null,
+        },
+        {
+          ...validKpi,
+          target: null,
+        },
+        validKpi,
+      ],
+      linkToDashboard: 'dashboardLink',
+    },
+  ]);
+  const node = shallow(<Processes {...props} />);
+
+  await runAllEffects();
+
+  const entityData = node.find(EntityList).prop('data');
+  expect(entityData[0].meta[2].props.content.props.kpis).toEqual([validKpi]);
 });

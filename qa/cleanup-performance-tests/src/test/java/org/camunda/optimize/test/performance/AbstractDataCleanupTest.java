@@ -9,6 +9,7 @@ import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfigurat
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.util.PropertyUtil;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
@@ -39,7 +40,7 @@ public abstract class AbstractDataCleanupTest {
   @RegisterExtension
   @Order(1)
   protected static ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
-    new ElasticSearchIntegrationTestExtension();
+    new ElasticSearchIntegrationTestExtension(false);
   @RegisterExtension
   @Order(2)
   protected static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
@@ -49,10 +50,9 @@ public abstract class AbstractDataCleanupTest {
     "240"
   ));
 
-  static {
-    elasticSearchIntegrationTestExtension.disableCleanup();
+  @BeforeAll
+  public static void beforeAll() {
     embeddedOptimizeExtension.setResetImportOnStart(false);
-    embeddedOptimizeExtension.setupOptimize();
   }
 
   protected static void importEngineData() {

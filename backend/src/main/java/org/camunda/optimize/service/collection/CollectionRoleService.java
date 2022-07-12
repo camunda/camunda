@@ -26,6 +26,7 @@ import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
 import java.util.Collections;
 import java.util.List;
@@ -50,6 +51,38 @@ public class CollectionRoleService {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
     final List<CollectionRoleRequestDto> resolvedRolesToAdd = validateAndResolveIdentities(userId, rolesToAdd);
     collectionWriter.addRoleToCollection(collectionId, resolvedRolesToAdd, userId);
+  }
+
+  public void addUserAsEditorToAutomaticallyCreatedCollection (final String collectionId,
+                                                               final IdentityDto user) {
+    Optional<CollectionDefinitionDto> collectionDefinition = collectionReader.getCollection(collectionId);
+    collectionDefinition.ifPresent(collectionDefinitionDto -> {
+      CollectionRoleRequestDto roleRequestDto = new CollectionRoleRequestDto(user, RoleType.EDITOR);
+      if (collectionDefinitionDto.isAutomaticallyCreated()) {
+       if(!userAlreadyHasAtLeastEditorAccessToCollection(roleRequestDto, collectionDefinitionDto.getData().getRoles())) {
+
+         final List<CollectionRoleRequestDto> resolvedRolesToAdd = validateAndResolveIdentities(
+           user.getId(),
+           List.of(roleRequestDto)
+         );
+         collectionWriter.addRoleToCollection(collectionId, resolvedRolesToAdd, user.getId());
+       }
+      } else {
+        throw new NotAuthorizedException("User " + user.getId() + " is not authorized to edit membership for " +
+                                           "collection " + collectionId);
+      }
+    });
+  }
+
+  private boolean userAlreadyHasAtLeastEditorAccessToCollection(final CollectionRoleRequestDto roleRequestDto,
+                                                                final List<CollectionRoleRequestDto> roles) {
+    for(CollectionRoleRequestDto role : roles) {
+      if (role.getIdentity().equals(roleRequestDto.getIdentity()) &&
+          role.getRole().compareTo(roleRequestDto.getRole()) >= 0) {
+          return true;
+      }
+    }
+    return false;
   }
 
   private List<CollectionRoleRequestDto> validateAndResolveIdentities(final String userId,
@@ -119,9 +152,9 @@ public class CollectionRoleService {
     }
   }
 
-  public void verifyCollectionExists(String collectionId) {
+  private void verifyCollectionExists(String collectionId) {
     final Optional<CollectionDefinitionDto> collectionDefinition = collectionReader.getCollection(collectionId);
-    if (!collectionDefinition.isPresent()) {
+    if (collectionDefinition.isEmpty()) {
       log.error("Was not able to retrieve collection with id [{}] from Elasticsearch.", collectionId);
       throw new NotFoundException("Collection does not exist! Tried to retrieve collection with id " + collectionId);
     }

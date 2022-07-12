@@ -36,6 +36,7 @@ import org.camunda.optimize.service.es.reader.DashboardReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
 import org.camunda.optimize.service.exceptions.InvalidDashboardVariableFilterException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.relations.CollectionReferencingService;
@@ -144,6 +145,28 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, dashboardDefinitionDto.getCollectionId());
     validateDashboardFilters(userId, dashboardDefinitionDto);
     return dashboardWriter.createNewDashboard(userId, dashboardDefinitionDto);
+  }
+
+  public Optional<IdResponseDto> createNewDashboardWithPresetId(final String userId,
+                                                      final DashboardDefinitionRestDto dashboardDefinitionDto,
+                                                      final String presetId) {
+    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, dashboardDefinitionDto.getCollectionId());
+    validateDashboardFilters(userId, dashboardDefinitionDto);
+    try {
+      return Optional.of(dashboardWriter.createNewDashboard(userId, dashboardDefinitionDto, presetId));
+    } catch (OptimizeRuntimeException e) {
+      // This can happen if the collection has been created in parallel, let's check if it already exists
+      if (Optional.ofNullable(getDashboardDefinition(presetId, userId)).isEmpty()) {
+        // If it doesn't exist yet and it could not be created, then we have another
+        // problem, log it and rethrow exception
+        log.error("Unexpected error when trying to create dashboard with ID " + presetId, e);
+        throw e;
+      }
+      else {
+        // If it exists already, there's nothing we need to do, return null to avoid the re-creation of reports
+        return Optional.empty();
+      }
+    }
   }
 
   public IdResponseDto copyDashboard(final String dashboardId, final String userId, final String name) {

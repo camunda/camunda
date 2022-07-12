@@ -9,7 +9,16 @@ import React from 'react';
 import classnames from 'classnames';
 import deepEqual from 'fast-deep-equal';
 
-import {Table, LoadingIndicator, Input, Select, Switch, Icon, Button} from 'components';
+import {
+  Table,
+  LoadingIndicator,
+  Input,
+  Select,
+  Switch,
+  Icon,
+  Button,
+  SearchInput,
+} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -198,18 +207,14 @@ export default withErrorHandling(
               />
             )}
             <EventsSources sources={eventSources} onChange={this.props.onSourcesChange} />
-            <div className="searchContainer">
-              <Icon className="searchIcon" type="search" />
-              <Input
-                required
-                type="text"
-                className="searchInput"
-                placeholder={t('home.search.name')}
-                value={searchQuery}
-                onChange={({target: {value}}) => this.searchFor(value)}
-                onClear={() => this.searchFor('')}
-              />
-            </div>
+            <SearchInput
+              required
+              className="searchInput"
+              placeholder={t('home.search.name')}
+              value={searchQuery}
+              onChange={({target: {value}}) => this.searchFor(value)}
+              onClear={() => this.searchFor('')}
+            />
             <Button
               onClick={() => this.setState({collapsed: !collapsed})}
               className="collapseButton"

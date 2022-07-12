@@ -7,11 +7,12 @@ security:
       clientSecret: ${CAMUNDA_OPTIMIZE_AUTH0_CLIENTSECRET:}
       domain: ${CAMUNDA_OPTIMIZE_AUTH0_BACKENDDOMAIN:}
       customDomain: ${CAMUNDA_OPTIMIZE_AUTH0_DOMAIN:}
-      userIdAttributeName: 'name'
+      userIdAttributeName: 'sub'
       organizationClaimName: 'https://camunda.com/orgs'
       organizationId: ${CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION:}
       clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:}
       audience: ${CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE:}
+      userAccessTokenAudience: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE:null}
     ccsm:
       issuerUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL:}
       issuerBackendUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:}
@@ -114,11 +115,11 @@ container:
 users:
   cloud:
     # The URL at which access tokens can be retrieved
-    tokenUrl: ${CAMUNDA_OPTIMIZE_M2M_AUTH0_URL:}
-    clientId: ${CAMUNDA_OPTIMIZE_M2M_AUTH0_CLIENTID:}
-    clientSecret: ${CAMUNDA_OPTIMIZE_M2M_AUTH0_CLIENTSECRET:}
-    audience: ${CAMUNDA_OPTIMIZE_M2M_AUTH0_AUDIENCE:}
-    usersUrl: ${CAMUNDA_OPTIMIZE_ACCOUNTS_URL:}
+    tokenUrl: ${CAMUNDA_OPTIMIZE_AUTH0_TOKEN_URL:}
+    clientId: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_CLIENTID:}
+    clientSecret: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_CLIENTSECRET:}
+    audience: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE:}
+    usersUrl: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_URL:}
 
 # Configuration for engines used to import data. Please note that you have to have at
 # least one engine configured at all times.
@@ -430,7 +431,7 @@ alerting:
 email:
   # A switch to control email sending process.
   enabled: false
-  # Email address that can be used to send alerts
+  # Email address that can be used to send alerts or email digests
   address: ''
   # The smtp server name
   hostname: ''
@@ -467,6 +468,16 @@ webhookAlerting:
 #      # The default payload structure with the alertMessagePlaceholder {{ALERT_MESSAGE}} for the alert text.
 #      # Optimize will replace this placeholder with the content of the alert message.
 #      defaultPayload: '{"text": "{{ALERT_MESSAGE}}"}'
+#      # HTTP forward proxy configuration
+#      proxy:
+#        # whether an HTTP proxy should be used for requests to the webhook URL
+#        enabled: false
+#        # the host of the proxy to use
+#        host: null
+#        # the port of the proxy to use
+#        port: null
+#        # whether this proxy is using a secured connection
+#        sslEnabled: false
 
 export:
   csv:
@@ -598,16 +609,19 @@ analytics:
       secret: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_SERVICE_SECRET:}
     properties:
       stage: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_STAGE:dev}
-      organizationId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_ORGANIZATION:dev}
-      clusterId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_CLUSTER_ID:dev}
+      organizationId: ${CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION:dev}
+      clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:dev}
 
 onboarding:
   enabled: ${CAMUNDA_OPTIMIZE_ONBOARDING_ENABLED:false}
   appCuesScriptUrl: ${CAMUNDA_OPTIMIZE_ONBOARDING_APPCUES_SCRIPT_URL://fast.appcues.com/104513.js}
   # Should process owners receive emails with onboarding data?
   enableOnboardingEmails: ${CAMUNDA_OPTIMIZE_ONBOARDING_SEND_EMAILS:false}
-  # How often (in seconds) shall optimize check whether process instances from new processes completed?
-  intervalForCheckingTriggerForOnboardingEmails: ${CAMUNDA_OPTIMIZE_ONBOARDING_INTERVAL_CHECK_DATA:1800}
+  # How often (in seconds) shall optimize check for process instances updates? - Minimum 60s
+  intervalForCheckingTriggerForOnboardingEmails: ${CAMUNDA_OPTIMIZE_ONBOARDING_INTERVAL_CHECK_DATA:180}
+  properties:
+    organizationId: ${CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION:dev}
+    clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:dev}
 
 # Configuration of application internal in-memory caches
 caches:

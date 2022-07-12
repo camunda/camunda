@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 public class TenantImportIndexHandler extends AllEntitiesBasedImportIndexHandler {
 
   private final EngineContext engineContext;
-  private Map<String, TenantEngineDto> alreadyImportedTenants = new HashMap<>();
+  private final Map<String, TenantEngineDto> alreadyImportedTenants = new HashMap<>();
 
   public TenantImportIndexHandler(final EngineContext engineContext) {
     this.engineContext = engineContext;

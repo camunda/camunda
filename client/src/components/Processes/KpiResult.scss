@@ -6,6 +6,12 @@
   .kpi {
     > .title {
       color: var(--grey-darken-23);
+      display: inline-block;
+      vertical-align: middle;
+      max-width: 200px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     &:not(:first-child) {

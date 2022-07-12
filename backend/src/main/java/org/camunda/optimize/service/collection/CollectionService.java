@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.relations.CollectionRelationService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.NotFoundException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @AllArgsConstructor
@@ -45,6 +47,28 @@ public class CollectionService {
   public IdResponseDto createNewCollectionAndReturnId(final String userId,
                                                       final PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
     return collectionWriter.createNewCollectionAndReturnId(userId, partialCollectionDefinitionDto);
+  }
+
+  public Optional<IdResponseDto> createNewCollectionWithPresetId(final String userId,
+                                                       final PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto,
+                                                       final String presetId,
+                                                       final boolean automaticallyCreated) {
+    try {
+      return Optional.of(collectionWriter.createNewCollectionAndReturnId(userId, partialCollectionDefinitionDto,
+                                                                        presetId, automaticallyCreated));
+    } catch (OptimizeRuntimeException e) {
+      // This can happen if the collection has been created in parallel, let's check if it already exists
+      if (Optional.ofNullable(getCollectionDefinition(presetId)).isEmpty()) {
+        // If it doesn't exist yet and it could not be created, then we have another problem, log it and rethrow
+        // exception
+        log.error("Unexpected error when trying to create collection with ID " + presetId, e);
+        throw e;
+      }
+      else {
+        // If it exists already, there's nothing we need to do, return empty to avoid the re-creation of reports
+        return Optional.empty();
+      }
+    }
   }
 
   public AuthorizedCollectionDefinitionRestDto getCollectionDefinitionRestDto(final String userId,

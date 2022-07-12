@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.metadata;
 
+import com.vdurmont.semver4j.Semver;
+
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -14,33 +16,45 @@ public final class Version {
   public static final String VERSION = stripToPlainVersion(RAW_VERSION);
   public static final String VERSION_MAJOR = getMajorVersionFrom(VERSION);
   public static final String VERSION_MINOR = getMinorVersionFrom(VERSION);
-  public static final String VERSION_PATCH = getPatchVersionFrom(VERSION);
-  public static final String INVALID_VERSION_MSG = "Provided version does not satisfy the x.x.x pattern: ";
 
-  public static final String stripToPlainVersion(final String rawVersion) {
-    // extract plain <major>.<minor>.<patch> version, strip everything else
-    return Arrays.stream(rawVersion.split("[^0-9]"))
+  public static String stripToPlainVersion(final String rawVersion) {
+    final String version = Arrays.stream(rawVersion.split("[^0-9]"))
       .limit(3)
       .filter(part -> part.chars().allMatch(Character::isDigit))
       .collect(Collectors.joining("."));
+    return version + getPreviewNumberFrom(rawVersion).map(previewNumber -> "-preview-" + previewNumber).orElse("");
   }
 
-  public static final String getMajorVersionFrom(String plainVersion) {
-    return Arrays.stream(plainVersion.split("\\.")).findFirst()
-      .orElseThrow(() -> new IllegalArgumentException(INVALID_VERSION_MSG + plainVersion));
+  public static final String getMajorVersionFrom(final String plainVersion) {
+    return String.valueOf(asSemver(plainVersion).getMajor());
   }
 
-  public static final String getMinorVersionFrom(String plainVersion) {
-    return Arrays.stream(plainVersion.split("\\.")).skip(1).findFirst()
-      .orElseThrow(() -> new IllegalArgumentException(INVALID_VERSION_MSG + plainVersion));
+  public static final String getMinorVersionFrom(final String plainVersion) {
+    return String.valueOf(asSemver(plainVersion).getMinor());
   }
 
-  public static final String getPatchVersionFrom(String plainVersion) {
-    return Arrays.stream(plainVersion.split("\\.")).skip(2).findFirst()
-      .orElseThrow(() -> new IllegalArgumentException(INVALID_VERSION_MSG + plainVersion));
+  public static final String getPatchVersionFrom(final String plainVersion) {
+    return String.valueOf(asSemver(plainVersion).getPatch());
   }
 
-  public static String getMajorAndMinor(String currentVersion) {
-    return getMajorVersionFrom(currentVersion) + "." + getMinorVersionFrom(currentVersion);
+  public static Optional<String> getPreviewNumberFrom(final String version) {
+    final Optional<String> previewSuffix = Arrays.stream(asSemver(version).getSuffixTokens())
+      .filter(value -> value.contains("preview"))
+      .findFirst();
+    return previewSuffix.map(value -> value.split("-")[1]);
+  }
+
+  public static String getMajorAndMinor(final String currentVersion) {
+    final Semver semver = asSemver(currentVersion);
+    return semver.getMajor() + "." + semver.getMinor();
+  }
+
+  public static boolean isAlphaVersion(final String version) {
+    return Arrays.stream(asSemver(version).getSuffixTokens())
+      .anyMatch(value -> value.contains("alpha"));
+  }
+
+  private static Semver asSemver(final String plainVersion) {
+    return new Semver(plainVersion, Semver.SemverType.LOOSE);
   }
 }

@@ -21,7 +21,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 
 public class CollectionIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 4;
+  public static final int VERSION = 5;
 
   public static final String ID = BaseCollectionDefinitionDto.Fields.id.name();
   public static final String DATA = BaseCollectionDefinitionDto.Fields.data.name();
@@ -60,6 +60,9 @@ public class CollectionIndex extends DefaultIndexMappingCreator {
     .endObject()
     .startObject(BaseCollectionDefinitionDto.Fields.lastModifier.name())
       .field("type", "keyword")
+    .endObject()
+    .startObject(BaseCollectionDefinitionDto.Fields.automaticallyCreated.name())
+      .field("type", "boolean")
     .endObject();
     newBuilder = addDataField(newBuilder);
     return newBuilder;

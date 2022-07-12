@@ -31,8 +31,8 @@ import org.camunda.optimize.test.optimize.CollectionClient
 import org.camunda.optimize.test.optimize.EntitiesClient
 import org.camunda.optimize.test.optimize.EventProcessClient
 import org.camunda.optimize.test.optimize.ReportClient
-import org.camunda.optimize.test.util.ProcessReportDataType
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder
+import org.camunda.optimize.service.util.ProcessReportDataType
+import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest
 import org.elasticsearch.action.search.SearchRequest

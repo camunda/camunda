@@ -1,0 +1,71 @@
+# Default values for c7-optimize.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+git:
+  # Defines the branch name to use for annotating resources
+  branch: master
+  # Defines the repository URL to use for annotating resources
+  repoUrl: https://github.com/camunda/camunda-optimize
+
+replicaCount: 1
+
+# this Chart serves 2 environments: stage and persistent, default: stage
+env: stage
+
+ingress:
+  # Defines the domain under which to expose the ingress
+  domain: optimize.camunda.cloud
+  # Defines the Vouch IDP URL to use for authenticating against Okta
+  vouchUrl: https://vouch.camunda.cloud
+
+# Tags is usually overridden to a specific tag produced by CI
+optimize:
+  image:
+    repository: gcr.io/ci-30-162810/camunda-optimize
+    tag: latest
+  resources:
+    limits:
+      cpu: 4
+      memory: 3Gi
+    requests:
+      cpu: 4
+      memory: 3Gi
+
+cambpm:
+  image:
+    repository: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee
+    tag: latest
+  resources:
+    limits:
+      cpu: 2
+      memory: 2Gi
+    requests:
+      cpu: 2
+      memory: 2Gi
+
+elasticsearch:
+  image:
+    repository: docker.elastic.co/elasticsearch/elasticsearch
+    tag: latest
+  resources:
+    limits:
+      cpu: 4
+      memory: 10Gi
+    requests:
+      cpu: 4
+      memory: 10Gi
+
+nameOverride: ""
+fullnameOverride: ""
+
+
+# Configuration of global values as required by the camunda-platform chart and to comply
+# with Infra best practices.
+global:
+  labels:
+    camunda.cloud/source: argocd
+    camunda.cloud/managed-by: Helm
+    app: optimize-camunda-cloud # Should be overridden by Argo app
+    team: optimize
+    commit: master # Should be overridden by Argo app

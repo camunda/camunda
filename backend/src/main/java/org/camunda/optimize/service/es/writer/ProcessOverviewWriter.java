@@ -5,25 +5,28 @@
  */
 package org.camunda.optimize.service.es.writer;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_OVERVIEW_INDEX_NAME;
@@ -37,8 +40,18 @@ public class ProcessOverviewWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public void updateProcessDigest(final String processDefinitionKey, final ProcessDigestDto processDigestDto) {
+  public void updateProcessConfiguration(final String processDefinitionKey, final ProcessUpdateDto processUpdateDto) {
     try {
+      final ProcessOverviewDto overviewDto = createNewProcessOverviewDto(processDefinitionKey, processUpdateDto);
+      final Map<String, Object> paramMap = new HashMap<>();
+      paramMap.put("owner", overviewDto.getOwner());
+      paramMap.put("processDefinitionKey", overviewDto.getProcessDefinitionKey());
+      paramMap.put("digestEnabled", overviewDto.getDigest().isEnabled());
+      Optional.ofNullable(overviewDto.getDigest().getCheckInterval())
+        .ifPresent(interval -> {
+          paramMap.put("digestCheckIntervalValue", interval.getValue());
+          paramMap.put("digestCheckIntervalUnit", interval.getUnit().getId());
+        });
       final UpdateRequest updateRequest = new UpdateRequest()
         .index(PROCESS_OVERVIEW_INDEX_NAME)
         .id(processDefinitionKey)
@@ -46,47 +59,89 @@ public class ProcessOverviewWriter {
           new Script(
             ScriptType.INLINE,
             Script.DEFAULT_SCRIPT_LANG,
-            getUpdateDigestScript(),
-            objectMapper.convertValue(processDigestDto, new TypeReference<>() {
-            })
-          ))
+            getUpdateOverviewScript(),
+            paramMap
+          )
+        )
+        .upsert(objectMapper.convertValue(overviewDto, Map.class))
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
       esClient.update(updateRequest);
     } catch (Exception e) {
       final String errorMessage = String.format(
-        "There was a problem while writing the process digest: [%s].",
-        processDigestDto
+        "There was a problem while updating the process: [%s].",
+        processUpdateDto
       );
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
 
-  public void upsertProcessOwner(final String processDefinitionKey, final String owner) {
-    final ProcessOverviewDto newProcessOverview =
-      new ProcessOverviewDto(owner, processDefinitionKey, new ProcessDigestDto());
+  public void updateProcessDigestResults(final String processDefKey, final ProcessDigestDto processDigestDto) {
     try {
       final UpdateRequest updateRequest = new UpdateRequest()
         .index(PROCESS_OVERVIEW_INDEX_NAME)
-        .id(processDefinitionKey)
-        .script(ElasticsearchWriterUtil.createFieldUpdateScript(
-          Set.of(ProcessOverviewDto.Fields.owner),
-          newProcessOverview,
-          objectMapper
-        ))
-        .upsert(objectMapper.convertValue(
-          newProcessOverview,
-          Map.class
-        ))
+        .id(processDefKey)
+        .script(
+          new Script(
+            ScriptType.INLINE,
+            Script.DEFAULT_SCRIPT_LANG,
+            "ctx._source.digest.kpiReportResults = params.kpiReportResults;\n",
+            Map.of("kpiReportResults", processDigestDto.getKpiReportResults())
+          )
+        )
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
       esClient.update(updateRequest);
+    } catch (Exception e) {
+      final String errorMessage = String.format(
+        "There was a problem while updating the digest results for process with key: [%s] and digest results: %s.",
+        processDefKey, processDigestDto.getKpiReportResults()
+      );
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  public void updateProcessOwnerIfNotSet(final String processDefinitionKey, final String ownerId) {
+    try {
+      final ProcessUpdateDto processUpdateDto = new ProcessUpdateDto();
+      processUpdateDto.setOwnerId(ownerId);
+      final ProcessDigestRequestDto processDigestRequestDto = new ProcessDigestRequestDto();
+      processDigestRequestDto.setCheckInterval(new AlertInterval(1, AlertIntervalUnit.WEEKS));
+      processUpdateDto.setProcessDigest(processDigestRequestDto);
+      final UpdateRequest updateRequest = new UpdateRequest()
+        .index(PROCESS_OVERVIEW_INDEX_NAME)
+        .id(processDefinitionKey)
+        .script(ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+          getUpdateOwnerIfNotSetScript(),
+          Map.of("owner", ownerId, "processDefinitionKey", processDefinitionKey)
+        ))
+        .upsert(objectMapper.convertValue(createNewProcessOverviewDto(processDefinitionKey, processUpdateDto), Map.class))
+        .setRefreshPolicy(IMMEDIATE)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      esClient.update(updateRequest);
+    } catch (Exception e) {
+      final String errorMessage = String.format(
+        "There was a problem while updating the owner for process with key: [%s] and digest results: %s.",
+        ownerId, processDefinitionKey
+      );
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  public void deleteProcessOwnerEntry(final String processDefinitionKey) {
+    log.info("Removing pending entry " + processDefinitionKey);
+    try {
+      final DeleteRequest deleteRequest = new DeleteRequest()
+        .index(PROCESS_OVERVIEW_INDEX_NAME)
+        .id(processDefinitionKey);
+      esClient.delete(deleteRequest);
     } catch (IOException e) {
       final String errorMessage =
         String.format(
-          "There was a problem while writing %s as the owner for goals of process: %s",
-          owner,
+          "There was a problem while deleting process owner entry for %s",
           processDefinitionKey
         );
       log.error(errorMessage, e);
@@ -94,30 +149,43 @@ public class ProcessOverviewWriter {
     }
   }
 
-  private String getUpdateDigestScript() {
-    final StringSubstitutor substitutor = new StringSubstitutor(
-      ImmutableMap.<String, String>builder()
-        .put("digestField", ProcessOverviewDto.Fields.digest)
-        .put("checkIntervalField", ProcessDigestDto.Fields.checkInterval)
-        .put("valueField", AlertInterval.Fields.value)
-        .put("unitField", AlertInterval.Fields.unit)
-        .put("enabledField", ProcessDigestDto.Fields.enabled)
-        .put("kpiReportResults", ProcessDigestDto.Fields.kpiReportResults)
-        .build()
-    );
-
+  private String getUpdateOverviewScript() {
     // @formatter:off
-    return substitutor.replace(
-  "if (params.${checkIntervalField} != null) {\n" +
-          "ctx._source.${digestField}.${checkIntervalField} = params.${checkIntervalField};\n" +
-        "}\n" +
-        "if (params.${enabledField} != null) {\n" +
-          "ctx._source.${digestField}.${enabledField} = params.${enabledField}\n" +
-        "}\n" +
-        "if (!params.${kpiReportResults}.isEmpty() && params.${kpiReportResults} != null) {\n" +
-          "ctx._source.${digestField}.${kpiReportResults} = params.${kpiReportResults}\n" +
-        "}\n"
-    );
+    return
+      "ctx._source.owner = params.owner;\n" +
+      "ctx._source.processDefinitionKey = params.processDefinitionKey;\n" +
+      "ctx._source.digest.enabled = params.digestEnabled;\n" +
+      "if (params.digestCheckIntervalValue != null && params.digestCheckIntervalUnit != null) {\n" +
+      "  def alertInterval = [\n" +
+      "    'value': params.digestCheckIntervalValue,\n" +
+      "    'unit': params.digestCheckIntervalUnit\n" +
+      "  ];\n" +
+      "  ctx._source.digest.checkInterval = alertInterval;\n" +
+      "}\n";
     // @formatter:on
   }
+
+  private String getUpdateOwnerIfNotSetScript() {
+    // @formatter:off
+    return
+      "if (ctx._source.owner == null) {\n" +
+      "  ctx._source.owner = params.owner;\n" +
+      "}\n" +
+      "ctx._source.processDefinitionKey = params.processDefinitionKey;\n";
+    // @formatter:on
+  }
+
+  private ProcessOverviewDto createNewProcessOverviewDto(final String processDefinitionKey,
+                                                         final ProcessUpdateDto processUpdateDto) {
+    final ProcessOverviewDto processOverviewDto = new ProcessOverviewDto();
+    processOverviewDto.setProcessDefinitionKey(processDefinitionKey);
+    processOverviewDto.setOwner(processUpdateDto.getOwnerId());
+    processOverviewDto.setDigest(new ProcessDigestDto(
+      processUpdateDto.getProcessDigest().getCheckInterval(),
+      processUpdateDto.getProcessDigest().isEnabled(),
+      Collections.emptyMap()
+    ));
+    return processOverviewDto;
+  }
+
 }

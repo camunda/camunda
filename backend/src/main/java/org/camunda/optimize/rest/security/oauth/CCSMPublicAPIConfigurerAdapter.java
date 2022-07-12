@@ -9,7 +9,6 @@ import lombok.Getter;
 import org.camunda.optimize.rest.security.platform.OptimizeStaticTokenDecoder;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -40,8 +39,6 @@ public class CCSMPublicAPIConfigurerAdapter extends AbstractPublicAPIConfigurerA
     }
   }
 
-  @Bean
-  @Override
   public JwtDecoder jwtDecoder() {
     if (this.getJwtDecodingMethod().equals(JWT_DECODING_STATIC_TOKEN_METHOD)) {
       return new OptimizeStaticTokenDecoder(configurationService);

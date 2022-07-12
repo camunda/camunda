@@ -11,6 +11,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.rest.security.AuthenticationCookieFilter;
 import org.camunda.optimize.rest.security.AuthenticationCookieRefreshFilter;
 import org.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
+import org.camunda.optimize.rest.security.oauth.AudienceValidator;
+import org.camunda.optimize.rest.security.oauth.ScopeValidator;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -29,8 +31,14 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.session.SessionManagementFilter;
@@ -51,6 +59,7 @@ import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOUR
 import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static org.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
+import static org.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.AUTH_0_CLIENT_REGISTRATION_ID;
 import static org.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.OAUTH_AUTH_ENDPOINT;
 import static org.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.OAUTH_REDIRECT_ENDPOINT;
 import static org.camunda.optimize.rest.security.platform.PlatformWebSecurityConfigurerAdapter.DEEP_SUB_PATH_ANY;
@@ -129,19 +138,49 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
       .and()
       .addFilterBefore(authenticationCookieFilter(), OAuth2AuthorizationRequestRedirectFilter.class)
       .addFilterAfter(authenticationCookieRefreshFilter, SessionManagementFilter.class)
-      .exceptionHandling().authenticationEntryPoint(new AddClusterIdSubPathToRedirectAuthenticationEntryPoint(OAUTH_AUTH_ENDPOINT + "/auth0"));
+      .exceptionHandling().authenticationEntryPoint(new AddClusterIdSubPathToRedirectAuthenticationEntryPoint(OAUTH_AUTH_ENDPOINT + "/auth0"))
+      .and()
+      .oauth2ResourceServer()
+      .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()));
     //@formatter:on
+  }
+
+  public JwtDecoder jwtDecoder() {
+    NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(readJwtSetUriFromConfig()).build();
+    OAuth2TokenValidator<Jwt> audienceValidator =
+      new AudienceValidator(
+        configurationService.getAuthConfiguration().getCloudAuthConfiguration().getUserAccessTokenAudience().orElse(""));
+    OAuth2TokenValidator<Jwt> clusterIdValidator = new ScopeValidator("profile");
+    OAuth2TokenValidator<Jwt> audienceAndClusterIdValidation =
+      new DelegatingOAuth2TokenValidator<>(audienceValidator, clusterIdValidator);
+    jwtDecoder.setJwtValidator(audienceAndClusterIdValidation);
+    return jwtDecoder;
+  }
+
+  private String readJwtSetUriFromConfig() {
+    return Optional.ofNullable(configurationService.getOptimizeApiConfiguration().getJwtSetUri()).orElse("");
   }
 
   private AuthenticationSuccessHandler getAuthenticationSuccessHandler() {
     return (request, response, authentication) -> {
       final DefaultOidcUser user = (DefaultOidcUser) authentication.getPrincipal();
-      final String authToken = sessionService.createAuthToken(user.getIdToken().getSubject());
+      final String userId = user.getIdToken().getSubject();
+      final String authToken = sessionService.createAuthToken(userId);
 
       if (hasAccess(user)) {
         final String optimizeAuthCookie =
           authCookieService.createNewOptimizeAuthCookie(authToken, request.getScheme());
         response.addHeader(HttpHeaders.SET_COOKIE, optimizeAuthCookie);
+
+        // spring security internally stores the access token as an authorized client, we retrieve it here to store it
+        // in a cookie to allow potential other Optimize webapps to reuse it
+        final OAuth2AccessToken serviceAccessToken = oAuth2AuthorizedClientService
+          .loadAuthorizedClient(AUTH_0_CLIENT_REGISTRATION_ID, userId)
+          .getAccessToken();
+        final String serviceTokenCookie = authCookieService.createOptimizeServiceTokenCookie(
+          serviceAccessToken, request.getScheme()
+        );
+        response.addHeader(HttpHeaders.SET_COOKIE, serviceTokenCookie);
 
         // we can't redirect to the previously accesses path or the root of the application as the Optimize Cookie
         // won't be sent by the browser in this case. This is because the chain of requests that lead to the

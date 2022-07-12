@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.writer.activity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
@@ -22,7 +21,6 @@ import org.elasticsearch.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +49,7 @@ public abstract class AbstractActivityInstanceWriter extends AbstractProcessInst
 
     createInstanceIndicesIfMissing(activityInstances, FlowNodeEventDto::getProcessDefinitionKey);
 
-    Map<String, List<OptimizeDto>> processInstanceToEvents = new HashMap<>();
+    Map<String, List<FlowNodeEventDto>> processInstanceToEvents = new HashMap<>();
     for (FlowNodeEventDto e : activityInstances) {
       if (!processInstanceToEvents.containsKey(e.getProcessInstanceId())) {
         processInstanceToEvents.put(e.getProcessInstanceId(), new ArrayList<>());
@@ -68,18 +66,13 @@ public abstract class AbstractActivityInstanceWriter extends AbstractProcessInst
       .collect(Collectors.toList());
   }
 
-  private UpdateRequest createImportRequestForActivityInstance(Map.Entry<String, List<OptimizeDto>> activitiesByProcessInstance) {
-    if (!activitiesByProcessInstance.getValue().stream().allMatch(FlowNodeEventDto.class::isInstance)) {
-      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
-    }
-    final List<FlowNodeEventDto> activityInstances =
-      (List<FlowNodeEventDto>) (List<?>) activitiesByProcessInstance.getValue();
+  private UpdateRequest createImportRequestForActivityInstance(Map.Entry<String, List<FlowNodeEventDto>> activitiesByProcessInstance) {
+    final List<FlowNodeEventDto> activityInstances = activitiesByProcessInstance.getValue();
     final String processInstanceId = activitiesByProcessInstance.getKey();
 
     final List<FlowNodeInstanceDto> flowNodeInstanceDtos = convertToFlowNodeInstanceDtos(activityInstances);
     final Map<String, Object> params = new HashMap<>();
     // see https://discuss.elastic.co/t/how-to-update-nested-objects-in-elasticsearch-2-2-script-via-java-api/43135
-
     try {
       params.put(FLOW_NODE_INSTANCES, flowNodeInstanceDtos);
       final Script updateScript = createDefaultScriptWithSpecificDtoParams(

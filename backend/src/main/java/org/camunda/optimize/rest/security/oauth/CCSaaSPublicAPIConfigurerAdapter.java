@@ -9,7 +9,6 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -33,14 +32,14 @@ public class CCSaaSPublicAPIConfigurerAdapter extends AbstractPublicAPIConfigure
     audience = getAuth0Configuration().getAudience();
   }
 
-  @Bean
-  @Override
+
   @SneakyThrows
-  public JwtDecoder jwtDecoder() {
+  protected JwtDecoder jwtDecoder() {
       NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(getJwtSetUri()).build();
       OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(audience);
-      OAuth2TokenValidator<Jwt> clusterIdValidator = new ClusterIdValidator(clusterId);
-      OAuth2TokenValidator<Jwt> audienceAndClusterIdValidation = new DelegatingOAuth2TokenValidator<>(audienceValidator, clusterIdValidator);
+      OAuth2TokenValidator<Jwt> clusterIdValidator = new ScopeValidator(clusterId);
+      OAuth2TokenValidator<Jwt> audienceAndClusterIdValidation =
+        new DelegatingOAuth2TokenValidator<>(audienceValidator, clusterIdValidator);
       jwtDecoder.setJwtValidator(audienceAndClusterIdValidation);
       return jwtDecoder;
   }

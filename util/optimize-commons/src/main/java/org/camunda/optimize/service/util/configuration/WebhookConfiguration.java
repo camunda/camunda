@@ -17,6 +17,7 @@ public class WebhookConfiguration {
   private Map<String, String> headers;
   private String httpMethod;
   private String defaultPayload;
+  private ProxyConfiguration proxy;
 
   public enum Placeholder {
     // This only works as the link is at the end of the composed text. We would need to refactor this if the webhook

@@ -34,9 +34,9 @@ export function Login({onLogin, mightFail}) {
 
     await mightFail(
       login(username, password),
-      (token) => {
+      async (token) => {
         if (token) {
-          onLogin(token);
+          await onLogin(token);
         }
       },
       ({message}) => setError(message || t('login.error'))

@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizat
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
 import org.camunda.optimize.service.metadata.Version;
+import org.camunda.optimize.service.util.configuration.OnboardingConfiguration;
 import org.camunda.optimize.service.util.configuration.WebhookConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.TextColorType;
 import org.junit.jupiter.api.Test;
@@ -277,6 +278,11 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().getOnboarding().setEnabled(true);
     final String scriptUrl = "test";
     embeddedOptimizeExtension.getConfigurationService().getOnboarding().setAppCuesScriptUrl(scriptUrl);
+    final String clusterId = "clusterId1";
+    final String orgId = "orgId1";
+    embeddedOptimizeExtension.getConfigurationService().getOnboarding().setProperties(
+      new OnboardingConfiguration.Properties(orgId, clusterId)
+    );
 
     // when
     final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
@@ -284,6 +290,8 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     // then
     assertThat(response.getOnboarding().isEnabled()).isEqualTo(true);
     assertThat(response.getOnboarding().getAppCuesScriptUrl()).isEqualTo(scriptUrl);
+    assertThat(response.getOnboarding().getOrgId()).isEqualTo(orgId);
+    assertThat(response.getOnboarding().getClusterId()).isEqualTo(clusterId);
   }
 
   private void setWebappsEndpoint(final String webappsEndpoint) {

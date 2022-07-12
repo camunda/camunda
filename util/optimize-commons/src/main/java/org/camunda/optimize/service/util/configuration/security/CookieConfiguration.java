@@ -16,6 +16,7 @@ import java.util.Optional;
 
 @Data
 public class CookieConfiguration {
+
   @JsonProperty("same-site.enabled")
   private boolean sameSiteFlagEnabled;
   @JsonProperty("secure")

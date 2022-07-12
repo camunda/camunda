@@ -39,7 +39,7 @@ public class ZeebeProcessInstanceImportService
   extends ZeebeProcessInstanceSubEntityImportService<ZeebeProcessInstanceRecordDto> {
 
   private static final Set<BpmnElementType> TYPES_TO_IGNORE = Set.of(
-    BpmnElementType.UNSPECIFIED, BpmnElementType.SEQUENCE_FLOW, BpmnElementType.TESTING_ONLY
+    BpmnElementType.UNSPECIFIED, BpmnElementType.SEQUENCE_FLOW
   );
 
   public ZeebeProcessInstanceImportService(final ConfigurationService configurationService,

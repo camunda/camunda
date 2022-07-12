@@ -4,7 +4,7 @@
 
   <groupId>org.camunda.optimize</groupId>
   <artifactId>parent</artifactId>
-  <version>3.9.0</version>
+  <version>3.9.0-preview-1</version>
   <packaging>pom</packaging>
   <name>Camunda Optimize</name>
 
@@ -28,12 +28,12 @@
     <camunda.engine.version>7.16.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.17.0-ee</camunda.maven.artifacts.version>
 
-    <zeebe.version>8.0.3</zeebe.version>
+    <zeebe.version>8.0.4</zeebe.version>
     <identity.version>8.0.0</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
-    <surefire-plugin.version>3.0.0-M6</surefire-plugin.version>
+    <surefire-plugin.version>3.0.0-M7</surefire-plugin.version>
     <!-- maven plugins -->
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
 
@@ -45,10 +45,10 @@
     <!--the ElasticSearch version of the previous Optimize version -->
     <previous.optimize.elasticsearch.version>7.10.0</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
-    <elasticsearch.log4j.version>2.17.2</elasticsearch.log4j.version>
+    <elasticsearch.log4j.version>2.18.0</elasticsearch.log4j.version>
     <guava.version>31.1-jre</guava.version>
-    <spring.boot.version>2.6.7</spring.boot.version>
-    <spring.version>5.3.20</spring.version>
+    <spring.boot.version>2.7.1</spring.boot.version>
+    <spring.version>5.3.21</spring.version>
     <mockito.version>4.6.1</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
     <junit.jupiter.version>5.8.2</junit.jupiter.version>
@@ -56,7 +56,7 @@
     <mockserver.version>5.11.2</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
     <assertj.version>3.23.1</assertj.version>
-    <postgres.version>42.3.6</postgres.version>
+    <postgres.version>42.4.0</postgres.version>
 
     <lombok.version>1.18.24</lombok.version>
     <logback.version>1.2.11</logback.version>
@@ -395,7 +395,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.4.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

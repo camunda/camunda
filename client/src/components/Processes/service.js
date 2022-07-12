@@ -7,6 +7,8 @@
 
 import {get, put} from 'request';
 
+import {formatters} from 'services';
+
 export async function loadProcesses(sortBy, sortOrder) {
   const params = {};
   if (sortBy && sortOrder) {
@@ -18,8 +20,8 @@ export async function loadProcesses(sortBy, sortOrder) {
   return await response.json();
 }
 
-export function updateOwner(processDefinitionKey, id) {
-  return put(`api/process/${processDefinitionKey}/owner`, {id});
+export function updateProcess(processDefinitionKey, payload) {
+  return put(`api/process/${processDefinitionKey}`, payload);
 }
 
 export async function loadManagementDashboard() {
@@ -28,8 +30,12 @@ export async function loadManagementDashboard() {
   return await response.json();
 }
 
-export function isSuccessful({target, value, isBelow}) {
+export function isSuccessful({target, unit, value, isBelow, measure}) {
   const actualValue = Number(value);
+  const targetMs =
+    measure === 'duration' && unit
+      ? formatters.convertToMilliseconds(target, unit)
+      : Number(target);
 
-  return isBelow ? target > actualValue : target < actualValue;
+  return isBelow ? targetMs > actualValue : targetMs < actualValue;
 }

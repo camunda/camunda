@@ -30,6 +30,7 @@ import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
 import org.camunda.optimize.service.dashboard.ManagementDashboardService;
+import org.camunda.optimize.service.digest.DigestService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
@@ -630,6 +631,10 @@ public class EmbeddedOptimizeExtension
 
   public AlertService getAlertService() {
     return getBean(AlertService.class);
+  }
+
+  public DigestService getDigestService() {
+    return getBean(DigestService.class);
   }
 
   public TenantService getTenantService() {

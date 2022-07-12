@@ -26,8 +26,8 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.WebhookConfiguration;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
-import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.service.util.ProcessReportDataType;
+import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.util.BpmnModels;
@@ -65,6 +65,7 @@ import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.mockserver.model.HttpRequest.request;
 
 public abstract class AbstractAlertIT extends AbstractIT {
+
   @BeforeEach
   public void beforeEach() throws Exception {
     embeddedOptimizeExtension.getAlertService().getScheduler().clear();
@@ -348,10 +349,10 @@ public abstract class AbstractAlertIT extends AbstractIT {
 
   protected void setEmailConfiguration() {
     embeddedOptimizeExtension.getConfigurationService().setEmailEnabled(true);
-    embeddedOptimizeExtension.getConfigurationService().setAlertEmailAddress("from@localhost.com");
-    embeddedOptimizeExtension.getConfigurationService().setAlertEmailHostname("127.0.0.1");
+    embeddedOptimizeExtension.getConfigurationService().setNotificationEmailAddress("from@localhost.com");
+    embeddedOptimizeExtension.getConfigurationService().setNotificationEmailHostname("127.0.0.1");
     embeddedOptimizeExtension.getConfigurationService()
-      .setAlertEmailPort(IntegrationTestConfigurationUtil.getSmtpPort());
+      .setNotificationEmailPort(IntegrationTestConfigurationUtil.getSmtpPort());
     EmailAuthenticationConfiguration emailAuthenticationConfiguration =
       embeddedOptimizeExtension.getConfigurationService()
         .getEmailAuthenticationConfiguration();
@@ -374,23 +375,21 @@ public abstract class AbstractAlertIT extends AbstractIT {
 
   protected void setWebhookConfiguration(final Integer webhookPort, final String payload) {
     Map<String, WebhookConfiguration> webhookConfigurationMap = new HashMap<>();
-
-
     final WebhookConfiguration webhook1 = uiConfigurationClient.createWebhookConfiguration(
       createWebhookHostUrl(webhookPort) + TEST_WEBHOOK_URL_PATH,
-      ImmutableMap.of("Content-type", "application/json"),
+      ImmutableMap.of("Content-Type", "application/json"),
       TEST_WEBHOOK_METHOD,
       payload
     );
     final WebhookConfiguration webhook2 = uiConfigurationClient.createWebhookConfiguration(
       createWebhookHostUrl(webhookPort) + TEST_WEBHOOK_URL_PATH,
-      ImmutableMap.of("Content-type", "some/customType"),
+      ImmutableMap.of("Content-Type", "some/customType"),
       TEST_WEBHOOK_METHOD,
       payload
     );
     final WebhookConfiguration webhook3 = uiConfigurationClient.createWebhookConfiguration(
       TEST_WEBHOOK_URL_INVALID_PORT + TEST_WEBHOOK_URL_PATH,
-      ImmutableMap.of("Content-type", "application/json"),
+      ImmutableMap.of("Content-Type", "application/json"),
       TEST_WEBHOOK_METHOD,
       payload
     );
@@ -400,6 +399,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
     webhookConfigurationMap.put(TEST_INVALID_PORT_WEBHOOK_NAME, webhook3);
 
     embeddedOptimizeExtension.getConfigurationService().setConfiguredWebhooks(webhookConfigurationMap);
+    embeddedOptimizeExtension.reloadConfiguration();
   }
 
   protected AlertCreationRequestDto addReminderToAlert(AlertCreationRequestDto alert) {

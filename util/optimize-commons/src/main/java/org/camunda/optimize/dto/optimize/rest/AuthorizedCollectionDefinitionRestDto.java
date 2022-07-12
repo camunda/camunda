@@ -40,6 +40,7 @@ public class AuthorizedCollectionDefinitionRestDto extends AuthorizedEntityDto {
     resolvedCollection.setOwner(collectionDefinitionDto.getOwner());
     resolvedCollection.setCreated(collectionDefinitionDto.getCreated());
     resolvedCollection.setLastModified(collectionDefinitionDto.getLastModified());
+    resolvedCollection.setAutomaticallyCreated(collectionDefinitionDto.isAutomaticallyCreated());
 
     resolvedCollection.setData(collectionDefinitionDto.getData());
     return new AuthorizedCollectionDefinitionRestDto(

@@ -170,7 +170,7 @@ public class DefinitionService implements ConfigurationReloadable {
                                               final String key,
                                               final String userId,
                                               final List<String> versions) {
-    return getDefinitionTenants(type, key, userId, versions, () -> definitionReader.getLatestVersionToKey(type, key));
+    return getDefinitionTenants(type, key, userId, versions, () -> getLatestVersionToKey(type, key));
   }
 
   public List<TenantDto> getDefinitionTenants(final DefinitionType type,

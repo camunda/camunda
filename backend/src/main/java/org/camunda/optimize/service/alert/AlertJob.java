@@ -47,7 +47,7 @@ public class AlertJob implements Job {
   private static final String HTTPS_PREFIX = "https://";
 
   private final ConfigurationService configurationService;
-  private final List<NotificationService> notificationServices;
+  private final List<AlertNotificationService> notificationServices;
   private final AlertReader alertReader;
   private final ReportReader reportReader;
   private final AlertWriter alertWriter;
@@ -147,7 +147,7 @@ public class AlertJob implements Job {
   }
 
   private void fanoutNotification(final AlertNotificationDto notification) {
-    for (NotificationService notificationService : notificationServices) {
+    for (AlertNotificationService notificationService : notificationServices) {
       try {
         notificationService.notify(notification);
       } catch (Exception e) {
@@ -182,7 +182,7 @@ public class AlertJob implements Job {
                                   final Double result,
                                   final AlertNotificationType notificationType,
                                   final String statusText) {
-    return configurationService.getAlertEmailCompanyBranding() + " Optimize - Report Status\n" +
+    return configurationService.getNotificationEmailCompanyBranding() + " Optimize - Report Status\n" +
       "Alert name: " + alert.getName() + "\n" +
       "Report name: " + reportDefinition.getName() + "\n" +
       "Status: Given threshold [" +

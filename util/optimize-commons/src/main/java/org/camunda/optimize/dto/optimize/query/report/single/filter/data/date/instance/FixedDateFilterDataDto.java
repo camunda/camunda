@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 
 import java.time.OffsetDateTime;
 
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = true)
 public class FixedDateFilterDataDto extends DateFilterDataDto<OffsetDateTime> {
   public FixedDateFilterDataDto() {
     this(null, null);

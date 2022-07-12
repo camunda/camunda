@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
@@ -27,7 +26,6 @@ import org.elasticsearch.script.Script;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
-import java.security.InvalidParameterException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -68,7 +66,7 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
 
     createInstanceIndicesIfMissing(variables, ProcessVariableDto::getProcessDefinitionKey);
 
-    Map<String, List<OptimizeDto>> processInstanceIdToVariables = groupVariablesByProcessInstanceIds(variables);
+    Map<String, List<ProcessVariableDto>> processInstanceIdToVariables = groupVariablesByProcessInstanceIds(variables);
 
     return processInstanceIdToVariables.entrySet().stream()
       .map(entry -> ImportRequestDto.builder()
@@ -81,12 +79,8 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
   }
 
   private UpdateRequest createUpdateRequestForProcessInstanceVariables(
-    final Map.Entry<String, List<OptimizeDto>> processInstanceIdToVariables) {
-    if (!(processInstanceIdToVariables.getValue().stream().allMatch(ProcessVariableDto.class::isInstance))) {
-      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
-    }
-    final List<ProcessVariableDto> variablesWithAllInformation =
-      (List<ProcessVariableDto>) (List<?>) processInstanceIdToVariables.getValue();
+    final Map.Entry<String, List<ProcessVariableDto>> processInstanceIdToVariables) {
+    final List<ProcessVariableDto> variablesWithAllInformation = processInstanceIdToVariables.getValue();
     final String processInstanceId = processInstanceIdToVariables.getKey();
     final String processDefinitionKey = variablesWithAllInformation.get(0).getProcessDefinitionKey();
 
@@ -154,8 +148,8 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
     );
   }
 
-  private Map<String, List<OptimizeDto>> groupVariablesByProcessInstanceIds(List<ProcessVariableDto> variableUpdates) {
-    Map<String, List<OptimizeDto>> processInstanceIdToVariables = new HashMap<>();
+  private Map<String, List<ProcessVariableDto>> groupVariablesByProcessInstanceIds(List<ProcessVariableDto> variableUpdates) {
+    Map<String, List<ProcessVariableDto>> processInstanceIdToVariables = new HashMap<>();
     for (ProcessVariableDto variable : variableUpdates) {
       if (isVariableFromCaseDefinition(variable) || !isProcessVariableTypeSupported(variable.getType())) {
         log.warn(

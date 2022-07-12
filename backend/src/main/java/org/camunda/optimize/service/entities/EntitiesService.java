@@ -20,6 +20,7 @@ import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.EntitiesReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.onboardinglistener.OnboardingDashboardCreationService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.AuthorizedEntitiesService;
@@ -45,6 +46,7 @@ public class EntitiesService {
   private final ReportService reportService;
   private final DashboardService dashboardService;
   private final AuthorizedCollectionService authorizedCollectionService;
+  private OnboardingDashboardCreationService onboardingService;
 
   public List<EntityResponseDto> getAllEntities(final String userId) {
     final List<AuthorizedCollectionDefinitionDto> collectionDefinitions =
@@ -68,15 +70,23 @@ public class EntitiesService {
       ).collect(Collectors.toList());
   }
 
-  public EntityNameResponseDto getEntityNames(final EntityNameRequestDto requestDto) {
+  public EntityNameResponseDto getEntityNames(final EntityNameRequestDto requestDto, final String userId) {
+
     Optional<EntityNameResponseDto> entityNames = entitiesReader.getEntityNames(requestDto);
-
-    if (!entityNames.isPresent()) {
-      String reason = String.format("Could not get entity names search request %s", requestDto.toString());
-      throw new NotFoundException(reason);
+    // If it's a click for a magic link
+    if (requestDto.getCollectionId() != null && requestDto.getDashboardId() != null &&
+        requestDto.getDashboardId().equals(requestDto.getCollectionId())) {
+      if (entityNames.isEmpty()) {
+        onboardingService.createNewDashboardForProcess(userId, requestDto.getDashboardId());
+        entityNames = entitiesReader.getEntityNames(requestDto);
+      } else {
+        onboardingService.addUserAsEditorToAutomaticallyCreatedCollection(requestDto.getCollectionId(), userId);
+      }
     }
-
-    return entityNames.get();
+    return entityNames.orElseThrow(() -> {
+      String reason = String.format("Could not get entity names search request %s", requestDto);
+      return new NotFoundException(reason);
+    });
   }
 
   // For dashboards and collections, we only check for authorization. For reports, we also check for conflicts

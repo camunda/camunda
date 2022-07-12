@@ -5,15 +5,15 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.9.0</version>
+    <version>3.9.0-preview-1</version>
   </parent>
 
   <artifactId>optimize-backend</artifactId>
 
   <properties>
-    <jetty.version>9.4.46.v20220331</jetty.version>
+    <jetty.version>9.4.48.v20220622</jetty.version>
     <jersey.version>2.35</jersey.version>
-    <spring.security.version>5.7.1</spring.security.version>
+    <spring.security.version>5.7.2</spring.security.version>
     <it.test.excludedGroups />
     <it.test.includedGroups />
     <test.forkCount />
@@ -192,7 +192,7 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-      <version>3.19.2</version>
+      <version>4.0.0</version>
       <exclusions>
         <exclusion>
           <artifactId>jackson-databind</artifactId>

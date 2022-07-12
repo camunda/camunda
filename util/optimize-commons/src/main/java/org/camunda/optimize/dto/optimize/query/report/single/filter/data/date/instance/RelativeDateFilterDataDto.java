@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = true)
 public class RelativeDateFilterDataDto extends DateFilterDataDto<RelativeDateFilterStartDto> {
   public RelativeDateFilterDataDto() {
     this(null);

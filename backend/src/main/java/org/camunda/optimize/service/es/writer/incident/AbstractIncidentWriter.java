@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.writer.incident;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
@@ -22,7 +21,6 @@ import org.elasticsearch.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -54,7 +52,7 @@ public abstract class AbstractIncidentWriter extends AbstractProcessInstanceData
 
     createInstanceIndicesFromIncidentsIfMissing(incidents);
 
-    Map<String, List<OptimizeDto>> processInstanceToEvents = new HashMap<>();
+    Map<String, List<IncidentDto>> processInstanceToEvents = new HashMap<>();
     for (IncidentDto e : incidents) {
       processInstanceToEvents.putIfAbsent(e.getProcessInstanceId(), new ArrayList<>());
       processInstanceToEvents.get(e.getProcessInstanceId()).add(e);
@@ -69,12 +67,8 @@ public abstract class AbstractIncidentWriter extends AbstractProcessInstanceData
       .collect(Collectors.toList());
   }
 
-  private UpdateRequest createImportRequestForIncident(Map.Entry<String, List<OptimizeDto>> incidentsByProcessInstance) {
-    if (!incidentsByProcessInstance.getValue().stream().allMatch(IncidentDto.class::isInstance)) {
-      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
-    }
-    final List<IncidentDto> incidents =
-      (List<IncidentDto>) (List<?>) incidentsByProcessInstance.getValue();
+  private UpdateRequest createImportRequestForIncident(Map.Entry<String, List<IncidentDto>> incidentsByProcessInstance) {
+    final List<IncidentDto> incidents = incidentsByProcessInstance.getValue();
     final String processInstanceId = incidentsByProcessInstance.getKey();
     final String processDefinitionKey = incidents.get(0).getDefinitionKey();
 

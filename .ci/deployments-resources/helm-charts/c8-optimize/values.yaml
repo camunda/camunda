@@ -1,0 +1,141 @@
+# Default values for optimize-onpremise.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+git:
+  # Defines the branch name to use for annotating resources
+  branch: master
+  # Defines the repository URL to use for annotating resources
+  repoUrl: https://github.com/camunda/camunda-optimize
+
+replicaCount: 1
+
+
+ingress:
+  # Defines the domain under which to expose the ingress
+  domain: optimize.camunda.cloud
+  # Defines the Vouch IDP URL to use for authenticating against Okta
+  vouchUrl: https://vouch.camunda.cloud
+
+# Configuration of the camunda-platform chart, in particular we disable some features that
+# we don't want to deploy. We also change the `fullNameOverride` and `zeebeClusterName`
+# to simpler values, so we don't duplicate
+# the ReleaseName everywhere (as that's already reflected in the Namespace).
+camunda-platform:
+# Tags is usually overridden to a specific tag produced by CI
+  optimize:
+    fullnameOverride: optimize
+    image:
+      repository: gcr.io/ci-30-162810/camunda-optimize
+      tag: latest
+    resources:
+      limits:
+        cpu: 2
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+  identity:
+    fullnameOverride: identity
+    image:
+      tag: latest
+    keycloak:
+      fullnameOverride: keycloak
+      postgresql:
+        fullnameOverride: postgresql
+      auth:
+        createAdminUser: true
+        adminUser: admin
+        adminPassword: admin
+      extraEnvVars:
+        - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
+          value: "true"
+
+  zeebe:
+    # Defines the size of the zeebe cluster.
+    clusterSize: 1
+    fullnameOverride: zeebe
+    # Defines the version of Zeebe to use
+    image:
+      tag: 8.0.0
+    partitionCount: 1
+    # Disable the creation of persistent volumes.
+    persistenceType: local
+    # Defines a reasonable default for the `zeebe` StatefulSet, for when persistence is enabled.
+    pvcSize: 2Gi
+    replicationFactor: 1
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+  operate:
+    enabled: false
+  tasklist:
+    enabled: false
+  zeebe-gateway:
+    replicas: 1
+    image:
+      tag: latest
+  # Configuration for ElasticSearch. Persistence is disabled by default,
+  # and we're setting some reasonable defaults for the `PersistentVolumeClaim` size
+  # in order to avoid being too wasteful.
+  # Feel free to enable persistence and adjust storage on a per-branch level whenever needed.
+  # Configuration for ElasticSearch. Persistence is disabled by default,
+  # and we're setting some reasonable defaults for the `PersistentVolumeClaim` size
+  # in order to avoid being too wasteful.
+  # Feel free to enable persistence and adjust storage on a per-branch level whenever needed.
+  elasticsearch:
+    # Defines the version of ElasticSearch to use
+    imageTag: 7.16.2
+    replicas: 1
+    # This is needed to disable the creation of poddisruptionbudget resource coming from ES chart (supported in k8s 1.21)
+    maxUnavailable: ""
+    minimumMasterNodes: 1
+    extraEnvs:
+      - name: xpack.security.enabled
+        value: "false"
+      - name: processors
+        value: "1"
+    clusterHealthCheckParams: wait_for_status=yellow&timeout=1s
+    esJavaOpts: "-Xms512m -Xmx512m"
+    persistence:
+      enabled: false
+    securityContext:
+      capabilities:
+        add:
+          - IPC_LOCK
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+      requests:
+        cpu: 0.5
+        memory: 512Mi
+    volumeClaimTemplate:
+      resources:
+        requests:
+          storage: 2Gi
+
+
+# Configuration of global values as required by the camunda-platform chart and to comply
+# with Infra best practices.
+global:
+  identity:
+    operate:
+      enabled: false
+    keycloak:
+      fullname: keycloak
+    auth:
+      publicIssuerUrl: "https://keycloak-test.optimize.camunda.cloud/auth/realms/camunda-platform"
+      optimize:
+        redirectUrl: "https://test.optimize.camunda.cloud"
+
+  zeebeClusterName: zeebe
+  labels:
+    camunda.cloud/source: argocd
+    camunda.cloud/managed-by: Helm
+    app: optimize-camunda-cloud # Should be overridden by Argo app
+    commit: master # Should be overridden by Argo app

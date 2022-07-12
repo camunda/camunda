@@ -30,7 +30,7 @@ export default function KpiResult({kpis, displayTip}) {
 
   return (
     <div className="KpiResult">
-      {kpis?.map(({reportId, reportName, value, target, isBelow, measure}, idx) => {
+      {kpis?.map(({reportId, reportName, value, unit, target, isBelow, measure}, idx) => {
         return (
           <div key={idx} className="kpi">
             <b className="title">
@@ -42,14 +42,15 @@ export default function KpiResult({kpis, displayTip}) {
             <div className="reportValues">
               <span
                 className={classnames(
-                  {success: isSuccessful({target, value, isBelow})},
+                  {success: isSuccessful({target, unit, value, isBelow, measure})},
                   'reportValue'
                 )}
               >
                 {t('common.value')}: {formatters[measure](value)}
               </span>
               <span>
-                {t('report.config.goal.target')}: {formatters[measure](target)}
+                {t('report.config.goal.target')}: {target}
+                {measure === 'percentage' && '%'} {unit}
               </span>
             </div>
           </div>

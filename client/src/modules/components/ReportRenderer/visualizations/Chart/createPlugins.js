@@ -10,6 +10,7 @@ import {parseISO} from 'date-fns';
 import {drawHorizentalLine} from './service';
 import zoomIn from './zoomIn';
 import drawPieEmptyState from './drawPieEmptyState';
+import generateLegends from './generateLegends';
 import fadeOnHover from './fadeOnHover';
 
 export default function createPlugins({updateReport, report: {combined, data, result}}) {
@@ -18,6 +19,7 @@ export default function createPlugins({updateReport, report: {combined, data, re
       afterDatasetsDraw: drawHorizentalLine,
     },
     drawPieEmptyState,
+    generateLegends,
     fadeOnHover({visualization: data.visualization, isStacked: data.configuration.stackedBar}),
   ];
 

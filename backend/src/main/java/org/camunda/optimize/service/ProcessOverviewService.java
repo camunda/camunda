@@ -7,70 +7,47 @@ package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.KpiResponseDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.KpiType;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerResponseDto;
-import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedFlowNodesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedOrCanceledFlowNodesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.DeletedIncidentFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeDurationFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.MultipleVariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NoIncidentFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonCanceledInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonSuspendedInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.OpenIncidentFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ResolvedIncidentFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
+import org.camunda.optimize.service.collection.CollectionService;
+import org.camunda.optimize.service.digest.DigestService;
 import org.camunda.optimize.service.es.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.es.writer.ProcessOverviewWriter;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
-import org.camunda.optimize.service.report.ReportEvaluationService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
-import org.camunda.optimize.util.SuppressionConstants;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.MAGIC_LINK_TEMPLATE;
 
 @AllArgsConstructor
 @Component
 @Slf4j
 public class ProcessOverviewService {
+
+  public static final String APP_CUE_DASHBOARD_SUFFIX = "?appcue=7c293dbb-3957-4187-a079-f0237161c489";
+  private static final String PENDING_OWNER_UPDATE_TEMPLATE = "pendingauthcheck#%s#%s";
 
   private final DefinitionService definitionService;
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
@@ -78,219 +55,153 @@ public class ProcessOverviewService {
   private final ProcessOverviewReader processOverviewReader;
   private final AbstractIdentityService identityService;
   private final KpiService kpiService;
-  private final ReportEvaluationService reportEvaluationService;
+  private final CollectionService collectionService;
+  private final DigestService digestService;
 
   public List<ProcessOverviewResponseDto> getAllProcessOverviews(final String userId, final ZoneId timezone) {
     final Map<String, String> procDefKeysAndName = definitionService.getAllDefinitionsWithTenants(PROCESS)
       .stream()
-      .filter(def ->
-                definitionAuthorizationService.isAuthorizedToAccessDefinition(
-                  userId,
-                  PROCESS,
-                  def.getKey(),
-                  def.getTenantIds()
-                )
-      )
+      .filter(def -> !def.getIsEventProcess())
+      .filter(
+        def -> definitionAuthorizationService.isAuthorizedToAccessDefinition(userId, PROCESS, def.getKey(), def.getTenantIds()))
+      .peek(def -> {
+        if (def.getName() == null || def.getName().isEmpty()) {
+          def.setName(def.getKey());
+        }
+      })
       .collect(toMap(DefinitionWithTenantIdsDto::getKey, DefinitionWithTenantIdsDto::getName));
 
     final Map<String, ProcessOverviewDto> processOverviewByKey =
       processOverviewReader.getProcessOverviewsByKey(procDefKeysAndName.keySet());
 
-    final Map<String, List<SingleProcessReportDefinitionRequestDto>> kpiReportsByKey = new HashMap<>();
-    procDefKeysAndName.keySet()
-      .forEach(processDefinitionKey -> kpiReportsByKey.put(
-        processDefinitionKey,
-        kpiService.getKpiReportsForProcessDefinition(processDefinitionKey)
-      ));
-
     return procDefKeysAndName.entrySet()
       .stream()
       .map(entry -> {
         final String procDefKey = entry.getKey();
+        String appCueSuffix = collectionAlreadyCreatedForProcess(procDefKey) ? "" : APP_CUE_DASHBOARD_SUFFIX;
+        String magicLinkToDashboard = String.format(MAGIC_LINK_TEMPLATE, procDefKey, procDefKey) + appCueSuffix;
         final Optional<ProcessOverviewDto> overviewForKey = Optional.ofNullable(processOverviewByKey.get(procDefKey));
-        final Optional<List<SingleProcessReportDefinitionRequestDto>> kpiReportsForKey = Optional.ofNullable(
-          kpiReportsByKey.get(procDefKey));
-        List<KpiResponseDto> kpis = new ArrayList<>();
-        if (kpiReportsForKey.isPresent()) {
-          for (SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto :
-            kpiReportsForKey.get()) {
-            @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final SingleReportEvaluationResult<Double> evaluationResult = (SingleReportEvaluationResult<Double>)
-              reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
-                userId,
-                timezone,
-                singleProcessReportDefinitionRequestDto.getId(),
-                null,
-                null
-              ).getEvaluationResult();
-            final Double evaluationValue = evaluationResult.getFirstCommandResult().getFirstMeasureData();
-            if(!String.valueOf(evaluationValue).equals("null")){
-              KpiResponseDto responseDto = new KpiResponseDto();
-              responseDto.setReportId(singleProcessReportDefinitionRequestDto.getId());
-              responseDto.setReportName(singleProcessReportDefinitionRequestDto.getName());
-              responseDto.setIsBelow(getIsBelow(singleProcessReportDefinitionRequestDto));
-              responseDto.setTarget(getTarget(singleProcessReportDefinitionRequestDto));
-              responseDto.setMeasure(getMeasure(singleProcessReportDefinitionRequestDto));
-              responseDto.setValue(evaluationValue.toString());
-              responseDto.setType(getReportType(singleProcessReportDefinitionRequestDto));
-              kpis.add(responseDto);
-            }
-          }
-        }
-
         return new ProcessOverviewResponseDto(
-          StringUtils.isEmpty(entry.getValue()) ? procDefKey : entry.getValue(),
+          entry.getValue(),
           procDefKey,
           overviewForKey.flatMap(overview -> Optional.ofNullable(overview.getOwner())
             .map(owner -> new ProcessOwnerResponseDto(owner, identityService.getIdentityNameById(owner).orElse(owner)))
           ).orElse(new ProcessOwnerResponseDto()),
           overviewForKey.map(ProcessOverviewDto::getDigest)
-            .orElse(new ProcessDigestDto()),
-          kpis
+            .orElse(new ProcessDigestDto(new AlertInterval(1, AlertIntervalUnit.WEEKS), false, new HashMap<>())),
+          kpiService.getKpiResultsForProcessDefinition(procDefKey, timezone),
+          magicLinkToDashboard
         );
       }).collect(Collectors.toList());
   }
 
-  private KpiType getReportType(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    ViewProperty viewProperty = getMeasure(singleProcessReportDefinitionRequestDto);
-    if (ViewProperty.DURATION.equals(viewProperty)) {
-      return KpiType.TIME;
-    } else if (ViewProperty.PERCENTAGE.equals(viewProperty) && timeKpiFilters(
-      singleProcessReportDefinitionRequestDto)) {
-      return KpiType.TIME;
-    } else {
-      return KpiType.QUALITY;
-    }
-  }
-
-  private boolean timeKpiFilters(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    boolean timeKpiFilters = false;
-    for (ProcessFilterDto<?> processFilter : singleProcessReportDefinitionRequestDto.getData().getFilter()) {
-      if ((processFilter instanceof FlowNodeStartDateFilterDto) ||
-        (processFilter instanceof FlowNodeEndDateFilterDto) ||
-        (processFilter instanceof VariableFilterDto) ||
-        (processFilter instanceof MultipleVariableFilterDto) ||
-        (processFilter instanceof ExecutedFlowNodeFilterDto) ||
-        (processFilter instanceof ExecutingFlowNodeFilterDto) ||
-        (processFilter instanceof CanceledFlowNodeFilterDto) ||
-        (processFilter instanceof RunningInstancesOnlyFilterDto) ||
-        (processFilter instanceof CompletedInstancesOnlyFilterDto) ||
-        (processFilter instanceof CanceledInstancesOnlyFilterDto) ||
-        (processFilter instanceof NonCanceledInstancesOnlyFilterDto) ||
-        (processFilter instanceof SuspendedInstancesOnlyFilterDto) ||
-        (processFilter instanceof NonSuspendedInstancesOnlyFilterDto) ||
-        (processFilter instanceof FlowNodeDurationFilterDto) ||
-        (processFilter instanceof OpenIncidentFilterDto) ||
-        (processFilter instanceof DeletedIncidentFilterDto) ||
-        (processFilter instanceof ResolvedIncidentFilterDto) ||
-        (processFilter instanceof NoIncidentFilterDto) ||
-        (processFilter instanceof RunningFlowNodesOnlyFilterDto) ||
-        (processFilter instanceof CompletedFlowNodesOnlyFilterDto) ||
-        (processFilter instanceof CanceledFlowNodesOnlyFilterDto) ||
-        (processFilter instanceof CompletedOrCanceledFlowNodesOnlyFilterDto)) {
-        return timeKpiFilters;
-      } else {
-        timeKpiFilters = true;
+  public void updateProcess(final String userId, final String processDefKey, final ProcessUpdateDto processUpdateDto) {
+    validateProcessDefinitionAuthorization(userId, processDefKey);
+    final String ownerIdToSave = getValidatedOwnerId(userId, processUpdateDto.getOwnerId());
+    processUpdateDto.setOwnerId(ownerIdToSave);
+    if (processUpdateDto.getProcessDigest().isEnabled()) {
+      if (processUpdateDto.getProcessDigest().getCheckInterval() == null) {
+        throw new BadRequestException("Check interval cannot be null if the digest is enabled");
+      } else if (processUpdateDto.getOwnerId() == null) {
+        throw new BadRequestException("Process digest cannot be enabled if no owner is set");
       }
     }
-    return timeKpiFilters;
+    processOverviewWriter.updateProcessConfiguration(processDefKey, processUpdateDto);
+    digestService.handleProcessUpdate(processDefKey, processUpdateDto);
   }
 
-  private ViewProperty getMeasure(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    List<ViewProperty> viewProperties = singleProcessReportDefinitionRequestDto.getData().getViewProperties();
-    if (viewProperties.contains(ViewProperty.DURATION)) {
-      return ViewProperty.DURATION;
-    } else if (viewProperties.contains(ViewProperty.FREQUENCY)) {
-      return ViewProperty.FREQUENCY;
-    } else if (viewProperties.contains(ViewProperty.PERCENTAGE)) {
-      return ViewProperty.PERCENTAGE;
+  public void updateProcessOwnerIfNotSet(final String userId, final String processDefinitionKey, final String ownerId) {
+    final String ownerIdToSave = getValidatedOwnerId(userId, ownerId);
+    if(ownerIdToSave == null || ownerIdToSave.isEmpty()) {
+      throw new BadRequestException("Owner ID cannot be empty!");
+    }
+    if (definitionHasBeenImported(processDefinitionKey)) {
+      log.info("Updating owner of process " + processDefinitionKey + " to " + ownerIdToSave);
+      validateProcessDefinitionAuthorization(userId, processDefinitionKey);
+      processOverviewWriter.updateProcessOwnerIfNotSet(processDefinitionKey, ownerIdToSave);
     } else {
-      return null;
+      // If this happens, it means that Optimize did not import the process definition yet. So we save the
+      // information but mark it as pending authorization check
+      log.info(String.format("Process definition %s has not been imported to optimize yet, so saving the " +
+                               "prospective owner %s as pending", processDefinitionKey, ownerIdToSave));
+      String pendingProcessKey = String.format(PENDING_OWNER_UPDATE_TEMPLATE, userId, processDefinitionKey);
+      processOverviewWriter.updateProcessOwnerIfNotSet(pendingProcessKey, ownerIdToSave);
     }
   }
 
-  private boolean getIsBelow(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    SingleReportTargetValueDto targetValue = singleProcessReportDefinitionRequestDto.getData()
-      .getConfiguration()
-      .getTargetValue();
-    ViewProperty viewProperty = getMeasure(singleProcessReportDefinitionRequestDto);
-    if (viewProperty == null) {
+  private String getValidatedOwnerId(final String userId, final String ownerId) {
+    return Optional.ofNullable(ownerId)
+      .map(owner -> {
+        final Optional<String> ownerUserId = identityService.getUserById(owner).map(IdentityDto::getId);
+        if (ownerUserId.isEmpty() || (!userId.equals(ownerUserId.get()) &&
+          !identityService.isUserAuthorizedToAccessIdentity(userId, new IdentityDto(ownerId, IdentityType.USER)))) {
+          throw new ForbiddenException(String.format(
+            "Could not find a user with ID %s that the user %s is authorized to see.", owner, userId));
+        }
+        return ownerUserId.get();
+      }).orElse(null);
+  }
+
+  private boolean definitionHasBeenImported(final String processDefinitionKey) {
+    try {
+      return definitionService.getLatestVersionToKey(PROCESS, processDefinitionKey) != null;
+    } catch (NotFoundException exception) {
+      log.info("Process with definition key {} has not yet been imported", processDefinitionKey);
       return false;
-    } else if (viewProperty.equals(ViewProperty.DURATION)) {
-      return targetValue.getDurationProgress().getTarget().getIsBelow();
-    } else {
-      return targetValue.getCountProgress().getIsBelow();
     }
   }
 
-  private String getTarget(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
-    SingleReportTargetValueDto targetValue = singleProcessReportDefinitionRequestDto.getData()
-      .getConfiguration()
-      .getTargetValue();
-    ViewProperty viewProperty = getMeasure(singleProcessReportDefinitionRequestDto);
-    if (viewProperty == null) {
-      return null;
-    } else if (viewProperty.equals(ViewProperty.DURATION)) {
-      return targetValue.getDurationProgress().getTarget().getValue();
-    } else {
-      return targetValue.getCountProgress().getTarget();
-    }
+  public void confirmOrDenyOwnershipData(final String processToBeOnboarded) {
+    Map<String, ProcessOverviewDto> pendingProcesses = processOverviewReader.getProcessOverviewsWithPendingOwnershipData();
+    pendingProcesses
+      .keySet()
+      .stream()
+      .filter(completeDefKey -> {
+        Pattern pattern = Pattern.compile(String.format(PENDING_OWNER_UPDATE_TEMPLATE, "(.*)", "(.*)$"));
+        return pattern.matcher(completeDefKey).matches();
+      })
+      .forEach(completeDefKey -> {
+        String userIdFromRequester = extractUserIdFromPendingDefKey(completeDefKey).orElse(null);
+        String ownerId = pendingProcesses.get(completeDefKey).getOwner();
+        try {
+          updateProcessOwnerIfNotSet(userIdFromRequester, processToBeOnboarded, ownerId);
+          processOverviewWriter.deleteProcessOwnerEntry(completeDefKey);
+        } catch (Exception exc) {
+          log.warn(exc.getMessage(), exc);
+        }
+      });
   }
 
-  public void updateProcessOwner(final String userId, final String processDefKey, final String ownerId) {
-    validateProcessDefinitionAuthorization(userId, processDefKey);
-    String ownerIdToSave = null;
-    if (ownerId != null) {
-      final Optional<String> ownerUserId = identityService.getUserById(ownerId).map(IdentityDto::getId);
-      if (ownerUserId.isEmpty() ||
-        !identityService.isUserAuthorizedToAccessIdentity(userId, new IdentityDto(ownerId, IdentityType.USER))) {
-        throw new NotFoundException(String.format(
-          "Could not find a user with ID %s that the user %s is authorized to see.", ownerId, userId));
-      } else {
-        ownerIdToSave = ownerUserId.get();
-      }
+  private Optional<String> extractUserIdFromPendingDefKey(final String defKey) {
+    Pattern pattern = Pattern.compile(String.format(PENDING_OWNER_UPDATE_TEMPLATE, "(.*)", "(.*)$"));
+    Matcher matcher = pattern.matcher(defKey);
+    if (matcher.find()) {
+      return Optional.of(matcher.group(1));
     }
-    processOverviewWriter.upsertProcessOwner(processDefKey, ownerIdToSave);
-  }
-
-  public void updateProcessDigest(final String userId,
-                                  final String processDefKey,
-                                  final ProcessDigestRequestDto digestToCreate) {
-    validateProcessDefinitionAuthorization(userId, processDefKey);
-    validateIsAuthorizedToUpdateDigest(userId, processDefKey);
-    processOverviewWriter.updateProcessDigest(
-      processDefKey,
-      new ProcessDigestDto(
-        digestToCreate.getCheckInterval(),
-        digestToCreate.getEnabled(),
-        Collections.emptyMap()
-      )
-    );
-  }
-
-  private void validateIsAuthorizedToUpdateDigest(final String userId,
-                                                  final String processDefinitionKey) {
-    final Optional<ProcessOverviewDto> processOverview =
-      processOverviewReader.getProcessOverviewByKey(processDefinitionKey);
-    if (processOverview.isEmpty() || !processOverview.get().getOwner().equals(userId)) {
-      throw new ForbiddenException(String.format(
-        "User [%s] is not authorized to update digest for process definition with key [%s]. " +
-          "Only process owners are permitted to update process digest settings.",
-        userId,
-        processDefinitionKey
-      )
-      );
-    }
+    return Optional.empty();
   }
 
   private void validateProcessDefinitionAuthorization(final String userId, final String processDefKey) {
-    final Optional<DefinitionWithTenantIdsDto> definitionForKey =
-      definitionService.getProcessDefinitionWithTenants(processDefKey);
-    if (definitionForKey.isEmpty()) {
-      throw new NotFoundException("Process definition with key " + processDefKey + " does not exist.");
-    }
-    if (!definitionAuthorizationService.isAuthorizedToAccessDefinition(
-      userId, PROCESS, definitionForKey.get().getKey(), definitionForKey.get().getTenantIds())) {
-      throw new ForbiddenException("User is not authorized to access the process definition with key " + processDefKey);
+    definitionService.getProcessDefinitionWithTenants(processDefKey)
+      .ifPresentOrElse(definition -> {
+        if (definition.getIsEventProcess() == Boolean.TRUE) {
+          throw new BadRequestException("Event based processes cannot have owners nor digests configured");
+        } else if (!definitionAuthorizationService.isAuthorizedToAccessDefinition(
+          userId, PROCESS, definition.getKey(), definition.getTenantIds())) {
+          throw new ForbiddenException("User is not authorized to access the process definition with key " + processDefKey);
+        }
+      }, () -> {
+        throw new NotFoundException("Process definition with key " + processDefKey + " does not exist.");
+      });
+  }
+
+  private boolean collectionAlreadyCreatedForProcess(final String procDefKey) {
+    try {
+      return collectionService.getCollectionDefinition(procDefKey).isAutomaticallyCreated();
+    } catch (NotFoundException e) {
+      // Doesn't exist yet, return false
+      return false;
     }
   }
+
 }

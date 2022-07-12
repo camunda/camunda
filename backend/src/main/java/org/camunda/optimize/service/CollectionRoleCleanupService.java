@@ -51,12 +51,12 @@ public class CollectionRoleCleanupService implements IdentityCacheSyncListener {
       final IdentityDto roleIdentity = role.getIdentity();
       switch (roleIdentity.getType()) {
         case GROUP:
-          if (!newIdentityCache.getGroupIdentityById(roleIdentity.getId()).isPresent()) {
+          if (newIdentityCache.getGroupIdentityById(roleIdentity.getId()).isEmpty()) {
             invalidIdentities.add(role.getId());
           }
           break;
         case USER:
-          if (!newIdentityCache.getUserIdentityById(roleIdentity.getId()).isPresent()) {
+          if (newIdentityCache.getUserIdentityById(roleIdentity.getId()).isEmpty()) {
             invalidIdentities.add(role.getId());
           }
           break;

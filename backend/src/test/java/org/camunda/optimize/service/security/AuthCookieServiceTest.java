@@ -30,7 +30,7 @@ public class AuthCookieServiceTest {
     Mockito.when(requestMock.getCookies()).thenReturn(cookies);
 
     // when
-    Optional<String> token = AuthCookieService.getToken(requestMock);
+    Optional<String> token = AuthCookieService.getAuthCookieToken(requestMock);
 
     // then
     assertThat(token).isPresent().get().isEqualTo("test");
@@ -39,7 +39,7 @@ public class AuthCookieServiceTest {
   @Test
   public void getTokenExceptionFromContainerRequestContext() {
     ContainerRequestContext requestMock = Mockito.mock(ContainerRequestContext.class);
-    assertThat(AuthCookieService.getToken(requestMock)).isEmpty();
+    assertThat(AuthCookieService.getAuthCookieToken(requestMock)).isEmpty();
   }
 
   @Test
@@ -51,7 +51,7 @@ public class AuthCookieServiceTest {
     Mockito.when(servletRequestMock.getCookies()).thenReturn(cookies);
 
     // when
-    Optional<String> token = AuthCookieService.getToken(servletRequestMock);
+    Optional<String> token = AuthCookieService.getAuthCookieToken(servletRequestMock);
 
     // then
     assertThat(token).isPresent().get().isEqualTo("test");
@@ -60,6 +60,6 @@ public class AuthCookieServiceTest {
   @Test
   public void getTokenExceptionFromHttpServletRequest() {
     HttpServletRequest servletRequestMock = Mockito.mock(HttpServletRequest.class);
-    assertThat(AuthCookieService.getToken(servletRequestMock)).isEmpty();
+    assertThat(AuthCookieService.getAuthCookieToken(servletRequestMock)).isEmpty();
   }
 }

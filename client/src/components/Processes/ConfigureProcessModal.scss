@@ -1,0 +1,35 @@
+.ConfigureProcessModal {
+  .infoContainer .Icon {
+    opacity: 0.26;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  .digestConfig {
+    border-radius: 10px;
+    border: 1px solid var(--silver-darken-87);
+    margin-top: 40px;
+    padding: 20px;
+
+    > legend {
+      font-size: 14px;
+    }
+
+    &:disabled {
+      color: var(--grey-lighten-56);
+      opacity: 0.8;
+    }
+
+    .Labeled label {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+
+      .InputGroup input {
+        margin-right: 10px;
+      }
+    }
+  }
+}

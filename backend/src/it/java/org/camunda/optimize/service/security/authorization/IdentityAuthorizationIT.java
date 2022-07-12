@@ -112,9 +112,9 @@ public class IdentityAuthorizationIT extends AbstractIT {
   @MethodSource("relevantPermissions")
   public void limitResults_partialAuthorizations_readPermission(final String permission) {
     // given
-    final UserDto user1 = new UserDto("testUser1", null, null, null);
-    final UserDto user2 = new UserDto("testUser2", null, null, null);
-    final UserDto user3 = new UserDto("testUser3", null, null, null);
+    final UserDto user1 = new UserDto("testUser1");
+    final UserDto user2 = new UserDto("testUser2");
+    final UserDto user3 = new UserDto("testUser3");
 
     embeddedOptimizeExtension.getIdentityService().addIdentity(user1);
     embeddedOptimizeExtension.getIdentityService().addIdentity(user2);
@@ -148,10 +148,10 @@ public class IdentityAuthorizationIT extends AbstractIT {
   @MethodSource("relevantPermissions")
   public void limitResults_partialAuthorizationsForMultipleResults(final String permission) {
     // given
-    final UserDto user1 = new UserDto("testUser1", null, null, null);
-    final UserDto user2 = new UserDto("testUser2", null, null, null);
-    final UserDto user3 = new UserDto("testUser3", null, null, null);
-    final UserDto user4 = new UserDto("testUser4", null, null, null);
+    final UserDto user1 = new UserDto("testUser1");
+    final UserDto user2 = new UserDto("testUser2");
+    final UserDto user3 = new UserDto("testUser3");
+    final UserDto user4 = new UserDto("testUser4");
 
     embeddedOptimizeExtension.getIdentityService().addIdentity(user1);
     embeddedOptimizeExtension.getIdentityService().addIdentity(user2);

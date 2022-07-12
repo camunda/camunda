@@ -9,6 +9,9 @@ import com.google.common.collect.ImmutableList;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
+import org.camunda.optimize.rest.engine.dto.EngineUserDto;
+import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
+import org.camunda.optimize.rest.engine.dto.UserProfileDto;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 
 import java.util.Arrays;
@@ -26,6 +29,10 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.READ_H
 @Builder
 public class AuthorizationClient {
   public static final String KERMIT_USER = "kermit";
+  public static final String SPIDERMAN_USER = "spiderman";
+  public static final String SPIDERMAN_FIRSTNAME = "Afraid";
+  public static final String SPIDERMAN_LASTNAME = "of Spiders";
+  public static final String SPIDERMAN_FULLNAME = SPIDERMAN_FIRSTNAME + " " + SPIDERMAN_LASTNAME;
   public static final String GROUP_ID = "kermitGroup";
 
   private final EngineIntegrationExtension engineExtension;
@@ -38,9 +45,24 @@ public class AuthorizationClient {
     addUserAndGrantOptimizeAccess(KERMIT_USER);
   }
 
+  public void addSpidermanUserAndGrantAccessToOptimize() {
+    final UserProfileDto userProfileDto = UserProfileDto.builder()
+      .id(SPIDERMAN_USER)
+      .firstName(SPIDERMAN_FIRSTNAME)
+      .lastName(SPIDERMAN_LASTNAME)
+      .build();
+    final EngineUserDto userDto = new EngineUserDto(userProfileDto, new UserCredentialsDto(userProfileDto.getId()));
+    addUserAndGrantOptimizeAccess(userDto);
+  }
+
   public void addUserAndGrantOptimizeAccess(final String userId) {
     engineExtension.addUser(userId, userId);
     engineExtension.grantUserOptimizeAccess(userId);
+  }
+
+  public void addUserAndGrantOptimizeAccess(EngineUserDto userDto) {
+    engineExtension.addUser(userDto);
+    engineExtension.grantUserOptimizeAccess(userDto.getProfile().getId());
   }
 
   public void createGroupAndGrantOptimizeAccess(final String groupId, final String groupName) {

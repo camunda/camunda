@@ -192,6 +192,7 @@ Object {
       "formatter": [Function],
     },
     "legend": Object {
+      "autoCollapse": true,
       "display": true,
       "labels": Object {
         "color": "#666",

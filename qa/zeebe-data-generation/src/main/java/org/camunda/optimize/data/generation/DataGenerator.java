@@ -7,7 +7,7 @@ package org.camunda.optimize.data.generation;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -136,9 +136,9 @@ public class DataGenerator {
   private void deployProcess(final String processId) {
     log.info("Deploying process with ID [{}]", processId);
     try {
-      DeployProcessCommandStep1 deployProcessCommandStep1 = zeebeClient.newDeployCommand();
+      DeployResourceCommandStep1 deployProcessCommandStep1 = zeebeClient.newDeployResourceCommand();
       deployProcessCommandStep1.addProcessModel(createModel(processId), processId + ".bpmn");
-      ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
+      ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployProcessCommandStep1)
         .send()
         .join(2, TimeUnit.SECONDS);
     } catch (Exception e) {

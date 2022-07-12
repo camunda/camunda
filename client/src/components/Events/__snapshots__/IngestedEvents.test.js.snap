@@ -17,23 +17,12 @@ exports[`should match snapshot 1`] = `
     >
       Ingested External Events
     </h4>
-    <div
-      className="searchInputContainer"
-    >
-      <ForwardRef(Input)
-        className="searchInput"
-        onChange={[Function]}
-        onClear={[Function]}
-        placeholder="Search for values"
-        type="text"
-        value=""
-      />
-      <Icon
-        className="searchIcon"
-        size="20"
-        type="search"
-      />
-    </div>
+    <SearchInput
+      onChange={[Function]}
+      onClear={[Function]}
+      placeholder="Search for values"
+      value=""
+    />
   </div>
   <Table
     body={

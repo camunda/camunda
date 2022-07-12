@@ -6,9 +6,10 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.InitialProcessOwnerDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
+import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 import org.camunda.optimize.service.ProcessOverviewService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
@@ -16,8 +17,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -27,6 +31,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 
@@ -41,29 +46,41 @@ public class ProcessOverviewRestService {
   @GET
   @Path("/overview")
   @Produces(MediaType.APPLICATION_JSON)
-  public List<ProcessOverviewResponseDto> getProcessOverviews(@Context ContainerRequestContext requestContext) {
+  public List<ProcessOverviewResponseDto> getProcessOverviews(@Context ContainerRequestContext requestContext,
+                                                              @BeanParam final ProcessOverviewSorter processOverviewSorter) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final ZoneId timezone = extractTimezone(requestContext);
-    return processOverviewService.getAllProcessOverviews(userId, timezone);
+    List<ProcessOverviewResponseDto> processOverviewResponseDtos =
+      processOverviewService.getAllProcessOverviews(userId, timezone);
+    return processOverviewSorter.applySort(processOverviewResponseDtos);
   }
 
   @PUT
-  @Path("/{processDefinitionKey}/digest")
+  @Path("/{processDefinitionKey}")
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateProcessesDigest(@Context final ContainerRequestContext requestContext,
-                                    @PathParam("processDefinitionKey") final String processDefKey,
-                                    @NotNull @Valid @RequestBody ProcessDigestRequestDto processDigest) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    processOverviewService.updateProcessDigest(userId, processDefKey, processDigest);
-  }
-
-  @PUT
-  @Path("/{processDefinitionKey}/owner-new") // TODO remove "-new" with OPT-6175
-  @Consumes(MediaType.APPLICATION_JSON)
-  public void updateProcessOwner(@Context final ContainerRequestContext requestContext,
-                                 @PathParam("processDefinitionKey") final String processDefKey,
-                                 @NotNull @Valid @RequestBody ProcessOwnerDto ownerDto) {
+  public void updateProcess(@Context final ContainerRequestContext requestContext,
+                            @PathParam("processDefinitionKey") final String processDefKey,
+                            @NotNull @Valid @RequestBody ProcessUpdateDto processUpdateDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    processOverviewService.updateProcessOwner(userId, processDefKey, ownerDto.getId());
+    processOverviewService.updateProcess(userId, processDefKey, processUpdateDto);
   }
+
+  @POST
+  @Path("/initial-owner")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void setInitialProcessOwner(@Context final ContainerRequestContext requestContext,
+                                     @NotNull @Valid @RequestBody InitialProcessOwnerDto ownerDto) {
+    String userId;
+    try {
+      userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    } catch (NotAuthorizedException e) {
+      // If we are using a CloudSaaS Token
+      userId = Optional.ofNullable(requestContext.getSecurityContext().getUserPrincipal().getName()).orElse("");
+    }
+    if (userId.isEmpty()) {
+      throw new NotAuthorizedException("Could not resolve user for this request");
+    }
+    processOverviewService.updateProcessOwnerIfNotSet(userId, ownerDto.getProcessDefinitionKey(), ownerDto.getOwner());
+  }
+
 }

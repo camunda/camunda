@@ -15,30 +15,6 @@
       margin-left: auto;
       font-size: 14px;
 
-      .searchInputContainer {
-        position: relative;
-
-        .Input {
-          padding: 6px 30px 6px 15px;
-        }
-
-        .Input:valid ~ .searchIcon {
-          display: none;
-        }
-
-        .searchIcon {
-          position: absolute;
-          right: 10px;
-          top: calc(50% - 2px);
-          transform: translateY(-50%);
-          color: var(--silver-darken-80);
-        }
-      }
-
-      .Input[type='text'] {
-        border-radius: 15px;
-      }
-
       .Tag {
         margin-left: 10px;
         height: 30px;

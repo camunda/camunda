@@ -352,6 +352,7 @@ pipeline {
       environment {
         VERSION = "${params.RELEASE_VERSION}"
         PUSH_CHANGES = "${params.PUSH_CHANGES}"
+        DOCKER_LATEST = "${params.DOCKER_LATEST}"
         DOCKERHUB_REGISTRY_CREDENTIALS = credentials('camunda-dockerhub')
         GCR_REGISTRY_CREDENTIALS = credentials('docker-registry-ci3')
         REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
@@ -378,7 +379,8 @@ pipeline {
             docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${VERSION}
             docker push ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${VERSION}
 
-            if [ "${MAJOR_OR_MINOR}" = true ]; then
+            # major and minor versions are always tagged as latest
+            if [ "${MAJOR_OR_MINOR}" = true || "${DOCKER_LATEST}" ]; then
               docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:latest
               docker push ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:latest
             fi
@@ -387,7 +389,8 @@ pipeline {
               docker login --username ${DOCKERHUB_REGISTRY_CREDENTIALS_USR} --password ${DOCKERHUB_REGISTRY_CREDENTIALS_PSW}
               docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${DOCKERHUB_IMAGE()}:${VERSION}
               docker push ${DOCKERHUB_IMAGE()}:${VERSION}
-              if [ "${MAJOR_OR_MINOR}" = true ]; then
+              # major and minor versions are always tagged as latest
+              if [ "${MAJOR_OR_MINOR}" = true || "${DOCKER_LATEST}" ]; then
                 docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${DOCKERHUB_IMAGE()}:latest
                 docker push ${DOCKERHUB_IMAGE()}:latest
               fi

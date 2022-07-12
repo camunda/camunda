@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.alert;
 
+import com.google.common.collect.ImmutableMap;
+import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.JettyConfig;
 import org.camunda.optimize.dto.optimize.ReportConstants;
@@ -12,16 +14,21 @@ import org.camunda.optimize.dto.optimize.alert.AlertNotificationType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
+import org.camunda.optimize.service.util.configuration.ProxyConfiguration;
+import org.camunda.optimize.service.util.configuration.WebhookConfiguration;
 import org.camunda.optimize.service.util.configuration.WebhookConfiguration.Placeholder;
 import org.camunda.optimize.test.optimize.AlertClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.junit.jupiter.MockServerExtension;
 import org.mockserver.junit.jupiter.MockServerSettings;
 import org.mockserver.matchers.MatchType;
 import org.mockserver.verify.VerificationTimes;
 
+import javax.ws.rs.HttpMethod;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,15 +37,21 @@ import static org.camunda.optimize.service.util.configuration.WebhookConfigurati
 import static org.camunda.optimize.service.util.configuration.WebhookConfiguration.Placeholder.ALERT_NAME;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_INVALID_PORT_WEBHOOK_NAME;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_HOST;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_METHOD;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_NAME;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_PATH;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_WITH_PROXY_NAME;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.createWebhookHostUrl;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.JsonBody.json;
 
 @ExtendWith(MockServerExtension.class)
 @MockServerSettings
 public class AlertWebhookIT extends AbstractAlertIT {
+
+  @RegisterExtension
+  protected final LogCapturer alertJobLogs = LogCapturer.create().captureForType(AlertJob.class);
 
   @Test
   public void sendWebhookRequestWithAllPlaceholderBody(MockServerClient client) {
@@ -51,7 +64,7 @@ public class AlertWebhookIT extends AbstractAlertIT {
       collectionId, processInstance.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS
     );
     final AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
-    simpleAlert.setWebhook(TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME);
+    simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
     simpleAlert.setFixNotification(true);
     addReminderToAlert(simpleAlert);
 
@@ -87,8 +100,59 @@ public class AlertWebhookIT extends AbstractAlertIT {
   }
 
   @Test
+  public void configureWebhookWithUnsupportedHttpGETMethod(MockServerClient client) {
+    // given
+    client.reset();
+    final Map<String, WebhookConfiguration> webhookConfigurationMap = Map.of(
+      TEST_WEBHOOK_NAME,
+      uiConfigurationClient.createWebhookConfiguration(
+        createWebhookHostUrl(7654) + TEST_WEBHOOK_URL_PATH,
+        ImmutableMap.of("Content-Type", "application/json"),
+        HttpMethod.GET,
+        "payload"
+      )
+    );
+    embeddedOptimizeExtension.getConfigurationService().setConfiguredWebhooks(webhookConfigurationMap);
+    embeddedOptimizeExtension.reloadConfiguration();
+    final String alertId = setupWebhookAlert(TEST_WEBHOOK_NAME);
+
+    // when
+    triggerAndCompleteCheckJob(alertId);
+
+    // then
+    client.verifyZeroInteractions();
+    alertJobLogs.assertContains("Exception thrown while trying to send notification");
+  }
+
+  @Test
+  public void configureWebhookWithUnsupportedHttpDELETEMethod(MockServerClient client) {
+    // given
+    client.reset();
+    final Map<String, WebhookConfiguration> webhookConfigurationMap = Map.of(
+      TEST_WEBHOOK_NAME,
+      uiConfigurationClient.createWebhookConfiguration(
+        createWebhookHostUrl(7654) + TEST_WEBHOOK_URL_PATH,
+        ImmutableMap.of("Content-Type", "application/json"),
+        HttpMethod.DELETE,
+        "payload"
+      )
+    );
+    embeddedOptimizeExtension.getConfigurationService().setConfiguredWebhooks(webhookConfigurationMap);
+    embeddedOptimizeExtension.reloadConfiguration();
+    final String alertId = setupWebhookAlert(TEST_WEBHOOK_NAME);
+
+    // when
+    triggerAndCompleteCheckJob(alertId);
+
+    // then
+    client.verifyZeroInteractions();
+    alertJobLogs.assertContains("Exception thrown while trying to send notification");
+  }
+
+  @Test
   public void sendWebhookRequestWithSomePlaceholderBody(MockServerClient client) {
     // given
+    client.reset();
     final String payloadTemplate = "{\n" +
       Stream.of(ALERT_NAME, ALERT_CURRENT_VALUE)
         .map(placeholder -> String.format("\"%s\": \"%s\"", placeholder.name(), placeholder.getPlaceholderString()))
@@ -107,6 +171,105 @@ public class AlertWebhookIT extends AbstractAlertIT {
       String.format("\"%s\": \"%s\",\n", ALERT_CURRENT_VALUE.name(), "2000.0")
       + "\n}";
     verifyWebhookCallWithPayload(client, expectedAlertPayload);
+  }
+
+  @Test
+  public void sendWebhookRequestWithProxyConfigured(MockServerClient client) {
+    // given
+    final String payloadTemplate = "{\n" +
+      Stream.of(ALERT_NAME, ALERT_CURRENT_VALUE)
+        .map(placeholder -> String.format("\"%s\": \"%s\"", placeholder.name(), placeholder.getPlaceholderString()))
+        .collect(Collectors.joining(",\n"))
+      + "\n}";
+
+    final String webhookHost = "128.0.0.1:7654";
+    Map<String, WebhookConfiguration> webhookConfigurationMap = Map.of(
+      TEST_WEBHOOK_WITH_PROXY_NAME,
+      uiConfigurationClient.createWebhookConfiguration(
+        "http://" + webhookHost + TEST_WEBHOOK_URL_PATH,
+        ImmutableMap.of("Content-Type", "application/json"),
+        TEST_WEBHOOK_METHOD,
+        payloadTemplate,
+        // We use the Mock Server as the proxy to capture the request
+        new ProxyConfiguration(true, TEST_WEBHOOK_HOST, client.getPort(), false)
+      )
+    );
+    embeddedOptimizeExtension.getConfigurationService().setConfiguredWebhooks(webhookConfigurationMap);
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    final String alertId = setupWebhookAlert(TEST_WEBHOOK_WITH_PROXY_NAME);
+
+    // when
+    triggerAndCompleteCheckJob(alertId);
+
+    // then
+    client.verify(
+      request()
+        .withPath(TEST_WEBHOOK_URL_PATH)
+        .withMethod(TEST_WEBHOOK_METHOD)
+        .withHeader("Host", webhookHost)
+        .withHeader("Proxy-Connection", "Keep-Alive")
+        .withKeepAlive(true)
+        .withSecure(false),
+      VerificationTimes.once()
+    );
+  }
+
+  @Test
+  public void sendMultipleWebhookRequestWithProxyConfiguredForOneWebhook(MockServerClient client) {
+    // given
+    final String payloadTemplate = "{\n" +
+      Stream.of(ALERT_NAME, ALERT_CURRENT_VALUE)
+        .map(placeholder -> String.format("\"%s\": \"%s\"", placeholder.name(), placeholder.getPlaceholderString()))
+        .collect(Collectors.joining(",\n"))
+      + "\n}";
+
+    final String proxyWebhookHost = "128.0.0.1:7654";
+    Map<String, WebhookConfiguration> webhookConfigurationMap = Map.of(
+      TEST_WEBHOOK_WITH_PROXY_NAME,
+      uiConfigurationClient.createWebhookConfiguration(
+        "http://" + proxyWebhookHost + TEST_WEBHOOK_URL_PATH,
+        ImmutableMap.of("Content-Type", "application/json"),
+        TEST_WEBHOOK_METHOD,
+        payloadTemplate,
+        // We use the Mock Server as the proxy to capture the request
+        new ProxyConfiguration(true, TEST_WEBHOOK_HOST, client.getPort(), false)
+      ),
+      TEST_WEBHOOK_NAME,
+      uiConfigurationClient.createWebhookConfiguration(
+        createWebhookHostUrl(client.getPort()) + TEST_WEBHOOK_URL_PATH,
+        ImmutableMap.of("Content-Type", "application/json"),
+        TEST_WEBHOOK_METHOD,
+        payloadTemplate
+      )
+    );
+    embeddedOptimizeExtension.getConfigurationService().setConfiguredWebhooks(webhookConfigurationMap);
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    final String proxyWebhookAlertId = setupWebhookAlert(TEST_WEBHOOK_WITH_PROXY_NAME);
+    final String nonProxyWebhookAlertId = setupWebhookAlert(TEST_WEBHOOK_NAME);
+
+    // when
+    triggerAndCompleteCheckJob(proxyWebhookAlertId);
+    triggerAndCompleteCheckJob(nonProxyWebhookAlertId);
+
+    // then the proxy webhook notification request is sent
+    client.verify(
+      request()
+        .withPath(TEST_WEBHOOK_URL_PATH)
+        .withMethod(TEST_WEBHOOK_METHOD)
+        .withHeader("Host", proxyWebhookHost)
+        .withHeader("Proxy-Connection", "Keep-Alive")
+        .withKeepAlive(true)
+        .withSecure(false)
+    );
+    // and so is the non-proxied request
+    client.verify(
+      request()
+        .withPath(TEST_WEBHOOK_URL_PATH)
+        .withMethod(TEST_WEBHOOK_METHOD)
+        .withHeader("Host", TEST_WEBHOOK_HOST + ":" + client.getPort())
+    );
   }
 
   @Test
@@ -164,10 +327,11 @@ public class AlertWebhookIT extends AbstractAlertIT {
   @Test
   public void webhookNotificationStillSentWhenEmailFails(MockServerClient client) {
     // given
+    client.reset();
     setWebhookConfiguration(client.getPort());
     setEmailConfiguration();
     embeddedOptimizeExtension.getConfigurationService()
-      .setAlertEmailPort(9999); // set to incorrect port so that email notifications fail
+      .setNotificationEmailPort(9999); // set to incorrect port so that email notifications fail
 
     String alertId = setupWebhookAlert(TEST_WEBHOOK_NAME);
 
@@ -190,9 +354,11 @@ public class AlertWebhookIT extends AbstractAlertIT {
 
   private void verifyWebhookCallWithPayload(final MockServerClient client, final String expectedNewAlertPayload) {
     client.verify(
-      request().withMethod(TEST_WEBHOOK_METHOD).withPath(TEST_WEBHOOK_URL_PATH)
+      request()
+        .withPath(TEST_WEBHOOK_URL_PATH)
+        .withMethod(TEST_WEBHOOK_METHOD)
         .withBody(json(expectedNewAlertPayload, MatchType.STRICT)),
-      VerificationTimes.exactly(1)
+      VerificationTimes.once()
     );
   }
 

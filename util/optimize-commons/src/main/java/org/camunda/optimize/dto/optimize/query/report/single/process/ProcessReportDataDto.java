@@ -61,6 +61,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   @Builder.Default
   protected ProcessReportDistributedByDto<?> distributedBy = new ProcessReportDistributedByDto<>();
   protected ProcessVisualization visualization;
+  @Builder.Default
   protected boolean managementReport = false;
 
   public String getProcessDefinitionKey() {

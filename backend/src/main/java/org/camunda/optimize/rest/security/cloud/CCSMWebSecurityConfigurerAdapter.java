@@ -50,6 +50,7 @@ import static org.camunda.optimize.rest.security.platform.PlatformWebSecurityCon
 @Conditional(CCSMCondition.class)
 @Order(2)
 public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
+
   private final SessionService sessionService;
   private final ConfigurationService configurationService;
   private final AuthenticationCookieRefreshFilter authenticationCookieRefreshFilter;

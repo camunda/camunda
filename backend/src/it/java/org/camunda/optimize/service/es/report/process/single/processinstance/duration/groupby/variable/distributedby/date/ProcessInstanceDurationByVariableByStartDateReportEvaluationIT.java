@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.variable.distributedby.date;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
-import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.service.util.ProcessReportDataType;
 
 public class ProcessInstanceDurationByVariableByStartDateReportEvaluationIT
   extends AbstractProcessInstanceDurationByVariableByDateReportEvaluationIT {

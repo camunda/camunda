@@ -26,6 +26,7 @@ export default function MultiUserInput({
   onRemove,
   onClear,
   excludeGroups = false,
+  persistMenu,
 }) {
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
@@ -80,6 +81,7 @@ export default function MultiUserInput({
       onClear={onClear}
       async
       typedOption={!optionsOnly}
+      persistMenu={persistMenu}
     >
       {identities.filter(filterSelected).map((identity) => {
         const {text, tag, subTexts} = formatTypeaheadOption(identity);

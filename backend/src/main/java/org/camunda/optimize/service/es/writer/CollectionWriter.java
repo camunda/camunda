@@ -72,15 +72,21 @@ public class CollectionWriter {
 
   public IdResponseDto createNewCollectionAndReturnId(@NonNull String userId,
                                                       @NonNull PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
-    log.debug("Writing new collection to Elasticsearch");
+    return createNewCollectionAndReturnId(userId, partialCollectionDefinitionDto, IdGenerator.getNextId(), false);
+  }
 
-    String id = IdGenerator.getNextId();
+  public IdResponseDto createNewCollectionAndReturnId(@NonNull String userId,
+                                                      @NonNull PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto,
+                                                      @NonNull String id,
+                                                      @NonNull boolean automaticallyCreated) {
+    log.debug("Writing new collection to Elasticsearch");
     CollectionDefinitionDto collectionDefinitionDto = new CollectionDefinitionDto();
     collectionDefinitionDto.setId(id);
     collectionDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
     collectionDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     collectionDefinitionDto.setOwner(userId);
     collectionDefinitionDto.setLastModifier(userId);
+    collectionDefinitionDto.setAutomaticallyCreated(automaticallyCreated);
     collectionDefinitionDto.setName(Optional.ofNullable(partialCollectionDefinitionDto.getName())
                                       .orElse(DEFAULT_COLLECTION_NAME));
 

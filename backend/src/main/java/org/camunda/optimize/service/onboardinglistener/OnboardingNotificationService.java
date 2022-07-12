@@ -8,7 +8,7 @@ package org.camunda.optimize.service.onboardinglistener;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.alert.EmailNotificationService;
+import org.camunda.optimize.service.EmailSendingService;
 import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
@@ -16,17 +16,14 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class OnboardingNotificationService {
 
-  public static final String PROCESS_KEY_PLACEHOLDER = "PLACEHOLDER_PROCESS_KEY";
-  public static final String MAGIC_LINK_PLACEHOLDER = "PLACEHOLDER_MAGIC_LINK";
-  public static final String RECIPIENT_PLACEHOLDER = "PLACEHOLDER_RECIPIENT";
-  public static final String MAGIC_LINK_TEMPLATE =
-    "https://camunda.com/where-the-magic-happens/" + PROCESS_KEY_PLACEHOLDER;
+  public static final String MAGIC_LINK_TEMPLATE = "/collection/%s/dashboard/%s/";
   public static final String EMAIL_BODY_TEMPLATE =
-    "Congratulations! Your first process instance for the process " + PROCESS_KEY_PLACEHOLDER + " has completed! " +
+    "Congratulations! Your first process instance for the process %s has completed! " +
       "Ready for some insights? Our systems have crunched the data and we have some valuable information to " +
-      "share with you. Curious? Please follow this link to learn more: " + MAGIC_LINK_PLACEHOLDER;
+      "share with you. Curious? Please follow this link to learn more: %s";
+  public static final String EMAIL_SUBJECT = "You've got insights from Optimize for your new process";
 
-  private EmailNotificationService emailNotificationService;
+  private EmailSendingService emailSendingService;
 
   public void notifyOnboarding(@NonNull final String processKey) {
     notifyOnboarding(processKey, retrieveEmailRecipient(processKey));
@@ -39,18 +36,19 @@ public class OnboardingNotificationService {
   }
 
   public void notifyOnboarding(@NonNull final String processKey, @NonNull final String emailRecipient) {
-    emailNotificationService.notifyRecipient(createEmailText(processKey), emailRecipient);
+    emailSendingService.sendEmailWithErrorHandling(
+      emailRecipient,
+      createEmailText(processKey),
+      EMAIL_SUBJECT
+    );
   }
 
   private String createEmailText(final String processKey) {
     String magicLink = generateMagicLinkForProcess(processKey);
-    return EMAIL_BODY_TEMPLATE
-      .replace(PROCESS_KEY_PLACEHOLDER, processKey)
-      .replace(MAGIC_LINK_PLACEHOLDER, magicLink);
+    return String.format(EMAIL_BODY_TEMPLATE, processKey, magicLink);
   }
 
   private String generateMagicLinkForProcess(final String processKey) {
-    // Dummy link, to be accomplished with task OPT-6190
-    return MAGIC_LINK_TEMPLATE.replace(PROCESS_KEY_PLACEHOLDER, processKey);
+    return String.format(MAGIC_LINK_TEMPLATE, processKey, processKey);
   }
 }

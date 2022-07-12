@@ -6,12 +6,14 @@
 package org.camunda.optimize.dto.optimize.index;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 
 @NoArgsConstructor
 @Data
+@EqualsAndHashCode(callSuper = true)
 @FieldNameConstants
 public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceDto> {
 

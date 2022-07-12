@@ -150,7 +150,7 @@ export default function ReportTemplateModal({onClose}) {
         {
           name: 'percentSuccess',
           img: percentageProgress,
-          disabled: (definitions) => definitions.length === 0,
+          disabled: (definitions) => definitions.length !== 1,
           config: {
             view: {entity: 'processInstance', properties: ['percentage']},
             groupBy: {type: 'none', value: null},
@@ -181,7 +181,7 @@ export default function ReportTemplateModal({onClose}) {
         {
           name: 'percentAutomated',
           img: percentageProgress,
-          disabled: (definitions) => definitions.length === 0,
+          disabled: (definitions) => definitions.length !== 1,
           config: {
             view: {entity: 'processInstance', properties: ['percentage']},
             groupBy: {type: 'none', value: null},

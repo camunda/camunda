@@ -1,13 +1,13 @@
-## Zeitbasierte Ziele festlegen und verfolgen
+## Prozessübersicht
 
-Legen Sie durch datengesteuerte Service Level Agreement (SLA) Ziele fest, wie lange Ihre Prozesse dauern sollen, damit Sie schnell erkennen können, welche Prozesse unterdurchschnittlich performen.
+Sehen Sie ganzheitliche Statistiken über Ihr gesamtes Prozessportfolio mit einigen Vorschlägen für verbesserungswürdige Bereiche.
 
-## KPI-Berichte
+## Prozess Onboarding
 
-Erstellen Sie Berichte und Alarme, die den prozentualen Anteil der vollständig automatisierten Instanzen oder die Zwischenfallrate (%) verfolgen, sowie SLA-Statistiken zu Dauern wie P99- oder P95-Dauer zusätzlich zu Minimum, Median und Maximum.
+Erstellen Sie mit einem Klick eine eigene KPI-Sammlung und ein Dashboard, ändern Sie dann Ihre Ziele und teilen Sie sie mit den Beteiligten.
 
-## Verbesserte UX
+## KPI-Übersicht
 
-Geben Sie Variablen einfach verständliche Displaynamen, filtern Sie laute Ausreißeranalyse-Heatmaps und wenden Sie fortlaufende Datumsfilter auf Ihre Dashboards an, um sich auf die wichtigsten Daten zu konzentrieren.
+Sehen Sie auf einem Bildschirm, wie alle Ihre Prozess-KPIs abschneiden, und ermitteln Sie dann, welche Prozesse am meisten verbessert werden müssen.
 
-Weitere Details finden Sie im [Blogbeitrag](https://camunda.com/blog/2022/04/camunda-optimize-3-8-0-released/).
+Weitere Einzelheiten finden Sie in diesem [Blogbeitrag] (https://camunda.com/blog/2022/07/camunda-optimize-3-9-0-preview-1-released/).

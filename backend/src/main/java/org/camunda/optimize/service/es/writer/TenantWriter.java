@@ -19,7 +19,6 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
-import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,12 +48,7 @@ public class TenantWriter {
     );
   }
 
-  private void addImportTenantRequest(BulkRequest bulkRequest, OptimizeDto optimizeDto) {
-    if (!(optimizeDto instanceof TenantDto)) {
-      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
-    }
-    TenantDto tenantDto = (TenantDto) optimizeDto;
-
+  private void addImportTenantRequest(BulkRequest bulkRequest, TenantDto tenantDto) {
     final String id = tenantDto.getId();
     final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
       FIELDS_TO_UPDATE,

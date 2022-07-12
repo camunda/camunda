@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.processoverview;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
-
-import javax.validation.constraints.NotNull;
 
 @Data
 @NoArgsConstructor
@@ -18,7 +17,7 @@ import javax.validation.constraints.NotNull;
 public class ProcessDigestRequestDto {
 
   private AlertInterval checkInterval;
-  @NotNull
-  private Boolean enabled;
+  @JsonProperty("enabled")
+  private boolean enabled;
 
 }

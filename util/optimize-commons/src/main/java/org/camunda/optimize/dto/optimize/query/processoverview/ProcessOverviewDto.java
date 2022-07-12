@@ -9,12 +9,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 @Data
 @FieldNameConstants
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProcessOverviewDto {
+public class ProcessOverviewDto implements OptimizeDto {
   private String owner;
   private String processDefinitionKey;
   private ProcessDigestDto digest;

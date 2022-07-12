@@ -72,7 +72,7 @@ public class SessionService implements ConfigurationReloadable {
   }
 
   public boolean hasValidSession(final HttpServletRequest servletRequest) {
-    final String token = AuthCookieService.getToken(servletRequest).orElse(null);
+    final String token = AuthCookieService.getAuthCookieToken(servletRequest).orElse(null);
     return isValidToken(token);
   }
 
@@ -83,7 +83,7 @@ public class SessionService implements ConfigurationReloadable {
   }
 
   public boolean isTokenPresent(final HttpServletRequest servletRequest) {
-    return AuthCookieService.getToken(servletRequest).isPresent();
+    return AuthCookieService.getAuthCookieToken(servletRequest).isPresent();
   }
 
   private boolean isValidAuthToken(String token) {
@@ -121,7 +121,7 @@ public class SessionService implements ConfigurationReloadable {
   }
 
   public void invalidateSession(ContainerRequestContext requestContext) {
-    AuthCookieService.getToken(requestContext).ifPresent(this::invalidateAuthToken);
+    AuthCookieService.getAuthCookieToken(requestContext).ifPresent(this::invalidateAuthToken);
   }
 
   private void invalidateAuthToken(final String token) {
@@ -147,7 +147,7 @@ public class SessionService implements ConfigurationReloadable {
   }
 
   public String getRequestUserOrFailNotAuthorized(ContainerRequestContext requestContext) {
-    return AuthCookieService.getToken(requestContext)
+    return AuthCookieService.getAuthCookieToken(requestContext)
       .flatMap(AuthCookieService::getTokenSubject)
       .orElseThrow(() -> new NotAuthorizedException("Could not extract request user!"));
   }

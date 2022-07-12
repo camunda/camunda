@@ -31,9 +31,8 @@ import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
-import org.camunda.optimize.dto.optimize.query.goals.ProcessDurationGoalDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.InitialProcessOwnerDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
@@ -68,7 +67,7 @@ import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
-import org.camunda.optimize.dto.optimize.rest.sorting.ProcessGoalSorter;
+import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
@@ -497,62 +496,25 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetProcessGoalsRequest() {
-    return buildGetProcessGoalsRequest(null);
-  }
-
-  public OptimizeRequestExecutor buildGetProcessGoalsRequest(ProcessGoalSorter sorter) {
-    this.path = "process/goals";
-    this.method = GET;
-    Optional.ofNullable(sorter).ifPresent(sortParams -> addSortParams(sorter.getSortRequestDto()));
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildUpdateProcessGoalsRequest(final String processDefinitionKey,
-                                                                final List<ProcessDurationGoalDto> goals) {
-    this.path = "process/" + processDefinitionKey + "/goals";
+  public OptimizeRequestExecutor buildUpdateProcessRequest(final String processDefinitionKey,
+                                                           final ProcessUpdateDto processUpdateDto) {
+    this.path = "process/" + processDefinitionKey;
     this.method = PUT;
-    this.body = getBody(goals);
+    this.body = getBody(processUpdateDto);
     return this;
   }
 
-  public OptimizeRequestExecutor buildEvaluateProcessGoalsRequest(final String processDefinitionKey,
-                                                                  final List<ProcessDurationGoalDto> goals) {
-    this.path = "process/" + processDefinitionKey + "/goals/evaluate";
+  public OptimizeRequestExecutor buildSetInitialProcessOwnerRequest(final InitialProcessOwnerDto processOwnerDto) {
+    this.path = "process/initial-owner";
     this.method = POST;
-    this.body = getBody(goals);
+    this.body = getBody(processOwnerDto);
     return this;
   }
 
-  public OptimizeRequestExecutor buildSetProcessOwnerRequest(final String processDefinitionKey,
-                                                             final ProcessOwnerDto owner) {
-    // TODO modify with OPT-6175
-    this.path = "process/" + processDefinitionKey + "/owner-new";
-    this.method = PUT;
-    this.body = getBody(owner);
-    return this;
-  }
-
-  // TODO remove with OPT-6175
-  public OptimizeRequestExecutor buildSetProcessOwnerRequestOld(final String processDefinitionKey,
-                                                                final ProcessOwnerDto owner) {
-    this.path = "process/" + processDefinitionKey + "/owner";
-    this.method = PUT;
-    this.body = getBody(owner);
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildGetProcessOverviewRequest() {
+  public OptimizeRequestExecutor buildGetProcessOverviewRequest(final ProcessOverviewSorter processOverviewSorter) {
     this.path = "process/overview";
     this.method = GET;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildUpdateProcessDigestRequest(final String processDefinitionKey,
-                                                                 final ProcessDigestRequestDto digest) {
-    this.path = "process/" + processDefinitionKey + "/digest";
-    this.method = PUT;
-    this.body = getBody(digest);
+    Optional.ofNullable(processOverviewSorter).ifPresent(sortParams -> addSortParams(processOverviewSorter.getSortRequestDto()));
     return this;
   }
 
@@ -984,7 +946,8 @@ public class OptimizeRequestExecutor {
     return buildProcessVariableNamesRequest(variableRequestDtos, true);
   }
 
-  public OptimizeRequestExecutor buildProcessVariableNamesRequest(List<ProcessVariableNameRequestDto> variableRequestDtos, boolean authenticationEnabled) {
+  public OptimizeRequestExecutor buildProcessVariableNamesRequest(List<ProcessVariableNameRequestDto> variableRequestDtos,
+                                                                  boolean authenticationEnabled) {
     this.path = addExternalPrefixIfNeeded(authenticationEnabled) + "variables";
     this.method = POST;
     this.body = getBody(variableRequestDtos);
@@ -999,7 +962,8 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildProcessVariableLabelRequest(DefinitionVariableLabelsDto definitionVariableLabelsDto, String accessToken) {
+  public OptimizeRequestExecutor buildProcessVariableLabelRequest(DefinitionVariableLabelsDto definitionVariableLabelsDto,
+                                                                  String accessToken) {
     this.path = PUBLIC_PATH + LABELS_SUB_PATH;
     this.method = POST;
     Optional.ofNullable(accessToken)
@@ -1081,7 +1045,8 @@ public class OptimizeRequestExecutor {
     return buildDecisionOutputVariableNamesRequest(Collections.singletonList(variableRequestDto), true);
   }
 
-  public OptimizeRequestExecutor buildDecisionOutputVariableNamesRequest(DecisionVariableNameRequestDto variableRequestDto, final boolean authenticationEnabled) {
+  public OptimizeRequestExecutor buildDecisionOutputVariableNamesRequest(DecisionVariableNameRequestDto variableRequestDto,
+                                                                         final boolean authenticationEnabled) {
     return buildDecisionOutputVariableNamesRequest(
       Collections.singletonList(variableRequestDto),
       authenticationEnabled

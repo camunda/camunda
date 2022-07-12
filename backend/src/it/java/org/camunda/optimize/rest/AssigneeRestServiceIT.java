@@ -16,8 +16,8 @@ import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroup
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.service.util.ProcessReportDataType;
+import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
@@ -217,7 +217,7 @@ public class AssigneeRestServiceIT extends AbstractIT {
       .containsExactlyInAnyOrder(
         new UserDto(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN),
         new UserDto(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME, ASSIGNEE_ID_JEAN + DEFAULT_EMAIL_DOMAIN),
-        new UserDto(userIdNotInEngine, null, null, null)
+        new UserDto(userIdNotInEngine)
       );
   }
 
@@ -248,7 +248,7 @@ public class AssigneeRestServiceIT extends AbstractIT {
       .containsExactlyInAnyOrder(
         new UserDto(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN),
         new UserDto(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME, ASSIGNEE_ID_JEAN + DEFAULT_EMAIL_DOMAIN),
-        new UserDto(userIdNotInEngine, null, null, null)
+        new UserDto(userIdNotInEngine)
       );
   }
 
@@ -572,7 +572,7 @@ public class AssigneeRestServiceIT extends AbstractIT {
     assertThat(searchResponse.getResult())
       .hasSize(1)
       .containsExactlyInAnyOrder(
-        new UserDto(userIdNotInEngine, null, null, null)
+        new UserDto(userIdNotInEngine)
       );
   }
 
@@ -624,7 +624,7 @@ public class AssigneeRestServiceIT extends AbstractIT {
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
-        new UserDto(userIdNotInEngine, null, null, null)
+        new UserDto(userIdNotInEngine)
       );
   }
 

@@ -21,5 +21,6 @@ public class ProcessOverviewResponseDto {
   private String processDefinitionKey;
   private ProcessOwnerResponseDto owner;
   private ProcessDigestResponseDto digest;
-  private List<KpiResponseDto> kpis;
+  private List<KpiResultDto> kpis;
+  private String linkToDashboard;
 }

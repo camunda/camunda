@@ -8,16 +8,17 @@ package org.camunda.optimize.dto.optimize.query.processoverview;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @FieldNameConstants
 @AllArgsConstructor
+@NoArgsConstructor
 public class ProcessDigestDto extends ProcessDigestResponseDto {
 
   /**
@@ -26,15 +27,10 @@ public class ProcessDigestDto extends ProcessDigestResponseDto {
   public static class Fields extends ProcessDigestResponseDto.Fields {
   }
 
-  private Map<String, Double> kpiReportResults;
+  private Map<String, String> kpiReportResults;
 
-  public ProcessDigestDto() {
-    super();
-    this.kpiReportResults = new HashMap<>();
-  }
-
-  public ProcessDigestDto(final AlertInterval checkInterval, final boolean enabled,
-                          final Map<String, Double> kpiReportResults) {
+  public ProcessDigestDto(final AlertInterval checkInterval, final Boolean enabled,
+                          final Map<String, String> kpiReportResults) {
     super(checkInterval, enabled);
     this.kpiReportResults = kpiReportResults;
   }

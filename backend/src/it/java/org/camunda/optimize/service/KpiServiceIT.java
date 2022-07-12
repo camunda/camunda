@@ -8,8 +8,8 @@ package org.camunda.optimize.service;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.service.util.ProcessReportDataType;
+import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class KpiServiceIT extends AbstractIT {
 
-  final String PROCESS_DEFINITION_KEY = "procdef";
+  private final String PROCESS_DEFINITION_KEY = "procDef";
 
   @Test
   public void getKpisForDefinition() {
@@ -45,10 +45,8 @@ public class KpiServiceIT extends AbstractIT {
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(false);
     reportClient.createSingleProcessReport(reportDataDto);
 
-
     // when
-    final List<String> reports = embeddedOptimizeExtension.getKpiService()
-      .getKpisForProcessDefinition(PROCESS_DEFINITION_KEY);
+    final List<String> reports = embeddedOptimizeExtension.getKpiService().getKpisForProcessDefinition(PROCESS_DEFINITION_KEY);
 
     // then
     assertThat(reports).singleElement().isEqualTo(reportId1);
@@ -57,10 +55,10 @@ public class KpiServiceIT extends AbstractIT {
   @Test
   public void otherProcessDefinitionKpiReportIsNotReturned() {
     // given
-    String reportId1 = createKpiReport();
+    String reportId = createKpiReport();
     final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(ProcessReportDataType.RAW_DATA)
-      .definitions(List.of(new ReportDataDefinitionDto("someprocessdefinition")))
+      .definitions(List.of(new ReportDataDefinitionDto("someProcessDefinition")))
       .build();
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(false);
     reportClient.createSingleProcessReport(reportDataDto);
@@ -71,7 +69,7 @@ public class KpiServiceIT extends AbstractIT {
       .getKpisForProcessDefinition(PROCESS_DEFINITION_KEY);
 
     // then
-    assertThat(reports).singleElement().isEqualTo(reportId1);
+    assertThat(reports).singleElement().isEqualTo(reportId);
   }
 
   private String createKpiReport() {

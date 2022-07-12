@@ -6,25 +6,26 @@
  */
 
 import React, {useCallback, useEffect, useState} from 'react';
+import {Link} from 'react-router-dom';
 
-import {Button, EntityList, Tooltip} from 'components';
+import {Button, EntityList, Icon, Tooltip} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
-import {showError} from 'notifications';
+import {addNotification, showError} from 'notifications';
 import {getOptimizeProfile} from 'config';
 
 import {DashboardView} from '../Dashboards/DashboardView';
 import KpiResult from './KpiResult';
 import KpiSummary from './KpiSummary';
-import EditOwnerModal from './EditOwnerModal';
-import {loadProcesses, updateOwner, loadManagementDashboard} from './service';
+import ConfigureProcessModal from './ConfigureProcessModal';
+import {loadProcesses, updateProcess, loadManagementDashboard} from './service';
 
 import './Processes.scss';
 
 export function Processes({mightFail}) {
   const [processes, setProcesses] = useState();
   const [sorting, setSorting] = useState();
-  const [editOwnerInfo, setEditOwnerInfo] = useState();
+  const [editProcessConfig, setEditProcessConfig] = useState();
   const [optimizeProfile, setOptimizeProfile] = useState();
   const [dashboard, setDashboard] = useState();
 
@@ -50,7 +51,13 @@ export function Processes({mightFail}) {
     })();
   }, []);
 
-  const columns = [t('common.name'), t('processes.timeKpi'), t('processes.qualityKpi')];
+  const columns = [
+    t('common.name'),
+    t('processes.timeKpi'),
+    t('processes.qualityKpi'),
+    t('dashboard.label'),
+    t('common.configure'),
+  ];
 
   if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
     const ownerColumn = t('processes.owner');
@@ -80,56 +87,69 @@ export function Processes({mightFail}) {
         columns={columns}
         sorting={sorting}
         onChange={loadProcessesList}
-        data={processes?.map(({processDefinitionKey, processDefinitionName, owner, kpis}) => {
-          const timeKpis = kpis?.filter((kpi) => kpi.type === 'time');
-          const qualityKpis = kpis?.filter((kpi) => kpi.type === 'quality');
-          const meta = [
-            <Tooltip position="bottom" content={<KpiResult kpis={timeKpis} />} delay={300}>
-              <div className="summaryContainer">
-                <KpiSummary kpis={timeKpis} />
-              </div>
-            </Tooltip>,
-            <Tooltip position="bottom" content={<KpiResult kpis={qualityKpis} />} delay={300}>
-              <div className="summaryContainer">
-                <KpiSummary kpis={qualityKpis} />
-              </div>
-            </Tooltip>,
-          ];
+        data={processes?.map(
+          ({processDefinitionKey, processDefinitionName, owner, digest, kpis, linkToDashboard}) => {
+            const kpisWithData = kpis.filter(({value, target}) => value && target);
+            const timeKpis = kpisWithData?.filter((kpi) => kpi.type === 'time');
+            const qualityKpis = kpisWithData?.filter((kpi) => kpi.type === 'quality');
+            const meta = [
+              <Tooltip position="bottom" content={<KpiResult kpis={timeKpis} />} delay={300}>
+                <div className="summaryContainer">
+                  <KpiSummary kpis={timeKpis} />
+                </div>
+              </Tooltip>,
+              <Tooltip position="bottom" content={<KpiResult kpis={qualityKpis} />} delay={300}>
+                <div className="summaryContainer">
+                  <KpiSummary kpis={qualityKpis} />
+                </div>
+              </Tooltip>,
+              <Link className="processHoverBtn" to={linkToDashboard} target="_blank">
+                {t('common.view')} <Icon type="jump" />
+              </Link>,
+            ];
 
-          if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
-            meta.unshift(
-              <div className="ownerInfo">
+            if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
+              meta.unshift(
                 <Tooltip content={owner?.name} overflowOnly>
                   <div className="ownerName">{owner?.name}</div>
                 </Tooltip>
-                <Button
-                  className="setOwnerBtn"
-                  onClick={() => setEditOwnerInfo({processDefinitionKey, owner})}
-                >
-                  {owner?.name ? t('processes.editOwner') : t('processes.addOwner')}
-                </Button>
-              </div>
-            );
-          }
+              );
 
-          return {
-            id: processDefinitionKey,
-            type: t('common.process.label'),
-            icon: 'data-source',
-            name: processDefinitionName || processDefinitionKey,
-            meta,
-          };
-        })}
+              meta.push(
+                <Button
+                  className="processHoverBtn"
+                  onClick={() => setEditProcessConfig({processDefinitionKey, owner, digest})}
+                >
+                  {t('common.configure')}
+                </Button>
+              );
+            }
+
+            return {
+              id: processDefinitionKey,
+              type: t('common.process.label'),
+              icon: 'data-source',
+              name: processDefinitionName || processDefinitionKey,
+              meta,
+            };
+          }
+        )}
       />
-      {editOwnerInfo && (
-        <EditOwnerModal
-          initialOwner={editOwnerInfo.owner}
-          onClose={() => setEditOwnerInfo()}
-          onConfirm={async (userId) => {
+      {editProcessConfig && (
+        <ConfigureProcessModal
+          initialConfig={editProcessConfig}
+          onClose={() => setEditProcessConfig()}
+          onConfirm={async (newConfig, emailEnabled, ownerName) => {
             await mightFail(
-              updateOwner(editOwnerInfo.processDefinitionKey, userId),
+              updateProcess(editProcessConfig.processDefinitionKey, newConfig),
               () => {
-                setEditOwnerInfo();
+                if (emailEnabled && newConfig.processDigest.enabled) {
+                  addNotification({
+                    type: 'success',
+                    text: t('processes.digestConfigured', {name: ownerName}),
+                  });
+                }
+                setEditProcessConfig();
                 loadProcessesList();
               },
               showError

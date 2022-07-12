@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.uiconfiguration;
 
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
+import org.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
 import org.camunda.optimize.service.SettingsService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.UIConfigurationService;
@@ -26,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
 
 import java.util.Collections;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,6 +50,8 @@ public class UIConfigurationServiceTest {
   private SettingsService settingService;
   @Mock
   private Environment environment;
+  @Mock
+  private Optional<CloudSaasMetaInfoService> metaInfoService = Optional.empty();
 
   @InjectMocks
   UIConfigurationService underTest;

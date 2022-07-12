@@ -55,6 +55,7 @@ import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -361,6 +362,8 @@ public class DefinitionReader {
       if (sourceAsMap.containsKey(resolveVersionFieldFromType(type))) {
         return sourceAsMap.get(resolveVersionFieldFromType(type)).toString();
       }
+    } else {
+      throw new NotFoundException("Could not find latest version of definition with key: " + key);
     }
     throw new OptimizeRuntimeException("Unable to retrieve latest version for " + type + " definition key: " + key);
   }
