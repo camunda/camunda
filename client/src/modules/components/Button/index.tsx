@@ -6,6 +6,7 @@
  */
 
 import styled, {css, ThemedInterpolationFunction} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 type Props = {
   size?: 'small' | 'medium' | 'large';
@@ -17,18 +18,19 @@ const getSizeVariant: ThemedInterpolationFunction<Props> = ({size}) => {
     case 'small':
       return css`
         height: 22px;
-        font-size: 13px;
+        ${styles.label01};
       `;
     case 'medium':
       return css`
         height: 35px;
         width: 117px;
-        font-size: 14px;
+        ${styles.label02};
       `;
     case 'large':
       return css`
         height: 48px;
         width: 340px;
+        ${styles.label02};
         font-size: 18px;
       `;
     default:
@@ -139,12 +141,11 @@ const Button = styled.button<Props>`
     const isSmall = size === 'small';
 
     return css`
-      font-family: IBM Plex Sans;
-      font-weight: 600;
       border-radius: ${isSmall ? 11 : 3}px;
       ${isSmall ? '' : shadow};
       ${getSizeVariant}
       ${getColorVariant}
+      font-weight: 600;
     `;
   }}
 `;
