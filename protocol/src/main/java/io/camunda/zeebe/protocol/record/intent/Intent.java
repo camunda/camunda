@@ -44,7 +44,8 @@ public interface Intent {
           DecisionEvaluationIntent.class,
           MessageStartEventSubscriptionIntent.class,
           ProcessInstanceResultIntent.class,
-          CheckpointIntent.class);
+          CheckpointIntent.class,
+          ProcessInstanceModificationIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN =
       new Intent() {
@@ -109,6 +110,8 @@ public interface Intent {
         return DecisionEvaluationIntent.from(intent);
       case CHECKPOINT:
         return CheckpointIntent.from(intent);
+      case PROCESS_INSTANCE_MODIFICATION:
+        return ProcessInstanceModificationIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

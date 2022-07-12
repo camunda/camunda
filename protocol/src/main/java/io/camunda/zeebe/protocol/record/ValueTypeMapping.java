@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -50,6 +51,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecor
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
@@ -152,6 +154,10 @@ public final class ValueTypeMapping {
         ValueType.PROCESS_INSTANCE_CREATION,
         new Mapping<>(
             ProcessInstanceCreationRecordValue.class, ProcessInstanceCreationIntent.class));
+    mapping.put(
+        ValueType.PROCESS_INSTANCE_MODIFICATION,
+        new Mapping<>(
+            ProcessInstanceModificationRecordValue.class, ProcessInstanceModificationIntent.class));
     mapping.put(
         ValueType.PROCESS_INSTANCE_RESULT,
         new Mapping<>(ProcessInstanceResultRecordValue.class, ProcessInstanceResultIntent.class));
