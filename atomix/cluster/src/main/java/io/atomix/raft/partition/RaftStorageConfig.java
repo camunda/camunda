@@ -156,9 +156,7 @@ public class RaftStorageConfig {
     return this;
   }
 
-  /**
-   * @return true to preallocate segment files, false otherwise
-   */
+  /** @return true to preallocate segment files, false otherwise */
   public boolean isPreallocateSegmentFiles() {
     return preallocateSegmentFiles;
   }
