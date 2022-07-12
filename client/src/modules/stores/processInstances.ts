@@ -62,6 +62,7 @@ class ProcessInstances extends NetworkReconnectionHandler {
   state: State = {
     ...DEFAULT_STATE,
   };
+  isPollRequestRunning: boolean = false;
   intervalId: null | ReturnType<typeof setInterval> = null;
   fetchInstancesDisposer: null | IReactionDisposer = null;
   completedOperationActionsDisposer: null | IReactionDisposer = null;
@@ -381,6 +382,7 @@ class ProcessInstances extends NetworkReconnectionHandler {
         this.pollingAbortController = new AbortController();
       }
 
+      this.isPollRequestRunning = true;
       const response = await fetchProcessInstancesByIds({
         ids: this.processInstanceIdsWithActiveOperations,
         signal: this.pollingAbortController?.signal,
@@ -412,6 +414,8 @@ class ProcessInstances extends NetworkReconnectionHandler {
     } catch (error) {
       logger.error('Failed to poll instances');
       logger.error(error);
+    } finally {
+      this.isPollRequestRunning = false;
     }
   };
 
@@ -444,7 +448,9 @@ class ProcessInstances extends NetworkReconnectionHandler {
 
   startPollingActiveInstances = async () => {
     this.intervalId = setInterval(() => {
-      this.handlePollingActiveInstances();
+      if (!this.isPollRequestRunning) {
+        this.handlePollingActiveInstances();
+      }
     }, 5000);
   };
 

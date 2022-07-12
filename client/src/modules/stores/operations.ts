@@ -42,6 +42,7 @@ const MAX_OPERATIONS_PER_REQUEST = 20;
 
 class Operations extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
+  isPollRequestRunning: boolean = false;
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
 
@@ -162,6 +163,7 @@ class Operations extends NetworkReconnectionHandler {
 
   handlePolling = async () => {
     try {
+      this.isPollRequestRunning = true;
       const response = await operationsApi.fetchOperations({
         pageSize: MAX_OPERATIONS_PER_REQUEST * this.state.page,
       });
@@ -176,6 +178,8 @@ class Operations extends NetworkReconnectionHandler {
     } catch (error) {
       logger.error('Failed to poll operations');
       logger.error(error);
+    } finally {
+      this.isPollRequestRunning = false;
     }
   };
 
@@ -202,7 +206,9 @@ class Operations extends NetworkReconnectionHandler {
 
   startPolling = async () => {
     this.intervalId = setInterval(() => {
-      this.handlePolling();
+      if (!this.isPollRequestRunning) {
+        this.handlePolling();
+      }
     }, 1000);
   };
 

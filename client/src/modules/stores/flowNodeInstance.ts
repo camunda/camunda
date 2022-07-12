@@ -60,6 +60,7 @@ const DEFAULT_STATE: State = {
 
 class FlowNodeInstance extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
+  isPollRequestRunning: boolean = false;
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
   instanceExecutionHistoryDisposer: null | IReactionDisposer = null;
@@ -131,6 +132,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     }
 
     try {
+      this.isPollRequestRunning = true;
       const response = await fetchFlowNodeInstances(queries);
 
       if (response.ok) {
@@ -142,6 +144,8 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
       }
     } catch (error) {
       this.handlePollFailure(error);
+    } finally {
+      this.isPollRequestRunning = false;
     }
   };
 
@@ -394,7 +398,11 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
 
   startPolling = () => {
     if (processInstanceDetailsStore.isRunning && this.intervalId === null) {
-      this.intervalId = setInterval(this.pollInstances, 5000);
+      this.intervalId = setInterval(() => {
+        if (!this.isPollRequestRunning) {
+          this.pollInstances();
+        }
+      }, 5000);
     }
   };
 

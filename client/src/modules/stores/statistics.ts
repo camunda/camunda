@@ -35,6 +35,7 @@ const DEFAULT_STATE: State = {
 
 class Statistics extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
+  isPollRequestRunning: boolean = false;
   intervalId: null | ReturnType<typeof setInterval> = null;
   pollingDisposer: null | IReactionDisposer = null;
 
@@ -94,6 +95,7 @@ class Statistics extends NetworkReconnectionHandler {
 
   handlePolling = async () => {
     try {
+      this.isPollRequestRunning = true;
       const response = await fetchProcessCoreStatistics();
 
       if (this.intervalId !== null) {
@@ -107,12 +109,16 @@ class Statistics extends NetworkReconnectionHandler {
       if (this.intervalId !== null) {
         this.setError();
       }
+    } finally {
+      this.isPollRequestRunning = false;
     }
   };
 
-  startPolling = async () => {
+  startPolling = () => {
     this.intervalId = setInterval(() => {
-      this.handlePolling();
+      if (!this.isPollRequestRunning) {
+        this.handlePolling();
+      }
     }, 5000);
   };
 

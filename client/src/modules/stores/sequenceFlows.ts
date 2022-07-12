@@ -31,6 +31,7 @@ const DEFAULT_STATE: State = {
 
 class SequenceFlows extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
+  isPollRequestRunning: boolean = false;
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
   processSeqenceFlowsDisposer: null | IReactionDisposer = null;
@@ -88,6 +89,7 @@ class SequenceFlows extends NetworkReconnectionHandler {
 
   handlePolling = async (instanceId: ProcessInstanceEntity['id']) => {
     try {
+      this.isPollRequestRunning = true;
       const response = await fetchSequenceFlows(instanceId);
 
       if (this.intervalId !== null && response.ok) {
@@ -100,12 +102,16 @@ class SequenceFlows extends NetworkReconnectionHandler {
     } catch (error) {
       logger.error('Failed to poll Sequence Flows');
       logger.error(error);
+    } finally {
+      this.isPollRequestRunning = false;
     }
   };
 
   startPolling = async (instanceId: ProcessInstanceEntity['id']) => {
     this.intervalId = setInterval(() => {
-      this.handlePolling(instanceId);
+      if (!this.isPollRequestRunning) {
+        this.handlePolling(instanceId);
+      }
     }, 5000);
   };
 

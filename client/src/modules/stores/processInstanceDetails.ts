@@ -37,6 +37,7 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
   state: State = {
     ...DEFAULT_STATE,
   };
+  isPollRequestRunning: boolean = false;
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
   retryCount: number = 0;
@@ -203,6 +204,7 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
 
   handlePolling = async (instanceId: any) => {
     try {
+      this.isPollRequestRunning = true;
       const response = await fetchProcessInstance(instanceId);
 
       if (this.intervalId !== null) {
@@ -221,12 +223,16 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
     } catch (error) {
       logger.error('Failed to poll process instance');
       logger.error(error);
+    } finally {
+      this.isPollRequestRunning = false;
     }
   };
 
   startPolling = async (instanceId: any) => {
     this.intervalId = setInterval(() => {
-      this.handlePolling(instanceId);
+      if (!this.isPollRequestRunning) {
+        this.handlePolling(instanceId);
+      }
     }, 5000);
   };
 

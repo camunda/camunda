@@ -64,7 +64,9 @@ class Variables extends NetworkReconnectionHandler {
   state: State = {
     ...DEFAULT_STATE,
   };
+  isPollRequestRunning: boolean = false;
   intervalId: null | ReturnType<typeof setInterval> = null;
+  isPollOperationRequestRunning: boolean = false;
   operationIntervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
   variablesWithActiveOperationsDisposer: null | IReactionDisposer = null;
@@ -335,6 +337,7 @@ class Variables extends NetworkReconnectionHandler {
         this.pollingAbortController = new AbortController();
       }
 
+      this.isPollRequestRunning = true;
       const response = await fetchVariables({
         instanceId,
         payload: {
@@ -371,6 +374,8 @@ class Variables extends NetworkReconnectionHandler {
     } catch (error) {
       logger.error('Failed to poll Variables');
       logger.error(error);
+    } finally {
+      this.isPollRequestRunning = false;
     }
   };
 
@@ -380,6 +385,7 @@ class Variables extends NetworkReconnectionHandler {
     onError: () => void
   ) => {
     try {
+      this.isPollOperationRequestRunning = true;
       const response = await getOperation(operationId);
 
       if (this.operationIntervalId !== null && response.ok) {
@@ -401,6 +407,8 @@ class Variables extends NetworkReconnectionHandler {
     } catch (error) {
       logger.error('Failed to poll Variable Operation');
       logger.error(error);
+    } finally {
+      this.isPollOperationRequestRunning = false;
     }
   };
 
@@ -579,7 +587,9 @@ class Variables extends NetworkReconnectionHandler {
   startPolling = async (instanceId: string | null) => {
     if (instanceId !== null && this.intervalId === null) {
       this.intervalId = setInterval(() => {
-        this.handlePolling(instanceId);
+        if (!this.isPollRequestRunning) {
+          this.handlePolling(instanceId);
+        }
       }, 5000);
     }
   };
@@ -604,7 +614,9 @@ class Variables extends NetworkReconnectionHandler {
   }) => {
     this.onPollingOperationSuccess = onSuccess;
     this.operationIntervalId = setInterval(() => {
-      this.handlePollingOperation(operationId, onSuccess, onError);
+      if (!this.isPollOperationRequestRunning) {
+        this.handlePollingOperation(operationId, onSuccess, onError);
+      }
     }, 5000);
   };
 

@@ -32,6 +32,7 @@ const DEFAULT_STATE: State = {
 
 class FlowNodeStates extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
+  isPollRequestRunning: boolean = false;
   intervalId: null | ReturnType<typeof setInterval> = null;
   flowNodeStatesDisposer: null | IReactionDisposer = null;
   completedFlowNodesDisposer: null | IReactionDisposer = null;
@@ -78,6 +79,27 @@ class FlowNodeStates extends NetworkReconnectionHandler {
     }
   );
 
+  handlePolling = async (processInstanceId: string) => {
+    try {
+      this.isPollRequestRunning = true;
+      const response = await fetchFlowNodeStates(processInstanceId);
+
+      if (this.intervalId !== null) {
+        if (response.ok) {
+          this.handleFetchSuccess(await response.json());
+        } else {
+          this.handleFetchFailure();
+        }
+      }
+    } catch (error) {
+      if (this.intervalId !== null) {
+        this.handleFetchFailure(error);
+      }
+    } finally {
+      this.isPollRequestRunning = false;
+    }
+  };
+
   handleFetchSuccess = (flowNodes: State['flowNodes']) => {
     this.state.flowNodes = flowNodes;
     this.state.status = 'fetched';
@@ -94,7 +116,9 @@ class FlowNodeStates extends NetworkReconnectionHandler {
 
   startPolling = (processInstanceId: string) => {
     this.intervalId = setInterval(() => {
-      this.fetchFlowNodeStates(processInstanceId);
+      if (!this.isPollRequestRunning) {
+        this.handlePolling(processInstanceId);
+      }
     }, 5000);
   };
 
