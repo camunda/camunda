@@ -1,3 +1,0 @@
-folder('browserstack') {
-  displayName 'Browserstack'
-}
