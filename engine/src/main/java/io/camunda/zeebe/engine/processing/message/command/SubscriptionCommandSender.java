@@ -56,7 +56,7 @@ public class SubscriptionCommandSender {
       final DirectBuffer correlationKey,
       final boolean closeOnCorrelate) {
 
-    return interPartitionCommandSender.sendCommand(
+    interPartitionCommandSender.sendCommand(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
         MessageSubscriptionIntent.CREATE,
@@ -68,6 +68,7 @@ public class SubscriptionCommandSender {
             .setMessageName(messageName)
             .setCorrelationKey(correlationKey)
             .setInterrupting(closeOnCorrelate));
+    return true;
   }
 
   public boolean openProcessMessageSubscription(
@@ -76,7 +77,7 @@ public class SubscriptionCommandSender {
       final DirectBuffer messageName,
       final boolean closeOnCorrelate) {
 
-    return interPartitionCommandSender.sendCommand(
+    interPartitionCommandSender.sendCommand(
         Protocol.decodePartitionId(processInstanceKey),
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
         ProcessMessageSubscriptionIntent.CREATE,
@@ -87,6 +88,7 @@ public class SubscriptionCommandSender {
             .setMessageKey(-1)
             .setMessageName(messageName)
             .setInterrupting(closeOnCorrelate));
+    return true;
   }
 
   public boolean correlateProcessMessageSubscription(
@@ -98,7 +100,7 @@ public class SubscriptionCommandSender {
       final DirectBuffer variables,
       final DirectBuffer correlationKey) {
 
-    return interPartitionCommandSender.sendCommand(
+    interPartitionCommandSender.sendCommand(
         Protocol.decodePartitionId(processInstanceKey),
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
         ProcessMessageSubscriptionIntent.CORRELATE,
@@ -111,6 +113,7 @@ public class SubscriptionCommandSender {
             .setMessageName(messageName)
             .setVariables(variables)
             .setCorrelationKey(correlationKey));
+    return true;
   }
 
   public boolean correlateMessageSubscription(
@@ -119,7 +122,7 @@ public class SubscriptionCommandSender {
       final long elementInstanceKey,
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName) {
-    return interPartitionCommandSender.sendCommand(
+    interPartitionCommandSender.sendCommand(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
         MessageSubscriptionIntent.CORRELATE,
@@ -129,6 +132,7 @@ public class SubscriptionCommandSender {
             .setBpmnProcessId(bpmnProcessId)
             .setMessageKey(-1)
             .setMessageName(messageName));
+    return true;
   }
 
   public boolean closeMessageSubscription(
@@ -137,7 +141,7 @@ public class SubscriptionCommandSender {
       final long elementInstanceKey,
       final DirectBuffer messageName) {
 
-    return interPartitionCommandSender.sendCommand(
+    interPartitionCommandSender.sendCommand(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
         MessageSubscriptionIntent.DELETE,
@@ -146,13 +150,14 @@ public class SubscriptionCommandSender {
             .setElementInstanceKey(elementInstanceKey)
             .setMessageKey(-1L)
             .setMessageName(messageName));
+    return true;
   }
 
   public boolean closeProcessMessageSubscription(
       final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer messageName) {
-    return interPartitionCommandSender.sendCommand(
+    interPartitionCommandSender.sendCommand(
         Protocol.decodePartitionId(processInstanceKey),
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
         ProcessMessageSubscriptionIntent.DELETE,
@@ -162,6 +167,7 @@ public class SubscriptionCommandSender {
             .setElementInstanceKey(elementInstanceKey)
             .setMessageKey(-1)
             .setMessageName(messageName));
+    return true;
   }
 
   public boolean rejectCorrelateMessageSubscription(
@@ -171,7 +177,7 @@ public class SubscriptionCommandSender {
       final DirectBuffer messageName,
       final DirectBuffer correlationKey) {
 
-    return interPartitionCommandSender.sendCommand(
+    interPartitionCommandSender.sendCommand(
         Protocol.decodePartitionId(processInstanceKey),
         ValueType.MESSAGE_SUBSCRIPTION,
         MessageSubscriptionIntent.REJECT,
@@ -183,5 +189,6 @@ public class SubscriptionCommandSender {
             .setCorrelationKey(correlationKey)
             .setMessageKey(messageKey)
             .setInterrupting(false));
+    return true;
   }
 }

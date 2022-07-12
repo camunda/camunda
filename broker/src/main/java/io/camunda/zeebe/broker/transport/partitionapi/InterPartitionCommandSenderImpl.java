@@ -36,7 +36,7 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
   }
 
   @Override
-  public boolean sendCommand(
+  public void sendCommand(
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
@@ -48,7 +48,7 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
           intent,
           valueType,
           receiverPartitionId);
-      return false;
+      return;
     }
     final int partitionLeader = partitionLeaders.get(receiverPartitionId);
 
@@ -63,7 +63,6 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
 
     communicationService.unicast(
         TOPIC_PREFIX + receiverPartitionId, message, MemberId.from("" + partitionLeader));
-    return true;
   }
 
   private static final class Encoder {

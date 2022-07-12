@@ -500,7 +500,7 @@ public final class EngineRule extends ExternalResource {
   private class TestInterPartitionCommandSender implements InterPartitionCommandSender {
 
     @Override
-    public boolean sendCommand(
+    public void sendCommand(
         final int receiverPartitionId,
         final ValueType valueType,
         final Intent intent,
@@ -515,7 +515,6 @@ public final class EngineRule extends ExternalResource {
       metadata.valueType(valueType);
 
       writer.metadataWriter(metadata).valueWriter(command).tryWrite();
-      return true;
     }
   }
 }

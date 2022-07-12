@@ -12,12 +12,13 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 
 /**
- * Supports sending arbitrary commands to another partition.
+ * Supports sending arbitrary commands to another partition. Sending may be unreliable and fail
+ * silently, it is up to the caller to detect this and retry.
  */
 public interface InterPartitionCommandSender {
   String TOPIC_PREFIX = "inter-partition-";
 
-  boolean sendCommand(
+  void sendCommand(
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
