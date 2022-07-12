@@ -58,8 +58,7 @@ final class RootlessImageTest {
           .withNetwork(network)
           .withCreateContainerCmdModifier(cmd -> cmd.withUser("1000620000:0"))
           .dependsOn(broker)
-          .withEnv(
-              "ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS", broker.getInternalClusterAddress());
+          .withEnv("ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT", broker.getInternalClusterAddress());
 
   @SuppressWarnings("unused")
   @RegisterExtension
