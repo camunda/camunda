@@ -5,7 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useRef, useEffect, useLayoutEffect, useState} from 'react';
+import React, {
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  isValidElement,
+} from 'react';
 import {BpmnJS, OnFlowNodeSelection, OverlayData} from 'modules/bpmn-js/BpmnJS';
 import DiagramControls from './DiagramControls';
 import DiagramLegacy from './index.legacy';
@@ -18,6 +24,7 @@ type Props = {
   onFlowNodeSelection?: OnFlowNodeSelection;
   overlaysData?: OverlayData[];
   children?: React.ReactNode;
+  selectedFlowNodeOverlay?: React.ReactNode;
 };
 
 const Diagram: React.FC<Props> = ({
@@ -26,11 +33,13 @@ const Diagram: React.FC<Props> = ({
   selectedFlowNodeId,
   onFlowNodeSelection,
   overlaysData,
+  selectedFlowNodeOverlay,
   children,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isDiagramRendered, setIsDiagramRendered] = useState(false);
   const viewerRef = useRef<BpmnJS | null>(null);
+  const [isViewboxChanging, setIsViewboxChanging] = useState(false);
 
   function getViewer() {
     if (viewerRef.current === null) {
@@ -61,6 +70,7 @@ const Diagram: React.FC<Props> = ({
   useEffect(() => {
     if (onFlowNodeSelection !== undefined) {
       viewer.onFlowNodeSelection = onFlowNodeSelection;
+      viewer.onViewboxChange = setIsViewboxChanging;
     }
   }, [viewer, onFlowNodeSelection]);
 
@@ -83,6 +93,11 @@ const Diagram: React.FC<Props> = ({
           {children}
         </>
       )}
+      {!isViewboxChanging &&
+        isValidElement(selectedFlowNodeOverlay) &&
+        React.cloneElement(selectedFlowNodeOverlay, {
+          selectedFlowNodeRef: viewer.selectedFlowNode,
+        })}
     </StyledDiagram>
   );
 };

@@ -26,6 +26,7 @@ import {IncidentsBanner} from './IncidentsBanner';
 import {IS_NEXT_DIAGRAM} from 'modules/feature-flags';
 import {StateOverlay} from './StateOverlay';
 import {tracking} from 'modules/tracking';
+import {PopoverOverlay} from 'modules/components/Diagram/PopoverOverlay';
 
 const OVERLAY_TYPE = 'flowNodeState';
 
@@ -176,6 +177,9 @@ const TopPanel: React.FC<Props> = observer(() => {
                       });
                     }}
                     overlaysData={flowNodeStateOverlaysNext.get()}
+                    selectedFlowNodeOverlay={
+                      !isIncidentBarOpen && <PopoverOverlay />
+                    }
                   >
                     {stateOverlays?.map((overlay) => {
                       const payload = overlay.payload as {

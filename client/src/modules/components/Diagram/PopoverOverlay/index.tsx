@@ -36,7 +36,7 @@ import {Link} from 'modules/components/Link';
 import {tracking} from 'modules/tracking';
 
 type Props = {
-  selectedFlowNodeRef: SVGGraphicsElement | null;
+  selectedFlowNodeRef?: SVGGraphicsElement | null;
 };
 
 const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {

@@ -65,12 +65,20 @@ class BpmnJS {
   #xml: string | null = null;
   #selectableFlowNodes: string[] = [];
   #selectedFlowNodeId?: string;
+  selectedFlowNode?: SVGGraphicsElement;
   onFlowNodeSelection?: OnFlowNodeSelection;
+  onViewboxChange?: (isChanging: boolean) => void;
   #overlaysData: OverlayData[] = [];
 
   import = async (xml: string) => {
     // Cleanup before importing
     this.#navigatedViewer!.off('element.click', this.#handleElementClick);
+    this.#navigatedViewer!.off('canvas.viewbox.changing', () => {
+      this.onViewboxChange?.(true);
+    });
+    this.#navigatedViewer!.off('canvas.viewbox.changed', () => {
+      this.onViewboxChange?.(false);
+    });
     this.#overlaysData = [];
     this.#selectableFlowNodes = [];
     this.#selectedFlowNodeId = undefined;
@@ -80,6 +88,12 @@ class BpmnJS {
     // Initialize after importing
     this.zoomReset();
     this.#navigatedViewer!.on('element.click', this.#handleElementClick);
+    this.#navigatedViewer!.on('canvas.viewbox.changing', () => {
+      this.onViewboxChange?.(true);
+    });
+    this.#navigatedViewer!.on('canvas.viewbox.changed', () => {
+      this.onViewboxChange?.(false);
+    });
   };
 
   render = async (
@@ -126,14 +140,20 @@ class BpmnJS {
       this.#selectableFlowNodes = selectableFlowNodes;
     }
 
-    // handle op-selected markers
+    // handle op-selected markers and selected flow node ref
     if (this.#selectedFlowNodeId !== selectedFlowNodeId) {
       if (this.#selectedFlowNodeId !== undefined) {
         this.#removeMarker(this.#selectedFlowNodeId, 'op-selected');
+
+        this.selectedFlowNode = undefined;
       }
 
       if (selectedFlowNodeId !== undefined) {
         this.#addMarker(selectedFlowNodeId, 'op-selected');
+
+        const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
+        this.selectedFlowNode =
+          elementRegistry?.getGraphics(selectedFlowNodeId);
       }
 
       this.#selectedFlowNodeId = selectedFlowNodeId;
@@ -238,6 +258,8 @@ class BpmnJS {
   };
 
   reset = () => {
+    this.onFlowNodeSelection = undefined;
+    this.onViewboxChange = undefined;
     this.#destroy();
   };
 
