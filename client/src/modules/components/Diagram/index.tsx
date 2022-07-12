@@ -25,6 +25,7 @@ type Props = {
   overlaysData?: OverlayData[];
   children?: React.ReactNode;
   selectedFlowNodeOverlay?: React.ReactNode;
+  highlightedSequenceFlows?: string[];
 };
 
 const Diagram: React.FC<Props> = ({
@@ -35,6 +36,7 @@ const Diagram: React.FC<Props> = ({
   overlaysData,
   selectedFlowNodeOverlay,
   children,
+  highlightedSequenceFlows,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isDiagramRendered, setIsDiagramRendered] = useState(false);
@@ -53,19 +55,27 @@ const Diagram: React.FC<Props> = ({
     async function renderDiagram() {
       if (containerRef.current) {
         setIsDiagramRendered(false);
-        await viewer.render(
-          containerRef.current,
+        await viewer.render({
+          container: containerRef.current,
           xml,
           selectableFlowNodes,
           selectedFlowNodeId,
-          overlaysData
-        );
+          overlaysData,
+          highlightedSequenceFlows,
+        });
         setIsDiagramRendered(true);
       }
     }
 
     renderDiagram();
-  }, [xml, selectableFlowNodes, selectedFlowNodeId, overlaysData, viewer]);
+  }, [
+    xml,
+    selectableFlowNodes,
+    selectedFlowNodeId,
+    overlaysData,
+    viewer,
+    highlightedSequenceFlows,
+  ]);
 
   useEffect(() => {
     if (onFlowNodeSelection !== undefined) {

@@ -180,6 +180,7 @@ const TopPanel: React.FC<Props> = observer(() => {
                     selectedFlowNodeOverlay={
                       !isIncidentBarOpen && <PopoverOverlay />
                     }
+                    highlightedSequenceFlows={processedSequenceFlows}
                   >
                     {stateOverlays?.map((overlay) => {
                       const payload = overlay.payload as {

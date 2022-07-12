@@ -57,14 +57,24 @@ type OnFlowNodeSelection = (
   isMultiInstance?: boolean
 ) => void;
 
+type RenderOptions = {
+  container: HTMLElement;
+  xml: string;
+  selectableFlowNodes?: string[];
+  selectedFlowNodeId?: string;
+  overlaysData?: OverlayData[];
+  highlightedSequenceFlows?: string[];
+};
+
 class BpmnJS {
   #navigatedViewer: NavigatedViewerType = null;
-  #theme: typeof currentTheme.state.selectedTheme =
+  #themeType: typeof currentTheme.state.selectedTheme =
     currentTheme.state.selectedTheme;
   #themeChangeReactionDisposer: IReactionDisposer | null = null;
   #xml: string | null = null;
   #selectableFlowNodes: string[] = [];
   #selectedFlowNodeId?: string;
+  #highlightedSequenceFlows: string[] = [];
   selectedFlowNode?: SVGGraphicsElement;
   onFlowNodeSelection?: OnFlowNodeSelection;
   onViewboxChange?: (isChanging: boolean) => void;
@@ -96,19 +106,25 @@ class BpmnJS {
     });
   };
 
-  render = async (
-    container: HTMLElement,
-    xml: string,
-    selectableFlowNodes: string[] = [],
-    selectedFlowNodeId?: string,
-    overlaysData: OverlayData[] = []
-  ) => {
+  render = async (options: RenderOptions) => {
+    const {
+      container,
+      xml,
+      selectableFlowNodes = [],
+      selectedFlowNodeId,
+      overlaysData = [],
+      highlightedSequenceFlows = [],
+    } = options;
+
     if (this.#navigatedViewer === null) {
       this.#createViewer(container);
     }
 
-    if (this.#theme !== currentTheme.state.selectedTheme || this.#xml !== xml) {
-      this.#theme = currentTheme.state.selectedTheme;
+    if (
+      this.#themeType !== currentTheme.state.selectedTheme ||
+      this.#xml !== xml
+    ) {
+      this.#themeType = currentTheme.state.selectedTheme;
 
       this.#xml = xml;
       await this.import(xml);
@@ -119,13 +135,7 @@ class BpmnJS {
       () => currentTheme.state.selectedTheme,
       () => {
         this.#createViewer(container);
-        this.render(
-          container,
-          xml,
-          selectableFlowNodes,
-          selectedFlowNodeId,
-          overlaysData
-        );
+        this.render(options);
       }
     );
 
@@ -183,6 +193,16 @@ class BpmnJS {
         });
       });
     }
+
+    // handle processed sequence flows
+    if (!isEqual(this.#highlightedSequenceFlows, highlightedSequenceFlows)) {
+      highlightedSequenceFlows.forEach((sequenceFlow) => {
+        this.#colorSequenceFlow(
+          sequenceFlow,
+          theme[this.#themeType].colors.selections
+        );
+      });
+    }
   };
 
   #createViewer = (container: HTMLElement) => {
@@ -206,6 +226,18 @@ class BpmnJS {
         .querySelector('.djs-outline');
       gfx.setAttribute('rx', '14px');
       gfx.setAttribute('ry', '14px');
+    }
+  };
+
+  #colorSequenceFlow = (id: string, color: string) => {
+    const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
+    const graphicsFactory = this.#navigatedViewer?.get('graphicsFactory');
+    const element: BpmnJSElement | undefined = elementRegistry?.get(id);
+    if (element?.di !== undefined) {
+      element.di.set('stroke', color);
+
+      const gfx = elementRegistry?.getGraphics(element);
+      graphicsFactory?.update('connection', element, gfx);
     }
   };
 
