@@ -7,7 +7,6 @@ package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
@@ -65,6 +64,11 @@ public class ProcessOverviewService {
       .filter(def -> !def.getIsEventProcess())
       .filter(
         def -> definitionAuthorizationService.isAuthorizedToAccessDefinition(userId, PROCESS, def.getKey(), def.getTenantIds()))
+      .peek(def -> {
+        if (def.getName() == null || def.getName().isEmpty()) {
+          def.setName(def.getKey());
+        }
+      })
       .collect(toMap(DefinitionWithTenantIdsDto::getKey, DefinitionWithTenantIdsDto::getName));
 
     final Map<String, ProcessOverviewDto> processOverviewByKey =
@@ -78,7 +82,7 @@ public class ProcessOverviewService {
         String magicLinkToDashboard = String.format(MAGIC_LINK_TEMPLATE, procDefKey, procDefKey) + appCueSuffix;
         final Optional<ProcessOverviewDto> overviewForKey = Optional.ofNullable(processOverviewByKey.get(procDefKey));
         return new ProcessOverviewResponseDto(
-          StringUtils.isEmpty(entry.getValue()) ? procDefKey : entry.getValue(),
+          entry.getValue(),
           procDefKey,
           overviewForKey.flatMap(overview -> Optional.ofNullable(overview.getOwner())
             .map(owner -> new ProcessOwnerResponseDto(owner, identityService.getIdentityNameById(owner).orElse(owner)))
@@ -108,9 +112,13 @@ public class ProcessOverviewService {
 
   public void updateProcessOwnerIfNotSet(final String userId, final String processDefinitionKey, final String ownerId) {
     final String ownerIdToSave = getValidatedOwnerId(userId, ownerId);
+    if(ownerIdToSave == null || ownerIdToSave.isEmpty()) {
+      throw new BadRequestException("Owner ID cannot be empty!");
+    }
     if (definitionHasBeenImported(processDefinitionKey)) {
+      log.info("Updating owner of process " + processDefinitionKey + " to " + ownerIdToSave);
       validateProcessDefinitionAuthorization(userId, processDefinitionKey);
-      processOverviewWriter.updateProcessOwnerIfNotSet(processDefinitionKey, ownerId);
+      processOverviewWriter.updateProcessOwnerIfNotSet(processDefinitionKey, ownerIdToSave);
     } else {
       // If this happens, it means that Optimize did not import the process definition yet. So we save the
       // information but mark it as pending authorization check
@@ -157,15 +165,11 @@ public class ProcessOverviewService {
         String ownerId = pendingProcesses.get(completeDefKey).getOwner();
         try {
           updateProcessOwnerIfNotSet(userIdFromRequester, processToBeOnboarded, ownerId);
-          removePendingEntryFromDatabase(completeDefKey);
+          processOverviewWriter.deleteProcessOwnerEntry(completeDefKey);
         } catch (Exception exc) {
           log.warn(exc.getMessage(), exc);
         }
       });
-  }
-
-  private void removePendingEntryFromDatabase(final String completeDefKey) {
-    processOverviewWriter.deleteProcessOwnerEntry(completeDefKey);
   }
 
   private Optional<String> extractUserIdFromPendingDefKey(final String defKey) {

@@ -56,7 +56,7 @@ export default withRouter(
         const splittedUrl = pathname.split(`/${entityUrl}/`);
         if (splittedUrl[1]) {
           const id = splittedUrl[1].split('/')[0];
-          if (!id.includes('new')) {
+          if (!['new', 'new-combined', 'new-decision'].includes(id)) {
             entitiesIds[entity + 'Id'] = id;
             breadcrumbs.push({
               id,

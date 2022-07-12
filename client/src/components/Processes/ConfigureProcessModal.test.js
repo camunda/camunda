@@ -10,12 +10,18 @@ import {shallow} from 'enzyme';
 
 import {isEmailEnabled} from 'config';
 import {Input, Select, UserTypeahead} from 'components';
+import {numberParser} from 'services';
 
 import {ConfigureProcessModal} from './ConfigureProcessModal';
 
 jest.mock('config', () => ({
   isEmailEnabled: jest.fn().mockReturnValue(true),
   getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+}));
+
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  numberParser: {isPositiveInt: jest.fn().mockReturnValue(true)},
 }));
 
 const digest = {enabled: false, checkInterval: {value: 1, unit: 'week'}};
@@ -102,4 +108,15 @@ it('should show warning that email is not configured', async () => {
   const node = shallow(<ConfigureProcessModal {...props} />);
 
   expect(node.find('MessageBox').exists()).toBe(true);
+});
+
+it('should disable the confirm button if invalid interval value is provided', async () => {
+  numberParser.isPositiveInt.mockReturnValue(false);
+  const node = shallow(
+    <ConfigureProcessModal initialConfig={{owner: {id: 'test', name: 'testName'}, digest}} />
+  );
+
+  node.find('Switch').simulate('change', {target: {checked: true}});
+
+  expect(node.find('.confirm').prop('disabled')).toBe(true);
 });

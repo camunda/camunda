@@ -54,7 +54,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
       Math.max(60, configurationService.getOnboarding().getIntervalForCheckingTriggerForOnboardingEmails()));
     log.info("Initializing OnboardingScheduler");
     onboardedProcessDefinitions = new HashSet<>();
-    for (String processToBeEvaluated : getAllCamundaEngineProcessDefinitionKeys()) {
+    for (String processToBeEvaluated : getAllProcessDefinitionKeys()) {
       if (processHasCompletedInstance(processToBeEvaluated)) {
         onboardedProcessDefinitions.add(processToBeEvaluated);
       }
@@ -72,7 +72,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
   }
 
   public void checkIfNewOnboardingDataIsPresent() {
-    Set<String> processesNotYetOnboarded = getAllCamundaEngineProcessDefinitionKeys();
+    Set<String> processesNotYetOnboarded = getAllProcessDefinitionKeys();
     processesNotYetOnboarded.removeAll(onboardedProcessDefinitions);
     for (String processToBeOnboarded : processesNotYetOnboarded) {
       resolveAnyPendingOwnerAuthorizations(processToBeOnboarded);
@@ -126,9 +126,8 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
     notificationHandler.apply(processToBeOnboarded);
   }
 
-  private Set<String> getAllCamundaEngineProcessDefinitionKeys() {
-    final Set<String> existingDefinitionKeys = processInstanceReader.getExistingProcessDefinitionKeysFromInstances();
-    return processDefinitionReader.getProcessDefinitions(existingDefinitionKeys)
+  private Set<String> getAllProcessDefinitionKeys() {
+    return processDefinitionReader.getAllProcessDefinitions()
       .stream()
       .filter(definition -> !definition.isEventBased())
       .map(ProcessDefinitionOptimizeDto::getKey)

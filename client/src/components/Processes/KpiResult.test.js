@@ -12,6 +12,14 @@ import {isSuccessful} from './service';
 import KpiResult from './KpiResult';
 
 jest.mock('./service', () => ({isSuccessful: jest.fn()}));
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  formatters: {
+    duration: (value) => value + 'ms',
+    percentage: (value) => value + '%',
+    frequency: (value) => value,
+  },
+}));
 
 const kpis = [
   {
@@ -59,7 +67,7 @@ it('should add "success" className to the report value if the kpi is successful'
   expect(node.find('.reportValue')).toHaveClassName('success');
 });
 
-it('should format the kpi values based on the report measure', () => {
+it('should display kpi value and target in correct format', () => {
   const node = shallow(
     <KpiResult
       kpis={[
@@ -67,6 +75,7 @@ it('should format the kpi values based on the report measure', () => {
           reportName: 'report Name',
           value: '123',
           target: '300',
+          unit: null,
           isBelow: true,
           measure: 'percentage',
         },
@@ -74,6 +83,22 @@ it('should format the kpi values based on the report measure', () => {
     />
   );
 
-  expect(node.find('.reportValues span').at(0)).toIncludeText('%');
-  expect(node.find('.reportValues span').at(1)).toIncludeText('%');
+  expect(node.find('.reportValues span').at(0)).toIncludeText('123%');
+  expect(node.find('.reportValues span').at(1)).toIncludeText('300%');
+
+  node.setProps({
+    kpis: [
+      {
+        reportName: 'report Name',
+        value: '12',
+        target: '4',
+        unit: 'days',
+        isBelow: true,
+        measure: 'duration',
+      },
+    ],
+  });
+
+  expect(node.find('.reportValues span').at(0)).toIncludeText('12ms');
+  expect(node.find('.reportValues span').at(1)).toIncludeText('4 days');
 });

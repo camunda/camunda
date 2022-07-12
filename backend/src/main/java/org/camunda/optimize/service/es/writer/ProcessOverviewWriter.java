@@ -8,6 +8,8 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
@@ -105,7 +107,9 @@ public class ProcessOverviewWriter {
     try {
       final ProcessUpdateDto processUpdateDto = new ProcessUpdateDto();
       processUpdateDto.setOwnerId(ownerId);
-      processUpdateDto.setProcessDigest(new ProcessDigestRequestDto());
+      final ProcessDigestRequestDto processDigestRequestDto = new ProcessDigestRequestDto();
+      processDigestRequestDto.setCheckInterval(new AlertInterval(1, AlertIntervalUnit.WEEKS));
+      processUpdateDto.setProcessDigest(processDigestRequestDto);
       final UpdateRequest updateRequest = new UpdateRequest()
         .index(PROCESS_OVERVIEW_INDEX_NAME)
         .id(processDefinitionKey)
@@ -128,6 +132,7 @@ public class ProcessOverviewWriter {
   }
 
   public void deleteProcessOwnerEntry(final String processDefinitionKey) {
+    log.info("Removing pending entry " + processDefinitionKey);
     try {
       final DeleteRequest deleteRequest = new DeleteRequest()
         .index(PROCESS_OVERVIEW_INDEX_NAME)

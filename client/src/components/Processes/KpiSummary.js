@@ -9,7 +9,6 @@ import React from 'react';
 import classNames from 'classnames';
 
 import {Icon} from 'components';
-import {t} from 'translation';
 
 import {isSuccessful} from './service';
 
@@ -20,22 +19,11 @@ export default function KpiSummary({kpis}) {
     return null;
   }
 
-  const kpisWithData = kpis.filter((report) => report.value);
+  const succeededKpis = kpis.filter(isSuccessful);
+  const failedKpis = kpis.filter((args) => !isSuccessful(args));
 
-  if (kpisWithData.length === 0) {
-    return (
-      <div className="KpiSummary">
-        <Icon type="info" />
-        <span className="height-center">{t('processes.noData')}</span>
-      </div>
-    );
-  }
-
-  const succeededKpis = kpisWithData.filter(isSuccessful);
-  const failedKpis = kpisWithData.filter((args) => !isSuccessful(args));
-
-  const allSucceeded = succeededKpis.length === kpisWithData.length;
-  const allFailed = failedKpis.length === kpisWithData.length;
+  const allSucceeded = succeededKpis.length === kpis.length;
+  const allFailed = failedKpis.length === kpis.length;
 
   if (allSucceeded || allFailed) {
     return (
@@ -44,7 +32,7 @@ export default function KpiSummary({kpis}) {
           className={classNames({success: allSucceeded, error: allFailed})}
           type={allSucceeded ? 'check-circle' : 'clear'}
         />
-        <span className="center">{kpisWithData.length}</span>
+        <span className="center">{kpis.length}</span>
       </div>
     );
   }

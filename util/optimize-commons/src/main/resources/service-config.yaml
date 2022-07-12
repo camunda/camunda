@@ -609,8 +609,8 @@ analytics:
       secret: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_SERVICE_SECRET:}
     properties:
       stage: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_STAGE:dev}
-      organizationId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_ORGANIZATION:dev}
-      clusterId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_CLUSTER_ID:dev}
+      organizationId: ${CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION:dev}
+      clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:dev}
 
 onboarding:
   enabled: ${CAMUNDA_OPTIMIZE_ONBOARDING_ENABLED:false}
@@ -620,8 +620,8 @@ onboarding:
   # How often (in seconds) shall optimize check for process instances updates? - Minimum 60s
   intervalForCheckingTriggerForOnboardingEmails: ${CAMUNDA_OPTIMIZE_ONBOARDING_INTERVAL_CHECK_DATA:180}
   properties:
-    organizationId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_ORGANIZATION:dev}
-    clusterId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_CLUSTER_ID:dev}
+    organizationId: ${CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION:dev}
+    clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:dev}
 
 # Configuration of application internal in-memory caches
 caches:

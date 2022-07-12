@@ -99,7 +99,7 @@ public class DashboardRestService {
     } catch (NotFoundException | ForbiddenException e) {
       // This is potentially a case of magic link creation, let's wait a bit and give it another chance
       try {
-        Thread.sleep(1000);
+        Thread.sleep(1500);
       } catch (InterruptedException ex) {
         // Not critical, do nothing
         Thread.currentThread().interrupt();

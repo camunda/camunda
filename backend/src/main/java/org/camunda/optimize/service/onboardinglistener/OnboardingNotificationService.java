@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class OnboardingNotificationService {
 
-  public static final String MAGIC_LINK_TEMPLATE = "/collection/%s/dashboard/%s";
+  public static final String MAGIC_LINK_TEMPLATE = "/collection/%s/dashboard/%s/";
   public static final String EMAIL_BODY_TEMPLATE =
     "Congratulations! Your first process instance for the process %s has completed! " +
       "Ready for some insights? Our systems have crunched the data and we have some valuable information to " +

@@ -13,7 +13,7 @@ import {default as NavItem, refreshBreadcrumbs} from './NavItem';
 import {loadEntitiesNames} from './service';
 
 jest.mock('./service', () => ({
-  loadEntitiesNames: jest.fn(),
+  loadEntitiesNames: jest.fn().mockReturnValue({}),
 }));
 
 jest.mock('react-router-dom', () => {
@@ -23,6 +23,10 @@ jest.mock('react-router-dom', () => {
     },
     withRouter: (fn) => fn,
   };
+});
+
+beforeEach(() => {
+  jest.clearAllMocks();
 });
 
 it('renders without crashing', () => {
@@ -48,7 +52,7 @@ it('should set the active class if the location pathname matches headerItem path
 });
 
 it('should render a breadcrumbs links when specified', async () => {
-  loadEntitiesNames.mockReturnValue({dashboardName: 'dashboard', reportName: 'report'});
+  loadEntitiesNames.mockReturnValueOnce({dashboardName: 'dashboard', reportName: 'report'});
 
   const node = shallow(
     <NavItem
@@ -81,4 +85,23 @@ it('should update breadcrumbs when requested', async () => {
   expect(loadEntitiesNames).not.toHaveBeenCalled();
   refreshBreadcrumbs();
   expect(loadEntitiesNames).toHaveBeenCalled();
+});
+
+it('should not invoke loadEntitiesNames if id of the entity contains new keyword', async () => {
+  const node = shallow(
+    <NavItem
+      name="testName"
+      active={['/report/*', '/dashboard/*']}
+      location={{pathname: '/dashboard/did/report/new'}}
+      breadcrumbsEntities={['dashboard', 'report']}
+    />
+  );
+
+  await node.update();
+  expect(loadEntitiesNames).toHaveBeenCalledWith({dashboardId: 'did'});
+
+  loadEntitiesNames.mockClear();
+  node.setProps({location: {pathname: '/dashboard/new', breadcrumbsEntities: ['dashboard']}});
+  refreshBreadcrumbs();
+  expect(loadEntitiesNames).not.toHaveBeenCalledWith();
 });

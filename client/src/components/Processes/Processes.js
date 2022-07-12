@@ -89,8 +89,9 @@ export function Processes({mightFail}) {
         onChange={loadProcessesList}
         data={processes?.map(
           ({processDefinitionKey, processDefinitionName, owner, digest, kpis, linkToDashboard}) => {
-            const timeKpis = kpis?.filter((kpi) => kpi.type === 'time');
-            const qualityKpis = kpis?.filter((kpi) => kpi.type === 'quality');
+            const kpisWithData = kpis.filter(({value, target}) => value && target);
+            const timeKpis = kpisWithData?.filter((kpi) => kpi.type === 'time');
+            const qualityKpis = kpisWithData?.filter((kpi) => kpi.type === 'quality');
             const meta = [
               <Tooltip position="bottom" content={<KpiResult kpis={timeKpis} />} delay={300}>
                 <div className="summaryContainer">
