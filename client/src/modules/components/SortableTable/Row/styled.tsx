@@ -8,11 +8,42 @@
 import styled, {css} from 'styled-components';
 import Table from 'modules/components/Table';
 
-const TR = styled(Table.TR)`
-  line-height: 36px;
-  &:first-child {
-    border-top-style: hidden;
-  }
+type TRProps = {
+  isClickable: boolean;
+};
+
+const TR = styled(Table.TR)<TRProps>`
+  ${({theme, isClickable, selected}) => {
+    const colors = theme.colors.sortableTable;
+
+    return css`
+      line-height: 36px;
+      &:first-child {
+        border-top-style: hidden;
+      }
+      ${selected
+        ? css`
+            background-color: ${colors.tr.selected.backgroundColor};
+          `
+        : css`
+            &:nth-child(odd) {
+              background-color: ${theme.colors.itemOdd};
+            }
+
+            &:nth-child(even) {
+              background-color: ${theme.colors.itemEven};
+            }
+
+            ${isClickable &&
+            css`
+              cursor: pointer;
+              &:hover {
+                background-color: ${colors.hover};
+              }
+            `};
+          `}
+    `;
+  }}
 `;
 
 const TD = styled(Table.TD)`

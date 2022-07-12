@@ -13,7 +13,7 @@ import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {ColumnHeader} from './ColumnHeader';
 import {Skeleton} from './Skeleton';
 import {Message} from './Message';
-import {Row} from './Row';
+import {Row, SelectionType} from './Row';
 import {Checkbox} from './Checkbox';
 
 import {
@@ -43,11 +43,13 @@ type Props = {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
   headerColumns: HeaderColumn[];
   rows: RowProps[];
-  skeletonColumns: React.ComponentProps<typeof Skeleton>['columns'];
+  skeletonColumns?: React.ComponentProps<typeof Skeleton>['columns'];
   emptyMessage?: string;
-  isSelectable?: boolean;
+  isScrollable?: boolean;
+  selectionType?: SelectionType;
   checkIsAllSelected?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
   onSelectAll?: () => void;
+  onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
 } & Pick<
   React.ComponentProps<typeof InfiniteScroller>,
   'onVerticalScrollStartReach' | 'onVerticalScrollEndReach'
@@ -59,12 +61,14 @@ const SortableTable: React.FC<Props> = observer(
     headerColumns,
     rows,
     skeletonColumns,
-    isSelectable = false,
+    selectionType = 'none',
+    isScrollable = true,
     emptyMessage,
     checkIsAllSelected,
     onSelectAll,
     onVerticalScrollStartReach,
     onVerticalScrollEndReach,
+    onSort,
   }) => {
     let scrollableContentRef = useRef<HTMLDivElement | null>(null);
 
@@ -75,14 +79,20 @@ const SortableTable: React.FC<Props> = observer(
     }, [state]);
 
     return (
-      <List>
+      <List $isScrollable={isScrollable}>
         <ScrollableContent
-          overflow={state === 'skeleton' ? 'hidden' : 'auto'}
+          overflow={
+            isScrollable
+              ? state === 'skeleton'
+                ? 'hidden'
+                : 'auto'
+              : 'initial'
+          }
           ref={scrollableContentRef}
         >
           {state === 'loading' && <Spinner data-testid="instances-loader" />}
-          <Table>
-            <THead>
+          <Table data-testid="data-table">
+            <THead $isSticky={isScrollable}>
               <TRHeader>
                 {headerColumns.map((header, index) => {
                   const {
@@ -98,7 +108,7 @@ const SortableTable: React.FC<Props> = observer(
                     <TH key={index}>
                       <>
                         {index === 0 &&
-                          isSelectable &&
+                          selectionType === 'checkbox' &&
                           (state === 'skeleton' ? (
                             <SkeletonCheckboxBlock />
                           ) : (
@@ -117,6 +127,7 @@ const SortableTable: React.FC<Props> = observer(
                           disabled={state !== 'content' || isDisabled}
                           showExtraPadding={showExtraPadding}
                           paddingWidth={paddingWidth}
+                          onSort={onSort}
                         />
                       </>
                     </TH>
@@ -124,7 +135,9 @@ const SortableTable: React.FC<Props> = observer(
                 })}
               </TRHeader>
             </THead>
-            {state === 'skeleton' && <Skeleton columns={skeletonColumns} />}
+            {state === 'skeleton' && skeletonColumns !== undefined && (
+              <Skeleton columns={skeletonColumns} />
+            )}
             {state === 'empty' && (
               <Message type="empty">{emptyMessage}</Message>
             )}
@@ -146,7 +159,7 @@ const SortableTable: React.FC<Props> = observer(
                         id={id}
                         ariaLabel={ariaLabel}
                         content={content}
-                        isSelectable={isSelectable}
+                        selectionType={selectionType}
                         onSelect={onSelect}
                         isSelected={isSelected}
                       />

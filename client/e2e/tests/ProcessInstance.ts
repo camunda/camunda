@@ -42,7 +42,7 @@ test('Resolve an incident', async (t) => {
     .expect(screen.queryByText(/flow node:/i).exists)
     .ok();
 
-  const withinIncidentsTable = within(screen.queryByTestId('incidents-table'));
+  const withinIncidentsTable = within(screen.queryByTestId('data-table'));
   const withinVariablesList = within(screen.queryByTestId('variables-list'));
 
   // edit goUp variable
@@ -142,7 +142,7 @@ test('Resolve an incident', async (t) => {
   await t
     .expect(screen.queryByTestId('incidents-banner').exists)
     .notOk()
-    .expect(screen.queryByTestId('incidents-table').exists)
+    .expect(screen.queryByTestId('data-table').exists)
     .notOk()
     .expect(
       within(screen.queryByTestId('instance-header')).queryByTestId(

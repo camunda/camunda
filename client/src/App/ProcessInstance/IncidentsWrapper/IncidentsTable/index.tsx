@@ -6,10 +6,7 @@
  */
 
 import {useState} from 'react';
-import Table from 'modules/components/Table';
 import {Button} from 'modules/components/Button';
-import {ColumnHeader} from './ColumnHeader';
-import {TransitionGroup} from 'modules/components/Transition';
 import {IncidentOperation} from 'modules/components/IncidentOperation';
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
@@ -18,16 +15,15 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {ErrorMessageModal} from './ErrorMessageModal';
-import * as Styled from './styled';
-import {Restricted} from 'modules/components/Restricted';
+import {FlexContainer, ErrorMessageCell} from './styled';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {Incident, incidentsStore} from 'modules/stores/incidents';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/routes';
 import {useLocation} from 'react-router-dom';
 import {tracking} from 'modules/tracking';
-
-const {THead, TBody, TR, TD} = Table;
+import {authenticationStore} from 'modules/stores/authentication';
+import {SortableTable} from 'modules/components/SortableTable';
 
 const IncidentsTable: React.FC = observer(function IncidentsTable() {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -36,7 +32,7 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const location = useLocation();
   const {sortBy, sortOrder} = getSortParams(location.search) || {
-    sortBy: 'errorType',
+    sortBy: 'creationTime',
     sortOrder: 'desc',
   };
 
@@ -67,168 +63,158 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
 
   return (
     <>
-      <Table data-testid="incidents-table">
-        <THead>
-          <TR>
-            <Styled.FirstTH>
-              <Styled.Fake />
-              <ColumnHeader
-                sortKey="errorType"
-                label="Incident Type"
-                table="instance"
-              />
-            </Styled.FirstTH>
-            <Styled.TH>
-              <ColumnHeader
-                sortKey="flowNodeName"
-                label="Flow Node"
-                table="instance"
-              />
-            </Styled.TH>
-            <Styled.TH>
-              <ColumnHeader
-                sortKey="jobId"
-                label="Job Id"
-                disabled={!isJobIdPresent}
-                table="instance"
-              />
-            </Styled.TH>
-            <Styled.TH>
-              <ColumnHeader
-                sortKey="creationTime"
-                label="Creation Time"
-                table="instance"
-              />
-            </Styled.TH>
-            <Styled.TH>
-              <ColumnHeader label="Error Message" />
-            </Styled.TH>
-            {processInstanceDetailsDiagramStore.hasCalledProcessInstances && (
-              <Styled.TH>
-                <ColumnHeader label="Root Cause Instance" />
-              </Styled.TH>
-            )}
-            <Restricted scopes={['write']}>
-              <Styled.TH>
-                <ColumnHeader label="Operations" />
-              </Styled.TH>
-            </Restricted>
-          </TR>
-        </THead>
+      <SortableTable
+        state="content"
+        selectionType="row"
+        isScrollable={false}
+        onSort={(sortKey: string) => {
+          tracking.track({
+            eventName: 'incidents-sorted',
+            column: sortKey,
+          });
+        }}
+        headerColumns={[
+          {
+            content: 'Incident Type',
+            sortKey: 'errorType',
+          },
+          {
+            content: 'Failing Flow Node',
+            sortKey: 'flowNodeName',
+          },
+          {
+            content: 'Job Id',
+            sortKey: 'jobId',
+            isDisabled: !isJobIdPresent,
+          },
+          {
+            content: 'Creation Date',
+            sortKey: 'creationTime',
+            isDefault: true,
+          },
+          {
+            content: 'Error Message',
+            isDisabled: true,
+          },
+          ...(processInstanceDetailsDiagramStore.hasCalledProcessInstances
+            ? [
+                {
+                  content: 'Root Cause Instance',
+                },
+              ]
+            : []),
+          ...(authenticationStore.hasPermission(['write'])
+            ? [
+                {
+                  content: 'Operations',
+                },
+              ]
+            : []),
+        ]}
+        rows={sortedIncidents.map((incident) => {
+          const {rootCauseInstance} = incident;
+          const areOperationsVisible =
+            rootCauseInstance === null ||
+            rootCauseInstance.instanceId === processInstanceId;
 
-        <TBody>
-          <TransitionGroup component={null}>
-            {sortedIncidents.map((incident, index: number) => {
-              const {rootCauseInstance} = incident;
-              const areOperationsVisible =
-                rootCauseInstance === null ||
-                rootCauseInstance.instanceId === processInstanceId;
+          return {
+            id: incident.id,
+            ariaLabel: `Incident ${incident.errorType.name}`,
+            onSelect: () => {
+              incidentsStore.isSingleIncidentSelected(
+                incident.flowNodeInstanceId
+              )
+                ? flowNodeSelectionStore.clearSelection()
+                : flowNodeSelectionStore.selectFlowNode({
+                    flowNodeId: incident.flowNodeId,
+                    flowNodeInstanceId: incident.flowNodeInstanceId,
+                    isMultiInstance: false,
+                  });
+            },
+            content: [
+              {
+                cellContent: incident.errorType.name,
+              },
+              {
+                cellContent: incident.flowNodeName,
+              },
+              {
+                cellContent: incident.jobId || '--',
+              },
+              {
+                cellContent: formatDate(incident.creationTime),
+              },
+              {
+                cellContent: (
+                  <FlexContainer>
+                    <ErrorMessageCell>{incident.errorMessage}</ErrorMessageCell>
+                    {incident.errorMessage.length >= 58 && (
+                      <Button
+                        size="small"
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
 
-              return (
-                <Styled.Transition
-                  key={incident.id}
-                  timeout={{enter: 500, exit: 200}}
-                  mountOnEnter
-                  unmountOnExit
-                >
-                  <Styled.IncidentTR
-                    data-testid={`tr-incident-${incident.id}`}
-                    aria-selected={incident.isSelected}
-                    isSelected={incident.isSelected}
-                    onClick={() => {
-                      incidentsStore.isSingleIncidentSelected(
-                        incident.flowNodeInstanceId
-                      )
-                        ? flowNodeSelectionStore.clearSelection()
-                        : flowNodeSelectionStore.selectFlowNode({
-                            flowNodeId: incident.flowNodeId,
-                            flowNodeInstanceId: incident.flowNodeInstanceId,
-                            isMultiInstance: false,
+                          tracking.track({
+                            eventName:
+                              'incidents-panel-full-error-message-opened',
                           });
-                    }}
-                    aria-label={`Incident ${incident.errorType.name}`}
-                  >
-                    <TD>
-                      <Styled.FirstCell>
-                        <Styled.Index>{index + 1}</Styled.Index>
-                        {incident.errorType.name}
-                      </Styled.FirstCell>
-                    </TD>
-                    <TD>
-                      <div>{incident.flowNodeName}</div>
-                    </TD>
-                    <TD>
-                      <div>{incident.jobId || '--'}</div>
-                    </TD>
-                    <TD>
-                      <div>{formatDate(incident.creationTime)}</div>
-                    </TD>
-                    <TD>
-                      <Styled.Flex>
-                        <Styled.ErrorMessageCell>
-                          {incident.errorMessage}
-                        </Styled.ErrorMessageCell>
-                        {incident.errorMessage.length >= 58 && (
-                          <Button
-                            size="small"
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
 
-                              tracking.track({
-                                eventName:
-                                  'incidents-panel-full-error-message-opened',
-                              });
-
-                              handleMoreButtonClick(
-                                incident.errorMessage,
-                                incident.flowNodeName
-                              );
+                          handleMoreButtonClick(
+                            incident.errorMessage,
+                            incident.flowNodeName
+                          );
+                        }}
+                      >
+                        More...
+                      </Button>
+                    )}
+                  </FlexContainer>
+                ),
+              },
+              ...(processInstanceDetailsDiagramStore.hasCalledProcessInstances &&
+              rootCauseInstance !== null
+                ? [
+                    {
+                      cellContent:
+                        rootCauseInstance.instanceId === processInstanceId ? (
+                          '--'
+                        ) : (
+                          <Link
+                            to={{
+                              pathname: Paths.processInstance(
+                                rootCauseInstance.instanceId
+                              ),
                             }}
+                            title={`View root cause instance ${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
                           >
-                            More...
-                          </Button>
-                        )}
-                      </Styled.Flex>
-                    </TD>
-                    {processInstanceDetailsDiagramStore.hasCalledProcessInstances &&
-                      rootCauseInstance !== null && (
-                        <TD>
-                          {rootCauseInstance.instanceId ===
-                          processInstanceId ? (
-                            '--'
-                          ) : (
-                            <Link
-                              to={{
-                                pathname: Paths.processInstance(
-                                  rootCauseInstance.instanceId
-                                ),
-                              }}
-                              title={`View root cause instance ${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
-                            >
-                              {`${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
-                            </Link>
-                          )}
-                        </TD>
-                      )}
-                    <Restricted scopes={['write']}>
-                      <TD>
-                        {areOperationsVisible && (
-                          <IncidentOperation
-                            instanceId={processInstanceId}
-                            incident={incident}
-                            showSpinner={incident.hasActiveOperation}
-                          />
-                        )}
-                      </TD>
-                    </Restricted>
-                  </Styled.IncidentTR>
-                </Styled.Transition>
-              );
-            })}
-          </TransitionGroup>
-        </TBody>
-      </Table>
+                            {`${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
+                          </Link>
+                        ),
+                    },
+                  ]
+                : []),
+              ...(authenticationStore.hasPermission(['write']) &&
+              areOperationsVisible
+                ? [
+                    {
+                      cellContent: (
+                        <IncidentOperation
+                          instanceId={processInstanceId}
+                          incident={incident}
+                          showSpinner={incident.hasActiveOperation}
+                        />
+                      ),
+                    },
+                  ]
+                : []),
+            ],
+            checkIsSelected: () => {
+              return incident.isSelected;
+            },
+          };
+        })}
+      ></SortableTable>
       <ErrorMessageModal
         isVisible={isModalVisible}
         title={modalTitle}

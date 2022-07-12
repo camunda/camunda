@@ -22,7 +22,7 @@ const Header = styled.span<HeaderProps>`
   ${({theme, $showExtraPadding, $paddingWidth}) => {
     return css`
       color: ${theme.colors.text01};
-      cursor: default;
+      cursor: not-allowed;
 
       ${$showExtraPadding
         ? css`
@@ -57,14 +57,12 @@ const SortableHeader = styled.button<Props & HeaderProps>`
 const Label = styled.span<Props>`
   ${({theme, active, disabled}) => {
     const colors = theme.colors.modules.table.columnHeader;
-    const opacity = theme.opacity.decisionsColumnHeader;
 
     return css`
       color: ${active ? colors.sortingActive.color : colors.color};
       ${disabled &&
       css`
         color: ${colors.disabled.color};
-        opacity: ${opacity.disabled};
       `}
     `;
   }}

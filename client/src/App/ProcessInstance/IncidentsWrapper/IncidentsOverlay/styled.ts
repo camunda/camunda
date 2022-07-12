@@ -15,7 +15,6 @@ const Overlay = styled.div`
     return css`
       width: 100%;
       height: 100%;
-      padding-left: 52px;
       position: absolute;
       z-index: 3;
       top: 0;

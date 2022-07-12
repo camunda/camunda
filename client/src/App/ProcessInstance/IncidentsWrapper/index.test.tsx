@@ -80,12 +80,12 @@ describe('IncidentsFilter', () => {
     });
 
     incidentsStore.setIncidentBarOpen(true);
-    const table = within(screen.getByTestId('incidents-table'));
+    const table = within(screen.getByRole('table'));
 
     expect(table.getByText(/^Incident Type/)).toBeInTheDocument();
-    expect(table.getByText(/^Flow Node/)).toBeInTheDocument();
+    expect(table.getByText(/^Failing Flow Node/)).toBeInTheDocument();
     expect(table.getByText(/^Job Id/)).toBeInTheDocument();
-    expect(table.getByText(/^Creation Time/)).toBeInTheDocument();
+    expect(table.getByText(/^Creation Date/)).toBeInTheDocument();
     expect(table.getByText(/^Error Message/)).toBeInTheDocument();
     expect(table.getByText(/^Operations/)).toBeInTheDocument();
   });
@@ -133,7 +133,7 @@ describe('IncidentsFilter', () => {
         }
       );
 
-      const table = within(screen.getByTestId('incidents-table'));
+      const table = within(screen.getByRole('table'));
 
       expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
       expect(table.getByText(/Condition errortype/)).toBeInTheDocument();
@@ -160,7 +160,7 @@ describe('IncidentsFilter', () => {
         }
       );
 
-      const table = within(screen.getByTestId('incidents-table'));
+      const table = within(screen.getByRole('table'));
 
       expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
       expect(
@@ -300,26 +300,12 @@ describe('IncidentsFilter', () => {
       );
 
       let [, firstRow, secondRow] = screen.getAllByRole('row');
-      expect(firstRow).toHaveTextContent(/Extract value errortype/);
-      expect(secondRow).toHaveTextContent(/Condition errortype/);
-
-      await user.click(
-        screen.getByRole('button', {
-          name: /sort by errortype/i,
-        })
-      );
-
-      expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?sort=errorType%2Basc$/
-      );
-
-      [, firstRow, secondRow] = screen.getAllByRole('row');
       expect(firstRow).toHaveTextContent(/Condition errortype/);
       expect(secondRow).toHaveTextContent(/Extract value errortype/);
 
       await user.click(
         screen.getByRole('button', {
-          name: /sort by errortype/i,
+          name: /sort by incident type/i,
         })
       );
 
@@ -330,6 +316,20 @@ describe('IncidentsFilter', () => {
       [, firstRow, secondRow] = screen.getAllByRole('row');
       expect(firstRow).toHaveTextContent(/Extract value errortype/);
       expect(secondRow).toHaveTextContent(/Condition errortype/);
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /sort by incident type/i,
+        })
+      );
+
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?sort=errorType%2Basc$/
+      );
+
+      [, firstRow, secondRow] = screen.getAllByRole('row');
+      expect(firstRow).toHaveTextContent(/Condition errortype/);
+      expect(secondRow).toHaveTextContent(/Extract value errortype/);
     });
 
     it('should sort by flow node', async () => {
@@ -341,12 +341,12 @@ describe('IncidentsFilter', () => {
       );
 
       let [, firstRow, secondRow] = screen.getAllByRole('row');
-      expect(firstRow).toHaveTextContent(/flowNodeId_alwaysFailingTask/);
-      expect(secondRow).toHaveTextContent(/flowNodeId_exclusiveGateway/);
+      expect(firstRow).toHaveTextContent(/flowNodeId_exclusiveGateway/);
+      expect(secondRow).toHaveTextContent(/flowNodeId_alwaysFailingTask/);
 
       await user.click(
         screen.getByRole('button', {
-          name: /sort by flownodename/i,
+          name: /sort by failing flow node/i,
         })
       );
 
@@ -360,7 +360,7 @@ describe('IncidentsFilter', () => {
 
       await user.click(
         screen.getByRole('button', {
-          name: /sort by flowNodeName/i,
+          name: /sort by failing flow node/i,
         })
       );
 
@@ -382,26 +382,12 @@ describe('IncidentsFilter', () => {
       );
 
       let [, firstRow, secondRow] = screen.getAllByRole('row');
-      expect(firstRow).toHaveTextContent(/flowNodeId_alwaysFailingTask/);
-      expect(secondRow).toHaveTextContent(/flowNodeId_exclusiveGateway/);
+      expect(firstRow).toHaveTextContent(/flowNodeId_exclusiveGateway/);
+      expect(secondRow).toHaveTextContent(/flowNodeId_alwaysFailingTask/);
 
       await user.click(
         screen.getByRole('button', {
-          name: /sort by creationTime/i,
-        })
-      );
-
-      expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?sort=creationTime%2Bdesc$/
-      );
-
-      [, firstRow, secondRow] = screen.getAllByRole('row');
-      expect(firstRow).toHaveTextContent(/2022-03-01 14:26:19/);
-      expect(secondRow).toHaveTextContent(/2019-03-01 14:26:19/);
-
-      await user.click(
-        screen.getByRole('button', {
-          name: /sort by creationTime/i,
+          name: /sort by creation date/i,
         })
       );
 
@@ -412,6 +398,20 @@ describe('IncidentsFilter', () => {
       [, firstRow, secondRow] = screen.getAllByRole('row');
       expect(firstRow).toHaveTextContent(/2019-03-01 14:26:19/);
       expect(secondRow).toHaveTextContent(/2022-03-01 14:26:19/);
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /sort by creation date/i,
+        })
+      );
+
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?sort=creationTime%2Bdesc$/
+      );
+
+      [, firstRow, secondRow] = screen.getAllByRole('row');
+      expect(firstRow).toHaveTextContent(/2022-03-01 14:26:19/);
+      expect(secondRow).toHaveTextContent(/2019-03-01 14:26:19/);
     });
   });
 });

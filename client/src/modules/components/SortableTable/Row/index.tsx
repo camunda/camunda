@@ -14,18 +14,20 @@ type Column = {
   dataTestId?: string;
 };
 
+type SelectionType = 'checkbox' | 'row' | 'none';
+
 type Props = {
   id: string;
   content: Column[];
   ariaLabel: string;
-  isSelectable?: boolean;
+  selectionType?: SelectionType;
   isSelected?: boolean;
   onSelect?: () => void;
 };
 
 const Row: React.FC<Props> = React.memo(
   ({
-    isSelectable = false,
+    selectionType = 'none',
     isSelected = false,
     id,
     content,
@@ -37,12 +39,18 @@ const Row: React.FC<Props> = React.memo(
         selected={isSelected}
         aria-label={ariaLabel}
         aria-selected={isSelected}
+        isClickable={selectionType === 'row'}
+        onClick={() => {
+          if (selectionType === 'row') {
+            onSelect?.();
+          }
+        }}
       >
         {content.map(({cellContent, dataTestId}, index) => {
           return (
             <TD key={index} data-testid={dataTestId}>
               <>
-                {index === 0 && isSelectable && (
+                {index === 0 && selectionType === 'checkbox' && (
                   <Checkbox
                     data-testid="instance-checkbox"
                     title={`Select instance ${id}`}
@@ -61,3 +69,4 @@ const Row: React.FC<Props> = React.memo(
   }
 );
 export {Row};
+export type {SelectionType};

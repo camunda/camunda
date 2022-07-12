@@ -109,7 +109,9 @@ const List: React.FC = observer(() => {
   return (
     <SortableTable
       state={getTableState()}
-      isSelectable={authenticationStore.hasPermission(['write'])}
+      selectionType={
+        authenticationStore.hasPermission(['write']) ? 'checkbox' : 'none'
+      }
       checkIsAllSelected={() =>
         processInstancesSelectionStore.state.isAllChecked
       }

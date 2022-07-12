@@ -25,15 +25,23 @@ const Container = styled.section`
   }}
 `;
 
-const List = styled.div`
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+type ListProps = {
+  $isScrollable: boolean;
+};
+
+const List = styled.div<ListProps>`
+  ${({$isScrollable}) => {
+    return css`
+      width: 100%;
+      height: ${$isScrollable ? '100%' : 'auto'};
+      display: flex;
+      flex-direction: column;
+    `;
+  }}
 `;
 
 type ScrollableContentProps = {
-  overflow: 'auto' | 'hidden';
+  overflow: 'auto' | 'hidden' | 'initial';
 };
 
 const ScrollableContent = styled.div<ScrollableContentProps>`
@@ -70,10 +78,21 @@ const TRHeader = styled(Table.TR)`
   border-top: none;
 `;
 
-const THead = styled(Table.THead)`
-  position: sticky;
-  z-index: 2;
-  top: 0;
+type THeadProps = {
+  $isSticky: boolean;
+};
+
+const THead = styled(Table.THead)<THeadProps>`
+  ${({$isSticky}) => {
+    return css`
+      ${$isSticky &&
+      css`
+        position: sticky;
+        z-index: 2;
+        top: 0;
+      `}
+    `;
+  }}
 `;
 
 const SkeletonCheckboxBlock = styled(BaseSkeletonCheckboxBlock)`

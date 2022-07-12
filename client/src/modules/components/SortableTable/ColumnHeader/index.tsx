@@ -17,7 +17,6 @@ function toggleSorting(
   currentSortOrder?: 'asc' | 'desc'
 ) {
   const params = new URLSearchParams(search);
-
   if (currentSortOrder === undefined) {
     params.set('sort', `${sortKey}+${INITIAL_SORT_ORDER}`);
     return params.toString();
@@ -27,7 +26,6 @@ function toggleSorting(
     'sort',
     `${sortKey}+${currentSortOrder === 'asc' ? 'desc' : 'asc'}`
   );
-
   return params.toString();
 }
 
@@ -38,6 +36,7 @@ type Props = {
   isDefault?: boolean;
   showExtraPadding?: boolean;
   paddingWidth?: number;
+  onSort?: (sortKey: string) => void;
 };
 
 const ColumnHeader: React.FC<Props> = ({
@@ -47,11 +46,12 @@ const ColumnHeader: React.FC<Props> = ({
   isDefault = false,
   showExtraPadding = false,
   paddingWidth = 0,
+  onSort,
 }) => {
   const isSortable = sortKey !== undefined;
   const navigate = useNavigate();
   const location = useLocation();
-  const existingSortParams = getSortParams();
+  const existingSortParams = getSortParams(location.search);
 
   if (isSortable) {
     const isActive =
@@ -71,6 +71,7 @@ const ColumnHeader: React.FC<Props> = ({
       <SortableHeader
         disabled={disabled}
         onClick={() => {
+          onSort?.(sortKey);
           navigate({
             search: toggleSorting(location.search, sortKey, currentSortOrder),
           });

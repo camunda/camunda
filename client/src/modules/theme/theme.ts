@@ -59,7 +59,7 @@ const DARK_COLORS = {
   button07: '#73777e',
   label: '#4a4c51',
   pillHover: '#767a80',
-  treeHover: '#4e4f55',
+  rowHover: '#4e4f55',
   logo: '#f8f8f8',
 } as const;
 const LIGHT_COLORS = {
@@ -87,7 +87,7 @@ const LIGHT_COLORS = {
   button05: '#e7e9ee',
   button06: '#d3d6e0',
   label: '#edeff3',
-  treeHover: '#e7e9ee',
+  rowHover: '#e7e9ee',
   logo: '#666666',
 } as const;
 
@@ -267,27 +267,6 @@ const theme = {
           backgroundColor: DARK_COLORS.ui04,
         },
       },
-      incidentsTable: {
-        firstTh: {
-          before: {
-            backgroundColor: DARK_COLORS.ui04,
-          },
-          after: {
-            backgroundColor: DARK_COLORS.ui04,
-          },
-        },
-        incidentTr: {
-          hover: {
-            backgroundColor: DARK_COLORS.treeHover,
-          },
-        },
-        fake: {
-          backgroundColor: 'yellow',
-          before: {
-            backgroundColor: DARK_COLORS.ui03,
-          },
-        },
-      },
       incidentsOverlay: {
         backgroundColor: DARK_COLORS.ui02,
       },
@@ -345,6 +324,12 @@ const theme = {
       },
       sortableTable: {
         backgroundColor: DARK_COLORS.ui02,
+        hover: DARK_COLORS.rowHover,
+        tr: {
+          selected: {
+            backgroundColor: DARK_COLORS.selectedOdd,
+          },
+        },
       },
       filtersPanel: {
         modalIcon: {
@@ -769,11 +754,7 @@ const theme = {
           td: {
             color: rgba(SEMANTIC_COLORS.white, 0.9),
           },
-          tr: {
-            selected: {
-              backgroundColor: DARK_COLORS.selectedOdd,
-            },
-          },
+
           thead: {
             backgroundColor: DARK_COLORS.ui04,
             tr: {
@@ -809,12 +790,6 @@ const theme = {
           block: 0.2,
         },
       },
-      incidentsTable: {
-        incidentTr: {
-          default: 1,
-          selected: 1,
-        },
-      },
       flowNodeInstancesTree: {
         bar: {
           nodeIcon: {
@@ -826,9 +801,6 @@ const theme = {
             selected: 0.9,
           },
         },
-      },
-      decisionsColumnHeader: {
-        disabled: 0.7,
       },
       columnHeader: {
         label: {
@@ -1151,27 +1123,6 @@ const theme = {
           backgroundColor: LIGHT_COLORS.ui05,
         },
       },
-      incidentsTable: {
-        firstTh: {
-          before: {
-            backgroundColor: LIGHT_COLORS.ui05,
-          },
-          after: {
-            backgroundColor: LIGHT_COLORS.ui05,
-          },
-        },
-        incidentTr: {
-          hover: {
-            backgroundColor: LIGHT_COLORS.button05,
-          },
-        },
-        fake: {
-          backgroundColor: 'yellow',
-          before: {
-            backgroundColor: LIGHT_COLORS.ui02,
-          },
-        },
-      },
       incidentsOverlay: {
         backgroundColor: LIGHT_COLORS.ui04,
       },
@@ -1229,6 +1180,12 @@ const theme = {
       },
       sortableTable: {
         backgroundColor: LIGHT_COLORS.ui04,
+        hover: LIGHT_COLORS.rowHover,
+        tr: {
+          selected: {
+            backgroundColor: LIGHT_COLORS.focusInner,
+          },
+        },
       },
       filtersPanel: {
         modalIcon: {
@@ -1646,11 +1603,6 @@ const theme = {
           td: {
             color: rgba(LIGHT_COLORS.ui06, 0.9),
           },
-          tr: {
-            selected: {
-              backgroundColor: LIGHT_COLORS.focusInner,
-            },
-          },
           thead: {
             backgroundColor: LIGHT_COLORS.ui02,
             tr: {
@@ -1686,12 +1638,6 @@ const theme = {
           block: 0.09,
         },
       },
-      incidentsTable: {
-        incidentTr: {
-          default: 0.9,
-          selected: 1,
-        },
-      },
       flowNodeInstancesTree: {
         bar: {
           nodeIcon: {
@@ -1703,9 +1649,6 @@ const theme = {
             selected: 1,
           },
         },
-      },
-      decisionsColumnHeader: {
-        disabled: 0.7,
       },
       columnHeader: {
         label: {

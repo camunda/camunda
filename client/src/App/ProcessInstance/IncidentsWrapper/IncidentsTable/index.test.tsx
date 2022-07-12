@@ -76,9 +76,9 @@ describe('IncidentsTable', () => {
     render(<IncidentsTable />, {wrapper: Wrapper});
 
     expect(screen.getByText('Incident Type')).toBeInTheDocument();
-    expect(screen.getByText('Flow Node')).toBeInTheDocument();
+    expect(screen.getByText('Failing Flow Node')).toBeInTheDocument();
     expect(screen.getByText('Job Id')).toBeInTheDocument();
-    expect(screen.getByText('Creation Time')).toBeInTheDocument();
+    expect(screen.getByText('Creation Date')).toBeInTheDocument();
     expect(screen.getByText('Error Message')).toBeInTheDocument();
     expect(screen.getByText('Operations')).toBeInTheDocument();
     expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
@@ -98,9 +98,9 @@ describe('IncidentsTable', () => {
     render(<IncidentsTable />, {wrapper: Wrapper});
 
     expect(screen.getByText('Incident Type')).toBeInTheDocument();
-    expect(screen.getByText('Flow Node')).toBeInTheDocument();
+    expect(screen.getByText('Failing Flow Node')).toBeInTheDocument();
     expect(screen.getByText('Job Id')).toBeInTheDocument();
-    expect(screen.getByText('Creation Time')).toBeInTheDocument();
+    expect(screen.getByText('Creation Date')).toBeInTheDocument();
     expect(screen.getByText('Error Message')).toBeInTheDocument();
     expect(screen.queryByText('Operations')).not.toBeInTheDocument();
     expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
@@ -117,7 +117,9 @@ describe('IncidentsTable', () => {
 
     render(<IncidentsTable />, {wrapper: Wrapper});
     let withinRow = within(
-      screen.getByTestId(`tr-incident-${incidentsMock[0].id}`)
+      screen.getByRole('row', {
+        name: `Incident ${incidentsMock[0].errorType.name}`,
+      })
     );
 
     expect(
@@ -142,7 +144,9 @@ describe('IncidentsTable', () => {
       withinRow.queryByRole('button', {name: 'Retry Incident'})
     ).not.toBeInTheDocument();
     withinRow = within(
-      screen.getByTestId(`tr-incident-${incidentsMock[1].id}`)
+      screen.getByRole('row', {
+        name: `Incident ${incidentsMock[1].errorType.name}`,
+      })
     );
     expect(
       withinRow.getByText(incidentsMock[1].errorType.name)
@@ -175,7 +179,9 @@ describe('IncidentsTable', () => {
 
     render(<IncidentsTable />, {wrapper: Wrapper});
     let withinRow = within(
-      screen.getByTestId(`tr-incident-${incidentsMock[0].id}`)
+      screen.getByRole('row', {
+        name: `Incident ${incidentsMock[0].errorType.name}`,
+      })
     );
 
     expect(
@@ -191,6 +197,7 @@ describe('IncidentsTable', () => {
     expect(
       withinRow.getByText(incidentsMock[0].errorMessage)
     ).toBeInTheDocument();
+
     expect(
       withinRow.getByRole('link', {
         name: /view root cause instance/i,
@@ -201,7 +208,9 @@ describe('IncidentsTable', () => {
     ).not.toBeInTheDocument();
 
     withinRow = within(
-      screen.getByTestId(`tr-incident-${incidentsMock[1].id}`)
+      screen.getByRole('row', {
+        name: `Incident ${incidentsMock[1].errorType.name}`,
+      })
     );
     expect(
       withinRow.getByText(incidentsMock[1].errorType.name)
@@ -244,7 +253,9 @@ describe('IncidentsTable', () => {
     render(<IncidentsTable />, {wrapper: Wrapper});
 
     let withinFirstRow = within(
-      screen.getByTestId(`tr-incident-${incidents[0].id}`)
+      screen.getByRole('row', {
+        name: `Incident ${incidents[0].errorType.name}`,
+      })
     );
 
     expect(withinFirstRow.getByText('--')).toBeInTheDocument();
@@ -254,13 +265,17 @@ describe('IncidentsTable', () => {
     incidentsStore.setIncidents({incidents: incidentsMock, count: 2});
     render(<IncidentsTable />, {wrapper: Wrapper});
     let withinFirstRow = within(
-      screen.getByTestId(`tr-incident-${incidentsMock[0].id}`)
+      screen.getByRole('row', {
+        name: `Incident ${incidentsMock[0].errorType.name}`,
+      })
     );
 
     expect(withinFirstRow.queryByText('More...')).not.toBeInTheDocument();
 
     let withinSecondRow = within(
-      screen.getByTestId(`tr-incident-${incidentsMock[1].id}`)
+      screen.getByRole('row', {
+        name: `Incident ${incidentsMock[1].errorType.name}`,
+      })
     );
 
     expect(withinSecondRow.getByText('More...')).toBeInTheDocument();
@@ -271,7 +286,9 @@ describe('IncidentsTable', () => {
     const {user} = render(<IncidentsTable />, {wrapper: Wrapper});
 
     let withinSecondRow = within(
-      screen.getByTestId(`tr-incident-${incidentsMock[1].id}`)
+      screen.getByRole('row', {
+        name: `Incident ${incidentsMock[1].errorType.name}`,
+      })
     );
 
     expect(withinSecondRow.getByText('More...')).toBeInTheDocument();
@@ -298,9 +315,9 @@ describe('IncidentsTable', () => {
 
       expect(screen.getByText('Job Id')).toBeEnabled();
       expect(screen.getByText('Incident Type')).toBeEnabled();
-      expect(screen.getByText('Flow Node')).toBeEnabled();
+      expect(screen.getByText('Failing Flow Node')).toBeEnabled();
       expect(screen.getByText('Job Id')).toBeEnabled();
-      expect(screen.getByText('Creation Time')).toBeEnabled();
+      expect(screen.getByText('Creation Date')).toBeEnabled();
       expect(screen.getByText('Error Message')).toBeEnabled();
       expect(screen.getByText('Operations')).toBeEnabled();
     });
@@ -319,7 +336,7 @@ describe('IncidentsTable', () => {
       incidentsStore.setIncidents({incidents, count: 1});
       render(<IncidentsTable />, {wrapper: Wrapper});
       expect(
-        screen.getByRole('button', {name: 'Sort by jobId'})
+        screen.getByRole('button', {name: 'Sort by Job Id'})
       ).toBeDisabled();
     });
   });

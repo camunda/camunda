@@ -6,13 +6,6 @@
  */
 
 import styled, {css} from 'styled-components';
-import Table from 'modules/components/Table';
-
-const TR = styled(Table.TR)`
-  &:first-child {
-    border-top-style: hidden;
-  }
-`;
 
 const Cell = styled.div`
   position: relative;
@@ -51,4 +44,4 @@ const ProcessName = styled.span`
   margin-left: 6px;
 `;
 
-export {TR, Cell, SelectionStatusIndicator, ProcessName};
+export {Cell, SelectionStatusIndicator, ProcessName};

@@ -38,14 +38,8 @@ const TD = styled.td`
   }}
 `;
 
-type TRProps = {
-  selected?: boolean;
-};
-
-const TR = styled.tr<TRProps>`
-  ${({theme, selected}) => {
-    const colors = theme.colors.modules.table.tr;
-
+const TR = styled.tr`
+  ${({theme}) => {
     return css`
       height: 36px;
       line-height: 37px;
@@ -53,20 +47,6 @@ const TR = styled.tr<TRProps>`
       border-width: 1px 0;
       border-style: solid;
       border-color: ${theme.colors.borderColor};
-
-      ${selected
-        ? css`
-            background-color: ${colors.selected.backgroundColor};
-          `
-        : css`
-            &:nth-child(odd) {
-              background-color: ${theme.colors.itemOdd};
-            }
-
-            &:nth-child(even) {
-              background-color: ${theme.colors.itemEven};
-            }
-          `}
     `;
   }}
 `;

@@ -75,7 +75,7 @@ const FocusButton = styled.button<FocusButtonProps>`
         ? css`
             /* Apply hover style to <Bar/>*/
             &:hover + div > div {
-              background: ${theme.colors.treeHover};
+              background: ${theme.colors.rowHover};
             }
           `
         : ''};

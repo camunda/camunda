@@ -72,10 +72,16 @@ const mockProps = {
   emptyMessage: 'List is empty',
 } as React.ComponentProps<typeof SortableTable>;
 
-const mockSelectableProps = {
-  isSelectable: true,
+const mockSelectableProps: {
+  checkIsAllSelected: React.ComponentProps<
+    typeof SortableTable
+  >['checkIsAllSelected'];
+  onSelectAll: React.ComponentProps<typeof SortableTable>['onSelectAll'];
+  selectionType: React.ComponentProps<typeof SortableTable>['selectionType'];
+} = {
   checkIsAllSelected: jest.fn(),
   onSelectAll: jest.fn(),
+  selectionType: 'checkbox',
 };
 
 export {mockProps, mockSelectableProps};

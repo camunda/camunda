@@ -14,26 +14,15 @@ const FiltersWrapper = styled.div`
     const colors = theme.colors.incidentsFilter.filtersWrapper;
 
     return css`
-      position: relative;
       padding: 18px 20px 19px;
       background-color: ${colors.backgroundColor};
-
-      &:before {
-        content: '';
-        position: absolute;
-        top: 0px;
-        left: -51px;
-        width: 51px;
-        height: 100%;
-        background-color: ${colors.backgroundColor};
-      }
+      border-bottom: 1px solid ${theme.colors.borderColor};
     `;
   }}
 `;
 
 const Content = styled.div`
   position: relative;
-  left: -51px;
   display: flex;
 `;
 
@@ -150,7 +139,7 @@ const ButtonWrapper = styled.div`
 
     return css`
       position: relative;
-      right: -71px;
+      right: -20px;
       width: 141px;
       display: flex;
       justify-content: center;

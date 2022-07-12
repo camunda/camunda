@@ -39,7 +39,7 @@ test('Should select multi instance flow nodes', async (t) => {
       selected: true,
     }
   );
-  const withinIncidentsTable = within(screen.queryByTestId('incidents-table'));
+  const withinIncidentsTable = within(screen.queryByTestId('data-table'));
 
   const selectedIncidentsTableRows = withinIncidentsTable.queryAllByRole(
     'row',
