@@ -29,6 +29,7 @@ const mockedModules: {[module: string]: any} = {
     })),
     get: jest.fn((id) => ({di: diObject, businessObject: {name: id}})),
     forEach: jest.fn(() => {}),
+    filter: jest.fn(() => []),
   },
   graphicsFactory: {update: jest.fn(() => {})},
   eventBus: {on: jest.fn()},

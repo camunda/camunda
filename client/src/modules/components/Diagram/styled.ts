@@ -32,6 +32,10 @@ const DiagramCanvas = styled.div`
         stroke: ${theme.colors.selections};
       }
 
+      .op-non-selectable {
+        cursor: not-allowed;
+      }
+
       .op-selected .djs-outline {
         stroke-width: 3px;
         stroke: ${theme.colors.selections};

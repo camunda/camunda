@@ -73,6 +73,7 @@ class BpmnJS {
   #themeChangeReactionDisposer: IReactionDisposer | null = null;
   #xml: string | null = null;
   #selectableFlowNodes: string[] = [];
+  #nonSelectableFlowNodes: string[] = [];
   #selectedFlowNodeId?: string;
   #highlightedSequenceFlows: string[] = [];
   selectedFlowNode?: SVGGraphicsElement;
@@ -139,8 +140,8 @@ class BpmnJS {
       }
     );
 
-    // handle op-selectable markers
     if (this.#selectableFlowNodes !== selectableFlowNodes) {
+      // handle op-selectable markers
       this.#selectableFlowNodes.forEach((flowNodeId) => {
         this.#removeMarker(flowNodeId, 'op-selectable');
       });
@@ -148,6 +149,20 @@ class BpmnJS {
         this.#addMarker(flowNodeId, 'op-selectable');
       });
       this.#selectableFlowNodes = selectableFlowNodes;
+
+      // handle op-non-selectable markers
+      const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
+      this.#nonSelectableFlowNodes.forEach((flowNodeId) => {
+        this.#removeMarker(flowNodeId, 'op-non-selectable');
+      });
+      const nonSelectableFlowNodes: BpmnJSElement[] = elementRegistry?.filter(
+        (element: BpmnJSElement) =>
+          isNonSelectableFlowNode(element, selectableFlowNodes)
+      );
+      nonSelectableFlowNodes.forEach(({id}) => {
+        this.#addMarker(id, 'op-non-selectable');
+      });
+      this.#nonSelectableFlowNodes = nonSelectableFlowNodes.map(({id}) => id);
     }
 
     // handle op-selected markers and selected flow node ref
