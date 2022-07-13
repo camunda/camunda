@@ -7,4 +7,40 @@
  */
 package io.camunda.zeebe.engine.api;
 
-public interface RecordProcessorContext {}
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import java.util.List;
+import java.util.function.Function;
+
+public interface RecordProcessorContext {
+
+  int getPartitionId();
+
+  ProcessingScheduleService getScheduleService();
+
+  ZeebeDb getZeebeDb();
+
+  TransactionContext getTransactionContext();
+
+  @Deprecated // will be removed soon
+  TypedStreamWriter getStreamWriterProxy();
+
+  @Deprecated // will be removed soon
+  TypedResponseWriter getTypedResponseWriter();
+
+  Function<MutableZeebeState, EventApplier> getEventApplierFactory();
+
+  TypedRecordProcessorFactory getTypedRecordProcessorFactory();
+
+  @Deprecated // will most likely be moved into engine
+  void setLifecycleListeners(List<StreamProcessorLifecycleAware> lifecycleListeners);
+
+  @Deprecated // will be moved into engine
+  void setRecordProcessorMap(RecordProcessorMap recordProcessorMap);
+}
