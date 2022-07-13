@@ -26,8 +26,8 @@ import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
@@ -46,7 +46,7 @@ import java.util.function.Consumer;
 public final class EngineProcessors {
 
   public static TypedRecordProcessors createEngineProcessors(
-      final RecordProcessorContext recordProcessorContext,
+      final TypedRecordProcessorContext typedRecordProcessorContext,
       final int partitionsCount,
       final SubscriptionCommandSender subscriptionCommandSender,
       final DeploymentDistributor deploymentDistributor,
@@ -54,9 +54,9 @@ public final class EngineProcessors {
       final Consumer<String> onJobsAvailableCallback,
       final FeatureFlags featureFlags) {
 
-    final var scheduleService = recordProcessorContext.getScheduleService();
-    final MutableZeebeState zeebeState = recordProcessorContext.getZeebeState();
-    final var writers = recordProcessorContext.getWriters();
+    final var scheduleService = typedRecordProcessorContext.getScheduleService();
+    final MutableZeebeState zeebeState = typedRecordProcessorContext.getZeebeState();
+    final var writers = typedRecordProcessorContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =
         TypedRecordProcessors.processors(zeebeState.getKeyGenerator(), writers);
 
@@ -65,7 +65,7 @@ public final class EngineProcessors {
 
     typedRecordProcessors.withListener(zeebeState);
 
-    final int partitionId = recordProcessorContext.getPartitionId();
+    final int partitionId = typedRecordProcessorContext.getPartitionId();
 
     final var variablesState = zeebeState.getVariableState();
     final var expressionProcessor =

@@ -12,7 +12,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.LastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 
-public interface RecordProcessorContext {
+public interface TypedRecordProcessorContext {
 
   int getPartitionId();
 
@@ -24,5 +24,5 @@ public interface RecordProcessorContext {
 
   LastProcessedPositionState getLastProcessedPositionState();
 
-  RecordProcessorContext listener(StreamProcessorListener streamProcessorListener);
+  TypedRecordProcessorContext listener(StreamProcessorListener streamProcessorListener);
 }
