@@ -34,6 +34,10 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
@@ -739,6 +743,69 @@ final class JsonSerializableToJsonTest {
         "Empty ProcessInstanceCreationRecord",
         (Supplier<UnifiedRecordValue>) ProcessInstanceCreationRecord::new,
         "{'variables':{},'bpmnProcessId':'','processDefinitionKey':-1,'version':-1,'processInstanceKey':-1, 'startInstructions':[]}"
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// ProcessInstanceModificationRecord /////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProcessInstanceModificationRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final long key = 1L;
+              final var elementInstanceKeyToTerminate = 2L;
+              final var elementIdToActivate = "activity";
+              final var ancestorScopeKey = 3L;
+              final var variableInstructionElementId = "sub-process";
+
+              return new ProcessInstanceModificationRecord()
+                  .setProcessInstanceKey(key)
+                  .addTerminateInstruction(
+                      new ProcessInstanceModificationTerminateInstruction()
+                          .setElementInstanceKey(elementInstanceKeyToTerminate))
+                  .addActivateInstruction(
+                      new ProcessInstanceModificationActivateInstruction()
+                          .setElementId(elementIdToActivate)
+                          .setAncestorScopeKey(ancestorScopeKey)
+                          .addVariableInstruction(
+                              new ProcessInstanceModificationVariableInstruction()
+                                  .setVariables(VARIABLES_MSGPACK)
+                                  .setElementId(variableInstructionElementId)));
+            },
+        """
+        {
+          "processInstanceKey": 1,
+          "terminateInstructions": [{
+            "elementInstanceKey": 2
+          }],
+          "activateInstructions": [{
+            "ancestorScopeKey": 3,
+            "variableInstructions": [{
+              "elementId": "sub-process",
+              "variables": {
+                "foo": "bar"
+              }
+            }],
+            "elementId": "activity"
+          }]
+        }
+        """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty ProcessInstanceModificationRecord ///////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty ProcessInstanceModificationRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> new ProcessInstanceModificationRecord().setProcessInstanceKey(1L),
+        """
+        {
+          "processInstanceKey": 1,
+          "terminateInstructions": [],
+          "activateInstructions": []
+        }
+        """
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
