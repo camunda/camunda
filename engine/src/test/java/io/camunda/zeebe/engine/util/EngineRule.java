@@ -49,7 +49,6 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -195,9 +194,9 @@ public final class EngineRule extends ExternalResource {
 
           environmentRule.startTypedStreamProcessor(
               partitionId,
-              (recordPRocessorContext) ->
+              (recordProcessorContext) ->
                   EngineProcessors.createEngineProcessors(
-                          recordPRocessorContext.listener(
+                          recordProcessorContext.listener(
                               new StreamProcessorListener() {
                                 @Override
                                 public void onProcessed(final TypedRecord<?> processedCommand) {
@@ -442,10 +441,11 @@ public final class EngineRule extends ExternalResource {
     public void onRecovered(final ReadonlyStreamProcessorContext context) {
       final int partitionId = context.getPartitionId();
       typedEvent = new TypedRecordImpl(partitionId);
-      final ActorControl actor = context.getActor();
+      final var scheduleService = context.getScheduleService();
 
       final LogStream logStream = context.getLogStream();
-      logStream.registerRecordAvailableListener(() -> actor.run(this::onNewEventCommitted));
+      logStream.registerRecordAvailableListener(
+          () -> scheduleService.runDelayed(Duration.ZERO, this::onNewEventCommitted));
       logStream
           .newLogStreamReader()
           .onComplete(

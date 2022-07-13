@@ -25,4 +25,13 @@ public class ArchitectureTest {
           .should()
           .dependOnClassesThat()
           .resideInAPackage("io.camunda.zeebe.streamprocessor..");
+
+  @ArchTest
+  public static final ArchRule RULE_ENGINE_CLASSES_MUST_NOT_DEPEND_ON_SCHEDULER_PACKAGE =
+      noClasses()
+          .that()
+          .resideInAPackage("io.camunda.zeebe.engine..")
+          .should()
+          .dependOnClassesThat()
+          .resideInAPackage("io.camunda.zeebe.scheduler");
 }

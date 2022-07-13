@@ -208,15 +208,15 @@ final class PartitionFactory {
       final PushDeploymentRequestHandler deploymentRequestHandler,
       final FeatureFlags featureFlags) {
     return (recordProcessorContext) -> {
-      final var actor = recordProcessorContext.getActor();
+      final var scheduleService = recordProcessorContext.getScheduleService();
 
       final TopologyPartitionListenerImpl partitionListener =
-          new TopologyPartitionListenerImpl(actor);
+          new TopologyPartitionListenerImpl(scheduleService);
       topologyManager.addTopologyPartitionListener(partitionListener);
 
       final DeploymentDistributorImpl deploymentDistributor =
           new DeploymentDistributorImpl(
-              communicationService, eventService, partitionListener, actor);
+              communicationService, eventService, partitionListener, scheduleService);
 
       final PartitionCommandSenderImpl partitionCommandSender =
           new PartitionCommandSenderImpl(communicationService, partitionListener);

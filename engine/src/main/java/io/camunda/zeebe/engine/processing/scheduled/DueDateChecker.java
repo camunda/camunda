@@ -7,22 +7,23 @@
  */
 package io.camunda.zeebe.engine.processing.scheduled;
 
+import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.camunda.zeebe.scheduler.ActorControl;
-import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.time.Duration;
 import java.util.function.Function;
 
 public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
-  private ActorControl actor;
+  private ProcessingScheduleService scheduleService;
   private TypedStreamWriter streamWriter;
 
-  private ScheduledTimer scheduledTimer;
+  private boolean checkerRunning;
+  private boolean shouldRescheduleChecker;
+
   private long nextDueDate = -1L;
   private final long timerResolution;
   private final Function<TypedCommandWriter, Long> nextDueDateSupplier;
@@ -44,29 +45,32 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
     final Duration delay = calculateDelayForNextRun(dueDate);
 
-    if (scheduledTimer == null) {
-      scheduledTimer = actor.runDelayed(delay, this::triggerEntities);
-      nextDueDate = dueDate;
-
-    } else if (nextDueDate - dueDate > timerResolution) {
-      scheduledTimer.cancel();
-
-      scheduledTimer = actor.runDelayed(delay, this::triggerEntities);
-      nextDueDate = dueDate;
+    if (shouldRescheduleChecker) {
+      if (!checkerRunning) {
+        scheduleService.runDelayed(delay, this::triggerEntities);
+        nextDueDate = dueDate;
+      } else if (nextDueDate - dueDate > timerResolution) {
+        scheduleService.runDelayed(delay, this::triggerEntities);
+        nextDueDate = dueDate;
+      }
     }
   }
 
   private void triggerEntities() {
-    nextDueDate = nextDueDateSupplier.apply(streamWriter);
+    if (shouldRescheduleChecker) {
+      nextDueDate = nextDueDateSupplier.apply(streamWriter);
 
-    // reschedule the runnable if there are timers left
+      // reschedule the runnable if there are timers left
 
-    if (nextDueDate > 0) {
-      final Duration delay = calculateDelayForNextRun(nextDueDate);
-      scheduledTimer = actor.runDelayed(delay, this::triggerEntities);
-
+      if (nextDueDate > 0) {
+        final Duration delay = calculateDelayForNextRun(nextDueDate);
+        scheduleService.runDelayed(delay, this::triggerEntities);
+        checkerRunning = true;
+      } else {
+        checkerRunning = false;
+      }
     } else {
-      scheduledTimer = null;
+      checkerRunning = false;
     }
   }
 
@@ -86,23 +90,23 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
-    actor = processingContext.getActor();
+    scheduleService = processingContext.getScheduleService();
     streamWriter = processingContext.getLogStreamWriter();
+    shouldRescheduleChecker = true;
     // check if timers are due after restart
     triggerEntities();
   }
 
   @Override
   public void onPaused() {
-    if (scheduledTimer != null) {
-      scheduledTimer.cancel();
-      scheduledTimer = null;
-    }
+    shouldRescheduleChecker = false;
+    nextDueDate = -1;
   }
 
   @Override
   public void onResumed() {
-    if (scheduledTimer == null) {
+    shouldRescheduleChecker = true;
+    if (!checkerRunning) {
       triggerEntities();
     }
   }

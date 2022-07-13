@@ -64,7 +64,7 @@ public final class TimerStartEventTest {
   private static final BpmnModelInstance FEEL_DATE_TIME_EXPRESSION_MODEL =
       Bpmn.createExecutableProcess("process_5")
           .startEvent("start_5")
-          .timerWithDateExpression("date and time(date(\"3978-11-25\"),time(\"T00:00:00@UTC\"))")
+          .timerWithDateExpression("date and time(date(\"2178-11-25\"),time(\"T00:00:00@UTC\"))")
           .endEvent("end_5")
           .done();
 
@@ -143,7 +143,7 @@ public final class TimerStartEventTest {
         .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
 
     final long expected =
-        ZonedDateTime.of(LocalDate.of(3978, 11, 25), LocalTime.of(0, 0, 0), ZoneId.of("UTC"))
+        ZonedDateTime.of(LocalDate.of(2178, 11, 25), LocalTime.of(0, 0, 0), ZoneId.of("UTC"))
             .toInstant()
             .toEpochMilli();
     assertThat(timerRecord.getDueDate()).isEqualTo(expected);

@@ -11,14 +11,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWri
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.scheduler.ActorControl;
 
 public interface ReadonlyStreamProcessorContext {
 
-  /**
-   * @return the actor on which the processing runs
-   */
-  ActorControl getActor();
+  ProcessingScheduleService getScheduleService();
 
   /**
    * @return the logstream, on which the processor runs

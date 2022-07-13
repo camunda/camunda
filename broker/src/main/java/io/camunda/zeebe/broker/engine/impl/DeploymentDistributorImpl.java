@@ -14,10 +14,10 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequest;
 import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentResponse;
+import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.camunda.zeebe.protocol.record.ErrorCode;
-import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -40,7 +40,7 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
   private final ErrorResponse errorResponse = new ErrorResponse();
 
   private final TopologyPartitionListenerImpl partitionListener;
-  private final ActorControl actor;
+  private final ProcessingScheduleService scheduleService;
 
   private final ClusterCommunicationService communicationService;
   private final ClusterEventService eventService;
@@ -49,13 +49,13 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
       final ClusterCommunicationService communicationService,
       final ClusterEventService eventService,
       final TopologyPartitionListenerImpl partitionListener,
-      final ActorControl actor) {
+      final ProcessingScheduleService scheduleService) {
 
     this.communicationService = communicationService;
     this.eventService = eventService;
 
     this.partitionListener = partitionListener;
-    this.actor = actor;
+    this.scheduleService = scheduleService;
   }
 
   @Override
@@ -77,7 +77,7 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
       final int partitionId,
       final CompletableActorFuture<Void> pushedFuture,
       final PushDeploymentRequest pushRequest) {
-    actor.runDelayed(
+    scheduleService.runDelayed(
         PUSH_REQUEST_TIMEOUT,
         () -> {
           final String topic = getDeploymentResponseTopic(pushRequest.deploymentKey(), partitionId);
@@ -201,7 +201,7 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
       final int partitionLeaderId, final int partition, final PushDeploymentRequest pushRequest) {
     LOG.trace("Retry deployment push to partition {} after {}", partition, RETRY_DELAY);
 
-    actor.runDelayed(
+    scheduleService.runDelayed(
         RETRY_DELAY,
         () -> {
           final Int2IntHashMap partitionLeaders = partitionListener.getPartitionLeaders();

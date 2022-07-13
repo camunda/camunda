@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing;
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
@@ -39,7 +40,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
-import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.util.function.Consumer;
 
@@ -54,7 +54,7 @@ public final class EngineProcessors {
       final Consumer<String> onJobsAvailableCallback,
       final FeatureFlags featureFlags) {
 
-    final var actor = recordProcessorContext.getActor();
+    final var scheduleService = recordProcessorContext.getScheduleService();
     final MutableZeebeState zeebeState = recordProcessorContext.getZeebeState();
     final var writers = recordProcessorContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =
@@ -102,7 +102,7 @@ public final class EngineProcessors {
         expressionProcessor,
         writers,
         partitionsCount,
-        actor,
+        scheduleService,
         deploymentDistributor,
         zeebeState.getKeyGenerator());
     addMessageProcessors(
@@ -176,7 +176,7 @@ public final class EngineProcessors {
       final ExpressionProcessor expressionProcessor,
       final Writers writers,
       final int partitionsCount,
-      final ActorControl actor,
+      final ProcessingScheduleService scheduleService,
       final DeploymentDistributor deploymentDistributor,
       final KeyGenerator keyGenerator) {
 
@@ -189,7 +189,7 @@ public final class EngineProcessors {
             expressionProcessor,
             partitionsCount,
             writers,
-            actor,
+            scheduleService,
             deploymentDistributor,
             keyGenerator);
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
