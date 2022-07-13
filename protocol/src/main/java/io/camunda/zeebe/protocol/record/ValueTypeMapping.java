@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -58,6 +59,7 @@ import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -162,6 +164,8 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.VARIABLE_DOCUMENT,
         new Mapping<>(VariableDocumentRecordValue.class, VariableDocumentIntent.class));
+    mapping.put(
+        ValueType.CHECKPOINT, new Mapping<>(CheckpointRecordValue.class, CheckpointIntent.class));
 
     return mapping;
   }
