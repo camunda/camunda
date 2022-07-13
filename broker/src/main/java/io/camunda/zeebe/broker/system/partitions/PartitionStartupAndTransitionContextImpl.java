@@ -203,6 +203,11 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public ClusterCommunicationService getClusterCommunicationService() {
+    return clusterCommunicationService;
+  }
+
+  @Override
   public InterPartitionCommandReceiver getPartitionCommandReceiver() {
     return interPartitionCommandReceiver;
   }
@@ -399,9 +404,5 @@ public class PartitionStartupAndTransitionContextImpl
 
   public ExporterRepository getExporterRepository() {
     return exporterRepository;
-  }
-
-  public ClusterCommunicationService getClusterCommunicationService() {
-    return clusterCommunicationService;
   }
 }
