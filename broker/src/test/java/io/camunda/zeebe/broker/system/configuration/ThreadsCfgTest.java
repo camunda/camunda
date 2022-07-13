@@ -41,7 +41,7 @@ final class ThreadsCfgTest {
   }
 
   @Test
-  void canSetCpuThreadCount() {
+  void shouldSetCpuThreadCount() {
     // given
     final ThreadsCfg cfg = new ThreadsCfg();
     cfg.setCpuThreadCount(3);
@@ -54,7 +54,7 @@ final class ThreadsCfgTest {
   }
 
   @Test
-  void canSetCpuThreadCountFromConfig() {
+  void shouldSetCpuThreadCountFromConfig() {
     // given
     final var cfg = TestConfigReader.readConfig("threads-cfg", Collections.emptyMap()).getThreads();
 
@@ -66,7 +66,7 @@ final class ThreadsCfgTest {
   }
 
   @Test
-  void canSetCpuThreadCountFromEnvironment() {
+  void shouldSetCpuThreadCountFromEnvironment() {
     // given
     final var environment = Collections.singletonMap("zeebe.broker.threads.cpuThreadCount", "6");
     final var cfg = TestConfigReader.readConfig("threads-cfg", environment).getThreads();
@@ -79,7 +79,7 @@ final class ThreadsCfgTest {
   }
 
   @Test
-  void canSetIoThreadCount() {
+  void shouldSetIoThreadCount() {
     // given
     final ThreadsCfg cfg = new ThreadsCfg();
     cfg.setIoThreadCount(3);
@@ -92,7 +92,7 @@ final class ThreadsCfgTest {
   }
 
   @Test
-  void canSetIoThreadCountFromConfig() {
+  void shouldSetIoThreadCountFromConfig() {
     // given
     final var cfg = TestConfigReader.readConfig("threads-cfg", Collections.emptyMap()).getThreads();
 
@@ -104,7 +104,7 @@ final class ThreadsCfgTest {
   }
 
   @Test
-  void canSetIoThreadCountFromEnv() {
+  void shouldSetIoThreadCountFromEnv() {
     // given
     final var environment = Collections.singletonMap("zeebe.broker.threads.ioThreadCount", "6");
     final var cfg = TestConfigReader.readConfig("threads-cfg", environment).getThreads();

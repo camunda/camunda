@@ -41,6 +41,16 @@ final class FeatureFlagsCfgTest {
   }
 
   @Test
+  void shouldDisableActorMetricsByDefault() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableActorMetrics()).isFalse();
+  }
+
+  @Test
   void shouldSetEnableActorMetricsFromConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
@@ -51,7 +61,7 @@ final class FeatureFlagsCfgTest {
   }
 
   @Test
-  void shouldSetEnableYActorMetricsFromEnv() {
+  void shouldSetEnableActorMetricsFromEnv() {
     // given
     environment.put("zeebe.broker.experimental.features.enableActorMetrics", "false");
 

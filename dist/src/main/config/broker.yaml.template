@@ -697,6 +697,6 @@
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEYIELDINGDUEDATECHECKER
         # enableYieldingDueDateChecker: false
 
-        # Controls whether to collect metrics about actor usage such as job execution latencies
+        # Controls whether to collect metrics about actor usage such as actor job execution latencies
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEACTORMETRICS
         # enableActorMetrics: false
