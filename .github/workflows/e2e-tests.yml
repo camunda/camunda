@@ -37,8 +37,8 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/common/github.com/actions/camunda NEXUS_USR;
-            secret/data/common/github.com/actions/camunda NEXUS_PSW;
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
       - name: Download zbctl
         working-directory: ./client/e2e
         run: |
