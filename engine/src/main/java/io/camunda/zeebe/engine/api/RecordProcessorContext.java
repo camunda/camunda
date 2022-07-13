@@ -7,17 +7,4 @@
  */
 package io.camunda.zeebe.engine.api;
 
-public interface Engine {
-
-  void init(EngineContext engineContext);
-
-  void replay(TypedRecord record);
-
-  ProcessingResult process(TypedRecord record, ProcessingContext processingContext);
-
-  ProcessingResult onProcessingError(
-      Throwable processingException,
-      TypedRecord record,
-      long position,
-      ErrorHandlingContext errorHandlingContext);
-}
+public interface RecordProcessorContext {}
