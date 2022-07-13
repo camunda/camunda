@@ -22,6 +22,8 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   private TypedStreamWriter streamWriter;
 
   private boolean checkerRunning;
+  private boolean shouldRescheduleChecker;
+
   private long nextDueDate = -1L;
   private final long timerResolution;
   private final Function<TypedCommandWriter, Long> nextDueDateSupplier;
@@ -43,27 +45,30 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
     final Duration delay = calculateDelayForNextRun(dueDate);
 
-    if (!checkerRunning) {
-      scheduleService.runDelayed(delay, this::triggerEntities);
-      nextDueDate = dueDate;
-      checkerRunning = true;
-
-    } else if (nextDueDate - dueDate > timerResolution) {
-      scheduleService.runDelayed(delay, this::triggerEntities);
-      nextDueDate = dueDate;
-      checkerRunning = true;
+    if (shouldRescheduleChecker) {
+      if (!checkerRunning) {
+        scheduleService.runDelayed(delay, this::triggerEntities);
+        nextDueDate = dueDate;
+      } else if (nextDueDate - dueDate > timerResolution) {
+        scheduleService.runDelayed(delay, this::triggerEntities);
+        nextDueDate = dueDate;
+      }
     }
   }
 
   private void triggerEntities() {
-    nextDueDate = nextDueDateSupplier.apply(streamWriter);
+    if (shouldRescheduleChecker) {
+      nextDueDate = nextDueDateSupplier.apply(streamWriter);
 
-    // reschedule the runnable if there are timers left
+      // reschedule the runnable if there are timers left
 
-    if (nextDueDate > 0) {
-      final Duration delay = calculateDelayForNextRun(nextDueDate);
-      scheduleService.runDelayed(delay, this::triggerEntities);
-      checkerRunning = true;
+      if (nextDueDate > 0) {
+        final Duration delay = calculateDelayForNextRun(nextDueDate);
+        scheduleService.runDelayed(delay, this::triggerEntities);
+        checkerRunning = true;
+      } else {
+        checkerRunning = false;
+      }
     } else {
       checkerRunning = false;
     }
@@ -87,17 +92,20 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
     scheduleService = processingContext.getScheduleService();
     streamWriter = processingContext.getLogStreamWriter();
+    shouldRescheduleChecker = true;
     // check if timers are due after restart
     triggerEntities();
   }
 
   @Override
   public void onPaused() {
-    checkerRunning = false;
+    shouldRescheduleChecker = false;
+    nextDueDate = -1;
   }
 
   @Override
   public void onResumed() {
+    shouldRescheduleChecker = true;
     if (!checkerRunning) {
       triggerEntities();
     }

@@ -27,7 +27,7 @@ public final class PendingProcessMessageSubscriptionChecker
   private final long subscriptionTimeoutInMillis;
 
   private ProcessingScheduleService scheduleService;
-  private boolean timerRunning = false;
+  private boolean schouldRescheduleTimer = false;
 
   public PendingProcessMessageSubscriptionChecker(
       final SubscriptionCommandSender commandSender,
@@ -40,7 +40,7 @@ public final class PendingProcessMessageSubscriptionChecker
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     scheduleService = context.getScheduleService();
-    timerRunning = true;
+    schouldRescheduleTimer = true;
     rescheduleTimer();
   }
 
@@ -61,18 +61,18 @@ public final class PendingProcessMessageSubscriptionChecker
 
   @Override
   public void onResumed() {
-    timerRunning = true;
+    schouldRescheduleTimer = true;
     rescheduleTimer();
   }
 
   private void rescheduleTimer() {
-    if (timerRunning) {
+    if (schouldRescheduleTimer) {
       scheduleService.runDelayed(SUBSCRIPTION_CHECK_INTERVAL, this::checkPendingSubscriptions);
     }
   }
 
   private void cancelTimer() {
-    timerRunning = false;
+    schouldRescheduleTimer = false;
   }
 
   private void checkPendingSubscriptions() {

@@ -20,7 +20,7 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
   public static final Duration TIME_OUT_POLLING_INTERVAL = Duration.ofSeconds(30);
   private final JobState state;
 
-  private boolean timerRunning = false;
+  private boolean shouldReschedule = false;
 
   private TypedCommandWriter writer;
   private ReadonlyStreamProcessorContext processingContext;
@@ -32,7 +32,7 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
     this.processingContext = processingContext;
-    timerRunning = true;
+    shouldReschedule = true;
     scheduleDeactivateTimedOutJobsTask();
     writer = processingContext.getLogStreamWriter();
   }
@@ -54,7 +54,7 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
 
   @Override
   public void onResumed() {
-    if (timerRunning) {
+    if (shouldReschedule) {
       scheduleDeactivateTimedOutJobsTask();
     }
   }
@@ -66,7 +66,7 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
   }
 
   private void cancelTimer() {
-    timerRunning = false;
+    shouldReschedule = false;
   }
 
   void deactivateTimedOutJobs() {
@@ -79,7 +79,7 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
 
           return writer.flush() >= 0;
         });
-    if (timerRunning) {
+    if (shouldReschedule) {
       scheduleDeactivateTimedOutJobsTask();
     }
   }
