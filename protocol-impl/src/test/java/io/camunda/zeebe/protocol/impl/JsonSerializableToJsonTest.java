@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -954,6 +955,20 @@ final class JsonSerializableToJsonTest {
               "evaluatedDecisions":[],
               "evaluationFailureMessage":"",
               "failedDecisionId":""
+          }
+          """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Checkpoint record ////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Checkpoint record",
+        (Supplier<UnifiedRecordValue>)
+            () -> new CheckpointRecord().setCheckpointId(1L).setCheckpointPosition(10L),
+        """
+          {
+              "checkpointId":1,
+              "checkpointPosition":10
           }
           """
       },
