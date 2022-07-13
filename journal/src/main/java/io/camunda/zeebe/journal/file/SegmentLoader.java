@@ -9,8 +9,10 @@ package io.camunda.zeebe.journal.file;
 
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.file.record.CorruptedLogException;
+import io.camunda.zeebe.journal.fs.VirtualFs;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
@@ -28,6 +30,7 @@ final class SegmentLoader {
   private static final Logger LOGGER = LoggerFactory.getLogger(SegmentLoader.class);
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
 
+  private final VirtualFs virtualFs;
   private final boolean preallocateFiles;
 
   SegmentLoader() {
@@ -35,6 +38,11 @@ final class SegmentLoader {
   }
 
   SegmentLoader(final boolean preallocateFiles) {
+    this(preallocateFiles, VirtualFs.createDefault());
+  }
+
+  SegmentLoader(final boolean preallocateFiles, final VirtualFs virtualFs) {
+    this.virtualFs = virtualFs;
     this.preallocateFiles = preallocateFiles;
   }
 
@@ -176,13 +184,15 @@ final class SegmentLoader {
       final long lastWrittenIndex)
       throws IOException {
     try (final var channel =
-        FileChannel.open(
-            segmentPath,
-            StandardOpenOption.READ,
-            StandardOpenOption.WRITE,
-            StandardOpenOption.CREATE_NEW)) {
+            FileChannel.open(
+                segmentPath,
+                StandardOpenOption.READ,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.CREATE_NEW);
+        // it's necessary to use a RandomAccessFile to get access to the underlying FileDescriptor
+        final RandomAccessFile file = new RandomAccessFile(segmentPath.toFile(), "rw")) {
       if (preallocateFiles) {
-        FileUtil.preallocate(channel, descriptor.maxSegmentSize());
+        virtualFs.preallocate(file.getFD(), channel, 0, descriptor.maxSegmentSize());
       }
 
       return mapSegment(channel, descriptor.maxSegmentSize());

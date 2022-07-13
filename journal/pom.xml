@@ -52,10 +52,27 @@
       <artifactId>zeebe-util</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jnr-ffi</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jnr-constants</artifactId>
+      <version>0.10.3</version>
+    </dependency>
+
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
     </dependency>
 

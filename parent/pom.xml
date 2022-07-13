@@ -110,6 +110,8 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.15</version.jnr-posix>
+    <version.jnr-ffi>2.2.12</version.jnr-ffi>
+    <version.jnr-constants>0.10.3</version.jnr-constants>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -872,6 +874,22 @@
         <artifactId>bcprov-jdk15on</artifactId>
         <version>${version.bouncycastle}</version>
         <scope>test</scope>
+      </dependency>
+
+      <!--
+        generate bytecode to access native functions instead of writing JNI C code
+        primarily used to interface with LibC on UNIX systems
+        -->
+      <dependency>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jnr-ffi</artifactId>
+        <version>${version.jnr-ffi}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jnr-constants</artifactId>
+        <version>${version.jnr-constants}</version>
       </dependency>
 
       <dependency>
@@ -1800,6 +1818,36 @@
                 <phase>post-integration-test</phase>
               </execution>
             </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- profile specifically for JDK 11 runs -->
+    <profile>
+      <id>jdk11</id>
+      <activation>
+        <jdk>[11,)</jdk>
+      </activation>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <!-- required to access the raw file descriptor from FileDescriptor -->
+              <argLine>--add-opens=java.base/java.io=ALL-UNNAMED</argLine>
+            </configuration>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <!-- required to access the raw file descriptor from FileDescriptor -->
+              <argLine>--add-opens=java.base/java.io=ALL-UNNAMED</argLine>
+            </configuration>
           </plugin>
         </plugins>
       </build>

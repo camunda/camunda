@@ -220,9 +220,17 @@
           <assembleDirectory>${project.build.directory}/camunda-zeebe</assembleDirectory>
           <configurationDirectory>config</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
+          <!--
+            "XX:+ExitOnOutOfMemoryError" ensures we will not try to recover if we run out of memory,
+            which is quite hard to do
+
+            "add-opens=java.base/java.io=ALL-UNNAMED" is required to use native syscalls with raw
+            file descriptors
+            -->
           <extraJvmArguments>-Xms128m
             -XX:+ExitOnOutOfMemoryError
-            -Dfile.encoding=UTF-8</extraJvmArguments>
+            -Dfile.encoding=UTF-8
+            --add-opens=java.base/java.io=ALL-UNNAMED</extraJvmArguments>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
           <platforms>
             <platform>windows</platform>
