@@ -6,6 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 const Container = styled.div`
   position: relative;
@@ -18,7 +19,7 @@ const LicenseTag = styled.button`
     padding: 3px 14px 4px;
     border-radius: 3px;
     background-color: ${theme.colors.filtersAndWarnings};
-    font-size: 12px;
+    ${styles.label01};
     font-weight: 600;
     color: ${theme.colors.white};
   `}
@@ -34,7 +35,7 @@ const LicenseNoteBox = styled.div`
       right: 90px;
       padding: 12px 12px 10px 12px;
 
-      font-size: 14px;
+      ${styles.legal02};
       color: ${theme.colors.text01};
       background-color: ${licenseColors.backgroundColor};
 

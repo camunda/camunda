@@ -6,14 +6,14 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 const Menu = styled.ul`
   ${({theme}) => {
     return css`
       display: flex;
       flex-wrap: wrap;
-      font-size: 15px;
-      font-weight: 500;
+      ${styles.bodyShort01};
       color: ${theme.colors.text02};
     `;
   }}
