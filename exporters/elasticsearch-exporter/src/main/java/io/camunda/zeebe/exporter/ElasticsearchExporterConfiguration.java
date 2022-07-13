@@ -85,6 +85,8 @@ public class ElasticsearchExporterConfiguration {
         return index.decision;
       case DECISION_EVALUATION:
         return index.decisionEvaluation;
+      case CHECKPOINT:
+        return index.checkpoint;
       default:
         return false;
     }
@@ -132,6 +134,8 @@ public class ElasticsearchExporterConfiguration {
     public boolean processMessageSubscription = true;
     public boolean variable = true;
     public boolean variableDocument = true;
+
+    public boolean checkpoint = false;
 
     // index settings
     private Integer numberOfShards = null;
@@ -197,6 +201,8 @@ public class ElasticsearchExporterConfiguration {
           + decision
           + ", decisionEvaluation="
           + decisionEvaluation
+          + ", checkpoint="
+          + checkpoint
           + '}';
     }
   }

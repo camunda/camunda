@@ -65,6 +65,7 @@ final class TestSupport {
       case DECISION -> config.decision = value;
       case DECISION_REQUIREMENTS -> config.decisionRequirements = value;
       case DECISION_EVALUATION -> config.decisionEvaluation = value;
+      case CHECKPOINT -> config.checkpoint = value;
       default -> throw new IllegalArgumentException(
           "No known indexing configuration option for value type " + valueType);
     }
