@@ -9,22 +9,22 @@ package io.camunda.zeebe.engine;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.api.Engine;
-import io.camunda.zeebe.engine.api.EngineContext;
 import io.camunda.zeebe.engine.api.ErrorHandlingContext;
 import io.camunda.zeebe.engine.api.ProcessingContext;
 import io.camunda.zeebe.engine.api.ProcessingResult;
+import io.camunda.zeebe.engine.api.RecordProcessor;
+import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import java.util.function.Function;
 
-public class EngineImpl implements Engine {
+public class Engine implements RecordProcessor {
 
   private final EventApplier eventApplier;
 
-  public EngineImpl(
+  public Engine(
       final int partitionId,
       final ZeebeDb zeebeDb,
       final Function<MutableZeebeState, EventApplier> eventApplierFactory) {
@@ -35,7 +35,7 @@ public class EngineImpl implements Engine {
   }
 
   @Override
-  public void init(final EngineContext engineContext) {
+  public void init(final RecordProcessorContext recordProcessorContext) {
     throw new IllegalStateException("Not yet implemented");
   }
 
@@ -54,7 +54,6 @@ public class EngineImpl implements Engine {
   public ProcessingResult onProcessingError(
       final Throwable processingException,
       final TypedRecord record,
-      final long position,
       final ErrorHandlingContext errorHandlingContext) {
     throw new IllegalStateException("Not yet implemented");
   }

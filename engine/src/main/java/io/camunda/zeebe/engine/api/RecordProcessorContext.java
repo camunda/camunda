@@ -7,22 +7,4 @@
  */
 package io.camunda.zeebe.engine.api;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.LastProcessedPositionState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-
-public interface RecordProcessorContext {
-
-  int getPartitionId();
-
-  ProcessingScheduleService getScheduleService();
-
-  MutableZeebeState getZeebeState();
-
-  Writers getWriters();
-
-  LastProcessedPositionState getLastProcessedPositionState();
-
-  RecordProcessorContext listener(StreamProcessorListener streamProcessorListener);
-}
+public interface RecordProcessorContext {}
