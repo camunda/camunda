@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.intent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -70,6 +71,7 @@ final class IntentEncodingDecodingTest {
     result.addAll(buildParameterSets(TimerIntent.class, TimerIntent::from));
     result.addAll(buildParameterSets(VariableDocumentIntent.class, VariableDocumentIntent::from));
     result.addAll(buildParameterSets(VariableIntent.class, VariableIntent::from));
+    result.addAll(buildParameterSets(CheckpointIntent.class, CheckpointIntent::from));
 
     return result.stream();
   }
