@@ -13,48 +13,47 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import java.nio.file.StandardOpenOption;
+import jnr.posix.FileStat;
+import jnr.posix.POSIX;
+import jnr.posix.POSIXFactory;
+import jnr.posix.util.Platform;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-public final class FileUtilTest {
-
-  @Rule public final TemporaryFolder tempFolder = new TemporaryFolder();
+final class FileUtilTest {
+  private @TempDir Path tmpDir;
 
   @Test
-  public void shouldDeleteFolder() throws IOException {
-    final File root = tempFolder.getRoot();
+  void shouldDeleteFolder() throws IOException {
+    Files.createFile(tmpDir.resolve("file1"));
+    Files.createFile(tmpDir.resolve("file2"));
+    Files.createDirectory(tmpDir.resolve("testFolder"));
 
-    tempFolder.newFile("file1");
-    tempFolder.newFile("file2");
-    tempFolder.newFolder("testFolder");
+    FileUtil.deleteFolder(tmpDir);
 
-    FileUtil.deleteFolder(root.getAbsolutePath());
-
-    assertThat(root.exists()).isFalse();
+    assertThat(tmpDir).doesNotExist();
   }
 
   @Test
-  public void shouldThrowExceptionForNonExistingFolder() {
-    final File root = tempFolder.getRoot();
+  void shouldThrowExceptionForNonExistingFolder() throws IOException {
+    final Path root = Files.createDirectory(tmpDir.resolve("other"));
+    Files.delete(root);
 
-    tempFolder.delete();
-
-    assertThatThrownBy(
-            () -> {
-              FileUtil.deleteFolder(root.getAbsolutePath());
-            })
-        .isInstanceOf(NoSuchFileException.class);
+    assertThatThrownBy(() -> FileUtil.deleteFolder(root)).isInstanceOf(NoSuchFileException.class);
   }
 
   // regression test
   @Test
-  public void shouldNotThrowErrorIfFolderDoesNotExist() {
+  void shouldNotThrowErrorIfFolderDoesNotExist() {
     // given
-    final Path nonExistent = tempFolder.getRoot().toPath().resolve("something");
+    final Path nonExistent = tmpDir.resolve("something");
 
     // when - then
     assertThatCode(() -> FileUtil.deleteFolderIfExists(nonExistent))
@@ -63,10 +62,10 @@ public final class FileUtilTest {
   }
 
   @Test
-  public void shouldThrowExceptionWhenCopySnapshotForNonExistingFolder() {
+  void shouldThrowExceptionWhenCopySnapshotForNonExistingFolder() {
     // given
-    final File source = tempFolder.getRoot().toPath().resolve("src").toFile();
-    final File target = tempFolder.getRoot().toPath().resolve("target").toFile();
+    final File source = tmpDir.resolve("src").toFile();
+    final File target = tmpDir.resolve("target").toFile();
 
     // when - then
     assertThatThrownBy(() -> FileUtil.copySnapshot(source.toPath(), target.toPath()))
@@ -74,28 +73,105 @@ public final class FileUtilTest {
   }
 
   @Test
-  public void shouldThrowExceptionWhenyCopySnapshotIfTargetAlreadyExists() throws IOException {
+  void shouldThrowExceptionWhenyCopySnapshotIfTargetAlreadyExists() throws IOException {
     // given
-    final File source = tempFolder.newFolder("src");
-    final File target = tempFolder.newFolder("target");
+    final Path source = Files.createDirectory(tmpDir.resolve("src"));
+    final Path target = Files.createDirectory(tmpDir.resolve("target"));
 
     // when -then
-    assertThatThrownBy(() -> FileUtil.copySnapshot(source.toPath(), target.toPath()))
+    assertThatThrownBy(() -> FileUtil.copySnapshot(source, target))
         .isInstanceOf(FileAlreadyExistsException.class);
   }
 
   @Test
-  public void shouldCopySnapshot() throws Exception {
+  void shouldCopySnapshot() throws Exception {
     // given
-    final File source = tempFolder.newFolder("src");
-    final String snapshotFile = "file1";
-    source.toPath().resolve(snapshotFile).toFile().createNewFile();
-    final File target = tempFolder.getRoot().toPath().resolve("target").toFile();
+    final var snapshotFile = "file1";
+    final Path source = Files.createDirectory(tmpDir.resolve("src"));
+    final Path target = tmpDir.resolve("target");
+    Files.createFile(source.resolve(snapshotFile));
 
     // when
-    FileUtil.copySnapshot(source.toPath(), target.toPath());
+    FileUtil.copySnapshot(source, target);
 
     // then
-    assertThat(target.list()).containsExactly(snapshotFile);
+    assertThat(Files.list(target)).contains(target.resolve(snapshotFile));
+  }
+
+  @Test
+  void shouldPreallocateFile() throws IOException {
+    // given
+    final var path = tmpDir.resolve("file");
+    final var length = 1024 * 1024L;
+
+    // when
+    try (final FileChannel channel =
+        FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+      FileUtil.preallocate(channel, length);
+    }
+
+    // then
+    final var realSize = getRealSize(path);
+    final var maxRealSize = length + getBlockSize(path);
+    assertThat(realSize)
+        .as(
+            "Expected <%s> to have a real size between <%d> and <%d> bytes, but it had <%d>",
+            path, length, maxRealSize, realSize)
+        .isBetween(length, maxRealSize);
+  }
+
+  /**
+   * Returns the actual size of the file on disk by checking the blocks allocated for this file. On
+   * most modern UNIX systems, doing {@link Files#size(Path)} returns that size as reported by the
+   * file's metadata, which may not be the real size (e.g. compressed file systems, sparse files,
+   * etc.). Using the {@code lstat} function from the C library we can get the actual size on disk
+   * of the file.
+   *
+   * <p>{@code lstat} will return the number of 512-bytes blocks used by a file. To get the real
+   * size, you simply multiply by 512. Note that unless your file size is aligned with the block
+   * size of your device, then the real size may be slightly larger, as more blocks may have been
+   * allocated.
+   *
+   * <p>NOTE: on Windows, sparse files are not the default, so {@link File#length()} is appropriate.
+   * Plus, there is no {@code lstat} function, and the equivalent function {@code wstat} does not
+   * return the number of blocks.
+   *
+   * @param file the file to get the size of
+   * @return the actual size on disk of the file
+   */
+  private long getRealSize(final Path file) {
+    if (Platform.IS_WINDOWS) {
+      try {
+        return Files.size(file);
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
+
+    final POSIX posixFunctions = POSIXFactory.getNativePOSIX();
+    final var pathString = file.toString();
+    final FileStat stat = posixFunctions.stat(pathString);
+
+    return stat.blocks() * 512;
+  }
+
+  /**
+   * Returns the I/O block size of the device containing the given file. This can be used to compute
+   * an upper bound for the real file size. On Windows, as we use {@link Files#size(Path)} for the
+   * real size, this simply returns 0.
+   *
+   * @param file the file to get the block size of
+   * @return the I/O block size of the device containing the file
+   */
+  private long getBlockSize(final Path file) {
+    if (Platform.IS_WINDOWS) {
+      return 0;
+    }
+
+    final POSIX posixFunctions = POSIXFactory.getNativePOSIX();
+    final var pathString = file.toString();
+    final FileStat stat = posixFunctions.stat(pathString);
+
+    return stat.blockSize();
   }
 }

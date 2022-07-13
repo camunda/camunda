@@ -110,6 +110,7 @@
     <version.immutables>2.8.9-ea-1</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
     <version.jcip>1.0</version.jcip>
+    <version.jnr-posix>3.1.15</version.jnr-posix>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -783,6 +784,12 @@
         <artifactId>bcprov-jdk15on</artifactId>
         <version>${version.bouncycastle}</version>
         <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jnr-posix</artifactId>
+        <version>${version.jnr-posix}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
