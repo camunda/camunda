@@ -21,5 +21,7 @@ public interface TypedRecordProcessorContext {
 
   Writers getWriters();
 
+  @Deprecated // will be moved to stream processor
+  @Deprecated // only used in test
   TypedRecordProcessorContext listener(StreamProcessorListener streamProcessorListener);
 }
