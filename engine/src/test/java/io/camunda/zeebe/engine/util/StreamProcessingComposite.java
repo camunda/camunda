@@ -25,7 +25,6 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.streamprocessor.StreamProcessorContext;
 import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
@@ -68,8 +67,6 @@ public class StreamProcessingComposite {
       final TypedRecordProcessorContext typedRecordProcessorContext) {
     zeebeState = typedRecordProcessorContext.getZeebeState();
 
-    lastProcessedPositionState =
-        ((StreamProcessorContext) typedRecordProcessorContext).getLastProcessedPositionState();
     return factory.build(
         TypedRecordProcessors.processors(
             zeebeState.getKeyGenerator(), typedRecordProcessorContext.getWriters()),

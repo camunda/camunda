@@ -54,10 +54,14 @@ public class Engine implements RecordProcessor {
             .getTypedRecordProcessorFactory()
             .createProcessors(typedProcessorContext);
 
+    recordProcessorContext.setStreamProcessorListener(
+        typedProcessorContext.getStreamProcessorListener());
+
     recordProcessorContext.setLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     final RecordProcessorMap recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
 
     recordProcessorContext.setRecordProcessorMap(recordProcessorMap);
+    recordProcessorContext.setWriters(typedProcessorContext.getWriters());
   }
 
   @Override

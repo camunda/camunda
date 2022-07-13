@@ -10,9 +10,11 @@ package io.camunda.zeebe.engine.api;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import java.util.List;
@@ -43,4 +45,9 @@ public interface RecordProcessorContext {
 
   @Deprecated // will be moved into engine
   void setRecordProcessorMap(RecordProcessorMap recordProcessorMap);
+
+  void setStreamProcessorListener(StreamProcessorListener streamProcessorListener);
+
+  @Deprecated // will most likely be moved into engine
+  void setWriters(Writers writers);
 }

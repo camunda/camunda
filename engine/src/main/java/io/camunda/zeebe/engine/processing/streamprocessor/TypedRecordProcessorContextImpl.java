@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWri
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
-import io.camunda.zeebe.engine.state.immutable.LastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import java.util.function.Function;
 
@@ -64,11 +63,6 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   @Override
   public Writers getWriters() {
     return writers;
-  }
-
-  @Override
-  public LastProcessedPositionState getLastProcessedPositionState() {
-    return getZeebeState().getLastProcessedPositionState();
   }
 
   @Override

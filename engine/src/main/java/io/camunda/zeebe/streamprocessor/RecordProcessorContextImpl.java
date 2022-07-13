@@ -13,16 +13,18 @@ import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-public class RecordProcessorContextImpl implements RecordProcessorContext {
+public final class RecordProcessorContextImpl implements RecordProcessorContext {
 
   private final int partitionId;
   private final ProcessingScheduleService scheduleService;
@@ -34,6 +36,8 @@ public class RecordProcessorContextImpl implements RecordProcessorContext {
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private List<StreamProcessorLifecycleAware> lifecycleListeners = Collections.EMPTY_LIST;
   private RecordProcessorMap recordProcessorMap;
+  private StreamProcessorListener streamProcessorListener;
+  private Writers writers;
 
   public RecordProcessorContextImpl(
       final int partitionId,
@@ -112,5 +116,23 @@ public class RecordProcessorContextImpl implements RecordProcessorContext {
   @Override
   public void setRecordProcessorMap(final RecordProcessorMap recordProcessorMap) {
     this.recordProcessorMap = recordProcessorMap;
+  }
+
+  public StreamProcessorListener getStreamProcessorListener() {
+    return streamProcessorListener;
+  }
+
+  @Override
+  public void setStreamProcessorListener(final StreamProcessorListener streamProcessorListener) {
+    this.streamProcessorListener = streamProcessorListener;
+  }
+
+  public Writers getWriters() {
+    return writers;
+  }
+
+  @Override
+  public void setWriters(final Writers writers) {
+    this.writers = writers;
   }
 }
