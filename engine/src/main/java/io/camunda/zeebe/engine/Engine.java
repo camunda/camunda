@@ -54,7 +54,6 @@ public class Engine implements RecordProcessor {
   public ProcessingResult onProcessingError(
       final Throwable processingException,
       final TypedRecord record,
-      final long position,
       final ErrorHandlingContext errorHandlingContext) {
     throw new IllegalStateException("Not yet implemented");
   }
