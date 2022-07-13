@@ -32,11 +32,6 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
     scheduleOnActor(() -> actorControl.runOnCompletion(precedingTask, followUpTask));
   }
 
-  @Override
-  public ActorFuture<Void> call(final Runnable action) {
-    return actorControl.call(action);
-  }
-
   private void scheduleOnActor(final Runnable task) {
     actorControl.submit(task);
   }

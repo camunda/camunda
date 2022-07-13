@@ -28,7 +28,4 @@ public interface ProcessingScheduleService {
           }
         });
   }
-
-  @Deprecated // only used in tests
-  ActorFuture<Void> call(final Runnable action);
 }

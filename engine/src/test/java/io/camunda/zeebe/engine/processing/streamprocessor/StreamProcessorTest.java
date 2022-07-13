@@ -40,9 +40,12 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.util.exception.RecoverableException;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -437,8 +440,8 @@ public final class StreamProcessorTest {
     verify(streamProcessorRule.getMockStreamProcessorListener(), TIMEOUT.times(2))
         .onProcessed(any());
 
-    scheduleService
-        .call(
+    call(
+            scheduleService,
             () -> {
               final var jobState = streamProcessorRule.getZeebeState().getJobState();
               final var job = jobState.getJob(jobKey);
@@ -481,8 +484,8 @@ public final class StreamProcessorTest {
     // then
     verify(streamProcessorRule.getMockStreamProcessorListener(), TIMEOUT).onProcessed(any());
 
-    scheduleService
-        .call(
+    call(
+            scheduleService,
             () -> {
               final var jobState = streamProcessorRule.getZeebeState().getJobState();
               final var job = jobState.getJob(jobKey);
@@ -746,5 +749,21 @@ public final class StreamProcessorTest {
                     .findAny())
         .until(Optional::isPresent)
         .get();
+  }
+
+  private ActorFuture<Void> call(
+      final ProcessingScheduleService scheduleService, final Runnable runnable) {
+    final CompletableActorFuture<Void> result = new CompletableActorFuture<>();
+    scheduleService.runDelayed(
+        Duration.ZERO,
+        () -> {
+          try {
+            runnable.run();
+            result.complete(null);
+          } catch (final Exception e) {
+            result.completeExceptionally(e);
+          }
+        });
+    return result;
   }
 }
