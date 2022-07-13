@@ -16,7 +16,6 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.engine.impl.DeploymentDistributorImpl;
 import io.camunda.zeebe.broker.engine.impl.LongPollingJobNotification;
-import io.camunda.zeebe.broker.engine.impl.PartitionCommandSenderImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
@@ -38,6 +37,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.InterPartitionCommandReceiverStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionTransitionStep;
@@ -47,6 +47,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPart
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
+import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
@@ -72,6 +73,7 @@ final class PartitionFactory {
       List.of(
           new LogStoragePartitionTransitionStep(),
           new LogStreamPartitionTransitionStep(),
+          new InterPartitionCommandReceiverStep(),
           new ZeebeDbPartitionTransitionStep(),
           new QueryServicePartitionTransitionStep(),
           new StreamProcessorTransitionStep(),
@@ -152,6 +154,7 @@ final class PartitionFactory {
       final PartitionStartupAndTransitionContextImpl partitionStartupAndTransitionContext =
           new PartitionStartupAndTransitionContextImpl(
               localBroker.getNodeId(),
+              communicationService,
               owningPartition,
               partitionListeners,
               new AtomixPartitionMessagingService(
@@ -218,8 +221,8 @@ final class PartitionFactory {
           new DeploymentDistributorImpl(
               communicationService, eventService, partitionListener, actor);
 
-      final PartitionCommandSenderImpl partitionCommandSender =
-          new PartitionCommandSenderImpl(communicationService, partitionListener);
+      final InterPartitionCommandSenderImpl partitionCommandSender =
+          new InterPartitionCommandSenderImpl(communicationService, partitionListener);
       final SubscriptionCommandSender subscriptionCommandSender =
           new SubscriptionCommandSender(
               recordProcessorContext.getPartitionId(), partitionCommandSender);
