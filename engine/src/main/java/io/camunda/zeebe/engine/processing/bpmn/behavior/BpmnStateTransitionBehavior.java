@@ -250,26 +250,7 @@ public final class BpmnStateTransitionBehavior {
         context.copy(
             sequenceFlowKey, followUpInstanceRecord, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
 
-    if (canActivateTargetElement(context, target)) {
-      activateElementInstanceInFlowScope(sequenceFlowTaken, target);
-    }
-  }
-
-  private boolean canActivateTargetElement(
-      final BpmnElementContext context, final ExecutableFlowNode targetElement) {
-
-    final int numberOfIncomingSequenceFlows = targetElement.getIncoming().size();
-
-    if (targetElement.getElementType() == BpmnElementType.PARALLEL_GATEWAY) {
-      // activate the parallel gateway only if all incoming sequence flows are taken at least once
-      final int numberOfTakenSequenceFlows =
-          elementInstanceState.getNumberOfTakenSequenceFlows(
-              context.getFlowScopeKey(), targetElement.getId());
-      return numberOfTakenSequenceFlows == numberOfIncomingSequenceFlows;
-
-    } else {
-      return true;
-    }
+    activateElementInstanceInFlowScope(sequenceFlowTaken, target);
   }
 
   public void completeElement(final BpmnElementContext context) {
