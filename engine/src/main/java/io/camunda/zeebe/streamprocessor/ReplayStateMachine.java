@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
-import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBatchReaderImpl;
@@ -40,6 +39,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
+import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 

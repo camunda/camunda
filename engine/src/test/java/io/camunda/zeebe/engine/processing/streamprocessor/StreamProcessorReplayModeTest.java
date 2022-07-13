@@ -114,10 +114,7 @@ public final class StreamProcessorReplayModeTest {
     // given
     startStreamProcessor(replayContinuously);
     final var snapshotPosition = 1L;
-    replayContinuously
-        .getZeebeState()
-        .getLastProcessedPositionState()
-        .markAsProcessed(snapshotPosition);
+    replayContinuously.getLastProcessedPositionState().markAsProcessed(snapshotPosition);
     replayContinuously.snapshot();
     replayContinuously.closeStreamProcessor();
 
@@ -294,10 +291,7 @@ public final class StreamProcessorReplayModeTest {
 
     startStreamProcessor(replayContinuously);
 
-    replayContinuously
-        .getZeebeState()
-        .getLastProcessedPositionState()
-        .markAsProcessed(snapshotPosition);
+    replayContinuously.getLastProcessedPositionState().markAsProcessed(snapshotPosition);
 
     replayContinuously.snapshot();
     replayContinuously.closeStreamProcessor();
@@ -319,8 +313,7 @@ public final class StreamProcessorReplayModeTest {
         .onReplayed(-1L, eventPosition);
 
     // then
-    final var lastProcessedPositionState =
-        replayContinuously.getZeebeState().getLastProcessedPositionState();
+    final var lastProcessedPositionState = replayContinuously.getLastProcessedPositionState();
 
     assertThat(lastProcessedPositionState.getLastSuccessfulProcessedRecordPosition())
         .describedAs(

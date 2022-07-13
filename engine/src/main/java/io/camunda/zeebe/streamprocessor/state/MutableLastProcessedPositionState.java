@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.state.immutable;
+package io.camunda.zeebe.streamprocessor.state;
 
-public interface LastProcessedPositionState {
+public interface MutableLastProcessedPositionState extends LastProcessedPositionState {
 
-  long getLastSuccessfulProcessedRecordPosition();
+  void markAsProcessed(final long position);
 }

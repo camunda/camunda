@@ -25,11 +25,11 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
-import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import java.util.function.BooleanSupplier;
 
 public final class StreamProcessorContext
@@ -58,6 +58,7 @@ public final class StreamProcessorContext
   private int maxFragmentSize;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private ProcessingScheduleService processingScheduleService;
+  private MutableLastProcessedPositionState lastProcessedPositionState;
 
   public StreamProcessorContext() {
     streamWriterProxy.wrap(logStreamWriter);
@@ -102,9 +103,8 @@ public final class StreamProcessorContext
     return getLogStream().getPartitionId();
   }
 
-  @Override
   public MutableLastProcessedPositionState getLastProcessedPositionState() {
-    return zeebeState.getLastProcessedPositionState();
+    return lastProcessedPositionState;
   }
 
   @Override
@@ -135,6 +135,12 @@ public final class StreamProcessorContext
 
   public StreamProcessorContext zeebeState(final ZeebeDbState zeebeState) {
     this.zeebeState = zeebeState;
+    return this;
+  }
+
+  public StreamProcessorContext lastProcessedPositionState(
+      final MutableLastProcessedPositionState lastProcessedPositionState) {
+    this.lastProcessedPositionState = lastProcessedPositionState;
     return this;
   }
 
