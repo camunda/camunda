@@ -33,6 +33,7 @@
     "method": "POST",
     "body": {
       "flowNodeId": "task1"
-    }
+    },
+    "ignore": true
   }
 ]
