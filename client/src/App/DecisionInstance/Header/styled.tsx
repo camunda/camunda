@@ -9,6 +9,7 @@ import styled, {css} from 'styled-components';
 import {ReactComponent as BaseStateCompleted} from 'modules/components/Icon/state-completed.svg';
 import {ReactComponent as BaseStateIncident} from 'modules/components/Icon/state-icon-incident.svg';
 import {BaseBlock, BaseCircle} from 'modules/components/Skeleton';
+import {styles} from '@carbon/elements';
 
 const Container = styled.header`
   ${({theme}) => {
@@ -41,13 +42,11 @@ const Table = styled.table`
 `;
 
 const TH = styled.th`
-  font-size: 12px;
-  font-weight: 400;
-  opacity: 0.9;
+  ${styles.label01};
 `;
 
 const TD = styled.td`
-  font-size: 15px;
+  ${styles.bodyShort01};
   font-weight: 500;
   text-overflow: ellipsis;
   overflow: hidden;

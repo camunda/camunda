@@ -6,6 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 const Container = styled.div`
   ${({theme}) => {
@@ -21,7 +22,7 @@ const IncidentBanner = styled.div`
     return css`
       background-color: ${theme.colors.incidentsAndErrors};
       color: ${theme.colors.white};
-      font-size: 15px;
+      ${styles.bodyShort01};
       font-weight: 500;
       height: 42px;
       display: flex;

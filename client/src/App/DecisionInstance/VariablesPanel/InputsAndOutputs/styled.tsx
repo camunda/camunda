@@ -8,6 +8,7 @@
 import {StatusMessage} from 'modules/components/StatusMessage';
 import styled, {css} from 'styled-components';
 import {BaseBlock} from 'modules/components/Skeleton';
+import {styles} from '@carbon/elements';
 
 type PanelProps = {
   $hasBorder?: boolean;
@@ -41,10 +42,8 @@ const Title = styled.h2`
     const {colors} = theme;
 
     return css`
-      font-family: IBM Plex Sans;
-      font-size: 16px;
+      ${styles.productiveHeading02}
       color: ${colors.text01};
-      font-weight: 500;
       padding: 28px 0 0 20px;
       margin: 0;
     `;

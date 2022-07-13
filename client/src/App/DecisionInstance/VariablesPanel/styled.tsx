@@ -6,6 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 const Container = styled.section`
   ${({theme}) => {
@@ -34,9 +35,7 @@ const Tab = styled.button<TabsProps>`
       all: unset;
       cursor: pointer;
 
-      font-family: IBM Plex Sans;
-      font-size: 16px;
-      font-weight: normal;
+      ${styles.productiveHeading02}
       color: ${colors.text01};
       padding: 0 4px;
 
@@ -44,10 +43,10 @@ const Tab = styled.button<TabsProps>`
         ? css`
             height: calc(100% - 3px);
             border-bottom: 3px solid ${colors.selections};
-            font-weight: 600;
           `
         : css`
             height: 100%;
+            font-weight: normal;
           `}
 
       &:not(:last-child) {

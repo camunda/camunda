@@ -6,6 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 /*
   Explanation for the scrollable trick: https://stackoverflow.com/a/54565100
@@ -64,7 +65,6 @@ const CellOverflowHandler = styled.div`
   max-height: 78px;
   padding-top: 4px;
   padding-bottom: 4px;
-  line-height: normal;
   word-break: break-word;
   overflow-y: auto;
   overflow-wrap: break-word;
@@ -115,7 +115,8 @@ const BaseTable = styled.table`
       border-spacing: 0;
       border-collapse: collapse;
       text-align: left;
-      font-size: 14px;
+      ${styles.bodyShort01};
+
       table-layout: fixed;
       color: ${theme.colors.text01};
       background-color: ${colors.backgroundColor};
