@@ -7,18 +7,19 @@ ARG DISTBALL
 ENV TMP_ARCHIVE=/tmp/zeebe.tar.gz \
     TMP_DIR=/tmp/zeebe
 
-COPY ${DISTBALL} ${TMP_ARCHIVE}
-
-RUN mkdir -p ${TMP_DIR} && \
-    tar xfvz ${TMP_ARCHIVE} --strip 1 -C ${TMP_DIR} && \
-    # already create volume dir to later have correct rights
-    mkdir ${TMP_DIR}/data
+RUN mkdir -p ${TMP_DIR}/bin && \
+    mkdir -p ${TMP_DIR}/data
 
 RUN apt-get update && \
     apt-get install tini && \
     cp /usr/bin/tini ${TMP_DIR}/bin/tini
 
 COPY docker/utils/startup.sh ${TMP_DIR}/bin/startup.sh
+
+COPY ${DISTBALL} ${TMP_ARCHIVE}
+
+RUN tar xfvz ${TMP_ARCHIVE} --strip 1 -C ${TMP_DIR}
+
 RUN chmod +x -R ${TMP_DIR}/bin/
 RUN chmod 0775 ${TMP_DIR} ${TMP_DIR}/data
 
