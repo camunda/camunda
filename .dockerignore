@@ -1,0 +1,6 @@
+# Ignore everthing by default
+*
+
+# Include the distballs and startup script
+!dist/target/*.tar.gz
+!docker/utils/startup.sh
