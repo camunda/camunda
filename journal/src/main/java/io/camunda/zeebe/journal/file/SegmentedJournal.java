@@ -36,19 +36,15 @@ import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.StampedLock;
@@ -77,6 +73,7 @@ public final class SegmentedJournal implements Journal {
   private final SegmentedJournalWriter writer;
   private final long lastWrittenIndex;
   private final StampedLock rwlock = new StampedLock();
+  private final boolean preallocateSegmentFiles;
 
   public SegmentedJournal(
       final String name,
@@ -84,7 +81,8 @@ public final class SegmentedJournal implements Journal {
       final int maxSegmentSize,
       final long minFreeSpace,
       final JournalIndex journalIndex,
-      final long lastWrittenIndex) {
+      final long lastWrittenIndex,
+      final boolean preallocateSegmentFiles) {
     this.name = checkNotNull(name, "name cannot be null");
     this.directory = checkNotNull(directory, "directory cannot be null");
     this.maxSegmentSize = maxSegmentSize;
@@ -92,6 +90,7 @@ public final class SegmentedJournal implements Journal {
     minFreeDiskSpace = minFreeSpace;
     this.journalIndex = journalIndex;
     this.lastWrittenIndex = lastWrittenIndex;
+    this.preallocateSegmentFiles = preallocateSegmentFiles;
     open();
     writer = new SegmentedJournalWriter(this);
   }
@@ -654,7 +653,8 @@ public final class SegmentedJournal implements Journal {
     try {
       mappedSegment = mapNewSegment(segmentFile, descriptor);
     } catch (final IOException e) {
-      throw new JournalException(String.format("Failed to map new segment %s", segmentFile), e);
+      throw new JournalException(
+          String.format("Failed to create new segment file %s", segmentFile), e);
     }
 
     try {
@@ -686,8 +686,9 @@ public final class SegmentedJournal implements Journal {
     final var descriptor = readDescriptor(segmentFile);
     final MappedByteBuffer mappedSegment;
 
-    try {
-      mappedSegment = mapSegment(segmentFile, descriptor, Collections.emptySet());
+    try (final var channel =
+        FileChannel.open(segmentFile.toPath(), StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+      mappedSegment = mapSegment(channel, descriptor.maxSegmentSize());
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to load existing segment %s", segmentFile), e);
@@ -704,11 +705,19 @@ public final class SegmentedJournal implements Journal {
 
   private MappedByteBuffer mapNewSegment(
       final File segmentFile, final JournalSegmentDescriptor descriptor) throws IOException {
-    try {
-      return mapSegment(segmentFile, descriptor, Set.of(StandardOpenOption.CREATE_NEW));
+    try (final var channel =
+        FileChannel.open(
+            segmentFile.toPath(),
+            StandardOpenOption.READ,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.CREATE_NEW)) {
+      if (preallocateSegmentFiles) {
+        FileUtil.preallocate(channel, descriptor.maxSegmentSize());
+      }
+
+      return mapSegment(channel, descriptor.maxSegmentSize());
     } catch (final FileAlreadyExistsException e) {
-      // assuming we haven't written in that segment, just overwrite it; if we have, we may be able
-      // reuse, but that's up to the caller
+      // do not reuse a segment into which we've already written!
       if (lastWrittenIndex >= descriptor.index()) {
         throw new JournalException(
             String.format(
@@ -718,24 +727,20 @@ public final class SegmentedJournal implements Journal {
             e);
       }
 
-      return mapSegment(segmentFile, descriptor, Set.of(StandardOpenOption.TRUNCATE_EXISTING));
+      log.warn(
+          "Failed to create segment {}: an unused file already existed, and will be replaced",
+          segmentFile,
+          e);
+      Files.delete(segmentFile.toPath());
+      return mapNewSegment(segmentFile, descriptor);
     }
   }
 
-  private MappedByteBuffer mapSegment(
-      final File segmentFile,
-      final JournalSegmentDescriptor descriptor,
-      final Set<OpenOption> extraOptions)
+  private MappedByteBuffer mapSegment(final FileChannel channel, final long segmentSize)
       throws IOException {
-    final var options = new HashSet<>(extraOptions);
-    options.add(StandardOpenOption.READ);
-    options.add(StandardOpenOption.WRITE);
+    final var mappedSegment = channel.map(MapMode.READ_WRITE, 0, segmentSize);
+    mappedSegment.order(ENDIANNESS);
 
-    try (final var channel = FileChannel.open(segmentFile.toPath(), options)) {
-      final var mappedSegment = channel.map(MapMode.READ_WRITE, 0, descriptor.maxSegmentSize());
-      mappedSegment.order(ENDIANNESS);
-
-      return mappedSegment;
-    }
+    return mappedSegment;
   }
 }
