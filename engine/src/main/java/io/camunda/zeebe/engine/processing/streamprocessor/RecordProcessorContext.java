@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.api;
+package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
+import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.LastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;

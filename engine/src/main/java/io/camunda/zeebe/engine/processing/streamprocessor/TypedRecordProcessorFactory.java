@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.camunda.zeebe.engine.api.RecordProcessorContext;
-
 @FunctionalInterface
 public interface TypedRecordProcessorFactory {
 

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import io.camunda.zeebe.engine.api.RecordProcessorContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 
 @FunctionalInterface
