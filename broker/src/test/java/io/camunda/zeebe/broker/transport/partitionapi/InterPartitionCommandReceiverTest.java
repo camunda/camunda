@@ -159,8 +159,8 @@ public class InterPartitionCommandReceiverTest {
     final var commandBytes = new byte[100];
 
     // initialize to make debugging easier in case this test breaks.
-    for (byte i = 0; i < commandBytes.length; i++) {
-      commandBytes[i] = i;
+    for (int i = 0; i < commandBytes.length; i++) {
+      commandBytes[i] = (byte) i;
     }
 
     final var sentMessage =
