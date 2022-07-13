@@ -7,7 +7,57 @@
  */
 package io.camunda.zeebe.engine.api;
 
+import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+
+/** Builder to compose the processing result */
 public interface ProcessingResultBuilder {
+
+  /**
+   * Appends a record to the result
+   *
+   * @return returns itself for method chaining
+   */
+  ProcessingResultBuilder appendRecord(
+      final long key,
+      final RecordType type,
+      final Intent intent,
+      final RejectionType rejectionType,
+      final String rejectionReason,
+      final RecordValue value);
+
+  /**
+   * Sets the response for the result; will be overwritten if called more than once
+   *
+   * @return returns itself for method chaining
+   */
+  ProcessingResultBuilder withResponse(
+      final long eventKey,
+      final Intent eventState,
+      final UnpackedObject eventValue,
+      final ValueType valueType,
+      final long requestId,
+      final int requestStreamId);
+
+  /**
+   * Appends a task to be executed after a successful commit ProcessingResultBuilder (replacement
+   * for side effects)
+   *
+   * @return returns itself for method chaining
+   */
+  ProcessingResultBuilder appendPostCommitTask(Runnable r);
+
+  /**
+   * Resets the processing result build to its initial states (removes all follow-up records, the
+   * response and post-commit tasks.
+   *
+   * @return returns itself for method chaining
+   */
+  ProcessingResultBuilder reset();
 
   ProcessingResult build();
 }
