@@ -20,6 +20,12 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import org.agrona.IoUtil;
 
 /** Raft log builder. */
 @SuppressWarnings("UnusedReturnValue")
@@ -147,7 +153,8 @@ public class SegmentedJournalBuilder {
 
   public SegmentedJournal build() {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
-    final var segmentLoader = new SegmentLoader(preallocateSegmentFiles);
+    final var templateFile = preallocateSegmentFiles ? createSegmentTemplateFile() : null;
+    final var segmentLoader = new SegmentLoader(templateFile, preallocateSegmentFiles);
     final var segmentsManager =
         new SegmentsManager(
             journalIndex, maxSegmentSize, directory, lastWrittenIndex, name, segmentLoader);
@@ -155,5 +162,19 @@ public class SegmentedJournalBuilder {
 
     return new SegmentedJournal(
         directory, maxSegmentSize, freeDiskSpace, journalIndex, segmentsManager, journalMetrics);
+  }
+
+  private Path createSegmentTemplateFile() {
+    try {
+      final var path = Files.createTempFile(directory.toPath(), name + "-segment", ".tpl");
+      try (final var channel = FileChannel.open(path, StandardOpenOption.WRITE)) {
+        IoUtil.fill(channel, 0, maxSegmentSize, (byte) 0);
+      }
+      return path;
+    } catch (final IOException e) {
+      // TODO: Log warning that we disable file preallocation
+      preallocateSegmentFiles = false;
+      return null;
+    }
   }
 }

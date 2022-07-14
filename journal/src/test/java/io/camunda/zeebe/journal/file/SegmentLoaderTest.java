@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.journal.file;
 
-import io.camunda.zeebe.journal.fs.LibC.InvalidLibC;
-import io.camunda.zeebe.journal.fs.PosixFs;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import org.agrona.IoUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
@@ -25,7 +27,7 @@ final class SegmentLoaderTest {
   void shouldPreallocateSegmentFiles(final @TempDir Path tmpDir) {
     // given
     final var segmentSize = 4 * 1024 * 1024;
-    final var segmentLoader = new SegmentLoader(true);
+    final var segmentLoader = new SegmentLoader(createTemplateFile(tmpDir, segmentSize), true);
     final var segmentFile = tmpDir.resolve("segment.log");
     final var descriptor =
         JournalSegmentDescriptor.builder().withId(1).withMaxSegmentSize(segmentSize).build();
@@ -41,7 +43,7 @@ final class SegmentLoaderTest {
   void shouldNotPreallocateSegmentFiles(final @TempDir Path tmpDir) {
     // given
     final var segmentSize = 4 * 1024 * 1024;
-    final var segmentLoader = new SegmentLoader(false);
+    final var segmentLoader = new SegmentLoader(null, false);
     final var segmentFile = tmpDir.resolve("segment.log");
     final var descriptor =
         JournalSegmentDescriptor.builder().withId(1).withMaxSegmentSize(segmentSize).build();
@@ -65,7 +67,7 @@ final class SegmentLoaderTest {
             .withMaxSegmentSize(segmentSize)
             .build();
     final var lastWrittenIndex = descriptor.index() - 1;
-    final var segmentLoader = new SegmentLoader(true);
+    final var segmentLoader = new SegmentLoader(createTemplateFile(tmpDir, segmentSize), true);
     final var segmentFile = tmpDir.resolve("segment.log");
 
     // when - the segment is "unused" if the lastWrittenIndex is less than the expected first index
@@ -78,38 +80,15 @@ final class SegmentLoaderTest {
     PosixPathAssert.assertThat(segmentFile).hasRealSize(segmentSize);
   }
 
-  @Test
-  void shouldPreallocateSegmentFilesWithPosixDisabled(final @TempDir Path tmpDir) {
-    // given
-    final var segmentSize = 4 * 1024 * 1024;
-    final var posixFs = new PosixFs();
-    final var segmentLoader = new SegmentLoader(true, posixFs);
-    final var segmentFile = tmpDir.resolve("segment.log");
-    final var descriptor =
-        JournalSegmentDescriptor.builder().withId(1).withMaxSegmentSize(segmentSize).build();
-
-    // when
-    posixFs.disablePosixFallocate();
-    segmentLoader.createSegment(segmentFile, descriptor, 1, new SparseJournalIndex(1));
-
-    // then
-    PosixPathAssert.assertThat(segmentFile).hasRealSize(segmentSize);
-  }
-
-  @Test
-  void shouldPreallocateSegmentFilesEvenIfPosixFails(final @TempDir Path tmpDir) {
-    // given
-    final var segmentSize = 4 * 1024 * 1024;
-    final var posixFs = new PosixFs(new InvalidLibC());
-    final var segmentLoader = new SegmentLoader(true, posixFs);
-    final var segmentFile = tmpDir.resolve("segment.log");
-    final var descriptor =
-        JournalSegmentDescriptor.builder().withId(1).withMaxSegmentSize(segmentSize).build();
-
-    // when
-    segmentLoader.createSegment(segmentFile, descriptor, 1, new SparseJournalIndex(1));
-
-    // then
-    PosixPathAssert.assertThat(segmentFile).hasRealSize(segmentSize);
+  private Path createTemplateFile(final Path directory, final long maxSegmentSize) {
+    try {
+      final var path = Files.createTempFile(directory, "segment", ".tpl");
+      try (final var channel = FileChannel.open(path, StandardOpenOption.WRITE)) {
+        IoUtil.fill(channel, 0, maxSegmentSize, (byte) 0);
+      }
+      return path;
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 }

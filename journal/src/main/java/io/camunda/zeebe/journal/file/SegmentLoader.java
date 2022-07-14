@@ -9,11 +9,8 @@ package io.camunda.zeebe.journal.file;
 
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.file.record.CorruptedLogException;
-import io.camunda.zeebe.journal.fs.PosixFs;
 import io.camunda.zeebe.util.FileUtil;
-import java.io.FileDescriptor;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
@@ -22,7 +19,6 @@ import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import org.agrona.IoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,19 +27,15 @@ final class SegmentLoader {
   private static final Logger LOGGER = LoggerFactory.getLogger(SegmentLoader.class);
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
 
-  private final PosixFs posixFs;
   private final boolean preallocateFiles;
+  private final Path segmentTemplateFile;
 
-  SegmentLoader() {
-    this(true);
+  SegmentLoader(final Path segmentTemplateFile) {
+    this(segmentTemplateFile, true);
   }
 
-  SegmentLoader(final boolean preallocateFiles) {
-    this(preallocateFiles, new PosixFs());
-  }
-
-  SegmentLoader(final boolean preallocateFiles, final PosixFs posixFs) {
-    this.posixFs = posixFs;
+  SegmentLoader(final Path segmentTemplateFile, final boolean preallocateFiles) {
+    this.segmentTemplateFile = segmentTemplateFile;
     this.preallocateFiles = preallocateFiles;
   }
 
@@ -190,12 +182,19 @@ final class SegmentLoader {
 
     // it's necessary to use RandomAccessFile to get access to the file descriptor for native
     // optimizations
-    try (final RandomAccessFile file = new RandomAccessFile(segmentPath.toFile(), "rw")) {
+    try (final var channel =
+        FileChannel.open(
+            segmentPath,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.READ,
+            StandardOpenOption.CREATE)) {
       if (preallocateFiles) {
-        preallocate(file.getFD(), file.getChannel(), descriptor.maxSegmentSize());
+        try (final var source = FileChannel.open(segmentTemplateFile, StandardOpenOption.READ)) {
+          source.transferTo(0, descriptor.maxSegmentSize(), channel);
+        }
       }
 
-      return mapSegment(file.getChannel(), descriptor.maxSegmentSize());
+      return mapSegment(channel, descriptor.maxSegmentSize());
     }
   }
 
@@ -217,32 +216,5 @@ final class SegmentLoader {
         "Failed to create segment {}: an unused file already existed, and will be replaced",
         segmentPath);
     Files.delete(segmentPath);
-  }
-
-  private void preallocate(
-      final FileDescriptor descriptor, final FileChannel channel, final long length)
-      throws IOException {
-    if (length < 0) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected to preallocate [%d] bytes, but the length cannot be negative", length));
-    }
-
-    if (!posixFs.isPosixFallocateEnabled()) {
-      IoUtil.fill(channel, 0, length, (byte) 0);
-      return;
-    }
-
-    try {
-      posixFs.posixFallocate(descriptor, 0, length);
-    } catch (final UnsupportedOperationException e) {
-      LOGGER.warn(
-          "Cannot use native calls to pre-allocate files; will fallback to zero-ing from now on",
-          e);
-      IoUtil.fill(channel, 0, length, (byte) 0);
-    } catch (final IOException e) {
-      throw new IOException(
-          String.format("Failed to pre-allocate new file of length [%d]", length), e);
-    }
   }
 }
