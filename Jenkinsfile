@@ -608,7 +608,7 @@ pipeline {
             PUSH_LATEST_TAG = "${isMainOrMaintenanceBranch() ? "TRUE" : "FALSE"}"
             SNAPSHOT = readMavenPom().getVersion().contains('SNAPSHOT')
             VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
-            IS_MAIN = isMainBranch()
+            IS_MAIN = "${isMainBranch() ? "TRUE" : "FALSE"}"
           }
           steps {
             container('docker') {
