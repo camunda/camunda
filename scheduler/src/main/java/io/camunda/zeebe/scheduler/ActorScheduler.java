@@ -110,6 +110,8 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
 
     private ActorTimerQueue actorTimerQueue;
 
+    private boolean enableMetrics = false;
+
     public String getSchedulerName() {
       return schedulerName;
     }
@@ -177,6 +179,15 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
       return ioBoundActorGroup;
     }
 
+    public boolean isMetricsEnabled() {
+      return enableMetrics;
+    }
+
+    public ActorSchedulerBuilder setMetricsEnabled(final boolean enableMetrics) {
+      this.enableMetrics = enableMetrics;
+      return this;
+    }
+
     private void initActorThreadFactory() {
       if (actorThreadFactory == null) {
         actorThreadFactory = new DefaultActorThreadFactory();
@@ -210,7 +221,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     }
   }
 
-  public static class DefaultActorThreadFactory implements ActorThreadFactory {
+  public static final class DefaultActorThreadFactory implements ActorThreadFactory {
     @Override
     public ActorThread newThread(
         final String name,
@@ -218,19 +229,22 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
         final ActorThreadGroup threadGroup,
         final TaskScheduler taskScheduler,
         final ActorClock clock,
-        final ActorTimerQueue timerQueue) {
-      return new ActorThread(name, id, threadGroup, taskScheduler, clock, timerQueue);
+        final ActorTimerQueue timerQueue,
+        final boolean metricsEnabled) {
+      return new ActorThread(
+          name, id, threadGroup, taskScheduler, clock, timerQueue, metricsEnabled);
     }
   }
 
   public interface ActorThreadFactory {
     ActorThread newThread(
-        String name,
-        int id,
-        ActorThreadGroup threadGroup,
-        TaskScheduler taskScheduler,
-        ActorClock clock,
-        ActorTimerQueue timerQueue);
+        final String name,
+        final int id,
+        final ActorThreadGroup threadGroup,
+        final TaskScheduler taskScheduler,
+        final ActorClock clock,
+        final ActorTimerQueue timerQueue,
+        final boolean metricsEnabled);
   }
 
   private enum SchedulerState {

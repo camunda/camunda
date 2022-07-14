@@ -19,6 +19,7 @@ public final class TimerSubscription implements ActorSubscription, ScheduledTime
   private volatile boolean isCanceled = false;
   private long timerId = -1L;
   private ActorThread thread;
+  private long timerExpiredAt;
 
   public TimerSubscription(
       final ActorJob job, final long deadline, final TimeUnit timeUnit, final boolean isRecurring) {
@@ -92,6 +93,7 @@ public final class TimerSubscription implements ActorSubscription, ScheduledTime
   public void onTimerExpired(final TimeUnit timeUnit, final long now) {
     if (!isCanceled) {
       isDone = true;
+      timerExpiredAt = timeUnit.toNanos(now);
       task.tryWakeup();
     }
   }
@@ -119,5 +121,9 @@ public final class TimerSubscription implements ActorSubscription, ScheduledTime
         + ", thread="
         + thread
         + '}';
+  }
+
+  public long getTimerExpiredAt() {
+    return timerExpiredAt;
   }
 }

@@ -11,14 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class FeatureFlagsCfgTest {
+final class FeatureFlagsCfgTest {
 
   public final Map<String, String> environment = new HashMap<>();
 
   @Test
-  public void shouldSetEnableYieldingDueDateCheckerFromConfig() {
+  void shouldSetEnableYieldingDueDateCheckerFromConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
     final var featureFlagsCfg = cfg.getExperimental().getFeatures();
@@ -28,7 +28,7 @@ public class FeatureFlagsCfgTest {
   }
 
   @Test
-  public void shouldSetEnableYieldingDueDateCheckerFromEnv() {
+  void shouldSetEnableYieldingDueDateCheckerFromEnv() {
     // given
     environment.put("zeebe.broker.experimental.features.enableYieldingDueDateChecker", "false");
 
@@ -38,5 +38,38 @@ public class FeatureFlagsCfgTest {
 
     // then
     assertThat(featureFlagsCfg.isEnableYieldingDueDateChecker()).isFalse();
+  }
+
+  @Test
+  void shouldDisableActorMetricsByDefault() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableActorMetrics()).isFalse();
+  }
+
+  @Test
+  void shouldSetEnableActorMetricsFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableActorMetrics()).isTrue();
+  }
+
+  @Test
+  void shouldSetEnableActorMetricsFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.features.enableActorMetrics", "false");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableActorMetrics()).isFalse();
   }
 }
