@@ -84,7 +84,7 @@ public final class PosixPathAssert extends AbstractPathAssert<PosixPathAssert> {
       throw failure(
           "%nExpected file%n  <%s>%nto have a real size of%n  <%d> bytes (or <%d> "
               + "bytes rounded up to the block size)%nbut it was %n  <%d> bytes (diff <%d> bytes)",
-          actual, expectedSize, sizeInBytes, realSize, expectedSize - realSize);
+          actual, expectedSize, sizeInBytes, realSize, realSize - expectedSize);
     }
 
     return myself;

@@ -58,7 +58,7 @@ final class PosixFsTest {
     }
 
     // then
-    PosixPathAssert.assertThat(path).hasRealSize(length - 8192);
+    PosixPathAssert.assertThat(path).hasRealSize(length);
   }
 
   @Test
