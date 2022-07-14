@@ -182,6 +182,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.processInstanceCreation) {
         createValueIndexTemplate(ValueType.PROCESS_INSTANCE_CREATION);
       }
+      if (index.processInstanceModification) {
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MODIFICATION);
+      }
       if (index.processMessageSubscription) {
         createValueIndexTemplate(ValueType.PROCESS_MESSAGE_SUBSCRIPTION);
       }

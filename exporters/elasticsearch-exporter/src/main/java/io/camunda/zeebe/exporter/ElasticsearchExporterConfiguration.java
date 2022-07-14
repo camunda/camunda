@@ -77,6 +77,8 @@ public class ElasticsearchExporterConfiguration {
         return index.processInstance;
       case PROCESS_INSTANCE_CREATION:
         return index.processInstanceCreation;
+      case PROCESS_INSTANCE_MODIFICATION:
+        return index.processInstanceModification;
       case PROCESS_MESSAGE_SUBSCRIPTION:
         return index.processMessageSubscription;
       case DECISION_REQUIREMENTS:
@@ -131,6 +133,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean process = true;
     public boolean processInstance = true;
     public boolean processInstanceCreation = false;
+    public boolean processInstanceModification = false;
     public boolean processMessageSubscription = true;
     public boolean variable = true;
     public boolean variableDocument = true;
@@ -193,6 +196,8 @@ public class ElasticsearchExporterConfiguration {
           + processInstance
           + ", processInstanceCreation="
           + processInstanceCreation
+          + ", processInstanceModification="
+          + processInstanceModification
           + ", processMessageSubscription="
           + processMessageSubscription
           + ", decisionRequirements="
