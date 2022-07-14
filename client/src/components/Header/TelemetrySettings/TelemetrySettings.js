@@ -68,7 +68,7 @@ export function TelemetrySettings({onClose, mightFail}) {
         <p>
           <b>{t('telemetry.respectPrivacy')} </b>
           {t('telemetry.personalData')}{' '}
-          <DocsLink location="technical-guide/setup/telemetry/ ">
+          <DocsLink location="self-managed/optimize-deployment/configuration/telemetry/">
             {t('common.documentation')}
           </DocsLink>{' '}
           <span

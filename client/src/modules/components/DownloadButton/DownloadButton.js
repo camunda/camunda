@@ -74,7 +74,7 @@ export function DownloadButton({
             <p
               dangerouslySetInnerHTML={{
                 __html: t('common.csvLimit.exportApi', {
-                  docsLink: docsLink + 'technical-guide/rest-api/report/get-data-export',
+                  docsLink: docsLink + 'apis-clients/optimize-api/report/get-data-export/',
                 }),
               }}
             />

@@ -49,7 +49,7 @@ export default function VisibleEventsModal({initialScope, onClose, onConfirm}) {
           </Form.Group>
           <MessageBox type="warning">
             {t('events.sources.eventListChangeWarning')}{' '}
-            <DocsLink location="user-guide/event-based-processes/#camunda-events">
+            <DocsLink location="components/optimize/userguide/additional-features/event-based-processes/#camunda-events">
               {t('events.sources.learnMore')}
             </DocsLink>
           </MessageBox>
