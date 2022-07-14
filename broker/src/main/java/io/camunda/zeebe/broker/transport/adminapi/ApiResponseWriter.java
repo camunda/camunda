@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.transport.adminapi;
 
 import io.camunda.zeebe.broker.transport.ApiRequestHandler.ResponseWriter;
 import io.camunda.zeebe.protocol.record.AdminResponseEncoder;
-import io.camunda.zeebe.protocol.record.ExecuteQueryResponseEncoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.ServerResponseImpl;
@@ -36,7 +35,7 @@ public class ApiResponseWriter implements ResponseWriter {
 
   @Override
   public int getLength() {
-    return MessageHeaderEncoder.ENCODED_LENGTH + ExecuteQueryResponseEncoder.BLOCK_LENGTH;
+    return MessageHeaderEncoder.ENCODED_LENGTH + AdminResponseEncoder.BLOCK_LENGTH;
   }
 
   @Override

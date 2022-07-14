@@ -58,7 +58,6 @@ public final class BrokerStartupProcess {
     result.add(new ApiMessagingServiceStep());
     result.add(new CommandApiServiceStep());
     result.add(new AdminApiServiceStep());
-    result.add(new SubscriptionApiStep());
     result.add(new LeaderManagementRequestHandlerStep());
 
     if (config.getGateway().isEnable()) {

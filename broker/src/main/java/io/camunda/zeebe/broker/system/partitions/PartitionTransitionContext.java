@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
@@ -15,6 +16,7 @@ import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -71,6 +73,12 @@ public interface PartitionTransitionContext extends PartitionContext {
   void setExporterDirector(ExporterDirector exporterDirector);
 
   PartitionMessagingService getMessagingService();
+
+  ClusterCommunicationService getClusterCommunicationService();
+
+  InterPartitionCommandReceiverActor getPartitionCommandReceiver();
+
+  void setPartitionCommandReceiver(InterPartitionCommandReceiverActor receiver);
 
   boolean shouldExport();
 

@@ -39,4 +39,12 @@
     <field name="partitionId" id="0" type="uint16"/>
     <field name="deploymentKey" id="1" type="uint64"/>
   </sbe:message>
+
+  <sbe:message name="InterPartitionMessage" id="4">
+    <field name="receiverPartitionId" id="0" type="uint16"/>
+    <field name="valueType" id="1" type="uint8"/>
+    <field name="intent" id="2" type="uint8"/>
+    <data name="command" id="3" type="blob"/>
+  </sbe:message>
+
 </sbe:messageSchema>

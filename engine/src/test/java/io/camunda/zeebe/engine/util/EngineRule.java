@@ -17,8 +17,6 @@ import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
-import io.camunda.zeebe.engine.processing.message.command.PartitionCommandSender;
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandMessageHandler;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
@@ -28,6 +26,7 @@ import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
@@ -46,7 +45,10 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
@@ -65,8 +67,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -96,9 +96,6 @@ public final class EngineRule extends ExternalResource {
   private Consumer<LoggedEvent> onSkippedCallback = record -> {};
   private DeploymentDistributor deploymentDistributor = new DeploymentDistributionImpl();
 
-  private final Int2ObjectHashMap<SubscriptionCommandMessageHandler> subscriptionHandlers =
-      new Int2ObjectHashMap<>();
-  private ExecutorService subscriptionHandlerExecutor;
   private final Map<Integer, ReprocessingCompletedListener> partitionReprocessingCompleteListeners =
       new Int2ObjectHashMap<>();
 
@@ -136,15 +133,11 @@ public final class EngineRule extends ExternalResource {
 
   @Override
   protected void before() {
-    subscriptionHandlerExecutor = Executors.newSingleThreadExecutor();
-
     startProcessors();
   }
 
   @Override
   protected void after() {
-    subscriptionHandlerExecutor.shutdown();
-    subscriptionHandlers.clear();
     partitionReprocessingCompleteListeners.clear();
   }
 
@@ -212,19 +205,13 @@ public final class EngineRule extends ExternalResource {
                               }),
                           partitionCount,
                           new SubscriptionCommandSender(
-                              partitionId, new PartitionCommandSenderImpl()),
+                              partitionId, new TestInterPartitionCommandSender()),
                           deploymentDistributor,
                           (key, partition) -> {},
                           jobsAvailableCallback,
                           featureFlags)
                       .withListener(new ProcessingExporterTransistor())
                       .withListener(reprocessingCompletedListener));
-
-          // sequenialize the commands to avoid concurrency
-          subscriptionHandlers.put(
-              partitionId,
-              new SubscriptionCommandMessageHandler(
-                  subscriptionHandlerExecutor::submit, environmentRule::getLogStreamRecordWriter));
         });
   }
 
@@ -510,19 +497,20 @@ public final class EngineRule extends ExternalResource {
     }
   }
 
-  private class PartitionCommandSenderImpl implements PartitionCommandSender {
+  private class TestInterPartitionCommandSender implements InterPartitionCommandSender {
 
     @Override
-    public boolean sendCommand(final int receiverPartitionId, final BufferWriter command) {
+    public void sendCommand(
+        final int receiverPartitionId,
+        final ValueType valueType,
+        final Intent intent,
+        final BufferWriter command) {
+      final var metadata =
+          new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
 
-      final byte[] bytes = new byte[command.getLength()];
-      final UnsafeBuffer commandBuffer = new UnsafeBuffer(bytes);
-      command.write(commandBuffer, 0);
-
-      // delegate the command to the subscription handler of the receiver partition
-      subscriptionHandlers.get(receiverPartitionId).apply(bytes);
-
-      return true;
+      final var writer = environmentRule.getLogStreamRecordWriter(receiverPartitionId);
+      writer.reset();
+      writer.metadataWriter(metadata).valueWriter(command).tryWrite();
     }
   }
 }
