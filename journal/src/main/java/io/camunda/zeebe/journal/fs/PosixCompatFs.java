@@ -40,10 +40,7 @@ final class PosixCompatFs implements VirtualFs {
    */
   @Override
   public void preallocate(
-      final FileDescriptor descriptor,
-      final FileChannel channel,
-      final long offset,
-      final long length)
+      final FileDescriptor descriptor, final FileChannel channel, final long length)
       throws IOException {
     if (length < 0) {
       throw new IllegalArgumentException(
@@ -57,7 +54,7 @@ final class PosixCompatFs implements VirtualFs {
     }
 
     try {
-      posixFs.posixFallocate(descriptor, offset, length);
+      posixFs.posixFallocate(descriptor, 0, length);
     } catch (final UnsupportedOperationException e) {
       LOGGER.warn(
           "Cannot use native calls to pre-allocate files; will fallback to zero-ing from now on",

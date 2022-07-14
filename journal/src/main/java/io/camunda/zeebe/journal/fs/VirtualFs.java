@@ -23,14 +23,13 @@ public interface VirtualFs {
    *
    * @param descriptor the file descriptor of the file we want to grow
    * @param channel the file channel pointing to the same file as the descriptor above
-   * @param offset the offset at which we want to start growing the file
    * @param length the length, in bytes, of the region to grow
    * @throws IllegalArgumentException if offset or length is negative
    * @throws UnsupportedOperationException if the underlying implementation does not support this
    * @throws OutOfDiskSpace if there is not enough disk space to allocate the file
    * @throws IOException if an exception occurs during an I/O call; see the cause for more
    */
-  void preallocate(FileDescriptor descriptor, final FileChannel channel, long offset, long length)
+  void preallocate(FileDescriptor descriptor, final FileChannel channel, long length)
       throws IOException;
 
   /**

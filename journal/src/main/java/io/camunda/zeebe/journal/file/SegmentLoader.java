@@ -190,9 +190,11 @@ final class SegmentLoader {
                 StandardOpenOption.WRITE,
                 StandardOpenOption.CREATE_NEW);
         // it's necessary to use a RandomAccessFile to get access to the underlying FileDescriptor
+        // at the same time, because we use the CREATE_NEW mode above, this statement should ALWAYS
+        // be executed after. This is indeed quite brittle, so suggestions are more than welcome
         final RandomAccessFile file = new RandomAccessFile(segmentPath.toFile(), "rw")) {
       if (preallocateFiles) {
-        virtualFs.preallocate(file.getFD(), channel, 0, descriptor.maxSegmentSize());
+        virtualFs.preallocate(file.getFD(), channel, descriptor.maxSegmentSize());
       }
 
       return mapSegment(channel, descriptor.maxSegmentSize());
