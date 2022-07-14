@@ -94,25 +94,28 @@ public final class InterPartitionCommandReceiver extends Actor implements DiskSp
   }
 
   private void handleMessage(final MemberId memberId, final byte[] message) {
-    if (LOG.isTraceEnabled()) {
-      LOG.trace("Received message from {}", memberId.id());
-    }
-
-    if (!diskSpaceAvailable) {
-      LOG.warn("Ignoring message, no disk space available");
-      return;
-    }
+    LOG.trace("Received message from {}", memberId);
 
     final var decoded = decoder.decodeMessage(message);
 
-    LOG.trace("Decoded command, now writing to logstream");
+    if (!diskSpaceAvailable) {
+      LOG.warn(
+          "Ignoring command {} {} from {}, no disk space available",
+          decoded.metadata.getValueType(),
+          decoded.metadata.getIntent(),
+          memberId);
+      return;
+    }
+
     logStreamWriter.reset();
     final var writeResult =
         logStreamWriter.metadataWriter(decoded.metadata).valueWriter(decoded.command).tryWrite();
     if (writeResult < 0) {
-      LOG.warn("Failed to write command to logstream");
-    } else {
-      LOG.trace("Command written to logstream");
+      LOG.warn(
+          "Failed to write command {} {} from {} to logstream",
+          decoded.metadata.getValueType(),
+          decoded.metadata.getIntent(),
+          memberId);
     }
   }
 
@@ -122,7 +125,6 @@ public final class InterPartitionCommandReceiver extends Actor implements DiskSp
     private final InterPartitionMessageDecoder messageDecoder = new InterPartitionMessageDecoder();
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final DirectBufferWriter commandBuffer = new DirectBufferWriter();
-
 
     DecodedMessage decodeMessage(final byte[] message) {
       messageBuffer.wrap(message);
@@ -146,6 +148,6 @@ public final class InterPartitionCommandReceiver extends Actor implements DiskSp
       return new DecodedMessage(recordMetadata, commandBuffer);
     }
 
-    record DecodedMessage(BufferWriter metadata, BufferWriter command) {}
+    record DecodedMessage(RecordMetadata metadata, BufferWriter command) {}
   }
 }
