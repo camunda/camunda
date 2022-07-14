@@ -194,6 +194,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.decisionEvaluation) {
         createValueIndexTemplate(ValueType.DECISION_EVALUATION);
       }
+      if (index.checkpoint) {
+        createValueIndexTemplate(ValueType.CHECKPOINT);
+      }
     }
 
     indexTemplatesCreated = true;
