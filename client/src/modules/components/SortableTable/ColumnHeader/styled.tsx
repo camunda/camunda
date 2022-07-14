@@ -7,6 +7,7 @@
 
 import styled, {css} from 'styled-components';
 import {SortIcon as DefaultSortIcon} from './SortIcon';
+import {styles} from '@carbon/elements';
 
 type Props = {
   active?: boolean;
@@ -46,8 +47,7 @@ const SortableHeader = styled.button<Props & HeaderProps>`
           `
         : ''}
       background: transparent;
-      font-weight: 500;
-      font-size: 14px;
+      ${styles.productiveHeading01};
       display: inline-flex;
       align-items: center;
     `;

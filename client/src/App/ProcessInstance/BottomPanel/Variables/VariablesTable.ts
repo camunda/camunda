@@ -6,9 +6,10 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 const TH = styled.th`
-  font-weight: normal;
+  ${styles.bodyShort01};
   text-align: left;
   padding-left: 20px;
   height: 31px;

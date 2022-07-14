@@ -9,11 +9,12 @@ import styled, {css} from 'styled-components';
 
 import {Panel} from 'modules/components/Panel';
 import {StatusMessage} from 'modules/components/StatusMessage';
+import {styles} from '@carbon/elements';
 
 const VariablesPanel = styled(Panel)`
   ${({theme}) => {
     return css`
-      font-size: 14px;
+      ${styles.bodyShort01};
       border-left: none;
       color: ${theme.colors.text01};
 

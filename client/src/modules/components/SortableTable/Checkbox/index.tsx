@@ -9,8 +9,6 @@ import styled from 'styled-components';
 import {CmCheckbox} from '@camunda-cloud/common-ui-react';
 
 const Checkbox = styled(CmCheckbox)`
-  position: relative;
-  top: 3px;
   margin-right: 3px;
 `;
 

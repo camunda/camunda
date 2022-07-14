@@ -32,6 +32,7 @@ const ProcessBlock = styled(Block)`
 `;
 
 const State = styled(StateIcon)`
+  top: 0;
   margin-right: 10px;
   margin-top: auto;
   margin-bottom: auto;

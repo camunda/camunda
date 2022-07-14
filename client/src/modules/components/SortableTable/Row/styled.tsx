@@ -17,7 +17,6 @@ const TR = styled(Table.TR)<TRProps>`
     const colors = theme.colors.sortableTable;
 
     return css`
-      line-height: 36px;
       &:first-child {
         border-top-style: hidden;
       }
@@ -57,4 +56,9 @@ const TD = styled(Table.TD)`
   }}
 `;
 
-export {TR, TD};
+const CellContent = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+export {TR, TD, CellContent};

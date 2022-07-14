@@ -24,6 +24,7 @@ import {
   TRHeader,
   Spinner,
   SkeletonCheckboxBlock,
+  HeaderContent,
 } from './styled';
 
 type HeaderColumn = {
@@ -106,7 +107,7 @@ const SortableTable: React.FC<Props> = observer(
 
                   return (
                     <TH key={index}>
-                      <>
+                      <HeaderContent>
                         {index === 0 &&
                           selectionType === 'checkbox' &&
                           (state === 'skeleton' ? (
@@ -129,7 +130,7 @@ const SortableTable: React.FC<Props> = observer(
                           paddingWidth={paddingWidth}
                           onSort={onSort}
                         />
-                      </>
+                      </HeaderContent>
                     </TH>
                   );
                 })}

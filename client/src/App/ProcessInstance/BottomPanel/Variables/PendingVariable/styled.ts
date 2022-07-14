@@ -6,9 +6,9 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 const DisplayText = styled.div`
-  line-height: 18px;
   word-break: break-word;
   margin: 11px 0;
   max-height: 76px;
@@ -31,11 +31,11 @@ const Container = styled.div`
 `;
 
 const Name = styled.div`
+  ${styles.bodyShort01};
   font-weight: 500;
   height: 100%;
   padding: 4px 0 4px 20px;
   margin: 3px 0;
-  line-height: 18px;
   display: block;
   text-overflow: ellipsis;
   overflow: hidden;

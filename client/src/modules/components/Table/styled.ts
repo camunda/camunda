@@ -6,10 +6,11 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 const Table = styled.table`
   width: 100%;
-  font-size: 14px;
+  ${styles.bodyShort01};
   border-spacing: 0;
   border-collapse: collapse;
 `;
@@ -19,7 +20,7 @@ const TH = styled.th`
     const colors = theme.colors.modules.table.th;
 
     return css`
-      font-weight: 600;
+      ${styles.productiveHeading01};
       padding: 0 0 0 5px;
       color: ${colors.color};
     `;
@@ -41,9 +42,7 @@ const TD = styled.td`
 const TR = styled.tr`
   ${({theme}) => {
     return css`
-      height: 36px;
-      line-height: 37px;
-
+      height: 37px;
       border-width: 1px 0;
       border-style: solid;
       border-color: ${theme.colors.borderColor};

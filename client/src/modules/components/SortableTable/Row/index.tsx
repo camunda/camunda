@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import {TR, TD} from './styled';
+import {TR, TD, CellContent} from './styled';
 import {Checkbox} from '../Checkbox';
 
 type Column = {
@@ -49,7 +49,7 @@ const Row: React.FC<Props> = React.memo(
         {content.map(({cellContent, dataTestId}, index) => {
           return (
             <TD key={index} data-testid={dataTestId}>
-              <>
+              <CellContent>
                 {index === 0 && selectionType === 'checkbox' && (
                   <Checkbox
                     data-testid="instance-checkbox"
@@ -60,7 +60,7 @@ const Row: React.FC<Props> = React.memo(
                 )}
 
                 {cellContent}
-              </>
+              </CellContent>
             </TD>
           );
         })}

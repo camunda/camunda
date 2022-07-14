@@ -63,7 +63,6 @@ const Spinner = styled(SpinnerSkeleton)`
 const TH = styled(Table.TH)`
   ${({theme}) => {
     return css`
-      font-weight: 500;
       white-space: nowrap;
       color: ${theme.colors.text01};
       box-shadow: inset 0 -1px 0 ${theme.colors.borderColor};
@@ -99,6 +98,11 @@ const SkeletonCheckboxBlock = styled(BaseSkeletonCheckboxBlock)`
   margin-right: 15px;
 `;
 
+const HeaderContent = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
 export {
   Container,
   List,
@@ -109,4 +113,5 @@ export {
   TRHeader,
   THead,
   SkeletonCheckboxBlock,
+  HeaderContent,
 };

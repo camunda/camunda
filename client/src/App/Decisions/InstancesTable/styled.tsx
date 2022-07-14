@@ -42,6 +42,7 @@ const DecisionBlock = styled(BaseBlock)`
 `;
 
 const State = styled(StateIcon)`
+  top: 0;
   margin-right: 10px;
   &:first-child {
     margin-left: 0;

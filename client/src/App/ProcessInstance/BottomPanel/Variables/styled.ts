@@ -20,22 +20,10 @@ import {ReactComponent as DefaultPlus} from 'modules/components/Icon/plus.svg';
 import EmptyPanelComponent from 'modules/components/EmptyPanel';
 import {Button as BaseButton} from 'modules/components/Button';
 import {TextField} from 'modules/components/TextField';
+import {styles} from '@carbon/elements';
 
 const Spinner = styled(OperationSpinner)`
   margin-top: 4px;
-`;
-
-const Variables = styled(Panel)`
-  ${({theme}) => {
-    const colors = theme.colors.variables;
-
-    return css`
-      flex: 1;
-      font-size: 14px;
-      border-left: none;
-      color: ${colors.color};
-    `;
-  }}
 `;
 
 const VariablesContent = styled(Panel.Body)`
@@ -58,22 +46,6 @@ const TableScroll = styled.div`
   &:last-child {
     margin-bottom: 0;
   }
-`;
-
-const Placeholder = styled.span`
-  ${({theme}) => {
-    const colors = theme.colors.variables.placeholder;
-
-    return css`
-      position: absolute;
-      text-align: center;
-      top: 40%;
-      width: 100%;
-      font-size: 14px;
-      color: ${colors.color};
-      padding: 0 20px;
-    `;
-  }}
 `;
 
 const TD = styled.td`
@@ -139,10 +111,10 @@ const THead = styled.thead<THeadProps>`
 `;
 
 const VariableName = styled.div`
+  ${styles.bodyShort01};
   font-weight: 500;
   height: 100%;
   padding-left: 20px;
-  line-height: 18px;
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
@@ -154,7 +126,6 @@ type DisplayTextProps = {hasBackdrop?: boolean};
 const DisplayText = styled.div<DisplayTextProps>`
   ${({hasBackdrop}) => {
     return css`
-      line-height: normal;
       word-break: break-word;
       max-height: 78px;
       overflow-y: auto;
@@ -293,10 +264,6 @@ const Footer = styled(Panel.Footer)<FooterProps>`
   }}
 `;
 
-const TH = styled.th`
-  font-weight: 500;
-`;
-
 const EditButtonsContainer = styled.div`
   display: flex;
 `;
@@ -306,8 +273,7 @@ const Header = styled.div`
     return css`
       margin-top: 8px;
       margin-left: 20px;
-      font-size: 16px;
-      font-weight: 500;
+      ${styles.productiveHeading02};
       color: ${theme.colors.text01};
     `;
   }}
@@ -319,12 +285,9 @@ const ValueField = styled(TextField)`
 
 export {
   Spinner,
-  Variables,
   VariablesContent,
   TableScroll,
-  Placeholder,
   TD,
-  TH,
   THead,
   VariableName,
   DisplayText,
