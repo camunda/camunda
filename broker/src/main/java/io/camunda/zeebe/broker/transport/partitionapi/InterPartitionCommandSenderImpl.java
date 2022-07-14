@@ -17,8 +17,7 @@ import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 public final class InterPartitionCommandSenderImpl implements InterPartitionCommandSender {
@@ -68,14 +67,20 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
   private static final class Encoder {
     private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     private final InterPartitionMessageEncoder bodyEncoder = new InterPartitionMessageEncoder();
-    private final MutableDirectBuffer messageBuffer = new ExpandableArrayBuffer();
-    private final MutableDirectBuffer commandBuffer = new ExpandableArrayBuffer();
 
     private byte[] encode(
         final int receiverPartitionId,
         final ValueType valueType,
         final Intent intent,
         final BufferWriter command) {
+      final var messageLength =
+          MessageHeaderEncoder.ENCODED_LENGTH
+              + InterPartitionMessageEncoder.BLOCK_LENGTH
+              + InterPartitionMessageEncoder.commandHeaderLength()
+              + command.getLength();
+
+      final var commandBuffer = new UnsafeBuffer(new byte[command.getLength()]);
+      final var messageBuffer = new UnsafeBuffer(new byte[messageLength]);
       command.write(commandBuffer, 0);
       bodyEncoder
           .wrapAndApplyHeader(messageBuffer, 0, headerEncoder)
@@ -83,16 +88,7 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
           .valueType(valueType.value())
           .intent(intent.value())
           .putCommand(commandBuffer, 0, command.getLength());
-
-      final var length =
-          MessageHeaderEncoder.ENCODED_LENGTH
-              + InterPartitionMessageEncoder.BLOCK_LENGTH
-              + InterPartitionMessageEncoder.commandHeaderLength()
-              + command.getLength();
-      final var messageBytes = new byte[length];
-      messageBuffer.getBytes(0, messageBytes, 0, length);
-
-      return messageBytes;
+      return messageBuffer.byteArray();
     }
   }
 }
