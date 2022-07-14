@@ -6,24 +6,38 @@
  */
 
 import styled, {css, ThemedInterpolationFunction} from 'styled-components';
-
-const FONT_STYLES = {
-  small: css`
-    font-weight: 400;
-    font-size: 13px;
-  `,
-  medium: css`
-    font-weight: 600;
-    font-size: 14px;
-  `,
-  large: css`
-    font-weight: 600;
-    font-size: 30px;
-  `,
-} as const;
+import {styles} from '@carbon/elements';
 
 type WrapperProps = {
   size: 'small' | 'medium' | 'large';
+};
+
+const getFontStyle: ThemedInterpolationFunction<WrapperProps> = ({
+  size,
+  theme,
+}) => {
+  const colors = theme.colors.modules.instancesBar.mediumTextStyle;
+
+  return css`
+    ${size === 'small' &&
+    css`
+      ${styles.label01};
+      color: ${theme.colors.text01};
+    `}
+    ${size === 'medium' &&
+    css`
+      ${styles.label02};
+      font-weight: 600;
+      color: ${colors.color};
+    `}
+
+    ${size === 'large' &&
+    css`
+      ${styles.label02};
+      font-size: 28px;
+      color: ${theme.colors.text02};
+    `}
+  `;
 };
 
 const Wrapper = styled.div<WrapperProps>`
@@ -31,10 +45,7 @@ const Wrapper = styled.div<WrapperProps>`
     return css`
       display: flex;
       padding: 0;
-      color: ${theme.colors.text02};
-      font-family: IBM Plex Sans;
-      line-height: 1.71;
-      ${FONT_STYLES[size]}
+      ${getFontStyle({size, theme})}
     `;
   }}
 `;
@@ -106,6 +117,7 @@ const BarContainer = styled.div<BarContainerProps>`
   ${({height}) => {
     return css`
       position: relative;
+      top: 2px;
       > div {
         height: ${height}px;
       }

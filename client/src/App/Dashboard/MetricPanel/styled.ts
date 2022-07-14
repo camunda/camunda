@@ -8,6 +8,7 @@
 import styled, {css} from 'styled-components';
 import BaseInstancesBar from 'modules/components/InstancesBar';
 import {Link} from 'react-router-dom';
+import {styles} from '@carbon/elements';
 
 const Panel = styled.div`
   ${({theme}) => {
@@ -40,9 +41,8 @@ const SkeletonBar = styled.div`
 `;
 
 const Title = styled(Link)`
-  font-size: 30px;
-  line-height: 60px;
-  margin-bottom: -27px;
+  ${styles.productiveHeading04};
+  margin-bottom: -10px;
   &:hover {
     text-decoration: underline;
   }
@@ -56,7 +56,8 @@ const LabelContainer = styled.div`
 `;
 
 const Label = styled(Link)`
-  font-size: 24px;
+  ${styles.productiveHeading03};
+
   &:hover {
     text-decoration: underline;
   }

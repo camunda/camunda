@@ -624,6 +624,9 @@ const theme = {
           greyTextStyle: {
             color: SEMANTIC_COLORS.white,
           },
+          mediumTextStyle: {
+            color: SEMANTIC_COLORS.white,
+          },
         },
         modal: {
           modalRoot: {
@@ -1472,6 +1475,9 @@ const theme = {
         instancesBar: {
           greyTextStyle: {
             color: SEMANTIC_COLORS.badge02,
+          },
+          mediumTextStyle: {
+            color: LIGHT_COLORS.ui06,
           },
         },
         modal: {
