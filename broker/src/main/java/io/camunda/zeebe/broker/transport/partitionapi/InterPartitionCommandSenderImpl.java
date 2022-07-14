@@ -26,7 +26,6 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
   private final ClusterCommunicationService communicationService;
 
   private final TopologyPartitionListenerImpl partitionListener;
-  private final Encoder encoder = new Encoder();
 
   public InterPartitionCommandSenderImpl(
       final ClusterCommunicationService communicationService,
@@ -59,17 +58,15 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
         receiverPartitionId,
         partitionLeader);
 
-    final var message = encoder.encode(receiverPartitionId, valueType, intent, command);
+    final var message = Encoder.encode(receiverPartitionId, valueType, intent, command);
 
     communicationService.unicast(
         TOPIC_PREFIX + receiverPartitionId, message, MemberId.from("" + partitionLeader));
   }
 
   private static final class Encoder {
-    private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-    private final InterPartitionMessageEncoder bodyEncoder = new InterPartitionMessageEncoder();
 
-    private byte[] encode(
+    private static byte[] encode(
         final int receiverPartitionId,
         final ValueType valueType,
         final Intent intent,
@@ -80,6 +77,8 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
               + InterPartitionMessageEncoder.commandHeaderLength()
               + command.getLength();
 
+      final var headerEncoder = new MessageHeaderEncoder();
+      final var bodyEncoder = new InterPartitionMessageEncoder();
       final var commandBuffer = new UnsafeBuffer(new byte[command.getLength()]);
       final var messageBuffer = new UnsafeBuffer(new byte[messageLength]);
       command.write(commandBuffer, 0);
