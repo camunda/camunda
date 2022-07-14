@@ -68,7 +68,6 @@ public final class PosixFs {
    */
   public boolean isPosixFallocateEnabled() {
     return supportsPosixFallocate;
-
   }
 
   /**
@@ -102,8 +101,8 @@ public final class PosixFs {
    * @throws IllegalArgumentException if offset or length is negative
    * @throws InterruptedIOException if an interrupt occurs while it was allocating the file, meaning
    *     it may not have been fully allocated
-   * @throws UnsupportedOperationException if the underlying file system does not support this or
-   *     if this function is disabled via {@link #disablePosixFallocate()}
+   * @throws UnsupportedOperationException if the underlying file system does not support this or if
+   *     this function is disabled via {@link #disablePosixFallocate()}
    * @throws OutOfDiskSpace if there is not enough disk space to allocate the file
    * @throws IOException if the file descriptor is invalid (e.g. not opened for writing, not
    *     pointing to a regular file, etc.)
