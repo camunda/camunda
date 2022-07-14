@@ -26,64 +26,47 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
-import java.util.concurrent.Executor;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.Int2IntHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 
-public class InterPartitionCommandReceiverTest {
-  @Rule public final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
-
-  ClusterCommunicationService communicationService;
-  private LogStreamRecordWriter logstream;
-
-  @Before
-  public void setup() {
-    communicationService = mock(ClusterCommunicationService.class);
-    logstream =
-        mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
-  }
+@Execution(ExecutionMode.CONCURRENT)
+final class InterPartitionCommandReceiverTest {
 
   @Test
-  public void shouldWriteSentCommandToLogStream() {
+  void shouldWriteSentCommandToLogStream() {
     // given
     final var receiverBrokerId = 1;
     final var receiverPartitionId = 3;
 
     final var sentMessage =
         sendCommand(
-            receiverPartitionId,
+            receiverBrokerId,
             receiverPartitionId,
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
             new byte[100]);
 
-    final var receiver =
-        new InterPartitionCommandReceiverActor(
-            receiverBrokerId, receiverPartitionId, communicationService, logstream);
-    scheduler.submitActor(receiver);
-    scheduler.workUntilDone();
+    final var logStreamWriter =
+        mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
-    getHandlerForPartition(communicationService, receiverPartitionId).accept(sentMessage);
-    scheduler.workUntilDone();
+    receiver.handleMessage(new MemberId("0"), sentMessage);
 
     // then - sent message can be written to log stream
-    verify(logstream).tryWrite();
+    verify(logStreamWriter).tryWrite();
   }
 
   @Test
-  public void shouldNotWriteIfNoDiskSpaceAvailable() {
+  void shouldNotWriteIfNoDiskSpaceAvailable() {
     // given
     final var receiverBrokerId = 3;
     final var receiverPartitionId = 5;
@@ -96,24 +79,20 @@ public class InterPartitionCommandReceiverTest {
             MessageSubscriptionIntent.CORRELATE,
             new byte[100]);
 
-    final var receiver =
-        new InterPartitionCommandReceiverActor(
-            receiverBrokerId, receiverPartitionId, communicationService, logstream);
-
-    scheduler.submitActor(receiver);
-    scheduler.workUntilDone();
+    final var logStreamWriter =
+        mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
-    receiver.onDiskSpaceNotAvailable();
-    getHandlerForPartition(communicationService, receiverPartitionId).accept(sentMessage);
-    scheduler.workUntilDone();
+    receiver.setDiskSpaceAvailable(false);
+    receiver.handleMessage(new MemberId("0"), sentMessage);
 
     // then
-    verifyNoInteractions(logstream);
+    verifyNoInteractions(logStreamWriter);
   }
 
   @Test
-  public void writtenMetadataShouldBeCorrect() {
+  void writtenMetadataShouldBeCorrect() {
     // given
     final var receiverBrokerId = 1;
     final var receiverPartitionId = 5;
@@ -124,20 +103,16 @@ public class InterPartitionCommandReceiverTest {
     final var sentMessage =
         sendCommand(receiverBrokerId, receiverPartitionId, valueType, intent, new byte[100]);
 
-    final var receiver =
-        new InterPartitionCommandReceiverActor(
-            receiverBrokerId, receiverPartitionId, communicationService, logstream);
-
-    scheduler.submitActor(receiver);
-    scheduler.workUntilDone();
+    final var logStreamWriter =
+        mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
-    getHandlerForPartition(communicationService, receiverPartitionId).accept(sentMessage);
-    scheduler.workUntilDone();
+    receiver.handleMessage(new MemberId("0"), sentMessage);
 
     // then
     final var metadataCaptor = ArgumentCaptor.forClass(BufferWriter.class);
-    verify(logstream).metadataWriter(metadataCaptor.capture());
+    verify(logStreamWriter).metadataWriter(metadataCaptor.capture());
     final var metadataWriter = metadataCaptor.getValue();
     final var metadataBuffer = new ExpandableArrayBuffer();
     final var metadata = new RecordMetadata();
@@ -150,7 +125,7 @@ public class InterPartitionCommandReceiverTest {
   }
 
   @Test
-  public void shouldWriteGivenCommand() {
+  void shouldWriteGivenCommand() {
     // given
     final var receiverBrokerId = 3;
     final var receiverPartitionId = 5;
@@ -170,20 +145,16 @@ public class InterPartitionCommandReceiverTest {
             MessageSubscriptionIntent.CORRELATE,
             commandBytes);
 
-    final var receiver =
-        new InterPartitionCommandReceiverActor(
-            receiverBrokerId, receiverPartitionId, communicationService, logstream);
-
-    scheduler.submitActor(receiver);
-    scheduler.workUntilDone();
+    final var logStreamWriter =
+        mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
-    getHandlerForPartition(communicationService, receiverPartitionId).accept(sentMessage);
-    scheduler.workUntilDone();
+    receiver.handleMessage(new MemberId("0"), sentMessage);
 
     // then
     final var valueCaptor = ArgumentCaptor.forClass(BufferWriter.class);
-    verify(logstream).valueWriter(valueCaptor.capture());
+    verify(logStreamWriter).valueWriter(valueCaptor.capture());
     final var valueWriter = valueCaptor.getValue();
     final var bytesWrittenToLogStream = new byte[valueWriter.getLength()];
     final var valueBuffer = new UnsafeBuffer(bytesWrittenToLogStream);
@@ -196,27 +167,11 @@ public class InterPartitionCommandReceiverTest {
   private TopologyPartitionListenerImpl mockTopologyListener(
       final int partitionId, final int brokerId) {
     final var topologyListener = mock(TopologyPartitionListenerImpl.class);
-
     final var topology = new Int2IntHashMap(-1);
     topology.put(partitionId, brokerId);
     when(topologyListener.getPartitionLeaders()).thenReturn(topology);
 
     return topologyListener;
-  }
-
-  private Consumer<byte[]> getHandlerForPartition(
-      final ClusterCommunicationService communicationService, final int partitionId) {
-    @SuppressWarnings("unchecked")
-    final ArgumentCaptor<BiConsumer<MemberId, byte[]>> handlerCaptor =
-        ArgumentCaptor.forClass(BiConsumer.class);
-    final var executorCaptor = ArgumentCaptor.forClass(Executor.class);
-    verify(communicationService)
-        .subscribe(
-            eq(TOPIC_PREFIX + partitionId), handlerCaptor.capture(), executorCaptor.capture());
-    return (byte[] bytes) ->
-        executorCaptor
-            .getValue()
-            .execute(() -> handlerCaptor.getValue().accept(new MemberId("0"), bytes));
   }
 
   private byte[] sendCommand(
@@ -225,6 +180,8 @@ public class InterPartitionCommandReceiverTest {
       final ValueType valueType,
       final Intent intent,
       final byte[] command) {
+    final ClusterCommunicationService communicationService =
+        mock(ClusterCommunicationService.class);
 
     final var topologyListener = mockTopologyListener(receiverPartitionId, receiverBrokerId);
     final var sender = new InterPartitionCommandSenderImpl(communicationService, topologyListener);
@@ -233,7 +190,6 @@ public class InterPartitionCommandReceiverTest {
     final var bufferWriter = new DirectBufferWriter();
     bufferWriter.wrap(buffer);
     sender.sendCommand(receiverPartitionId, valueType, intent, bufferWriter);
-    scheduler.workUntilDone();
 
     final var messageCaptor = ArgumentCaptor.forClass(byte[].class);
     verify(communicationService)
