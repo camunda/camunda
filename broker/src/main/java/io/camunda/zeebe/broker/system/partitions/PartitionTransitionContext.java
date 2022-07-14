@@ -16,7 +16,7 @@ import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
-import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiver;
+import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -76,9 +76,9 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   ClusterCommunicationService getClusterCommunicationService();
 
-  InterPartitionCommandReceiver getPartitionCommandReceiver();
+  InterPartitionCommandReceiverActor getPartitionCommandReceiver();
 
-  void setPartitionCommandReceiver(InterPartitionCommandReceiver receiver);
+  void setPartitionCommandReceiver(InterPartitionCommandReceiverActor receiver);
 
   boolean shouldExport();
 

@@ -69,7 +69,7 @@ public class InterPartitionCommandReceiverTest {
             new byte[100]);
 
     final var receiver =
-        new InterPartitionCommandReceiver(
+        new InterPartitionCommandReceiverActor(
             receiverBrokerId, receiverPartitionId, communicationService, logstream);
     scheduler.submitActor(receiver);
     scheduler.workUntilDone();
@@ -97,7 +97,7 @@ public class InterPartitionCommandReceiverTest {
             new byte[100]);
 
     final var receiver =
-        new InterPartitionCommandReceiver(
+        new InterPartitionCommandReceiverActor(
             receiverBrokerId, receiverPartitionId, communicationService, logstream);
 
     scheduler.submitActor(receiver);
@@ -125,7 +125,7 @@ public class InterPartitionCommandReceiverTest {
         sendCommand(receiverBrokerId, receiverPartitionId, valueType, intent, new byte[100]);
 
     final var receiver =
-        new InterPartitionCommandReceiver(
+        new InterPartitionCommandReceiverActor(
             receiverBrokerId, receiverPartitionId, communicationService, logstream);
 
     scheduler.submitActor(receiver);
@@ -171,7 +171,7 @@ public class InterPartitionCommandReceiverTest {
             commandBytes);
 
     final var receiver =
-        new InterPartitionCommandReceiver(
+        new InterPartitionCommandReceiverActor(
             receiverBrokerId, receiverPartitionId, communicationService, logstream);
 
     scheduler.submitActor(receiver);

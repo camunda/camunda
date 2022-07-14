@@ -20,7 +20,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
-import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiver;
+import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -84,7 +84,7 @@ public class PartitionStartupAndTransitionContextImpl
   private long currentTerm;
   private Role currentRole;
   private ConcurrencyControl concurrencyControl;
-  private InterPartitionCommandReceiver interPartitionCommandReceiver;
+  private InterPartitionCommandReceiverActor interPartitionCommandReceiver;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -208,12 +208,12 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public InterPartitionCommandReceiver getPartitionCommandReceiver() {
+  public InterPartitionCommandReceiverActor getPartitionCommandReceiver() {
     return interPartitionCommandReceiver;
   }
 
   @Override
-  public void setPartitionCommandReceiver(final InterPartitionCommandReceiver receiver) {
+  public void setPartitionCommandReceiver(final InterPartitionCommandReceiverActor receiver) {
     interPartitionCommandReceiver = receiver;
   }
 

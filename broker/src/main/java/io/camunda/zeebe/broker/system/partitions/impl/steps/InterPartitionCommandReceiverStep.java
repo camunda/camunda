@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
-import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiver;
+import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
@@ -45,7 +45,7 @@ public class InterPartitionCommandReceiverStep implements PartitionTransitionSte
                   return;
                 }
                 final var receiver =
-                    new InterPartitionCommandReceiver(
+                    new InterPartitionCommandReceiverActor(
                         context.getNodeId(),
                         context.getPartitionId(),
                         context.getClusterCommunicationService(),

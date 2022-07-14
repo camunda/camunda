@@ -18,7 +18,7 @@ import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
-import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiver;
+import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -55,7 +55,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private AsyncSnapshotDirector snapshotDirector;
   private QueryService queryService;
   private ConcurrencyControl concurrencyControl;
-  private InterPartitionCommandReceiver interPartitionCommandReceiver;
+  private InterPartitionCommandReceiverActor interPartitionCommandReceiver;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
 
   @Override
@@ -130,12 +130,12 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public InterPartitionCommandReceiver getPartitionCommandReceiver() {
+  public InterPartitionCommandReceiverActor getPartitionCommandReceiver() {
     return interPartitionCommandReceiver;
   }
 
   @Override
-  public void setPartitionCommandReceiver(final InterPartitionCommandReceiver receiver) {
+  public void setPartitionCommandReceiver(final InterPartitionCommandReceiverActor receiver) {
     interPartitionCommandReceiver = receiver;
   }
 
