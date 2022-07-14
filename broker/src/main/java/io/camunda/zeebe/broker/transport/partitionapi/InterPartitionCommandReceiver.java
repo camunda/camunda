@@ -38,7 +38,7 @@ public final class InterPartitionCommandReceiver extends Actor implements DiskSp
   private final ClusterCommunicationService communicationService;
   private final LogStreamRecordWriter logStreamWriter;
   private final int partitionId;
-  private final Decoder decoder;
+  private final Decoder decoder = new Decoder();
   private boolean diskSpaceAvailable = true;
 
   public InterPartitionCommandReceiver(
@@ -49,7 +49,6 @@ public final class InterPartitionCommandReceiver extends Actor implements DiskSp
     this.partitionId = partitionId;
     this.communicationService = communicationService;
     this.logStreamWriter = logStreamWriter;
-    decoder = new Decoder(partitionId);
     actorName = buildActorName(nodeId, getClass().getSimpleName(), partitionId);
   }
 
@@ -118,16 +117,12 @@ public final class InterPartitionCommandReceiver extends Actor implements DiskSp
   }
 
   private static final class Decoder {
-    private final int partitionId;
     private final UnsafeBuffer messageBuffer = new UnsafeBuffer();
     private final RecordMetadata recordMetadata = new RecordMetadata();
     private final InterPartitionMessageDecoder messageDecoder = new InterPartitionMessageDecoder();
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final DirectBufferWriter commandBuffer = new DirectBufferWriter();
 
-    private Decoder(final int partitionId) {
-      this.partitionId = partitionId;
-    }
 
     DecodedMessage decodeMessage(final byte[] message) {
       messageBuffer.wrap(message);
@@ -138,12 +133,7 @@ public final class InterPartitionCommandReceiver extends Actor implements DiskSp
 
       // rebuild the record metadata first, all messages contain commands for the current
       // partitionId
-      recordMetadata
-          .reset()
-          .requestStreamId(partitionId)
-          .recordType(RecordType.COMMAND)
-          .valueType(valueType)
-          .intent(intent);
+      recordMetadata.reset().recordType(RecordType.COMMAND).valueType(valueType).intent(intent);
 
       // wrap the command buffer around the rest of the message
       // this does not try to parse the command, we are just assuming that these bytes

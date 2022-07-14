@@ -505,15 +505,11 @@ public final class EngineRule extends ExternalResource {
         final ValueType valueType,
         final Intent intent,
         final BufferWriter command) {
+      final var metadata =
+          new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
+
       final var writer = environmentRule.getLogStreamRecordWriter(receiverPartitionId);
       writer.reset();
-      final var metadata = new RecordMetadata();
-
-      metadata.requestStreamId(receiverPartitionId);
-      metadata.recordType(RecordType.COMMAND);
-      metadata.intent(intent);
-      metadata.valueType(valueType);
-
       writer.metadataWriter(metadata).valueWriter(command).tryWrite();
     }
   }

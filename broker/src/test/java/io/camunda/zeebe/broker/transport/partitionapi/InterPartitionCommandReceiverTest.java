@@ -144,7 +144,6 @@ public class InterPartitionCommandReceiverTest {
     metadataWriter.write(metadataBuffer, 0);
     metadata.wrap(metadataBuffer, 0, metadataWriter.getLength());
 
-    assertThat(metadata.getRequestStreamId()).isEqualTo(receiverPartitionId);
     assertThat(metadata.getRecordType()).isEqualTo(RecordType.COMMAND);
     assertThat(metadata.getValueType()).isEqualTo(valueType);
     assertThat(metadata.getIntent()).isEqualTo(intent);
