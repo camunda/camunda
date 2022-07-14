@@ -22,4 +22,11 @@
 
   <name>Zeebe Backup</name>
 
+  <dependencies>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-scheduler</artifactId>
+    </dependency>
+  </dependencies>
+
 </project>
