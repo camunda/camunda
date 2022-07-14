@@ -60,7 +60,6 @@
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-constants</artifactId>
-      <version>0.10.3</version>
     </dependency>
 
     <!-- Test dependencies -->

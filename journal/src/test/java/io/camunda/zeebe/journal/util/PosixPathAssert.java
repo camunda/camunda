@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.journal;
+package io.camunda.zeebe.journal.util;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,6 +18,11 @@ import jnr.posix.POSIXFactory;
 import jnr.posix.util.Platform;
 import org.assertj.core.api.AbstractPathAssert;
 
+/**
+ * A set of assertions to test properties of {@link Path} using native calls, with fallback
+ * implementations for non-POSIX systems.
+ */
+@SuppressWarnings("UnusedReturnValue")
 public final class PosixPathAssert extends AbstractPathAssert<PosixPathAssert> {
 
   public PosixPathAssert(final Path actual) {
@@ -30,6 +35,59 @@ public final class PosixPathAssert extends AbstractPathAssert<PosixPathAssert> {
 
   public static PosixPathAssert assertThat(final File file) {
     return assertThat(file.toPath());
+  }
+
+  /**
+   * Verifies that the real file size in bytes is strictly less than the expected size in bytes.
+   *
+   * @param sizeInBytes the strict upper bound of the real file size
+   * @return itself for chaining
+   */
+  public PosixPathAssert hasRealSizeLessThan(final long sizeInBytes) {
+    isNotNull().isRegularFile();
+
+    final var realSize = getRealSize(actual);
+    if (realSize >= sizeInBytes) {
+      throw failure(
+          "%nExpected file%n  <%s>%nto have a real size less than%n  <%d> bytes%nbut "
+              + "it was%n  <%d> bytes (<%d> more bytes)",
+          actual, sizeInBytes, realSize, realSize - sizeInBytes);
+    }
+
+    return this;
+  }
+
+  /**
+   * Verifies the real file size in bytes of actual is equal to expected. If the given expected size
+   * is not a multiple of the I/O block size, it will be rounded up to the nearest greater multiple,
+   * as the real size will always be a multiple of the block size.
+   *
+   * @param sizeInBytes the expected size in bytes; may be rounded up to the nearest block size
+   * @throws AssertionError if actual is null
+   * @throws AssertionError if the path does not point to a regular file (e.g. pipe, directory,
+   *     socket)
+   * @throws AssertionError if the real size (in terms of allocated blocks) is less than the
+   *     expected size (rounded up to the nearest block size multiple)
+   * @return itself for chaining
+   */
+  public PosixPathAssert hasRealSize(final long sizeInBytes) {
+    isNotNull().isRegularFile();
+
+    if (Platform.IS_WINDOWS) {
+      return hasSize(sizeInBytes);
+    }
+
+    final var expectedSize = roundUpToBlockSize(sizeInBytes);
+    final var realSize = getRealSize(actual);
+    // could use paths.assertHasSize, but I feel this error message is more descriptive
+    if (expectedSize != realSize) {
+      throw failure(
+          "%nExpected file%n  <%s>%nto have a real size of%n  <%d> bytes (or <%d> "
+              + "bytes rounded up to the block size)%nbut it was %n  <%d> bytes (diff <%d> bytes)",
+          actual, expectedSize, sizeInBytes, realSize, expectedSize - realSize);
+    }
+
+    return myself;
   }
 
   /**
@@ -85,5 +143,10 @@ public final class PosixPathAssert extends AbstractPathAssert<PosixPathAssert> {
     final FileStat stat = posixFunctions.stat(pathString);
 
     return stat.blockSize();
+  }
+
+  private long roundUpToBlockSize(final long expectedSize) {
+    final var blockSize = getBlockSize(actual);
+    return (expectedSize + blockSize - 1) - (expectedSize + blockSize - 1) % blockSize;
   }
 }

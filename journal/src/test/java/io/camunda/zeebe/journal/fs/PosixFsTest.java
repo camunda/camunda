@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
 import io.camunda.zeebe.journal.fs.LibC.InvalidLibC;
+import io.camunda.zeebe.journal.util.PosixPathAssert;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.RandomAccessFile;
@@ -57,7 +58,7 @@ final class PosixFsTest {
     }
 
     // then
-    assertThat(path).hasSize(length);
+    PosixPathAssert.assertThat(path).hasRealSize(length - 8192);
   }
 
   @Test

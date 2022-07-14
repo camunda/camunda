@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
  * goal is just to cover Unix platforms (e.g. Linux, macOS). If this diverges, do refactor or split
  * this class.
  */
-final class PosixFs {
+public final class PosixFs {
   private static final Logger LOGGER = LoggerFactory.getLogger(PosixFs.class);
   private static final VarHandle FILE_DESCRIPTOR_FD_FIELD;
 
@@ -51,7 +51,7 @@ final class PosixFs {
 
   private final LibC libC;
 
-  PosixFs() {
+  public PosixFs() {
     this(LibC.ofNativeLibrary());
   }
 
@@ -66,7 +66,7 @@ final class PosixFs {
    *
    * @return true if supported, false otherwise
    */
-  boolean isPosixFallocateEnabled() {
+  public boolean isPosixFallocateEnabled() {
     return supportsPosixFallocate;
 
   }
@@ -75,7 +75,7 @@ final class PosixFs {
    * Disables usage of {@link #posixFallocate(FileDescriptor, long, long)}. After calling this,
    * {@link #isPosixFallocateEnabled()} will return false.
    */
-  void disablePosixFallocate() {
+  public void disablePosixFallocate() {
     LOGGER.debug("Disabling usage of posix_fallocate optimization");
     supportsPosixFallocate = false;
   }
@@ -108,7 +108,7 @@ final class PosixFs {
    * @throws IOException if the file descriptor is invalid (e.g. not opened for writing, not
    *     pointing to a regular file, etc.)
    */
-  void posixFallocate(final FileDescriptor descriptor, final long offset, final long length)
+  public void posixFallocate(final FileDescriptor descriptor, final long offset, final long length)
       throws IOException {
     if (offset < 0) {
       throw new IllegalArgumentException(

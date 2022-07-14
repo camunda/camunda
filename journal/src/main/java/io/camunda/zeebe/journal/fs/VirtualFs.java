@@ -11,6 +11,8 @@ import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
 
 /**
  * Abstracts away native file system operations. This allows us to better test dependents in
@@ -31,6 +33,10 @@ public interface VirtualFs {
    */
   void preallocate(FileDescriptor descriptor, final FileChannel channel, long length)
       throws IOException;
+
+  default FileChannel open(final Path path, final OpenOption... options) throws IOException {
+    return FileChannel.open(path, options);
+  }
 
   /**
    * Creates a default implementation which attempts to leverage native system calls where possible,

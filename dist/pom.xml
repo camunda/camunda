@@ -224,8 +224,8 @@
             "XX:+ExitOnOutOfMemoryError" ensures we will not try to recover if we run out of memory,
             which is quite hard to do
 
-            "add-opens=java.base/java.io=ALL-UNNAMED" is required to use native syscalls with raw
-            file descriptors
+            "add-opens=java.base/java.io=ALL-UNNAMED" is required to use native system calls with
+            raw file descriptors
             -->
           <extraJvmArguments>-Xms128m
             -XX:+ExitOnOutOfMemoryError
