@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.fs.LibC.InvalidLibC;
+import io.camunda.zeebe.journal.fs.PosixFs;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -71,6 +73,41 @@ final class SegmentLoaderTest {
     Files.writeString(segmentFile, "foo");
     segmentLoader.createSegment(
         segmentFile, descriptor, lastWrittenIndex, new SparseJournalIndex(1));
+
+    // then
+    PosixPathAssert.assertThat(segmentFile).hasRealSize(segmentSize);
+  }
+
+  @Test
+  void shouldPreallocateSegmentFilesWithPosixDisabled(final @TempDir Path tmpDir) {
+    // given
+    final var segmentSize = 4 * 1024 * 1024;
+    final var posixFs = new PosixFs();
+    final var segmentLoader = new SegmentLoader(true, posixFs);
+    final var segmentFile = tmpDir.resolve("segment.log");
+    final var descriptor =
+        JournalSegmentDescriptor.builder().withId(1).withMaxSegmentSize(segmentSize).build();
+
+    // when
+    posixFs.disablePosixFallocate();
+    segmentLoader.createSegment(segmentFile, descriptor, 1, new SparseJournalIndex(1));
+
+    // then
+    PosixPathAssert.assertThat(segmentFile).hasRealSize(segmentSize);
+  }
+
+  @Test
+  void shouldPreallocateSegmentFilesEvenIfPosixFails(final @TempDir Path tmpDir) {
+    // given
+    final var segmentSize = 4 * 1024 * 1024;
+    final var posixFs = new PosixFs(new InvalidLibC());
+    final var segmentLoader = new SegmentLoader(true, posixFs);
+    final var segmentFile = tmpDir.resolve("segment.log");
+    final var descriptor =
+        JournalSegmentDescriptor.builder().withId(1).withMaxSegmentSize(segmentSize).build();
+
+    // when
+    segmentLoader.createSegment(segmentFile, descriptor, 1, new SparseJournalIndex(1));
 
     // then
     PosixPathAssert.assertThat(segmentFile).hasRealSize(segmentSize);

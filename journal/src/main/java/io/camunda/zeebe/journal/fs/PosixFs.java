@@ -55,7 +55,7 @@ public final class PosixFs {
     this(LibC.ofNativeLibrary());
   }
 
-  PosixFs(final LibC libC) {
+  public PosixFs(final LibC libC) {
     this.libC = libC;
   }
 
