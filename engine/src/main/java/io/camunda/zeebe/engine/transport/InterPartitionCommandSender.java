@@ -16,8 +16,6 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
  * silently, it is up to the caller to detect this and retry.
  */
 public interface InterPartitionCommandSender {
-  String TOPIC_PREFIX = "inter-partition-";
-
   void sendCommand(
       final int receiverPartitionId,
       final ValueType valueType,

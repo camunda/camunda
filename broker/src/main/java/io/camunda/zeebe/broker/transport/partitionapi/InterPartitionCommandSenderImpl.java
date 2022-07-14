@@ -21,6 +21,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 public final class InterPartitionCommandSenderImpl implements InterPartitionCommandSender {
+  public static final String TOPIC_PREFIX = "inter-partition-";
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private final ClusterCommunicationService communicationService;
 

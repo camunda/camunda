@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.partitionapi;
 
+import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.TOPIC_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -19,7 +20,6 @@ import static org.mockito.Mockito.withSettings;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
-import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -212,9 +212,7 @@ public class InterPartitionCommandReceiverTest {
     final var executorCaptor = ArgumentCaptor.forClass(Executor.class);
     verify(communicationService)
         .subscribe(
-            eq(InterPartitionCommandSender.TOPIC_PREFIX + partitionId),
-            handlerCaptor.capture(),
-            executorCaptor.capture());
+            eq(TOPIC_PREFIX + partitionId), handlerCaptor.capture(), executorCaptor.capture());
     return (byte[] bytes) ->
         executorCaptor
             .getValue()
@@ -239,10 +237,7 @@ public class InterPartitionCommandReceiverTest {
 
     final var messageCaptor = ArgumentCaptor.forClass(byte[].class);
     verify(communicationService)
-        .unicast(
-            eq(InterPartitionCommandSender.TOPIC_PREFIX + receiverPartitionId),
-            messageCaptor.capture(),
-            any());
+        .unicast(eq(TOPIC_PREFIX + receiverPartitionId), messageCaptor.capture(), any());
 
     return messageCaptor.getValue();
   }

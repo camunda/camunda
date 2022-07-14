@@ -7,13 +7,14 @@
  */
 package io.camunda.zeebe.broker.transport.partitionapi;
 
+import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.TOPIC_PREFIX;
+
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.clustering.management.InterPartitionMessageDecoder;
 import io.camunda.zeebe.clustering.management.MessageHeaderDecoder;
-import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -66,13 +67,12 @@ public final class InterPartitionCommandReceiver extends Actor implements DiskSp
 
   @Override
   protected void onActorStarting() {
-    communicationService.subscribe(
-        InterPartitionCommandSender.TOPIC_PREFIX + partitionId, this::tryHandleMessage, actor::run);
+    communicationService.subscribe(TOPIC_PREFIX + partitionId, this::tryHandleMessage, actor::run);
   }
 
   @Override
   protected void onActorClosing() {
-    communicationService.unsubscribe(InterPartitionCommandSender.TOPIC_PREFIX + partitionId);
+    communicationService.unsubscribe(TOPIC_PREFIX + partitionId);
   }
 
   @Override
