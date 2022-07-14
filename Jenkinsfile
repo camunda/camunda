@@ -631,7 +631,7 @@ pipeline {
                 docker push ${DOCKER_IMAGE}:${DOCKER_LATEST_TAG}
               fi
 
-              if [ "${IS_MAIN}" = "TRUE"]; then
+              if [ "${IS_MAIN}" = "TRUE" ]; then
                 docker login --username ${DOCKERHUB_REGISTRY_CREDENTIALS_USR} --password ${DOCKERHUB_REGISTRY_CREDENTIALS_PSW}
                 docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE_DOCKER_HUB}:SNAPSHOT
                 docker push ${DOCKER_IMAGE_DOCKER_HUB}:SNAPSHOT
