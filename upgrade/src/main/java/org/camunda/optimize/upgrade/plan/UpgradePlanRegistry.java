@@ -39,7 +39,7 @@ public class UpgradePlanRegistry {
               .getConstructor().newInstance();
             final UpgradePlan upgradePlan = planFactory.createUpgradePlan(upgradeExecutionDependencies);
             if (planFactory instanceof CurrentVersionNoOperationUpgradePlanFactory) {
-              // The no operation  upgrade plan will only get added if there is not a custom plan yet
+              // The no operation upgrade plan will only get added if there is not a custom plan yet
               upgradePlans.putIfAbsent(upgradePlan.getToVersion(), upgradePlan);
             } else {
               // specific upgrade plans always overwrite any preexisting entries

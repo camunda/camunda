@@ -149,22 +149,6 @@ public class ElasticSearchSchemaManager {
     );
   }
 
-  private boolean indicesExistWithNames(final OptimizeElasticsearchClient esClient,
-                                        final List<String> indexNames) {
-    return StreamSupport.stream(Iterables.partition(indexNames, INDEX_EXIST_BATCH_SIZE).spliterator(), true)
-      .allMatch(indices -> {
-        final GetIndexRequest request = new GetIndexRequest(indices.toArray(new String[]{}));
-        try {
-          return esClient.exists(request);
-        } catch (IOException e) {
-          final String message = String.format(
-            "Could not check if [%s] index(es) already exist.", String.join(",", indices)
-          );
-          throw new OptimizeRuntimeException(message, e);
-        }
-      });
-  }
-
   public void createIndexIfMissing(final OptimizeElasticsearchClient esClient,
                                    final IndexMappingCreator indexMapping) {
     createIndexIfMissing(esClient, indexMapping, Collections.emptySet());
@@ -250,6 +234,51 @@ public class ElasticSearchSchemaManager {
     }
   }
 
+  public void createOrUpdateTemplateWithoutAliases(final OptimizeElasticsearchClient esClient,
+                                                   final IndexMappingCreator mappingCreator) {
+    final String templateName = indexNameService.getOptimizeIndexTemplateNameWithVersion(mappingCreator);
+    final Settings indexSettings = createIndexSettings(mappingCreator);
+
+    log.debug("Creating or updating template with name {}.", templateName);
+    PutIndexTemplateRequest templateRequest = new PutIndexTemplateRequest(templateName)
+      .version(mappingCreator.getVersion())
+      .mapping(mappingCreator.getSource())
+      .settings(indexSettings)
+      .patterns(Collections.singletonList(
+        indexNameService.getOptimizeIndexNameWithVersionWithWildcardSuffix(mappingCreator)
+      ));
+    try {
+      esClient.createTemplate(templateRequest);
+    } catch (Exception e) {
+      final String message = String.format("Could not create or update template %s.", templateName);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  public void updateDynamicSettingsAndMappings(OptimizeElasticsearchClient esClient,
+                                               IndexMappingCreator indexMapping) {
+    updateIndexDynamicSettingsAndMappings(esClient, indexMapping);
+    if (indexMapping.isCreateFromTemplate()) {
+      updateTemplateDynamicSettingsAndMappings(esClient, indexMapping);
+    }
+  }
+
+  private boolean indicesExistWithNames(final OptimizeElasticsearchClient esClient,
+                                        final List<String> indexNames) {
+    return StreamSupport.stream(Iterables.partition(indexNames, INDEX_EXIST_BATCH_SIZE).spliterator(), true)
+      .allMatch(indices -> {
+        final GetIndexRequest request = new GetIndexRequest(indices.toArray(new String[]{}));
+        try {
+          return esClient.exists(request);
+        } catch (IOException e) {
+          final String message = String.format(
+            "Could not check if [%s] index(es) already exist.", String.join(",", indices)
+          );
+          throw new OptimizeRuntimeException(message, e);
+        }
+      });
+  }
+
   private void createOptimizeIndexFromRequest(final OptimizeElasticsearchClient esClient,
                                               final IndexMappingCreator mapping,
                                               final String indexName,
@@ -285,27 +314,6 @@ public class ElasticSearchSchemaManager {
     } catch (IOException e) {
       String message = String.format("Could not create index %s from template.", indexNameWithSuffix);
       log.warn(message, e);
-      throw new OptimizeRuntimeException(message, e);
-    }
-  }
-
-  public void createOrUpdateTemplateWithoutAliases(final OptimizeElasticsearchClient esClient,
-                                                   final IndexMappingCreator mappingCreator) {
-    final String templateName = indexNameService.getOptimizeIndexTemplateNameWithVersion(mappingCreator);
-    final Settings indexSettings = createIndexSettings(mappingCreator);
-
-    log.debug("Creating or updating template with name {}.", templateName);
-    PutIndexTemplateRequest templateRequest = new PutIndexTemplateRequest(templateName)
-      .version(mappingCreator.getVersion())
-      .mapping(mappingCreator.getSource())
-      .settings(indexSettings)
-      .patterns(Collections.singletonList(
-        indexNameService.getOptimizeIndexNameWithVersionWithWildcardSuffix(mappingCreator)
-      ));
-    try {
-      esClient.createTemplate(templateRequest);
-    } catch (Exception e) {
-      final String message = String.format("Could not create or update template %s.", templateName);
       throw new OptimizeRuntimeException(message, e);
     }
   }
@@ -376,14 +384,6 @@ public class ElasticSearchSchemaManager {
       } catch (IOException e) {
         throw new OptimizeRuntimeException("Could not unblock Elasticsearch indices!", e);
       }
-    }
-  }
-
-  public void updateDynamicSettingsAndMappings(OptimizeElasticsearchClient esClient,
-                                               IndexMappingCreator indexMapping) {
-    updateIndexDynamicSettingsAndMappings(esClient, indexMapping);
-    if (indexMapping.isCreateFromTemplate()) {
-      updateTemplateDynamicSettingsAndMappings(esClient, indexMapping);
     }
   }
 
