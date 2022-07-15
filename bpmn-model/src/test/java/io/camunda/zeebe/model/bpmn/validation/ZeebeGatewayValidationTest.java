@@ -76,7 +76,9 @@ public class ZeebeGatewayValidationTest extends AbstractZeebeValidationTest {
             .endEvent()
             .done(),
         singletonList(
-            expect("task", "Conditional sequence flows are only supported at exclusive gateway"))
+            expect(
+                "task",
+                "Conditional sequence flows are only supported at exclusive or inclusive gateway"))
       },
     };
   }
