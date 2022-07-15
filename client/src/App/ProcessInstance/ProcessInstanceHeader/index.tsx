@@ -9,7 +9,7 @@ import {formatDate} from 'modules/utils/date';
 import {getProcessName} from 'modules/utils/instance';
 import {Operations} from 'modules/components/Operations';
 import Skeleton from './Skeleton';
-import {Observer, observer} from 'mobx-react';
+import {observer} from 'mobx-react';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import * as Styled from './styled';
@@ -168,32 +168,11 @@ const ProcessInstanceHeader: React.FC = observer(() => {
               variablesStore.hasActiveOperation ||
               processInstance?.hasActiveOperation
             }
+            isInstanceModificationVisible={
+              IS_MODIFICATION_MODE_ENABLED &&
+              !modificationsStore.state.isModificationModeEnabled
+            }
           />
-          {IS_MODIFICATION_MODE_ENABLED && (
-            <Observer>
-              {() => (
-                <>
-                  {modificationsStore.state.isModificationModeEnabled ? (
-                    <button
-                      onClick={() => {
-                        modificationsStore.disableModificationMode();
-                      }}
-                    >
-                      Disable Modification Mode
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        modificationsStore.enableModificationMode();
-                      }}
-                    >
-                      Enable Modification Mode
-                    </button>
-                  )}
-                </>
-              )}
-            </Observer>
-          )}
         </>
       </Restricted>
     </Styled.Container>

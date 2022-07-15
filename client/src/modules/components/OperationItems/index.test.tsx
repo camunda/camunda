@@ -8,13 +8,14 @@
 import {render, screen} from 'modules/testing-library';
 import {noop} from 'lodash';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import OperationItems from './index';
+import {OperationItems} from './';
+import {OperationItem} from '../OperationItem';
 
 describe('OperationItems', () => {
   it('should render with its children', () => {
     render(
       <OperationItems>
-        <OperationItems.Item type="RESOLVE_INCIDENT" onClick={noop} />
+        <OperationItem type="RESOLVE_INCIDENT" onClick={noop} />
       </OperationItems>,
       {wrapper: ThemeProvider}
     );
@@ -27,7 +28,7 @@ describe('OperationItems', () => {
     it('should show the correct icon based on the type', () => {
       render(
         <OperationItems>
-          <OperationItems.Item type="RESOLVE_INCIDENT" onClick={noop} />
+          <OperationItem type="RESOLVE_INCIDENT" onClick={noop} />
         </OperationItems>,
         {wrapper: ThemeProvider}
       );
@@ -39,7 +40,7 @@ describe('OperationItems', () => {
       const BUTTON_TITLE = 'Retry Instance 1';
       render(
         <OperationItems>
-          <OperationItems.Item
+          <OperationItem
             type="RESOLVE_INCIDENT"
             onClick={noop}
             title={BUTTON_TITLE}
@@ -53,12 +54,12 @@ describe('OperationItems', () => {
       ).toBeInTheDocument();
     });
 
-    it('should execute the passed method when clicked', async () => {
+    it('should execute callback function', async () => {
       const BUTTON_TITLE = 'Retry Instance 1';
       const MOCK_ON_CLICK = jest.fn();
       const {user} = render(
         <OperationItems>
-          <OperationItems.Item
+          <OperationItem
             type="RESOLVE_INCIDENT"
             onClick={MOCK_ON_CLICK}
             title={BUTTON_TITLE}
@@ -77,7 +78,7 @@ describe('OperationItems', () => {
     it('should show the correct icon based on the type', () => {
       render(
         <OperationItems>
-          <OperationItems.Item type="CANCEL_PROCESS_INSTANCE" onClick={noop} />
+          <OperationItem type="CANCEL_PROCESS_INSTANCE" onClick={noop} />
         </OperationItems>,
         {wrapper: ThemeProvider}
       );
@@ -89,7 +90,7 @@ describe('OperationItems', () => {
       const BUTTON_TITLE = 'Cancel Instance 1';
       render(
         <OperationItems>
-          <OperationItems.Item
+          <OperationItem
             type="CANCEL_PROCESS_INSTANCE"
             onClick={noop}
             title={BUTTON_TITLE}
@@ -103,12 +104,12 @@ describe('OperationItems', () => {
       ).toBeInTheDocument();
     });
 
-    it('should execute the passed method when clicked', async () => {
+    it('should execute callback function', async () => {
       const BUTTON_TITLE = 'Cancel Instance 1';
       const MOCK_ON_CLICK = jest.fn();
       const {user} = render(
         <OperationItems>
-          <OperationItems.Item
+          <OperationItem
             type="CANCEL_PROCESS_INSTANCE"
             onClick={MOCK_ON_CLICK}
             title={BUTTON_TITLE}
@@ -127,7 +128,7 @@ describe('OperationItems', () => {
     it('should show the correct icon based on the type', () => {
       render(
         <OperationItems>
-          <OperationItems.Item type="DELETE_PROCESS_INSTANCE" onClick={noop} />
+          <OperationItem type="DELETE_PROCESS_INSTANCE" onClick={noop} />
         </OperationItems>,
         {wrapper: ThemeProvider}
       );
@@ -139,7 +140,7 @@ describe('OperationItems', () => {
       const BUTTON_TITLE = 'Delete Instance 1';
       render(
         <OperationItems>
-          <OperationItems.Item
+          <OperationItem
             type="DELETE_PROCESS_INSTANCE"
             onClick={noop}
             title={BUTTON_TITLE}
@@ -153,12 +154,12 @@ describe('OperationItems', () => {
       ).toBeInTheDocument();
     });
 
-    it('should execute the passed method when clicked', async () => {
+    it('should execute callback function', async () => {
       const BUTTON_TITLE = 'Delete Instance 1';
       const MOCK_ON_CLICK = jest.fn();
       const {user} = render(
         <OperationItems>
-          <OperationItems.Item
+          <OperationItem
             type="DELETE_PROCESS_INSTANCE"
             onClick={MOCK_ON_CLICK}
             title={BUTTON_TITLE}
@@ -171,5 +172,55 @@ describe('OperationItems', () => {
 
       expect(MOCK_ON_CLICK).toHaveBeenCalled();
     });
+  });
+});
+
+describe('Modification Mode', () => {
+  it('should show the correct icon based on the type', () => {
+    render(
+      <OperationItems>
+        <OperationItem type="ENTER_MODIFICATION_MODE" onClick={noop} />
+      </OperationItems>,
+      {wrapper: ThemeProvider}
+    );
+
+    expect(screen.getByTestId('modification-mode-icon')).toBeInTheDocument();
+  });
+
+  it('should render modify button', () => {
+    const BUTTON_TITLE = 'Modify Instance 1';
+    render(
+      <OperationItems>
+        <OperationItem
+          type="ENTER_MODIFICATION_MODE"
+          onClick={noop}
+          title={BUTTON_TITLE}
+        />
+      </OperationItems>,
+      {wrapper: ThemeProvider}
+    );
+
+    expect(
+      screen.getByRole('button', {name: BUTTON_TITLE})
+    ).toBeInTheDocument();
+  });
+
+  it('should execute callback function', async () => {
+    const BUTTON_TITLE = 'Modify Instance 1';
+    const MOCK_ON_CLICK = jest.fn();
+    const {user} = render(
+      <OperationItems>
+        <OperationItem
+          type="ENTER_MODIFICATION_MODE"
+          onClick={MOCK_ON_CLICK}
+          title={BUTTON_TITLE}
+        />
+      </OperationItems>,
+      {wrapper: ThemeProvider}
+    );
+
+    await user.click(screen.getByRole('button', {name: BUTTON_TITLE}));
+
+    expect(MOCK_ON_CLICK).toHaveBeenCalled();
   });
 });

@@ -11,7 +11,8 @@ import {OperationSpinner} from 'modules/components/OperationSpinner';
 import {operationsStore} from 'modules/stores/operations';
 import {useNotifications} from 'modules/notifications';
 
-import OperationItems from 'modules/components/OperationItems';
+import {OperationItems} from 'modules/components/OperationItems';
+import {OperationItem} from 'modules/components/OperationItem';
 import {observer} from 'mobx-react';
 
 import * as Styled from './styled';
@@ -56,7 +57,7 @@ const IncidentOperation: React.FC<Props> = observer(
           <OperationSpinner data-testid="operation-spinner" />
         )}
         <OperationItems>
-          <OperationItems.Item
+          <OperationItem
             type="RESOLVE_INCIDENT"
             onClick={handleOnClick}
             data-testid="retry-incident"

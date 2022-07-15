@@ -15,22 +15,31 @@ import {observer} from 'mobx-react';
 
 import {hasIncident, isRunning} from 'modules/utils/instance';
 
-import OperationItems from 'modules/components/OperationItems';
+import {OperationItems} from 'modules/components/OperationItems';
+import {OperationItem} from 'modules/components/OperationItem';
 import {OperationSpinner} from 'modules/components/OperationSpinner';
 import {DeleteOperationModal} from './DeleteOperationModal';
 import {ConfirmOperationModal} from 'modules/components/ConfirmOperationModal';
 import {OperationsContainer} from './styled';
 import {CalledInstanceCancellationModal} from './CalledInstanceCancellationModal';
+import {modificationsStore} from 'modules/stores/modifications';
 
 type Props = {
   instance: ProcessInstanceEntity;
   onOperation?: (operationType: OperationEntityType) => void;
   onError?: (operationType: OperationEntityType) => void;
   forceSpinner?: boolean;
+  isInstanceModificationVisible?: boolean;
 };
 
 const Operations: React.FC<Props> = observer(
-  ({instance, onOperation, onError, forceSpinner}) => {
+  ({
+    instance,
+    onOperation,
+    onError,
+    forceSpinner,
+    isInstanceModificationVisible = false,
+  }) => {
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
     const [isCancellationModalVisible, setIsCancellationModalVisible] =
       useState(false);
@@ -73,32 +82,45 @@ const Operations: React.FC<Props> = observer(
             data-testid="operation-spinner"
           />
         )}
+
         <OperationItems>
-          {hasIncident(instance) && (
-            <OperationItems.Item
-              type="RESOLVE_INCIDENT"
-              onClick={() => applyOperation('RESOLVE_INCIDENT')}
-              title={`Retry Instance ${instance.id}`}
-              disabled={isOperationActive('RESOLVE_INCIDENT')}
-            />
-          )}
-          {isRunning(instance) && (
-            <OperationItems.Item
-              type="CANCEL_PROCESS_INSTANCE"
-              onClick={() => setIsCancellationModalVisible(true)}
-              title={`Cancel Instance ${instance.id}`}
-              disabled={isOperationActive('CANCEL_PROCESS_INSTANCE')}
-            />
-          )}
+          {hasIncident(instance) &&
+            !modificationsStore.state.isModificationModeEnabled && (
+              <OperationItem
+                type="RESOLVE_INCIDENT"
+                onClick={() => applyOperation('RESOLVE_INCIDENT')}
+                title={`Retry Instance ${instance.id}`}
+                disabled={isOperationActive('RESOLVE_INCIDENT')}
+              />
+            )}
+          {isRunning(instance) &&
+            !modificationsStore.state.isModificationModeEnabled && (
+              <OperationItem
+                type="CANCEL_PROCESS_INSTANCE"
+                onClick={() => setIsCancellationModalVisible(true)}
+                title={`Cancel Instance ${instance.id}`}
+                disabled={isOperationActive('CANCEL_PROCESS_INSTANCE')}
+              />
+            )}
           {!isRunning(instance) && (
-            <OperationItems.Item
+            <OperationItem
               type="DELETE_PROCESS_INSTANCE"
               onClick={() => setIsDeleteModalVisible(true)}
               title={`Delete Instance ${instance.id}`}
               disabled={isOperationActive('DELETE_PROCESS_INSTANCE')}
             />
           )}
+          {isInstanceModificationVisible &&
+            isRunning(instance) &&
+            !modificationsStore.state.isModificationModeEnabled && (
+              <OperationItem
+                type="ENTER_MODIFICATION_MODE"
+                onClick={() => modificationsStore.enableModificationMode()}
+                title={`Modify Instance ${instance.id}`}
+              />
+            )}
         </OperationItems>
+
         {instance.rootInstanceId === null ? (
           <ConfirmOperationModal
             bodyText={`About to cancel Instance ${instance.id}. In case there are called instances, these will be canceled too.`}

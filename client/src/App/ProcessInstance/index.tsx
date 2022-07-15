@@ -29,6 +29,7 @@ import {
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {TimeStampPill} from './TimeStampPill';
+import {modificationsStore} from 'modules/stores/modifications';
 
 const ProcessInstance: React.FC = () => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -81,6 +82,7 @@ const ProcessInstance: React.FC = () => {
       processInstanceDetailsDiagramStore.reset();
       flowNodeTimeStampStore.reset();
       flowNodeSelectionStore.reset();
+      modificationsStore.reset();
     };
   }, [processInstanceId]);
 

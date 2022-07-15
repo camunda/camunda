@@ -20,6 +20,7 @@ import {groupedProcessesMock} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {modificationsStore} from 'modules/stores/modifications';
 
 const instanceMock: ProcessInstanceEntity = {
   id: 'instance_1',
@@ -62,10 +63,151 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 describe('Operations', () => {
   afterEach(() => {
     jest.clearAllMocks();
+    modificationsStore.reset();
   });
 
   describe('Operation Buttons', () => {
-    it('should render retry and cancel button if instance is running and has an incident', () => {
+    it('should render retry, cancel and modify buttons if instance is running and has an incident', () => {
+      render(
+        <Operations
+          instance={{...instanceMock, state: 'INCIDENT'}}
+          isInstanceModificationVisible
+        />,
+        {
+          wrapper: Wrapper,
+        }
+      );
+
+      expect(
+        screen.getByTitle(`Retry Instance instance_1`)
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTitle(`Cancel Instance instance_1`)
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTitle(`Delete Instance instance_1`)
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByTitle(`Modify Instance instance_1`)
+      ).toBeInTheDocument();
+    });
+    it('should render cancel and modify buttons if instance is running and does not have an incident', () => {
+      render(
+        <Operations
+          instance={{...instanceMock, state: 'ACTIVE'}}
+          isInstanceModificationVisible
+        />,
+        {
+          wrapper: Wrapper,
+        }
+      );
+
+      expect(
+        screen.queryByTitle(`Retry Instance instance_1`)
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByTitle(`Cancel Instance instance_1`)
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTitle(`Delete Instance instance_1`)
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByTitle(`Modify Instance instance_1`)
+      ).toBeInTheDocument();
+    });
+    it('should render delete button if instance is completed', () => {
+      render(
+        <Operations
+          instance={{
+            ...instanceMock,
+            state: 'COMPLETED',
+          }}
+          isInstanceModificationVisible
+        />,
+        {wrapper: Wrapper}
+      );
+
+      expect(
+        screen.queryByTitle(`Retry Instance instance_1`)
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTitle(`Cancel Instance instance_1`)
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByTitle(`Delete Instance instance_1`)
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTitle(`Modify Instance instance_1`)
+      ).not.toBeInTheDocument();
+    });
+
+    it('should render delete button if instance is canceled', () => {
+      render(
+        <Operations
+          instance={{
+            ...instanceMock,
+            state: 'CANCELED',
+          }}
+          isInstanceModificationVisible
+        />,
+        {wrapper: Wrapper}
+      );
+
+      expect(
+        screen.queryByTitle(`Retry Instance instance_1`)
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTitle(`Cancel Instance instance_1`)
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByTitle(`Delete Instance instance_1`)
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTitle(`Modify Instance instance_1`)
+      ).not.toBeInTheDocument();
+    });
+
+    it('should hide operation buttons in process instance modification mode', async () => {
+      const {user} = render(
+        <Operations
+          instance={{...instanceMock, state: 'INCIDENT'}}
+          isInstanceModificationVisible
+        />,
+        {
+          wrapper: Wrapper,
+        }
+      );
+
+      expect(
+        screen.getByTitle(`Retry Instance instance_1`)
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTitle(`Cancel Instance instance_1`)
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTitle(`Delete Instance instance_1`)
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByTitle(`Modify Instance instance_1`)
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByTitle(`Modify Instance instance_1`));
+
+      expect(
+        screen.queryByTitle(`Retry Instance instance_1`)
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTitle(`Cancel Instance instance_1`)
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTitle(`Delete Instance instance_1`)
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTitle(`Modify Instance instance_1`)
+      ).not.toBeInTheDocument();
+    });
+
+    it('should not display modify button by default', () => {
       render(<Operations instance={{...instanceMock, state: 'INCIDENT'}} />, {
         wrapper: Wrapper,
       });
@@ -79,63 +221,9 @@ describe('Operations', () => {
       expect(
         screen.queryByTitle(`Delete Instance instance_1`)
       ).not.toBeInTheDocument();
-    });
-    it('should render only cancel button if instance is running and does not have an incident', () => {
-      render(<Operations instance={{...instanceMock, state: 'ACTIVE'}} />, {
-        wrapper: Wrapper,
-      });
-
       expect(
-        screen.queryByTitle(`Retry Instance instance_1`)
+        screen.queryByTitle(`Modify Instance instance_1`)
       ).not.toBeInTheDocument();
-      expect(
-        screen.getByTitle(`Cancel Instance instance_1`)
-      ).toBeInTheDocument();
-      expect(
-        screen.queryByTitle(`Delete Instance instance_1`)
-      ).not.toBeInTheDocument();
-    });
-    it('should render delete button if instance is completed', () => {
-      render(
-        <Operations
-          instance={{
-            ...instanceMock,
-            state: 'COMPLETED',
-          }}
-        />,
-        {wrapper: Wrapper}
-      );
-
-      expect(
-        screen.queryByTitle(`Retry Instance instance_1`)
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByTitle(`Cancel Instance instance_1`)
-      ).not.toBeInTheDocument();
-      expect(
-        screen.getByTitle(`Delete Instance instance_1`)
-      ).toBeInTheDocument();
-    });
-    it('should render delete button if instance is canceled', () => {
-      render(
-        <Operations
-          instance={{
-            ...instanceMock,
-            state: 'CANCELED',
-          }}
-        />,
-        {wrapper: Wrapper}
-      );
-
-      expect(
-        screen.queryByTitle(`Retry Instance instance_1`)
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByTitle(`Cancel Instance instance_1`)
-      ).not.toBeInTheDocument();
-      expect(
-        screen.getByTitle(`Delete Instance instance_1`)
-      ).toBeInTheDocument();
     });
   });
   describe('Spinner', () => {
