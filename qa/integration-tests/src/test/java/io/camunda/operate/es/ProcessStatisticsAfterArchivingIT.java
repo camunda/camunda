@@ -39,7 +39,10 @@ public class ProcessStatisticsAfterArchivingIT extends ProcessStatisticsIT {
     super.createData(processDefinitionKey);
     mockPartitionHolder(partitionHolder);
     ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, partitionHolder.getPartitionIds());
-    runArchiving(archiverJob);
+    runArchiving(archiverJob, () -> {
+      elasticsearchTestRule.refreshIndexesInElasticsearch();
+      return null;
+    });
     elasticsearchTestRule.refreshIndexesInElasticsearch();
   }
 

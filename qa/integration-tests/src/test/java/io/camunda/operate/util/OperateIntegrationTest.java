@@ -18,9 +18,9 @@ import io.camunda.operate.webapp.security.Permission;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
-import io.camunda.operate.exceptions.ArchiverException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.webapp.security.UserService;
@@ -143,17 +143,18 @@ public abstract class OperateIntegrationTest {
     assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo(message);
   }
 
-  protected void runArchiving(ProcessInstancesArchiverJob archiverJob) {
+  protected void runArchiving(ProcessInstancesArchiverJob archiverJob, Callable<Void> esIndexRefresher) {
     try {
       int archived;
       int archivedTotal = 0;
       do {
-        archived = archiverJob.archiveNextBatch();
+        archived = archiverJob.archiveNextBatch().join();
+        esIndexRefresher.call();
         archivedTotal += archived;
       } while (archived > 0);
       assertThat(archivedTotal).isGreaterThan(0);
-    } catch (ArchiverException e) {
-      throw new RuntimeException("Error while archiving");
+    } catch (Exception e) {
+      throw new RuntimeException("Error while archiving", e);
     }
   }
 

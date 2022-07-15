@@ -9,31 +9,27 @@ package io.camunda.operate.archiver;
 import static io.camunda.operate.util.ElasticsearchUtil.INTERNAL_SCROLL_KEEP_ALIVE_MS;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_SLICES;
-import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_SLICES_VALUE;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.util.EntityUtils;
 import io.camunda.operate.Metrics;
+import io.camunda.operate.archiver.util.Either;
 import io.camunda.operate.exceptions.ArchiverException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.zeebe.PartitionHolder;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.Response;
+import io.micrometer.core.instrument.Timer;
+
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.reindex.AbstractBulkByScrollRequest;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,9 +68,6 @@ public class Archiver {
   @Autowired
   private Metrics metrics;
 
-  @Autowired
-  private ObjectMapper objectMapper;
-
   @PostConstruct
   public void startArchiving() {
     if (operateProperties.getArchiver().isRolloverEnabled()) {
@@ -92,106 +85,117 @@ public class Archiver {
       for (int i=0; i < threadsCount; i++) {
         List<Integer> partitionIdsSubset = CollectionUtil.splitAndGetSublist(partitionIds, threadsCount, i);
         if (!partitionIdsSubset.isEmpty()) {
-          ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, partitionIdsSubset);
+          final var archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, partitionIdsSubset);
           archiverExecutor.execute(archiverJob);
         }
         if (partitionIdsSubset.contains(1)) {
-          BatchOperationArchiverJob batchOperationArchiverJob = beanFactory.getBean(BatchOperationArchiverJob.class);
+          final var batchOperationArchiverJob = beanFactory.getBean(BatchOperationArchiverJob.class);
           archiverExecutor.execute(batchOperationArchiverJob);
         }
       }
     }
   }
 
-  public void moveDocuments(String sourceIndexName, String idFieldName, String finishDate, List<Object> ids) throws ArchiverException {
+  public CompletableFuture<Void> moveDocuments(String sourceIndexName, String idFieldName, String finishDate, List<Object> ids) {
+    final var moveDocumentsFuture = new CompletableFuture<Void>();
+    final var destinationIndexName = getDestinationIndexName(sourceIndexName, finishDate);
 
-    String destinationIndexName = getDestinationIndexName(sourceIndexName, finishDate);
+    reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, ids)
+      .thenCompose((ignore) -> {
+        return deleteDocuments(sourceIndexName, idFieldName, ids);
+      })
+      .whenComplete((ignore, e) -> {
+        if (e != null) {
+          moveDocumentsFuture.completeExceptionally(e);
+          return;
+        }
+        moveDocumentsFuture.complete(null);
+      });
 
-    reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, ids);
-
-    deleteDocuments(sourceIndexName, idFieldName, ids);
-
+    return moveDocumentsFuture;
   }
-
-  private Long deleteWithTimer(Callable<Long> callable) throws Exception {
-    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_DELETE_QUERY)
-        .recordCallable(callable);
-  }
-
-  private Long reindexWithTimer(Callable<Long> callable) throws Exception {
-    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_REINDEX_QUERY)
-        .recordCallable(callable);
-  }
-
 
   public String getDestinationIndexName(String sourceIndexName, String finishDate) {
     return String.format(INDEX_NAME_PATTERN, sourceIndexName, finishDate);
   }
 
-  private long deleteDocuments(String sourceIndexName, String idFieldName, List<Object> processInstanceKeys) throws ArchiverException {
-    try {
-      final String query = termsQuery(idFieldName, processInstanceKeys).toString();
-      return deleteWithTimer(
-          () -> delete(query, sourceIndexName));
-    } catch (ArchiverException ex) {
-      throw ex;
-    } catch (Exception e) {
-      final String message = String.format("Exception occurred, while deleting the documents: %s", e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
+  private CompletableFuture<Long> deleteDocuments(final String sourceIndexName, final String idFieldName, final List<Object> processInstanceKeys) {
+    final var deleteFuture = new CompletableFuture<Long>();
+    final var deleteRequest = createDeleteByQueryRequestWithDefaults(sourceIndexName)
+        .setQuery(termsQuery(idFieldName, processInstanceKeys));
+    final var startTimer = Timer.start();
+
+    sendDeleteRequest(deleteRequest)
+      .whenComplete((response, e) -> {
+        final var timer = getArchiverDeleteQueryTimer();
+        startTimer.stop(timer);
+
+        final var result = handleResponse(response, e, sourceIndexName, "delete");
+        result.ifRightOrLeft(deleteFuture::complete, deleteFuture::completeExceptionally);
+      });
+
+    return deleteFuture;
   }
 
-  private long delete(final String query, String sourceIndexName)
-      throws IOException, ArchiverException {
-
-    final Request deleteWithTaskRequest = new Request(HttpPost.METHOD_NAME,
-        String.format("/%s/_delete_by_query", sourceIndexName));
-    deleteWithTaskRequest.setJsonEntity(String.format("{\"query\": %s }", query));
-    deleteWithTaskRequest.addParameter("wait_for_completion", "false");
-    deleteWithTaskRequest.addParameter("slices", AUTO_SLICES_VALUE);
-    deleteWithTaskRequest.addParameter("conflicts", "proceed");
-
-    final Response response = esClient.getLowLevelClient().performRequest(deleteWithTaskRequest);
-
-    if (!(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK)) {
-      final HttpEntity entity = response.getEntity();
-      throw new ArchiverException(String
-          .format("Exception occurred when performing deletion. Status code: %s, error: %s",
-              response.getStatusLine().getStatusCode(),
-              entity == null ? "" : EntityUtils.toString(entity)));
-    }
-
-    Map<String, Object> bodyMap = objectMapper
-        .readValue(response.getEntity().getContent(), Map.class);
-    String taskId = (String) bodyMap.get("task");
-    logger.debug("Deletion started for index {}. Task id {}", sourceIndexName, taskId);
-    //wait till task is completed
-    return ElasticsearchUtil.waitAndCheckTaskResult(taskId, sourceIndexName, "delete", esClient);
-  }
-
-  private long reindexDocuments(String sourceIndexName, String destinationIndexName,
-      String idFieldName, List<Object> processInstanceKeys)
-      throws ArchiverException {
-
-    ReindexRequest reindexRequest = new ReindexRequest()
+  private CompletableFuture<Long> reindexDocuments(final String sourceIndexName, final String destinationIndexName,
+      final String idFieldName, final List<Object> processInstanceKeys) {
+    final var reindexFuture = new CompletableFuture<Long>();
+    final var reindexRequest = createReindexRequestWithDefaults()
         .setSourceIndices(sourceIndexName)
-        .setSourceBatchSize(processInstanceKeys.size())
         .setDestIndex(destinationIndexName)
         .setSourceQuery(termsQuery(idFieldName, processInstanceKeys));
 
-    reindexRequest = applyDefaultSettings(reindexRequest);
+    final var startTimer = Timer.start();
+    sendReindexRequest(reindexRequest)
+      .whenComplete((response, e) -> {
+        final var reindexTimer = getArchiverReindexQueryTimer();
+        startTimer.stop(reindexTimer);
 
-    try {
-      ReindexRequest finalReindexRequest = reindexRequest;
-      return reindexWithTimer(
-          () -> ElasticsearchUtil.reindex(finalReindexRequest, sourceIndexName, esClient));
-    } catch (ArchiverException ex) {
-      throw ex;
-    } catch (Exception e) {
-      final String message = String
-          .format("Exception occurred, while reindexing the documents: %s", e.getMessage());
-      throw new OperateRuntimeException(message, e);
+        final var result = handleResponse(response, e, sourceIndexName, "reindex");
+        result.ifRightOrLeft(reindexFuture::complete, reindexFuture::completeExceptionally);
+      });
+
+    return reindexFuture;
+  }
+
+  private ReindexRequest createReindexRequestWithDefaults() {
+    final var reindexRequest = new ReindexRequest();
+    return applyDefaultSettings(reindexRequest);
+  }
+
+  private CompletableFuture<BulkByScrollResponse> sendReindexRequest(final ReindexRequest reindexRequest) {
+    return ElasticsearchUtil.reindexAsync(reindexRequest, archiverExecutor, esClient);
+  }
+
+  private Either<Throwable, Long> handleResponse(final BulkByScrollResponse response, final Throwable error, final String sourceIndexName, final String operation) {
+    if (error != null) {
+      final var exceptionMessage = String.format("Exception occurred when performing operation %s. error: %s", operation, error.getMessage());
+      final var archiverException  = new ArchiverException(exceptionMessage, error);
+      return Either.left(archiverException);
     }
+
+    final var expected = response.getTotal();
+    var actual = response.getUpdated() + response.getCreated() + response.getDeleted(); 
+
+    if (actual < expected) {
+      //there were some failures
+      final String errorMsg = String.format(
+          "Failures occurred when performing operation %s on source index %s. Check Elasticsearch logs.",
+          operation, sourceIndexName);
+      return Either.left(new OperateRuntimeException(errorMsg));
+    }
+
+    logger.debug("Operation {} succeeded on source index {}.", operation, sourceIndexName);
+    return Either.right(expected);
+  }
+
+  private DeleteByQueryRequest createDeleteByQueryRequestWithDefaults(final String index) {
+    final var deleteRequest = new DeleteByQueryRequest(index);
+    return applyDefaultSettings(deleteRequest);
+  }
+
+  private CompletableFuture<BulkByScrollResponse> sendDeleteRequest(final DeleteByQueryRequest deleteRequest) {
+    return ElasticsearchUtil.deleteByQueryAsync(deleteRequest, archiverExecutor, esClient);
   }
 
   private <T extends AbstractBulkByScrollRequest<T>> T applyDefaultSettings(T request) {
@@ -203,6 +207,14 @@ public class Archiver {
   @PreDestroy
   private void shutdown() {
     shutdown = true;
+  }
+
+  private Timer getArchiverReindexQueryTimer() {
+    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_REINDEX_QUERY);
+  }
+
+  private Timer getArchiverDeleteQueryTimer() {
+    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_DELETE_QUERY);
   }
 
 }

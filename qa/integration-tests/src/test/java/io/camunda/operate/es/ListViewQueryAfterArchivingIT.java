@@ -25,7 +25,10 @@ public class ListViewQueryAfterArchivingIT extends ListViewQueryIT {
     super.createData();
     mockPartitionHolder(partitionHolder);
     ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, partitionHolder.getPartitionIds());
-    runArchiving(archiverJob);
+    runArchiving(archiverJob, () -> {
+      elasticsearchTestRule.refreshIndexesInElasticsearch();
+      return null;
+    });
     elasticsearchTestRule.refreshIndexesInElasticsearch();
   }
 

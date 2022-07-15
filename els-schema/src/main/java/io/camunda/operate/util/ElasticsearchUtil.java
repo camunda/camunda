@@ -31,23 +31,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.FeaturesClient;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.tasks.GetTaskRequest;
@@ -56,6 +61,8 @@ import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
@@ -90,6 +97,24 @@ public abstract class ElasticsearchUtil {
     logger.debug("Reindexing started for index {}. Task id: {}", sourceIndexName, taskId);
     //wait till task is completed
     return waitAndCheckTaskResult(taskId, sourceIndexName, "reindex", esClient);
+  }
+
+  public static CompletableFuture<BulkByScrollResponse> reindexAsync(final ReindexRequest reindexRequest, final Executor executor, final RestHighLevelClient esClient) {
+    final var reindexFuture = new CompletableFuture<BulkByScrollResponse>();
+    esClient.reindexAsync(reindexRequest, RequestOptions.DEFAULT, new DelegatingActionListener<>(reindexFuture, executor));
+    return reindexFuture;
+  }
+
+  public static CompletableFuture<BulkByScrollResponse> deleteByQueryAsync(final DeleteByQueryRequest deleteRequest, final Executor executor, final RestHighLevelClient esClient) {
+    final var deleteFuture = new CompletableFuture<BulkByScrollResponse>();
+    esClient.deleteByQueryAsync(deleteRequest, RequestOptions.DEFAULT, new DelegatingActionListener<>(deleteFuture, executor));
+    return deleteFuture;
+  }
+
+  public static CompletableFuture<SearchResponse> searchAsync(final SearchRequest searchRequest, final Executor executor, final RestHighLevelClient esClient) {
+    final var searchFuture = new CompletableFuture<SearchResponse>();
+    esClient.searchAsync(searchRequest, RequestOptions.DEFAULT, new DelegatingActionListener<>(searchFuture, executor));
+    return searchFuture;
   }
 
   public static long waitAndCheckTaskResult(String taskId, String sourceIndexName, String operation,
@@ -597,4 +622,24 @@ public abstract class ElasticsearchUtil {
     return indexNames;
   }
 
+  private static class DelegatingActionListener<Response> implements ActionListener<Response> {
+
+    private final CompletableFuture<Response> future;
+    private final Executor executorDelegate;
+
+    private DelegatingActionListener(final CompletableFuture<Response> future, final Executor executor) {
+      this.future = future;
+      this.executorDelegate = executor;
+    }
+
+    @Override
+    public void onResponse(Response response) {
+      executorDelegate.execute(() -> future.complete(response));
+    }
+
+    @Override
+    public void onFailure(Exception e) {
+      executorDelegate.execute(() -> future.completeExceptionally(e));
+    }
+  }
 }

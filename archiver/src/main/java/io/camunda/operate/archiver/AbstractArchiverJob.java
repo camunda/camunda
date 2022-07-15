@@ -8,14 +8,23 @@ package io.camunda.operate.archiver;
 
 import javax.annotation.PreDestroy;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import io.camunda.operate.exceptions.ArchiverException;
+import java.util.concurrent.CompletableFuture;
+
+import io.camunda.operate.archiver.util.BackoffIdleStrategy;
+import io.camunda.operate.archiver.util.Either;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.ElasticsearchUtil;
+
+import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.metrics.TopHits;
@@ -23,52 +32,69 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 public abstract class AbstractArchiverJob implements Runnable {
 
-  private static final Logger logger = LoggerFactory.getLogger(AbstractArchiverJob.class);
+  protected static final String DATES_AGG = "datesAgg";
+  protected static final String INSTANCES_AGG = "instancesAgg";
+
+  private final BackoffIdleStrategy idleStrategy;
+  private final BackoffIdleStrategy errorStrategy;
 
   private boolean shutdown = false;
 
   @Autowired
   @Qualifier("archiverThreadPoolExecutor")
-  private TaskScheduler archiverExecutor;
+  protected ThreadPoolTaskScheduler archiverExecutor;
+
+  @Autowired
+  private RestHighLevelClient esClient;
 
   @Autowired
   private OperateProperties operateProperties;
 
   public AbstractArchiverJob() {
+    this.idleStrategy = new BackoffIdleStrategy(2_000, 1.2f, 60_000);
+    this.errorStrategy = new BackoffIdleStrategy(100, 1.2f, 10_000);
   }
 
-  protected abstract int archiveBatch(ArchiveBatch archiveBatch) throws ArchiverException;
+  protected abstract CompletableFuture<Integer> archiveBatch(ArchiveBatch archiveBatch);
 
-  protected abstract ArchiveBatch getNextBatch();
+  protected abstract CompletableFuture<ArchiveBatch> getNextBatch();
 
   @Override
   public void run() {
-    long delay;
-    try {
-      int entitiesCount = archiveNextBatch();
-      delay = operateProperties.getArchiver().getDelayBetweenRuns();
 
-      if (entitiesCount == 0) {
-        //TODO we can implement backoff strategy, if there is not enough data
-        delay = 60000;
-      }
+    archiveNextBatch()
+      .thenApply((count) -> {
+        errorStrategy.reset();
 
-    } catch (Exception ex) {
-      //retry
-      logger.error("Error occurred while archiving data. Will be retried.", ex);
-      delay = operateProperties.getArchiver().getDelayBetweenRuns();
-    }
-    if (!shutdown) {
-      archiverExecutor.schedule(this, Date.from(Instant.now().plus(delay, ChronoUnit.MILLIS)));
-    }
+        if (count >= operateProperties.getArchiver().getRolloverBatchSize()) {
+          idleStrategy.reset();
+        } else {
+          idleStrategy.idle();
+        }
+
+        final var delay = Math.max(
+            operateProperties.getArchiver().getDelayBetweenRuns(),
+            idleStrategy.idleTime());
+
+        return delay;
+      })
+      .exceptionally((t) -> {
+        errorStrategy.idle();
+        return errorStrategy.idleTime();
+      })
+      .thenAccept((delay) -> {
+        if (!shutdown) {
+          archiverExecutor.schedule(this, Date.from(Instant.now().plusMillis(delay)));
+        }
+      });
   }
 
-  public int archiveNextBatch() throws ArchiverException {
-    return archiveBatch(getNextBatch());
+  public CompletableFuture<Integer> archiveNextBatch() {
+    return getNextBatch().thenCompose(this::archiveBatch);
   }
 
   protected ArchiveBatch createArchiveBatch(SearchResponse searchResponse, String datesAggName, String instancesAggName) {
@@ -86,6 +112,10 @@ public abstract class AbstractArchiverJob implements Runnable {
     } else {
       return null;
     }
+  }
+
+  protected CompletableFuture<SearchResponse> sendSearchRequest(final SearchRequest searchRequest) {
+    return ElasticsearchUtil.searchAsync(searchRequest, archiverExecutor, esClient);
   }
 
   @PreDestroy

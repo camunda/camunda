@@ -6,16 +6,16 @@
  */
 package io.camunda.operate.archiver;
 
-import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
+
 import io.camunda.operate.Metrics;
-import io.camunda.operate.schema.templates.BatchOperationTemplate;
-import io.camunda.operate.exceptions.ArchiverException;
+import io.camunda.operate.archiver.util.Either;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.property.OperateProperties;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -30,7 +30,8 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.instrument.Timer;
+
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.dateHistogram;
@@ -56,41 +57,54 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
   @Autowired
   private BeanFactory beanFactory;
 
+  @Autowired
+  private Metrics metrics;
+
   @Override
-  public int archiveBatch(ArchiveBatch archiveBatch) throws ArchiverException {
+  public CompletableFuture<Integer> archiveBatch(ArchiveBatch archiveBatch) {
+    final CompletableFuture<Integer> archiveBatchFuture;
     final Archiver archiver = beanFactory.getBean(Archiver.class);
+
     if (archiveBatch != null) {
       logger.debug("Following batch operations are found for archiving: {}", archiveBatch);
-      try {
-        archiver.moveDocuments(batchOperationTemplate.getFullQualifiedName(), BatchOperationTemplate.ID, archiveBatch.getFinishDate(),
-            archiveBatch.getIds());
-        return archiveBatch.getIds().size();
-      } catch (ArchiverException e) {
-        throw e;
-      }
+
+      archiveBatchFuture = new CompletableFuture<>();
+      archiver.moveDocuments(batchOperationTemplate.getFullQualifiedName(),
+          BatchOperationTemplate.ID,
+          archiveBatch.getFinishDate(),
+          archiveBatch.getIds())
+        .whenComplete((v, e) -> {
+          if (e != null) {
+            archiveBatchFuture.completeExceptionally(e);
+            return;
+          }
+          archiveBatchFuture.complete(archiveBatch.getIds().size());
+        });
     } else {
       logger.debug("Nothing to archive");
-      return 0;
+      archiveBatchFuture = CompletableFuture.completedFuture(0);
     }
+
+    return archiveBatchFuture;
   }
 
   @Override
-  public ArchiveBatch getNextBatch() {
-    final String datesAgg = "datesAgg";
-    final String instancesAgg = "instancesAgg";
+  public CompletableFuture<ArchiveBatch> getNextBatch() {
+    final var batchFuture = new CompletableFuture<ArchiveBatch>();
+    final var aggregation = createFinishedBatchOperationsAggregation(DATES_AGG, INSTANCES_AGG);
+    final var searchRequest = createFinishedBatchOperationsSearchRequest(aggregation);
 
-    final AggregationBuilder agg = createFinishedBatchOperationsAggregation(datesAgg, instancesAgg);
+    final var startTimer = Timer.start();
+    sendSearchRequest(searchRequest)
+      .whenComplete((response, e) -> {
+        final var timer = getArchiverQueryTimer();
+        startTimer.stop(timer);
 
-    final SearchRequest searchRequest = createFinishedBatchOperationsSearchRequest(agg);
+        final var result = handleSearchResponse(response, e);
+        result.ifRightOrLeft(batchFuture::complete, batchFuture::completeExceptionally);
+      });
 
-    try {
-      final SearchResponse searchResponse = runSearch(searchRequest);
-
-      return createArchiveBatch(searchResponse, datesAgg, instancesAgg);
-    } catch (Exception e) {
-      final String message = String.format("Exception occurred, while obtaining finished batch operations: %s", e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
+    return batchFuture;
   }
 
   private SearchRequest createFinishedBatchOperationsSearchRequest(AggregationBuilder agg) {
@@ -130,9 +144,18 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
         );
   }
 
-  @Timed(value = Metrics.TIMER_NAME_ARCHIVER_QUERY, description = "Archiver: search query latency")
-  private SearchResponse runSearch(SearchRequest searchRequest) throws IOException {
-    return esClient.search(searchRequest, RequestOptions.DEFAULT);
+  private Either<Throwable, ArchiveBatch> handleSearchResponse(final SearchResponse searchResponse, final Throwable error) {
+    if (error != null) {
+      final var message = String.format("Exception occurred, while obtaining finished batch operations: %s", error.getMessage());
+      return Either.left(new OperateRuntimeException(message, error));
+    }
+
+    final var batch = createArchiveBatch(searchResponse, DATES_AGG, INSTANCES_AGG);
+    return Either.right(batch);
+  }
+
+  private Timer getArchiverQueryTimer() {
+    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_QUERY);
   }
 
 }

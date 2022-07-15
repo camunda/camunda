@@ -107,7 +107,7 @@ public class ImportPerformanceStaticDataTest {
   public void testBArchiver() throws ArchiverException {
     final PartitionHolder partitionHolder = applicationContext.getBean(PartitionHolder.class);
     ProcessInstancesArchiverJob archiverJob = applicationContext.getBean(ProcessInstancesArchiverJob.class, partitionHolder.getPartitionIds());
-    final int archivedCount = archiverJob.archiveNextBatch();
+    final int archivedCount = archiverJob.archiveNextBatch().join();
     assertThat(archivedCount).isEqualTo(1);
   }
 

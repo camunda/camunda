@@ -6,19 +6,22 @@
  */
 package io.camunda.operate.archiver;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+
 import io.camunda.operate.Metrics;
+import io.camunda.operate.archiver.util.Either;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
-import io.camunda.operate.exceptions.ArchiverException;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.micrometer.core.instrument.Timer;
+
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -62,9 +65,6 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
   private ListViewTemplate processInstanceTemplate;
 
   @Autowired
-  private RestHighLevelClient esClient;
-
-  @Autowired
   private List<ProcessInstanceDependant> processInstanceDependantTemplates;
 
   @Autowired
@@ -78,23 +78,22 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
   }
 
   @Override
-  public ArchiveBatch getNextBatch() {
+  public CompletableFuture<ArchiveBatch> getNextBatch() {
+    final var batchFuture = new CompletableFuture<ArchiveBatch>();
+    final var aggregation = createFinishedInstancesAggregation(DATES_AGG, INSTANCES_AGG);
+    final var searchRequest = createFinishedInstancesSearchRequest(aggregation);
 
-    final String datesAgg = "datesAgg";
-    final String instancesAgg = "instancesAgg";
+    final var startTimer = Timer.start();
+    sendSearchRequest(searchRequest)
+      .whenComplete((response, e) -> {
+        final var timer = getArchiverQueryTimer();
+        startTimer.stop(timer);
 
-    final AggregationBuilder agg = createFinishedInstancesAggregation(datesAgg, instancesAgg);
+        final var result = handleSearchResponse(response, e);
+        result.ifRightOrLeft(batchFuture::complete, batchFuture::completeExceptionally);
+      });
 
-    final SearchRequest searchRequest = createFinishedInstancesSearchRequest(agg);
-
-    try {
-      final SearchResponse searchResponse = withTimer(() -> esClient.search(searchRequest, RequestOptions.DEFAULT));
-
-      return createArchiveBatch(searchResponse, datesAgg, instancesAgg);
-    } catch (Exception e) {
-      final String message = String.format("Exception occurred, while obtaining finished process instances: %s", e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
+    return batchFuture;
   }
 
   private SearchRequest createFinishedInstancesSearchRequest(AggregationBuilder agg) {
@@ -136,35 +135,82 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
         );
   }
 
-  private SearchResponse withTimer(Callable<SearchResponse> callable) throws Exception {
-    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_QUERY)
-        .recordCallable(callable);
+  private Either<Throwable, ArchiveBatch> handleSearchResponse(final SearchResponse searchResponse, final Throwable error) {
+    if (error != null) {
+      final var message = String.format("Exception occurred, while obtaining finished process instances: %s", error.getMessage());
+      return Either.left(new OperateRuntimeException(message, error));
+    }
+
+    final var batch = createArchiveBatch(searchResponse, DATES_AGG, INSTANCES_AGG);
+    return Either.right(batch);
+  }
+
+  private Timer getArchiverQueryTimer() {
+    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_QUERY);
   }
 
   @Override
-  public int archiveBatch(ProcessInstancesArchiverJob.ArchiveBatch archiveBatch) throws ArchiverException {
-    final Archiver archiver = beanFactory.getBean(Archiver.class);
+  public CompletableFuture<Integer> archiveBatch(ProcessInstancesArchiverJob.ArchiveBatch archiveBatch) {
+    final CompletableFuture<Integer> archiveBatchFuture;
+
     if (archiveBatch != null) {
       logger.debug("Following process instances are found for archiving: {}", archiveBatch);
-      try {
-        //1st remove dependent data
-        for (ProcessInstanceDependant template: processInstanceDependantTemplates) {
-          archiver.moveDocuments(template.getFullQualifiedName(), ProcessInstanceDependant.PROCESS_INSTANCE_KEY, archiveBatch.getFinishDate(),
-              archiveBatch.getIds());
-        }
 
-        //then remove process instances themselves
-        archiver.moveDocuments(processInstanceTemplate.getFullQualifiedName(), ListViewTemplate.PROCESS_INSTANCE_KEY, archiveBatch.getFinishDate(),
-            archiveBatch.getIds());
-        metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVED, archiveBatch.getIds().size());
-        return archiveBatch.getIds().size();
-      } catch (ArchiverException e) {
-        throw e;
-      }
+      archiveBatchFuture = new CompletableFuture<Integer>();
+      final var finishDate = archiveBatch.getFinishDate();
+      final var processInstanceKeys = archiveBatch.getIds();
+
+      moveDependableDocuments(finishDate, processInstanceKeys)
+        .thenCompose((v) -> {
+          return moveProcessInstanceDocuments(finishDate, processInstanceKeys);
+        })
+        .thenAccept((i) -> {
+          metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVED, i);
+          archiveBatchFuture.complete(i);
+        })
+        .exceptionally((t) -> {
+          archiveBatchFuture.completeExceptionally(t);
+          return null;
+        });
+
     } else {
       logger.debug("Nothing to archive");
-      return 0;
+      archiveBatchFuture = CompletableFuture.completedFuture(0);
     }
+
+    return archiveBatchFuture;
+  }
+
+  private CompletableFuture<Void> moveDependableDocuments(final String finishDate, final List<Object> processInstanceKeys) {
+    final var dependableFutures = new ArrayList<CompletableFuture<Void>>();
+    final Archiver archiver = beanFactory.getBean(Archiver.class);
+
+    for (ProcessInstanceDependant template: processInstanceDependantTemplates) {
+      final var moveDocumentsFuture = archiver.moveDocuments(template.getFullQualifiedName(),
+          ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
+          finishDate,
+          processInstanceKeys);
+      dependableFutures.add(moveDocumentsFuture);
+    }
+
+    return CompletableFuture.allOf(dependableFutures.toArray(new CompletableFuture[dependableFutures.size()]));
+  }
+
+  private CompletableFuture<Integer> moveProcessInstanceDocuments(final String finishDate, final List<Object> processInstanceKeys) {
+    final var future = new CompletableFuture<Integer>();
+    final Archiver archiver = beanFactory.getBean(Archiver.class);
+
+    archiver.moveDocuments(processInstanceTemplate.getFullQualifiedName(),
+        ListViewTemplate.PROCESS_INSTANCE_KEY,
+        finishDate,
+        processInstanceKeys)
+      .thenAccept((ignore) -> future.complete(processInstanceKeys.size()))
+      .exceptionally((t) -> {
+        future.completeExceptionally(t);
+        return null;
+      });
+
+    return future;
   }
 
 }

@@ -151,7 +151,8 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .getProcessInstanceKey();
 
     resetZeebeTime();
-    assertThat(archiverJob.archiveNextBatch()).isEqualTo(1);
+    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(1);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when 1.1
     FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(

@@ -161,11 +161,11 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     resetZeebeTime();
 
     //when
-    assertThat(archiverJob.archiveNextBatch()).isEqualTo(count1);
+    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(count1);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
-    assertThat(archiverJob.archiveNextBatch()).isEqualTo(count2);
+    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(count2);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
-    assertThat(archiverJob.archiveNextBatch()).isEqualTo(0);     //3rd run should not move anything, as the rest of the instances are not completed
+    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(0);     //3rd run should not move anything, as the rest of the instances are not completed
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
@@ -214,7 +214,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
     //when
     BatchOperationArchiverJob batchOperationArchiverJob = beanFactory.getBean(BatchOperationArchiverJob.class);
-    int count = batchOperationArchiverJob.archiveNextBatch();
+    int count = batchOperationArchiverJob.archiveNextBatch().join();
     assertThat(count).isEqualTo(2);
     elasticsearchTestRule.refreshOperateESIndices();
 
@@ -258,8 +258,8 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
     resetZeebeTime();
 
-    assertThat(archiverJob.archiveNextBatch()).isEqualTo(1);
-
+    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(1);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
     assertInstancesInCorrectIndex(1, Arrays.asList(processInstanceKey), endDate, true);
 
   }
@@ -303,10 +303,10 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     resetZeebeTime();
 
     //when
-    assertThat(archiverJob.archiveNextBatch()).isEqualTo(count1);
+    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(count1);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     //2rd run should not move anything, as the rest of the instances are somcpleted less then 1 hour ago
-    assertThat(archiverJob.archiveNextBatch()).isEqualTo(0);
+    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(0);
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
@@ -346,7 +346,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     resetZeebeTime();
 
     //when
-    assertThat(archiverJob.archiveNextBatch()).isEqualTo(1);
+    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(1);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //then

@@ -442,8 +442,8 @@ public class OperateTester {
     try {
       ProcessInstancesArchiverJob.ArchiveBatch finishedAtDateIds = new AbstractArchiverJob.ArchiveBatch("_test_archived", Arrays.asList(processInstanceKey));
       ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class);
-      archiverJob.archiveBatch(finishedAtDateIds);
-    } catch (ArchiverException e) {
+      archiverJob.archiveBatch(finishedAtDateIds).join();
+    } catch (Exception e) {
       return this;
     }
     return this;
