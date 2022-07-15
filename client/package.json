@@ -8,7 +8,7 @@
     "@ibm/plex": "^6.0.2",
     "bpmn-js": "9.3.1",
     "bpmn-js-disable-collapsed-subprocess": "^0.1.5",
-    "chart.js": "^3.5.1",
+    "chart.js": "^3.8.0",
     "chartjs-plugin-datalabels": "^2.0.0",
     "classnames": "^2.3.1",
     "date-fns": "^2.28.0",
