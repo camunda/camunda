@@ -50,13 +50,13 @@ public final class ProcessInstanceStateTransitionGuard {
       case ACTIVATE_ELEMENT -> hasActiveFlowScopeInstance(context)
           .flatMap(ok -> canActivateParallelGateway(context, element));
       case COMPLETE_ELEMENT ->
-        // an incident is resolved by writing a COMPLETE command when the element instance is in
-        // state COMPLETING
-          hasElementInstanceWithState(
+      // an incident is resolved by writing a COMPLETE command when the element instance is in
+      // state COMPLETING
+      hasElementInstanceWithState(
               context,
               ProcessInstanceIntent.ELEMENT_ACTIVATED,
               ProcessInstanceIntent.ELEMENT_COMPLETING)
-              .flatMap(ok -> hasActiveFlowScopeInstance(context));
+          .flatMap(ok -> hasActiveFlowScopeInstance(context));
       case TERMINATE_ELEMENT -> hasElementInstanceWithState(
           context,
           ProcessInstanceIntent.ELEMENT_ACTIVATING,
@@ -180,8 +180,7 @@ public final class ProcessInstanceStateTransitionGuard {
           : Either.left(
               String.format(
                   "Expected to be able to activate parallel gateway '%s',"
-                      + " but not all sequence flows have been taken. "
-                      + "This could occur when a sequence flow is taken multiple times.",
+                      + " but not all sequence flows have been taken.",
                   BufferUtil.bufferAsString(element.getId())));
     }
   }
