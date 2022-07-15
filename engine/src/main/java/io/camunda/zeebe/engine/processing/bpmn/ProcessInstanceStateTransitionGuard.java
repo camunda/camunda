@@ -46,34 +46,27 @@ public final class ProcessInstanceStateTransitionGuard {
 
   private Either<String, ?> checkStateTransition(
       final BpmnElementContext context, final ExecutableFlowElement element) {
-    switch (context.getIntent()) {
-      case ACTIVATE_ELEMENT:
-        final Either<String, ?> hasActiveFlowScopeInstance = hasActiveFlowScopeInstance(context);
-        return hasActiveFlowScopeInstance.isLeft()
-            ? hasActiveFlowScopeInstance
-            : canActivateParallelGateway(context, element);
-      case COMPLETE_ELEMENT:
+    return switch (context.getIntent()) {
+      case ACTIVATE_ELEMENT -> hasActiveFlowScopeInstance(context)
+          .flatMap(ok -> canActivateParallelGateway(context, element));
+      case COMPLETE_ELEMENT ->
         // an incident is resolved by writing a COMPLETE command when the element instance is in
         // state COMPLETING
-        return hasElementInstanceWithState(
-                context,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                ProcessInstanceIntent.ELEMENT_COMPLETING)
-            .flatMap(ok -> hasActiveFlowScopeInstance(context));
-
-      case TERMINATE_ELEMENT:
-        return hasElementInstanceWithState(
-            context,
-            ProcessInstanceIntent.ELEMENT_ACTIVATING,
-            ProcessInstanceIntent.ELEMENT_ACTIVATED,
-            ProcessInstanceIntent.ELEMENT_COMPLETING);
-
-      default:
-        return Either.left(
-            String.format(
-                "Expected the check of the preconditions of a command with intent [activate,complete,terminate] but the intent was '%s'",
-                context.getIntent()));
-    }
+          hasElementInstanceWithState(
+              context,
+              ProcessInstanceIntent.ELEMENT_ACTIVATED,
+              ProcessInstanceIntent.ELEMENT_COMPLETING)
+              .flatMap(ok -> hasActiveFlowScopeInstance(context));
+      case TERMINATE_ELEMENT -> hasElementInstanceWithState(
+          context,
+          ProcessInstanceIntent.ELEMENT_ACTIVATING,
+          ProcessInstanceIntent.ELEMENT_ACTIVATED,
+          ProcessInstanceIntent.ELEMENT_COMPLETING);
+      default -> Either.left(
+          String.format(
+              "Expected the check of the preconditions of a command with intent [activate,complete,terminate] but the intent was '%s'",
+              context.getIntent()));
+    };
   }
 
   private Either<String, ElementInstance> getElementInstance(final BpmnElementContext context) {

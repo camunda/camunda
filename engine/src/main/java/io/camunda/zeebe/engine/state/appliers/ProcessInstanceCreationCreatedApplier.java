@@ -65,13 +65,10 @@ final class ProcessInstanceCreationCreatedApplier
    */
   private ElementInstance findParentFlowScope(
       final ElementInstance processInstance, final DirectBuffer targetElementId) {
-    final ElementInstance flowScope;
     if (processInstance.getValue().getElementIdBuffer().equals(targetElementId)) {
-      flowScope = processInstance;
-    } else {
-      flowScope = findFlowScopeInChildren(processInstance, targetElementId);
+      return processInstance;
     }
-    return flowScope;
+    return findFlowScopeInChildren(processInstance, targetElementId);
   }
 
   private ElementInstance findFlowScopeInChildren(
