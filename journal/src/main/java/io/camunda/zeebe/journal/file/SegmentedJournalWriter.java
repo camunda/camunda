@@ -24,7 +24,7 @@ class SegmentedJournalWriter {
   private final SegmentedJournal journal;
   private final JournalMetrics journalMetrics;
   private JournalSegment currentSegment;
-  private MappedJournalSegmentWriter currentWriter;
+  private JournalSegmentWriter currentWriter;
 
   public SegmentedJournalWriter(final SegmentedJournal journal) {
     this.journal = journal;

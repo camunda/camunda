@@ -21,16 +21,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import org.agrona.IoUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Raft log builder. */
 @SuppressWarnings("UnusedReturnValue")
 public class SegmentedJournalBuilder {
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(SegmentedJournalBuilder.class);
   private static final String DEFAULT_NAME = "journal";
   private static final String DEFAULT_DIRECTORY = System.getProperty("user.dir");
   private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
@@ -153,8 +151,8 @@ public class SegmentedJournalBuilder {
 
   public SegmentedJournal build() {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
-    final var templateFile = preallocateSegmentFiles ? createSegmentTemplateFile() : null;
-    final var segmentLoader = new SegmentLoader(templateFile, preallocateSegmentFiles);
+    final var segmentAllocator = createSegmentAllocator();
+    final var segmentLoader = new SegmentLoader(segmentAllocator);
     final var segmentsManager =
         new SegmentsManager(
             journalIndex, maxSegmentSize, directory, lastWrittenIndex, name, segmentLoader);
@@ -164,17 +162,21 @@ public class SegmentedJournalBuilder {
         directory, maxSegmentSize, freeDiskSpace, journalIndex, segmentsManager, journalMetrics);
   }
 
-  private Path createSegmentTemplateFile() {
-    try {
-      final var path = Files.createTempFile(directory.toPath(), name + "-segment", ".tpl");
-      try (final var channel = FileChannel.open(path, StandardOpenOption.WRITE)) {
-        IoUtil.fill(channel, 0, maxSegmentSize, (byte) 0);
+  private SegmentAllocator createSegmentAllocator() {
+    if (preallocateSegmentFiles) {
+      final Path path = directory.toPath().resolve(name + "-segment.tpl");
+
+      try {
+        return TemplateSegmentAllocator.of(path, maxSegmentSize);
+      } catch (final IOException e) {
+        LOGGER.warn(
+            "Failed to create template based segment pre-allocator for journal {} at {}; segments will not be pre-allocated",
+            name,
+            directory,
+            e);
       }
-      return path;
-    } catch (final IOException e) {
-      // TODO: Log warning that we disable file preallocation
-      preallocateSegmentFiles = false;
-      return null;
     }
+
+    return new DefaultSegmentAllocator();
   }
 }

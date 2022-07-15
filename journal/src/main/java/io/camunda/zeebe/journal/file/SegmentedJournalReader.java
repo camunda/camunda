@@ -26,7 +26,7 @@ class SegmentedJournalReader implements JournalReader {
 
   private final SegmentedJournal journal;
   private JournalSegment currentSegment;
-  private MappedJournalSegmentReader currentReader;
+  private JournalSegmentReader currentReader;
 
   SegmentedJournalReader(final SegmentedJournal journal) {
     this.journal = journal;

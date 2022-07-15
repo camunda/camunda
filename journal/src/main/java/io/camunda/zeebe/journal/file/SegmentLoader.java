@@ -19,28 +19,19 @@ import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Create a segment file. Load a segment from the segment file. */
 final class SegmentLoader {
-  private static final Logger LOGGER = LoggerFactory.getLogger(SegmentLoader.class);
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
 
-  private final boolean preallocateFiles;
-  private final Path segmentTemplateFile;
+  private final SegmentAllocator segmentAllocator;
 
-  SegmentLoader(final Path segmentTemplateFile) {
-    this(segmentTemplateFile, true);
+  SegmentLoader() {
+    this(new DefaultSegmentAllocator());
   }
 
-  SegmentLoader(final Path segmentTemplateFile, final boolean preallocateFiles) {
-    this.segmentTemplateFile = segmentTemplateFile;
-    this.preallocateFiles = preallocateFiles;
-  }
-
-  public void newMethod(final int a) {
-    // do not use a or method
+  SegmentLoader(final SegmentAllocator segmentAllocator) {
+    this.segmentAllocator = segmentAllocator;
   }
 
   JournalSegment createSegment(
@@ -48,10 +39,11 @@ final class SegmentLoader {
       final JournalSegmentDescriptor descriptor,
       final long lastWrittenIndex,
       final JournalIndex journalIndex) {
+    final var segmentSize = descriptor.maxSegmentSize();
     final MappedByteBuffer mappedSegment;
 
-    try {
-      mappedSegment = mapNewSegment(segmentFile, descriptor, lastWrittenIndex);
+    try (final var channel = segmentAllocator.allocate(segmentFile, descriptor, lastWrittenIndex)) {
+      mappedSegment = mapSegment(channel, segmentSize);
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to create new segment file %s", segmentFile), e);
@@ -173,52 +165,5 @@ final class SegmentLoader {
     }
 
     return buffer.get(0);
-  }
-
-  private MappedByteBuffer mapNewSegment(
-      final Path segmentPath,
-      final JournalSegmentDescriptor descriptor,
-      final long lastWrittenIndex)
-      throws IOException {
-    if (Files.exists(segmentPath)) {
-      tryReuseExistingSegmentFile(segmentPath, descriptor, lastWrittenIndex);
-    }
-
-    // it's necessary to use RandomAccessFile to get access to the file descriptor for native
-    // optimizations
-    try (final var channel =
-        FileChannel.open(
-            segmentPath,
-            StandardOpenOption.WRITE,
-            StandardOpenOption.READ,
-            StandardOpenOption.CREATE)) {
-      if (preallocateFiles) {
-        try (final var source = FileChannel.open(segmentTemplateFile, StandardOpenOption.READ)) {
-          source.transferTo(0, descriptor.maxSegmentSize(), channel);
-        }
-      }
-
-      return mapSegment(channel, descriptor.maxSegmentSize());
-    }
-  }
-
-  private void tryReuseExistingSegmentFile(
-      final Path segmentPath,
-      final JournalSegmentDescriptor descriptor,
-      final long lastWrittenIndex)
-      throws IOException {
-    // do not reuse a segment into which we've already written!
-    if (lastWrittenIndex >= descriptor.index()) {
-      throw new JournalException(
-          String.format(
-              "Failed to create journal segment %s, as it already exists, and the last written "
-                  + "index %d indicates we've already written to it",
-              segmentPath, lastWrittenIndex));
-    }
-
-    LOGGER.warn(
-        "Failed to create segment {}: an unused file already existed, and will be replaced",
-        segmentPath);
-    Files.delete(segmentPath);
   }
 }

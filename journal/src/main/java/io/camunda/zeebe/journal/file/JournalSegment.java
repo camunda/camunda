@@ -44,8 +44,8 @@ class JournalSegment implements AutoCloseable {
   private final JournalSegmentFile file;
   private final JournalSegmentDescriptor descriptor;
   private final JournalIndex index;
-  private final MappedJournalSegmentWriter writer;
-  private final Set<MappedJournalSegmentReader> readers = Sets.newConcurrentHashSet();
+  private final JournalSegmentWriter writer;
+  private final Set<JournalSegmentReader> readers = Sets.newConcurrentHashSet();
   private boolean open = true;
   private final MappedByteBuffer buffer;
   // This need to be volatile because both the writer and the readers access it concurrently
@@ -133,7 +133,7 @@ class JournalSegment implements AutoCloseable {
    *
    * @return The segment writer.
    */
-  public MappedJournalSegmentWriter writer() {
+  public JournalSegmentWriter writer() {
     checkOpen();
     return writer;
   }
@@ -143,17 +143,17 @@ class JournalSegment implements AutoCloseable {
    *
    * @return A new segment reader.
    */
-  MappedJournalSegmentReader createReader() {
+  JournalSegmentReader createReader() {
     checkOpen();
-    final MappedJournalSegmentReader reader =
-        new MappedJournalSegmentReader(
+    final JournalSegmentReader reader =
+        new JournalSegmentReader(
             buffer.asReadOnlyBuffer().position(0).order(ENDIANNESS), this, index);
     readers.add(reader);
     return reader;
   }
 
-  private MappedJournalSegmentWriter createWriter(final long lastWrittenIndex) {
-    return new MappedJournalSegmentWriter(buffer, this, index, lastWrittenIndex);
+  private JournalSegmentWriter createWriter(final long lastWrittenIndex) {
+    return new JournalSegmentWriter(buffer, this, index, lastWrittenIndex);
   }
 
   /**
@@ -161,7 +161,7 @@ class JournalSegment implements AutoCloseable {
    *
    * @param reader the closed reader
    */
-  void onReaderClosed(final MappedJournalSegmentReader reader) {
+  void onReaderClosed(final JournalSegmentReader reader) {
     readers.remove(reader);
     // When multiple readers are closed simultaneously, both readers might try to delete the file.
     // This is ok, as safeDelete is idempotent. Hence we keep it simple, and doesn't add more
@@ -189,7 +189,7 @@ class JournalSegment implements AutoCloseable {
   @Override
   public void close() {
     open = false;
-    readers.forEach(MappedJournalSegmentReader::close);
+    readers.forEach(JournalSegmentReader::close);
     IoUtil.unmap(buffer);
   }
 
