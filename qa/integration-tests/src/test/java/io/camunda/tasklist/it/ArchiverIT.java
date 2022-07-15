@@ -129,11 +129,11 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     resetZeebeTime();
 
     // when
-    assertThat(archiverJob.archiveNextBatch()).isEqualTo(count1);
+    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(count1);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
-    assertThat(archiverJob.archiveNextBatch()).isEqualTo(count2);
+    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(count2);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
-    assertThat(archiverJob.archiveNextBatch())
+    assertThat(archiverJob.archiveNextBatch().join())
         .isEqualTo(
             0); // 3rd run should not move anything, as the rest of the tasks are not completed
 
@@ -179,10 +179,10 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     resetZeebeTime();
 
     // when
-    assertThat(archiverJob.archiveNextBatch()).isEqualTo(count1);
+    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(count1);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     // 2rd run should not move anything, as the rest of the tasks are completed less then 1 hour ago
-    assertThat(archiverJob.archiveNextBatch()).isEqualTo(0);
+    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(0);
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
@@ -222,10 +222,10 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     // when
-    assertThat(processInstanceArchiverJob.archiveNextBatch()).isEqualTo(count1 + count2);
+    assertThat(processInstanceArchiverJob.archiveNextBatch().join()).isEqualTo(count1 + count2);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     // 2rd run should not move anything, as the rest of the tasks are completed less then 1 hour ago
-    assertThat(processInstanceArchiverJob.archiveNextBatch()).isEqualTo(0);
+    assertThat(processInstanceArchiverJob.archiveNextBatch().join()).isEqualTo(0);
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 

@@ -104,8 +104,9 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
             / tasklistProperties
                 .getClusterNode()
                 .getNodeCount(); // we're archiving only part of the partitions
-    assertThat(archiverJob.archiveNextBatch()).isGreaterThanOrEqualTo(expectedCount);
-    assertThat(archiverJob.archiveNextBatch()).isLessThanOrEqualTo(expectedCount + 1);
+    assertThat(archiverJob.archiveNextBatch().join()).isGreaterThanOrEqualTo(expectedCount);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    assertThat(archiverJob.archiveNextBatch().join()).isLessThanOrEqualTo(expectedCount + 1);
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 

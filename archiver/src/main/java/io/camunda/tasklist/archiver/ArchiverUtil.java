@@ -12,12 +12,13 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_SLICES;
 
 import io.camunda.tasklist.Metrics;
+import io.camunda.tasklist.archiver.util.Either;
 import io.camunda.tasklist.exceptions.ArchiverException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.micrometer.core.instrument.Timer;
 import java.util.List;
-import java.util.concurrent.Callable;
-import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.client.RequestOptions;
+import java.util.concurrent.CompletableFuture;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.reindex.AbstractBulkByScrollRequest;
@@ -27,6 +28,8 @@ import org.elasticsearch.index.reindex.ReindexRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -35,56 +38,107 @@ public class ArchiverUtil {
   private static final String INDEX_NAME_PATTERN = "%s%s";
   private static final Logger LOGGER = LoggerFactory.getLogger(ArchiverUtil.class);
 
+  @Autowired
+  @Qualifier("archiverThreadPoolExecutor")
+  private ThreadPoolTaskScheduler archiverExecutor;
+
   @Autowired private RestHighLevelClient esClient;
 
   @Autowired private Metrics metrics;
 
-  public void moveDocuments(
-      String sourceIndexName, String idFieldName, String finishDate, List<String> ids)
-      throws ArchiverException {
+  public CompletableFuture<Void> moveDocuments(
+      final String sourceIndexName,
+      final String idFieldName,
+      final String finishDate,
+      final List<String> ids) {
+    final var moveDocumentsFuture = new CompletableFuture<Void>();
+    final var destinationIndexName = getDestinationIndexName(sourceIndexName, finishDate);
 
-    final String destinationIndexName = getDestinationIndexName(sourceIndexName, finishDate);
+    reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, ids)
+        .thenCompose((ignore) -> deleteDocuments(sourceIndexName, idFieldName, ids))
+        .whenComplete(
+            (ignore, e) -> {
+              if (e != null) {
+                moveDocumentsFuture.completeExceptionally(e);
+                return;
+              }
+              moveDocumentsFuture.complete(null);
+            });
 
-    reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, ids);
-
-    deleteDocuments(sourceIndexName, idFieldName, ids);
-  }
-
-  private BulkByScrollResponse deleteWithTimer(Callable<BulkByScrollResponse> callable)
-      throws Exception {
-    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_DELETE_QUERY).recordCallable(callable);
-  }
-
-  private BulkByScrollResponse reindexWithTimer(Callable<BulkByScrollResponse> callable)
-      throws Exception {
-    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_REINDEX_QUERY).recordCallable(callable);
+    return moveDocumentsFuture;
   }
 
   public String getDestinationIndexName(String sourceIndexName, String finishDate) {
     return String.format(INDEX_NAME_PATTERN, sourceIndexName, finishDate);
   }
 
-  public long deleteDocuments(
-      String sourceIndexName, String idFieldName, List<String> processInstanceKeys)
-      throws ArchiverException {
-    DeleteByQueryRequest request =
-        new DeleteByQueryRequest(sourceIndexName)
-            .setBatchSize(processInstanceKeys.size())
+  public CompletableFuture<Long> deleteDocuments(
+      final String sourceIndexName,
+      final String idFieldName,
+      final List<String> processInstanceKeys) {
+    final var deleteFuture = new CompletableFuture<Long>();
+    final var deleteRequest =
+        createDeleteByQueryRequestWithDefaults(sourceIndexName)
             .setQuery(termsQuery(idFieldName, processInstanceKeys))
             .setMaxRetries(UPDATE_RETRY_COUNT);
-    request = applyDefaultSettings(request);
-    try {
-      final DeleteByQueryRequest finalRequest = request;
-      final BulkByScrollResponse response =
-          deleteWithTimer(() -> esClient.deleteByQuery(finalRequest, RequestOptions.DEFAULT));
-      return checkResponse(response, sourceIndexName, "delete");
-    } catch (ArchiverException ex) {
-      throw ex;
-    } catch (Exception e) {
-      final String message =
-          String.format("Exception occurred, while deleting the documents: %s", e.getMessage());
-      throw new TasklistRuntimeException(message, e);
-    }
+    final var startTimer = Timer.start();
+
+    sendDeleteRequest(deleteRequest)
+        .whenComplete(
+            (response, e) -> {
+              final var timer = getArchiverDeleteQueryTimer();
+              startTimer.stop(timer);
+              final var result = handleResponse(response, e, sourceIndexName, "delete");
+              result.ifRightOrLeft(deleteFuture::complete, deleteFuture::completeExceptionally);
+            });
+
+    return deleteFuture;
+  }
+
+  private CompletableFuture<Long> reindexDocuments(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final String idFieldName,
+      final List<String> processInstanceKeys) {
+    final var reindexFuture = new CompletableFuture<Long>();
+    final var reindexRequest =
+        createReindexRequestWithDefaults()
+            .setSourceIndices(sourceIndexName)
+            .setDestIndex(destinationIndexName)
+            .setSourceQuery(termsQuery(idFieldName, processInstanceKeys));
+
+    final var startTimer = Timer.start();
+    sendReindexRequest(reindexRequest)
+        .whenComplete(
+            (response, e) -> {
+              final var reindexTimer = getArchiverReindexQueryTimer();
+              startTimer.stop(reindexTimer);
+
+              final var result = handleResponse(response, e, sourceIndexName, "reindex");
+              result.ifRightOrLeft(reindexFuture::complete, reindexFuture::completeExceptionally);
+            });
+
+    return reindexFuture;
+  }
+
+  private CompletableFuture<BulkByScrollResponse> sendReindexRequest(
+      final ReindexRequest reindexRequest) {
+    return ElasticsearchUtil.reindexAsync(reindexRequest, archiverExecutor, esClient);
+  }
+
+  private ReindexRequest createReindexRequestWithDefaults() {
+    final var reindexRequest = new ReindexRequest();
+    return applyDefaultSettings(reindexRequest);
+  }
+
+  private DeleteByQueryRequest createDeleteByQueryRequestWithDefaults(final String index) {
+    final var deleteRequest = new DeleteByQueryRequest(index);
+    return applyDefaultSettings(deleteRequest);
+  }
+
+  private CompletableFuture<BulkByScrollResponse> sendDeleteRequest(
+      final DeleteByQueryRequest deleteRequest) {
+    return ElasticsearchUtil.deleteByQueryAsync(deleteRequest, archiverExecutor, esClient);
   }
 
   private <T extends AbstractBulkByScrollRequest<T>> T applyDefaultSettings(T request) {
@@ -94,55 +148,42 @@ public class ArchiverUtil {
         .setSlices(AUTO_SLICES);
   }
 
-  private long reindexDocuments(
-      String sourceIndexName,
-      String destinationIndexName,
-      String idFieldName,
-      List<String> processInstanceKeys)
-      throws ArchiverException {
-
-    ReindexRequest reindexRequest =
-        new ReindexRequest()
-            .setSourceIndices(sourceIndexName)
-            .setSourceBatchSize(processInstanceKeys.size())
-            .setDestIndex(destinationIndexName)
-            .setSourceQuery(termsQuery(idFieldName, processInstanceKeys));
-
-    reindexRequest = applyDefaultSettings(reindexRequest);
-
-    try {
-      final ReindexRequest finalReindexRequest = reindexRequest;
-      final BulkByScrollResponse response =
-          reindexWithTimer(() -> esClient.reindex(finalReindexRequest, RequestOptions.DEFAULT));
-
-      return checkResponse(response, sourceIndexName, "reindex");
-    } catch (ArchiverException ex) {
-      throw ex;
-    } catch (Exception e) {
-      final String message =
-          String.format("Exception occurred, while reindexing the documents: %s", e.getMessage());
-      throw new TasklistRuntimeException(message, e);
+  private Either<Throwable, Long> handleResponse(
+      final BulkByScrollResponse response,
+      final Throwable error,
+      final String sourceIndexName,
+      final String operation) {
+    if (error != null) {
+      final var message =
+          String.format(
+              "Exception occurred, while performing operation %s on source index %s. the documents: %s",
+              operation, sourceIndexName, error.getMessage());
+      return Either.left(new TasklistRuntimeException(message, error));
     }
-  }
 
-  private long checkResponse(
-      BulkByScrollResponse response, String sourceIndexName, String operation)
-      throws ArchiverException {
-    final List<BulkItemResponse.Failure> bulkFailures = response.getBulkFailures();
+    final var bulkFailures = response.getBulkFailures();
     if (bulkFailures.size() > 0) {
       LOGGER.error(
           "Failures occurred when performing operation: {} on source index {}. See details below.",
           operation,
           sourceIndexName);
       bulkFailures.stream().forEach(f -> LOGGER.error(f.toString()));
-      throw new ArchiverException(String.format("Operation %s failed", operation));
-    } else {
-      LOGGER.debug(
-          "Operation {} succeded on source index {}. Response: {}",
-          operation,
-          sourceIndexName,
-          response.toString());
-      return response.getTotal();
+      return Either.left(new ArchiverException(String.format("Operation % failed", operation)));
     }
+
+    LOGGER.debug(
+        "Operation {} succeded on source index {}. Response: {}",
+        operation,
+        sourceIndexName,
+        response.toString());
+    return Either.right(response.getTotal());
+  }
+
+  private Timer getArchiverReindexQueryTimer() {
+    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_REINDEX_QUERY);
+  }
+
+  private Timer getArchiverDeleteQueryTimer() {
+    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_DELETE_QUERY);
   }
 }

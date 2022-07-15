@@ -16,24 +16,27 @@ import static org.elasticsearch.search.aggregations.PipelineAggregatorBuilders.b
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.tasklist.Metrics;
-import io.camunda.tasklist.exceptions.ArchiverException;
+import io.camunda.tasklist.archiver.util.Either;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
-import io.micrometer.core.annotation.Timed;
-import java.io.IOException;
+import io.micrometer.core.instrument.Timer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
+import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
+import org.elasticsearch.search.aggregations.metrics.TopHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -48,6 +51,8 @@ import org.springframework.stereotype.Component;
 public class TaskArchiverJob extends AbstractArchiverJob {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskArchiverJob.class);
+  private static final String DATES_AGG = "datesAgg";
+  private static final String INSTANCES_AGG = "instancesAgg";
 
   @Autowired private TaskTemplate taskTemplate;
 
@@ -57,57 +62,83 @@ public class TaskArchiverJob extends AbstractArchiverJob {
 
   @Autowired private RestHighLevelClient esClient;
 
+  @Autowired private Metrics metrics;
+
   public TaskArchiverJob(final List<Integer> partitionIds) {
     super(partitionIds);
   }
 
   @Override
-  public int archiveBatch(ArchiveBatch archiveBatch) throws ArchiverException {
+  public CompletableFuture<Integer> archiveBatch(ArchiveBatch archiveBatch) {
+    final CompletableFuture<Integer> archiveBatchFuture;
     if (archiveBatch != null) {
       LOGGER.debug("Following batch operations are found for archiving: {}", archiveBatch);
-      try {
+      archiveBatchFuture = new CompletableFuture<>();
 
-        // archive task variables
-        archiverUtil.moveDocuments(
-            taskVariableTemplate.getFullQualifiedName(),
-            TaskVariableTemplate.TASK_ID,
-            archiveBatch.getFinishDate(),
-            archiveBatch.getIds());
+      // archive task variables
+      final var moveVariableDocuments =
+          archiverUtil.moveDocuments(
+              taskVariableTemplate.getFullQualifiedName(),
+              TaskVariableTemplate.TASK_ID,
+              archiveBatch.getFinishDate(),
+              archiveBatch.getIds());
 
-        archiverUtil.moveDocuments(
-            taskTemplate.getFullQualifiedName(),
-            TaskTemplate.ID,
-            archiveBatch.getFinishDate(),
-            archiveBatch.getIds());
-        return archiveBatch.getIds().size();
-      } catch (ArchiverException e) {
-        throw e;
-      }
+      // archive tasks
+      final var moveTaskDocuments =
+          archiverUtil.moveDocuments(
+              taskTemplate.getFullQualifiedName(),
+              TaskTemplate.ID,
+              archiveBatch.getFinishDate(),
+              archiveBatch.getIds());
+
+      CompletableFuture.allOf(moveVariableDocuments, moveTaskDocuments)
+          .thenAccept((v) -> archiveBatchFuture.complete(archiveBatch.getIds().size()))
+          .exceptionally(
+              (t) -> {
+                archiveBatchFuture.completeExceptionally(t);
+                return null;
+              });
+
     } else {
       LOGGER.debug("Nothing to archive");
-      return 0;
+      archiveBatchFuture = CompletableFuture.completedFuture(0);
     }
+
+    return archiveBatchFuture;
   }
 
   @Override
-  public ArchiveBatch getNextBatch() {
-    final String datesAgg = "datesAgg";
-    final String instancesAgg = "instancesAgg";
+  public CompletableFuture<ArchiveBatch> getNextBatch() {
+    final var batchFuture = new CompletableFuture<ArchiveBatch>();
+    final var aggregation = createFinishedTasksAggregation(DATES_AGG, INSTANCES_AGG);
+    final var searchRequest = createFinishedTasksSearchRequest(aggregation);
 
-    final AggregationBuilder agg = createFinishedTasksAggregation(datesAgg, instancesAgg);
+    final var startTimer = Timer.start();
+    sendSearchRequest(searchRequest)
+        .whenComplete(
+            (response, e) -> {
+              final var timer = getArchiverQueryTimer();
+              startTimer.stop(timer);
 
-    final SearchRequest searchRequest = createFinishedTasksSearchRequest(agg);
+              final var result = handleSearchResponse(response, e);
+              result.ifRightOrLeft(batchFuture::complete, batchFuture::completeExceptionally);
+            });
 
-    try {
-      final SearchResponse searchResponse = runSearch(searchRequest);
+    return batchFuture;
+  }
 
-      return createArchiveBatch(searchResponse, datesAgg, instancesAgg);
-    } catch (Exception e) {
-      final String message =
+  protected Either<Throwable, ArchiveBatch> handleSearchResponse(
+      final SearchResponse searchResponse, final Throwable error) {
+    if (error != null) {
+      final var message =
           String.format(
-              "Exception occurred, while obtaining finished batch operations: %s", e.getMessage());
-      throw new TasklistRuntimeException(message, e);
+              "Exception occurred, while obtaining finished batch operations: %s",
+              error.getMessage());
+      return Either.left(new TasklistRuntimeException(message, error));
     }
+
+    final var batch = createArchiveBatch(searchResponse);
+    return Either.right(batch);
   }
 
   private SearchRequest createFinishedTasksSearchRequest(AggregationBuilder agg) {
@@ -154,8 +185,27 @@ public class TaskArchiverJob extends AbstractArchiverJob {
                 .fetchSource(TaskTemplate.ID, null));
   }
 
-  @Timed(value = Metrics.TIMER_NAME_ARCHIVER_QUERY, description = "Archiver: search query latency")
-  private SearchResponse runSearch(SearchRequest searchRequest) throws IOException {
-    return esClient.search(searchRequest, RequestOptions.DEFAULT);
+  protected ArchiveBatch createArchiveBatch(final SearchResponse searchResponse) {
+    final List<? extends Histogram.Bucket> buckets =
+        ((Histogram) searchResponse.getAggregations().get(DATES_AGG)).getBuckets();
+
+    if (buckets.size() > 0) {
+      final Histogram.Bucket bucket = buckets.get(0);
+      final String finishDate = bucket.getKeyAsString();
+      final SearchHits hits = ((TopHits) bucket.getAggregations().get(INSTANCES_AGG)).getHits();
+      final ArrayList<String> ids =
+          Arrays.stream(hits.getHits())
+              .collect(
+                  ArrayList::new,
+                  (list, hit) -> list.add(hit.getId()),
+                  (list1, list2) -> list1.addAll(list2));
+      return new ArchiveBatch(finishDate, ids);
+    } else {
+      return null;
+    }
+  }
+
+  private Timer getArchiverQueryTimer() {
+    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_QUERY);
   }
 }

@@ -7,28 +7,34 @@
 package io.camunda.tasklist.archiver;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.tasklist.util.ElasticsearchUtil.scrollIdsToList;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.tasklist.Metrics;
-import io.camunda.tasklist.exceptions.ArchiverException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
-import io.micrometer.core.annotation.Timed;
-import java.io.IOException;
+import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.micrometer.core.instrument.Timer;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -57,48 +63,117 @@ public class ProcessInstanceArchiverJob extends AbstractArchiverJob {
 
   @Autowired private RestHighLevelClient esClient;
 
+  @Autowired private Metrics metrics;
+
   public ProcessInstanceArchiverJob(final List<Integer> partitionIds) {
     super(partitionIds);
   }
 
   @Override
-  public int archiveBatch(ArchiveBatch archiveBatch) throws ArchiverException {
+  public CompletableFuture<Integer> archiveBatch(ArchiveBatch archiveBatch) {
+    final CompletableFuture<Integer> archiveBatchFuture;
     if (archiveBatch != null) {
       LOGGER.debug("Following batch operations are found for archiving: {}", archiveBatch);
-      archiverUtil.deleteDocuments(
-          variableIndex.getFullQualifiedName(),
-          VariableIndex.PROCESS_INSTANCE_ID,
-          archiveBatch.getIds());
-      archiverUtil.deleteDocuments(
-          flowNodeInstanceIndex.getFullQualifiedName(),
-          FlowNodeInstanceIndex.PROCESS_INSTANCE_ID,
-          archiveBatch.getIds());
-      archiverUtil.deleteDocuments(
-          processInstanceIndex.getFullQualifiedName(),
-          ProcessInstanceIndex.ID,
-          archiveBatch.getIds());
-      return archiveBatch.getIds().size();
+      archiveBatchFuture = new CompletableFuture<>();
+
+      final var deleteVariablesFuture =
+          archiverUtil.deleteDocuments(
+              variableIndex.getFullQualifiedName(),
+              VariableIndex.PROCESS_INSTANCE_ID,
+              archiveBatch.getIds());
+
+      final var deleteFlowNodesFuture =
+          archiverUtil.deleteDocuments(
+              flowNodeInstanceIndex.getFullQualifiedName(),
+              FlowNodeInstanceIndex.PROCESS_INSTANCE_ID,
+              archiveBatch.getIds());
+
+      final var deleteProcessInstanceFuture =
+          archiverUtil.deleteDocuments(
+              processInstanceIndex.getFullQualifiedName(),
+              ProcessInstanceIndex.ID,
+              archiveBatch.getIds());
+
+      CompletableFuture.allOf(
+              deleteVariablesFuture, deleteFlowNodesFuture, deleteProcessInstanceFuture)
+          .thenAccept((v) -> archiveBatchFuture.complete(archiveBatch.getIds().size()))
+          .exceptionally(
+              (t) -> {
+                archiveBatchFuture.completeExceptionally(t);
+                return null;
+              });
     } else {
       LOGGER.debug("Nothing to archive");
-      return 0;
+      archiveBatchFuture = CompletableFuture.completedFuture(0);
     }
+
+    return archiveBatchFuture;
   }
 
   @Override
-  public ArchiveBatch getNextBatch() {
+  public CompletableFuture<ArchiveBatch> getNextBatch() {
+    final var nextBatchFuture = new CompletableFuture<ArchiveBatch>();
+    final var searchRequest = createFinishedProcessInstanceSearchRequest();
+    searchRequest.scroll(TimeValue.timeValueMillis(ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS));
 
-    final SearchRequest searchRequest = createFinishedProcessInstanceSearchRequest();
+    final var startTimer = Timer.start();
+    sendSearchRequest(searchRequest)
+        .thenCompose(this::fetchFinishedProcessInstanceIds)
+        .thenApply(this::createArchiveBatch)
+        .thenAccept(nextBatchFuture::complete)
+        .exceptionally(
+            (t) -> {
+              final var message =
+                  String.format(
+                      "Exception occurred, while obtaining finished batch operations: %s",
+                      t.getMessage());
+              nextBatchFuture.completeExceptionally(new TasklistRuntimeException(message, t));
+              return null;
+            })
+        .thenAccept(
+            (ignore) -> {
+              final var timer = getArchiverQueryTimer();
+              startTimer.stop(timer);
+            });
 
-    try {
-      final List<String> ids = runSearch(searchRequest);
+    return nextBatchFuture;
+  }
 
-      return createArchiveBatch(ids);
-    } catch (Exception e) {
-      final String message =
-          String.format(
-              "Exception occurred, while obtaining finished batch operations: %s", e.getMessage());
-      throw new TasklistRuntimeException(message, e);
+  protected CompletableFuture<List<String>> fetchFinishedProcessInstanceIds(
+      final SearchResponse response) {
+    final CompletableFuture<List<String>> srcollFuture;
+    final var result = new ArrayList<String>();
+
+    final var scrollId = response.getScrollId();
+    final var hits = response.getHits();
+
+    if (hits.getHits().length > 0) {
+      srcollFuture = new CompletableFuture<>();
+      final var ids =
+          Arrays.asList(hits.getHits()).stream().map(SearchHit::getId).collect(Collectors.toList());
+      result.addAll(ids);
+
+      final var scrollRequest = new SearchScrollRequest(scrollId);
+      scrollRequest.scroll(TimeValue.timeValueMillis(ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS));
+
+      ElasticsearchUtil.scrollAsync(scrollRequest, archiverExecutor, esClient)
+          .thenCompose(this::fetchFinishedProcessInstanceIds)
+          .thenAccept(
+              (resultingIds) -> {
+                result.addAll(resultingIds);
+                srcollFuture.complete(result);
+              })
+          .exceptionally(
+              (e) -> {
+                srcollFuture.completeExceptionally(e);
+                return null;
+              });
+
+    } else {
+      srcollFuture = CompletableFuture.completedFuture(result);
     }
+
+    return srcollFuture;
   }
 
   protected ArchiveBatch createArchiveBatch(final List<String> ids) {
@@ -130,9 +205,7 @@ public class ProcessInstanceArchiverJob extends AbstractArchiverJob {
     return searchRequest;
   }
 
-  @Timed(value = Metrics.TIMER_NAME_ARCHIVER_QUERY, description = "Archiver: search query latency")
-  private List<String> runSearch(SearchRequest searchRequest) throws IOException {
-    final List<String> ids = scrollIdsToList(searchRequest, esClient);
-    return ids;
+  private Timer getArchiverQueryTimer() {
+    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_QUERY);
   }
 }

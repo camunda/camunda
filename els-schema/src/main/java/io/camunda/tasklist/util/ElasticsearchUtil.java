@@ -22,9 +22,12 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -40,6 +43,9 @@ import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -63,6 +69,54 @@ public abstract class ElasticsearchUtil {
 
   public static SearchRequest createSearchRequest(TemplateDescriptor template) {
     return createSearchRequest(template, QueryType.ALL);
+  }
+
+  public static CompletableFuture<BulkByScrollResponse> reindexAsync(
+      final ReindexRequest reindexRequest,
+      final Executor executor,
+      final RestHighLevelClient esClient) {
+    final var reindexFuture = new CompletableFuture<BulkByScrollResponse>();
+    esClient.reindexAsync(
+        reindexRequest,
+        RequestOptions.DEFAULT,
+        new DelegatingActionListener<>(reindexFuture, executor));
+    return reindexFuture;
+  }
+
+  public static CompletableFuture<BulkByScrollResponse> deleteByQueryAsync(
+      final DeleteByQueryRequest deleteRequest,
+      final Executor executor,
+      final RestHighLevelClient esClient) {
+    final var deleteFuture = new CompletableFuture<BulkByScrollResponse>();
+    esClient.deleteByQueryAsync(
+        deleteRequest,
+        RequestOptions.DEFAULT,
+        new DelegatingActionListener<>(deleteFuture, executor));
+    return deleteFuture;
+  }
+
+  public static CompletableFuture<SearchResponse> searchAsync(
+      final SearchRequest searchRequest,
+      final Executor executor,
+      final RestHighLevelClient esClient) {
+    final var searchFuture = new CompletableFuture<SearchResponse>();
+    esClient.searchAsync(
+        searchRequest,
+        RequestOptions.DEFAULT,
+        new DelegatingActionListener<>(searchFuture, executor));
+    return searchFuture;
+  }
+
+  public static CompletableFuture<SearchResponse> scrollAsync(
+      final SearchScrollRequest scrollRequest,
+      final Executor executor,
+      final RestHighLevelClient esClient) {
+    final var searchFuture = new CompletableFuture<SearchResponse>();
+    esClient.scrollAsync(
+        scrollRequest,
+        RequestOptions.DEFAULT,
+        new DelegatingActionListener<>(searchFuture, executor));
+    return searchFuture;
   }
 
   /* CREATE QUERIES */
@@ -435,5 +489,28 @@ public abstract class ElasticsearchUtil {
   public enum QueryType {
     ONLY_RUNTIME,
     ALL
+  }
+
+  private static final class DelegatingActionListener<Response>
+      implements ActionListener<Response> {
+
+    private final CompletableFuture<Response> future;
+    private final Executor executorDelegate;
+
+    private DelegatingActionListener(
+        final CompletableFuture<Response> future, final Executor executor) {
+      this.future = future;
+      this.executorDelegate = executor;
+    }
+
+    @Override
+    public void onResponse(Response response) {
+      executorDelegate.execute(() -> future.complete(response));
+    }
+
+    @Override
+    public void onFailure(Exception e) {
+      executorDelegate.execute(() -> future.completeExceptionally(e));
+    }
   }
 }
