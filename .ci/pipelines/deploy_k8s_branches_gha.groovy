@@ -18,7 +18,9 @@ camundaGitHubWorkflowDispatch([
                 chart_ref: params.BRANCH,
                 docker_tag: params.DOCKER_TAG,
                 es_version: params.ES_VERSION,
-                cambpm_version: params.CAMBPM_VERSION
+                cambpm_version: params.CAMBPM_VERSION,
+                identity_version: params.IDENTITY_VERSION,
+                zeebe_version: params.ZEEBE_VERSION
         ],
         org: 'camunda',
         ref: params.REF,

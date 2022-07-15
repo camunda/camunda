@@ -17,6 +17,12 @@ on:
       es_version:
         description: 'ES docker tag to deploy'
         required: true
+      zeebe_version:
+        description: 'Zeebe docker tag to deploy'
+        required: true
+      identity_version:
+        description: 'Identity docker tag to deploy'
+        required: true
       cambpm_version:
         description: 'Cambpm docker tag to deploy'
         required: true
@@ -54,5 +60,7 @@ jobs:
           revision: ${{ github.event.inputs.chart_ref }}
           docker_tag: ${{ github.event.inputs.docker_tag }}
           es_version: ${{ github.event.inputs.es_version }}
+          zeebe_version: ${{ github.event.inputs.zeebe_version }}
+          identity_version: ${{ github.event.inputs.identity_version }}
           cambpm_version: ${{ github.event.inputs.cambpm_version }}
           argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}

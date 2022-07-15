@@ -35,6 +35,14 @@ inputs:
     description: ES Docker tag to deploy.
     required: true
 
+  zeebe_version:
+    description: Zeebe Docker tag to deploy.
+    required: true
+
+  identity_version:
+    description: Identity Docker tag to deploy.
+    required: true
+
   cambpm_version:
     description: CAMBPM tag to deploy
     required: true
@@ -104,8 +112,6 @@ runs:
       shell: bash
       run: >-
         .github/actions/deploy-env/deploy_script.sh
-        
-        argocd app sync ${{ env.APP_NAME }} --async --force || true
       env:
         ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
         ARGOCD_OPTS: "--grpc-web"
@@ -114,13 +120,21 @@ runs:
         DOCKER_TAG: ${{ inputs.docker_tag }}
         CAMBPM_VERSION: ${{ inputs.cambpm_version }}
         ES_VERSION: ${{ inputs.es_version }}
+        ZEEBE_VERSION: ${{ inputs.zeebe_version }}
+        IDENTITY_VERSION: ${{ inputs.identity_version }}
         REVISION: ${{ inputs.revision }}
         SHA: ${{ github.sha }}
     - name: Wait for sync (up to 15 minutes)
       shell: bash
       run: |-
         echo "::group::wait for sync"
-        argocd app wait ${{ env.APP_NAME }} --timeout 900 --health --sync
+        if [[ ${{ env.APP_NAME }} == "optimize-stage" ]];
+        then  
+          argocd app wait ${{ env.APP_NAME }} c8-${{ env.APP_NAME }} --timeout 900 --health --sync
+        else 
+          argocd app wait ${{ env.APP_NAME }} --timeout 900 --health --sync
+        fi
+        
         echo "::endgroup::"
       env:
         ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
