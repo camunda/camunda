@@ -799,6 +799,12 @@ final class LeaderAppender {
     if (persistedSnapshot == null) {
       return false;
     }
+    if (member.getSnapshotIndex() >= persistedSnapshot.getIndex()) {
+      // Member has the latest snapshot, replicating the snapshot again wouldn't help.
+      // WARNING! This is load-bearing and not just an optimization. See
+      // https://github.com/camunda/zeebe/issues/9820 for context.
+      return false;
+    }
     if (raft.getLog().getFirstIndex() > member.getCurrentIndex()) {
       // Necessary events are not available anymore, we have to use the snapshot
       return true;
