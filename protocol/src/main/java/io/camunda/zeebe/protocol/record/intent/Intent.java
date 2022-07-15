@@ -44,7 +44,8 @@ public interface Intent {
           DecisionEvaluationIntent.class,
           MessageStartEventSubscriptionIntent.class,
           ProcessInstanceResultIntent.class,
-          CheckpointIntent.class);
+          CheckpointIntent.class,
+          ProcessInstanceModificationIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN =
       new Intent() {
@@ -63,6 +64,7 @@ public interface Intent {
 
   String name();
 
+  @SuppressWarnings("checkstyle:MissingSwitchDefault")
   static Intent fromProtocolValue(final ValueType valueType, final short intent) {
     switch (valueType) {
       case DEPLOYMENT:
@@ -109,15 +111,17 @@ public interface Intent {
         return DecisionEvaluationIntent.from(intent);
       case CHECKPOINT:
         return CheckpointIntent.from(intent);
+      case PROCESS_INSTANCE_MODIFICATION:
+        return ProcessInstanceModificationIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
-      default:
-        throw new RuntimeException(
-            String.format(
-                "Expected to map value type %s to intent type, but did not recognize the value type",
-                valueType.name()));
     }
+
+    throw new RuntimeException(
+        String.format(
+            "Expected to map value type %s to intent type, but did not recognize the value type",
+            valueType.name()));
   }
 
   static Intent fromProtocolValue(final ValueType valueType, final String intent) {

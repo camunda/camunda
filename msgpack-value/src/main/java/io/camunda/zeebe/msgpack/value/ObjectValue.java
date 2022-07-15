@@ -157,11 +157,19 @@ public class ObjectValue extends BaseValue {
     }
   }
 
+  /**
+   * Hashcode of an ObjectValue object is generated based on the properties (declared, undeclared,
+   * recycled).
+   */
   @Override
   public int hashCode() {
     return Objects.hash(declaredProperties, undeclaredProperties, recycledProperties);
   }
 
+  /**
+   * Equality of ObjectValue objects is based on equality of properties (declared, undeclared,
+   * recycled).
+   */
   @Override
   public boolean equals(final Object o) {
     if (this == o) {

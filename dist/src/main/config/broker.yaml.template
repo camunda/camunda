@@ -479,19 +479,23 @@
         #     event: true
         #     rejection: false
         #
-        #     deployment: false
-        #     process: true
+        #     decisionRequirements: true
+        #     decision: true
+        #     decisionEvaluation: true
+        #     deployment: true
         #     error: true
         #     incident: true
         #     job: true
         #     jobBatch: false
-        #     message: false
-        #     messageSubscription: false
-        #     variable: true
-        #     variableDocument: true
+        #     message: true
+        #     messageSubscription: true
+        #     process: true
         #     processInstance: true
         #     processInstanceCreation: false
-        #     processMessageSubscription: false
+        #     processInstanceModification: false
+        #     processMessageSubscription: true
+        #     variable: true
+        #     variableDocument: true
 
     # experimental
       # Be aware that all configuration's which are part of the experimental section

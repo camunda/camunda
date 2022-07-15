@@ -555,6 +555,7 @@
         #     process: true
         #     processInstance: true
         #     processInstanceCreation: false
+        #     processInstanceModification: false
         #     processMessageSubscription: true
         #     variable: true
         #     variableDocument: true
