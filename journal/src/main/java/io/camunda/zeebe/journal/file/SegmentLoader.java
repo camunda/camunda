@@ -39,6 +39,10 @@ final class SegmentLoader {
     this.preallocateFiles = preallocateFiles;
   }
 
+  public void newMethod(final int a) {
+    // do not use a or method
+  }
+
   JournalSegment createSegment(
       final Path segmentFile,
       final JournalSegmentDescriptor descriptor,
