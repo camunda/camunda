@@ -97,6 +97,7 @@ exporters:
         process: false
         processInstance: false
         processInstanceCreation: false
+        processInstanceModification: false
         processMessageSubscription: false
         variable: false
         variableDocument: false
@@ -135,6 +136,8 @@ More specifically, each option configures the following:
 * `processInstance` (`boolean`): if true, records related to process instances will be exported; if
   false, ignored.
 * `processInstanceCreation` (`boolean`): if true, records related to process instance creations will
+  be exported; if false, ignored.
+* `processInstanceModification` (`boolean`): if true, records related to process instance modifications will
   be exported; if false, ignored.
 * `processMessageSubscription` (`boolean`): if true, records related to process message
   subscriptions will be exported; if false, ignored.
@@ -192,6 +195,7 @@ exporters:
         process: true
         processInstance: true
         processInstanceCreation: false
+        processInstanceModification: false
         processMessageSubscription: true
         variable: true
         variableDocument: true
