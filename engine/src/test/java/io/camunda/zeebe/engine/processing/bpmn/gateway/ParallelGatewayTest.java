@@ -15,12 +15,15 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.assertj.core.groups.Tuple;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -347,6 +350,59 @@ public final class ParallelGatewayTest {
         .extracting(e -> e.getValue().getElementId())
         .containsExactlyInAnyOrder("task1", "task2");
     assertThat(taskEvents.get(0).getKey()).isNotEqualTo(taskEvents.get(1).getKey());
+  }
+
+  // Regression test for https://github.com/camunda/zeebe/issues/6778
+  @Test
+  public void shouldRejectActivateCommandWhenSequenceFlowIsTakenTwice() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .parallelGateway("splitting")
+            .parallelGateway("joining")
+            .moveToNode("splitting")
+            .exclusiveGateway("exclusive")
+            .moveToNode("splitting")
+            .connectTo("exclusive")
+            .moveToNode("exclusive")
+            .connectTo("joining")
+            .moveToNode("joining")
+            .endEvent("endEvent")
+            .done();
+    engine.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long key = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final var records =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(key)
+            .limit("endEvent", ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .toList();
+
+    assertThat(
+            records.stream()
+                .filter(
+                    r -> r.getValue().getBpmnElementType().equals(BpmnElementType.PARALLEL_GATEWAY))
+                .filter(r -> r.getIntent().equals(ProcessInstanceIntent.ACTIVATE_ELEMENT))
+                .filter(r -> r.getRecordType().equals(RecordType.COMMAND_REJECTION)))
+        .describedAs("activate command should be rejected twice")
+        .hasSize(2)
+        .extracting(Record::getRejectionType, Record::getRejectionReason)
+        .describedAs("rejection should contain correct rejection reason")
+        .containsOnly(
+            Tuple.tuple(
+                RejectionType.INVALID_STATE,
+                "Expected to be able to activate parallel gateway 'joining', but not all sequence flows have been taken."));
+
+    assertThat(
+            records.stream()
+                .filter(r -> r.getValue().getElementId().equals("joining"))
+                .filter(r -> r.getIntent().equals(ProcessInstanceIntent.ELEMENT_ACTIVATED)))
+        .describedAs("joining gateway should only be activated once")
+        .hasSize(1);
   }
 
   private static boolean isServiceTaskInProcess(

@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -48,6 +49,7 @@ public final class EventAppliers implements EventApplier {
 
   public EventAppliers(final MutableZeebeState state) {
     registerProcessInstanceEventAppliers(state);
+    registerProcessInstanceCreationAppliers(state);
 
     register(ProcessIntent.CREATED, new ProcessCreatedApplier(state));
     register(ErrorIntent.CREATED, new ErrorCreatedApplier(state.getBlackListState()));
@@ -134,6 +136,15 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
         new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState, processState));
+  }
+
+  private void registerProcessInstanceCreationAppliers(final MutableZeebeState state) {
+    final var processState = state.getProcessState();
+    final var elementInstanceState = state.getElementInstanceState();
+
+    register(
+        ProcessInstanceCreationIntent.CREATED,
+        new ProcessInstanceCreationCreatedApplier(processState, elementInstanceState));
   }
 
   private void registerJobIntentEventAppliers(final MutableZeebeState state) {
