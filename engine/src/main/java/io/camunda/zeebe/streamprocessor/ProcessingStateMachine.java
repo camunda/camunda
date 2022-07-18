@@ -152,7 +152,7 @@ public final class ProcessingStateMachine {
   private LoggedEvent currentRecord;
   private TypedRecordProcessor<?> currentProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
-  private final long writtenPosition = StreamProcessor.UNSET_POSITION;
+  private long writtenPosition = StreamProcessor.UNSET_POSITION;
   private long lastSuccessfulProcessedRecordPosition = StreamProcessor.UNSET_POSITION;
   private long lastWrittenPosition = StreamProcessor.UNSET_POSITION;
   private volatile boolean onErrorHandlingLoop;
@@ -406,7 +406,22 @@ public final class ProcessingStateMachine {
 
   private void writeRecords(final ProcessingResult result) {
     final ActorFuture<Boolean> retryFuture =
-        result.writeRecordsToStream(context.getLogStreamBatchWriter());
+        writeRetryStrategy.runWithRetry(
+            () -> {
+              final var batchWriter = context.getLogStreamBatchWriter();
+              final long position1 = result.writeRecordsToStream(batchWriter);
+              final long position2 = batchWriter.tryWrite();
+
+              final var maxPosition = Math.max(position1, position2);
+
+              // only overwrite position if records were flushed
+              if (maxPosition > 0) {
+                writtenPosition = maxPosition;
+              }
+
+              return maxPosition >= 0;
+            },
+            abortCondition);
 
     actor.runOnCompletion(
         retryFuture,

@@ -13,12 +13,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandRespons
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
-import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BooleanSupplier;
 
 /**
  * Implementation of {@code ProcessingResult} that uses direct access to the stream and to response
@@ -30,8 +26,6 @@ final class DirectProcessingResult implements ProcessingResult {
 
   private final List<PostCommitTask> postCommitTasks;
 
-  private final RetryStrategy writeRetryStrategy;
-  private final BooleanSupplier abortCondition;
   private final TypedStreamWriter streamWriter;
   private final TypedResponseWriter responseWriter;
   private final boolean hasResponse;
@@ -41,8 +35,6 @@ final class DirectProcessingResult implements ProcessingResult {
       final List<PostCommitTask> postCommitTasks,
       final boolean hasResponse) {
     this.postCommitTasks = new ArrayList<>(postCommitTasks);
-    writeRetryStrategy = new AbortableRetryStrategy(context.getActor());
-    abortCondition = context.getAbortCondition();
     streamWriter = context.getLogStreamWriter();
     responseWriter = context.getTypedResponseWriter();
 
@@ -50,16 +42,8 @@ final class DirectProcessingResult implements ProcessingResult {
   }
 
   @Override
-  public ActorFuture<Boolean> writeRecordsToStream(
-      final LogStreamBatchWriter logStreamBatchWriter) {
-    // here we must assume that stream writer is backed by log stream record writer internally
-    return writeRetryStrategy.runWithRetry(
-        () -> {
-          final long position = streamWriter.flush();
-          logStreamBatchWriter.tryWrite();
-          return position >= 0;
-        },
-        abortCondition);
+  public long writeRecordsToStream(final LogStreamBatchWriter logStreamBatchWriter) {
+    return streamWriter.flush();
   }
 
   @Override
