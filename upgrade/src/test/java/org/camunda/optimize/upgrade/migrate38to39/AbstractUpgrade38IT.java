@@ -7,9 +7,9 @@ package org.camunda.optimize.upgrade.migrate38to39;
 
 
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
-import org.camunda.optimize.upgrade.migrate38to39.indices.DashboardIndexOld;
-import org.camunda.optimize.upgrade.migrate38to39.indices.CollectionIndexOld;
-import org.camunda.optimize.upgrade.migrate38to39.indices.SingleProcessReportIndexOld;
+import org.camunda.optimize.upgrade.migrate38to39.indices.DashboardIndex38;
+import org.camunda.optimize.upgrade.migrate38to39.indices.CollectionIndex38;
+import org.camunda.optimize.upgrade.migrate38to39.indices.SingleProcessReportIndex38;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,11 +18,11 @@ import java.util.List;
 
 public class AbstractUpgrade38IT extends AbstractUpgradeIT {
   protected static final String FROM_VERSION = "3.8.0";
-  protected static final String TO_VERSION = "3.9.0";
+  protected static final String TO_VERSION = "3.9.0-preview-1";
 
-  protected static final SingleProcessReportIndexOld SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndexOld();
-  protected static final DashboardIndexOld DASHBOARD_INDEX = new DashboardIndexOld();
-  protected static final CollectionIndexOld COLLECTION_INDEX = new CollectionIndexOld();
+  protected static final SingleProcessReportIndex38 SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndex38();
+  protected static final DashboardIndex38 DASHBOARD_INDEX = new DashboardIndex38();
+  protected static final CollectionIndex38 COLLECTION_INDEX = new CollectionIndex38();
 
   @BeforeEach
   protected void setUp() throws Exception {

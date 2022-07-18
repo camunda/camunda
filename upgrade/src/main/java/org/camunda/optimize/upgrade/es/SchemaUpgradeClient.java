@@ -17,6 +17,7 @@ import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
+import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksResponse;
@@ -224,9 +225,15 @@ public class SchemaUpgradeClient {
     schemaManager.initializeSchema(elasticsearchClient);
   }
 
-  public void updateOptimizeVersion(final String fromVersion, final String toVersion) {
-    log.info("Updating Optimize Elasticsearch data structure version tag from {} to {}.", fromVersion, toVersion);
-    metadataService.upsertMetadata(elasticsearchClient, toVersion);
+  public void updateOptimizeVersion(final UpgradePlan upgradePlan) {
+    if (!upgradePlan.isSilentUpgrade()) {
+      log.info(
+        "Updating Optimize Elasticsearch data structure version tag from {} to {}.",
+        upgradePlan.getFromVersion().toString(),
+        upgradePlan.getToVersion().toString()
+      );
+    }
+    metadataService.upsertMetadata(elasticsearchClient, upgradePlan.getToVersion().toString());
   }
 
   public void createIndexFromTemplate(final String indexNameWithSuffix) {

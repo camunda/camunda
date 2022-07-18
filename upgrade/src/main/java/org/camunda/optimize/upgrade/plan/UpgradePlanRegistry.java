@@ -58,8 +58,19 @@ public class UpgradePlanRegistry {
     return upgradePlans.entrySet().stream()
       .filter(entry -> entry.getKey().isLowerThanOrEqualTo(new Semver(targetVersion)))
       .sorted(Map.Entry.comparingByKey())
+      .peek(entry -> {
+        // We run migrations to previews silently, unless upgrading specifically to a preview version
+        if ((!isPreviewVersion(targetVersion) && isPreviewVersion(entry.getKey().getValue()))
+          || (isPreviewVersion(targetVersion) && !entry.getKey().isEqualTo(new Semver(targetVersion)))) {
+          entry.getValue().setSilentUpgrade(true);
+        }
+      })
       .map(Map.Entry::getValue)
       .collect(Collectors.toList());
+  }
+
+  private boolean isPreviewVersion(final String targetVersion) {
+    return targetVersion.contains("preview");
   }
 
 }
