@@ -5,8 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.journal.file;
+package io.camunda.zeebe.journal.util;
 
+import io.camunda.zeebe.journal.file.FrameUtil;
+import io.camunda.zeebe.journal.file.MessageHeaderDecoder;
+import io.camunda.zeebe.journal.file.SegmentDescriptor;
 import io.camunda.zeebe.journal.file.record.JournalRecordReaderUtil;
 import io.camunda.zeebe.journal.file.record.SBESerializer;
 import java.io.BufferedInputStream;

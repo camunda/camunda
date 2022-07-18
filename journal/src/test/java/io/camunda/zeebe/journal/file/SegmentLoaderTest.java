@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
-import io.camunda.zeebe.journal.file.util.PosixPathAssert;
+import io.camunda.zeebe.journal.util.PosixPathAssert;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
