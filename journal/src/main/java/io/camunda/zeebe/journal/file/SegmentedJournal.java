@@ -197,7 +197,7 @@ public final class SegmentedJournal implements Journal {
    *
    * @throws IllegalStateException if the segment manager is not open
    */
-  JournalSegment getFirstSegment() {
+  Segment getFirstSegment() {
     assertOpen();
     return segments.getFirstSegment();
   }
@@ -207,12 +207,12 @@ public final class SegmentedJournal implements Journal {
    *
    * @throws IllegalStateException if the segment manager is not open
    */
-  JournalSegment getLastSegment() {
+  Segment getLastSegment() {
     assertOpen();
     return segments.getLastSegment();
   }
 
-  JournalSegment getNextSegment() {
+  Segment getNextSegment() {
     assertOpen();
     assertDiskSpace();
     return segments.getNextSegment();
@@ -224,7 +224,7 @@ public final class SegmentedJournal implements Journal {
    * @param index The segment index with which to look up the next segment.
    * @return The next segment for the given index.
    */
-  JournalSegment getNextSegment(final long index) {
+  Segment getNextSegment(final long index) {
     return segments.getNextSegment(index);
   }
 
@@ -234,7 +234,7 @@ public final class SegmentedJournal implements Journal {
    * @param index The index for which to return the segment.
    * @throws IllegalStateException if the segment manager is not open
    */
-  JournalSegment getSegment(final long index) {
+  Segment getSegment(final long index) {
     assertOpen();
     return segments.getSegment(index);
   }
@@ -249,7 +249,7 @@ public final class SegmentedJournal implements Journal {
    * @param index the starting index of the journal
    * @return the first segment
    */
-  JournalSegment resetSegments(final long index) {
+  Segment resetSegments(final long index) {
     return segments.resetSegments(index);
   }
 
@@ -258,7 +258,7 @@ public final class SegmentedJournal implements Journal {
    *
    * @param segment The segment to remove.
    */
-  synchronized void removeSegment(final JournalSegment segment) {
+  synchronized void removeSegment(final Segment segment) {
     segments.removeSegment(segment);
   }
   /**

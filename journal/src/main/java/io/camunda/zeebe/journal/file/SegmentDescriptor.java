@@ -25,7 +25,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * The segment descriptor stores the metadata of a single segment {@link JournalSegment} of a {@link
+ * The segment descriptor stores the metadata of a single segment {@link Segment} of a {@link
  * SegmentedJournal}. The descriptor is stored in the first bytes of the segment. The number of
  * bytes requires for the descriptor is dependent on the encoding used. The first byte of the
  * segment contains the version of the descriptor. The subsequent bytes contains the following
@@ -42,7 +42,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <p>{@code maxSegmentSize} (32-bit unsigned integer) - The maximum number of bytes allowed in the
  * segment.
  */
-public final class JournalSegmentDescriptor {
+public final class SegmentDescriptor {
 
   private static final int VERSION_LENGTH = Byte.BYTES;
   // current descriptor version containing: header, metadata, header and descriptor
@@ -70,7 +70,7 @@ public final class JournalSegmentDescriptor {
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final ChecksumGenerator checksumGen = new ChecksumGenerator();
 
-  public JournalSegmentDescriptor(final ByteBuffer buffer) {
+  public SegmentDescriptor(final ByteBuffer buffer) {
     directBuffer.wrap(buffer);
 
     final byte version = directBuffer.getByte(0);
@@ -86,7 +86,7 @@ public final class JournalSegmentDescriptor {
     }
   }
 
-  private JournalSegmentDescriptor(final long id, final long index, final int maxSegmentSize) {
+  private SegmentDescriptor(final long id, final long index, final int maxSegmentSize) {
     this.id = id;
     this.index = index;
     this.maxSegmentSize = maxSegmentSize;
@@ -273,9 +273,9 @@ public final class JournalSegmentDescriptor {
 
   /**
    * Copies the descriptor to a new buffer. The number of bytes written will be equal to {@link
-   * JournalSegmentDescriptor#getEncodingLength()}
+   * SegmentDescriptor#getEncodingLength()}
    */
-  JournalSegmentDescriptor copyTo(final ByteBuffer buffer) {
+  SegmentDescriptor copyTo(final ByteBuffer buffer) {
     directBuffer.wrap(buffer);
     directBuffer.putByte(0, CUR_VERSION);
 
@@ -315,7 +315,7 @@ public final class JournalSegmentDescriptor {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final JournalSegmentDescriptor that = (JournalSegmentDescriptor) o;
+    final SegmentDescriptor that = (SegmentDescriptor) o;
     return id == that.id && index == that.index && maxSegmentSize == that.maxSegmentSize;
   }
 
@@ -379,8 +379,8 @@ public final class JournalSegmentDescriptor {
      *
      * @return The built segment descriptor.
      */
-    public JournalSegmentDescriptor build() {
-      return new JournalSegmentDescriptor(id, index, maxSegmentSize);
+    public SegmentDescriptor build() {
+      return new SegmentDescriptor(id, index, maxSegmentSize);
     }
   }
 }

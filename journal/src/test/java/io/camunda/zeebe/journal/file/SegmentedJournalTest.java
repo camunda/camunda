@@ -23,19 +23,12 @@ import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.file.record.RecordData;
 import io.camunda.zeebe.journal.file.record.SBESerializer;
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import jnr.posix.FileStat;
-import jnr.posix.POSIX;
-import jnr.posix.POSIXFactory;
-import jnr.posix.util.Platform;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -460,9 +453,8 @@ class SegmentedJournalTest {
     final File logDirectory = getJournalDirectory();
     assertThat(logDirectory)
         .isDirectoryContaining(
-            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(
-            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
   }
 
   @Test
@@ -535,9 +527,8 @@ class SegmentedJournalTest {
     final File logDirectory = getJournalDirectory();
     assertThat(logDirectory)
         .isDirectoryNotContaining(
-            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(
-            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
   }
 
   @Test
@@ -553,9 +544,8 @@ class SegmentedJournalTest {
     final File logDirectory = getJournalDirectory();
     assertThat(logDirectory)
         .isDirectoryNotContaining(
-            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(
-            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
   }
 
   @Test
@@ -576,11 +566,10 @@ class SegmentedJournalTest {
     // there are two files deferred for deletion
     assertThat(
             logDirectory.listFiles(
-                file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName())))
+                file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName())))
         .hasSize(2);
     assertThat(
-            logDirectory.listFiles(
-                file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName())))
+            logDirectory.listFiles(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName())))
         .hasSize(1);
   }
 
@@ -610,139 +599,13 @@ class SegmentedJournalTest {
     assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
   }
 
-  @Test
-  void shouldPreallocateSegmentFiles() {
-    // given
-    final var segmentSize = 1024 * 1024L;
-    final var journal = openJournal(segmentSize, true);
-
-    // when
-    final var segment = Objects.requireNonNull(journal.getFirstSegment());
-    final var segmentFile = segment.file().file().toPath();
-
-    // then
-    final var realSize = getRealSize(segmentFile);
-    final var maxRealSize = segmentSize + getBlockSize(segmentFile);
-    assertThat(realSize)
-        .as(
-            "Expected <%s> to have a real size between <%d> and <%d> bytes, but it had <%d>",
-            segmentFile, segmentSize, maxRealSize, realSize)
-        .isBetween((long) segmentSize, maxRealSize);
-  }
-
-  @Test
-  void shouldNotPreallocateSegmentFiles() {
-    // given
-    final var segmentSize = 1024 * 1024L;
-    final var journal = openJournal(segmentSize, false);
-
-    // when
-    final var segment = Objects.requireNonNull(journal.getFirstSegment());
-    final var segmentFile = segment.file().file().toPath();
-
-    // then
-    final var realSize = getRealSize(segmentFile);
-    assertThat(realSize)
-        .as(
-            "Expected <%s> to have a real size less than <%d> bytes, but it had <%d>",
-            segmentFile, segmentSize, realSize)
-        .isLessThan(segmentSize);
-  }
-
-  @Test
-  void shouldPreallocateNewFileIfUnusedSegmentAlreadyExists() throws IOException {
-    // given - a journal with two segments, but nothing written in the second segment
-    // it's important that the max segment size is at least more than a couple blocks, as otherwise
-    // we aren't really testing anything
-    final var segmentSize = 1024 * 1024L;
-    final var journal = openJournal(segmentSize, true);
-
-    // when - the segment is "unused" if the lastWrittenIndex is less than the expected first index
-    // this can happen if we crashed in the middle of creating the new segment
-    final var secondSegment =
-        JournalSegmentFile.createSegmentFile(JOURNAL_NAME, directory.toFile(), 2).toPath();
-    Files.writeString(secondSegment, "foo");
-
-    // write until we get to the second segment
-    JournalSegment segment = Objects.requireNonNull(journal.getLastSegment());
-    while (segment.id() != 2) {
-      journal.append(data);
-      segment = Objects.requireNonNull(journal.getLastSegment());
-    }
-    final var segmentFile = segment.file().file().toPath();
-
-    // then
-    final var realSize = getRealSize(segmentFile);
-    final var maxRealSize = segmentSize + getBlockSize(segmentFile);
-    assertThat(realSize)
-        .as(
-            "Expected <%s> to have a real size between <%d> and <%d> bytes, but it had <%d>",
-            segmentFile, segmentSize, maxRealSize, realSize)
-        .isBetween((long) segmentSize, maxRealSize);
-  }
-
-  /**
-   * Returns the actual size of the file on disk by checking the blocks allocated for this file. On
-   * most modern UNIX systems, doing {@link Files#size(Path)} returns that size as reported by the
-   * file's metadata, which may not be the real size (e.g. compressed file systems, sparse files,
-   * etc.). Using the {@code lstat} function from the C library we can get the actual size on disk
-   * of the file.
-   *
-   * <p>{@code lstat} will return the number of 512-bytes blocks used by a file. To get the real
-   * size, you simply multiply by 512. Note that unless your file size is aligned with the block
-   * size of your device, then the real size may be slightly larger, as more blocks may have been
-   * allocated.
-   *
-   * <p>NOTE: on Windows, sparse files are not the default, so {@link File#length()} is appropriate.
-   * Plus, there is no {@code lstat} function, and the equivalent function {@code wstat} does not
-   * return the number of blocks.
-   *
-   * @param file the file to get the size of
-   * @return the actual size on disk of the file
-   */
-  private long getRealSize(final Path file) {
-    if (Platform.IS_WINDOWS) {
-      try {
-        return Files.size(file);
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
-      }
-    }
-
-    final POSIX posixFunctions = POSIXFactory.getNativePOSIX();
-    final var pathString = file.toString();
-    final FileStat stat = posixFunctions.stat(pathString);
-
-    return stat.blocks() * 512;
-  }
-
-  /**
-   * Returns the I/O block size of the device containing the given file. This can be used to compute
-   * an upper bound for the real file size. On Windows, as we use {@link Files#size(Path)} for the
-   * real size, this simply returns 0.
-   *
-   * @param file the file to get the block size of
-   * @return the I/O block size of the device containing the file
-   */
-  private long getBlockSize(final Path file) {
-    if (Platform.IS_WINDOWS) {
-      return 0;
-    }
-
-    final POSIX posixFunctions = POSIXFactory.getNativePOSIX();
-    final var pathString = file.toString();
-    final FileStat stat = posixFunctions.stat(pathString);
-
-    return stat.blockSize();
-  }
-
   private SegmentedJournal openJournal(final float entriesPerSegment) {
     return openJournal(entriesPerSegment, entrySize);
   }
 
   private SegmentedJournal openJournal(final float entriesPerSegment, final int entrySize) {
     final var maxSegmentSize =
-        (long) (entrySize * entriesPerSegment) + JournalSegmentDescriptor.getEncodingLength();
+        (long) (entrySize * entriesPerSegment) + SegmentDescriptor.getEncodingLength();
     return openJournal(maxSegmentSize, true);
   }
 
