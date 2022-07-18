@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.camunda.zeebe.journal.JournalRecord;
-import io.camunda.zeebe.journal.file.util.TestJournalRecord;
+import io.camunda.zeebe.journal.util.TestJournalRecord;
 import org.junit.jupiter.api.Test;
 
 /** Sparse journal index test. */
