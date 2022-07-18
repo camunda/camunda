@@ -9,8 +9,8 @@ package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
-import io.camunda.zeebe.journal.record.CorruptedLogException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -293,7 +293,7 @@ final class SegmentsManager {
         }
 
         segments.add(segment);
-      } catch (final CorruptedLogException e) {
+      } catch (final CorruptedJournalException e) {
         if (handleSegmentCorruption(files, segments, i)) {
           return segments;
         }
@@ -307,7 +307,7 @@ final class SegmentsManager {
 
   private void checkForIndexGaps(final Segment prevSegment, final Segment segment) {
     if (prevSegment.lastIndex() != segment.index() - 1) {
-      throw new CorruptedLogException(
+      throw new CorruptedJournalException(
           String.format(
               "Log segment %s is not aligned with previous segment %s (last index: %d).",
               segment, prevSegment, prevSegment.lastIndex()));

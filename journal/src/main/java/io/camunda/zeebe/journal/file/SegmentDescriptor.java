@@ -18,8 +18,8 @@ package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import io.camunda.zeebe.journal.ChecksumGenerator;
-import io.camunda.zeebe.journal.record.CorruptedLogException;
+import io.camunda.zeebe.journal.CorruptedJournalException;
+import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.agrona.MutableDirectBuffer;
@@ -80,7 +80,7 @@ final class SegmentDescriptor {
     } else if (version == NO_META_VERSION) {
       readV1Descriptor(directBuffer);
     } else {
-      throw new CorruptedLogException(
+      throw new CorruptedJournalException(
           String.format(
               "Expected version to be one [%d %d] but read %d instead.",
               NO_META_VERSION, CUR_VERSION, version));
@@ -135,7 +135,7 @@ final class SegmentDescriptor {
     final long computedChecksum = checksumGen.compute(slice, 0, descriptorLength);
 
     if (computedChecksum != checksum) {
-      throw new CorruptedLogException(
+      throw new CorruptedJournalException(
           "Descriptor doesn't match checksum (possibly due to corruption).");
     }
   }
@@ -189,7 +189,7 @@ final class SegmentDescriptor {
     headerDecoder.wrap(buffer, offset);
 
     if (headerDecoder.schemaId() != schemaId || headerDecoder.templateId() != templateId) {
-      throw new CorruptedLogException(
+      throw new CorruptedJournalException(
           String.format(
               "Cannot read header. Read schema and template ids ('%d' and '%d') don't match expected '%d' and %d'.",
               headerDecoder.schemaId(), headerDecoder.templateId(), schemaId, templateId));

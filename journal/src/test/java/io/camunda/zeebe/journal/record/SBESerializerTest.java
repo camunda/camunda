@@ -10,6 +10,7 @@ package io.camunda.zeebe.journal.record;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.util.Either;
 import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
@@ -92,7 +93,7 @@ public class SBESerializerTest {
 
     // when - then
     assertThatThrownBy(() -> serializer.readMetadata(writeBuffer, 0))
-        .isInstanceOf(CorruptedLogException.class);
+        .isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test
@@ -102,7 +103,7 @@ public class SBESerializerTest {
 
     // when - then
     assertThatThrownBy(() -> serializer.readData(writeBuffer, 0, 1))
-        .isInstanceOf(CorruptedLogException.class);
+        .isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test
