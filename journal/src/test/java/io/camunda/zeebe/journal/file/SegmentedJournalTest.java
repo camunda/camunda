@@ -22,6 +22,7 @@ import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.file.record.RecordData;
 import io.camunda.zeebe.journal.file.record.SBESerializer;
+import io.camunda.zeebe.journal.file.util.PosixPathAssert;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -597,6 +598,46 @@ class SegmentedJournalTest {
 
     // then
     assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+  }
+
+  @Test
+  void shouldPreallocateSegmentFiles(final @TempDir Path tmpDir) {
+    // given
+    final var segmentSize = 4 * 1024 * 1024;
+    final var builder =
+        SegmentedJournal.builder()
+            .withPreallocateSegmentFiles(true)
+            .withMaxSegmentSize(segmentSize)
+            .withDirectory(tmpDir.toFile());
+    final File firstSegment;
+
+    // when
+    try (final var journal = builder.build()) {
+      firstSegment = journal.getFirstSegment().file().file();
+    }
+
+    // then
+    PosixPathAssert.assertThat(firstSegment).hasRealSize(segmentSize);
+  }
+
+  @Test
+  void shouldNotPreallocateSegmentFiles(final @TempDir Path tmpDir) {
+    // given
+    final var segmentSize = 4 * 1024 * 1024;
+    final var builder =
+        SegmentedJournal.builder()
+            .withPreallocateSegmentFiles(false)
+            .withMaxSegmentSize(segmentSize)
+            .withDirectory(tmpDir.toFile());
+    final File firstSegment;
+
+    // when
+    try (final var journal = builder.build()) {
+      firstSegment = journal.getFirstSegment().file().file();
+    }
+
+    // then
+    PosixPathAssert.assertThat(firstSegment).hasRealSizeLessThan(segmentSize);
   }
 
   private SegmentedJournal openJournal(final float entriesPerSegment) {
