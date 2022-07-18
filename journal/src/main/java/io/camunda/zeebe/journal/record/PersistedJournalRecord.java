@@ -8,7 +8,6 @@
 package io.camunda.zeebe.journal.record;
 
 import io.camunda.zeebe.journal.JournalRecord;
-import java.util.Objects;
 import org.agrona.DirectBuffer;
 
 /**
@@ -17,14 +16,8 @@ import org.agrona.DirectBuffer;
  * <p>A {@link PersistedJournalRecord} consists of two parts. The first part is {@link
  * RecordMetadata}. The second part is {@link RecordData}.
  */
-public class PersistedJournalRecord implements JournalRecord {
-  private final RecordMetadata metadata;
-  private final RecordData record;
-
-  public PersistedJournalRecord(final RecordMetadata metadata, final RecordData record) {
-    this.metadata = metadata;
-    this.record = record;
-  }
+public record PersistedJournalRecord(RecordMetadata metadata, RecordData record)
+    implements JournalRecord {
 
   @Override
   public long index() {
@@ -44,30 +37,5 @@ public class PersistedJournalRecord implements JournalRecord {
   @Override
   public DirectBuffer data() {
     return record.data();
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(record);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final JournalRecord that = (JournalRecord) o;
-    return that.index() == index()
-        && that.asqn() == asqn()
-        && that.checksum() == checksum()
-        && Objects.equals(that.data(), data());
-  }
-
-  @Override
-  public String toString() {
-    return "PersistedJournalRecord{" + "metadata=" + metadata + ", record=" + record + '}';
   }
 }

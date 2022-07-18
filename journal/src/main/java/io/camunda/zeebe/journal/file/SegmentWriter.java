@@ -16,18 +16,18 @@
  */
 package io.camunda.zeebe.journal.file;
 
-import io.camunda.zeebe.journal.ChecksumGenerator;
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.JournalException.SegmentFull;
 import io.camunda.zeebe.journal.JournalRecord;
-import io.camunda.zeebe.journal.record.CorruptedLogException;
 import io.camunda.zeebe.journal.record.JournalRecordReaderUtil;
 import io.camunda.zeebe.journal.record.JournalRecordSerializer;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.RecordMetadata;
 import io.camunda.zeebe.journal.record.SBESerializer;
+import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import io.camunda.zeebe.util.Either;
 import java.nio.BufferUnderflowException;
 import java.nio.MappedByteBuffer;
@@ -218,7 +218,7 @@ final class SegmentWriter {
       }
     } catch (final BufferUnderflowException e) {
       // Reached end of the segment
-    } catch (final CorruptedLogException e) {
+    } catch (final CorruptedJournalException e) {
       handleChecksumMismatch(e, nextIndex, lastWrittenIndex, position);
     } finally {
       buffer.reset();
@@ -226,7 +226,7 @@ final class SegmentWriter {
   }
 
   private void handleChecksumMismatch(
-      final CorruptedLogException e,
+      final CorruptedJournalException e,
       final long nextIndex,
       final long lastWrittenIndex,
       final int position) {

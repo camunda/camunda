@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.journal.record;
 
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.file.MessageHeaderDecoder;
 import io.camunda.zeebe.journal.file.MessageHeaderEncoder;
 import io.camunda.zeebe.journal.file.RecordDataDecoder;
@@ -21,7 +22,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 /** The serializer that writes and reads a journal record according to the SBE schema defined. */
 public final class SBESerializer implements JournalRecordSerializer {
-
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final RecordMetadataEncoder metadataEncoder = new RecordMetadataEncoder();
   private final RecordDataEncoder recordEncoder = new RecordDataEncoder();
@@ -80,7 +80,7 @@ public final class SBESerializer implements JournalRecordSerializer {
   @Override
   public RecordMetadata readMetadata(final DirectBuffer buffer, final int offset) {
     if (!hasMetadata(buffer, offset)) {
-      throw new CorruptedLogException("Cannot read metadata. Header does not match.");
+      throw new CorruptedJournalException("Cannot read metadata. Header does not match.");
     }
     metadataDecoder.wrap(
         buffer,
@@ -96,7 +96,7 @@ public final class SBESerializer implements JournalRecordSerializer {
     headerDecoder.wrap(buffer, offset);
     if (headerDecoder.schemaId() != recordDecoder.sbeSchemaId()
         || headerDecoder.templateId() != recordDecoder.sbeTemplateId()) {
-      throw new CorruptedLogException("Cannot read record. Header does not match.");
+      throw new CorruptedJournalException("Cannot read record. Header does not match.");
     }
     recordDecoder.wrap(
         buffer,
