@@ -22,7 +22,10 @@ import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.file.record.RecordData;
 import io.camunda.zeebe.journal.file.record.SBESerializer;
-import io.camunda.zeebe.journal.file.util.PosixPathAssert;
+import io.camunda.zeebe.journal.util.LogCorrupter;
+import io.camunda.zeebe.journal.util.PosixPathAssert;
+import io.camunda.zeebe.journal.util.TestJournalRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -416,7 +419,13 @@ class SegmentedJournalTest {
   void shouldHandleCorruptionAtDescriptorWithSomeAckedEntries() throws Exception {
     // given
     var journal = openJournal(1);
-    final var firstRecord = JournalTest.copyRecord(journal.append(data));
+    final var firstRecord = journal.append(data);
+    final var copiedFirstRecord =
+        new TestJournalRecord(
+            firstRecord.index(),
+            firstRecord.asqn(),
+            firstRecord.checksum(),
+            BufferUtil.cloneBuffer(firstRecord.data()));
     journal.append(data);
 
     journal.close();
@@ -431,9 +440,9 @@ class SegmentedJournalTest {
     final var lastRecord = journal.append(data);
 
     // then
-    assertThat(journal.getFirstIndex()).isEqualTo(firstRecord.index());
+    assertThat(journal.getFirstIndex()).isEqualTo(copiedFirstRecord.index());
     assertThat(journal.getLastIndex()).isEqualTo(lastRecord.index());
-    assertThat(reader.next()).isEqualTo(firstRecord);
+    assertThat(reader.next()).isEqualTo(copiedFirstRecord);
     assertThat(reader.next()).isEqualTo(lastRecord);
     assertThat(reader.hasNext()).isFalse();
   }
