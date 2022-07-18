@@ -10,7 +10,7 @@ package io.camunda.zeebe.journal.file;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.camunda.zeebe.journal.JournalException;
-import io.camunda.zeebe.journal.file.record.CorruptedLogException;
+import io.camunda.zeebe.journal.record.CorruptedLogException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;

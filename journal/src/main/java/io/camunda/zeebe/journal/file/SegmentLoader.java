@@ -8,7 +8,7 @@
 package io.camunda.zeebe.journal.file;
 
 import io.camunda.zeebe.journal.JournalException;
-import io.camunda.zeebe.journal.file.record.CorruptedLogException;
+import io.camunda.zeebe.journal.record.CorruptedLogException;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;

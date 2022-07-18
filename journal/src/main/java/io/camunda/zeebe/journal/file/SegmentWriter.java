@@ -16,17 +16,18 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.ChecksumGenerator;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.JournalException.SegmentFull;
 import io.camunda.zeebe.journal.JournalRecord;
-import io.camunda.zeebe.journal.file.record.CorruptedLogException;
-import io.camunda.zeebe.journal.file.record.JournalRecordReaderUtil;
-import io.camunda.zeebe.journal.file.record.JournalRecordSerializer;
-import io.camunda.zeebe.journal.file.record.PersistedJournalRecord;
-import io.camunda.zeebe.journal.file.record.RecordData;
-import io.camunda.zeebe.journal.file.record.RecordMetadata;
-import io.camunda.zeebe.journal.file.record.SBESerializer;
+import io.camunda.zeebe.journal.record.CorruptedLogException;
+import io.camunda.zeebe.journal.record.JournalRecordReaderUtil;
+import io.camunda.zeebe.journal.record.JournalRecordSerializer;
+import io.camunda.zeebe.journal.record.PersistedJournalRecord;
+import io.camunda.zeebe.journal.record.RecordData;
+import io.camunda.zeebe.journal.record.RecordMetadata;
+import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.util.Either;
 import java.nio.BufferUnderflowException;
 import java.nio.MappedByteBuffer;
