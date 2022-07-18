@@ -46,6 +46,7 @@ import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.prometheus.client.Histogram;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
@@ -151,7 +152,7 @@ public final class ProcessingStateMachine {
   private LoggedEvent currentRecord;
   private TypedRecordProcessor<?> currentProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
-  private long writtenPosition = StreamProcessor.UNSET_POSITION;
+  private final long writtenPosition = StreamProcessor.UNSET_POSITION;
   private long lastSuccessfulProcessedRecordPosition = StreamProcessor.UNSET_POSITION;
   private long lastWrittenPosition = StreamProcessor.UNSET_POSITION;
   private volatile boolean onErrorHandlingLoop;
@@ -263,12 +264,13 @@ public final class ProcessingStateMachine {
     final var processingStartTime = ActorClock.currentTimeMillis();
     processingTimer = metrics.startProcessingDurationTimer(metadata.getRecordType());
 
+    final AtomicReference<ProcessingResult> processingResultRef = new AtomicReference<>();
+
     try {
       final var value = recordValues.readRecordValue(command, metadata.getValueType());
       typedCommand.wrap(command, metadata, value);
 
       final ProcessingResultBuilder resultBuilder = new DirectProcessingResultBuilder(context);
-      final AtomicReference<ProcessingResult> processingResultRef = new AtomicReference<>();
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
@@ -299,7 +301,7 @@ public final class ProcessingStateMachine {
 
       metrics.commandsProcessed();
 
-      writeRecords();
+      writeRecords(processingResultRef.get());
     } catch (final RecoverableException recoverableException) {
       // recoverable
       LOG.error(
@@ -312,7 +314,11 @@ public final class ProcessingStateMachine {
       throw unrecoverableException;
     } catch (final Exception e) {
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, command, metadata, e);
-      onError(e, this::writeRecords);
+      if (processingResultRef.get() == null) {
+        processingResultRef.set(
+            new DirectProcessingResult(context, Collections.emptyList(), false));
+      }
+      onError(e, () -> writeRecords(processingResultRef.get()));
     }
   }
 
@@ -398,27 +404,16 @@ public final class ProcessingStateMachine {
         typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
   }
 
-  private void writeRecords() {
+  private void writeRecords(final ProcessingResult result) {
     final ActorFuture<Boolean> retryFuture =
-        writeRetryStrategy.runWithRetry(
-            () -> {
-              final long position = logStreamWriter.flush();
-
-              // only overwrite position if records were flushed
-              if (position > 0) {
-                writtenPosition = position;
-              }
-
-              return position >= 0;
-            },
-            abortCondition);
+        result.writeRecordsToStream(null); // TODO get hold of writer
 
     actor.runOnCompletion(
         retryFuture,
         (bool, t) -> {
           if (t != null) {
             LOG.error(ERROR_MESSAGE_WRITE_RECORD_ABORTED, currentRecord, metadata, t);
-            onError(t, this::writeRecords);
+            onError(t, () -> writeRecords(result));
           } else {
             // We write various type of records. The positions are always increasing and
             // incremented by 1 for one record (even in a batch), so we can count the amount
