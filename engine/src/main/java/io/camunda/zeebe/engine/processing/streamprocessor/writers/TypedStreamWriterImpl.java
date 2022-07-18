@@ -53,7 +53,8 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
     appendRecord(key, type, intent, RejectionType.NULL_VAL, "", value);
   }
 
-  protected void appendRecord(
+  @Override
+  public void appendRecord(
       final long key,
       final RecordType type,
       final Intent intent,
@@ -82,6 +83,11 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
     } else {
       throw new RuntimeException(String.format("The record value %s is not a BufferWriter", value));
     }
+  }
+
+  @Override
+  public void configureSourceContext(final long sourceRecordPosition) {
+    this.sourceRecordPosition = sourceRecordPosition;
   }
 
   @Override
@@ -118,11 +124,6 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
         rejectionType,
         reason,
         command.getValue());
-  }
-
-  @Override
-  public void configureSourceContext(final long sourceRecordPosition) {
-    this.sourceRecordPosition = sourceRecordPosition;
   }
 
   @Override

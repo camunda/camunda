@@ -9,15 +9,19 @@ package io.camunda.zeebe.engine.api;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 /**
  * Here the interface is just a suggestion. Can be whatever PDT teams thinks is best to work with
  */
 public interface ProcessingResult {
 
-  long writeRecordsToStream(LogStreamRecordWriter logStreamRecordWriter);
+  ActorFuture<Boolean> writeRecordsToStream(LogStreamRecordWriter logStreamRecordWriter);
 
   boolean writeResponse(CommandResponseWriter commandResponseWriter);
 
-  void executePostCommitTasks();
+  /**
+   * @return <code>false</code> to indicate that the side effect could not be applied successfully
+   */
+  boolean executePostCommitTasks();
 }

@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -208,6 +209,15 @@ public class StreamProcessorHealthTest {
         final TypedRecord<? extends RecordValue> command,
         final RejectionType type,
         final String reason) {}
+
+    @Override
+    public void appendRecord(
+        final long key,
+        final RecordType type,
+        final Intent intent,
+        final RejectionType rejectionType,
+        final String rejectionReason,
+        final RecordValue value) {}
 
     @Override
     public void configureSourceContext(final long sourceRecordPosition) {}

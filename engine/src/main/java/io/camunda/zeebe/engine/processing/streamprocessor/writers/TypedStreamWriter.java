@@ -7,9 +7,22 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+
 /** Things that only a stream processor should write to the log stream (+ commands) */
 public interface TypedStreamWriter
     extends TypedCommandWriter, TypedEventWriter, TypedRejectionWriter {
+
+  void appendRecord(
+      long key,
+      RecordType type,
+      Intent intent,
+      RejectionType rejectionType,
+      String rejectionReason,
+      RecordValue value);
 
   void configureSourceContext(long sourceRecordPosition);
 }
