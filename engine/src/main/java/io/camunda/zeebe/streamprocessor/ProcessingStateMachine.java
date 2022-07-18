@@ -435,12 +435,12 @@ public final class ProcessingStateMachine {
             // of written records via the lastWritten and now written position.
             final var amount = writtenPosition - lastWrittenPosition;
             metrics.recordsWritten(amount);
-            updateState();
+            updateState(result);
           }
         });
   }
 
-  private void updateState() {
+  private void updateState(final ProcessingResult result) {
     final ActorFuture<Boolean> retryFuture =
         updateStateRetryStrategy.runWithRetry(
             () -> {
@@ -457,14 +457,14 @@ public final class ProcessingStateMachine {
         (bool, throwable) -> {
           if (throwable != null) {
             LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentRecord, metadata, throwable);
-            onError(throwable, this::updateState);
+            onError(throwable, () -> updateState(result));
           } else {
-            executeSideEffects();
+            executeSideEffects(result);
           }
         });
   }
 
-  private void executeSideEffects() {
+  private void executeSideEffects(final ProcessingResult result) {
     final ActorFuture<Boolean> retryFuture =
         sideEffectsRetryStrategy.runWithRetry(sideEffectProducer::flush, abortCondition);
 
