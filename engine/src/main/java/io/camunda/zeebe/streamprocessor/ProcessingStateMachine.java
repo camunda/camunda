@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.RecordProtocolVersionF
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -148,7 +147,6 @@ public final class ProcessingStateMachine {
   private final StreamProcessorListener streamProcessorListener;
 
   // current iteration
-  private SideEffectProducer sideEffectProducer;
   private LoggedEvent currentRecord;
   private TypedRecordProcessor<?> currentProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
@@ -288,7 +286,10 @@ public final class ProcessingStateMachine {
                   typedCommand,
                   responseWriter,
                   logStreamWriter,
-                  this::setSideEffectProducer);
+                  (sideEffectProducer) -> {
+                    resultBuilder.resetPostCommitTasks();
+                    resultBuilder.appendPostCommitTask(sideEffectProducer::flush);
+                  });
             }
 
             final var processingResult = resultBuilder.build();
@@ -338,10 +339,6 @@ public final class ProcessingStateMachine {
     responseWriter.reset();
     logStreamWriter.reset();
     logStreamWriter.configureSourceContext(sourceRecordPosition);
-  }
-
-  public void setSideEffectProducer(final SideEffectProducer sideEffectProducer) {
-    this.sideEffectProducer = sideEffectProducer;
   }
 
   private void onError(final Throwable processingException, final Runnable nextStep) {
@@ -472,12 +469,8 @@ public final class ProcessingStateMachine {
 
               if (!responseSent) {
                 return false;
-              }
-
-              if (sideEffectProducer != null) {
-                return sideEffectProducer.flush();
               } else {
-                return true;
+                return result.executePostCommitTasks();
               }
             },
             abortCondition);

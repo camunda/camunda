@@ -52,12 +52,19 @@ public interface ProcessingResultBuilder {
   ProcessingResultBuilder appendPostCommitTask(PostCommitTask task);
 
   /**
-   * Resets the processing result build to its initial states (removes all follow-up records, the
+   * Resets the processing result builder to its initial states (removes all follow-up records, the
    * response and post-commit tasks.
    *
    * @return returns itself for method chaining
    */
   ProcessingResultBuilder reset();
+
+  /**
+   * Resets the post commit tasks in this processing result builder to its initial states
+   *
+   * @return itself for method chaining
+   */
+  ProcessingResultBuilder resetPostCommitTasks();
 
   ProcessingResult build();
 }
