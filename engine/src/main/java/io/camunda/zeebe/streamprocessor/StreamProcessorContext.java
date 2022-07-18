@@ -59,6 +59,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private MutableLastProcessedPositionState lastProcessedPositionState;
   private Writers writers;
   private LogStreamBatchWriter logStreamBatchWriter;
+  private CommandResponseWriter commandResponseWriter;
 
   public StreamProcessorContext() {
     streamWriterProxy.wrap(logStreamWriter);
@@ -157,6 +158,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public StreamProcessorContext commandResponseWriter(
       final CommandResponseWriter commandResponseWriter) {
+    this.commandResponseWriter = commandResponseWriter;
     typedResponseWriter =
         new TypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId());
     return this;
@@ -164,6 +166,10 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public TypedResponseWriterImpl getTypedResponseWriter() {
     return typedResponseWriter;
+  }
+
+  public CommandResponseWriter getCommandResponseWriter() {
+    return commandResponseWriter;
   }
 
   public StreamProcessorContext maxFragmentSize(final int maxFragmentSize) {

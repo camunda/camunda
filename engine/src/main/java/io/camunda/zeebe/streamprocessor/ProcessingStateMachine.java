@@ -280,8 +280,6 @@ public final class ProcessingStateMachine {
             final long position = typedCommand.getPosition();
             resetOutput(position);
 
-            // default side effect is responses; can be changed by processor
-            sideEffectProducer = responseWriter;
             final boolean isNotOnBlacklist =
                 !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
             if (isNotOnBlacklist) {
@@ -466,7 +464,23 @@ public final class ProcessingStateMachine {
 
   private void executeSideEffects(final ProcessingResult result) {
     final ActorFuture<Boolean> retryFuture =
-        sideEffectsRetryStrategy.runWithRetry(sideEffectProducer::flush, abortCondition);
+        sideEffectsRetryStrategy.runWithRetry(
+            () -> {
+              // TODO refactor this into two parallel tasks, which are then combined, and on the
+              // completion of which the process continues
+              final boolean responseSent = result.writeResponse(context.getCommandResponseWriter());
+
+              if (!responseSent) {
+                return false;
+              }
+
+              if (sideEffectProducer != null) {
+                return sideEffectProducer.flush();
+              } else {
+                return true;
+              }
+            },
+            abortCondition);
 
     actor.runOnCompletion(
         retryFuture,
