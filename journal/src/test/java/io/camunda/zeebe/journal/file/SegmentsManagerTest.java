@@ -11,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.journal.file.record.CorruptedLogException;
-import io.camunda.zeebe.journal.file.record.RecordData;
-import io.camunda.zeebe.journal.file.record.SBESerializer;
+import io.camunda.zeebe.journal.record.CorruptedLogException;
+import io.camunda.zeebe.journal.record.RecordData;
+import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.journal.util.LogCorrupter;
 import java.io.File;
 import java.nio.ByteBuffer;

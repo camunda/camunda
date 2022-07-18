@@ -18,8 +18,8 @@ package io.camunda.zeebe.journal.file;
 
 import com.google.common.base.Preconditions;
 import io.camunda.zeebe.journal.JournalRecord;
-import io.camunda.zeebe.journal.file.record.JournalRecordReaderUtil;
-import io.camunda.zeebe.journal.file.record.SBESerializer;
+import io.camunda.zeebe.journal.record.JournalRecordReaderUtil;
+import io.camunda.zeebe.journal.record.SBESerializer;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
