@@ -35,10 +35,10 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** Segment writer. */
-class MappedJournalSegmentWriter {
+class SegmentWriter {
 
   private final MappedByteBuffer buffer;
-  private final JournalSegment segment;
+  private final Segment segment;
   private final JournalIndex index;
   private final long firstIndex;
   private JournalRecord lastEntry;
@@ -49,9 +49,9 @@ class MappedJournalSegmentWriter {
   private final MutableDirectBuffer writeBuffer = new UnsafeBuffer();
   private final int descriptorLength;
 
-  MappedJournalSegmentWriter(
+  SegmentWriter(
       final MappedByteBuffer buffer,
-      final JournalSegment segment,
+      final Segment segment,
       final JournalIndex index,
       final long lastWrittenIndex) {
     this.segment = segment;

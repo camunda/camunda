@@ -24,17 +24,16 @@ import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
 
 /** Log segment reader. */
-class MappedJournalSegmentReader {
+class SegmentReader {
 
   private final ByteBuffer buffer;
   private final JournalIndex index;
-  private final JournalSegment segment;
+  private final Segment segment;
   private long currentIndex;
   private final JournalRecordReaderUtil recordReader;
   private final int descriptorLength;
 
-  MappedJournalSegmentReader(
-      final ByteBuffer buffer, final JournalSegment segment, final JournalIndex index) {
+  SegmentReader(final ByteBuffer buffer, final Segment segment, final JournalIndex index) {
     this.index = index;
     this.segment = segment;
     descriptorLength = segment.descriptor().length();

@@ -23,8 +23,8 @@ import org.agrona.DirectBuffer;
 class SegmentedJournalWriter {
   private final SegmentedJournal journal;
   private final JournalMetrics journalMetrics;
-  private JournalSegment currentSegment;
-  private MappedJournalSegmentWriter currentWriter;
+  private Segment currentSegment;
+  private SegmentWriter currentWriter;
 
   public SegmentedJournalWriter(final SegmentedJournal journal) {
     this.journal = journal;

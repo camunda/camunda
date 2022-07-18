@@ -25,8 +25,8 @@ import java.util.NoSuchElementException;
 class SegmentedJournalReader implements JournalReader {
 
   private final SegmentedJournal journal;
-  private JournalSegment currentSegment;
-  private MappedJournalSegmentReader currentReader;
+  private Segment currentSegment;
+  private SegmentReader currentReader;
 
   SegmentedJournalReader(final SegmentedJournal journal) {
     this.journal = journal;
@@ -190,7 +190,7 @@ class SegmentedJournalReader implements JournalReader {
   private void rewind(final long index) {
     if (currentSegment.index() >= index) {
       final long lookupIndex = index == Long.MIN_VALUE ? index : index - 1; // avoid underflow
-      final JournalSegment segment = journal.getSegment(lookupIndex);
+      final Segment segment = journal.getSegment(lookupIndex);
       if (segment != null) {
         replaceCurrentSegment(segment);
       }
@@ -203,7 +203,7 @@ class SegmentedJournalReader implements JournalReader {
   private void forward(final long index) {
     // skip to the correct segment if there is one
     if (!currentSegment.equals(journal.getLastSegment())) {
-      final JournalSegment segment = journal.getSegment(index);
+      final Segment segment = journal.getSegment(index);
       if (segment != null && !segment.equals(currentSegment)) {
         replaceCurrentSegment(segment);
       }
@@ -220,7 +220,7 @@ class SegmentedJournalReader implements JournalReader {
         return false;
       }
 
-      final JournalSegment nextSegment = journal.getNextSegment(currentSegment.index());
+      final Segment nextSegment = journal.getNextSegment(currentSegment.index());
       if (nextSegment != null && nextSegment.index() == getNextIndex()) {
         replaceCurrentSegment(nextSegment);
         return currentReader.hasNext();
@@ -230,7 +230,7 @@ class SegmentedJournalReader implements JournalReader {
     return true;
   }
 
-  private void replaceCurrentSegment(final JournalSegment nextSegment) {
+  private void replaceCurrentSegment(final Segment nextSegment) {
     if (currentSegment.equals(nextSegment)) {
       currentReader.reset();
       return;

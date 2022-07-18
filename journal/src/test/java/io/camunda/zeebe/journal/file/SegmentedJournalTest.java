@@ -453,9 +453,8 @@ class SegmentedJournalTest {
     final File logDirectory = directory.resolve("data").toFile();
     assertThat(logDirectory)
         .isDirectoryContaining(
-            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(
-            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
   }
 
   @Test
@@ -528,9 +527,8 @@ class SegmentedJournalTest {
     final File logDirectory = directory.resolve("data").toFile();
     assertThat(logDirectory)
         .isDirectoryNotContaining(
-            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(
-            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
   }
 
   @Test
@@ -546,9 +544,8 @@ class SegmentedJournalTest {
     final File logDirectory = directory.resolve("data").toFile();
     assertThat(logDirectory)
         .isDirectoryNotContaining(
-            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(
-            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
   }
 
   @Test
@@ -569,11 +566,10 @@ class SegmentedJournalTest {
     // there are two files deferred for deletion
     assertThat(
             logDirectory.listFiles(
-                file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName())))
+                file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName())))
         .hasSize(2);
     assertThat(
-            logDirectory.listFiles(
-                file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName())))
+            logDirectory.listFiles(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName())))
         .hasSize(1);
   }
 
@@ -611,7 +607,7 @@ class SegmentedJournalTest {
     return SegmentedJournal.builder()
         .withDirectory(directory.resolve("data").toFile())
         .withMaxSegmentSize(
-            (int) (entrySize * entriesPerSegment) + JournalSegmentDescriptor.getEncodingLength())
+            (int) (entrySize * entriesPerSegment) + SegmentDescriptor.getEncodingLength())
         .withJournalIndexDensity(journalIndexDensity)
         .withName(JOURNAL_NAME)
         .build();
