@@ -15,6 +15,9 @@ import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContextImpl;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -36,7 +39,29 @@ public class Engine implements RecordProcessor {
 
   @Override
   public void init(final RecordProcessorContext recordProcessorContext) {
-    throw new IllegalStateException("Not yet implemented");
+    final var typedProcessorContext =
+        new TypedRecordProcessorContextImpl(
+            recordProcessorContext.getPartitionId(),
+            recordProcessorContext.getScheduleService(),
+            recordProcessorContext.getZeebeDb(),
+            recordProcessorContext.getTransactionContext(),
+            recordProcessorContext.getStreamWriterProxy(),
+            recordProcessorContext.getEventApplierFactory(),
+            recordProcessorContext.getTypedResponseWriter());
+
+    final TypedRecordProcessors typedRecordProcessors =
+        recordProcessorContext
+            .getTypedRecordProcessorFactory()
+            .createProcessors(typedProcessorContext);
+
+    recordProcessorContext.setStreamProcessorListener(
+        typedProcessorContext.getStreamProcessorListener());
+
+    recordProcessorContext.setLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
+    final RecordProcessorMap recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
+
+    recordProcessorContext.setRecordProcessorMap(recordProcessorMap);
+    recordProcessorContext.setWriters(typedProcessorContext.getWriters());
   }
 
   @Override

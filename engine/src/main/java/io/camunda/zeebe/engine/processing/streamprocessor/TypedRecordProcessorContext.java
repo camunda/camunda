@@ -21,5 +21,6 @@ public interface TypedRecordProcessorContext {
 
   Writers getWriters();
 
+  @Deprecated // only used in test
   TypedRecordProcessorContext listener(StreamProcessorListener streamProcessorListener);
 }

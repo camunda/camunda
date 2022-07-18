@@ -15,9 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriterImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -32,8 +30,7 @@ import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import java.util.function.BooleanSupplier;
 
-public final class StreamProcessorContext
-    implements ReadonlyStreamProcessorContext, TypedRecordProcessorContext {
+public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
 
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
 
@@ -59,6 +56,7 @@ public final class StreamProcessorContext
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private ProcessingScheduleService processingScheduleService;
   private MutableLastProcessedPositionState lastProcessedPositionState;
+  private Writers writers;
 
   public StreamProcessorContext() {
     streamWriterProxy.wrap(logStreamWriter);
@@ -87,10 +85,7 @@ public final class StreamProcessorContext
 
   @Override
   public Writers getWriters() {
-    // todo (#8009): cleanup - revisit after migration is finished
-    // create newly every time, because the specific writers may differ over time
-    final var stateWriter = new EventApplyingStateWriter(streamWriterProxy, eventApplier);
-    return new Writers(streamWriterProxy, stateWriter, typedResponseWriter);
+    return writers;
   }
 
   @Override
@@ -107,7 +102,6 @@ public final class StreamProcessorContext
     return lastProcessedPositionState;
   }
 
-  @Override
   public StreamProcessorContext listener(final StreamProcessorListener streamProcessorListener) {
     this.streamProcessorListener = streamProcessorListener;
     return this;
@@ -164,6 +158,10 @@ public final class StreamProcessorContext
     typedResponseWriter =
         new TypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId());
     return this;
+  }
+
+  public TypedResponseWriterImpl getTypedResponseWriter() {
+    return typedResponseWriter;
   }
 
   public StreamProcessorContext maxFragmentSize(final int maxFragmentSize) {
@@ -223,5 +221,9 @@ public final class StreamProcessorContext
 
   public StreamProcessorMode getProcessorMode() {
     return streamProcessorMode;
+  }
+
+  public void writers(final Writers writers) {
+    this.writers = writers;
   }
 }
