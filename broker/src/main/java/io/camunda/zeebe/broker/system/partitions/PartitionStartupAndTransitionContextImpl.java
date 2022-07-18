@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
+import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -50,6 +52,7 @@ public class PartitionStartupAndTransitionContextImpl
 
   private final int nodeId;
   private final List<PartitionListener> partitionListeners;
+  private final ClusterCommunicationService clusterCommunicationService;
   private final PartitionMessagingService messagingService;
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
@@ -81,12 +84,14 @@ public class PartitionStartupAndTransitionContextImpl
   private long currentTerm;
   private Role currentRole;
   private ConcurrencyControl concurrencyControl;
+  private InterPartitionCommandReceiverActor interPartitionCommandReceiver;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
+      final ClusterCommunicationService clusterCommunicationService,
       final RaftPartition raftPartition,
       final List<PartitionListener> partitionListeners,
-      final PartitionMessagingService messagingService,
+      final PartitionMessagingService partitionCommunicationService,
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
       final Supplier<CommandResponseWriter> commandResponseWriterSupplier,
@@ -98,8 +103,9 @@ public class PartitionStartupAndTransitionContextImpl
       final PartitionProcessingState partitionProcessingState,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
     this.nodeId = nodeId;
+    this.clusterCommunicationService = clusterCommunicationService;
     this.raftPartition = raftPartition;
-    this.messagingService = messagingService;
+    messagingService = partitionCommunicationService;
     this.brokerCfg = brokerCfg;
     this.stateController = stateController;
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
@@ -194,6 +200,21 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public PartitionMessagingService getMessagingService() {
     return messagingService;
+  }
+
+  @Override
+  public ClusterCommunicationService getClusterCommunicationService() {
+    return clusterCommunicationService;
+  }
+
+  @Override
+  public InterPartitionCommandReceiverActor getPartitionCommandReceiver() {
+    return interPartitionCommandReceiver;
+  }
+
+  @Override
+  public void setPartitionCommandReceiver(final InterPartitionCommandReceiverActor receiver) {
+    interPartitionCommandReceiver = receiver;
   }
 
   @Override

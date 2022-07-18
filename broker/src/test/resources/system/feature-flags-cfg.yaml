@@ -3,3 +3,4 @@ zeebe:
     experimental:
       features:
         enableYieldingDueDateChecker: true
+        enableActorMetrics: true

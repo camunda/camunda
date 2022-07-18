@@ -14,14 +14,14 @@ import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.scheduler.ScheduledTimer;
 import java.time.Duration;
 
 public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
   public static final Duration TIME_OUT_POLLING_INTERVAL = Duration.ofSeconds(30);
   private final JobState state;
 
-  private ScheduledTimer timer;
+  private boolean shouldReschedule = false;
+
   private TypedCommandWriter writer;
   private ReadonlyStreamProcessorContext processingContext;
 
@@ -32,10 +32,8 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
     this.processingContext = processingContext;
-    timer =
-        this.processingContext
-            .getActor()
-            .runAtFixedRate(TIME_OUT_POLLING_INTERVAL, this::deactivateTimedOutJobs);
+    shouldReschedule = true;
+    scheduleDeactivateTimedOutJobsTask();
     writer = processingContext.getLogStreamWriter();
   }
 
@@ -56,19 +54,19 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
 
   @Override
   public void onResumed() {
-    if (timer == null) {
-      timer =
-          processingContext
-              .getActor()
-              .runAtFixedRate(TIME_OUT_POLLING_INTERVAL, this::deactivateTimedOutJobs);
+    if (shouldReschedule) {
+      scheduleDeactivateTimedOutJobsTask();
     }
   }
 
+  private void scheduleDeactivateTimedOutJobsTask() {
+    processingContext
+        .getScheduleService()
+        .runDelayed(TIME_OUT_POLLING_INTERVAL, this::deactivateTimedOutJobs);
+  }
+
   private void cancelTimer() {
-    if (timer != null) {
-      timer.cancel();
-      timer = null;
-    }
+    shouldReschedule = false;
   }
 
   void deactivateTimedOutJobs() {
@@ -81,5 +79,8 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
 
           return writer.flush() >= 0;
         });
+    if (shouldReschedule) {
+      scheduleDeactivateTimedOutJobsTask();
+    }
   }
 }

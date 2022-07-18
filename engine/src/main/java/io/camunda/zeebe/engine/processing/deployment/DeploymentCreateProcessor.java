@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment;
 
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 
+import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -37,7 +38,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
-import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.function.Consumer;
@@ -66,7 +66,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final ExpressionProcessor expressionProcessor,
       final int partitionsCount,
       final Writers writers,
-      final ActorControl actor,
+      final ProcessingScheduleService scheduleService,
       final DeploymentDistributor deploymentDistributor,
       final KeyGenerator keyGenerator) {
     processState = zeebeState.getProcessState();
@@ -81,7 +81,8 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
         new MessageStartEventSubscriptionManager(
             processState, zeebeState.getMessageStartEventSubscriptionState(), keyGenerator);
     deploymentDistributionBehavior =
-        new DeploymentDistributionBehavior(writers, partitionsCount, deploymentDistributor, actor);
+        new DeploymentDistributionBehavior(
+            writers, partitionsCount, deploymentDistributor, scheduleService);
   }
 
   @Override

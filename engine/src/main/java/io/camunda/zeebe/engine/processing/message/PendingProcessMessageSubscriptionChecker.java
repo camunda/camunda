@@ -7,13 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
-import io.camunda.zeebe.scheduler.ActorControl;
-import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.time.Duration;
 
@@ -27,8 +26,8 @@ public final class PendingProcessMessageSubscriptionChecker
   private final MutablePendingProcessMessageSubscriptionState pendingState;
   private final long subscriptionTimeoutInMillis;
 
-  private ActorControl actor;
-  private ScheduledTimer timer;
+  private ProcessingScheduleService scheduleService;
+  private boolean schouldRescheduleTimer = false;
 
   public PendingProcessMessageSubscriptionChecker(
       final SubscriptionCommandSender commandSender,
@@ -40,8 +39,9 @@ public final class PendingProcessMessageSubscriptionChecker
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    actor = context.getActor();
-    scheduleTimer();
+    scheduleService = context.getScheduleService();
+    schouldRescheduleTimer = true;
+    rescheduleTimer();
   }
 
   @Override
@@ -61,25 +61,24 @@ public final class PendingProcessMessageSubscriptionChecker
 
   @Override
   public void onResumed() {
-    scheduleTimer();
+    schouldRescheduleTimer = true;
+    rescheduleTimer();
   }
 
-  private void scheduleTimer() {
-    if (timer == null) {
-      timer = actor.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, this::checkPendingSubscriptions);
+  private void rescheduleTimer() {
+    if (schouldRescheduleTimer) {
+      scheduleService.runDelayed(SUBSCRIPTION_CHECK_INTERVAL, this::checkPendingSubscriptions);
     }
   }
 
   private void cancelTimer() {
-    if (timer != null) {
-      timer.cancel();
-      timer = null;
-    }
+    schouldRescheduleTimer = false;
   }
 
   private void checkPendingSubscriptions() {
     pendingState.visitSubscriptionBefore(
         ActorClock.currentTimeMillis() - subscriptionTimeoutInMillis, this::sendPendingCommand);
+    rescheduleTimer();
   }
 
   private boolean sendPendingCommand(final ProcessMessageSubscription subscription) {

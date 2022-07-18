@@ -28,11 +28,11 @@ public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    final var actor = context.getActor();
     final var writers = context.getWriters();
 
     final var deploymentDistributionBehavior =
-        new DeploymentDistributionBehavior(writers, partitionsCount, deploymentDistributor, actor);
+        new DeploymentDistributionBehavior(
+            writers, partitionsCount, deploymentDistributor, context.getScheduleService());
 
     deploymentState.foreachPendingDeploymentDistribution(
         (key, partitionId, deployment) ->

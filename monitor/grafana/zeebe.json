@@ -527,7 +527,7 @@
               "format": "short",
               "label": null,
               "logBase": 1,
-              "max": "5000",
+              "max": null,
               "min": "0",
               "show": true
             },
@@ -632,7 +632,7 @@
               "format": "short",
               "label": null,
               "logBase": 1,
-              "max": "5000",
+              "max": null,
               "min": "0",
               "show": true
             },
@@ -2639,7 +2639,7 @@
               "format": "short",
               "label": null,
               "logBase": 1,
-              "max": "5000",
+              "max": null,
               "min": "0",
               "show": true
             },
@@ -2740,7 +2740,7 @@
               "format": "short",
               "label": null,
               "logBase": 1,
-              "max": "5000",
+              "max": null,
               "min": "0",
               "show": true
             },
@@ -2841,7 +2841,7 @@
               "format": "short",
               "label": null,
               "logBase": 1,
-              "max": "5000",
+              "max": null,
               "min": "0",
               "show": true
             },

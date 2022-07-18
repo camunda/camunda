@@ -42,7 +42,8 @@ public abstract class ActorThreadGroup {
                   this,
                   tasks,
                   builder.getActorClock(),
-                  builder.getActorTimerQueue());
+                  builder.getActorTimerQueue(),
+                  builder.isMetricsEnabled());
 
       threads[t] = thread;
     }

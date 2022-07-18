@@ -33,6 +33,10 @@ public class ExecutableProcess extends ExecutableFlowElementContainer {
     return flowElements.get(id);
   }
 
+  public AbstractFlowElement getElementById(final String id) {
+    return flowElements.get(wrapString(id));
+  }
+
   /** convenience function for transformation */
   public <T extends ExecutableFlowElement> T getElementById(
       final String id, final Class<T> expectedType) {

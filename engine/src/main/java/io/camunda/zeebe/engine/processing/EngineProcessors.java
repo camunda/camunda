@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing;
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
-import io.camunda.zeebe.engine.api.RecordProcessorContext;
+import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
@@ -39,14 +40,13 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
-import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.util.function.Consumer;
 
 public final class EngineProcessors {
 
   public static TypedRecordProcessors createEngineProcessors(
-      final RecordProcessorContext recordProcessorContext,
+      final TypedRecordProcessorContext typedRecordProcessorContext,
       final int partitionsCount,
       final SubscriptionCommandSender subscriptionCommandSender,
       final DeploymentDistributor deploymentDistributor,
@@ -54,9 +54,9 @@ public final class EngineProcessors {
       final Consumer<String> onJobsAvailableCallback,
       final FeatureFlags featureFlags) {
 
-    final var actor = recordProcessorContext.getActor();
-    final MutableZeebeState zeebeState = recordProcessorContext.getZeebeState();
-    final var writers = recordProcessorContext.getWriters();
+    final var scheduleService = typedRecordProcessorContext.getScheduleService();
+    final MutableZeebeState zeebeState = typedRecordProcessorContext.getZeebeState();
+    final var writers = typedRecordProcessorContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =
         TypedRecordProcessors.processors(zeebeState.getKeyGenerator(), writers);
 
@@ -65,7 +65,7 @@ public final class EngineProcessors {
 
     typedRecordProcessors.withListener(zeebeState);
 
-    final int partitionId = recordProcessorContext.getPartitionId();
+    final int partitionId = typedRecordProcessorContext.getPartitionId();
 
     final var variablesState = zeebeState.getVariableState();
     final var expressionProcessor =
@@ -102,7 +102,7 @@ public final class EngineProcessors {
         expressionProcessor,
         writers,
         partitionsCount,
-        actor,
+        scheduleService,
         deploymentDistributor,
         zeebeState.getKeyGenerator());
     addMessageProcessors(
@@ -176,7 +176,7 @@ public final class EngineProcessors {
       final ExpressionProcessor expressionProcessor,
       final Writers writers,
       final int partitionsCount,
-      final ActorControl actor,
+      final ProcessingScheduleService scheduleService,
       final DeploymentDistributor deploymentDistributor,
       final KeyGenerator keyGenerator) {
 
@@ -189,7 +189,7 @@ public final class EngineProcessors {
             expressionProcessor,
             partitionsCount,
             writers,
-            actor,
+            scheduleService,
             deploymentDistributor,
             keyGenerator);
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);

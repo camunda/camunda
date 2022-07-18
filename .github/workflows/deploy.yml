@@ -31,7 +31,7 @@ jobs:
           secrets: |
             secret/data/common/github.com/actions/camunda/zeebe ARTIFACTS_USR;
             secret/data/common/github.com/actions/camunda/zeebe ARTIFACTS_PSW;
-      - uses: actions/setup-java@v3.4.0
+      - uses: actions/setup-java@v3.4.1
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -64,7 +64,7 @@ jobs:
           secrets: |
             secret/data/common/github.com/actions/camunda/zeebe REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/common/github.com/actions/camunda/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
-      - uses: actions/setup-java@v3.4.0
+      - uses: actions/setup-java@v3.4.1
         with:
           distribution: 'temurin'
           java-version: '17'

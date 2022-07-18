@@ -23,6 +23,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
+import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.slf4j.Logger;
 
@@ -81,6 +82,22 @@ public final class FileUtil {
       throws IOException {
     Files.move(source, target, options);
     flushDirectory(target.getParent());
+  }
+
+  /**
+   * Allocates a new file at the given path with the given size. This method guarantees that the
+   * file will have at least the expected size (but may have one page more).
+   *
+   * @param length the length of the file
+   */
+  public static void preallocate(final FileChannel channel, final long length) {
+    if (length < 0) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected to preallocate [%d] bytes, but the length cannot be negative", length));
+    }
+
+    IoUtil.fill(channel, 0, length, (byte) 0);
   }
 
   public static void deleteFolder(final String path) throws IOException {

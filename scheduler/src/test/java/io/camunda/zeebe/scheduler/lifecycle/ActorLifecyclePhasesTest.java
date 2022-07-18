@@ -15,6 +15,7 @@ import io.camunda.zeebe.scheduler.ActorTask.ActorLifecyclePhase;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -333,7 +334,7 @@ public final class ActorLifecyclePhasesTest {
           @Override
           public void onActorStarted() {
             super.onActorStarted();
-            actor.submit(actor::fail);
+            actor.submit(() -> actor.fail(new RuntimeException("foo")));
             actor.submit(invocations::incrementAndGet);
           }
         };
@@ -350,5 +351,195 @@ public final class ActorLifecyclePhasesTest {
                 ActorLifecyclePhase.STARTING,
                 ActorLifecyclePhase.STARTED,
                 ActorLifecyclePhase.FAILED));
+  }
+
+  @Test
+  public void shouldCompleteCloseFutureWhenFailingInStarted() {
+    // given
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorStarted() {
+            super.onActorStarted();
+            actor.fail(new RuntimeException("foo"));
+          }
+        };
+
+    // when - explicitly do not work after close as it should be completed already
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
+
+    // then
+    assertThat(actor.phases)
+        .isEqualTo(
+            List.of(
+                ActorLifecyclePhase.STARTING,
+                ActorLifecyclePhase.STARTED,
+                ActorLifecyclePhase.FAILED));
+    assertThat(closeFuture).failsWithin(Duration.ofSeconds(1));
+  }
+
+  @Test
+  public void shouldCompleteCloseFutureOnExceptionOnClosing() {
+    // given
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorClosing() {
+            super.onActorClosing();
+            throw new RuntimeException("foo");
+          }
+        };
+
+    // when
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(actor.phases)
+        .isEqualTo(
+            List.of(
+                ActorLifecyclePhase.STARTING,
+                ActorLifecyclePhase.STARTED,
+                ActorLifecyclePhase.CLOSE_REQUESTED,
+                ActorLifecyclePhase.CLOSING));
+    assertThat(closeFuture).failsWithin(Duration.ofSeconds(1));
+  }
+
+  @Test
+  public void shouldCompleteCloseFutureWhenFailingOnClosing() {
+    // given
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorClosing() {
+            super.onActorClosing();
+            actor.fail(new RuntimeException("foo"));
+          }
+        };
+
+    // when
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(actor.phases)
+        .isEqualTo(
+            List.of(
+                ActorLifecyclePhase.STARTING,
+                ActorLifecyclePhase.STARTED,
+                ActorLifecyclePhase.CLOSE_REQUESTED,
+                ActorLifecyclePhase.CLOSING,
+                ActorLifecyclePhase.FAILED));
+    assertThat(closeFuture).failsWithin(Duration.ofSeconds(1));
+  }
+
+  @Test
+  public void shouldCompleteFuturesWhenFailingOnStarting() {
+    // given
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorStarting() {
+            super.onActorStarting();
+            actor.fail(new RuntimeException("foo"));
+          }
+        };
+
+    // when - explicitly do not work after close as it should be completed already
+    final ActorFuture<Void> startFuture = schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
+
+    // then
+    assertThat(actor.phases)
+        .isEqualTo(List.of(ActorLifecyclePhase.STARTING, ActorLifecyclePhase.FAILED));
+    assertThat(startFuture).failsWithin(Duration.ofSeconds(1));
+    assertThat(closeFuture).failsWithin(Duration.ofSeconds(1));
+  }
+
+  @Test
+  public void shouldCompleteFuturesOnExceptionOnStarting() {
+    // given
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorStarting() {
+            super.onActorStarting();
+            throw new RuntimeException("hello");
+          }
+        };
+
+    // when - explicitly do not work after close as it should be completed already
+    final ActorFuture<Void> startFuture = schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
+
+    // then
+    assertThat(actor.phases).isEqualTo(List.of(ActorLifecyclePhase.STARTING));
+    assertThat(startFuture).failsWithin(Duration.ofSeconds(1));
+    assertThat(closeFuture).failsWithin(Duration.ofSeconds(1));
+  }
+
+  @Test
+  public void shouldCompleteCloseFutureWhenFailingOnCloseRequested() {
+    // given
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorCloseRequested() {
+            super.onActorCloseRequested();
+            actor.fail(new RuntimeException("hello"));
+          }
+        };
+
+    // when
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(actor.phases)
+        .isEqualTo(
+            List.of(
+                ActorLifecyclePhase.STARTING,
+                ActorLifecyclePhase.STARTED,
+                ActorLifecyclePhase.CLOSE_REQUESTED,
+                ActorLifecyclePhase.FAILED));
+    assertThat(closeFuture).failsWithin(Duration.ofSeconds(1));
+  }
+
+  @Test
+  public void shouldCompleteCloseFutureWhenExceptionOnCloseRequested() {
+    // given
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorCloseRequested() {
+            super.onActorCloseRequested();
+            throw new RuntimeException("hello");
+          }
+        };
+
+    // when
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(actor.phases)
+        .isEqualTo(
+            List.of(
+                ActorLifecyclePhase.STARTING,
+                ActorLifecyclePhase.STARTED,
+                ActorLifecyclePhase.CLOSE_REQUESTED));
+    assertThat(closeFuture).failsWithin(Duration.ofSeconds(1));
   }
 }

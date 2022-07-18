@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
@@ -40,6 +41,8 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
     RECORDS_BY_TYPE.put(ValueType.INCIDENT, new IncidentRecord());
     RECORDS_BY_TYPE.put(ValueType.VARIABLE_DOCUMENT, new VariableDocumentRecord());
     RECORDS_BY_TYPE.put(ValueType.PROCESS_INSTANCE_CREATION, new ProcessInstanceCreationRecord());
+    RECORDS_BY_TYPE.put(
+        ValueType.PROCESS_INSTANCE_MODIFICATION, new ProcessInstanceModificationRecord());
   }
 
   private UnpackedObject event;

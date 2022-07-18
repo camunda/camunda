@@ -14,7 +14,6 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
@@ -52,7 +51,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private ManagedMessagingService commandApiMessagingService;
   private CommandApiServiceImpl commandApiService;
   private AdminApiRequestHandler adminApiService;
-  private SubscriptionApiCommandMessageHandlerService subscriptionApiService;
   private EmbeddedGatewayService embeddedGatewayService;
   private LeaderManagementRequestHandler leaderManagementRequestHandler;
   private PartitionManagerImpl partitionManager;
@@ -178,17 +176,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setApiMessagingService(final ManagedMessagingService commandApiMessagingService) {
     this.commandApiMessagingService = commandApiMessagingService;
-  }
-
-  @Override
-  public SubscriptionApiCommandMessageHandlerService getSubscriptionApiService() {
-    return subscriptionApiService;
-  }
-
-  @Override
-  public void setSubscriptionApiService(
-      final SubscriptionApiCommandMessageHandlerService subscriptionApiService) {
-    this.subscriptionApiService = subscriptionApiService;
   }
 
   @Override

@@ -26,7 +26,7 @@ public final class ControlledActorThread extends ActorThread {
       final TaskScheduler taskScheduler,
       final ActorClock clock,
       final ActorTimerQueue timerQueue) {
-    super(name, id, threadGroup, taskScheduler, clock, timerQueue);
+    super(name, id, threadGroup, taskScheduler, clock, timerQueue, false);
     idleStrategy = new ControlledIdleStartegy();
   }
 

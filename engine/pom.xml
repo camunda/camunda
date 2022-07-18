@@ -212,56 +212,6 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>add-source</id>
-            <goals>
-              <goal>add-source</goal>
-            </goals>
-            <phase>generate-sources</phase>
-            <configuration>
-              <sources combine.children="append">
-                <!-- merging with parent config for benchmarks -->
-                <source>${project.build.directory}/generated-sources/sbe</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <configuration>
-          <includeProjectDependencies>false</includeProjectDependencies>
-          <includePluginDependencies>true</includePluginDependencies>
-          <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
-          <arguments>
-            <argument>${project.build.resources[0].directory}/subscription-schema.xml</argument>
-          </arguments>
-          <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
-          <!-- system properties defined in zeebe-parent -->
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe-tool</artifactId>
-            <version>${version.sbe}</version>
-          </dependency>
-        </dependencies>
-        <executions>
-          <execution>
-            <goals>
-              <goal>java</goal>
-            </goals>
-            <phase>generate-sources</phase>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>

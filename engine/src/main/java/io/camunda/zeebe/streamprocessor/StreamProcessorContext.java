@@ -8,13 +8,14 @@
 package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
@@ -24,15 +25,15 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
-import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import java.util.function.BooleanSupplier;
 
 public final class StreamProcessorContext
-    implements ReadonlyStreamProcessorContext, RecordProcessorContext {
+    implements ReadonlyStreamProcessorContext, TypedRecordProcessorContext {
 
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
 
@@ -56,6 +57,8 @@ public final class StreamProcessorContext
 
   private int maxFragmentSize;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
+  private ProcessingScheduleService processingScheduleService;
+  private MutableLastProcessedPositionState lastProcessedPositionState;
 
   public StreamProcessorContext() {
     streamWriterProxy.wrap(logStreamWriter);
@@ -63,6 +66,50 @@ public final class StreamProcessorContext
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
+    processingScheduleService = new ProcessingScheduleServiceImpl(actor);
+    return this;
+  }
+
+  @Override
+  public ProcessingScheduleService getScheduleService() {
+    return processingScheduleService;
+  }
+
+  @Override
+  public LogStream getLogStream() {
+    return logStream;
+  }
+
+  @Override
+  public TypedStreamWriter getLogStreamWriter() {
+    return streamWriterProxy;
+  }
+
+  @Override
+  public Writers getWriters() {
+    // todo (#8009): cleanup - revisit after migration is finished
+    // create newly every time, because the specific writers may differ over time
+    final var stateWriter = new EventApplyingStateWriter(streamWriterProxy, eventApplier);
+    return new Writers(streamWriterProxy, stateWriter, typedResponseWriter);
+  }
+
+  @Override
+  public MutableZeebeState getZeebeState() {
+    return zeebeState;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return getLogStream().getPartitionId();
+  }
+
+  public MutableLastProcessedPositionState getLastProcessedPositionState() {
+    return lastProcessedPositionState;
+  }
+
+  @Override
+  public StreamProcessorContext listener(final StreamProcessorListener streamProcessorListener) {
+    this.streamProcessorListener = streamProcessorListener;
     return this;
   }
 
@@ -88,6 +135,12 @@ public final class StreamProcessorContext
 
   public StreamProcessorContext zeebeState(final ZeebeDbState zeebeState) {
     this.zeebeState = zeebeState;
+    return this;
+  }
+
+  public StreamProcessorContext lastProcessedPositionState(
+      final MutableLastProcessedPositionState lastProcessedPositionState) {
+    this.lastProcessedPositionState = lastProcessedPositionState;
     return this;
   }
 
@@ -132,48 +185,8 @@ public final class StreamProcessorContext
     return zeebeState.getKeyGeneratorControls();
   }
 
-  @Override
-  public MutableLastProcessedPositionState getLastProcessedPositionState() {
-    return zeebeState.getLastProcessedPositionState();
-  }
-
-  @Override
-  public StreamProcessorContext listener(final StreamProcessorListener streamProcessorListener) {
-    this.streamProcessorListener = streamProcessorListener;
-    return this;
-  }
-
-  @Override
   public ActorControl getActor() {
     return actor;
-  }
-
-  @Override
-  public LogStream getLogStream() {
-    return logStream;
-  }
-
-  @Override
-  public TypedStreamWriter getLogStreamWriter() {
-    return streamWriterProxy;
-  }
-
-  @Override
-  public Writers getWriters() {
-    // todo (#8009): cleanup - revisit after migration is finished
-    // create newly every time, because the specific writers may differ over time
-    final var stateWriter = new EventApplyingStateWriter(streamWriterProxy, eventApplier);
-    return new Writers(streamWriterProxy, stateWriter, typedResponseWriter);
-  }
-
-  @Override
-  public MutableZeebeState getZeebeState() {
-    return zeebeState;
-  }
-
-  @Override
-  public int getPartitionId() {
-    return getLogStream().getPartitionId();
   }
 
   public LogStreamReader getLogStreamReader() {

@@ -10,11 +10,10 @@ package io.camunda.zeebe.engine.util;
 import static io.camunda.zeebe.engine.util.Records.processInstance;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import io.camunda.zeebe.engine.api.RecordProcessorContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.camunda.zeebe.engine.state.immutable.LastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -26,6 +25,8 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessorContext;
+import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 
@@ -37,7 +38,7 @@ public class StreamProcessingComposite {
   private final int partitionId;
   private final ZeebeDbFactory<?> zeebeDbFactory;
   private MutableZeebeState zeebeState;
-  private LastProcessedPositionState lastProcessedPositionState;
+  private MutableLastProcessedPositionState lastProcessedPositionState = null;
 
   private final WriteActor writeActor = new WriteActor();
 
@@ -64,13 +65,15 @@ public class StreamProcessingComposite {
 
   private TypedRecordProcessors createTypedRecordProcessors(
       final StreamProcessorTestFactory factory,
-      final RecordProcessorContext recordProcessorContext) {
-    zeebeState = recordProcessorContext.getZeebeState();
-    lastProcessedPositionState = recordProcessorContext.getLastProcessedPositionState();
+      final TypedRecordProcessorContext typedRecordProcessorContext) {
+    zeebeState = typedRecordProcessorContext.getZeebeState();
+
+    lastProcessedPositionState =
+        ((StreamProcessorContext) typedRecordProcessorContext).getLastProcessedPositionState();
     return factory.build(
         TypedRecordProcessors.processors(
-            zeebeState.getKeyGenerator(), recordProcessorContext.getWriters()),
-        recordProcessorContext);
+            zeebeState.getKeyGenerator(), typedRecordProcessorContext.getWriters()),
+        typedRecordProcessorContext);
   }
 
   public StreamProcessor startTypedStreamProcessor(final TypedRecordProcessorFactory factory) {
@@ -79,14 +82,19 @@ public class StreamProcessingComposite {
 
   public StreamProcessor startTypedStreamProcessor(
       final int partitionId, final TypedRecordProcessorFactory factory) {
-    return streams.startStreamProcessor(
-        getLogName(partitionId),
-        zeebeDbFactory,
-        (processingContext -> {
-          zeebeState = processingContext.getZeebeState();
-          lastProcessedPositionState = processingContext.getLastProcessedPositionState();
-          return factory.createProcessors(processingContext);
-        }));
+    final var result =
+        streams.startStreamProcessor(
+            getLogName(partitionId),
+            zeebeDbFactory,
+            (processingContext -> {
+              zeebeState = processingContext.getZeebeState();
+
+              return factory.createProcessors(processingContext);
+            }));
+
+    lastProcessedPositionState = result.getStreamProcessorDbState().getLastProcessedPositionState();
+
+    return result;
   }
 
   public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
@@ -102,29 +110,36 @@ public class StreamProcessingComposite {
 
   public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
       final int partitionId, final TypedRecordProcessorFactory factory) {
-    return streams.startStreamProcessorNotAwaitOpening(
-        getLogName(partitionId),
-        zeebeDbFactory,
-        (processingContext -> {
-          zeebeState = processingContext.getZeebeState();
-          lastProcessedPositionState = processingContext.getLastProcessedPositionState();
-          return factory.createProcessors(processingContext);
-        }));
+    final var result =
+        streams.startStreamProcessorNotAwaitOpening(
+            getLogName(partitionId),
+            zeebeDbFactory,
+            (processingContext -> {
+              zeebeState = processingContext.getZeebeState();
+
+              return factory.createProcessors(processingContext);
+            }));
+
+    lastProcessedPositionState = result.getStreamProcessorDbState().getLastProcessedPositionState();
+    return result;
   }
 
   public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
       final int partitionId,
       final TypedRecordProcessorFactory factory,
       final Function<LogStreamBatchWriter, TypedStreamWriter> streamWriterFactory) {
-    return streams.startStreamProcessorNotAwaitOpening(
-        getLogName(partitionId),
-        zeebeDbFactory,
-        (processingContext -> {
-          zeebeState = processingContext.getZeebeState();
-          lastProcessedPositionState = processingContext.getLastProcessedPositionState();
-          return factory.createProcessors(processingContext);
-        }),
-        streamWriterFactory);
+    final var result =
+        streams.startStreamProcessorNotAwaitOpening(
+            getLogName(partitionId),
+            zeebeDbFactory,
+            (processingContext -> {
+              zeebeState = processingContext.getZeebeState();
+              return factory.createProcessors(processingContext);
+            }),
+            streamWriterFactory);
+
+    lastProcessedPositionState = result.getStreamProcessorDbState().getLastProcessedPositionState();
+    return result;
   }
 
   public void pauseProcessing(final int partitionId) {
@@ -285,6 +300,10 @@ public class StreamProcessingComposite {
     return STREAM_NAME + partitionId;
   }
 
+  public MutableLastProcessedPositionState getLastProcessedPositionState() {
+    return lastProcessedPositionState;
+  }
+
   /** Used to run writes within an actor thread. */
   private static final class WriteActor extends Actor {
     public ActorFuture<Long> submit(final Callable<Long> write) {
@@ -295,6 +314,6 @@ public class StreamProcessingComposite {
   @FunctionalInterface
   public interface StreamProcessorTestFactory {
     TypedRecordProcessors build(
-        TypedRecordProcessors builder, RecordProcessorContext recordProcessorContext);
+        TypedRecordProcessors builder, TypedRecordProcessorContext typedRecordProcessorContext);
   }
 }

@@ -9,7 +9,7 @@ package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
-import io.camunda.zeebe.engine.api.Engine;
+import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.ReplayMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.EventFilter;
@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
-import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBatchReaderImpl;
@@ -40,6 +39,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
+import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
@@ -92,10 +92,10 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private State currentState = State.AWAIT_RECORD;
   private final BooleanSupplier shouldPause;
   private final ReplayMetrics replayMetrics;
-  private final Engine engine;
+  private final RecordProcessor engine;
 
   public ReplayStateMachine(
-      final Engine engine,
+      final RecordProcessor engine,
       final StreamProcessorContext context,
       final BooleanSupplier shouldReplayNext) {
     this.engine = engine;

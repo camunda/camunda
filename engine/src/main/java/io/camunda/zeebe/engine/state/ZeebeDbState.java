@@ -32,7 +32,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
-import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -46,7 +45,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.state.processing.DbBlackListState;
 import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
-import io.camunda.zeebe.engine.state.processing.DbLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
 import io.camunda.zeebe.protocol.Protocol;
 import java.util.function.BiConsumer;
@@ -70,7 +68,6 @@ public class ZeebeDbState implements MutableZeebeState {
   private final DbProcessMessageSubscriptionState processMessageSubscriptionState;
   private final MutableIncidentState incidentState;
   private final MutableBlackListState blackListState;
-  private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final MutableMigrationState mutableMigrationState;
   private final MutableDecisionState decisionState;
 
@@ -105,7 +102,6 @@ public class ZeebeDbState implements MutableZeebeState {
         new DbProcessMessageSubscriptionState(zeebeDb, transactionContext);
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
     blackListState = new DbBlackListState(zeebeDb, transactionContext, partitionId);
-    lastProcessedPositionState = new DbLastProcessedPositionState(zeebeDb, transactionContext);
     decisionState = new DbDecisionState(zeebeDb, transactionContext);
 
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
@@ -183,6 +179,11 @@ public class ZeebeDbState implements MutableZeebeState {
   }
 
   @Override
+  public MutableDecisionState getDecisionState() {
+    return decisionState;
+  }
+
+  @Override
   public MutableMigrationState getMigrationState() {
     return mutableMigrationState;
   }
@@ -200,16 +201,6 @@ public class ZeebeDbState implements MutableZeebeState {
   @Override
   public KeyGenerator getKeyGenerator() {
     return keyGenerator;
-  }
-
-  @Override
-  public MutableLastProcessedPositionState getLastProcessedPositionState() {
-    return lastProcessedPositionState;
-  }
-
-  @Override
-  public MutableDecisionState getDecisionState() {
-    return decisionState;
   }
 
   @Override

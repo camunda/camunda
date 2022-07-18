@@ -12,14 +12,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
-public class ExperimentalCfgTest {
+@Execution(ExecutionMode.CONCURRENT)
+final class ExperimentalCfgTest {
 
-  public final Map<String, String> environment = new HashMap<>();
+  final Map<String, String> environment = new HashMap<>();
 
   @Test
-  public void shouldSetRaftRequestTimeoutFromConfig() {
+  void shouldSetRaftRequestTimeoutFromConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
     final var raft = cfg.getExperimental().getRaft();
@@ -29,7 +32,7 @@ public class ExperimentalCfgTest {
   }
 
   @Test
-  public void shouldSetRaftRequestTimeoutFromEnv() {
+  void shouldSetRaftRequestTimeoutFromEnv() {
     // given
     environment.put("zeebe.broker.experimental.raft.requestTimeout", "15s");
 
@@ -42,7 +45,7 @@ public class ExperimentalCfgTest {
   }
 
   @Test
-  public void shouldSetRaftMaxQuorumResponseTimeoutFromConfig() {
+  void shouldSetRaftMaxQuorumResponseTimeoutFromConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
     final var raft = cfg.getExperimental().getRaft();
@@ -52,7 +55,7 @@ public class ExperimentalCfgTest {
   }
 
   @Test
-  public void shouldSetRaftMaxQuorumResponseTimeoutFromEnv() {
+  void shouldSetRaftMaxQuorumResponseTimeoutFromEnv() {
     // given
     environment.put("zeebe.broker.experimental.raft.maxQuorumResponseTimeout", "15s");
 
@@ -65,7 +68,7 @@ public class ExperimentalCfgTest {
   }
 
   @Test
-  public void shouldSetRaftMinStepDownFailureCountFromConfig() {
+  void shouldSetRaftMinStepDownFailureCountFromConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
     final var raft = cfg.getExperimental().getRaft();
@@ -75,7 +78,7 @@ public class ExperimentalCfgTest {
   }
 
   @Test
-  public void shouldSetRaftMinStepDownFailureCountFromEnv() {
+  void shouldSetRaftMinStepDownFailureCountFromEnv() {
     // given
     environment.put("zeebe.broker.experimental.raft.minStepDownFailureCount", "10");
 
@@ -88,7 +91,7 @@ public class ExperimentalCfgTest {
   }
 
   @Test
-  public void shouldSetPreferSnapshotReplicationThresholdFromConfig() {
+  void shouldSetPreferSnapshotReplicationThresholdFromConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
     final var raft = cfg.getExperimental().getRaft();
@@ -98,7 +101,7 @@ public class ExperimentalCfgTest {
   }
 
   @Test
-  public void shouldSetPreferSnapshotReplicationThresholdFromEnv() {
+  void shouldSetPreferSnapshotReplicationThresholdFromEnv() {
     // given
     environment.put("zeebe.broker.experimental.raft.preferSnapshotReplicationThreshold", "10");
 
@@ -111,7 +114,7 @@ public class ExperimentalCfgTest {
   }
 
   @Test
-  public void shouldSetEnablePreconditionsFromConfig() {
+  void shouldSetEnablePreconditionsFromConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
     final var consistencyChecks = cfg.getExperimental().getConsistencyChecks();
@@ -121,7 +124,7 @@ public class ExperimentalCfgTest {
   }
 
   @Test
-  public void shouldSetEnablePreconditionsFromEnv() {
+  void shouldSetEnablePreconditionsFromEnv() {
     // given
     environment.put("zeebe.broker.experimental.consistencyChecks.enablePreconditions", "false");
 
@@ -134,7 +137,7 @@ public class ExperimentalCfgTest {
   }
 
   @Test
-  public void shouldSetEnableForeignKeyChecksFromConfig() {
+  void shouldSetEnableForeignKeyChecksFromConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
     final var consistencyChecks = cfg.getExperimental().getConsistencyChecks();
@@ -144,7 +147,7 @@ public class ExperimentalCfgTest {
   }
 
   @Test
-  public void shouldSetEnableForeignKeyChecksFromEnv() {
+  void shouldSetEnableForeignKeyChecksFromEnv() {
     // given
     environment.put("zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks", "false");
 
@@ -154,5 +157,28 @@ public class ExperimentalCfgTest {
 
     // then
     assertThat(consistencyChecks.isEnableForeignKeyChecks()).isFalse();
+  }
+
+  @Test
+  void shouldSetPreallocateSegmentFilesFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.raft.preallocateSegmentFiles", "false");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+    final var raftCfg = cfg.getExperimental().getRaft();
+
+    // then
+    assertThat(raftCfg.isPreallocateSegmentFiles()).isFalse();
+  }
+
+  @Test
+  void shouldSetPreallocateSegmentFilesFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+    final var raftCfg = cfg.getExperimental().getRaft();
+
+    // then
+    assertThat(raftCfg.isPreallocateSegmentFiles()).isTrue();
   }
 }
