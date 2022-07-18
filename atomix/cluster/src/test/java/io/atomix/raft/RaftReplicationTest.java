@@ -17,6 +17,9 @@ package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.raft.RaftServer.Role;
+import java.util.stream.Collectors;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -111,5 +114,48 @@ public class RaftReplicationTest {
     raftRule.awaitSameLogSizeOnAllNodes(lastCommitIndex);
     assertThat(follower.getContext().getPersistedSnapshotStore().getCurrentSnapshotIndex())
         .isEqualTo(snapshotIndex);
+  }
+
+  @Test
+  // Regression test for https://github.com/camunda/zeebe/issues/9820
+  public void shouldNotGetStuckInSnapshotReplicationLoop() throws Exception {
+    // given -- a cluster where follower's log starts at snapshot index
+    final var initialLeader = raftRule.getLeader().orElseThrow();
+
+    final var snapshotIndex = raftRule.appendEntries(5);
+    raftRule.doSnapshotOnMember(initialLeader, snapshotIndex, 3);
+    raftRule.appendEntries(5);
+
+    raftRule.getServers().stream()
+        .filter(s -> s.getRole() == Role.FOLLOWER)
+        .toList()
+        .forEach(
+            (follower) -> {
+              try {
+                raftRule.shutdownServer(follower);
+                // force data loss so that follower must receive the snapshot & has no preceding log
+                raftRule.triggerDataLossOnNode(follower.name());
+                raftRule.joinCluster(follower.name());
+              } catch (final Exception e) {
+                throw new RuntimeException(e);
+              }
+            });
+
+    // when -- letting the initial leader re-join after data loss
+    raftRule.shutdownServer(initialLeader);
+    raftRule.awaitNewLeader();
+    raftRule.triggerDataLossOnNode(initialLeader.name());
+    raftRule.joinCluster(initialLeader.name());
+
+    // then -- all members should have snapshot and latest log
+    raftRule.allNodesHaveSnapshotWithIndex(snapshotIndex);
+    Awaitility.await("All members should have the latest log")
+        .until(
+            () ->
+                raftRule.getServers().stream()
+                        .map(s -> s.getContext().getLog().getLastIndex())
+                        .collect(Collectors.toSet())
+                        .size()
+                    == 1);
   }
 }
