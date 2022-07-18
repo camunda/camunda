@@ -29,6 +29,8 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
   private final TypedStreamWriter streamWriter;
   private final TypedResponseWriter responseWriter;
 
+  private boolean hasResponse = false;
+
   DirectProcessingResultBuilder(final StreamProcessorContext context) {
     this.context = context;
     streamWriter = context.getLogStreamWriter();
@@ -55,6 +57,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
       final ValueType valueType,
       final long requestId,
       final int requestStreamId) {
+    hasResponse = true;
     responseWriter.writeResponse(
         eventKey, eventState, eventValue, valueType, requestId, requestStreamId);
     return this;
@@ -76,6 +79,6 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   @Override
   public ProcessingResult build() {
-    return new DirectProcessingResult(context, postCommitTasks);
+    return new DirectProcessingResult(context, postCommitTasks, hasResponse);
   }
 }

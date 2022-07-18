@@ -34,14 +34,19 @@ final class DirectProcessingResult implements ProcessingResult {
   private final BooleanSupplier abortCondition;
   private final TypedStreamWriter streamWriter;
   private final TypedResponseWriter responseWriter;
+  private final boolean hasResponse;
 
   DirectProcessingResult(
-      final StreamProcessorContext context, final List<PostCommitTask> postCommitTasks) {
+      final StreamProcessorContext context,
+      final List<PostCommitTask> postCommitTasks,
+      final boolean hasResponse) {
     this.postCommitTasks = new ArrayList<>(postCommitTasks);
     writeRetryStrategy = new AbortableRetryStrategy(context.getActor());
     abortCondition = context.getAbortCondition();
     streamWriter = context.getLogStreamWriter();
     responseWriter = context.getTypedResponseWriter();
+
+    this.hasResponse = hasResponse;
   }
 
   @Override
@@ -59,7 +64,12 @@ final class DirectProcessingResult implements ProcessingResult {
   @Override
   public boolean writeResponse(final CommandResponseWriter commandResponseWriter) {
     // here we must assume that response writer is backed up by command response writer internally
-    return responseWriter.flush();
+
+    if (hasResponse) {
+      return responseWriter.flush();
+    } else {
+      return true;
+    }
   }
 
   @Override
