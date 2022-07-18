@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.journal.record.CorruptedLogException;
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.journal.util.LogCorrupter;
@@ -69,7 +69,7 @@ class SegmentsManagerTest {
 
     // when/then
     final var segments = createSegmentsManager(index);
-    assertThatThrownBy(segments::open).isInstanceOf(CorruptedLogException.class);
+    assertThatThrownBy(segments::open).isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test

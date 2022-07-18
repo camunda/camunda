@@ -7,9 +7,10 @@
  */
 package io.camunda.zeebe.journal.record;
 
-import io.camunda.zeebe.journal.ChecksumGenerator;
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -33,7 +34,7 @@ public final class JournalRecordReaderUtil {
 
     if (buffer.position() + serializer.getMetadataLength() > buffer.limit()) {
       // This should never happen as this method is invoked always after hasNext() returns true
-      throw new CorruptedLogException(
+      throw new CorruptedJournalException(
           "Expected to read a record, but reached the end of the segment.");
     }
 
@@ -48,7 +49,7 @@ public final class JournalRecordReaderUtil {
     if (buffer.position() + metadataLength + recordLength > buffer.limit()) {
       // There is no valid record here. This should not happen, if we have magic headers before
       // each record.
-      throw new CorruptedLogException(
+      throw new CorruptedJournalException(
           String.format(
               "Expected to read a record at position %d, with metadata %s, but reached the end of the segment.",
               buffer.position(), metadata));
@@ -60,7 +61,7 @@ public final class JournalRecordReaderUtil {
 
     if (checksum != metadata.checksum()) {
       buffer.reset();
-      throw new CorruptedLogException(
+      throw new CorruptedJournalException(
           "Record doesn't match checksum. Log segment may be corrupted.");
     }
 

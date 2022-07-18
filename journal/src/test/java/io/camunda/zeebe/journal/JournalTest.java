@@ -14,7 +14,6 @@ import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
-import io.camunda.zeebe.journal.record.CorruptedLogException;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.RecordMetadata;
@@ -568,7 +567,7 @@ class JournalTest {
     // then
     assertThatThrownBy(
             () -> journal = openJournal(b -> b.withLastWrittenIndex(secondRecord.index())))
-        .isInstanceOf(CorruptedLogException.class);
+        .isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test

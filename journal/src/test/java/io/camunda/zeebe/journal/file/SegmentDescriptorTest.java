@@ -19,7 +19,7 @@ package io.camunda.zeebe.journal.file;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.journal.record.CorruptedLogException;
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import java.nio.ByteBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -53,7 +53,7 @@ class SegmentDescriptorTest {
 
     // when/then
     assertThatThrownBy(() -> new SegmentDescriptor(buffer))
-        .isInstanceOf(CorruptedLogException.class);
+        .isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test
@@ -94,6 +94,6 @@ class SegmentDescriptorTest {
 
     // then
     assertThatThrownBy(() -> new SegmentDescriptor(buffer))
-        .isInstanceOf(CorruptedLogException.class);
+        .isInstanceOf(CorruptedJournalException.class);
   }
 }
