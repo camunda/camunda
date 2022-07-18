@@ -128,7 +128,7 @@ public class RaftReplicationTest {
 
     raftRule.getServers().stream()
         .filter(s -> s.getRole() == Role.FOLLOWER)
-        .toList()
+        .collect(Collectors.toList())
         .forEach(
             (follower) -> {
               try {
