@@ -9,6 +9,8 @@ package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import io.camunda.zeebe.engine.api.ProcessingResult;
+import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.EventFilter;
@@ -44,6 +46,7 @@ import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.prometheus.client.Histogram;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
@@ -157,10 +160,11 @@ public final class ProcessingStateMachine {
   private Histogram.Timer processingTimer;
   private boolean reachedEnd = true;
   private boolean inProcessing;
+  private final StreamProcessorContext context;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context, final BooleanSupplier shouldProcessNext) {
-
+    this.context = context;
     actor = context.getActor();
     recordProcessorMap = context.getRecordProcessorMap();
     recordValues = context.getRecordValues();
@@ -263,6 +267,9 @@ public final class ProcessingStateMachine {
       final var value = recordValues.readRecordValue(command, metadata.getValueType());
       typedCommand.wrap(command, metadata, value);
 
+      final ProcessingResultBuilder resultBuilder = new DirectProcessingResultBuilder(context);
+      final AtomicReference<ProcessingResult> processingResultRef = new AtomicReference<>();
+
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
@@ -283,6 +290,9 @@ public final class ProcessingStateMachine {
                   logStreamWriter,
                   this::setSideEffectProducer);
             }
+
+            final var processingResult = resultBuilder.build();
+            processingResultRef.set(processingResult);
 
             lastProcessedPositionState.markAsProcessed(position);
           });

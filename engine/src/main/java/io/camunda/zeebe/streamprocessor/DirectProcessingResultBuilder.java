@@ -21,6 +21,12 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Implementation of {@code ProcessingResultBuilder} that uses direct access to the stream and to
+ * response writer. This implementation is here to support a bridge for legacy code. Legacy code can
+ * first be shaped into the interfaces defined in engine abstraction, and subseqeently the
+ * interfaces can be re-implemented to allow for buffered writing to stream and response writer
+ */
 final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   private final List<PostCommitTask> postCommitTasks = new ArrayList<>();
