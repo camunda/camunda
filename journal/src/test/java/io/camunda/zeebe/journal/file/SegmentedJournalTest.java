@@ -20,8 +20,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
-import io.camunda.zeebe.journal.file.record.RecordData;
-import io.camunda.zeebe.journal.file.record.SBESerializer;
+import io.camunda.zeebe.journal.record.RecordData;
+import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.journal.util.LogCorrupter;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
 import io.camunda.zeebe.journal.util.TestJournalRecord;

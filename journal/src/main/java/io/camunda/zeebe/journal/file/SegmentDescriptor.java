@@ -18,7 +18,8 @@ package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import io.camunda.zeebe.journal.file.record.CorruptedLogException;
+import io.camunda.zeebe.journal.ChecksumGenerator;
+import io.camunda.zeebe.journal.record.CorruptedLogException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.agrona.MutableDirectBuffer;
