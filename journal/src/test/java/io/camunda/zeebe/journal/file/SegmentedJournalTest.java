@@ -20,11 +20,11 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.journal.util.LogCorrupter;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
-import io.camunda.zeebe.journal.util.TestJournalRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -419,13 +419,14 @@ class SegmentedJournalTest {
   void shouldHandleCorruptionAtDescriptorWithSomeAckedEntries() throws Exception {
     // given
     var journal = openJournal(1);
-    final var firstRecord = journal.append(data);
+    final var firstRecord = (PersistedJournalRecord) journal.append(data);
     final var copiedFirstRecord =
-        new TestJournalRecord(
-            firstRecord.index(),
-            firstRecord.asqn(),
-            firstRecord.checksum(),
-            BufferUtil.cloneBuffer(firstRecord.data()));
+        new PersistedJournalRecord(
+            firstRecord.metadata(),
+            new RecordData(
+                firstRecord.index(),
+                firstRecord.asqn(),
+                BufferUtil.cloneBuffer(firstRecord.data())));
     journal.append(data);
 
     journal.close();

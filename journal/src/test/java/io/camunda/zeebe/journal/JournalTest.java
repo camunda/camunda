@@ -592,12 +592,17 @@ class JournalTest {
     assertThat(reader.next()).isEqualTo(lastRecord);
   }
 
+  // TODO: do not rely on implementation detail to compare records
   private PersistedJournalRecord copyRecord(final JournalRecord record) {
-    final RecordData copiedRecord =
+    final RecordData data =
         new RecordData(record.index(), record.asqn(), BufferUtil.cloneBuffer(record.data()));
 
+    if (record instanceof PersistedJournalRecord p) {
+      return new PersistedJournalRecord(p.metadata(), data);
+    }
+
     return new PersistedJournalRecord(
-        new RecordMetadata(record.checksum(), copiedRecord.data().capacity()), copiedRecord);
+        new RecordMetadata(record.checksum(), data.data().capacity()), data);
   }
 
   private SegmentedJournal openJournal() {
