@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
@@ -57,6 +58,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private ProcessingScheduleService processingScheduleService;
   private MutableLastProcessedPositionState lastProcessedPositionState;
   private Writers writers;
+  private LogStreamBatchWriter logStreamBatchWriter;
 
   public StreamProcessorContext() {
     streamWriterProxy.wrap(logStreamWriter);
@@ -225,5 +227,13 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public void writers(final Writers writers) {
     this.writers = writers;
+  }
+
+  public void logStreamBatchWriter(final LogStreamBatchWriter batchWriter) {
+    logStreamBatchWriter = batchWriter;
+  }
+
+  public LogStreamBatchWriter getLogStreamBatchWriter() {
+    return logStreamBatchWriter;
   }
 }

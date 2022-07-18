@@ -406,7 +406,7 @@ public final class ProcessingStateMachine {
 
   private void writeRecords(final ProcessingResult result) {
     final ActorFuture<Boolean> retryFuture =
-        result.writeRecordsToStream(null); // TODO get hold of writer
+        result.writeRecordsToStream(context.getLogStreamBatchWriter());
 
     actor.runOnCompletion(
         retryFuture,

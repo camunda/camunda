@@ -287,6 +287,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
           .maxFragmentSize(batchWriter.getMaxFragmentLength())
           .logStreamWriter(typedStreamWriterFactory.apply(batchWriter));
 
+      streamProcessorContext.logStreamBatchWriter(batchWriter);
+
       phase = Phase.PROCESSING;
 
       // enable writing records to the stream

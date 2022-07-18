@@ -12,7 +12,7 @@ import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
@@ -51,11 +51,12 @@ final class DirectProcessingResult implements ProcessingResult {
 
   @Override
   public ActorFuture<Boolean> writeRecordsToStream(
-      final LogStreamRecordWriter logStreamRecordWriter) {
+      final LogStreamBatchWriter logStreamBatchWriter) {
     // here we must assume that stream writer is backed by log stream record writer internally
     return writeRetryStrategy.runWithRetry(
         () -> {
           final long position = streamWriter.flush();
+          logStreamBatchWriter.tryWrite();
           return position >= 0;
         },
         abortCondition);

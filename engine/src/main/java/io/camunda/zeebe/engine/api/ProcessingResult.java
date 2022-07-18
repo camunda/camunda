@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.api;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 /**
@@ -16,7 +16,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
  */
 public interface ProcessingResult {
 
-  ActorFuture<Boolean> writeRecordsToStream(LogStreamRecordWriter logStreamRecordWriter);
+  ActorFuture<Boolean> writeRecordsToStream(LogStreamBatchWriter logStreamBatchWriter);
 
   boolean writeResponse(CommandResponseWriter commandResponseWriter);
 
