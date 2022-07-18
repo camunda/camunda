@@ -18,7 +18,7 @@ c7_optimize_deploy_arguments="--dest-namespace ${APP_NAME} \
     --project optimize-previews \
     --upsert"
 
-c8_optimize_deploy_arguments="--dest-namespace c8-${APP_NAME} \
+c8_optimize_deploy_arguments="--dest-namespace ${APP_NAME}-c8 \
     --file .ci/deployments-resources/argo/c8-optimize-application.yml \
     --helm-set global.identity.auth.publicIssuerUrl=https://keycloak-stage-c8.optimize.camunda.cloud/auth/realms/camunda-platform
     --helm-set global.identity.auth.optimize.redirectUrl=https://stage-c8.optimize.camunda.cloud
