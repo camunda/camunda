@@ -26,7 +26,6 @@ c8_optimize_deploy_arguments="--dest-namespace ${APP_NAME}-c8 \
     --helm-set camunda-platform.identity.image.tag=${IDENTITY_VERSION} \
     --helm-set camunda-platform.zeebe.image.tag=${ZEEBE_VERSION} \
     --helm-set camunda-platform.zeebe-gateway.image.tag=${ZEEBE_VERSION} \
-    --helm-set camunda-platform.elasticsearch.imageTag=${ES_VERSION} \
     --helm-set global.labels.app=c8-${APP_NAME} \
     --helm-set global.labels.commit=${SHA} \
     --name c8-${APP_NAME} \
