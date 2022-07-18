@@ -77,7 +77,6 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
 
     sideEffect.accept(sideEffectQueue);
     sideEffectQueue.clear();
-    sideEffectQueue.add(responseWriter::flush);
 
     final boolean shouldRespond = wrappedProcessor.onCommand(command, this, sideEffectQueue::add);
 
