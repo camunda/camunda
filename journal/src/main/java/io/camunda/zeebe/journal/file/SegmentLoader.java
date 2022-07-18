@@ -20,7 +20,6 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import org.agrona.IoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,14 +28,14 @@ final class SegmentLoader {
   private static final Logger LOGGER = LoggerFactory.getLogger(SegmentLoader.class);
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
 
-  private final boolean preallocateFiles;
+  private final SegmentAllocator allocator;
 
   SegmentLoader() {
-    this(true);
+    this(SegmentAllocator.fill());
   }
 
-  SegmentLoader(final boolean preallocateFiles) {
-    this.preallocateFiles = preallocateFiles;
+  SegmentLoader(final SegmentAllocator allocator) {
+    this.allocator = allocator;
   }
 
   Segment createSegment(
@@ -181,10 +180,7 @@ final class SegmentLoader {
             StandardOpenOption.READ,
             StandardOpenOption.WRITE,
             StandardOpenOption.CREATE_NEW)) {
-      if (preallocateFiles) {
-        IoUtil.fill(channel, 0, maxSegmentSize, (byte) 0);
-      }
-
+      allocator.allocate(channel, maxSegmentSize);
       return mapSegment(channel, maxSegmentSize);
     } catch (final FileAlreadyExistsException e) {
       // do not reuse a segment into which we've already written!
