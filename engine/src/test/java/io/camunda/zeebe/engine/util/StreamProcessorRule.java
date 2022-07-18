@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
@@ -309,6 +310,10 @@ public final class StreamProcessorRule implements TestRule {
   public void snapshot() {
     final var partitionId = startPartitionId;
     streamProcessingComposite.snapshot(partitionId);
+  }
+
+  public MutableLastProcessedPositionState getLastProcessedPositionState() {
+    return streamProcessingComposite.getLastProcessedPositionState();
   }
 
   private class SetupRule extends ExternalResource {

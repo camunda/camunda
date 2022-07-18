@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.state.processing;
+package io.camunda.zeebe.streamprocessor.state;
 
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
-import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
+import io.camunda.zeebe.engine.state.processing.LastProcessedPosition;
 
 public final class DbLastProcessedPositionState implements MutableLastProcessedPositionState {
 
