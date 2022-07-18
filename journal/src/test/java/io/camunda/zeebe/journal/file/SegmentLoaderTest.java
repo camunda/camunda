@@ -33,7 +33,7 @@ final class SegmentLoaderTest {
     final var segmentLoader = new SegmentLoader(true);
     final var segmentFile = tmpDir.resolve("segment.log");
     final var descriptor =
-        JournalSegmentDescriptor.builder().withId(1).withMaxSegmentSize(segmentSize).build();
+        SegmentDescriptor.builder().withId(1).withMaxSegmentSize(segmentSize).build();
 
     // when
     segmentLoader.createSegment(segmentFile, descriptor, 1, new SparseJournalIndex(1));
@@ -55,7 +55,7 @@ final class SegmentLoaderTest {
     final var segmentLoader = new SegmentLoader(false);
     final var segmentFile = tmpDir.resolve("segment.log");
     final var descriptor =
-        JournalSegmentDescriptor.builder().withId(1).withMaxSegmentSize(segmentSize).build();
+        SegmentDescriptor.builder().withId(1).withMaxSegmentSize(segmentSize).build();
 
     // when
     segmentLoader.createSegment(segmentFile, descriptor, 1, new SparseJournalIndex(1));
@@ -75,11 +75,7 @@ final class SegmentLoaderTest {
     // given
     final var segmentSize = 4 * 1024 * 1024;
     final var descriptor =
-        JournalSegmentDescriptor.builder()
-            .withId(1)
-            .withIndex(1)
-            .withMaxSegmentSize(segmentSize)
-            .build();
+        SegmentDescriptor.builder().withId(1).withIndex(1).withMaxSegmentSize(segmentSize).build();
     final var lastWrittenIndex = descriptor.index() - 1;
     final var segmentLoader = new SegmentLoader(true);
     final var segmentFile = tmpDir.resolve("segment.log");

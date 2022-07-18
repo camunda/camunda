@@ -36,24 +36,24 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
-class JournalSegment implements AutoCloseable {
+class Segment implements AutoCloseable {
 
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
-  private static final Logger LOG = LoggerFactory.getLogger(JournalSegment.class);
+  private static final Logger LOG = LoggerFactory.getLogger(Segment.class);
 
-  private final JournalSegmentFile file;
-  private final JournalSegmentDescriptor descriptor;
+  private final SegmentFile file;
+  private final SegmentDescriptor descriptor;
   private final JournalIndex index;
-  private final MappedJournalSegmentWriter writer;
-  private final Set<MappedJournalSegmentReader> readers = Sets.newConcurrentHashSet();
+  private final SegmentWriter writer;
+  private final Set<SegmentReader> readers = Sets.newConcurrentHashSet();
   private boolean open = true;
   private final MappedByteBuffer buffer;
   // This need to be volatile because both the writer and the readers access it concurrently
   private volatile boolean markedForDeletion = false;
 
-  public JournalSegment(
-      final JournalSegmentFile file,
-      final JournalSegmentDescriptor descriptor,
+  public Segment(
+      final SegmentFile file,
+      final SegmentDescriptor descriptor,
       final MappedByteBuffer buffer,
       final long maxWrittenIndex,
       final JournalIndex index) {
@@ -97,7 +97,7 @@ class JournalSegment implements AutoCloseable {
    *
    * @return The segment file.
    */
-  public JournalSegmentFile file() {
+  public SegmentFile file() {
     return file;
   }
 
@@ -106,7 +106,7 @@ class JournalSegment implements AutoCloseable {
    *
    * @return The segment descriptor.
    */
-  public JournalSegmentDescriptor descriptor() {
+  public SegmentDescriptor descriptor() {
     return descriptor;
   }
 
@@ -133,7 +133,7 @@ class JournalSegment implements AutoCloseable {
    *
    * @return The segment writer.
    */
-  public MappedJournalSegmentWriter writer() {
+  public SegmentWriter writer() {
     checkOpen();
     return writer;
   }
@@ -143,17 +143,16 @@ class JournalSegment implements AutoCloseable {
    *
    * @return A new segment reader.
    */
-  MappedJournalSegmentReader createReader() {
+  SegmentReader createReader() {
     checkOpen();
-    final MappedJournalSegmentReader reader =
-        new MappedJournalSegmentReader(
-            buffer.asReadOnlyBuffer().position(0).order(ENDIANNESS), this, index);
+    final SegmentReader reader =
+        new SegmentReader(buffer.asReadOnlyBuffer().position(0).order(ENDIANNESS), this, index);
     readers.add(reader);
     return reader;
   }
 
-  private MappedJournalSegmentWriter createWriter(final long lastWrittenIndex) {
-    return new MappedJournalSegmentWriter(buffer, this, index, lastWrittenIndex);
+  private SegmentWriter createWriter(final long lastWrittenIndex) {
+    return new SegmentWriter(buffer, this, index, lastWrittenIndex);
   }
 
   /**
@@ -161,7 +160,7 @@ class JournalSegment implements AutoCloseable {
    *
    * @param reader the closed reader
    */
-  void onReaderClosed(final MappedJournalSegmentReader reader) {
+  void onReaderClosed(final SegmentReader reader) {
     readers.remove(reader);
     // When multiple readers are closed simultaneously, both readers might try to delete the file.
     // This is ok, as safeDelete is idempotent. Hence we keep it simple, and doesn't add more
@@ -189,7 +188,7 @@ class JournalSegment implements AutoCloseable {
   @Override
   public void close() {
     open = false;
-    readers.forEach(MappedJournalSegmentReader::close);
+    readers.forEach(SegmentReader::close);
     IoUtil.unmap(buffer);
   }
 
