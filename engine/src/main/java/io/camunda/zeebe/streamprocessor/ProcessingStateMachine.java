@@ -265,7 +265,27 @@ public final class ProcessingStateMachine {
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
-      processInTransaction(typedCommand);
+      zeebeDbTransaction = transactionContext.getCurrentTransaction();
+      zeebeDbTransaction.run(
+          () -> {
+            final long position = typedCommand.getPosition();
+            resetOutput(position);
+
+            // default side effect is responses; can be changed by processor
+            sideEffectProducer = responseWriter;
+            final boolean isNotOnBlacklist =
+                !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
+            if (isNotOnBlacklist) {
+              currentProcessor.processRecord(
+                  position,
+                  typedCommand,
+                  responseWriter,
+                  logStreamWriter,
+                  this::setSideEffectProducer);
+            }
+
+            lastProcessedPositionState.markAsProcessed(position);
+          });
 
       metrics.commandsProcessed();
 
@@ -298,30 +318,6 @@ public final class ProcessingStateMachine {
     }
 
     return typedRecordProcessor;
-  }
-
-  private void processInTransaction(final TypedRecordImpl typedRecord) throws Exception {
-    zeebeDbTransaction = transactionContext.getCurrentTransaction();
-    zeebeDbTransaction.run(
-        () -> {
-          final long position = typedRecord.getPosition();
-          resetOutput(position);
-
-          // default side effect is responses; can be changed by processor
-          sideEffectProducer = responseWriter;
-          final boolean isNotOnBlacklist =
-              !zeebeState.getBlackListState().isOnBlacklist(typedRecord);
-          if (isNotOnBlacklist) {
-            currentProcessor.processRecord(
-                position,
-                typedRecord,
-                responseWriter,
-                logStreamWriter,
-                this::setSideEffectProducer);
-          }
-
-          lastProcessedPositionState.markAsProcessed(position);
-        });
   }
 
   private void resetOutput(final long sourceRecordPosition) {
