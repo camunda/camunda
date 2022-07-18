@@ -20,38 +20,6 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 @Execution(ExecutionMode.CONCURRENT)
 final class SegmentLoaderTest {
   @Test
-  void shouldPreallocateSegmentFiles(final @TempDir Path tmpDir) {
-    // given
-    final var segmentSize = 4 * 1024 * 1024;
-    final var segmentLoader = new SegmentLoader(true);
-    final var segmentFile = tmpDir.resolve("segment.log");
-    final var descriptor =
-        SegmentDescriptor.builder().withId(1).withMaxSegmentSize(segmentSize).build();
-
-    // when
-    segmentLoader.createSegment(segmentFile, descriptor, 1, new SparseJournalIndex(1));
-
-    // then
-    PosixPathAssert.assertThat(segmentFile).hasRealSize(segmentSize);
-  }
-
-  @Test
-  void shouldNotPreallocateSegmentFiles(final @TempDir Path tmpDir) {
-    // given
-    final var segmentSize = 4 * 1024 * 1024;
-    final var segmentLoader = new SegmentLoader(false);
-    final var segmentFile = tmpDir.resolve("segment.log");
-    final var descriptor =
-        SegmentDescriptor.builder().withId(1).withMaxSegmentSize(segmentSize).build();
-
-    // when
-    segmentLoader.createSegment(segmentFile, descriptor, 1, new SparseJournalIndex(1));
-
-    // then
-    PosixPathAssert.assertThat(segmentFile).hasRealSizeLessThan(segmentSize);
-  }
-
-  @Test
   void shouldPreallocateNewFileIfUnusedSegmentAlreadyExists(final @TempDir Path tmpDir)
       throws IOException {
     // given
