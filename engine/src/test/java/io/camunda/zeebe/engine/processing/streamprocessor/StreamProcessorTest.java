@@ -271,11 +271,9 @@ public final class StreamProcessorTest {
                     new TypedRecordProcessor<>() {
                       @Override
                       public void processRecord(
-                          final long position,
                           final TypedRecord<UnifiedRecordValue> record,
                           final TypedResponseWriter responseWriter,
-                          final TypedStreamWriter streamWriter,
-                          final Consumer<SideEffectProducer> sideEffect) {
+                          final TypedStreamWriter streamWriter) {
 
                         streamWriter.appendFollowUpEvent(
                             record.getKey(),
@@ -311,7 +309,6 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final long position,
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
@@ -345,7 +342,6 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final long position,
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
@@ -378,7 +374,6 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final long position,
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
@@ -416,12 +411,7 @@ public final class StreamProcessorTest {
               ProcessInstanceIntent.ACTIVATE_ELEMENT,
               new TypedRecordProcessor<>() {
                 @Override
-                public void processRecord(
-                    final long position,
-                    final TypedRecord<UnifiedRecordValue> record,
-                    final TypedResponseWriter responseWriter,
-                    final TypedStreamWriter streamWriter,
-                    final Consumer<SideEffectProducer> sideEffect) {
+                public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
 
                   state.getJobState().create(jobKey, JOB_RECORD);
 
@@ -465,12 +455,7 @@ public final class StreamProcessorTest {
               ProcessInstanceIntent.ACTIVATE_ELEMENT,
               new TypedRecordProcessor<>() {
                 @Override
-                public void processRecord(
-                    final long position,
-                    final TypedRecord<UnifiedRecordValue> record,
-                    final TypedResponseWriter responseWriter,
-                    final TypedStreamWriter streamWriter,
-                    final Consumer<SideEffectProducer> sideEffect) {
+                public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
 
                   state.getJobState().create(jobKey, JOB_RECORD);
                 }
@@ -506,11 +491,9 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final long position,
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
-                      final Consumer<SideEffectProducer> sideEffect) {
+                      final TypedStreamWriter streamWriter) {
 
                     responseWriter.writeEventOnCommand(
                         3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
@@ -547,11 +530,9 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final long position,
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
-                      final Consumer<SideEffectProducer> sideEffect) {
+                      final TypedStreamWriter streamWriter) {
 
                     responseWriter.writeEventOnCommand(
                         3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
@@ -705,11 +686,9 @@ public final class StreamProcessorTest {
                     new TypedRecordProcessor<>() {
                       @Override
                       public void processRecord(
-                          final long position,
                           final TypedRecord<UnifiedRecordValue> record,
                           final TypedResponseWriter responseWriter,
-                          final TypedStreamWriter streamWriter,
-                          final Consumer<SideEffectProducer> sideEffect) {
+                          final TypedStreamWriter streamWriter) {
 
                         streamWriter.appendFollowUpEvent(
                             record.getKey(),
