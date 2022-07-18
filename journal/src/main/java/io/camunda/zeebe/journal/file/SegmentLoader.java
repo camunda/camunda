@@ -20,6 +20,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import org.agrona.IoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -173,6 +174,7 @@ final class SegmentLoader {
   private MappedByteBuffer mapNewSegment(
       final Path segmentPath, final SegmentDescriptor descriptor, final long lastWrittenIndex)
       throws IOException {
+    final var maxSegmentSize = descriptor.maxSegmentSize();
     try (final var channel =
         FileChannel.open(
             segmentPath,
@@ -180,10 +182,10 @@ final class SegmentLoader {
             StandardOpenOption.WRITE,
             StandardOpenOption.CREATE_NEW)) {
       if (preallocateFiles) {
-        FileUtil.preallocate(channel, descriptor.maxSegmentSize());
+        IoUtil.fill(channel, 0, maxSegmentSize, (byte) 0);
       }
 
-      return mapSegment(channel, descriptor.maxSegmentSize());
+      return mapSegment(channel, maxSegmentSize);
     } catch (final FileAlreadyExistsException e) {
       // do not reuse a segment into which we've already written!
       if (lastWrittenIndex >= descriptor.index()) {
