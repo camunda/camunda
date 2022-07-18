@@ -22,6 +22,7 @@ import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.file.record.RecordData;
 import io.camunda.zeebe.journal.file.record.SBESerializer;
+import io.camunda.zeebe.journal.util.PosixPathAssert;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -29,11 +30,13 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@SuppressWarnings("resource")
 class SegmentedJournalTest {
   private static final String JOURNAL_NAME = "journal";
 
@@ -425,7 +428,7 @@ class SegmentedJournalTest {
     LogCorrupter.corruptDescriptor(logFile);
 
     // when/then
-    journal = openJournal(1);
+    journal = openJournal(b -> b.withLastWrittenIndex(firstRecord.index()));
     final var reader = journal.openReader();
     final var lastRecord = journal.append(data);
 
@@ -603,18 +606,60 @@ class SegmentedJournalTest {
     assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
   }
 
+  @Test
+  void shouldPreallocateSegmentFiles() {
+    // given
+    final var segmentSize = 4 * 1024 * 1024;
+    final var journal =
+        SegmentedJournal.builder()
+            .withDirectory(directory.toFile())
+            .withMaxSegmentSize(segmentSize)
+            .withPreallocateSegmentFiles(true)
+            .build();
+
+    // when
+    final var segment = journal.getFirstSegment();
+
+    // then
+    PosixPathAssert.assertThat(segment.file().file()).hasRealSize(segmentSize);
+  }
+
+  @Test
+  void shouldNotPreallocateSegmentFiles() {
+    // given
+    final var segmentSize = 4 * 1024 * 1024;
+    final var journal =
+        SegmentedJournal.builder()
+            .withDirectory(directory.toFile())
+            .withMaxSegmentSize(segmentSize)
+            .withPreallocateSegmentFiles(false)
+            .build();
+
+    // when
+    final var segment = journal.getFirstSegment();
+
+    // then
+    PosixPathAssert.assertThat(segment.file().file()).hasRealSizeLessThan(segmentSize);
+  }
+
   private SegmentedJournal openJournal(final float entriesPerSegment) {
     return openJournal(entriesPerSegment, entrySize);
   }
 
   private SegmentedJournal openJournal(final float entriesPerSegment, final int entrySize) {
-    return SegmentedJournal.builder()
-        .withDirectory(directory.resolve("data").toFile())
-        .withMaxSegmentSize(
-            (int) (entrySize * entriesPerSegment) + JournalSegmentDescriptor.getEncodingLength())
-        .withJournalIndexDensity(journalIndexDensity)
-        .withName(JOURNAL_NAME)
-        .build();
+    final var maxSegmentSize =
+        (int) (entrySize * entriesPerSegment) + JournalSegmentDescriptor.getEncodingLength();
+    return openJournal(b -> b.withMaxSegmentSize(maxSegmentSize));
+  }
+
+  private SegmentedJournal openJournal(final Consumer<SegmentedJournalBuilder> builderConsumer) {
+    final var builder =
+        SegmentedJournal.builder()
+            .withDirectory(directory.resolve("data").toFile())
+            .withJournalIndexDensity(journalIndexDensity)
+            .withName(JOURNAL_NAME);
+    builderConsumer.accept(builder);
+    return builder.build();
   }
 
   private int getSerializedSize(final DirectBuffer data) {

@@ -11,6 +11,7 @@ import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
@@ -24,26 +25,25 @@ import java.nio.file.StandardOpenOption;
 final class SegmentLoader {
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
 
-  private final SegmentAllocator segmentAllocator;
+  private final SegmentAllocator allocator;
 
   SegmentLoader() {
-    this(new DefaultSegmentAllocator());
+    this(SegmentAllocator.posix());
   }
 
-  SegmentLoader(final SegmentAllocator segmentAllocator) {
-    this.segmentAllocator = segmentAllocator;
+  SegmentLoader(final SegmentAllocator allocator) {
+    this.allocator = allocator;
   }
 
   JournalSegment createSegment(
       final Path segmentFile,
       final JournalSegmentDescriptor descriptor,
-      final long lastWrittenIndex,
       final JournalIndex journalIndex) {
     final var segmentSize = descriptor.maxSegmentSize();
     final MappedByteBuffer mappedSegment;
 
-    try (final var channel = segmentAllocator.allocate(segmentFile, descriptor, lastWrittenIndex)) {
-      mappedSegment = mapSegment(channel, segmentSize);
+    try (final var file = createNewSegment(segmentFile, descriptor)) {
+      mappedSegment = mapSegment(file.getChannel(), segmentSize);
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to create new segment file %s", segmentFile), e);
@@ -71,7 +71,7 @@ final class SegmentLoader {
           e);
     }
 
-    return loadSegment(segmentFile, mappedSegment, descriptor, lastWrittenIndex, journalIndex);
+    return loadSegment(segmentFile, mappedSegment, descriptor, descriptor.index(), journalIndex);
   }
 
   JournalSegment loadExistingSegment(
@@ -165,5 +165,19 @@ final class SegmentLoader {
     }
 
     return buffer.get(0);
+  }
+
+  private RandomAccessFile createNewSegment(
+      final Path segmentFile, final JournalSegmentDescriptor descriptor) throws IOException {
+    final var file = new RandomAccessFile(segmentFile.toFile(), "rw");
+
+    try {
+      allocator.allocate(file.getFD(), file.getChannel(), descriptor.maxSegmentSize());
+    } catch (final Exception e) {
+      file.close();
+      throw e;
+    }
+
+    return file;
   }
 }

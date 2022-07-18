@@ -234,8 +234,19 @@ final class SegmentsManager {
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
     for (final JournalSegment segment : loadSegments()) {
-      segments.put(segment.descriptor().index(), segment);
-      journalMetrics.incSegmentCount();
+      // delete any unused segments; this can happen when we crash or shutdown while we were
+      // creating the next segment
+      if (segment.index() <= lastWrittenIndex) {
+        segments.put(segment.descriptor().index(), segment);
+        journalMetrics.incSegmentCount();
+      } else {
+        LOG.debug(
+            "Deleting unused segment {} (index {} is less than lastWrittenIndex {})",
+            segment,
+            segment.index(),
+            lastWrittenIndex);
+        segment.delete();
+      }
     }
 
     // If a segment doesn't already exist, create an initial segment starting at index 1.
@@ -254,6 +265,7 @@ final class SegmentsManager {
       segments.put(1L, currentSegment);
       journalMetrics.incSegmentCount();
     }
+
     // observe the journal open duration
     openDurationTimer.close();
 
@@ -265,8 +277,7 @@ final class SegmentsManager {
 
   private JournalSegment createSegment(final JournalSegmentDescriptor descriptor) {
     final var segmentFile = JournalSegmentFile.createSegmentFile(name, directory, descriptor.id());
-    return segmentLoader.createSegment(
-        segmentFile.toPath(), descriptor, lastWrittenIndex, journalIndex);
+    return segmentLoader.createSegment(segmentFile.toPath(), descriptor, journalIndex);
   }
 
   /**

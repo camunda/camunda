@@ -20,8 +20,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,19 +162,9 @@ public class SegmentedJournalBuilder {
 
   private SegmentAllocator createSegmentAllocator() {
     if (preallocateSegmentFiles) {
-      final Path path = directory.toPath().resolve(name + "-segment.tpl");
-
-      try {
-        return TemplateSegmentAllocator.of(path, maxSegmentSize);
-      } catch (final IOException e) {
-        LOGGER.warn(
-            "Failed to create template based segment pre-allocator for journal {} at {}; segments will not be pre-allocated",
-            name,
-            directory,
-            e);
-      }
+      return SegmentAllocator.posix();
     }
 
-    return new DefaultSegmentAllocator();
+    return SegmentAllocator.noop();
   }
 }

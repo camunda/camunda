@@ -102,22 +102,6 @@ final class PosixFsTest {
     }
   }
 
-  @Test
-  void shouldDisablePosixFallocateOnInvalidFS() throws IOException {
-    // given
-    final var posixFs = new PosixFs(new FailingPosixFallocate(Errno.EINVAL));
-    final var path = tmpDir.resolve("file");
-
-    // when
-    try (final RandomAccessFile file = new RandomAccessFile(path.toFile(), "rw")) {
-      assertThatCode(() -> posixFs.posixFallocate(file.getFD(), 0, 1024 * 1024))
-          .isInstanceOf(UnsupportedOperationException.class);
-    }
-
-    // then
-    assertThat(posixFs.isPosixFallocateEnabled()).isFalse();
-  }
-
   private static Stream<Arguments> provideErrorPairs() {
     return Stream.of(
         Arguments.of(Errno.EBADF, IOException.class),

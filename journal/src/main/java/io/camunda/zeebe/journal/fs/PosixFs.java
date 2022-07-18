@@ -154,7 +154,6 @@ public final class PosixFs {
       case ENOSPC -> throw new OutOfDiskSpace(
           "Failed to pre-allocate file: there is not enough space");
       default -> {
-        disablePosixFallocate();
         throw new UnsupportedOperationException(
             "Failed to pre-allocate file: the underlying filesystem does not support this operation");
       }

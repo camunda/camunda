@@ -126,6 +126,29 @@ class SegmentsManagerTest {
     assertThat(segments.getFirstSegment().lastIndex()).isEqualTo(0);
   }
 
+  @Test
+  void shouldDeleteUnusedSegmentsOnOpen() {
+    // given
+    final var segmentLoader = new SegmentLoader();
+    final var journalIndex = new SparseJournalIndex(journalIndexDensity);
+    final var secondSegmentFile =
+        JournalSegmentFile.createSegmentFile(JOURNAL_NAME, directory.toFile(), 2);
+    final var secondSegmentDescriptor =
+        JournalSegmentDescriptor.builder().withId(2).withMaxSegmentSize(8192).withIndex(2).build();
+    final var secondSegment =
+        segmentLoader.createSegment(
+            secondSegmentFile.toPath(), secondSegmentDescriptor, journalIndex);
+    final var manager =
+        new SegmentsManager(journalIndex, 8192, directory.toFile(), 1, JOURNAL_NAME, segmentLoader);
+
+    // when
+    manager.open();
+
+    // then
+    assertThat(manager.getFirstSegment()).isNotNull().isEqualTo(manager.getLastSegment());
+    assertThat(secondSegment.file().file()).doesNotExist();
+  }
+
   private SegmentsManager createSegmentsManager(final long lastWrittenIndex) {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     return new SegmentsManager(
@@ -134,7 +157,7 @@ class SegmentsManagerTest {
         directory.resolve("data").toFile(),
         lastWrittenIndex,
         JOURNAL_NAME,
-        new SegmentLoader(null, false));
+        new SegmentLoader());
   }
 
   private SegmentedJournal openJournal(final float entriesPerSegment) {

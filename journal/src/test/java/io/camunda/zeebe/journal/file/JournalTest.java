@@ -465,7 +465,7 @@ class JournalTest {
     journal.close();
 
     // when
-    journal = openJournal();
+    journal = openJournal(b -> b.withLastWrittenIndex(lastIndexBeforeClose));
 
     // then
     assertThat(journal.isOpen()).isTrue();
@@ -479,7 +479,7 @@ class JournalTest {
     journal.close();
 
     // when
-    journal = openJournal();
+    journal = openJournal(b -> b.withLastWrittenIndex(appendedRecord.index()));
     final JournalReader reader = journal.openReader();
 
     // then
@@ -495,7 +495,7 @@ class JournalTest {
     journal.close();
 
     // when
-    journal = openJournal();
+    journal = openJournal(b -> b.withLastWrittenIndex(firstRecord.index()));
     final var secondRecord = journal.append(data);
 
     // then
@@ -549,7 +549,7 @@ class JournalTest {
     final var secondRecord = copyRecord(journal.append(data));
 
     journal.close();
-    journal = openJournal();
+    journal = openJournal(b -> b.withLastWrittenIndex(secondRecord.index()));
 
     // then
     final var reader = journal.openReader();
