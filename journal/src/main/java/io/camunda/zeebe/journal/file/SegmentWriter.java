@@ -106,7 +106,7 @@ final class SegmentWriter {
             buffer, startPosition + frameLength + metadataLength, recordLength);
 
     writeMetadata(startPosition, frameLength, recordLength, checksum);
-    updateLastWrittenEntry(startPosition, frameLength, metadataLength, recordLength);
+    updateLastWrittenEntry(startPosition, frameLength, metadataLength);
     FrameUtil.writeVersion(buffer, startPosition);
 
     buffer.position(startPosition + frameLength + metadataLength + recordLength);
@@ -149,7 +149,7 @@ final class SegmentWriter {
     }
 
     writeMetadata(startPosition, frameLength, recordLength, checksum);
-    updateLastWrittenEntry(startPosition, frameLength, metadataLength, recordLength);
+    updateLastWrittenEntry(startPosition, frameLength, metadataLength);
     FrameUtil.writeVersion(buffer, startPosition);
 
     buffer.position(startPosition + frameLength + metadataLength + recordLength);
@@ -157,23 +157,17 @@ final class SegmentWriter {
   }
 
   private void updateLastWrittenEntry(
-      final int startPosition,
-      final int frameLength,
-      final int metadataLength,
-      final int recordLength) {
+      final int startPosition, final int frameLength, final int metadataLength) {
     final var metadata = serializer.readMetadata(writeBuffer, startPosition + frameLength);
-    final var data =
-        serializer.readData(
-            writeBuffer, startPosition + frameLength + metadataLength, recordLength);
+    final var data = serializer.readData(writeBuffer, startPosition + frameLength + metadataLength);
     lastEntry = new PersistedJournalRecord(metadata, data);
     index.index(lastEntry, startPosition);
   }
 
-  private RecordMetadata writeMetadata(
+  private void writeMetadata(
       final int startPosition, final int frameLength, final int recordLength, final long checksum) {
     final RecordMetadata recordMetadata = new RecordMetadata(checksum, recordLength);
     serializer.writeMetadata(recordMetadata, writeBuffer, startPosition + frameLength);
-    return recordMetadata;
   }
 
   private Either<SegmentFull, Integer> writeRecord(
@@ -271,14 +265,5 @@ final class SegmentWriter {
       isOpen = false;
       flush();
     }
-  }
-
-  /**
-   * Returns a boolean indicating whether the segment is empty.
-   *
-   * @return Indicates whether the segment is empty.
-   */
-  boolean isEmpty() {
-    return lastEntry == null;
   }
 }
