@@ -23,7 +23,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.MetadataFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProtocolVersionFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -148,7 +147,6 @@ public final class ProcessingStateMachine {
   private final StreamProcessorListener streamProcessorListener;
 
   // current iteration
-  private SideEffectProducer sideEffectProducer;
   private LoggedEvent currentRecord;
   private ZeebeDbTransaction zeebeDbTransaction;
   private long writtenPosition = StreamProcessor.UNSET_POSITION;
@@ -321,10 +319,6 @@ public final class ProcessingStateMachine {
     logStreamWriter.configureSourceContext(sourceRecordPosition);
   }
 
-  public void setSideEffectProducer(final SideEffectProducer sideEffectProducer) {
-    this.sideEffectProducer = sideEffectProducer;
-  }
-
   private void onError(final Throwable processingException, final Runnable nextStep) {
     onErrorRetries++;
     if (onErrorRetries > 1) {
@@ -445,7 +439,19 @@ public final class ProcessingStateMachine {
 
   private void executeSideEffects(final ProcessingResult result) {
     final ActorFuture<Boolean> retryFuture =
-        sideEffectsRetryStrategy.runWithRetry(sideEffectProducer::flush, abortCondition);
+        sideEffectsRetryStrategy.runWithRetry(
+            () -> {
+              // TODO refactor this into two parallel tasks, which are then combined, and on the
+              // completion of which the process continues
+              final boolean responseSent = result.writeResponse(context.getCommandResponseWriter());
+
+              if (!responseSent) {
+                return false;
+              } else {
+                return result.executePostCommitTasks();
+              }
+            },
+            abortCondition);
 
     actor.runOnCompletion(
         retryFuture,
