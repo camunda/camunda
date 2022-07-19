@@ -23,7 +23,6 @@ import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
-import io.camunda.zeebe.journal.util.LogCorrupter;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.File;
@@ -38,6 +37,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@SuppressWarnings("resource")
 class SegmentedJournalTest {
   private static final String JOURNAL_NAME = "journal";
 
@@ -596,7 +596,9 @@ class SegmentedJournalTest {
 
     // expect
     assertThat(segment.isOpen()).isFalse();
-    assertThatThrownBy(() -> journal.openReader()).withFailMessage("Segment not open");
+    assertThatThrownBy(journal::openReader)
+        .withFailMessage("Segment not open")
+        .isInstanceOf(IllegalStateException.class);
 
     // when
     new Thread(

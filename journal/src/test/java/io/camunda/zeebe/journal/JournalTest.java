@@ -12,12 +12,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
+import io.camunda.zeebe.journal.file.LogCorrupter;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.RecordMetadata;
-import io.camunda.zeebe.journal.util.LogCorrupter;
 import io.camunda.zeebe.journal.util.TestJournalRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.File;
@@ -196,7 +196,7 @@ class JournalTest {
 
     // when
     journal.reset(2);
-    journal.append(asqn++, data);
+    journal.append(asqn, data);
 
     // then
     assertThat(reader.hasNext()).isFalse();

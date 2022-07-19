@@ -5,11 +5,8 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.journal.util;
+package io.camunda.zeebe.journal.file;
 
-import io.camunda.zeebe.journal.file.FrameUtil;
-import io.camunda.zeebe.journal.file.MessageHeaderDecoder;
-import io.camunda.zeebe.journal.file.SegmentDescriptor;
 import io.camunda.zeebe.journal.record.JournalRecordReaderUtil;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import java.io.BufferedInputStream;
@@ -20,7 +17,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class LogCorrupter {
+public final class LogCorrupter {
 
   /**
    * Corrupts the record associated with the specified index, if it's present in the file.
