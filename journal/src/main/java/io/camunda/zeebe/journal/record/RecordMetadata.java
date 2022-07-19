@@ -5,10 +5,6 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.journal.file.util;
+package io.camunda.zeebe.journal.record;
 
-import io.camunda.zeebe.journal.JournalRecord;
-import org.agrona.DirectBuffer;
-
-public record TestJournalRecord(long index, long asqn, long checksum, DirectBuffer data)
-    implements JournalRecord {}
+public record RecordMetadata(long checksum, int length) {}

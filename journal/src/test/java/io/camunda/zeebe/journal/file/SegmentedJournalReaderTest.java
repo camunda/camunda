@@ -18,8 +18,8 @@ package io.camunda.zeebe.journal.file;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.journal.JournalReader;
-import io.camunda.zeebe.journal.file.record.RecordData;
-import io.camunda.zeebe.journal.file.record.SBESerializer;
+import io.camunda.zeebe.journal.record.RecordData;
+import io.camunda.zeebe.journal.record.SBESerializer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;

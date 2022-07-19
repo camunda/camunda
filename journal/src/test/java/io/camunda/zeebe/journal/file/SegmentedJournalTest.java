@@ -20,9 +20,11 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
-import io.camunda.zeebe.journal.file.record.RecordData;
-import io.camunda.zeebe.journal.file.record.SBESerializer;
-import io.camunda.zeebe.journal.file.util.PosixPathAssert;
+import io.camunda.zeebe.journal.record.PersistedJournalRecord;
+import io.camunda.zeebe.journal.record.RecordData;
+import io.camunda.zeebe.journal.record.SBESerializer;
+import io.camunda.zeebe.journal.util.PosixPathAssert;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -35,6 +37,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@SuppressWarnings("resource")
 class SegmentedJournalTest {
   private static final String JOURNAL_NAME = "journal";
 
@@ -416,7 +419,14 @@ class SegmentedJournalTest {
   void shouldHandleCorruptionAtDescriptorWithSomeAckedEntries() throws Exception {
     // given
     var journal = openJournal(1);
-    final var firstRecord = JournalTest.copyRecord(journal.append(data));
+    final var firstRecord = (PersistedJournalRecord) journal.append(data);
+    final var copiedFirstRecord =
+        new PersistedJournalRecord(
+            firstRecord.metadata(),
+            new RecordData(
+                firstRecord.index(),
+                firstRecord.asqn(),
+                BufferUtil.cloneBuffer(firstRecord.data())));
     journal.append(data);
 
     journal.close();
@@ -431,9 +441,9 @@ class SegmentedJournalTest {
     final var lastRecord = journal.append(data);
 
     // then
-    assertThat(journal.getFirstIndex()).isEqualTo(firstRecord.index());
+    assertThat(journal.getFirstIndex()).isEqualTo(copiedFirstRecord.index());
     assertThat(journal.getLastIndex()).isEqualTo(lastRecord.index());
-    assertThat(reader.next()).isEqualTo(firstRecord);
+    assertThat(reader.next()).isEqualTo(copiedFirstRecord);
     assertThat(reader.next()).isEqualTo(lastRecord);
     assertThat(reader.hasNext()).isFalse();
   }
@@ -586,7 +596,9 @@ class SegmentedJournalTest {
 
     // expect
     assertThat(segment.isOpen()).isFalse();
-    assertThatThrownBy(() -> journal.openReader()).withFailMessage("Segment not open");
+    assertThatThrownBy(journal::openReader)
+        .withFailMessage("Segment not open")
+        .isInstanceOf(IllegalStateException.class);
 
     // when
     new Thread(

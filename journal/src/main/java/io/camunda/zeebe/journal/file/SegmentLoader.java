@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
-import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -120,7 +120,7 @@ final class SegmentLoader {
       final byte version = readVersion(channel, fileName);
       final int length = SegmentDescriptor.getEncodingLengthForVersion(version);
       if (fileSize < length) {
-        throw new CorruptedLogException(
+        throw new CorruptedJournalException(
             String.format(
                 "Expected segment '%s' with version %d to be at least %d bytes long but it only has %d.",
                 fileName, version, length, fileSize));
@@ -144,7 +144,7 @@ final class SegmentLoader {
               "Expected to read descriptor of segment '%s', but nothing was read.", fileName),
           e);
     } catch (final UnknownVersionException e) {
-      throw new CorruptedLogException(
+      throw new CorruptedJournalException(
           String.format("Couldn't read or recognize version of segment '%s'.", fileName), e);
     } catch (final IOException e) {
       throw new JournalException(e);
@@ -161,7 +161,7 @@ final class SegmentLoader {
               "Expected to read the version byte from segment '%s' but nothing was read.",
               fileName));
     } else if (readBytes == -1) {
-      throw new CorruptedLogException(
+      throw new CorruptedJournalException(
           String.format(
               "Expected to read the version byte from segment '%s' but got EOF instead.",
               fileName));

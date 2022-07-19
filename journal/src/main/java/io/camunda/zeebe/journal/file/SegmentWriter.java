@@ -16,17 +16,18 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.JournalException.SegmentFull;
 import io.camunda.zeebe.journal.JournalRecord;
-import io.camunda.zeebe.journal.file.record.CorruptedLogException;
-import io.camunda.zeebe.journal.file.record.JournalRecordReaderUtil;
-import io.camunda.zeebe.journal.file.record.JournalRecordSerializer;
-import io.camunda.zeebe.journal.file.record.PersistedJournalRecord;
-import io.camunda.zeebe.journal.file.record.RecordData;
-import io.camunda.zeebe.journal.file.record.RecordMetadata;
-import io.camunda.zeebe.journal.file.record.SBESerializer;
+import io.camunda.zeebe.journal.record.JournalRecordReaderUtil;
+import io.camunda.zeebe.journal.record.JournalRecordSerializer;
+import io.camunda.zeebe.journal.record.PersistedJournalRecord;
+import io.camunda.zeebe.journal.record.RecordData;
+import io.camunda.zeebe.journal.record.RecordMetadata;
+import io.camunda.zeebe.journal.record.SBESerializer;
+import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import io.camunda.zeebe.util.Either;
 import java.nio.BufferUnderflowException;
 import java.nio.MappedByteBuffer;
@@ -105,7 +106,7 @@ final class SegmentWriter {
             buffer, startPosition + frameLength + metadataLength, recordLength);
 
     writeMetadata(startPosition, frameLength, recordLength, checksum);
-    updateLastWrittenEntry(startPosition, frameLength, metadataLength, recordLength);
+    updateLastWrittenEntry(startPosition, frameLength, metadataLength);
     FrameUtil.writeVersion(buffer, startPosition);
 
     buffer.position(startPosition + frameLength + metadataLength + recordLength);
@@ -148,7 +149,7 @@ final class SegmentWriter {
     }
 
     writeMetadata(startPosition, frameLength, recordLength, checksum);
-    updateLastWrittenEntry(startPosition, frameLength, metadataLength, recordLength);
+    updateLastWrittenEntry(startPosition, frameLength, metadataLength);
     FrameUtil.writeVersion(buffer, startPosition);
 
     buffer.position(startPosition + frameLength + metadataLength + recordLength);
@@ -156,23 +157,17 @@ final class SegmentWriter {
   }
 
   private void updateLastWrittenEntry(
-      final int startPosition,
-      final int frameLength,
-      final int metadataLength,
-      final int recordLength) {
+      final int startPosition, final int frameLength, final int metadataLength) {
     final var metadata = serializer.readMetadata(writeBuffer, startPosition + frameLength);
-    final var data =
-        serializer.readData(
-            writeBuffer, startPosition + frameLength + metadataLength, recordLength);
+    final var data = serializer.readData(writeBuffer, startPosition + frameLength + metadataLength);
     lastEntry = new PersistedJournalRecord(metadata, data);
     index.index(lastEntry, startPosition);
   }
 
-  private RecordMetadata writeMetadata(
+  private void writeMetadata(
       final int startPosition, final int frameLength, final int recordLength, final long checksum) {
     final RecordMetadata recordMetadata = new RecordMetadata(checksum, recordLength);
     serializer.writeMetadata(recordMetadata, writeBuffer, startPosition + frameLength);
-    return recordMetadata;
   }
 
   private Either<SegmentFull, Integer> writeRecord(
@@ -217,7 +212,7 @@ final class SegmentWriter {
       }
     } catch (final BufferUnderflowException e) {
       // Reached end of the segment
-    } catch (final CorruptedLogException e) {
+    } catch (final CorruptedJournalException e) {
       handleChecksumMismatch(e, nextIndex, lastWrittenIndex, position);
     } finally {
       buffer.reset();
@@ -225,7 +220,7 @@ final class SegmentWriter {
   }
 
   private void handleChecksumMismatch(
-      final CorruptedLogException e,
+      final CorruptedJournalException e,
       final long nextIndex,
       final long lastWrittenIndex,
       final int position) {
@@ -270,14 +265,5 @@ final class SegmentWriter {
       isOpen = false;
       flush();
     }
-  }
-
-  /**
-   * Returns a boolean indicating whether the segment is empty.
-   *
-   * @return Indicates whether the segment is empty.
-   */
-  boolean isEmpty() {
-    return lastEntry == null;
   }
 }

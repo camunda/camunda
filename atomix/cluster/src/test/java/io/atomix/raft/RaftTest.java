@@ -47,7 +47,7 @@ import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
-import io.camunda.zeebe.journal.file.record.CorruptedLogException;
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthReport;
 import java.io.File;
@@ -428,7 +428,7 @@ public class RaftTest extends ConcurrentTestCase {
     // then
     final MemberId memberId = members.get(0).memberId();
     assertThatThrownBy(() -> recreateServer(leader, memberId))
-        .isInstanceOf(CorruptedLogException.class);
+        .isInstanceOf(CorruptedJournalException.class);
   }
 
   private RaftServer recreateServer(final RaftServer server, final MemberId memberId) {
