@@ -66,7 +66,7 @@ public final class JournalRecordReaderUtil {
     }
 
     // Read record
-    final RecordData record = serializer.readData(directBuffer, metadataLength, recordLength);
+    final RecordData record = serializer.readData(directBuffer, metadataLength);
 
     if (record != null && expectedIndex != record.index()) {
       buffer.reset();

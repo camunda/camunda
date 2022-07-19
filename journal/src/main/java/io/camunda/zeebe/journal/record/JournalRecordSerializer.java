@@ -63,7 +63,7 @@ public interface JournalRecordSerializer {
    * @param offset the offset in the buffer at which the data will be read from
    * @return a journal indexed record that is read.
    */
-  RecordData readData(DirectBuffer buffer, int offset, int length);
+  RecordData readData(DirectBuffer buffer, int offset);
 
   /**
    * Returns the length of the serialized {@link RecordMetadata} in the buffer.

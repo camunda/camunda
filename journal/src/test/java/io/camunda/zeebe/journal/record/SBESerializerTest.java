@@ -55,7 +55,7 @@ public class SBESerializerTest {
     final var length = serializer.writeData(record, writeBuffer, 0).get();
 
     // when
-    final var recordRead = serializer.readData(writeBuffer, 0, length);
+    final var recordRead = serializer.readData(writeBuffer, 0);
 
     // then
     assertThat(recordRead.index()).isEqualTo(record.index());
@@ -102,7 +102,7 @@ public class SBESerializerTest {
     writeBuffer.putLong(0, 0);
 
     // when - then
-    assertThatThrownBy(() -> serializer.readData(writeBuffer, 0, 1))
+    assertThatThrownBy(() -> serializer.readData(writeBuffer, 0))
         .isInstanceOf(CorruptedJournalException.class);
   }
 
@@ -125,7 +125,7 @@ public class SBESerializerTest {
 
     // when
     final var recordWrittenLength = serializer.writeData(record, writeBuffer, offset).get();
-    final var readData = serializer.readData(writeBuffer, offset, recordWrittenLength);
+    final var readData = serializer.readData(writeBuffer, offset);
 
     // then
     assertThat(readData).isEqualTo(record);
