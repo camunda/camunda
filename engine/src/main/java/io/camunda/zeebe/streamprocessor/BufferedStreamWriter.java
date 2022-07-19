@@ -7,13 +7,11 @@
  */
 package io.camunda.zeebe.streamprocessor;
 
-import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.EVENT_REGISTRY;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -32,7 +30,7 @@ final class BufferedStreamWriter {
 
   private static final Map<Class, Boolean> SUITABLE_TYPES = new HashMap<>();
   private static final int INITIAL_BUFFER_CAPACITY = 1024 * 32;
-  private final Map<Class<? extends UnpackedObject>, ValueType> typeRegistry;
+
   // todo we can allocate one buffer with max message size here and then it would simplify this -
   // and limit checking
   private final MutableDirectBuffer eventBuffer =
@@ -50,8 +48,6 @@ final class BufferedStreamWriter {
     reset();
 
     this.maxFragmentSize = maxFragmentSize;
-    typeRegistry = new HashMap<>();
-    EVENT_REGISTRY.forEach((e, c) -> typeRegistry.put(c, e));
   }
 
   protected MutableDirectBuffer getEventBuffer() {
@@ -73,13 +69,14 @@ final class BufferedStreamWriter {
       final Intent intent,
       final RejectionType rejectionType,
       final String rejectionReason,
+      final ValueType valueType,
       final RecordValue value) {
 
     // copy record to buffer
     writeKey(key);
     writeSourceIndex(sourceIndex);
 
-    initMetadata(type, intent, rejectionType, rejectionReason, value);
+    initMetadata(type, intent, rejectionType, rejectionReason, valueType, value);
     final var metadataLength = metadata.getLength();
     writeMetadataLength(metadataLength);
 
@@ -118,13 +115,9 @@ final class BufferedStreamWriter {
       final Intent intent,
       final RejectionType rejectionType,
       final String rejectionReason,
+      final ValueType valueType,
       final RecordValue value) {
     metadata.reset();
-    final ValueType valueType = typeRegistry.get(value.getClass());
-    if (valueType == null) {
-      // usually happens when the record is not registered at the TypedStreamEnvironment
-      throw new RuntimeException("Missing value type mapping for record: " + value.getClass());
-    }
 
     metadata
         .recordType(type)
