@@ -295,7 +295,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       streamProcessorContext.enableLogStreamWriter();
 
       processingStateMachine =
-          new ProcessingStateMachine(streamProcessorContext, this::shouldProcessNext);
+          new ProcessingStateMachine(streamProcessorContext, this::shouldProcessNext, engine);
 
       logStream.registerRecordAvailableListener(this);
 

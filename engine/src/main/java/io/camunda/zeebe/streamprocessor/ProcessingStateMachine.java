@@ -9,8 +9,11 @@ package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import io.camunda.zeebe.engine.api.EmptyProcessingResult;
+import io.camunda.zeebe.engine.api.ProcessingContext;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
+import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.EventFilter;
@@ -162,10 +165,14 @@ public final class ProcessingStateMachine {
   private boolean reachedEnd = true;
   private boolean inProcessing;
   private final StreamProcessorContext context;
+  private final RecordProcessor engine;
 
   public ProcessingStateMachine(
-      final StreamProcessorContext context, final BooleanSupplier shouldProcessNext) {
+      final StreamProcessorContext context,
+      final BooleanSupplier shouldProcessNext,
+      final RecordProcessor engine) {
     this.context = context;
+    this.engine = engine;
     actor = context.getActor();
     recordProcessorMap = context.getRecordProcessorMap();
     recordValues = context.getRecordValues();
@@ -253,10 +260,6 @@ public final class ProcessingStateMachine {
     command.readMetadata(metadata);
 
     currentProcessor = chooseNextProcessor(command);
-    if (currentProcessor == null) {
-      skipRecord();
-      return;
-    }
 
     // Here we need to get the current time, since we want to calculate
     // how long it took between writing to the dispatcher and processing.
@@ -270,7 +273,10 @@ public final class ProcessingStateMachine {
       final var value = recordValues.readRecordValue(command, metadata.getValueType());
       typedCommand.wrap(command, metadata, value);
 
-      final ProcessingResultBuilder resultBuilder = new DirectProcessingResultBuilder(context);
+      final ProcessingResultBuilder processingResultBuilder =
+          new DirectProcessingResultBuilder(context);
+      final ProcessingContext processingContext =
+          new ProcessingContextImpl(processingResultBuilder);
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
@@ -280,26 +286,20 @@ public final class ProcessingStateMachine {
             final long position = typedCommand.getPosition();
             resetOutput(position);
 
-            // default side effect is responses; can be changed by processor
-            sideEffectProducer = responseWriter;
-            final boolean isNotOnBlacklist =
-                !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
-            if (isNotOnBlacklist) {
-              currentProcessor.processRecord(
-                  position,
-                  typedCommand,
-                  responseWriter,
-                  logStreamWriter,
-                  this::setSideEffectProducer);
-            }
+            final var processingResult = engine.process(typedCommand, processingContext);
 
-            final var processingResult = resultBuilder.build();
+            // default side effect is responses; can be changed by processor
             processingResultRef.set(processingResult);
 
             lastProcessedPositionState.markAsProcessed(position);
           });
 
       metrics.commandsProcessed();
+
+      if (EmptyProcessingResult.INSTANCE == processingResultRef.get()) {
+        skipRecord();
+        return;
+      }
 
       writeRecords(processingResultRef.get());
     } catch (final RecoverableException recoverableException) {

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine;
 
+import io.camunda.zeebe.engine.api.EmptyProcessingResult;
 import io.camunda.zeebe.engine.api.ErrorHandlingContext;
 import io.camunda.zeebe.engine.api.ProcessingContext;
 import io.camunda.zeebe.engine.api.ProcessingResult;
@@ -14,27 +15,43 @@ import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContextImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.logstreams.impl.Loggers;
+import org.slf4j.Logger;
 
 public class Engine implements RecordProcessor {
 
+  private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
+  private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
+      "Expected to find processor for record '{}', but caught an exception. Skip this record.";
   private EventApplier eventApplier;
+  private RecordProcessorMap recordProcessorMap;
+  private MutableZeebeState zeebeState;
+  private TypedStreamWriter streamWriter;
+  private TypedResponseWriter responseWriter;
 
   public Engine() {}
 
   @Override
   public void init(final RecordProcessorContext recordProcessorContext) {
+    streamWriter = recordProcessorContext.getStreamWriterProxy();
+    responseWriter = recordProcessorContext.getTypedResponseWriter();
+
     final var typedProcessorContext =
         new TypedRecordProcessorContextImpl(
             recordProcessorContext.getPartitionId(),
             recordProcessorContext.getScheduleService(),
             recordProcessorContext.getZeebeDb(),
             recordProcessorContext.getTransactionContext(),
-            recordProcessorContext.getStreamWriterProxy(),
+            streamWriter,
             recordProcessorContext.getEventApplierFactory(),
-            recordProcessorContext.getTypedResponseWriter());
+            responseWriter);
 
     final TypedRecordProcessors typedRecordProcessors =
         recordProcessorContext
@@ -45,12 +62,12 @@ public class Engine implements RecordProcessor {
         typedProcessorContext.getStreamProcessorListener());
 
     recordProcessorContext.setLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
-    final RecordProcessorMap recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
+    recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
 
     recordProcessorContext.setRecordProcessorMap(recordProcessorMap);
     recordProcessorContext.setWriters(typedProcessorContext.getWriters());
 
-    final var zeebeState = typedProcessorContext.getZeebeState();
+    zeebeState = typedProcessorContext.getZeebeState();
     eventApplier = recordProcessorContext.getEventApplierFactory().apply(zeebeState);
   }
 
@@ -62,7 +79,37 @@ public class Engine implements RecordProcessor {
   @Override
   public ProcessingResult process(
       final TypedRecord record, final ProcessingContext processingContext) {
-    throw new IllegalStateException("Not yet implemented");
+    TypedRecordProcessor<?> currentProcessor = null;
+
+    final var typedCommand = (TypedRecord<?>) record;
+    try {
+      currentProcessor =
+          recordProcessorMap.get(
+              typedCommand.getRecordType(),
+              typedCommand.getValueType(),
+              typedCommand.getIntent().value());
+    } catch (final Exception e) {
+      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, typedCommand, e);
+    }
+
+    if (currentProcessor == null) {
+      return EmptyProcessingResult.INSTANCE;
+    }
+
+    final var processingResultBuilder = processingContext.getProcessingResultBuilder();
+
+    final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
+    if (isNotOnBlacklist) {
+      final long position = typedCommand.getPosition();
+      currentProcessor.processRecord(
+          position,
+          record,
+          responseWriter,
+          streamWriter,
+          (sep) -> processingResultBuilder.appendPostCommitTask(sep::flush));
+    }
+
+    return processingResultBuilder.build();
   }
 
   @Override
