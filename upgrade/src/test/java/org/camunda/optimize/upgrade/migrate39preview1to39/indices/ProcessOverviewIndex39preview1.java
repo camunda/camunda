@@ -23,13 +23,13 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_INTEGE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
 
-public class ProcessOverviewIndex extends DefaultIndexMappingCreator {
-  public static final int VERSION = 2;
+public class ProcessOverviewIndex39preview1 extends DefaultIndexMappingCreator {
+
+  public static final int VERSION = 1;
 
   public static final String PROCESS_DEFINITION_KEY = ProcessOverviewDto.Fields.processDefinitionKey;
   public static final String OWNER = ProcessOverviewDto.Fields.owner;
   public static final String DIGEST = ProcessOverviewDto.Fields.digest;
-  public static final String LAST_KPI_EVALUATION = ProcessOverviewDto.Fields.lastKpiEvaluationResults;
   public static final String ENABLED = ProcessDigestResponseDto.Fields.enabled;
   public static final String KPI_REPORT_RESULTS = ProcessDigestDto.Fields.kpiReportResults;
   public static final String CHECK_INTERVAL = ProcessDigestResponseDto.Fields.checkInterval;
@@ -56,32 +56,29 @@ public class ProcessOverviewIndex extends DefaultIndexMappingCreator {
       .startObject(OWNER)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
-      .startObject(LAST_KPI_EVALUATION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-      .endObject()
       .startObject(DIGEST)
         .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-        .startObject(PROPERTIES_PROPERTY_TYPE)
-          .startObject(CHECK_INTERVAL)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-            .startObject(PROPERTIES_PROPERTY_TYPE)
-              .startObject(INTERVAL_VALUE)
-                .field(MAPPING_PROPERTY_TYPE, TYPE_INTEGER)
-              .endObject()
-              .startObject(INTERVAL_UNIT)
-                .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-              .endObject()
+          .startObject(PROPERTIES_PROPERTY_TYPE)
+            .startObject(CHECK_INTERVAL)
+              .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
+               .startObject(PROPERTIES_PROPERTY_TYPE)
+                .startObject(INTERVAL_VALUE)
+                   .field(MAPPING_PROPERTY_TYPE, TYPE_INTEGER)
+                .endObject()
+                .startObject(INTERVAL_UNIT)
+                  .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+                .endObject()
+               .endObject()
+             .endObject()
+             .startObject(ENABLED)
+              .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
+             .endObject()
+             .startObject(KPI_REPORT_RESULTS)
+               .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
+               .field(DYNAMIC_PROPERTY_TYPE, true)
+             .endObject()
             .endObject()
-          .endObject()
-          .startObject(ENABLED)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
-          .endObject()
-          .startObject(KPI_REPORT_RESULTS)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-            .field(DYNAMIC_PROPERTY_TYPE, true)
-          .endObject()
-        .endObject()
-      .endObject();
+        .endObject();
     // @formatter:on
   }
 }

@@ -5,9 +5,13 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
+import org.camunda.optimize.service.es.schema.index.ProcessOverviewIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 
 public class Upgrade39Preview1To39PlanFactory implements UpgradePlanFactory {
   @Override
@@ -15,6 +19,7 @@ public class Upgrade39Preview1To39PlanFactory implements UpgradePlanFactory {
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion("3.9.0-preview-1")
       .toVersion("3.9.0")
+      .addUpgradeStep(new UpdateIndexStep(new ProcessOverviewIndex(),"ctx._source.lastKpiEvaluationResults = new HashMap();\n"))
       .build();
   }
 
