@@ -92,7 +92,7 @@ public final class SBESerializer implements JournalRecordSerializer {
   }
 
   @Override
-  public RecordData readData(final DirectBuffer buffer, final int offset, final int length) {
+  public RecordData readData(final DirectBuffer buffer, final int offset) {
     headerDecoder.wrap(buffer, offset);
     if (headerDecoder.schemaId() != recordDecoder.sbeSchemaId()
         || headerDecoder.templateId() != recordDecoder.sbeTemplateId()) {
