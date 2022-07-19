@@ -26,8 +26,6 @@ import java.util.Map;
 /** Implementation of {@code ProcessingResultBuilder} that writes all data into a buffer */
 final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
-  private final Map<Class<?>, Boolean> SUITABLE_TYPES = new HashMap<>();
-
   private final Map<Class<? extends UnpackedObject>, ValueType> typeRegistry;
 
   private final BufferedStreamWriter bufferedStreamWriter;
@@ -97,11 +95,8 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   }
 
   private BufferWriter initValueWriter(final RecordValue value) {
-    final var suitableType =
-        SUITABLE_TYPES.computeIfAbsent(value.getClass(), BufferWriter.class::isAssignableFrom);
-
     // validation
-    if (!suitableType) {
+    if (!(value instanceof BufferWriter)) {
       throw new RuntimeException(String.format("The record value %s is not a BufferWriter", value));
     }
 
