@@ -46,7 +46,6 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.prometheus.client.Histogram;
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
-import org.agrona.collections.MutableReference;
 import org.slf4j.Logger;
 
 /**
