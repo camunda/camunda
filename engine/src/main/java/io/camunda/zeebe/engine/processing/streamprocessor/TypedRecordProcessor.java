@@ -16,8 +16,11 @@ import java.util.function.Consumer;
 
 // todo (#8002): remove TypedStreamWriter from this interface's method signatures
 // After the migration, none of these should be in use anymore and replaced by the CommandWriter and
-// StateWriter passed along to the constructors of the concrete processors.
+// StateWriter passed along to the constructors of the concrete processors. The only method that
+// should remain in use is {@code processRecord(final TypedRecord<T> record)}
 public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
+
+  default void processRecord(final TypedRecord<T> record) {}
 
   /**
    * @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer)
@@ -25,7 +28,9 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
   default void processRecord(
       final TypedRecord<T> record,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {}
+      final TypedStreamWriter streamWriter) {
+    processRecord(record);
+  }
 
   /**
    * @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer)

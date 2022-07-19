@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -27,6 +28,17 @@ public final class TypedStreamWriterProxy implements TypedStreamWriter {
       final RejectionType type,
       final String reason) {
     writer.appendRejection(command, type, reason);
+  }
+
+  @Override
+  public void appendRecord(
+      final long key,
+      final RecordType type,
+      final Intent intent,
+      final RejectionType rejectionType,
+      final String rejectionReason,
+      final RecordValue value) {
+    writer.appendRecord(key, type, intent, rejectionType, rejectionReason, value);
   }
 
   @Override

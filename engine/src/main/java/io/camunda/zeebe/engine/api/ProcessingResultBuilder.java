@@ -49,7 +49,7 @@ public interface ProcessingResultBuilder {
    *
    * @return returns itself for method chaining
    */
-  ProcessingResultBuilder appendPostCommitTask(Runnable r);
+  ProcessingResultBuilder appendPostCommitTask(PostCommitTask task);
 
   /**
    * Resets the processing result build to its initial states (removes all follow-up records, the

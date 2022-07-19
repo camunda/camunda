@@ -13,14 +13,13 @@ import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -32,7 +31,6 @@ import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -45,7 +43,6 @@ public class StreamProcessorHealthTest {
   @Rule public final StreamProcessorRule streamProcessorRule = new StreamProcessorRule();
 
   private StreamProcessor streamProcessor;
-  private TypedStreamWriter mockedLogStreamWriter;
   private AtomicBoolean shouldFlushThrowException;
   private AtomicInteger invocation;
   private AtomicBoolean shouldFailErrorHandlingInTransaction;
@@ -164,13 +161,7 @@ public class StreamProcessorHealthTest {
                       ACTIVATE_ELEMENT,
                       new TypedRecordProcessor<>() {
                         @Override
-                        public void processRecord(
-                            final long position,
-                            final TypedRecord<UnifiedRecordValue> record,
-                            final TypedResponseWriter responseWriter,
-                            final TypedStreamWriter streamWriter,
-                            final Consumer<SideEffectProducer> sideEffect) {
-
+                        public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
                           invocation.getAndIncrement();
                           if (shouldProcessingThrowException.get()) {
                             throw new RuntimeException("Expected failure on processing");
@@ -208,6 +199,15 @@ public class StreamProcessorHealthTest {
         final TypedRecord<? extends RecordValue> command,
         final RejectionType type,
         final String reason) {}
+
+    @Override
+    public void appendRecord(
+        final long key,
+        final RecordType type,
+        final Intent intent,
+        final RejectionType rejectionType,
+        final String rejectionReason,
+        final RecordValue value) {}
 
     @Override
     public void configureSourceContext(final long sourceRecordPosition) {}

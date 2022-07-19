@@ -9,6 +9,8 @@ package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import io.camunda.zeebe.engine.api.ProcessingResult;
+import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.EventFilter;
@@ -44,7 +46,9 @@ import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.prometheus.client.Histogram;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.function.BooleanSupplier;
+import org.agrona.collections.MutableReference;
 import org.slf4j.Logger;
 
 /**
@@ -157,10 +161,11 @@ public final class ProcessingStateMachine {
   private Histogram.Timer processingTimer;
   private boolean reachedEnd = true;
   private boolean inProcessing;
+  private final StreamProcessorContext context;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context, final BooleanSupplier shouldProcessNext) {
-
+    this.context = context;
     actor = context.getActor();
     recordProcessorMap = context.getRecordProcessorMap();
     recordValues = context.getRecordValues();
@@ -259,17 +264,44 @@ public final class ProcessingStateMachine {
     final var processingStartTime = ActorClock.currentTimeMillis();
     processingTimer = metrics.startProcessingDurationTimer(metadata.getRecordType());
 
+    final MutableReference<ProcessingResult> processingResultRef = new MutableReference<>();
+
     try {
       final var value = recordValues.readRecordValue(command, metadata.getValueType());
       typedCommand.wrap(command, metadata, value);
 
+      final ProcessingResultBuilder resultBuilder = new DirectProcessingResultBuilder(context);
+
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
-      processInTransaction(typedCommand);
+      zeebeDbTransaction = transactionContext.getCurrentTransaction();
+      zeebeDbTransaction.run(
+          () -> {
+            final long position = typedCommand.getPosition();
+            resetOutput(position);
+
+            // default side effect is responses; can be changed by processor
+            sideEffectProducer = responseWriter;
+            final boolean isNotOnBlacklist =
+                !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
+            if (isNotOnBlacklist) {
+              currentProcessor.processRecord(
+                  position,
+                  typedCommand,
+                  responseWriter,
+                  logStreamWriter,
+                  this::setSideEffectProducer);
+            }
+
+            final var processingResult = resultBuilder.build();
+            processingResultRef.set(processingResult);
+
+            lastProcessedPositionState.markAsProcessed(position);
+          });
 
       metrics.commandsProcessed();
 
-      writeRecords();
+      writeRecords(processingResultRef.get());
     } catch (final RecoverableException recoverableException) {
       // recoverable
       LOG.error(
@@ -282,7 +314,11 @@ public final class ProcessingStateMachine {
       throw unrecoverableException;
     } catch (final Exception e) {
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, command, metadata, e);
-      onError(e, this::writeRecords);
+      if (processingResultRef.get() == null) {
+        processingResultRef.set(
+            new DirectProcessingResult(context, Collections.emptyList(), false));
+      }
+      onError(e, () -> writeRecords(processingResultRef.get()));
     }
   }
 
@@ -298,30 +334,6 @@ public final class ProcessingStateMachine {
     }
 
     return typedRecordProcessor;
-  }
-
-  private void processInTransaction(final TypedRecordImpl typedRecord) throws Exception {
-    zeebeDbTransaction = transactionContext.getCurrentTransaction();
-    zeebeDbTransaction.run(
-        () -> {
-          final long position = typedRecord.getPosition();
-          resetOutput(position);
-
-          // default side effect is responses; can be changed by processor
-          sideEffectProducer = responseWriter;
-          final boolean isNotOnBlacklist =
-              !zeebeState.getBlackListState().isOnBlacklist(typedRecord);
-          if (isNotOnBlacklist) {
-            currentProcessor.processRecord(
-                position,
-                typedRecord,
-                responseWriter,
-                logStreamWriter,
-                this::setSideEffectProducer);
-          }
-
-          lastProcessedPositionState.markAsProcessed(position);
-        });
   }
 
   private void resetOutput(final long sourceRecordPosition) {
@@ -392,18 +404,22 @@ public final class ProcessingStateMachine {
         typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
   }
 
-  private void writeRecords() {
+  private void writeRecords(final ProcessingResult result) {
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
-              final long position = logStreamWriter.flush();
+              final var batchWriter = context.getLogStreamBatchWriter();
+              final long position1 = result.writeRecordsToStream(batchWriter);
+              final long position2 = batchWriter.tryWrite();
+
+              final var maxPosition = Math.max(position1, position2);
 
               // only overwrite position if records were flushed
-              if (position > 0) {
-                writtenPosition = position;
+              if (maxPosition > 0) {
+                writtenPosition = maxPosition;
               }
 
-              return position >= 0;
+              return maxPosition >= 0;
             },
             abortCondition);
 
@@ -412,19 +428,19 @@ public final class ProcessingStateMachine {
         (bool, t) -> {
           if (t != null) {
             LOG.error(ERROR_MESSAGE_WRITE_RECORD_ABORTED, currentRecord, metadata, t);
-            onError(t, this::writeRecords);
+            onError(t, () -> writeRecords(result));
           } else {
             // We write various type of records. The positions are always increasing and
             // incremented by 1 for one record (even in a batch), so we can count the amount
             // of written records via the lastWritten and now written position.
             final var amount = writtenPosition - lastWrittenPosition;
             metrics.recordsWritten(amount);
-            updateState();
+            updateState(result);
           }
         });
   }
 
-  private void updateState() {
+  private void updateState(final ProcessingResult result) {
     final ActorFuture<Boolean> retryFuture =
         updateStateRetryStrategy.runWithRetry(
             () -> {
@@ -441,14 +457,14 @@ public final class ProcessingStateMachine {
         (bool, throwable) -> {
           if (throwable != null) {
             LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentRecord, metadata, throwable);
-            onError(throwable, this::updateState);
+            onError(throwable, () -> updateState(result));
           } else {
-            executeSideEffects();
+            executeSideEffects(result);
           }
         });
   }
 
-  private void executeSideEffects() {
+  private void executeSideEffects(final ProcessingResult result) {
     final ActorFuture<Boolean> retryFuture =
         sideEffectsRetryStrategy.runWithRetry(sideEffectProducer::flush, abortCondition);
 
