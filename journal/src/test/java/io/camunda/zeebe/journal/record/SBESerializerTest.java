@@ -19,7 +19,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class SBESerializerTest {
+final class SBESerializerTest {
 
   private RecordData record;
   private RecordMetadata metadata;
@@ -27,7 +27,7 @@ public class SBESerializerTest {
   private MutableDirectBuffer writeBuffer;
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     serializer = new SBESerializer();
 
     final DirectBuffer data = new UnsafeBuffer();
@@ -41,7 +41,7 @@ public class SBESerializerTest {
   }
 
   @Test
-  public void shouldWriteRecord() {
+  void shouldWriteRecord() {
     // given - when
     final var recordWrittenLength = serializer.writeData(record, writeBuffer, 0).get();
 
@@ -50,9 +50,9 @@ public class SBESerializerTest {
   }
 
   @Test
-  public void shouldReadRecord() {
+  void shouldReadRecord() {
     // given
-    final var length = serializer.writeData(record, writeBuffer, 0).get();
+    serializer.writeData(record, writeBuffer, 0).get();
 
     // when
     final var recordRead = serializer.readData(writeBuffer, 0);
@@ -64,7 +64,7 @@ public class SBESerializerTest {
   }
 
   @Test
-  public void shouldWriteMetadata() {
+  void shouldWriteMetadata() {
     // given - when
     final var metadataLength = serializer.writeMetadata(metadata, writeBuffer, 0);
 
@@ -73,7 +73,7 @@ public class SBESerializerTest {
   }
 
   @Test
-  public void shouldReadMetadata() {
+  void shouldReadMetadata() {
     // given
     serializer.writeMetadata(metadata, writeBuffer, 0);
 
@@ -86,7 +86,7 @@ public class SBESerializerTest {
   }
 
   @Test
-  public void shouldThrowCorruptLogExceptionIfMetadataIsInvalid() {
+  void shouldThrowCorruptLogExceptionIfMetadataIsInvalid() {
     // given
     serializer.writeMetadata(metadata, writeBuffer, 0);
     writeBuffer.putLong(0, 0);
@@ -97,7 +97,7 @@ public class SBESerializerTest {
   }
 
   @Test
-  public void shouldThrowExceptionWhenInvalidRecord() {
+  void shouldThrowExceptionWhenInvalidRecord() {
     // given
     writeBuffer.putLong(0, 0);
 
@@ -107,7 +107,7 @@ public class SBESerializerTest {
   }
 
   @Test
-  public void shouldReadLengthEqualToActualLength() {
+  void shouldReadLengthEqualToActualLength() {
     // given
     final int actualMetadataLength = serializer.writeMetadata(metadata, writeBuffer, 0);
 
@@ -119,12 +119,12 @@ public class SBESerializerTest {
   }
 
   @Test
-  public void shouldWriteRecordAtAnyOffset() {
+  void shouldWriteRecordAtAnyOffset() {
     // given
     final int offset = 10;
 
     // when
-    final var recordWrittenLength = serializer.writeData(record, writeBuffer, offset).get();
+    serializer.writeData(record, writeBuffer, offset).get();
     final var readData = serializer.readData(writeBuffer, offset);
 
     // then
@@ -132,7 +132,7 @@ public class SBESerializerTest {
   }
 
   @Test
-  public void shouldWriteMetadataAtAnyOffset() {
+  void shouldWriteMetadataAtAnyOffset() {
     // given
     final int offset = 10;
 
@@ -145,7 +145,7 @@ public class SBESerializerTest {
   }
 
   @Test
-  public void shouldThrowBufferOverFlowWhenNotEnoughSpace() {
+  void shouldThrowBufferOverFlowWhenNotEnoughSpace() {
     // given
     final int offset = writeBuffer.capacity() - 1;
 
