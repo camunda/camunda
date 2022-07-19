@@ -106,7 +106,7 @@ public class Engine implements RecordProcessor {
           responseWriter,
           streamWriter,
           (sep) -> {
-            // TODO clear post commit tasks
+            processingResultBuilder.resetPostCommitTasks();
             processingResultBuilder.appendPostCommitTask(sep::flush);
           });
     }

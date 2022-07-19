@@ -84,6 +84,12 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
   }
 
   @Override
+  public ProcessingResultBuilder resetPostCommitTasks() {
+    postCommitTasks.clear();
+    return this;
+  }
+
+  @Override
   public ProcessingResult build() {
     return new DirectProcessingResult(context, postCommitTasks, hasResponse);
   }
