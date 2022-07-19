@@ -42,7 +42,7 @@ camunda-platform:
     keycloak:
       fullnameOverride: keycloak
       postgresql:
-        enabled: false
+        fullnameOverride: postgresql
       auth:
         createAdminUser: true
         adminUser: admin
