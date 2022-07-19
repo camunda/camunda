@@ -35,7 +35,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
   private final TypedStreamWriter streamWriter;
   private final TypedResponseWriter responseWriter;
 
-  private boolean hasResponse = false;
+  private boolean hasResponse = true;
 
   DirectProcessingResultBuilder(final StreamProcessorContext context) {
     this.context = context;
