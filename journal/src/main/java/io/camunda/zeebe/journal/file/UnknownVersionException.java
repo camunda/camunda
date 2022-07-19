@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.journal.file;
 
-public class UnknownVersionException extends RuntimeException {
+final class UnknownVersionException extends RuntimeException {
 
-  public UnknownVersionException(final String message) {
+  UnknownVersionException(final String message) {
     super(message);
   }
 }

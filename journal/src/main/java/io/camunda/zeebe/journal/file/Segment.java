@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
-class Segment implements AutoCloseable {
+final class Segment implements AutoCloseable {
 
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
   private static final Logger LOG = LoggerFactory.getLogger(Segment.class);

@@ -44,7 +44,7 @@ public final class SegmentedJournal implements Journal {
   private final StampedLock rwlock = new StampedLock();
   private final SegmentsManager segments;
 
-  public SegmentedJournal(
+  SegmentedJournal(
       final File directory,
       final int maxSegmentSize,
       final long minFreeDiskSpace,
