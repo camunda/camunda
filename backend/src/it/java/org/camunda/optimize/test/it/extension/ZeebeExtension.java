@@ -8,7 +8,7 @@ package org.camunda.optimize.test.it.extension;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
@@ -91,10 +91,10 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   }
 
   public Process deployProcess(BpmnModelInstance bpmnModelInstance) {
-    DeployProcessCommandStep1 deployProcessCommandStep1 = zeebeClient.newDeployCommand();
+    DeployResourceCommandStep1 deployProcessCommandStep1 = zeebeClient.newDeployResourceCommand();
     deployProcessCommandStep1.addProcessModel(bpmnModelInstance, "resourceName.bpmn");
     final DeploymentEvent deploymentEvent =
-      ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
+      ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployProcessCommandStep1)
         .send()
         .join();
     return deploymentEvent.getProcesses().get(0);
