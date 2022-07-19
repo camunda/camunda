@@ -42,7 +42,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <p>{@code maxSegmentSize} (32-bit unsigned integer) - The maximum number of bytes allowed in the
  * segment.
  */
-public final class SegmentDescriptor {
+final class SegmentDescriptor {
 
   private static final int VERSION_LENGTH = Byte.BYTES;
   // current descriptor version containing: header, metadata, header and descriptor
@@ -70,7 +70,7 @@ public final class SegmentDescriptor {
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final ChecksumGenerator checksumGen = new ChecksumGenerator();
 
-  public SegmentDescriptor(final ByteBuffer buffer) {
+  SegmentDescriptor(final ByteBuffer buffer) {
     directBuffer.wrap(buffer);
 
     final byte version = directBuffer.getByte(0);
@@ -201,7 +201,7 @@ public final class SegmentDescriptor {
    *
    * @return the number of bytes taken by this descriptor in the segment.
    */
-  public int length() {
+  int length() {
     return encodedLength;
   }
 
@@ -210,7 +210,7 @@ public final class SegmentDescriptor {
    *
    * @return the encoding length
    */
-  public static int getEncodingLength() {
+  static int getEncodingLength() {
     return VERSION_LENGTH
         + MessageHeaderEncoder.ENCODED_LENGTH * 2
         + DescriptorMetadataEncoder.BLOCK_LENGTH
@@ -218,7 +218,7 @@ public final class SegmentDescriptor {
   }
 
   /** The number of bytes required to read and write a descriptor of a given version. */
-  public static int getEncodingLengthForVersion(final byte version) {
+  static int getEncodingLengthForVersion(final byte version) {
     if (version == 0 || version > VERSION_LENGTHS.length) {
       throw new UnknownVersionException(
           String.format(
@@ -234,7 +234,7 @@ public final class SegmentDescriptor {
    *
    * @return The descriptor builder.
    */
-  public static Builder builder() {
+  static Builder builder() {
     return new Builder();
   }
 
@@ -246,7 +246,7 @@ public final class SegmentDescriptor {
    *
    * @return The segment identifier.
    */
-  public long id() {
+  long id() {
     return id;
   }
 
@@ -258,7 +258,7 @@ public final class SegmentDescriptor {
    *
    * @return The segment index.
    */
-  public long index() {
+  long index() {
     return index;
   }
 
@@ -267,7 +267,7 @@ public final class SegmentDescriptor {
    *
    * @return The maximum allowed number of bytes in the segment.
    */
-  public int maxSegmentSize() {
+  int maxSegmentSize() {
     return maxSegmentSize;
   }
 
@@ -332,7 +332,7 @@ public final class SegmentDescriptor {
   }
 
   /** Segment descriptor builder. */
-  public static final class Builder {
+  static final class Builder {
 
     private long id;
     private long index;
@@ -344,7 +344,7 @@ public final class SegmentDescriptor {
      * @param id The segment identifier.
      * @return The segment descriptor builder.
      */
-    public Builder withId(final long id) {
+    Builder withId(final long id) {
       checkArgument(id > 0, "id must be positive");
       this.id = id;
       return this;
@@ -356,7 +356,7 @@ public final class SegmentDescriptor {
      * @param index The segment starting index.
      * @return The segment descriptor builder.
      */
-    public Builder withIndex(final long index) {
+    Builder withIndex(final long index) {
       checkArgument(index > 0, "index must be positive");
       this.index = index;
       return this;
@@ -368,7 +368,7 @@ public final class SegmentDescriptor {
      * @param maxSegmentSize The maximum count of the segment.
      * @return The segment descriptor builder.
      */
-    public Builder withMaxSegmentSize(final int maxSegmentSize) {
+    Builder withMaxSegmentSize(final int maxSegmentSize) {
       checkArgument(maxSegmentSize > 0, "maxSegmentSize must be positive");
       this.maxSegmentSize = maxSegmentSize;
       return this;
@@ -379,7 +379,7 @@ public final class SegmentDescriptor {
      *
      * @return The built segment descriptor.
      */
-    public SegmentDescriptor build() {
+    SegmentDescriptor build() {
       return new SegmentDescriptor(id, index, maxSegmentSize);
     }
   }

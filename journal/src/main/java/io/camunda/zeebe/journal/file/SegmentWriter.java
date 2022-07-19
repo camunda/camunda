@@ -35,7 +35,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** Segment writer. */
-class SegmentWriter {
+final class SegmentWriter {
 
   private final MappedByteBuffer buffer;
   private final Segment segment;
@@ -64,15 +64,15 @@ class SegmentWriter {
     reset(0, lastWrittenIndex);
   }
 
-  public long getLastIndex() {
+  long getLastIndex() {
     return lastEntry != null ? lastEntry.index() : segment.index() - 1;
   }
 
-  public JournalRecord getLastEntry() {
+  JournalRecord getLastEntry() {
     return lastEntry;
   }
 
-  public long getNextIndex() {
+  long getNextIndex() {
     if (lastEntry != null) {
       return lastEntry.index() + 1;
     } else {
@@ -80,7 +80,7 @@ class SegmentWriter {
     }
   }
 
-  public Either<SegmentFull, JournalRecord> append(final long asqn, final DirectBuffer data) {
+  Either<SegmentFull, JournalRecord> append(final long asqn, final DirectBuffer data) {
     // Store the entry index.
     final long recordIndex = getNextIndex();
 
@@ -112,7 +112,7 @@ class SegmentWriter {
     return Either.right(lastEntry);
   }
 
-  public Either<SegmentFull, Void> append(final JournalRecord record) {
+  Either<SegmentFull, Void> append(final JournalRecord record) {
     final long nextIndex = getNextIndex();
 
     // If the entry's index is not the expected next index in the segment, fail the append.
@@ -261,11 +261,11 @@ class SegmentWriter {
     }
   }
 
-  public void flush() {
+  void flush() {
     buffer.force();
   }
 
-  public void close() {
+  void close() {
     if (isOpen) {
       isOpen = false;
       flush();
@@ -277,7 +277,7 @@ class SegmentWriter {
    *
    * @return Indicates whether the segment is empty.
    */
-  public boolean isEmpty() {
+  boolean isEmpty() {
     return lastEntry == null;
   }
 }
