@@ -908,6 +908,7 @@
     "view": "View",
     "viewDocumentation": "View documentation",
     "viewMore": "View More",
+    "viewLess": "View Less",
     "configure": "Configure",
     "process": {
       "label": "Process",
