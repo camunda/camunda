@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +25,8 @@ import java.util.Map;
 
 /** Implementation of {@code ProcessingResultBuilder} that writes all data into a buffer */
 final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
+
+  private final Map<Class<?>, Boolean> SUITABLE_TYPES = new HashMap<>();
 
   private final Map<Class<? extends UnpackedObject>, ValueType> typeRegistry;
 
@@ -47,14 +50,11 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
       final String rejectionReason,
       final RecordValue value) {
 
-    final ValueType valueType = typeRegistry.get(value.getClass());
-    if (valueType == null) {
-      // usually happens when the record is not registered at the TypedStreamEnvironment
-      throw new RuntimeException("Missing value type mapping for record: " + value.getClass());
-    }
+    final ValueType valueType = initValueType(value);
+    final var valueWriter = initValueWriter(value);
 
     bufferedStreamWriter.appendRecord(
-        key, sourceIndex, type, intent, rejectionType, rejectionReason, valueType, value);
+        key, sourceIndex, type, intent, rejectionType, rejectionReason, valueType, valueWriter);
     return this;
   }
 
@@ -85,5 +85,26 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   @Override
   public ProcessingResult build() {
     throw new RuntimeException("Not yet implemented");
+  }
+
+  private ValueType initValueType(final RecordValue value) {
+    final ValueType valueType = typeRegistry.get(value.getClass());
+    if (valueType == null) {
+      // usually happens when the record is not registered at the TypedStreamEnvironment
+      throw new RuntimeException("Missing value type mapping for record: " + value.getClass());
+    }
+    return valueType;
+  }
+
+  private BufferWriter initValueWriter(final RecordValue value) {
+    final var suitableType =
+        SUITABLE_TYPES.computeIfAbsent(value.getClass(), BufferWriter.class::isAssignableFrom);
+
+    // validation
+    if (!suitableType) {
+      throw new RuntimeException(String.format("The record value %s is not a BufferWriter", value));
+    }
+
+    return (BufferWriter) value;
   }
 }

@@ -15,20 +15,16 @@ import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.util.HashMap;
-import java.util.Map;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
 
 /** Stream writer that writes into a byte buffer instead of writing directly to the stream */
 final class BufferedStreamWriter {
 
-  private static final Map<Class, Boolean> SUITABLE_TYPES = new HashMap<>();
   private static final int INITIAL_BUFFER_CAPACITY = 1024 * 32;
 
   // todo we can allocate one buffer with max message size here and then it would simplify this -
@@ -44,25 +40,25 @@ final class BufferedStreamWriter {
   private int eventLength;
   private int eventCount;
 
-  protected BufferedStreamWriter(final int maxFragmentSize) {
+  BufferedStreamWriter(final int maxFragmentSize) {
     reset();
 
     this.maxFragmentSize = maxFragmentSize;
   }
 
-  protected MutableDirectBuffer getEventBuffer() {
+  MutableDirectBuffer getEventBuffer() {
     return eventBuffer;
   }
 
-  protected int getEventLength() {
+  int getEventLength() {
     return eventLength;
   }
 
-  protected int getEventCount() {
+  int getEventCount() {
     return eventCount;
   }
 
-  protected void appendRecord(
+  void appendRecord(
       final long key,
       final int sourceIndex,
       final RecordType type,
@@ -70,17 +66,16 @@ final class BufferedStreamWriter {
       final RejectionType rejectionType,
       final String rejectionReason,
       final ValueType valueType,
-      final RecordValue value) {
+      final BufferWriter valueWriter) {
 
     // copy record to buffer
     writeKey(key);
     writeSourceIndex(sourceIndex);
 
-    initMetadata(type, intent, rejectionType, rejectionReason, valueType, value);
+    initMetadata(type, intent, rejectionType, rejectionReason, valueType);
     final var metadataLength = metadata.getLength();
     writeMetadataLength(metadataLength);
 
-    final BufferWriter valueWriter = initValueWriter(value);
     final var valueLength = valueWriter.getLength();
     writeValueLength(valueLength);
 
@@ -91,7 +86,7 @@ final class BufferedStreamWriter {
     eventCount += 1;
   }
 
-  protected boolean canWriteAdditionalEvent(final int length) {
+  boolean canWriteAdditionalEvent(final int length) {
     final var count = eventCount + 1;
     final var batchLength = eventLength + length + (count * HEADER_BLOCK_LENGTH);
     return batchLength < maxFragmentSize;
@@ -115,8 +110,7 @@ final class BufferedStreamWriter {
       final Intent intent,
       final RejectionType rejectionType,
       final String rejectionReason,
-      final ValueType valueType,
-      final RecordValue value) {
+      final ValueType valueType) {
     metadata.reset();
 
     metadata
@@ -130,19 +124,6 @@ final class BufferedStreamWriter {
   private void writeMetadataLength(final int metadataLength) {
     eventBuffer.putInt(eventBufferOffset, metadataLength, Protocol.ENDIANNESS);
     eventBufferOffset += SIZE_OF_INT;
-  }
-
-  private BufferWriter initValueWriter(final RecordValue value) {
-    final var suitableType =
-        SUITABLE_TYPES.computeIfAbsent(value.getClass(), BufferWriter.class::isAssignableFrom);
-
-    // validation
-    if (!suitableType) {
-      throw new RuntimeException(String.format("The record value %s is not a BufferWriter", value));
-    }
-
-    final var valueWriter = (BufferWriter) value;
-    return valueWriter;
   }
 
   private void writeValueLength(final int valueLength) {
@@ -162,7 +143,7 @@ final class BufferedStreamWriter {
     eventBufferOffset += valueLength;
   }
 
-  protected void reset() {
+  void reset() {
     eventBufferOffset = 0;
     eventLength = 0;
     eventCount = 0;
