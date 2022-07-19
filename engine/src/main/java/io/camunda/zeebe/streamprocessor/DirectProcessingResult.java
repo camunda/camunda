@@ -28,7 +28,7 @@ final class DirectProcessingResult implements ProcessingResult {
 
   private final TypedStreamWriter streamWriter;
   private final TypedResponseWriter responseWriter;
-  private final boolean hasResponse;
+  private boolean hasResponse;
 
   DirectProcessingResult(
       final StreamProcessorContext context,
@@ -51,6 +51,7 @@ final class DirectProcessingResult implements ProcessingResult {
     // here we must assume that response writer is backed up by command response writer internally
 
     if (hasResponse) {
+      hasResponse = false;
       return responseWriter.flush();
     } else {
       return true;
