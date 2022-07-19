@@ -28,19 +28,19 @@ final class SegmentLoader {
   private static final Logger LOGGER = LoggerFactory.getLogger(SegmentLoader.class);
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
 
-  private final boolean preallocateFiles;
+  private final SegmentAllocator allocator;
 
   SegmentLoader() {
-    this(true);
+    this(SegmentAllocator.fill());
   }
 
-  SegmentLoader(final boolean preallocateFiles) {
-    this.preallocateFiles = preallocateFiles;
+  SegmentLoader(final SegmentAllocator allocator) {
+    this.allocator = allocator;
   }
 
-  JournalSegment createSegment(
+  Segment createSegment(
       final Path segmentFile,
-      final JournalSegmentDescriptor descriptor,
+      final SegmentDescriptor descriptor,
       final long lastWrittenIndex,
       final JournalIndex journalIndex) {
     final MappedByteBuffer mappedSegment;
@@ -77,7 +77,7 @@ final class SegmentLoader {
     return loadSegment(segmentFile, mappedSegment, descriptor, lastWrittenIndex, journalIndex);
   }
 
-  JournalSegment loadExistingSegment(
+  Segment loadExistingSegment(
       final Path segmentFile, final long lastWrittenIndex, final JournalIndex journalIndex) {
     final var descriptor = readDescriptor(segmentFile);
     final MappedByteBuffer mappedSegment;
@@ -94,14 +94,14 @@ final class SegmentLoader {
   }
 
   /* ---- Internal methods ------ */
-  private JournalSegment loadSegment(
+  private Segment loadSegment(
       final Path file,
       final MappedByteBuffer buffer,
-      final JournalSegmentDescriptor descriptor,
+      final SegmentDescriptor descriptor,
       final long lastWrittenIndex,
       final JournalIndex journalIndex) {
-    final JournalSegmentFile segmentFile = new JournalSegmentFile(file.toFile());
-    return new JournalSegment(segmentFile, descriptor, buffer, lastWrittenIndex, journalIndex);
+    final SegmentFile segmentFile = new SegmentFile(file.toFile());
+    return new Segment(segmentFile, descriptor, buffer, lastWrittenIndex, journalIndex);
   }
 
   private MappedByteBuffer mapSegment(final FileChannel channel, final long segmentSize)
@@ -112,13 +112,13 @@ final class SegmentLoader {
     return mappedSegment;
   }
 
-  private JournalSegmentDescriptor readDescriptor(final Path file) {
+  private SegmentDescriptor readDescriptor(final Path file) {
     final var fileName = file.getFileName().toString();
 
     try (final FileChannel channel = FileChannel.open(file, StandardOpenOption.READ)) {
       final var fileSize = Files.size(file);
       final byte version = readVersion(channel, fileName);
-      final int length = JournalSegmentDescriptor.getEncodingLengthForVersion(version);
+      final int length = SegmentDescriptor.getEncodingLengthForVersion(version);
       if (fileSize < length) {
         throw new CorruptedLogException(
             String.format(
@@ -137,7 +137,7 @@ final class SegmentLoader {
       }
 
       buffer.flip();
-      return new JournalSegmentDescriptor(buffer);
+      return new SegmentDescriptor(buffer);
     } catch (final IndexOutOfBoundsException e) {
       throw new JournalException(
           String.format(
@@ -171,21 +171,17 @@ final class SegmentLoader {
   }
 
   private MappedByteBuffer mapNewSegment(
-      final Path segmentPath,
-      final JournalSegmentDescriptor descriptor,
-      final long lastWrittenIndex)
+      final Path segmentPath, final SegmentDescriptor descriptor, final long lastWrittenIndex)
       throws IOException {
+    final var maxSegmentSize = descriptor.maxSegmentSize();
     try (final var channel =
         FileChannel.open(
             segmentPath,
             StandardOpenOption.READ,
             StandardOpenOption.WRITE,
             StandardOpenOption.CREATE_NEW)) {
-      if (preallocateFiles) {
-        FileUtil.preallocate(channel, descriptor.maxSegmentSize());
-      }
-
-      return mapSegment(channel, descriptor.maxSegmentSize());
+      allocator.allocate(channel, maxSegmentSize);
+      return mapSegment(channel, maxSegmentSize);
     } catch (final FileAlreadyExistsException e) {
       // do not reuse a segment into which we've already written!
       if (lastWrittenIndex >= descriptor.index()) {

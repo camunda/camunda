@@ -22,6 +22,7 @@ import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.file.record.RecordData;
 import io.camunda.zeebe.journal.file.record.SBESerializer;
+import io.camunda.zeebe.journal.file.util.PosixPathAssert;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -453,9 +454,8 @@ class SegmentedJournalTest {
     final File logDirectory = directory.resolve("data").toFile();
     assertThat(logDirectory)
         .isDirectoryContaining(
-            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(
-            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
   }
 
   @Test
@@ -528,9 +528,8 @@ class SegmentedJournalTest {
     final File logDirectory = directory.resolve("data").toFile();
     assertThat(logDirectory)
         .isDirectoryNotContaining(
-            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(
-            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
   }
 
   @Test
@@ -546,9 +545,8 @@ class SegmentedJournalTest {
     final File logDirectory = directory.resolve("data").toFile();
     assertThat(logDirectory)
         .isDirectoryNotContaining(
-            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(
-            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
   }
 
   @Test
@@ -569,11 +567,10 @@ class SegmentedJournalTest {
     // there are two files deferred for deletion
     assertThat(
             logDirectory.listFiles(
-                file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName())))
+                file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName())))
         .hasSize(2);
     assertThat(
-            logDirectory.listFiles(
-                file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName())))
+            logDirectory.listFiles(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName())))
         .hasSize(1);
   }
 
@@ -603,6 +600,46 @@ class SegmentedJournalTest {
     assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
   }
 
+  @Test
+  void shouldPreallocateSegmentFiles(final @TempDir Path tmpDir) {
+    // given
+    final var segmentSize = 4 * 1024 * 1024;
+    final var builder =
+        SegmentedJournal.builder()
+            .withPreallocateSegmentFiles(true)
+            .withMaxSegmentSize(segmentSize)
+            .withDirectory(tmpDir.toFile());
+    final File firstSegment;
+
+    // when
+    try (final var journal = builder.build()) {
+      firstSegment = journal.getFirstSegment().file().file();
+    }
+
+    // then
+    PosixPathAssert.assertThat(firstSegment).hasRealSize(segmentSize);
+  }
+
+  @Test
+  void shouldNotPreallocateSegmentFiles(final @TempDir Path tmpDir) {
+    // given
+    final var segmentSize = 4 * 1024 * 1024;
+    final var builder =
+        SegmentedJournal.builder()
+            .withPreallocateSegmentFiles(false)
+            .withMaxSegmentSize(segmentSize)
+            .withDirectory(tmpDir.toFile());
+    final File firstSegment;
+
+    // when
+    try (final var journal = builder.build()) {
+      firstSegment = journal.getFirstSegment().file().file();
+    }
+
+    // then
+    PosixPathAssert.assertThat(firstSegment).hasRealSizeLessThan(segmentSize);
+  }
+
   private SegmentedJournal openJournal(final float entriesPerSegment) {
     return openJournal(entriesPerSegment, entrySize);
   }
@@ -611,7 +648,7 @@ class SegmentedJournalTest {
     return SegmentedJournal.builder()
         .withDirectory(directory.resolve("data").toFile())
         .withMaxSegmentSize(
-            (int) (entrySize * entriesPerSegment) + JournalSegmentDescriptor.getEncodingLength())
+            (int) (entrySize * entriesPerSegment) + SegmentDescriptor.getEncodingLength())
         .withJournalIndexDensity(journalIndexDensity)
         .withName(JOURNAL_NAME)
         .build();

@@ -21,20 +21,20 @@ import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.file.record.JournalRecordReaderUtil;
 import io.camunda.zeebe.journal.file.record.SBESerializer;
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /** Log segment reader. */
-class MappedJournalSegmentReader {
+final class SegmentReader implements Iterator<JournalRecord> {
 
   private final ByteBuffer buffer;
   private final JournalIndex index;
-  private final JournalSegment segment;
+  private final Segment segment;
   private long currentIndex;
   private final JournalRecordReaderUtil recordReader;
   private final int descriptorLength;
 
-  MappedJournalSegmentReader(
-      final ByteBuffer buffer, final JournalSegment segment, final JournalIndex index) {
+  SegmentReader(final ByteBuffer buffer, final Segment segment, final JournalIndex index) {
     this.index = index;
     this.segment = segment;
     descriptorLength = segment.descriptor().length();
@@ -43,6 +43,7 @@ class MappedJournalSegmentReader {
     reset();
   }
 
+  @Override
   public boolean hasNext() {
     if (!segment.isOpen()) {
       // When the segment has been deleted concurrently, we do not want to allow the readers to
@@ -54,6 +55,7 @@ class MappedJournalSegmentReader {
     return FrameUtil.hasValidVersion(buffer);
   }
 
+  @Override
   public JournalRecord next() {
     if (!hasNext()) {
       throw new NoSuchElementException();
@@ -68,12 +70,12 @@ class MappedJournalSegmentReader {
     return currentEntry;
   }
 
-  public void reset() {
+  void reset() {
     buffer.position(descriptorLength);
     currentIndex = segment.index() - 1;
   }
 
-  public void seek(final long index) {
+  void seek(final long index) {
     checkSegmentOpen();
     final long firstIndex = segment.index();
     final long lastIndex = segment.lastIndex();
@@ -91,7 +93,7 @@ class MappedJournalSegmentReader {
     }
   }
 
-  public void close() {
+  void close() {
     segment.onReaderClosed(this);
   }
 

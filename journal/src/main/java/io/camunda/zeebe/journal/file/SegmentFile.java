@@ -26,7 +26,7 @@ import java.nio.file.Path;
  *
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
-final class JournalSegmentFile {
+final class SegmentFile {
 
   private static int deletedFileIndex = 0;
   private static final char PART_SEPARATOR = '-';
@@ -40,7 +40,7 @@ final class JournalSegmentFile {
   /**
    * @throws IllegalArgumentException if {@code file} is not a valid segment file
    */
-  JournalSegmentFile(final File file) {
+  SegmentFile(final File file) {
     this.file = file;
   }
 

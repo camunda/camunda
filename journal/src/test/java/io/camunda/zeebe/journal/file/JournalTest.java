@@ -27,6 +27,7 @@ import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import io.camunda.zeebe.journal.file.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.file.record.RecordData;
 import io.camunda.zeebe.journal.file.record.RecordMetadata;
+import io.camunda.zeebe.journal.file.util.TestJournalRecord;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;

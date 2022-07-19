@@ -52,7 +52,7 @@ public class LogCorrupter {
   }
 
   public static void corruptDescriptor(final File file) throws IOException {
-    final byte[] bytes = new byte[JournalSegmentDescriptor.getEncodingLength()];
+    final byte[] bytes = new byte[SegmentDescriptor.getEncodingLength()];
     int read;
 
     try (final BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
@@ -76,7 +76,7 @@ public class LogCorrupter {
   private static boolean corruptRecord(final byte[] bytes, final long targetIndex) {
     final JournalRecordReaderUtil reader = new JournalRecordReaderUtil(new SBESerializer());
     final ByteBuffer buffer = ByteBuffer.wrap(bytes);
-    buffer.position(JournalSegmentDescriptor.getEncodingLength());
+    buffer.position(SegmentDescriptor.getEncodingLength());
 
     for (long index = 1;
         FrameUtil.hasValidVersion(buffer) && FrameUtil.readVersion(buffer) == 1;
