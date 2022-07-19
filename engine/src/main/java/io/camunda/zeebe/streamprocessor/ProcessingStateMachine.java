@@ -34,7 +34,6 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -46,7 +45,6 @@ import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.prometheus.client.Histogram;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.function.BooleanSupplier;
 import org.agrona.collections.MutableReference;
 import org.slf4j.Logger;
@@ -160,6 +158,7 @@ public final class ProcessingStateMachine {
   private boolean inProcessing;
   private final StreamProcessorContext context;
   private final RecordProcessor engine;
+  private ProcessingResult currentProcessingResult;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -249,6 +248,8 @@ public final class ProcessingStateMachine {
     // are triggered from commit listener
     inProcessing = true;
 
+    currentProcessingResult = EmptyProcessingResult.INSTANCE;
+
     metadata.reset();
     command.readMetadata(metadata);
 
@@ -257,8 +258,6 @@ public final class ProcessingStateMachine {
     // In all other cases we should prefer to use the Prometheus Timer API.
     final var processingStartTime = ActorClock.currentTimeMillis();
     processingTimer = metrics.startProcessingDurationTimer(metadata.getRecordType());
-
-    final MutableReference<ProcessingResult> processingResultRef = new MutableReference<>();
 
     try {
       final var value = recordValues.readRecordValue(command, metadata.getValueType());
@@ -277,22 +276,19 @@ public final class ProcessingStateMachine {
             final long position = typedCommand.getPosition();
             resetOutput(position);
 
-            final var processingResult = engine.process(typedCommand, processingContext);
-
-            // default side effect is responses; can be changed by processor
-            processingResultRef.set(processingResult);
+            currentProcessingResult = engine.process(typedCommand, processingContext);
 
             lastProcessedPositionState.markAsProcessed(position);
           });
 
       metrics.commandsProcessed();
 
-      if (EmptyProcessingResult.INSTANCE == processingResultRef.get()) {
+      if (EmptyProcessingResult.INSTANCE == currentProcessingResult) {
         skipRecord();
         return;
       }
 
-      writeRecords(processingResultRef.get());
+      writeRecords();
     } catch (final RecoverableException recoverableException) {
       // recoverable
       LOG.error(
@@ -305,11 +301,7 @@ public final class ProcessingStateMachine {
       throw unrecoverableException;
     } catch (final Exception e) {
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, command, metadata, e);
-      if (processingResultRef.get() == null) {
-        processingResultRef.set(
-            new DirectProcessingResult(context, Collections.emptyList(), false));
-      }
-      onError(e, () -> writeRecords(processingResultRef.get()));
+      onError(e, this::writeRecords);
     }
   }
 
@@ -355,15 +347,14 @@ public final class ProcessingStateMachine {
           final long position = typedCommand.getPosition();
           resetOutput(position);
 
-          writeRejectionOnCommand(processingException);
-          errorRecord.initErrorRecord(processingException, position);
+          final ProcessingResultBuilder processingResultBuilder =
+              new DirectProcessingResultBuilder(context);
 
-          zeebeState
-              .getBlackListState()
-              .tryToBlacklist(typedCommand, errorRecord::setProcessInstanceKey);
-
-          logStreamWriter.appendFollowUpEvent(
-              typedCommand.getKey(), ErrorIntent.CREATED, errorRecord);
+          currentProcessingResult =
+              engine.onProcessingError(
+                  processingException,
+                  typedCommand,
+                  new ErrorHandlingContextImpl(processingResultBuilder));
         });
   }
 
@@ -377,12 +368,12 @@ public final class ProcessingStateMachine {
         typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
   }
 
-  private void writeRecords(final ProcessingResult result) {
+  private void writeRecords() {
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
               final var batchWriter = context.getLogStreamBatchWriter();
-              final long position1 = result.writeRecordsToStream(batchWriter);
+              final long position1 = currentProcessingResult.writeRecordsToStream(batchWriter);
               final long position2 = batchWriter.tryWrite();
 
               final var maxPosition = Math.max(position1, position2);
@@ -401,19 +392,19 @@ public final class ProcessingStateMachine {
         (bool, t) -> {
           if (t != null) {
             LOG.error(ERROR_MESSAGE_WRITE_RECORD_ABORTED, currentRecord, metadata, t);
-            onError(t, () -> writeRecords(result));
+            onError(t, this::writeRecords);
           } else {
             // We write various type of records. The positions are always increasing and
             // incremented by 1 for one record (even in a batch), so we can count the amount
             // of written records via the lastWritten and now written position.
             final var amount = writtenPosition - lastWrittenPosition;
             metrics.recordsWritten(amount);
-            updateState(result);
+            updateState();
           }
         });
   }
 
-  private void updateState(final ProcessingResult result) {
+  private void updateState() {
     final ActorFuture<Boolean> retryFuture =
         updateStateRetryStrategy.runWithRetry(
             () -> {
@@ -430,25 +421,26 @@ public final class ProcessingStateMachine {
         (bool, throwable) -> {
           if (throwable != null) {
             LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentRecord, metadata, throwable);
-            onError(throwable, () -> updateState(result));
+            onError(throwable, this::updateState);
           } else {
-            executeSideEffects(result);
+            executeSideEffects();
           }
         });
   }
 
-  private void executeSideEffects(final ProcessingResult result) {
+  private void executeSideEffects() {
     final ActorFuture<Boolean> retryFuture =
         sideEffectsRetryStrategy.runWithRetry(
             () -> {
               // TODO refactor this into two parallel tasks, which are then combined, and on the
               // completion of which the process continues
-              final boolean responseSent = result.writeResponse(context.getCommandResponseWriter());
+              final boolean responseSent =
+                  currentProcessingResult.writeResponse(context.getCommandResponseWriter());
 
               if (!responseSent) {
                 return false;
               } else {
-                return result.executePostCommitTasks();
+                return currentProcessingResult.executePostCommitTasks();
               }
             },
             abortCondition);
