@@ -20,11 +20,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.EventFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.LastProcessingPositions;
 import io.camunda.zeebe.engine.processing.streamprocessor.MetadataEventFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.MetadataFilter;
-import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProtocolVersionFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -145,7 +143,6 @@ public final class ProcessingStateMachine {
   private final BooleanSupplier abortCondition;
   private final ErrorRecord errorRecord = new ErrorRecord();
   private final RecordValues recordValues;
-  private final RecordProcessorMap recordProcessorMap;
   private final TypedRecordImpl typedCommand;
   private final StreamProcessorMetrics metrics;
   private final StreamProcessorListener streamProcessorListener;
@@ -153,7 +150,6 @@ public final class ProcessingStateMachine {
   // current iteration
   private SideEffectProducer sideEffectProducer;
   private LoggedEvent currentRecord;
-  private TypedRecordProcessor<?> currentProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
   private long writtenPosition = StreamProcessor.UNSET_POSITION;
   private long lastSuccessfulProcessedRecordPosition = StreamProcessor.UNSET_POSITION;
@@ -174,7 +170,6 @@ public final class ProcessingStateMachine {
     this.context = context;
     this.engine = engine;
     actor = context.getActor();
-    recordProcessorMap = context.getRecordProcessorMap();
     recordValues = context.getRecordValues();
     logStreamReader = context.getLogStreamReader();
     logStreamWriter = context.getLogStreamWriter();
@@ -259,8 +254,6 @@ public final class ProcessingStateMachine {
     metadata.reset();
     command.readMetadata(metadata);
 
-    currentProcessor = chooseNextProcessor(command);
-
     // Here we need to get the current time, since we want to calculate
     // how long it took between writing to the dispatcher and processing.
     // In all other cases we should prefer to use the Prometheus Timer API.
@@ -320,20 +313,6 @@ public final class ProcessingStateMachine {
       }
       onError(e, () -> writeRecords(processingResultRef.get()));
     }
-  }
-
-  private TypedRecordProcessor<?> chooseNextProcessor(final LoggedEvent command) {
-    TypedRecordProcessor<?> typedRecordProcessor = null;
-
-    try {
-      typedRecordProcessor =
-          recordProcessorMap.get(
-              metadata.getRecordType(), metadata.getValueType(), metadata.getIntent().value());
-    } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, command, metadata, e);
-    }
-
-    return typedRecordProcessor;
   }
 
   private void resetOutput(final long sourceRecordPosition) {

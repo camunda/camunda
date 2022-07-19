@@ -11,7 +11,6 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
-import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
@@ -45,7 +44,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private TypedResponseWriterImpl typedResponseWriter;
 
   private RecordValues recordValues;
-  private RecordProcessorMap recordProcessorMap;
   private ZeebeDbState zeebeState;
   private TransactionContext transactionContext;
   private EventApplier eventApplier;
@@ -124,11 +122,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return this;
   }
 
-  public StreamProcessorContext recordProcessorMap(final RecordProcessorMap recordProcessorMap) {
-    this.recordProcessorMap = recordProcessorMap;
-    return this;
-  }
-
   public StreamProcessorContext zeebeState(final ZeebeDbState zeebeState) {
     this.zeebeState = zeebeState;
     return this;
@@ -195,10 +188,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public RecordValues getRecordValues() {
     return recordValues;
-  }
-
-  public RecordProcessorMap getRecordProcessorMap() {
-    return recordProcessorMap;
   }
 
   public TransactionContext getTransactionContext() {

@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.api;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -42,9 +41,6 @@ public interface RecordProcessorContext {
 
   @Deprecated // will most likely be moved into engine
   void setLifecycleListeners(List<StreamProcessorLifecycleAware> lifecycleListeners);
-
-  @Deprecated // will be moved into engine
-  void setRecordProcessorMap(RecordProcessorMap recordProcessorMap);
 
   void setStreamProcessorListener(StreamProcessorListener streamProcessorListener);
 

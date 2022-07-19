@@ -64,7 +64,6 @@ public class Engine implements RecordProcessor {
     recordProcessorContext.setLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
 
-    recordProcessorContext.setRecordProcessorMap(recordProcessorMap);
     recordProcessorContext.setWriters(typedProcessorContext.getWriters());
 
     zeebeState = typedProcessorContext.getZeebeState();
@@ -106,7 +105,10 @@ public class Engine implements RecordProcessor {
           record,
           responseWriter,
           streamWriter,
-          (sep) -> processingResultBuilder.appendPostCommitTask(sep::flush));
+          (sep) -> {
+            // TODO clear post commit tasks
+            processingResultBuilder.appendPostCommitTask(sep::flush);
+          });
     }
 
     return processingResultBuilder.build();
