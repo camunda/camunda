@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-const IS_NEXT_DIAGRAM = false;
 const IS_MODIFICATION_MODE_ENABLED = false;
 
-export {IS_NEXT_DIAGRAM, IS_MODIFICATION_MODE_ENABLED};
+export {IS_MODIFICATION_MODE_ENABLED};

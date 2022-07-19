@@ -39,7 +39,7 @@ type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
 };
 
-const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
+const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   const popperElementRef = useRef<HTMLDivElement>(null);
   const [arrow, setArrow] = useState<HTMLElement | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -314,4 +314,4 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
     : null;
 });
 
-export {PopoverOverlay};
+export {MetadataPopover};

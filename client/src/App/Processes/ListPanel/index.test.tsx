@@ -20,7 +20,6 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {NotificationProvider} from 'modules/notifications';
-import {processInstancesDiagramStore} from 'modules/stores/processInstancesDiagram';
 import {authenticationStore} from 'modules/stores/authentication';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {ListFooter} from './ListFooter';
@@ -47,7 +46,6 @@ function createWrapper(initialPath: string = '/') {
 describe('ListPanel', () => {
   afterEach(() => {
     processInstancesStore.reset();
-    processInstancesDiagramStore.reset();
     panelStatesStore.reset();
   });
 

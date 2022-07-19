@@ -22,7 +22,7 @@ const Arrow = styled.div`
 
 const Popper = styled.div`
   ${({theme}) => {
-    const colors = theme.colors.modules.diagram.popoverOverlay.arrowStyle;
+    const colors = theme.colors.modules.diagram.metadataPopover.arrowStyle;
 
     return css`
       z-index: 5;
@@ -83,8 +83,8 @@ const Popper = styled.div`
 
 const Popover = styled.div`
   ${({theme}) => {
-    const colors = theme.colors.modules.diagram.popoverOverlay.popOver;
-    const shadow = theme.shadows.modules.diagram.popoverOverlay.popOver;
+    const colors = theme.colors.modules.diagram.metadataPopover.popOver;
+    const shadow = theme.shadows.modules.diagram.metadataPopover.popOver;
 
     return css`
       width: 354px;
@@ -133,7 +133,7 @@ const Divider = styled.hr`
     height: 1px;
     border: none;
     border-top: solid 1px
-      ${theme.colors.modules.diagram.popoverOverlay.popOver.borderColor};
+      ${theme.colors.modules.diagram.metadataPopover.popOver.borderColor};
   `}
 `;
 

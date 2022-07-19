@@ -14,7 +14,6 @@ import React, {
 } from 'react';
 import {BpmnJS, OnFlowNodeSelection, OverlayData} from 'modules/bpmn-js/BpmnJS';
 import DiagramControls from './DiagramControls';
-import DiagramLegacy from './index.legacy';
 import {Diagram as StyledDiagram, DiagramCanvas} from './styled';
 
 type Props = {
@@ -113,4 +112,3 @@ const Diagram: React.FC<Props> = ({
 };
 
 export {Diagram};
-export default DiagramLegacy;

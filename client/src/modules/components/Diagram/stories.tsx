@@ -19,7 +19,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import DiagramComponent from './index.legacy';
+import {Diagram as DiagramComponent} from './index';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {
   calledDecisionMetadata,
@@ -31,6 +31,7 @@ import {
   singleInstanceMetadata,
 } from 'modules/mocks/metadata';
 import {elementTemplateIconsProcess} from 'modules/mocks/elementTemplatesIconsProcess';
+import {MetadataPopover} from 'App/ProcessInstance/TopPanel/MetadataPopover';
 
 export default {
   title: 'Components/Diagram',
@@ -76,10 +77,10 @@ const Diagram = ({
         {diagram !== null && (
           <Container>
             <DiagramComponent
+              xml={xml}
               selectableFlowNodes={flowNodeId !== undefined ? [flowNodeId] : []}
-              definitions={diagram.definitions}
-              hidePopover={false}
               selectedFlowNodeId={flowNodeId}
+              selectedFlowNodeOverlay={<MetadataPopover />}
             />
           </Container>
         )}

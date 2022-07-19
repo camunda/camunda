@@ -463,7 +463,7 @@ const theme = {
           },
         },
         diagram: {
-          popoverOverlay: {
+          metadataPopover: {
             arrowStyle: {
               before: {
                 borderColor: DARK_COLORS.ui06,
@@ -927,7 +927,7 @@ const theme = {
           },
         },
         diagram: {
-          popoverOverlay: {
+          metadataPopover: {
             popOver: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.6)}`,
           },
         },
@@ -1316,7 +1316,7 @@ const theme = {
           },
         },
         diagram: {
-          popoverOverlay: {
+          metadataPopover: {
             arrowStyle: {
               before: {
                 borderColor: LIGHT_COLORS.ui05,
@@ -1778,7 +1778,7 @@ const theme = {
           },
         },
         diagram: {
-          popoverOverlay: {
+          metadataPopover: {
             popOver: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
           },
         },

@@ -18,15 +18,14 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {incidentsStore} from 'modules/stores/incidents';
-import DiagramLegacy, {Diagram} from 'modules/components/Diagram';
+import {Diagram} from 'modules/components/Diagram';
 import {OverlayPosition} from 'modules/types/modeler';
 import {IncidentsWrapper} from '../IncidentsWrapper';
 import {Container, DiagramPanel, StatusMessage} from './styled';
 import {IncidentsBanner} from './IncidentsBanner';
-import {IS_NEXT_DIAGRAM} from 'modules/feature-flags';
 import {StateOverlay} from './StateOverlay';
 import {tracking} from 'modules/tracking';
-import {PopoverOverlay} from 'modules/components/Diagram/PopoverOverlay';
+import {MetadataPopover} from './MetadataPopover';
 
 const OVERLAY_TYPE = 'flowNodeState';
 
@@ -60,21 +59,6 @@ const TopPanel: React.FC<Props> = observer(() => {
 
   const flowNodeStateOverlays = computed(() =>
     Object.entries(flowNodes).reduce<
-      {id: string; state: InstanceEntityState}[]
-    >((flowNodeStates, [flowNodeId, state]) => {
-      const metaData =
-        processInstanceDetailsDiagramStore.getMetaData(flowNodeId);
-
-      if (state === 'COMPLETED' && metaData?.type.elementType !== 'END') {
-        return flowNodeStates;
-      } else {
-        return [...flowNodeStates, {id: flowNodeId, state}];
-      }
-    }, [])
-  );
-
-  const flowNodeStateOverlaysNext = computed(() =>
-    Object.entries(flowNodes).reduce<
       {
         flowNodeId: string;
         type: string;
@@ -107,7 +91,7 @@ const TopPanel: React.FC<Props> = observer(() => {
     ({type}) => type === OVERLAY_TYPE
   );
   const {
-    state: {status, diagramModel, xml},
+    state: {status, xml},
   } = processInstanceDetailsDiagramStore;
 
   const {
@@ -164,57 +148,38 @@ const TopPanel: React.FC<Props> = observer(() => {
               <IncidentsWrapper setIsInTransition={setIsInTransition} />
             )}
 
-            {IS_NEXT_DIAGRAM
-              ? xml !== null && (
-                  <Diagram
-                    xml={xml}
-                    selectableFlowNodes={selectableFlowNodes}
-                    selectedFlowNodeId={flowNodeSelection?.flowNodeId}
-                    onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
-                      flowNodeSelectionStore.selectFlowNode({
-                        flowNodeId,
-                        isMultiInstance,
-                      });
-                    }}
-                    overlaysData={flowNodeStateOverlaysNext.get()}
-                    selectedFlowNodeOverlay={
-                      !isIncidentBarOpen && <PopoverOverlay />
-                    }
-                    highlightedSequenceFlows={processedSequenceFlows}
-                  >
-                    {stateOverlays?.map((overlay) => {
-                      const payload = overlay.payload as {
-                        state: InstanceEntityState;
-                      };
+            {xml !== null && (
+              <Diagram
+                xml={xml}
+                selectableFlowNodes={selectableFlowNodes}
+                selectedFlowNodeId={flowNodeSelection?.flowNodeId}
+                onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
+                  flowNodeSelectionStore.selectFlowNode({
+                    flowNodeId,
+                    isMultiInstance,
+                  });
+                }}
+                overlaysData={flowNodeStateOverlays.get()}
+                selectedFlowNodeOverlay={
+                  !isIncidentBarOpen && <MetadataPopover />
+                }
+                highlightedSequenceFlows={processedSequenceFlows}
+              >
+                {stateOverlays?.map((overlay) => {
+                  const payload = overlay.payload as {
+                    state: InstanceEntityState;
+                  };
 
-                      return (
-                        <StateOverlay
-                          key={overlay.flowNodeId}
-                          state={payload.state}
-                          container={overlay.container}
-                        />
-                      );
-                    })}
-                  </Diagram>
-                )
-              : // @ts-expect-error ts-migrate(2339) FIXME: Property 'definitions' does not exist on type 'nev... Remove this comment to see the full error message
-                diagramModel?.definitions && (
-                  <DiagramLegacy
-                    onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
-                      flowNodeSelectionStore.selectFlowNode({
-                        flowNodeId,
-                        isMultiInstance,
-                      });
-                    }}
-                    selectableFlowNodes={selectableFlowNodes}
-                    processedSequenceFlows={processedSequenceFlows}
-                    selectedFlowNodeId={flowNodeSelection?.flowNodeId}
-                    flowNodeStateOverlays={flowNodeStateOverlays.get()}
-                    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-                    definitions={diagramModel.definitions}
-                    hidePopover={isIncidentBarOpen}
-                  />
-                )}
+                  return (
+                    <StateOverlay
+                      key={overlay.flowNodeId}
+                      state={payload.state}
+                      container={overlay.container}
+                    />
+                  );
+                })}
+              </Diagram>
+            )}
           </>
         )}
       </DiagramPanel>

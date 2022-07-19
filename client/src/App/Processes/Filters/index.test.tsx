@@ -12,11 +12,9 @@ import {mockServer} from 'modules/mock-server/node';
 import {Filters} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {processesStore} from 'modules/stores/processes';
-import {processInstancesDiagramStore} from 'modules/stores/processInstancesDiagram';
 import {processDiagramStore} from 'modules/stores/processDiagram';
 import {mockProcessXML} from 'modules/testUtils';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {IS_NEXT_DIAGRAM} from 'modules/feature-flags';
 import {processInstancesStore} from 'modules/stores/processInstances';
 
 const GROUPED_BIG_VARIABLE_PROCESS = {
@@ -93,22 +91,14 @@ describe('Filters', () => {
 
     processesStore.fetchProcesses();
 
-    if (IS_NEXT_DIAGRAM) {
-      await processDiagramStore.fetchProcessDiagram('bigVarProcess');
-    } else {
-      await processInstancesDiagramStore.fetchProcessXml('bigVarProcess');
-    }
+    await processDiagramStore.fetchProcessDiagram('bigVarProcess');
     jest.useFakeTimers();
   });
 
   afterEach(() => {
     processesStore.reset();
     processInstancesStore.reset();
-    if (IS_NEXT_DIAGRAM) {
-      processDiagramStore.reset();
-    } else {
-      processInstancesDiagramStore.reset();
-    }
+    processDiagramStore.reset();
 
     jest.clearAllTimers();
     jest.useRealTimers();
@@ -1563,28 +1553,6 @@ describe('Filters', () => {
   });
 
   it('should omit all versions option', async () => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      ),
-      rest.get('/api/processes/grouped', (_, res, ctx) =>
-        res.once(ctx.json([GROUPED_BIG_VARIABLE_PROCESS]))
-      ),
-      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
-        res.once(ctx.json({}))
-      )
-    );
-
-    processesStore.fetchProcesses();
-
-    if (!IS_NEXT_DIAGRAM) {
-      processInstancesDiagramStore.fetchProcessXml('bigVarProcess');
-    } else {
-      processDiagramStore.fetchProcessDiagram('bigVarProcess');
-    }
-
-    jest.useFakeTimers();
-
     const {user} = render(<Filters />, {
       wrapper: getWrapper(
         `/?${new URLSearchParams(

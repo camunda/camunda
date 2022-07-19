@@ -16,7 +16,7 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockServer} from 'modules/mock-server/node';
-import {PopoverOverlay} from './';
+import {MetadataPopover} from '.';
 import {
   createInstance,
   mockCallActivityProcessXML,
@@ -61,14 +61,14 @@ const renderPopover = () => {
   const {container} = render(<svg />);
 
   return render(
-    <PopoverOverlay selectedFlowNodeRef={container.querySelector('svg')} />,
+    <MetadataPopover selectedFlowNodeRef={container.querySelector('svg')} />,
     {
       wrapper: Wrapper,
     }
   );
 };
 
-describe('PopoverOverlay', () => {
+describe('MetadataPopover', () => {
   beforeEach(() => {
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.init();
