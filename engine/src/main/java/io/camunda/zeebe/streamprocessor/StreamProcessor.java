@@ -141,7 +141,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     actorName = buildActorName(processorBuilder.getNodeId(), "StreamProcessor", partitionId);
     metrics = new StreamProcessorMetrics(partitionId);
 
-    engine = new Engine(partitionId, zeebeDb, processorBuilder.getEventApplierFactory());
+    engine = new Engine();
   }
 
   public static StreamProcessorBuilder builder() {
