@@ -37,9 +37,7 @@ final class SegmentFile {
   private final File file;
   private Path fileMarkedForDeletion;
 
-  /**
-   * @throws IllegalArgumentException if {@code file} is not a valid segment file
-   */
+  /** @throws IllegalArgumentException if {@code file} is not a valid segment file */
   SegmentFile(final File file) {
     this.file = file;
   }
