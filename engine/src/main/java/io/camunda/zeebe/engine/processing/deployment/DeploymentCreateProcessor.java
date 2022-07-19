@@ -92,8 +92,6 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
 
-    // need to add multiple side-effects for sending a response and scheduling timers
-    sideEffects.add(responseWriter);
     sideEffect.accept(sideEffects);
 
     final DeploymentRecord deploymentEvent = command.getValue();

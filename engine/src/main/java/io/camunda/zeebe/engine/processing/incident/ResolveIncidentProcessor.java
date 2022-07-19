@@ -111,7 +111,6 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
         .ifRightOrLeft(
             failedCommand -> {
               sideEffects.clear();
-              sideEffects.add(responseWriter::flush);
 
               bpmnStreamProcessor.processRecord(
                   failedCommand, noopResponseWriter, streamWriter, sideEffects::add);
