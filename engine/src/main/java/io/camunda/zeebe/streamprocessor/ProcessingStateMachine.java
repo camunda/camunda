@@ -47,8 +47,8 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.prometheus.client.Histogram;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
+import org.agrona.collections.MutableReference;
 import org.slf4j.Logger;
 
 /**
@@ -264,7 +264,7 @@ public final class ProcessingStateMachine {
     final var processingStartTime = ActorClock.currentTimeMillis();
     processingTimer = metrics.startProcessingDurationTimer(metadata.getRecordType());
 
-    final AtomicReference<ProcessingResult> processingResultRef = new AtomicReference<>();
+    final MutableReference<ProcessingResult> processingResultRef = new MutableReference<>();
 
     try {
       final var value = recordValues.readRecordValue(command, metadata.getValueType());
