@@ -23,10 +23,12 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWri
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.processing.DbBlackListState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import org.slf4j.Logger;
 
 public class Engine implements RecordProcessor {
@@ -142,7 +144,15 @@ public class Engine implements RecordProcessor {
         .writeRejectionOnCommand(record, RejectionType.PROCESSING_ERROR, errorMessage);
     errorRecord.initErrorRecord(processingException, record.getPosition());
 
-    writers.state().appendFollowUpEvent(record.getKey(), ErrorIntent.CREATED, errorRecord);
+    if (DbBlackListState.shouldBeBlacklisted(record.getIntent())) {
+      if (record.getValue() instanceof ProcessInstanceRelated) {
+        final long processInstanceKey =
+            ((ProcessInstanceRelated) record.getValue()).getProcessInstanceKey();
+        errorRecord.setProcessInstanceKey(processInstanceKey);
+      }
+
+      writers.state().appendFollowUpEvent(record.getKey(), ErrorIntent.CREATED, errorRecord);
+    }
     return processingResultBuilder.build();
   }
 }
