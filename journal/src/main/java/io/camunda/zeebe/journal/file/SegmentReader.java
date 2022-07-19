@@ -21,10 +21,11 @@ import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.file.record.JournalRecordReaderUtil;
 import io.camunda.zeebe.journal.file.record.SBESerializer;
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /** Log segment reader. */
-class SegmentReader {
+final class SegmentReader implements Iterator<JournalRecord> {
 
   private final ByteBuffer buffer;
   private final JournalIndex index;
@@ -42,6 +43,7 @@ class SegmentReader {
     reset();
   }
 
+  @Override
   public boolean hasNext() {
     if (!segment.isOpen()) {
       // When the segment has been deleted concurrently, we do not want to allow the readers to
@@ -53,6 +55,7 @@ class SegmentReader {
     return FrameUtil.hasValidVersion(buffer);
   }
 
+  @Override
   public JournalRecord next() {
     if (!hasNext()) {
       throw new NoSuchElementException();
@@ -67,12 +70,12 @@ class SegmentReader {
     return currentEntry;
   }
 
-  public void reset() {
+  void reset() {
     buffer.position(descriptorLength);
     currentIndex = segment.index() - 1;
   }
 
-  public void seek(final long index) {
+  void seek(final long index) {
     checkSegmentOpen();
     final long firstIndex = segment.index();
     final long lastIndex = segment.lastIndex();
@@ -90,7 +93,7 @@ class SegmentReader {
     }
   }
 
-  public void close() {
+  void close() {
     segment.onReaderClosed(this);
   }
 
