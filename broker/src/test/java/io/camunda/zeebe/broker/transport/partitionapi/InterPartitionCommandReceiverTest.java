@@ -10,8 +10,10 @@ package io.camunda.zeebe.broker.transport.partitionapi;
 import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.TOPIC_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -164,6 +166,59 @@ final class InterPartitionCommandReceiverTest {
     assertThat(bytesWrittenToLogStream).isEqualTo(commandBytes);
   }
 
+  @Test
+  void shouldWriteCommandWithRecordKey() {
+    // given
+    final var receiverBrokerId = 3;
+    final var receiverPartitionId = 5;
+
+    final var recordKey = 10L;
+
+    final var sentMessage =
+        sendCommand(
+            receiverBrokerId,
+            receiverPartitionId,
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.CORRELATE,
+            recordKey,
+            new byte[100]);
+
+    final var logStreamWriter =
+        mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+
+    // when
+    receiver.handleMessage(new MemberId("0"), sentMessage);
+
+    // then
+    verify(logStreamWriter).key(recordKey);
+  }
+
+  @Test
+  void shouldWriteCommandWithKey() {
+    // given
+    final var receiverBrokerId = 3;
+    final var receiverPartitionId = 5;
+
+    final var sentMessage =
+        sendCommand(
+            receiverBrokerId,
+            receiverPartitionId,
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.CORRELATE,
+            new byte[100]);
+
+    final var logStreamWriter =
+        mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+
+    // when
+    receiver.handleMessage(new MemberId("0"), sentMessage);
+
+    // then
+    verify(logStreamWriter, never()).key(anyLong());
+  }
+
   private TopologyPartitionListenerImpl mockTopologyListener(
       final int partitionId, final int brokerId) {
     final var topologyListener = mock(TopologyPartitionListenerImpl.class);
@@ -180,6 +235,16 @@ final class InterPartitionCommandReceiverTest {
       final ValueType valueType,
       final Intent intent,
       final byte[] command) {
+    return sendCommand(receiverBrokerId, receiverPartitionId, valueType, intent, null, command);
+  }
+
+  private byte[] sendCommand(
+      final Integer receiverBrokerId,
+      final Integer receiverPartitionId,
+      final ValueType valueType,
+      final Intent intent,
+      final Long recordKey,
+      final byte[] command) {
     final ClusterCommunicationService communicationService =
         mock(ClusterCommunicationService.class);
 
@@ -189,7 +254,7 @@ final class InterPartitionCommandReceiverTest {
     final var buffer = new UnsafeBuffer(command);
     final var bufferWriter = new DirectBufferWriter();
     bufferWriter.wrap(buffer);
-    sender.sendCommand(receiverPartitionId, valueType, intent, bufferWriter);
+    sender.sendCommand(receiverPartitionId, valueType, intent, recordKey, bufferWriter);
 
     final var messageCaptor = ArgumentCaptor.forClass(byte[].class);
     verify(communicationService)

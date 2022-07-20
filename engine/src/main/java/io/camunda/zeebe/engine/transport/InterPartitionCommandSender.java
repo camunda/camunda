@@ -21,4 +21,19 @@ public interface InterPartitionCommandSender {
       final ValueType valueType,
       final Intent intent,
       final BufferWriter command);
+
+  /**
+   * Uses the given record key when writing the command. Otherwise, behaves like {@link
+   * InterPartitionCommandSender#sendCommand}
+   *
+   * @deprecated This is only available for compatability with deployment distribution.
+   * @param recordKey Record key to use when writing the command. Ignored if null.
+   */
+  @Deprecated(forRemoval = true)
+  void sendCommand(
+      final int receiverPartitionId,
+      final ValueType valueType,
+      final Intent intent,
+      final Long recordKey,
+      final BufferWriter command);
 }
