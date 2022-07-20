@@ -8,9 +8,8 @@
 package io.camunda.zeebe.engine;
 
 import io.camunda.zeebe.engine.api.EmptyProcessingResult;
-import io.camunda.zeebe.engine.api.ErrorHandlingContext;
-import io.camunda.zeebe.engine.api.ProcessingContext;
 import io.camunda.zeebe.engine.api.ProcessingResult;
+import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
@@ -89,7 +88,7 @@ public class Engine implements RecordProcessor {
 
   @Override
   public ProcessingResult process(
-      final TypedRecord record, final ProcessingContext processingContext) {
+      final TypedRecord record, final ProcessingResultBuilder processingResultBuilder) {
     TypedRecordProcessor<?> currentProcessor = null;
 
     final var typedCommand = (TypedRecord<?>) record;
@@ -106,8 +105,6 @@ public class Engine implements RecordProcessor {
     if (currentProcessor == null) {
       return EmptyProcessingResult.INSTANCE;
     }
-
-    final var processingResultBuilder = processingContext.getProcessingResultBuilder();
 
     final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
     if (isNotOnBlacklist) {
@@ -130,13 +127,11 @@ public class Engine implements RecordProcessor {
   public ProcessingResult onProcessingError(
       final Throwable processingException,
       final TypedRecord record,
-      final ErrorHandlingContext errorHandlingContext) {
+      final ProcessingResultBuilder processingResultBuilder) {
 
     final String errorMessage =
         String.format(PROCESSING_ERROR_MESSAGE, record, processingException.getMessage());
     LOG.error(errorMessage, processingException);
-
-    final var processingResultBuilder = errorHandlingContext.getProcessingResultBuilder();
 
     writers.rejection().appendRejection(record, RejectionType.PROCESSING_ERROR, errorMessage);
     writers
