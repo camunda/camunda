@@ -141,15 +141,6 @@ public class ActorControl implements ConcurrencyControl {
   }
 
   /**
-   * Run the provided runnable repeatedly until it calls {@link #done()}. To be used for jobs which
-   * may experience backpressure.
-   */
-  public void runUntilDone(final Runnable runnable) {
-    ensureCalledFromWithinActor("runUntilDone(...)");
-    scheduleRunnable(runnable, false);
-  }
-
-  /**
    * The runnable is is executed while the actor is in the following actor lifecycle phases: {@link
    * ActorLifecyclePhase#STARTED}
    *
@@ -230,7 +221,7 @@ public class ActorControl implements ConcurrencyControl {
    */
   @Override
   public void run(final Runnable action) {
-    scheduleRunnable(action, true);
+    scheduleRunnable(action);
   }
 
   /**
@@ -352,27 +343,22 @@ public class ActorControl implements ConcurrencyControl {
     return task.closeFuture;
   }
 
-  private void scheduleRunnable(final Runnable runnable, final boolean autocompleting) {
+  private void scheduleRunnable(final Runnable runnable) {
     final ActorThread currentActorThread = ActorThread.current();
 
     if (currentActorThread != null && currentActorThread.getCurrentTask() == task) {
       final ActorJob newJob = currentActorThread.newJob();
       newJob.setRunnable(runnable);
-      newJob.setAutoCompleting(autocompleting);
+      newJob.setAutoCompleting(true);
       newJob.onJobAddedToTask(task);
       task.insertJob(newJob);
     } else {
       final ActorJob job = new ActorJob();
       job.setRunnable(runnable);
-      job.setAutoCompleting(autocompleting);
+      job.setAutoCompleting(true);
       job.onJobAddedToTask(task);
       task.submit(job);
     }
-  }
-
-  public void done() {
-    final ActorJob job = ensureCalledFromWithinActor("done()");
-    job.markDone();
   }
 
   public boolean isClosing() {
