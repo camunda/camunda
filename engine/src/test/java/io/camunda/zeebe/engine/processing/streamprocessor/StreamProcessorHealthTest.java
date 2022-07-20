@@ -207,17 +207,17 @@ public class StreamProcessorHealthTest {
         final Intent intent,
         final RejectionType rejectionType,
         final String rejectionReason,
-        final RecordValue value) {}
+        final RecordValue value) {
+      if (shouldFailErrorHandlingInTransaction.get()) {
+        throw new RuntimeException("Expected failure on append followup event");
+      }
+    }
 
     @Override
     public void configureSourceContext(final long sourceRecordPosition) {}
 
     @Override
-    public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
-      if (shouldFailErrorHandlingInTransaction.get()) {
-        throw new RuntimeException("Expected failure on append followup event");
-      }
-    }
+    public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {}
 
     @Override
     public int getMaxEventLength() {
