@@ -11,7 +11,6 @@ import io.camunda.zeebe.engine.api.EmptyProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.RecordProcessor;
-import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -30,7 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import org.slf4j.Logger;
 
-public class Engine implements RecordProcessor {
+public class Engine implements RecordProcessor<EngineContext> {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
@@ -50,35 +49,32 @@ public class Engine implements RecordProcessor {
   public Engine() {}
 
   @Override
-  public void init(final RecordProcessorContext recordProcessorContext) {
-    streamWriter = recordProcessorContext.getStreamWriterProxy();
-    responseWriter = recordProcessorContext.getTypedResponseWriter();
+  public void init(final EngineContext engineContext) {
+    streamWriter = engineContext.getStreamWriterProxy();
+    responseWriter = engineContext.getTypedResponseWriter();
 
     final var typedProcessorContext =
         new TypedRecordProcessorContextImpl(
-            recordProcessorContext.getPartitionId(),
-            recordProcessorContext.getScheduleService(),
-            recordProcessorContext.getZeebeDb(),
-            recordProcessorContext.getTransactionContext(),
+            engineContext.getPartitionId(),
+            engineContext.getScheduleService(),
+            engineContext.getZeebeDb(),
+            engineContext.getTransactionContext(),
             streamWriter,
-            recordProcessorContext.getEventApplierFactory(),
+            engineContext.getEventApplierFactory(),
             responseWriter);
 
     final TypedRecordProcessors typedRecordProcessors =
-        recordProcessorContext
-            .getTypedRecordProcessorFactory()
-            .createProcessors(typedProcessorContext);
+        engineContext.getTypedRecordProcessorFactory().createProcessors(typedProcessorContext);
 
-    recordProcessorContext.setStreamProcessorListener(
-        typedProcessorContext.getStreamProcessorListener());
+    engineContext.setStreamProcessorListener(typedProcessorContext.getStreamProcessorListener());
 
-    recordProcessorContext.setLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
+    engineContext.setLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
 
     writers = typedProcessorContext.getWriters();
-    recordProcessorContext.setWriters(writers);
+    engineContext.setWriters(writers);
     zeebeState = typedProcessorContext.getZeebeState();
-    eventApplier = recordProcessorContext.getEventApplierFactory().apply(zeebeState);
+    eventApplier = engineContext.getEventApplierFactory().apply(zeebeState);
   }
 
   @Override

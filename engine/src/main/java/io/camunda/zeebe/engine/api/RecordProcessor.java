@@ -11,14 +11,14 @@ package io.camunda.zeebe.engine.api;
  * Interface for record processors. A record processor is responsible for handling a single record.
  * (The class {@code StreamProcessor} in turn is responsible for handling a stream of records.
  */
-public interface RecordProcessor {
+public interface RecordProcessor<CONTEXT> {
 
   /**
    * Called by platform to initialize the processor
    *
    * @param recordProcessorContext context object to initialize the processor
    */
-  void init(RecordProcessorContext recordProcessorContext);
+  void init(CONTEXT recordProcessorContext);
 
   /**
    * Called by platform in order to replay a single record
