@@ -255,16 +255,16 @@ public final class ProcessingStateMachine {
       final var value = recordValues.readRecordValue(command, metadata.getValueType());
       typedCommand.wrap(command, metadata, value);
 
+      final long position = typedCommand.getPosition();
       final ProcessingResultBuilder processingResultBuilder =
-          new DirectProcessingResultBuilder(context);
+          new DirectProcessingResultBuilder(context, position);
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
       zeebeDbTransaction.run(
           () -> {
-            final long position = typedCommand.getPosition();
-            resetOutput(position, processingResultBuilder);
+            processingResultBuilder.reset();
 
             currentProcessingResult = engine.process(typedCommand, processingResultBuilder);
 
@@ -293,12 +293,6 @@ public final class ProcessingStateMachine {
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, command, metadata, e);
       onError(e, this::writeRecords);
     }
-  }
-
-  private void resetOutput(
-      final long sourceRecordPosition, final ProcessingResultBuilder resultBuilder) {
-    resultBuilder.reset();
-    logStreamWriter.configureSourceContext(sourceRecordPosition);
   }
 
   private void onError(final Throwable processingException, final Runnable nextStep) {
@@ -334,11 +328,11 @@ public final class ProcessingStateMachine {
     zeebeDbTransaction = transactionContext.getCurrentTransaction();
     zeebeDbTransaction.run(
         () -> {
-          final ProcessingResultBuilder processingResultBuilder =
-              new DirectProcessingResultBuilder(context);
-
           final long position = typedCommand.getPosition();
-          resetOutput(position, processingResultBuilder);
+          final ProcessingResultBuilder processingResultBuilder =
+              new DirectProcessingResultBuilder(context, position);
+
+          logStreamWriter.configureSourceContext(position);
 
           currentProcessingResult =
               engine.onProcessingError(processingException, typedCommand, processingResultBuilder);

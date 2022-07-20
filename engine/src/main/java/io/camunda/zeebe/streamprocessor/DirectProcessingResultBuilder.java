@@ -37,10 +37,14 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   private boolean hasResponse =
       true; // TODO set to false after the process builder class is used by the engine
+  private final long sourceRecordPosition;
 
-  DirectProcessingResultBuilder(final StreamProcessorContext context) {
+  DirectProcessingResultBuilder(
+      final StreamProcessorContext context, final long sourceRecordPosition) {
     this.context = context;
+    this.sourceRecordPosition = sourceRecordPosition;
     streamWriter = context.getLogStreamWriter();
+    streamWriter.configureSourceContext(sourceRecordPosition);
     responseWriter = context.getTypedResponseWriter();
   }
 
@@ -79,6 +83,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
   @Override
   public ProcessingResultBuilder reset() {
     streamWriter.reset();
+    streamWriter.configureSourceContext(sourceRecordPosition);
     responseWriter.reset();
     postCommitTasks.clear();
     return this;

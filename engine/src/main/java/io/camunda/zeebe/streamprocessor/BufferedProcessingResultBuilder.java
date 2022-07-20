@@ -57,6 +57,14 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
     final ValueType valueType = initValueType(value);
     final var valueWriter = initValueWriter(value);
 
+    /* TODO this is probably wrong. There is sourceIndex (int) and there is
+    sourceEventPosition (long), so confusing the two is definitely wrong.
+    This needs to be investigated further as setSourceIndex(...) only seems to called
+    in a test; so maybe defaulting it to -1 is the way to go; but then there is also
+    sourceEventPosition which the batch writer writes into the log at some point, but
+    this class doesn't yet
+    */
+
     bufferedStreamWriter.appendRecord(
         key, sourceIndex, type, intent, rejectionType, rejectionReason, valueType, valueWriter);
     return this;
