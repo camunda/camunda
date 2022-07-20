@@ -29,13 +29,13 @@ final class BufferedStreamWriter {
 
   // todo we can allocate one buffer with max message size here and then it would simplify this -
   // and limit checking
-  private final MutableDirectBuffer eventBuffer =
+  private final MutableDirectBuffer recordBuffer =
       new ExpandableDirectByteBuffer(INITIAL_BUFFER_CAPACITY);
 
   private final RecordMetadata metadata = new RecordMetadata();
 
-  private int eventBufferOffset;
-  private int eventCount;
+  private int recordBufferOffset;
+  private int recordCount;
   private final UnaryOperator<Integer> capacityCalculator;
 
   /**
@@ -48,16 +48,16 @@ final class BufferedStreamWriter {
     this.capacityCalculator = capacityCalculator;
   }
 
-  MutableDirectBuffer getEventBuffer() {
-    return eventBuffer;
+  MutableDirectBuffer getRecordBuffer() {
+    return recordBuffer;
   }
 
-  int getEventBufferOffset() {
-    return eventBufferOffset;
+  int getRecordBufferOffset() {
+    return recordBufferOffset;
   }
 
-  int getEventCount() {
-    return eventCount;
+  int getRecordCount() {
+    return recordCount;
   }
 
   void appendRecord(
@@ -84,24 +84,24 @@ final class BufferedStreamWriter {
     writeMetadata(metadataLength);
     writeValue(valueWriter, valueLength);
 
-    eventCount += 1;
+    recordCount += 1;
   }
 
   boolean canWriteAdditionalEvent(final int length) {
-    return length < capacityCalculator.apply(eventBufferOffset);
+    return length < capacityCalculator.apply(recordBufferOffset);
   }
 
   private void writeKey(long key) {
     if (key < 0) {
       key = LogEntryDescriptor.KEY_NULL_VALUE;
     }
-    eventBuffer.putLong(eventBufferOffset, key, Protocol.ENDIANNESS);
-    eventBufferOffset += SIZE_OF_LONG;
+    recordBuffer.putLong(recordBufferOffset, key, Protocol.ENDIANNESS);
+    recordBufferOffset += SIZE_OF_LONG;
   }
 
   private void writeSourceIndex(final int sourceIndex) {
-    eventBuffer.putInt(eventBufferOffset, sourceIndex, Protocol.ENDIANNESS);
-    eventBufferOffset += SIZE_OF_INT;
+    recordBuffer.putInt(recordBufferOffset, sourceIndex, Protocol.ENDIANNESS);
+    recordBufferOffset += SIZE_OF_INT;
   }
 
   private void initMetadata(
@@ -121,30 +121,30 @@ final class BufferedStreamWriter {
   }
 
   private void writeMetadataLength(final int metadataLength) {
-    eventBuffer.putInt(eventBufferOffset, metadataLength, Protocol.ENDIANNESS);
-    eventBufferOffset += SIZE_OF_INT;
+    recordBuffer.putInt(recordBufferOffset, metadataLength, Protocol.ENDIANNESS);
+    recordBufferOffset += SIZE_OF_INT;
   }
 
   private void writeValueLength(final int valueLength) {
-    eventBuffer.putInt(eventBufferOffset, valueLength, Protocol.ENDIANNESS);
-    eventBufferOffset += SIZE_OF_INT;
+    recordBuffer.putInt(recordBufferOffset, valueLength, Protocol.ENDIANNESS);
+    recordBufferOffset += SIZE_OF_INT;
   }
 
   private void writeMetadata(final int metadataLength) {
     if (metadataLength > 0) {
-      metadata.write(eventBuffer, eventBufferOffset);
-      eventBufferOffset += metadataLength;
+      metadata.write(recordBuffer, recordBufferOffset);
+      recordBufferOffset += metadataLength;
     }
   }
 
   private void writeValue(final BufferWriter valueWriter, final int valueLength) {
-    valueWriter.write(eventBuffer, eventBufferOffset);
-    eventBufferOffset += valueLength;
+    valueWriter.write(recordBuffer, recordBufferOffset);
+    recordBufferOffset += valueLength;
   }
 
   void reset() {
-    eventBufferOffset = 0;
-    eventCount = 0;
+    recordBufferOffset = 0;
+    recordCount = 0;
     metadata.reset();
   }
 }
