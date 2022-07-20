@@ -11,11 +11,11 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -69,7 +69,7 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
   @Override
   public void processRecord(
       final TypedRecord<T> command,
-      final TypedResponseWriter responseWriter,
+      final LegacyTypedResponseWriter responseWriter,
       final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
 

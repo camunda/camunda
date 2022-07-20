@@ -12,12 +12,12 @@ public final class Writers {
 
   private final LegacyTypedStreamWriter stream;
   private final StateWriter state;
-  private final TypedResponseWriter response;
+  private final LegacyTypedResponseWriter response;
 
   public Writers(
       final LegacyTypedStreamWriter stream,
       final StateWriter state,
-      final TypedResponseWriter response) {
+      final LegacyTypedResponseWriter response) {
     this.stream = stream;
     this.state = state;
     this.response = response;
@@ -49,7 +49,7 @@ public final class Writers {
    *
    * @return the response writer, which is used during processing
    */
-  public TypedResponseWriter response() {
+  public LegacyTypedResponseWriter response() {
     return response;
   }
 }

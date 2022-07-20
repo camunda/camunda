@@ -11,11 +11,11 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriterLegacy;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -39,7 +39,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
   private final ProcessInstanceRecord failedRecord = new ProcessInstanceRecord();
   private final SideEffectQueue sideEffects = new SideEffectQueue();
-  private final TypedResponseWriter noopResponseWriter = new NoopResponseWriter();
+  private final LegacyTypedResponseWriter noopResponseWriter = new NoopResponseWriterLegacy();
 
   private final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor;
   private final StateWriter stateWriter;
@@ -65,7 +65,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   @Override
   public void processRecord(
       final TypedRecord<IncidentRecord> command,
-      final TypedResponseWriter responseWriter,
+      final LegacyTypedResponseWriter responseWriter,
       final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
     final long key = command.getKey();
@@ -86,7 +86,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
   private void rejectResolveCommand(
       final TypedRecord<IncidentRecord> command,
-      final TypedResponseWriter responseWriter,
+      final LegacyTypedResponseWriter responseWriter,
       final String errorMessage,
       final RejectionType rejectionType) {
 

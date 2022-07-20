@@ -10,8 +10,8 @@ package io.camunda.zeebe.streamprocessor;
 import io.camunda.zeebe.engine.api.PostCommitTask;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -33,7 +33,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   private final StreamProcessorContext context;
   private final LegacyTypedStreamWriter streamWriter;
-  private final TypedResponseWriter responseWriter;
+  private final LegacyTypedResponseWriter responseWriter;
 
   private boolean hasResponse =
       true; // TODO set to false after the process builder class is used by the engine

@@ -15,9 +15,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriterImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopLegacyTypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriterImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
@@ -42,7 +42,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private LogStream logStream;
   private LogStreamReader logStreamReader;
   private LegacyTypedStreamWriter logStreamWriter = noopTypedStreamWriter;
-  private TypedResponseWriterImpl typedResponseWriter;
+  private LegacyTypedResponseWriterImpl typedResponseWriter;
 
   private RecordValues recordValues;
   private ZeebeDbState zeebeState;
@@ -155,11 +155,11 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
       final CommandResponseWriter commandResponseWriter) {
     this.commandResponseWriter = commandResponseWriter;
     typedResponseWriter =
-        new TypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId());
+        new LegacyTypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId());
     return this;
   }
 
-  public TypedResponseWriterImpl getTypedResponseWriter() {
+  public LegacyTypedResponseWriterImpl getTypedResponseWriter() {
     return typedResponseWriter;
   }
 

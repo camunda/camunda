@@ -14,7 +14,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
-public interface TypedResponseWriter extends SideEffectProducer {
+public interface LegacyTypedResponseWriter extends SideEffectProducer {
 
   void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason);
 

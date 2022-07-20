@@ -13,8 +13,8 @@ import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -29,7 +29,7 @@ public final class EngineContext {
   private final ZeebeDb zeebeDb;
   private final TransactionContext transactionContext;
   private final LegacyTypedStreamWriter streamWriter;
-  private final TypedResponseWriter responseWriter;
+  private final LegacyTypedResponseWriter responseWriter;
   private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private List<StreamProcessorLifecycleAware> lifecycleListeners = Collections.EMPTY_LIST;
@@ -42,7 +42,7 @@ public final class EngineContext {
       final ZeebeDb zeebeDb,
       final TransactionContext transactionContext,
       final LegacyTypedStreamWriter streamWriter,
-      final TypedResponseWriter responseWriter,
+      final LegacyTypedResponseWriter responseWriter,
       final Function<MutableZeebeState, EventApplier> eventApplierFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     this.partitionId = partitionId;
@@ -75,7 +75,7 @@ public final class EngineContext {
     return streamWriter;
   }
 
-  public TypedResponseWriter getTypedResponseWriter() {
+  public LegacyTypedResponseWriter getTypedResponseWriter() {
     return responseWriter;
   }
 

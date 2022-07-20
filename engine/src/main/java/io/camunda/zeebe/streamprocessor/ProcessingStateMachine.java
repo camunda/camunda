@@ -22,8 +22,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.MetadataFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProtocolVersionFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -125,7 +125,7 @@ public final class ProcessingStateMachine {
   private final MutableZeebeState zeebeState;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final RecordMetadata metadata = new RecordMetadata();
-  private final TypedResponseWriter responseWriter;
+  private final LegacyTypedResponseWriter responseWriter;
   private final ActorControl actor;
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;

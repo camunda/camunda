@@ -27,8 +27,8 @@ import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
@@ -272,7 +272,7 @@ public final class StreamProcessorTest {
                       @Override
                       public void processRecord(
                           final TypedRecord<UnifiedRecordValue> record,
-                          final TypedResponseWriter responseWriter,
+                          final LegacyTypedResponseWriter responseWriter,
                           final LegacyTypedStreamWriter streamWriter) {
 
                         streamWriter.appendFollowUpEvent(
@@ -310,7 +310,7 @@ public final class StreamProcessorTest {
                   @Override
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
+                      final LegacyTypedResponseWriter responseWriter,
                       final LegacyTypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
 
@@ -343,7 +343,7 @@ public final class StreamProcessorTest {
                   @Override
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
+                      final LegacyTypedResponseWriter responseWriter,
                       final LegacyTypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
                     sideEffect.accept(
@@ -375,7 +375,7 @@ public final class StreamProcessorTest {
                   @Override
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
+                      final LegacyTypedResponseWriter responseWriter,
                       final LegacyTypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
 
@@ -492,7 +492,7 @@ public final class StreamProcessorTest {
                   @Override
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
+                      final LegacyTypedResponseWriter responseWriter,
                       final LegacyTypedStreamWriter streamWriter) {
 
                     responseWriter.writeEventOnCommand(
@@ -531,7 +531,7 @@ public final class StreamProcessorTest {
                   @Override
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
+                      final LegacyTypedResponseWriter responseWriter,
                       final LegacyTypedStreamWriter streamWriter) {
 
                     responseWriter.writeEventOnCommand(
@@ -687,7 +687,7 @@ public final class StreamProcessorTest {
                       @Override
                       public void processRecord(
                           final TypedRecord<UnifiedRecordValue> record,
-                          final TypedResponseWriter responseWriter,
+                          final LegacyTypedResponseWriter responseWriter,
                           final LegacyTypedStreamWriter streamWriter) {
 
                         streamWriter.appendFollowUpEvent(

@@ -22,8 +22,8 @@ import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
@@ -162,7 +162,7 @@ public final class SkipFailingEventsTest {
                     @Override
                     public void processRecord(
                         final TypedRecord<UnifiedRecordValue> record,
-                        final TypedResponseWriter responseWriter,
+                        final LegacyTypedResponseWriter responseWriter,
                         final LegacyTypedStreamWriter streamWriter) {
                       throw new NullPointerException();
                     }
@@ -320,7 +320,7 @@ public final class SkipFailingEventsTest {
               @Override
               public void processRecord(
                   final TypedRecord<JobRecord> record,
-                  final TypedResponseWriter responseWriter,
+                  final LegacyTypedResponseWriter responseWriter,
                   final LegacyTypedStreamWriter streamWriter) {
                 processedInstances.add(record.getValue().getProcessInstanceKey());
                 final var processInstanceKey = (int) record.getValue().getProcessInstanceKey();
@@ -335,7 +335,7 @@ public final class SkipFailingEventsTest {
           @Override
           public void processRecord(
               final TypedRecord<JobRecord> record,
-              final TypedResponseWriter responseWriter,
+              final LegacyTypedResponseWriter responseWriter,
               final LegacyTypedStreamWriter streamWriter) {
             throw new RuntimeException("expected");
           }
@@ -403,7 +403,7 @@ public final class SkipFailingEventsTest {
           @Override
           public void processRecord(
               final TypedRecord<DeploymentRecord> record,
-              final TypedResponseWriter responseWriter,
+              final LegacyTypedResponseWriter responseWriter,
               final LegacyTypedStreamWriter streamWriter) {
             if (record.getKey() == 0) {
               throw new RuntimeException("expected");
@@ -479,7 +479,7 @@ public final class SkipFailingEventsTest {
     @Override
     public void processRecord(
         final TypedRecord<ProcessInstanceRecord> record,
-        final TypedResponseWriter responseWriter,
+        final LegacyTypedResponseWriter responseWriter,
         final LegacyTypedStreamWriter streamWriter) {
       processCount.incrementAndGet();
       throw new RuntimeException("expected");
@@ -496,7 +496,7 @@ public final class SkipFailingEventsTest {
     @Override
     public void processRecord(
         final TypedRecord<ProcessInstanceRecord> record,
-        final TypedResponseWriter responseWriter,
+        final LegacyTypedResponseWriter responseWriter,
         final LegacyTypedStreamWriter streamWriter) {
       processedInstances.add(record.getValue().getProcessInstanceKey());
       streamWriter.appendFollowUpEvent(

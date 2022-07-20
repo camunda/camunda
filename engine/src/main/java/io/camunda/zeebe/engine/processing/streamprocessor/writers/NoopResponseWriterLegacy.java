@@ -13,7 +13,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
-public final class NoopResponseWriter implements TypedResponseWriter {
+public final class NoopResponseWriterLegacy implements LegacyTypedResponseWriter {
 
   @Override
   public void writeRejectionOnCommand(
