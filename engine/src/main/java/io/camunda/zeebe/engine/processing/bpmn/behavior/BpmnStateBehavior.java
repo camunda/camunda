@@ -199,4 +199,9 @@ public final class BpmnStateBehavior {
         && flowScopeInstance.isInterrupted()
         && flowScopeInstance.isActive();
   }
+
+  public int getNumberOfTakenSequenceFlows(
+      final long flowScopeKey, final DirectBuffer gatewayElementId) {
+    return elementInstanceState.getNumberOfTakenSequenceFlows(flowScopeKey, gatewayElementId);
+  }
 }
