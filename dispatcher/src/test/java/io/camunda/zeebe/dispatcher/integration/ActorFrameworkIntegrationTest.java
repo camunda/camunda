@@ -104,7 +104,14 @@ public final class ActorFrameworkIntegrationTest {
     final BlockPeek peek = new BlockPeek();
     Subscription subscription;
     int counter = 0;
-    final Runnable processPeek = this::processPeek;
+    final Runnable processPeek =
+        () -> {
+          try {
+            processPeek();
+          } catch (final Exception e) {
+            actor.submit(this::processPeek);
+          }
+        };
 
     PeekingConsumer(final Dispatcher dispatcher) {
       this.dispatcher = dispatcher;
@@ -124,7 +131,7 @@ public final class ActorFrameworkIntegrationTest {
 
     void consume() {
       if (subscription.peekBlock(peek, Integer.MAX_VALUE, true) > 0) {
-        actor.runUntilDone(processPeek);
+        actor.submit(processPeek);
       }
     }
 
@@ -139,7 +146,6 @@ public final class ActorFrameworkIntegrationTest {
         counter = newCounter;
       }
       peek.markCompleted();
-      actor.done();
     }
 
     @Override
@@ -166,11 +172,9 @@ public final class ActorFrameworkIntegrationTest {
     final Dispatcher dispatcher;
     final ClaimedFragment claim = new ClaimedFragment();
     int counter = 1;
-    final Runnable produce = this::produce;
-
     ClaimingProducer(final Dispatcher dispatcher) {
       this.dispatcher = dispatcher;
-    }
+    }    final Runnable produce = this::produce;
 
     @Override
     protected void onActorStarted() {
@@ -190,5 +194,7 @@ public final class ActorFrameworkIntegrationTest {
         latch.countDown();
       }
     }
+
+
   }
 }
