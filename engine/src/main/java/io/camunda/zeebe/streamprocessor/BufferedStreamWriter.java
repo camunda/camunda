@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.streamprocessor;
 
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
@@ -19,6 +18,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.function.UnaryOperator;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -34,24 +34,26 @@ final class BufferedStreamWriter {
 
   private final RecordMetadata metadata = new RecordMetadata();
 
-  private final int maxFragmentSize;
-
   private int eventBufferOffset;
-  private int eventLength;
   private int eventCount;
+  private final UnaryOperator<Integer> capacityCalculator;
 
-  BufferedStreamWriter(final int maxFragmentSize) {
+  /**
+   * @param capacityCalculator function that takes current buffer size as input and returns free
+   *     capacity
+   */
+  BufferedStreamWriter(final UnaryOperator<Integer> capacityCalculator) {
     reset();
 
-    this.maxFragmentSize = maxFragmentSize;
+    this.capacityCalculator = capacityCalculator;
   }
 
   MutableDirectBuffer getEventBuffer() {
     return eventBuffer;
   }
 
-  int getEventLength() {
-    return eventLength;
+  int getEventBufferOffset() {
+    return eventBufferOffset;
   }
 
   int getEventCount() {
@@ -82,14 +84,11 @@ final class BufferedStreamWriter {
     writeMetadata(metadataLength);
     writeValue(valueWriter, valueLength);
 
-    eventLength += metadataLength + valueLength;
     eventCount += 1;
   }
 
   boolean canWriteAdditionalEvent(final int length) {
-    final var count = eventCount + 1;
-    final var batchLength = eventLength + length + (count * HEADER_BLOCK_LENGTH);
-    return batchLength < maxFragmentSize;
+    return length < capacityCalculator.apply(eventBufferOffset);
   }
 
   private void writeKey(long key) {
@@ -145,7 +144,6 @@ final class BufferedStreamWriter {
 
   void reset() {
     eventBufferOffset = 0;
-    eventLength = 0;
     eventCount = 0;
     metadata.reset();
   }

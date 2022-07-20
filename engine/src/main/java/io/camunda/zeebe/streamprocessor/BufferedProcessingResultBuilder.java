@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 /** Implementation of {@code ProcessingResultBuilder} that writes all data into a buffer */
 final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
@@ -32,8 +33,9 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final List<Runnable> postCommitTasks = new ArrayList<>();
   private final int sourceIndex;
 
-  BufferedProcessingResultBuilder(final int maxFragmentSize, final int sourceIndex) {
-    bufferedStreamWriter = new BufferedStreamWriter(maxFragmentSize);
+  BufferedProcessingResultBuilder(
+      final UnaryOperator<Integer> capacityCalculator, final int sourceIndex) {
+    bufferedStreamWriter = new BufferedStreamWriter(capacityCalculator);
     this.sourceIndex = sourceIndex;
 
     typeRegistry = new HashMap<>();
