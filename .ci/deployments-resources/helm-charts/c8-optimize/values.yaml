@@ -24,7 +24,6 @@ ingress:
 camunda-platform:
 # Tags is usually overridden to a specific tag produced by CI
   optimize:
-    podLabels: { commit: master } # should be overridden by Argocd
     fullnameOverride: optimize
     image:
       repository: gcr.io/ci-30-162810/camunda-optimize
@@ -142,3 +141,4 @@ global:
     camunda.cloud/source: argocd
     camunda.cloud/managed-by: Helm
     app: optimize-camunda-cloud # Should be overridden by Argo app
+    commit: master # Should be overridden by Argo app
