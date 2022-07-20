@@ -62,15 +62,26 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   @Override
   public ProcessingResultBuilder withResponse(
-      final long eventKey,
-      final Intent eventState,
-      final UnpackedObject eventValue,
+      final RecordType recordType,
+      final long key,
+      final Intent intent,
+      final UnpackedObject value,
       final ValueType valueType,
+      final RejectionType rejectionType,
+      final String rejectionReason,
       final long requestId,
       final int requestStreamId) {
     hasResponse = true;
     responseWriter.writeResponse(
-        eventKey, eventState, eventValue, valueType, requestId, requestStreamId);
+        recordType,
+        key,
+        intent,
+        value,
+        valueType,
+        rejectionType,
+        rejectionReason,
+        requestId,
+        requestStreamId);
     return this;
   }
 

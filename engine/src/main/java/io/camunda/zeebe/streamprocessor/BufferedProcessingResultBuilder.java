@@ -72,10 +72,13 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
   @Override
   public ProcessingResultBuilder withResponse(
-      final long eventKey,
-      final Intent eventState,
-      final UnpackedObject eventValue,
+      final RecordType recordType,
+      final long key,
+      final Intent intent,
+      final UnpackedObject value,
       final ValueType valueType,
+      final RejectionType rejectionType,
+      final String rejectionReason,
       final long requestId,
       final int requestStreamId) {
     throw new RuntimeException("Not yet implemented");

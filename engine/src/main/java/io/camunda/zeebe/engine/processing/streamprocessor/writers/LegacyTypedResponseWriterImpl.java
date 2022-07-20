@@ -110,6 +110,33 @@ public final class LegacyTypedResponseWriterImpl
   }
 
   @Override
+  public void writeResponse(
+      final RecordType recordType,
+      final long key,
+      final Intent intent,
+      final UnpackedObject value,
+      final ValueType valueType,
+      final RejectionType rejectionType,
+      final String rejectionReason,
+      final long requestId,
+      final int requestStreamId) {
+
+    final byte[] bytes = rejectionReason.getBytes(StandardCharsets.UTF_8);
+    stringWrapper.wrap(bytes);
+
+    stage(
+        recordType,
+        intent,
+        key,
+        rejectionType,
+        stringWrapper,
+        valueType,
+        requestId,
+        requestStreamId,
+        value);
+  }
+
+  @Override
   public boolean flush() {
     if (isResponseStaged) {
       writer.tryWriteResponse(requestStreamId, requestId);
