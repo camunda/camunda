@@ -80,6 +80,10 @@ public final class DeploymentDistributionBehavior {
 
   public void distributeDeploymentToPartition(
       final int partitionId, final long key, final DirectBuffer copiedDeploymentBuffer) {
+    final var deploymentRecord = new DeploymentRecord();
+    deploymentRecord.wrap(copiedDeploymentBuffer);
+    deploymentDistributionCommandSender.distributeToPartition(key, partitionId, deploymentRecord);
+
     final var deploymentPushedFuture =
         deploymentDistributor.pushDeploymentToPartition(key, partitionId, copiedDeploymentBuffer);
 

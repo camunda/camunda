@@ -8,8 +8,11 @@
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
 import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 
-public class DeploymentDistributionCommandSender {
+public final class DeploymentDistributionCommandSender {
   private final InterPartitionCommandSender sender;
   private final int partitionId;
 
@@ -17,5 +20,15 @@ public class DeploymentDistributionCommandSender {
       final int partitionId, final InterPartitionCommandSender sender) {
     this.partitionId = partitionId;
     this.sender = sender;
+  }
+
+  public void distributeToPartition(
+      final long key, final int receiverPartitionId, final DeploymentRecord deploymentRecord) {
+    sender.sendCommand(
+        receiverPartitionId,
+        ValueType.DEPLOYMENT,
+        DeploymentIntent.DISTRIBUTE,
+        key,
+        deploymentRecord);
   }
 }
