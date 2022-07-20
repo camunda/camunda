@@ -380,7 +380,7 @@ public final class ParallelGatewayTest {
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(key)
             .limit("endEvent", ProcessInstanceIntent.ELEMENT_COMPLETED)
-            .toList();
+            .collect(Collectors.toList());
 
     assertThat(
             records.stream()
