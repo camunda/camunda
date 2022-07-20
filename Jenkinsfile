@@ -273,7 +273,7 @@ pipeline {
 
                                     withVault(
                                         [vaultSecrets: [
-                                            [path: 'secret/common/ci-zeebe/jenkins', secretValues: [
+                                            [path: 'secret/products/zeebe/ci/jenkins', secretValues: [
                                                 [envVar: 'TC_CLOUD_TOKEN', vaultKey: 'TC_CLOUD_TOKEN'],
                                             ]],
                                     ]]) {
@@ -375,7 +375,7 @@ pipeline {
                     withVault(
                         [vaultSecrets:
                              [
-                                 [path        : 'secret/common/ci-zeebe/testbench-secrets-1.x-prod',
+                                 [path        : 'secret/products/zeebe/ci/testbench-secrets-1.x-prod',
                                   secretValues:
                                       [
                                           [envVar: 'ZEEBE_CLIENT_SECRET', vaultKey: 'clientSecret'],
