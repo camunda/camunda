@@ -8,25 +8,20 @@
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
-public interface LegacyTypedResponseWriter extends SideEffectProducer, TypedResponseWriter {
+public interface TypedResponseWriter {
 
-  @Override
   void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason);
 
-  @Override
   void writeEvent(TypedRecord<?> event);
 
-  @Override
   void writeEventOnCommand(
       long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command);
 
-  @Override
   void writeResponse(
       long eventKey,
       Intent eventState,
@@ -34,14 +29,4 @@ public interface LegacyTypedResponseWriter extends SideEffectProducer, TypedResp
       ValueType valueType,
       long requestId,
       int requestStreamId);
-
-  /**
-   * Submits the response to transport.
-   *
-   * @return false in case of backpressure, else true
-   */
-  @Override
-  boolean flush();
-
-  void reset();
 }

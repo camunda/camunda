@@ -11,7 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
@@ -30,10 +30,10 @@ public final class BpmnProcessResultSenderBehavior {
 
   private final ElementInstanceState elementInstanceState;
   private final VariableState variableState;
-  private final LegacyTypedResponseWriter responseWriter;
+  private final TypedResponseWriter responseWriter;
 
   public BpmnProcessResultSenderBehavior(
-      final ZeebeState zeebeState, final LegacyTypedResponseWriter responseWriter) {
+      final ZeebeState zeebeState, final TypedResponseWriter responseWriter) {
     elementInstanceState = zeebeState.getElementInstanceState();
     variableState = zeebeState.getVariableState();
     this.responseWriter = responseWriter;

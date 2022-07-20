@@ -49,7 +49,7 @@ public final class Writers {
    *
    * @return the response writer, which is used during processing
    */
-  public LegacyTypedResponseWriter response() {
+  public TypedResponseWriter response() {
     return response;
   }
 }
