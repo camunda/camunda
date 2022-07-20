@@ -19,11 +19,13 @@ public final class Writers {
   private final StateWriter stateWriter;
 
   private final TypedResponseWriter responseWriter;
+  private final Supplier<ProcessingResultBuilder> resultBuilderSupplier;
 
   public Writers(
       final Supplier<ProcessingResultBuilder> resultBuilderSupplier,
       final EventApplier eventApplier) {
 
+    this.resultBuilderSupplier = resultBuilderSupplier;
     commandWriter = new ResultBuilderBackedTypedCommandWriter(resultBuilderSupplier);
     rejectionWriter = new ResultBuilderBackedRejectionWriter(resultBuilderSupplier);
     stateWriter =
@@ -60,5 +62,10 @@ public final class Writers {
    */
   public TypedResponseWriter response() {
     return responseWriter;
+  }
+
+  /** Resets written records, response and post commit tasks */
+  public void reset() {
+    resultBuilderSupplier.get().reset();
   }
 }
