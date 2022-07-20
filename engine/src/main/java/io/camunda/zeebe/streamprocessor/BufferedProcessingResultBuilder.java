@@ -90,15 +90,19 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
     final ValueType valueType = typeRegistry.get(value.getClass());
     if (valueType == null) {
       // usually happens when the record is not registered at the TypedStreamEnvironment
-      throw new RuntimeException("Missing value type mapping for record: " + value.getClass());
+      throw new IllegalArgumentException(
+          "Missing value type mapping for record: " + value.getClass());
     }
     return valueType;
   }
 
   private BufferWriter initValueWriter(final RecordValue value) {
+    // TODO evaluate whether the interface should be changed to UnifiedRecordValue or <T extends
+    // RecordValue & BufferWriter> BufferWriter initValueWriter(final T value) {}
     // validation
     if (!(value instanceof BufferWriter)) {
-      throw new RuntimeException(String.format("The record value %s is not a BufferWriter", value));
+      throw new IllegalArgumentException(
+          String.format("The record value %s is not a BufferWriter", value));
     }
 
     return (BufferWriter) value;
