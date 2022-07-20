@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
@@ -131,29 +132,39 @@ public final class PushDeploymentRequestHandler
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     deploymentRecord.wrap(deployment);
 
-    actor.runUntilDone(
-        () -> {
-          final LogStreamRecordWriter logStream = leaderPartitions.get(partitionId);
-          if (logStream == null) {
-            LOG.debug("Leader change on partition {}, ignore push deployment request", partitionId);
-            actor.done();
-            return;
-          }
+    actor.submit(
+        () ->
+            tryWriteDistributeDeployment(
+                responseFuture, deploymentKey, partitionId, deploymentRecord));
+  }
 
-          final boolean success =
-              writeDistributeDeployment(logStream, deploymentKey, deploymentRecord);
-          if (success) {
-            LOG.debug(
-                "Deployment DISTRIBUTE command for deployment {} was written on partition {}",
-                deploymentKey,
-                partitionId);
-            actor.done();
+  private void tryWriteDistributeDeployment(
+      final CompletableFuture<byte[]> responseFuture,
+      final long deploymentKey,
+      final int partitionId,
+      final DeploymentRecord deploymentRecord) {
+    final LogStreamRecordWriter logStream = leaderPartitions.get(partitionId);
+    if (logStream == null) {
+      LOG.debug("Leader change on partition {}, ignore push deployment request", partitionId);
+      return;
+    }
 
-            sendResponse(responseFuture, deploymentKey, partitionId);
-          } else {
-            actor.yieldThread();
-          }
-        });
+    final boolean success = writeDistributeDeployment(logStream, deploymentKey, deploymentRecord);
+    if (!success) {
+      actor.runDelayed(
+          Duration.ofMillis(100),
+          () ->
+              tryWriteDistributeDeployment(
+                  responseFuture, deploymentKey, partitionId, deploymentRecord));
+      return;
+    }
+
+    LOG.debug(
+        "Deployment DISTRIBUTE command for deployment {} was written on partition {}",
+        deploymentKey,
+        partitionId);
+
+    sendResponse(responseFuture, deploymentKey, partitionId);
   }
 
   private void sendResponse(
