@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.UnaryOperator;
+import java.util.function.BinaryOperator;
 
 /** Implementation of {@code ProcessingResultBuilder} that writes all data into a buffer */
 final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
@@ -34,7 +34,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final int sourceIndex;
 
   BufferedProcessingResultBuilder(
-      final UnaryOperator<Integer> capacityCalculator, final int sourceIndex) {
+      final BinaryOperator<Integer> capacityCalculator, final int sourceIndex) {
     bufferedStreamWriter = new BufferedStreamWriter(capacityCalculator);
     this.sourceIndex = sourceIndex;
 

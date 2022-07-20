@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.util.function.UnaryOperator;
+import java.util.function.BinaryOperator;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -36,13 +36,9 @@ final class BufferedStreamWriter {
 
   private int recordBufferOffset;
   private int recordCount;
-  private final UnaryOperator<Integer> capacityCalculator;
+  private final BinaryOperator<Integer> capacityCalculator;
 
-  /**
-   * @param capacityCalculator function that takes current buffer size as input and returns free
-   *     capacity
-   */
-  BufferedStreamWriter(final UnaryOperator<Integer> capacityCalculator) {
+  BufferedStreamWriter(final BinaryOperator<Integer> capacityCalculator) {
     reset();
 
     this.capacityCalculator = capacityCalculator;
@@ -88,7 +84,7 @@ final class BufferedStreamWriter {
   }
 
   boolean canWriteAdditionalEvent(final int length) {
-    return length < capacityCalculator.apply(recordBufferOffset);
+    return length < capacityCalculator.apply(recordCount, recordBufferOffset);
   }
 
   private void writeKey(long key) {
