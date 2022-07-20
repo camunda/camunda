@@ -24,7 +24,6 @@ public interface ProcessingResultBuilder {
    */
   ProcessingResultBuilder appendRecord(
       final long key,
-      int sourceIndex,
       final RecordType type,
       final Intent intent,
       final RejectionType rejectionType,

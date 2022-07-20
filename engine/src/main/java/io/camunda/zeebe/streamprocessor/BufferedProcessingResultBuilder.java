@@ -30,9 +30,11 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
   private final BufferedStreamWriter bufferedStreamWriter;
   private final List<Runnable> postCommitTasks = new ArrayList<>();
+  private final int sourceIndex;
 
-  BufferedProcessingResultBuilder(final int maxFragmentSize) {
+  BufferedProcessingResultBuilder(final int maxFragmentSize, final int sourceIndex) {
     bufferedStreamWriter = new BufferedStreamWriter(maxFragmentSize);
+    this.sourceIndex = sourceIndex;
 
     typeRegistry = new HashMap<>();
     EVENT_REGISTRY.forEach((e, c) -> typeRegistry.put(c, e));
@@ -41,7 +43,6 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   @Override
   public ProcessingResultBuilder appendRecord(
       final long key,
-      final int sourceIndex,
       final RecordType type,
       final Intent intent,
       final RejectionType rejectionType,
