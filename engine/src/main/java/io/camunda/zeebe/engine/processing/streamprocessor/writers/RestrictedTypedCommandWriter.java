@@ -10,20 +10,9 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
-/** Things that any actor can write to a partition. */
-/** This interface is supposed to be replaced by RestrictedTypedCommandWriter */
-public interface TypedCommandWriter extends RestrictedTypedCommandWriter {
-
-  @Override
+/** This interface is supposed to replace TypedCommandWriter */
+public interface RestrictedTypedCommandWriter {
   void appendNewCommand(Intent intent, RecordValue value);
 
-  @Override
   void appendFollowUpCommand(long key, Intent intent, RecordValue value);
-
-  void reset();
-
-  /**
-   * @return position of new record, negative value on failure
-   */
-  long flush();
 }

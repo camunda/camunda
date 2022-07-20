@@ -24,7 +24,7 @@ public final class Writers {
   /**
    * @return the writer, which is used by the processors to write (follow-up) commands
    */
-  public TypedCommandWriter command() {
+  public RestrictedTypedCommandWriter command() {
     return stream;
   }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
+import io.camunda.zeebe.engine.api.LegacyTask;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -19,7 +20,6 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
@@ -28,13 +28,13 @@ public final class DeploymentDistributionBehavior {
 
   private final DeploymentDistributionRecord deploymentDistributionRecord =
       new DeploymentDistributionRecord();
+
   private final DeploymentRecord emptyDeploymentRecord = new DeploymentRecord();
 
   private final List<Integer> otherPartitions;
   private final DeploymentDistributor deploymentDistributor;
   private final ProcessingScheduleService scheduleService;
   private final StateWriter stateWriter;
-  private final TypedCommandWriter commandWriter;
 
   public DeploymentDistributionBehavior(
       final Writers writers,
@@ -50,7 +50,6 @@ public final class DeploymentDistributionBehavior {
     this.scheduleService = scheduleService;
 
     stateWriter = writers.state();
-    commandWriter = writers.command();
   }
 
   public void distributeDeployment(final DeploymentRecord deploymentEvent, final long key) {
@@ -84,8 +83,10 @@ public final class DeploymentDistributionBehavior {
         deploymentPushedFuture, new WriteDeploymentDistributionCompleteTask(partitionId, key));
   }
 
-  private final class WriteDeploymentDistributionCompleteTask
-      implements Runnable, BiConsumer<Void, Throwable> {
+  private static final class WriteDeploymentDistributionCompleteTask implements LegacyTask {
+
+    private final DeploymentDistributionRecord deploymentDistributionRecord =
+        new DeploymentDistributionRecord();
 
     private final int partitionId;
     private final long key;
@@ -96,7 +97,9 @@ public final class DeploymentDistributionBehavior {
     }
 
     @Override
-    public void run() {
+    public void run(
+        final TypedCommandWriter commandWriter, final ProcessingScheduleService schedulingService) {
+
       deploymentDistributionRecord.setPartition(partitionId);
       commandWriter.reset();
       commandWriter.appendFollowUpCommand(
@@ -104,13 +107,8 @@ public final class DeploymentDistributionBehavior {
 
       final long pos = commandWriter.flush();
       if (pos < 0) {
-        scheduleService.runDelayed(Duration.ofMillis(100), this);
+        schedulingService.runDelayed(Duration.ofMillis(100), this);
       }
-    }
-
-    @Override
-    public void accept(final Void unused, final Throwable throwable) {
-      run();
     }
   }
 }

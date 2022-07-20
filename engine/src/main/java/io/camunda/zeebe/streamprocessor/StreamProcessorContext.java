@@ -65,7 +65,8 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
-    processingScheduleService = new ProcessingScheduleServiceImpl(actor);
+    // TODO clean this up as soon as legacy
+    processingScheduleService = new ProcessingScheduleServiceImpl(actor, streamWriterProxy);
     return this;
   }
 
