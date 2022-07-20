@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.engine.api;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedCommandWriter;
 
 /** This interface is here to migrate legacy tasks */
 @Deprecated
 public interface LegacyTask {
 
-  void run(TypedCommandWriter commandWriter, ProcessingScheduleService schedulingService);
+  void run(LegacyTypedCommandWriter commandWriter, ProcessingScheduleService schedulingService);
 }

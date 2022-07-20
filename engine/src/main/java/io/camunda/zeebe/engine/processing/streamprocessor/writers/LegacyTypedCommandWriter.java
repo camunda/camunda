@@ -12,7 +12,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 
 /** Things that any actor can write to a partition. */
 /** This interface is supposed to be replaced by RestrictedTypedCommandWriter */
-public interface TypedCommandWriter extends RestrictedTypedCommandWriter {
+public interface LegacyTypedCommandWriter extends RestrictedTypedCommandWriter {
 
   @Override
   void appendNewCommand(Intent intent, RecordValue value);

@@ -11,11 +11,11 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -66,7 +66,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   public void processRecord(
       final TypedRecord<IncidentRecord> command,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
     final long key = command.getKey();
 
@@ -96,7 +96,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
   private void attemptToContinueProcessProcessing(
       final TypedRecord<IncidentRecord> command,
-      final TypedStreamWriter streamWriter,
+      final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect,
       final IncidentRecord incident) {
     final long jobKey = incident.getJobKey();

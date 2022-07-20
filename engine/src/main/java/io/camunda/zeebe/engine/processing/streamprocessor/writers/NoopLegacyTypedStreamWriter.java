@@ -13,7 +13,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
-public final class NoopTypedStreamWriter implements TypedStreamWriter {
+public final class NoopLegacyTypedStreamWriter implements LegacyTypedStreamWriter {
 
   @Override
   public void appendRejection(

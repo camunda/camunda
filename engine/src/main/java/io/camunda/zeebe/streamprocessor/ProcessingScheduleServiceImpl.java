@@ -9,7 +9,7 @@ package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.engine.api.LegacyTask;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedCommandWriter;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
@@ -18,12 +18,12 @@ import java.util.function.BiConsumer;
 public class ProcessingScheduleServiceImpl implements ProcessingScheduleService {
 
   private final ActorControl actorControl;
-  private final TypedCommandWriter commandWriter;
+  private final LegacyTypedCommandWriter commandWriter;
 
   public ProcessingScheduleServiceImpl(
-      final ActorControl actorControl, final TypedCommandWriter typedCommandWriter) {
+      final ActorControl actorControl, final LegacyTypedCommandWriter legacyTypedCommandWriter) {
     this.actorControl = actorControl;
-    commandWriter = typedCommandWriter;
+    commandWriter = legacyTypedCommandWriter;
   }
 
   @Override

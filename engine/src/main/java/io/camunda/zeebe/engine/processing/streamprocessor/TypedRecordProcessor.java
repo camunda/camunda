@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import java.util.function.Consumer;
 
@@ -23,22 +23,22 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
   default void processRecord(final TypedRecord<T> record) {}
 
   /**
-   * @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer)
+   * @see #processRecord(TypedRecord, TypedResponseWriter, LegacyTypedStreamWriter, Consumer)
    */
   default void processRecord(
       final TypedRecord<T> record,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+      final LegacyTypedStreamWriter streamWriter) {
     processRecord(record);
   }
 
   /**
-   * @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer)
+   * @see #processRecord(TypedRecord, TypedResponseWriter, LegacyTypedStreamWriter, Consumer)
    */
   default void processRecord(
       final TypedRecord<T> record,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
     processRecord(record, responseWriter, streamWriter);
   }
@@ -58,7 +58,7 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
       final long position,
       final TypedRecord<T> record,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
     processRecord(record, responseWriter, streamWriter, sideEffect);
   }

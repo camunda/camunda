@@ -9,10 +9,10 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
@@ -42,7 +42,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
   public void processRecord(
       final TypedRecord<ProcessMessageSubscriptionRecord> command,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+      final LegacyTypedStreamWriter streamWriter) {
 
     final ProcessMessageSubscriptionRecord subscriptionRecord = command.getValue();
 

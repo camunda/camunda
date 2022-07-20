@@ -22,8 +22,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.MetadataFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProtocolVersionFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -129,7 +129,7 @@ public final class ProcessingStateMachine {
   private final ActorControl actor;
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
-  private final TypedStreamWriter logStreamWriter;
+  private final LegacyTypedStreamWriter logStreamWriter;
   private final TransactionContext transactionContext;
   private final RetryStrategy writeRetryStrategy;
   private final RetryStrategy sideEffectsRetryStrategy;

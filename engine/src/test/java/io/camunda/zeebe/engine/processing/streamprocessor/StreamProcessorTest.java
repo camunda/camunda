@@ -27,8 +27,8 @@ import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
@@ -273,7 +273,7 @@ public final class StreamProcessorTest {
                       public void processRecord(
                           final TypedRecord<UnifiedRecordValue> record,
                           final TypedResponseWriter responseWriter,
-                          final TypedStreamWriter streamWriter) {
+                          final LegacyTypedStreamWriter streamWriter) {
 
                         streamWriter.appendFollowUpEvent(
                             record.getKey(),
@@ -311,7 +311,7 @@ public final class StreamProcessorTest {
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
+                      final LegacyTypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
 
                     sideEffect.accept(
@@ -344,7 +344,7 @@ public final class StreamProcessorTest {
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
+                      final LegacyTypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
                     sideEffect.accept(
                         () -> {
@@ -376,7 +376,7 @@ public final class StreamProcessorTest {
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
+                      final LegacyTypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
 
                     sideEffect.accept(
@@ -493,7 +493,7 @@ public final class StreamProcessorTest {
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter) {
+                      final LegacyTypedStreamWriter streamWriter) {
 
                     responseWriter.writeEventOnCommand(
                         3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
@@ -532,7 +532,7 @@ public final class StreamProcessorTest {
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter) {
+                      final LegacyTypedStreamWriter streamWriter) {
 
                     responseWriter.writeEventOnCommand(
                         3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
@@ -688,7 +688,7 @@ public final class StreamProcessorTest {
                       public void processRecord(
                           final TypedRecord<UnifiedRecordValue> record,
                           final TypedResponseWriter responseWriter,
-                          final TypedStreamWriter streamWriter) {
+                          final LegacyTypedStreamWriter streamWriter) {
 
                         streamWriter.appendFollowUpEvent(
                             record.getKey(),

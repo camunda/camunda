@@ -10,12 +10,14 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 /** Convenience class to aggregate all the writers */
 public final class Writers {
 
-  private final TypedStreamWriter stream;
+  private final LegacyTypedStreamWriter stream;
   private final StateWriter state;
   private final TypedResponseWriter response;
 
   public Writers(
-      final TypedStreamWriter stream, final StateWriter state, final TypedResponseWriter response) {
+      final LegacyTypedStreamWriter stream,
+      final StateWriter state,
+      final TypedResponseWriter response) {
     this.stream = stream;
     this.state = state;
     this.response = response;

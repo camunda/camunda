@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.deployment.distribute;
 
 import io.camunda.zeebe.engine.api.LegacyTask;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
@@ -98,7 +98,8 @@ public final class DeploymentDistributionBehavior {
 
     @Override
     public void run(
-        final TypedCommandWriter commandWriter, final ProcessingScheduleService schedulingService) {
+        final LegacyTypedCommandWriter commandWriter,
+        final ProcessingScheduleService schedulingService) {
 
       deploymentDistributionRecord.setPartition(partitionId);
       commandWriter.reset();

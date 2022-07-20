@@ -24,7 +24,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -243,7 +243,7 @@ public final class TestStreams {
       final String log,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory,
-      final Function<LogStreamBatchWriter, TypedStreamWriter> streamWriterFactory) {
+      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory) {
     final SynchronousLogStream stream = getLogStream(log);
     return buildStreamProcessor(
         stream, zeebeDbFactory, typedRecordProcessorFactory, streamWriterFactory, false);
@@ -253,7 +253,7 @@ public final class TestStreams {
       final SynchronousLogStream stream,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory factory,
-      final Function<LogStreamBatchWriter, TypedStreamWriter> streamWriterFactory,
+      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory,
       final boolean awaitOpening) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);

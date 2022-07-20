@@ -13,8 +13,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListene
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriterImpl;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriterImpl;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -34,8 +34,8 @@ public final class StreamProcessorBuilder {
   private ZeebeDb zeebeDb;
   private Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private int nodeId;
-  private Function<LogStreamBatchWriter, TypedStreamWriter> typedStreamWriterFactory =
-      TypedStreamWriterImpl::new;
+  private Function<LogStreamBatchWriter, LegacyTypedStreamWriter> typedStreamWriterFactory =
+      LegacyTypedStreamWriterImpl::new;
 
   public StreamProcessorBuilder() {
     streamProcessorContext = new StreamProcessorContext();
@@ -132,12 +132,12 @@ public final class StreamProcessorBuilder {
     Objects.requireNonNull(eventApplierFactory, "No factory for the event supplier provided.");
   }
 
-  public Function<LogStreamBatchWriter, TypedStreamWriter> getTypedStreamWriterFactory() {
+  public Function<LogStreamBatchWriter, LegacyTypedStreamWriter> getTypedStreamWriterFactory() {
     return typedStreamWriterFactory;
   }
 
   public StreamProcessorBuilder typedStreamWriterFactory(
-      final Function<LogStreamBatchWriter, TypedStreamWriter> typedStreamWriterFactory) {
+      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> typedStreamWriterFactory) {
     this.typedStreamWriterFactory = typedStreamWriterFactory;
     return this;
   }

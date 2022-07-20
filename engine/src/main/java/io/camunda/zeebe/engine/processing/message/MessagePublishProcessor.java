@@ -15,9 +15,9 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -75,7 +75,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   public void processRecord(
       final TypedRecord<MessageRecord> command,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
     this.responseWriter = responseWriter;
     messageRecord = command.getValue();

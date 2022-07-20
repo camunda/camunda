@@ -16,8 +16,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.util.RecordStream;
@@ -193,7 +193,7 @@ public final class TypedStreamProcessorTest {
     public void processRecord(
         final TypedRecord<DeploymentRecord> record,
         final TypedResponseWriter responseWriter,
-        final TypedStreamWriter streamWriter) {
+        final LegacyTypedStreamWriter streamWriter) {
       if (record.getKey() == 0) {
         throw new RuntimeException("expected");
       }
@@ -209,7 +209,7 @@ public final class TypedStreamProcessorTest {
     public void processRecord(
         final TypedRecord<DeploymentRecord> record,
         final TypedResponseWriter responseWriter,
-        final TypedStreamWriter streamWriter) {
+        final LegacyTypedStreamWriter streamWriter) {
       streamWriter.appendFollowUpEvent(
           keyGenerator.nextKey(), DeploymentIntent.CREATED, record.getValue());
       streamWriter.flush();

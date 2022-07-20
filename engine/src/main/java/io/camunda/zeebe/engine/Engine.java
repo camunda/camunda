@@ -16,8 +16,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContextImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -39,7 +39,7 @@ public class Engine implements RecordProcessor<EngineContext> {
   private EventApplier eventApplier;
   private RecordProcessorMap recordProcessorMap;
   private MutableZeebeState zeebeState;
-  private TypedStreamWriter streamWriter;
+  private LegacyTypedStreamWriter streamWriter;
   private TypedResponseWriter responseWriter;
 
   private final ErrorRecord errorRecord = new ErrorRecord();

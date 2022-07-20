@@ -13,7 +13,7 @@ import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
@@ -169,7 +169,7 @@ public class StreamProcessorHealthTest {
                         }
                       });
             },
-            batchWriter -> new WrappedStreamWriter());
+            batchWriter -> new WrappedStreamWriterLegacy());
 
     return streamProcessor;
   }
@@ -192,7 +192,7 @@ public class StreamProcessorHealthTest {
     }
   }
 
-  private final class WrappedStreamWriter implements TypedStreamWriter {
+  private final class WrappedStreamWriterLegacy implements LegacyTypedStreamWriter {
 
     @Override
     public void appendRejection(

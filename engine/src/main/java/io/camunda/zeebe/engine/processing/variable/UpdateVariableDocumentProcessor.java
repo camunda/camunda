@@ -9,9 +9,9 @@ package io.camunda.zeebe.engine.processing.variable;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -45,7 +45,7 @@ public final class UpdateVariableDocumentProcessor
   public void processRecord(
       final TypedRecord<VariableDocumentRecord> record,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+      final LegacyTypedStreamWriter streamWriter) {
     final VariableDocumentRecord value = record.getValue();
 
     final ElementInstance scope = elementInstanceState.getInstance(value.getScopeKey());
