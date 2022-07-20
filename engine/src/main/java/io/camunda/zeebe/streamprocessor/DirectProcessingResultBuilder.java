@@ -35,8 +35,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
   private final LegacyTypedStreamWriter streamWriter;
   private final LegacyTypedResponseWriter responseWriter;
 
-  private boolean hasResponse =
-      true; // TODO set to false after the process builder class is used by the engine
+  private boolean hasResponse = false;
   private final long sourceRecordPosition;
 
   DirectProcessingResultBuilder(

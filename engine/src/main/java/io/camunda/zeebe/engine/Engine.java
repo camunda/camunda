@@ -20,13 +20,14 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedRes
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.processing.DbBlackListState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 
 public class Engine implements RecordProcessor<EngineContext> {
@@ -38,11 +39,14 @@ public class Engine implements RecordProcessor<EngineContext> {
       "Expected to process record '%s' without errors, but exception occurred with message '%s'.";
   private EventApplier eventApplier;
   private RecordProcessorMap recordProcessorMap;
-  private MutableZeebeState zeebeState;
+  private ZeebeDbState zeebeState;
   private LegacyTypedStreamWriter streamWriter;
   private LegacyTypedResponseWriter responseWriter;
 
   private final ErrorRecord errorRecord = new ErrorRecord();
+
+  private final ProcessingResultBuilderMutex resultBuilderMutex =
+      new ProcessingResultBuilderMutex();
 
   private Writers writers;
 
@@ -53,15 +57,21 @@ public class Engine implements RecordProcessor<EngineContext> {
     streamWriter = engineContext.getStreamWriterProxy();
     responseWriter = engineContext.getTypedResponseWriter();
 
+    zeebeState =
+        new ZeebeDbState(
+            engineContext.getPartitionId(),
+            engineContext.getZeebeDb(),
+            engineContext.getTransactionContext());
+    eventApplier = engineContext.getEventApplierFactory().apply(zeebeState);
+
+    writers = new Writers(resultBuilderMutex, eventApplier);
+
     final var typedProcessorContext =
         new TypedRecordProcessorContextImpl(
             engineContext.getPartitionId(),
             engineContext.getScheduleService(),
-            engineContext.getZeebeDb(),
-            engineContext.getTransactionContext(),
-            streamWriter,
-            engineContext.getEventApplierFactory(),
-            responseWriter);
+            zeebeState,
+            writers);
 
     final TypedRecordProcessors typedRecordProcessors =
         engineContext.getTypedRecordProcessorFactory().createProcessors(typedProcessorContext);
@@ -71,10 +81,7 @@ public class Engine implements RecordProcessor<EngineContext> {
     engineContext.setLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
 
-    writers = typedProcessorContext.getWriters();
     engineContext.setWriters(writers);
-    zeebeState = typedProcessorContext.getZeebeState();
-    eventApplier = engineContext.getEventApplierFactory().apply(zeebeState);
   }
 
   @Override
@@ -85,37 +92,38 @@ public class Engine implements RecordProcessor<EngineContext> {
   @Override
   public ProcessingResult process(
       final TypedRecord record, final ProcessingResultBuilder processingResultBuilder) {
-    TypedRecordProcessor<?> currentProcessor = null;
+    try (final var scope = new ProcessingResultBuilderScope(processingResultBuilder)) {
+      TypedRecordProcessor<?> currentProcessor = null;
 
-    final var typedCommand = (TypedRecord<?>) record;
-    try {
-      currentProcessor =
-          recordProcessorMap.get(
-              typedCommand.getRecordType(),
-              typedCommand.getValueType(),
-              typedCommand.getIntent().value());
-    } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, typedCommand, e);
+      final var typedCommand = (TypedRecord<?>) record;
+      try {
+        currentProcessor =
+            recordProcessorMap.get(
+                typedCommand.getRecordType(),
+                typedCommand.getValueType(),
+                typedCommand.getIntent().value());
+      } catch (final Exception e) {
+        LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, typedCommand, e);
+      }
+
+      if (currentProcessor == null) {
+        return EmptyProcessingResult.INSTANCE;
+      }
+
+      final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
+      if (isNotOnBlacklist) {
+        final long position = typedCommand.getPosition();
+        currentProcessor.processRecord(
+            position,
+            record,
+            responseWriter,
+            streamWriter,
+            (sep) -> {
+              processingResultBuilder.resetPostCommitTasks();
+              processingResultBuilder.appendPostCommitTask(sep::flush);
+            });
+      }
     }
-
-    if (currentProcessor == null) {
-      return EmptyProcessingResult.INSTANCE;
-    }
-
-    final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
-    if (isNotOnBlacklist) {
-      final long position = typedCommand.getPosition();
-      currentProcessor.processRecord(
-          position,
-          record,
-          responseWriter,
-          streamWriter,
-          (sep) -> {
-            processingResultBuilder.resetPostCommitTasks();
-            processingResultBuilder.appendPostCommitTask(sep::flush);
-          });
-    }
-
     return processingResultBuilder.build();
   }
 
@@ -124,26 +132,60 @@ public class Engine implements RecordProcessor<EngineContext> {
       final Throwable processingException,
       final TypedRecord record,
       final ProcessingResultBuilder processingResultBuilder) {
-
     final String errorMessage =
         String.format(PROCESSING_ERROR_MESSAGE, record, processingException.getMessage());
     LOG.error(errorMessage, processingException);
 
-    writers.rejection().appendRejection(record, RejectionType.PROCESSING_ERROR, errorMessage);
-    writers
-        .response()
-        .writeRejectionOnCommand(record, RejectionType.PROCESSING_ERROR, errorMessage);
-    errorRecord.initErrorRecord(processingException, record.getPosition());
+    try (final var scope = new ProcessingResultBuilderScope(processingResultBuilder)) {
+      writers.rejection().appendRejection(record, RejectionType.PROCESSING_ERROR, errorMessage);
+      writers
+          .response()
+          .writeRejectionOnCommand(record, RejectionType.PROCESSING_ERROR, errorMessage);
+      errorRecord.initErrorRecord(processingException, record.getPosition());
 
-    if (DbBlackListState.shouldBeBlacklisted(record.getIntent())) {
-      if (record.getValue() instanceof ProcessInstanceRelated) {
-        final long processInstanceKey =
-            ((ProcessInstanceRelated) record.getValue()).getProcessInstanceKey();
-        errorRecord.setProcessInstanceKey(processInstanceKey);
+      if (DbBlackListState.shouldBeBlacklisted(record.getIntent())) {
+        if (record.getValue() instanceof ProcessInstanceRelated) {
+          final long processInstanceKey =
+              ((ProcessInstanceRelated) record.getValue()).getProcessInstanceKey();
+          errorRecord.setProcessInstanceKey(processInstanceKey);
+        }
+
+        writers.state().appendFollowUpEvent(record.getKey(), ErrorIntent.CREATED, errorRecord);
       }
-
-      writers.state().appendFollowUpEvent(record.getKey(), ErrorIntent.CREATED, errorRecord);
     }
     return processingResultBuilder.build();
+  }
+
+  private static final class ProcessingResultBuilderMutex
+      implements Supplier<ProcessingResultBuilder> {
+
+    private ProcessingResultBuilder resultBuilder;
+
+    private void setResultBuilder(final ProcessingResultBuilder resultBuilder) {
+      this.resultBuilder = resultBuilder;
+    }
+
+    private void unsetResultBuilder() {
+      /* TODO think about what we want to do here. Right now it is rest to null, which means NPEs
+      if accessed outside scope. We could also set a NOOP implementation, or one that logs warnings, etc.*/
+      resultBuilder = null;
+    }
+
+    @Override
+    public ProcessingResultBuilder get() {
+      return resultBuilder;
+    }
+  }
+
+  private final class ProcessingResultBuilderScope implements AutoCloseable {
+
+    private ProcessingResultBuilderScope(final ProcessingResultBuilder processingResultBuilder) {
+      resultBuilderMutex.setResultBuilder(processingResultBuilder);
+    }
+
+    @Override
+    public void close() {
+      resultBuilderMutex.unsetResultBuilder();
+    }
   }
 }

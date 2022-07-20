@@ -7,17 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.camunda.zeebe.db.TransactionContext;
-import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import java.util.function.Function;
 
 public class TypedRecordProcessorContextImpl implements TypedRecordProcessorContext {
 
@@ -30,19 +23,12 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   public TypedRecordProcessorContextImpl(
       final int partitionId,
       final ProcessingScheduleService scheduleService,
-      final ZeebeDb zeebeDb,
-      final TransactionContext transactionContext,
-      final LegacyTypedStreamWriter streamWriterProxy,
-      final Function<MutableZeebeState, EventApplier> eventApplierFactory,
-      final LegacyTypedResponseWriter legacyTypedResponseWriter) {
+      final ZeebeDbState zeebeState,
+      final Writers writers) {
     this.partitionId = partitionId;
     this.scheduleService = scheduleService;
-
-    zeebeState = new ZeebeDbState(partitionId, zeebeDb, transactionContext);
-
-    final var stateWriter =
-        new EventApplyingStateWriter(streamWriterProxy, eventApplierFactory.apply(zeebeState));
-    writers = new Writers(streamWriterProxy, stateWriter, legacyTypedResponseWriter);
+    this.zeebeState = zeebeState;
+    this.writers = writers;
   }
 
   @Override
