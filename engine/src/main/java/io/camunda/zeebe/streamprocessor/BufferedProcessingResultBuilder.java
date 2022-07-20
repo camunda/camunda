@@ -9,6 +9,7 @@ package io.camunda.zeebe.streamprocessor;
 
 import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.EVENT_REGISTRY;
 
+import io.camunda.zeebe.engine.api.PostCommitTask;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.msgpack.UnpackedObject;
@@ -30,7 +31,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final Map<Class<? extends UnpackedObject>, ValueType> typeRegistry;
 
   private final BufferedStreamWriter bufferedStreamWriter;
-  private final List<Runnable> postCommitTasks = new ArrayList<>();
+  private final List<PostCommitTask> postCommitTasks = new ArrayList<>();
   private final int sourceIndex;
 
   BufferedProcessingResultBuilder(
@@ -71,7 +72,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   }
 
   @Override
-  public ProcessingResultBuilder appendPostCommitTask(final Runnable r) {
+  public ProcessingResultBuilder appendPostCommitTask(final PostCommitTask r) {
     postCommitTasks.add(r);
     return this;
   }
@@ -79,6 +80,12 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   @Override
   public ProcessingResultBuilder reset() {
     bufferedStreamWriter.reset();
+    postCommitTasks.clear();
+    return this;
+  }
+
+  @Override
+  public ProcessingResultBuilder resetPostCommitTasks() {
     postCommitTasks.clear();
     return this;
   }
