@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionBehavior;
+import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
@@ -67,6 +68,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final int partitionsCount,
       final Writers writers,
       final ProcessingScheduleService scheduleService,
+      final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final DeploymentDistributor deploymentDistributor,
       final KeyGenerator keyGenerator) {
     processState = zeebeState.getProcessState();
@@ -82,7 +84,11 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
             processState, zeebeState.getMessageStartEventSubscriptionState(), keyGenerator);
     deploymentDistributionBehavior =
         new DeploymentDistributionBehavior(
-            writers, partitionsCount, deploymentDistributor, scheduleService);
+            writers,
+            partitionsCount,
+            deploymentDistributionCommandSender,
+            deploymentDistributor,
+            scheduleService);
   }
 
   @Override

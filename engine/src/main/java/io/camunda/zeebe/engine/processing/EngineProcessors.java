@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentResponder;
 import io.camunda.zeebe.engine.processing.deployment.distribute.CompleteDeploymentDistributionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
+import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
@@ -49,6 +50,7 @@ public final class EngineProcessors {
       final TypedRecordProcessorContext typedRecordProcessorContext,
       final int partitionsCount,
       final SubscriptionCommandSender subscriptionCommandSender,
+      final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final DeploymentDistributor deploymentDistributor,
       final DeploymentResponder deploymentResponder,
       final Consumer<String> onJobsAvailableCallback,
@@ -103,6 +105,7 @@ public final class EngineProcessors {
         writers,
         partitionsCount,
         scheduleService,
+        deploymentDistributionCommandSender,
         deploymentDistributor,
         zeebeState.getKeyGenerator());
     addMessageProcessors(
@@ -177,6 +180,7 @@ public final class EngineProcessors {
       final Writers writers,
       final int partitionsCount,
       final ProcessingScheduleService scheduleService,
+      final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final DeploymentDistributor deploymentDistributor,
       final KeyGenerator keyGenerator) {
 
@@ -190,6 +194,7 @@ public final class EngineProcessors {
             partitionsCount,
             writers,
             scheduleService,
+            deploymentDistributionCommandSender,
             deploymentDistributor,
             keyGenerator);
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
@@ -197,7 +202,10 @@ public final class EngineProcessors {
     // redistributes deployments after recovery
     final var deploymentRedistributor =
         new DeploymentRedistributor(
-            partitionsCount, deploymentDistributor, zeebeState.getDeploymentState());
+            partitionsCount,
+            deploymentDistributionCommandSender,
+            deploymentDistributor,
+            zeebeState.getDeploymentState());
     typedRecordProcessors.withListener(deploymentRedistributor);
 
     // on other partitions DISTRIBUTE command is received and processed

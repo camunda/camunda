@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
+import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
@@ -210,6 +211,8 @@ public final class EngineRule extends ExternalResource {
                               }),
                           partitionCount,
                           new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
+                          new DeploymentDistributionCommandSender(
+                              partitionId, interPartitionCommandSender),
                           deploymentDistributor,
                           (key, partition) -> {},
                           jobsAvailableCallback,

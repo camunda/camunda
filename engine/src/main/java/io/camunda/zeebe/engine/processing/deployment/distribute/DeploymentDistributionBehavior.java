@@ -32,6 +32,8 @@ public final class DeploymentDistributionBehavior {
   private final DeploymentRecord emptyDeploymentRecord = new DeploymentRecord();
 
   private final List<Integer> otherPartitions;
+  private final DeploymentDistributionCommandSender deploymentDistributionCommandSender;
+
   private final DeploymentDistributor deploymentDistributor;
   private final ProcessingScheduleService scheduleService;
   private final StateWriter stateWriter;
@@ -39,6 +41,7 @@ public final class DeploymentDistributionBehavior {
   public DeploymentDistributionBehavior(
       final Writers writers,
       final int partitionsCount,
+      final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final DeploymentDistributor deploymentDistributor,
       final ProcessingScheduleService scheduleService) {
     otherPartitions =
@@ -46,6 +49,7 @@ public final class DeploymentDistributionBehavior {
             .filter(partition -> partition != Protocol.DEPLOYMENT_PARTITION)
             .boxed()
             .collect(Collectors.toList());
+    this.deploymentDistributionCommandSender = deploymentDistributionCommandSender;
     this.deploymentDistributor = deploymentDistributor;
     this.scheduleService = scheduleService;
 

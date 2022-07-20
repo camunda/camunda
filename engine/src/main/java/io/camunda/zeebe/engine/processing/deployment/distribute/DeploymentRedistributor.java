@@ -14,14 +14,17 @@ import io.camunda.zeebe.engine.state.immutable.DeploymentState;
 public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
 
   private final int partitionsCount;
+  private final DeploymentDistributionCommandSender deploymentDistributionCommandSender;
   private final DeploymentDistributor deploymentDistributor;
   private final DeploymentState deploymentState;
 
   public DeploymentRedistributor(
       final int partitionsCount,
+      final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final DeploymentDistributor deploymentDistributor,
       final DeploymentState deploymentState) {
     this.partitionsCount = partitionsCount;
+    this.deploymentDistributionCommandSender = deploymentDistributionCommandSender;
     this.deploymentDistributor = deploymentDistributor;
     this.deploymentState = deploymentState;
   }
@@ -32,7 +35,11 @@ public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
 
     final var deploymentDistributionBehavior =
         new DeploymentDistributionBehavior(
-            writers, partitionsCount, deploymentDistributor, context.getScheduleService());
+            writers,
+            partitionsCount,
+            deploymentDistributionCommandSender,
+            deploymentDistributor,
+            context.getScheduleService());
 
     deploymentState.foreachPendingDeploymentDistribution(
         (key, partitionId, deployment) ->
