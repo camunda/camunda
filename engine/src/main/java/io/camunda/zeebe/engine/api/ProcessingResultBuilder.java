@@ -59,5 +59,12 @@ public interface ProcessingResultBuilder {
    */
   ProcessingResultBuilder reset();
 
+  /**
+   * Resets itself with the post commit tasks reset
+   *
+   * @return itself for method chaining
+   */
+  ProcessingResultBuilder resetPostCommitTasks();
+
   ProcessingResult build();
 }

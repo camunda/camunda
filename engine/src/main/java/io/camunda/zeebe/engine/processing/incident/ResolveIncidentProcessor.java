@@ -81,7 +81,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
 
     // if it fails, a new incident is raised
-    attemptToContinueProcessProcessing(command, responseWriter, streamWriter, sideEffect, incident);
+    attemptToContinueProcessProcessing(command, streamWriter, sideEffect, incident);
   }
 
   private void rejectResolveCommand(
@@ -96,7 +96,6 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
   private void attemptToContinueProcessProcessing(
       final TypedRecord<IncidentRecord> command,
-      final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect,
       final IncidentRecord incident) {
@@ -111,7 +110,6 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
         .ifRightOrLeft(
             failedCommand -> {
               sideEffects.clear();
-              sideEffects.add(responseWriter::flush);
 
               bpmnStreamProcessor.processRecord(
                   failedCommand, noopResponseWriter, streamWriter, sideEffects::add);

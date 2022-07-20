@@ -12,7 +12,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -35,7 +34,6 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private List<StreamProcessorLifecycleAware> lifecycleListeners = Collections.EMPTY_LIST;
-  private RecordProcessorMap recordProcessorMap;
   private StreamProcessorListener streamProcessorListener;
   private Writers writers;
 
@@ -106,16 +104,6 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   @Override
   public void setLifecycleListeners(final List<StreamProcessorLifecycleAware> lifecycleListeners) {
     this.lifecycleListeners = lifecycleListeners;
-  }
-
-  @Deprecated // will be moved to engine
-  public RecordProcessorMap getRecordProcessorMap() {
-    return recordProcessorMap;
-  }
-
-  @Override
-  public void setRecordProcessorMap(final RecordProcessorMap recordProcessorMap) {
-    this.recordProcessorMap = recordProcessorMap;
   }
 
   public StreamProcessorListener getStreamProcessorListener() {

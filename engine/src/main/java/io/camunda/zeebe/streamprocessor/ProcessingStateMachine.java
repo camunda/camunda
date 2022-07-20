@@ -9,20 +9,20 @@ package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import io.camunda.zeebe.engine.api.EmptyProcessingResult;
+import io.camunda.zeebe.engine.api.ProcessingContext;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
+import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.EventFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.LastProcessingPositions;
 import io.camunda.zeebe.engine.processing.streamprocessor.MetadataEventFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.MetadataFilter;
-import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProtocolVersionFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -34,7 +34,6 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -46,9 +45,7 @@ import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.prometheus.client.Histogram;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.function.BooleanSupplier;
-import org.agrona.collections.MutableReference;
 import org.slf4j.Logger;
 
 /**
@@ -142,15 +139,12 @@ public final class ProcessingStateMachine {
   private final BooleanSupplier abortCondition;
   private final ErrorRecord errorRecord = new ErrorRecord();
   private final RecordValues recordValues;
-  private final RecordProcessorMap recordProcessorMap;
   private final TypedRecordImpl typedCommand;
   private final StreamProcessorMetrics metrics;
   private final StreamProcessorListener streamProcessorListener;
 
   // current iteration
-  private SideEffectProducer sideEffectProducer;
   private LoggedEvent currentRecord;
-  private TypedRecordProcessor<?> currentProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
   private long writtenPosition = StreamProcessor.UNSET_POSITION;
   private long lastSuccessfulProcessedRecordPosition = StreamProcessor.UNSET_POSITION;
@@ -162,12 +156,16 @@ public final class ProcessingStateMachine {
   private boolean reachedEnd = true;
   private boolean inProcessing;
   private final StreamProcessorContext context;
+  private final RecordProcessor engine;
+  private ProcessingResult currentProcessingResult;
 
   public ProcessingStateMachine(
-      final StreamProcessorContext context, final BooleanSupplier shouldProcessNext) {
+      final StreamProcessorContext context,
+      final BooleanSupplier shouldProcessNext,
+      final RecordProcessor engine) {
     this.context = context;
+    this.engine = engine;
     actor = context.getActor();
-    recordProcessorMap = context.getRecordProcessorMap();
     recordValues = context.getRecordValues();
     logStreamReader = context.getLogStreamReader();
     logStreamWriter = context.getLogStreamWriter();
@@ -249,14 +247,10 @@ public final class ProcessingStateMachine {
     // are triggered from commit listener
     inProcessing = true;
 
+    currentProcessingResult = EmptyProcessingResult.INSTANCE;
+
     metadata.reset();
     command.readMetadata(metadata);
-
-    currentProcessor = chooseNextProcessor(command);
-    if (currentProcessor == null) {
-      skipRecord();
-      return;
-    }
 
     // Here we need to get the current time, since we want to calculate
     // how long it took between writing to the dispatcher and processing.
@@ -264,13 +258,14 @@ public final class ProcessingStateMachine {
     final var processingStartTime = ActorClock.currentTimeMillis();
     processingTimer = metrics.startProcessingDurationTimer(metadata.getRecordType());
 
-    final MutableReference<ProcessingResult> processingResultRef = new MutableReference<>();
-
     try {
       final var value = recordValues.readRecordValue(command, metadata.getValueType());
       typedCommand.wrap(command, metadata, value);
 
-      final ProcessingResultBuilder resultBuilder = new DirectProcessingResultBuilder(context);
+      final ProcessingResultBuilder processingResultBuilder =
+          new DirectProcessingResultBuilder(context);
+      final ProcessingContext processingContext =
+          new ProcessingContextImpl(processingResultBuilder);
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
@@ -280,28 +275,19 @@ public final class ProcessingStateMachine {
             final long position = typedCommand.getPosition();
             resetOutput(position);
 
-            // default side effect is responses; can be changed by processor
-            sideEffectProducer = responseWriter;
-            final boolean isNotOnBlacklist =
-                !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
-            if (isNotOnBlacklist) {
-              currentProcessor.processRecord(
-                  position,
-                  typedCommand,
-                  responseWriter,
-                  logStreamWriter,
-                  this::setSideEffectProducer);
-            }
-
-            final var processingResult = resultBuilder.build();
-            processingResultRef.set(processingResult);
+            currentProcessingResult = engine.process(typedCommand, processingContext);
 
             lastProcessedPositionState.markAsProcessed(position);
           });
 
       metrics.commandsProcessed();
 
-      writeRecords(processingResultRef.get());
+      if (EmptyProcessingResult.INSTANCE == currentProcessingResult) {
+        skipRecord();
+        return;
+      }
+
+      writeRecords();
     } catch (final RecoverableException recoverableException) {
       // recoverable
       LOG.error(
@@ -314,36 +300,14 @@ public final class ProcessingStateMachine {
       throw unrecoverableException;
     } catch (final Exception e) {
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, command, metadata, e);
-      if (processingResultRef.get() == null) {
-        processingResultRef.set(
-            new DirectProcessingResult(context, Collections.emptyList(), false));
-      }
-      onError(e, () -> writeRecords(processingResultRef.get()));
+      onError(e, this::writeRecords);
     }
-  }
-
-  private TypedRecordProcessor<?> chooseNextProcessor(final LoggedEvent command) {
-    TypedRecordProcessor<?> typedRecordProcessor = null;
-
-    try {
-      typedRecordProcessor =
-          recordProcessorMap.get(
-              metadata.getRecordType(), metadata.getValueType(), metadata.getIntent().value());
-    } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, command, metadata, e);
-    }
-
-    return typedRecordProcessor;
   }
 
   private void resetOutput(final long sourceRecordPosition) {
     responseWriter.reset();
     logStreamWriter.reset();
     logStreamWriter.configureSourceContext(sourceRecordPosition);
-  }
-
-  public void setSideEffectProducer(final SideEffectProducer sideEffectProducer) {
-    this.sideEffectProducer = sideEffectProducer;
   }
 
   private void onError(final Throwable processingException, final Runnable nextStep) {
@@ -382,15 +346,14 @@ public final class ProcessingStateMachine {
           final long position = typedCommand.getPosition();
           resetOutput(position);
 
-          writeRejectionOnCommand(processingException);
-          errorRecord.initErrorRecord(processingException, position);
+          final ProcessingResultBuilder processingResultBuilder =
+              new DirectProcessingResultBuilder(context);
 
-          zeebeState
-              .getBlackListState()
-              .tryToBlacklist(typedCommand, errorRecord::setProcessInstanceKey);
-
-          logStreamWriter.appendFollowUpEvent(
-              typedCommand.getKey(), ErrorIntent.CREATED, errorRecord);
+          currentProcessingResult =
+              engine.onProcessingError(
+                  processingException,
+                  typedCommand,
+                  new ErrorHandlingContextImpl(processingResultBuilder));
         });
   }
 
@@ -404,12 +367,12 @@ public final class ProcessingStateMachine {
         typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
   }
 
-  private void writeRecords(final ProcessingResult result) {
+  private void writeRecords() {
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
               final var batchWriter = context.getLogStreamBatchWriter();
-              final long position1 = result.writeRecordsToStream(batchWriter);
+              final long position1 = currentProcessingResult.writeRecordsToStream(batchWriter);
               final long position2 = batchWriter.tryWrite();
 
               final var maxPosition = Math.max(position1, position2);
@@ -428,19 +391,19 @@ public final class ProcessingStateMachine {
         (bool, t) -> {
           if (t != null) {
             LOG.error(ERROR_MESSAGE_WRITE_RECORD_ABORTED, currentRecord, metadata, t);
-            onError(t, () -> writeRecords(result));
+            onError(t, this::writeRecords);
           } else {
             // We write various type of records. The positions are always increasing and
             // incremented by 1 for one record (even in a batch), so we can count the amount
             // of written records via the lastWritten and now written position.
             final var amount = writtenPosition - lastWrittenPosition;
             metrics.recordsWritten(amount);
-            updateState(result);
+            updateState();
           }
         });
   }
 
-  private void updateState(final ProcessingResult result) {
+  private void updateState() {
     final ActorFuture<Boolean> retryFuture =
         updateStateRetryStrategy.runWithRetry(
             () -> {
@@ -457,16 +420,29 @@ public final class ProcessingStateMachine {
         (bool, throwable) -> {
           if (throwable != null) {
             LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentRecord, metadata, throwable);
-            onError(throwable, () -> updateState(result));
+            onError(throwable, this::updateState);
           } else {
-            executeSideEffects(result);
+            executeSideEffects();
           }
         });
   }
 
-  private void executeSideEffects(final ProcessingResult result) {
+  private void executeSideEffects() {
     final ActorFuture<Boolean> retryFuture =
-        sideEffectsRetryStrategy.runWithRetry(sideEffectProducer::flush, abortCondition);
+        sideEffectsRetryStrategy.runWithRetry(
+            () -> {
+              // TODO refactor this into two parallel tasks, which are then combined, and on the
+              // completion of which the process continues
+              final boolean responseSent =
+                  currentProcessingResult.writeResponse(context.getCommandResponseWriter());
+
+              if (!responseSent) {
+                return false;
+              } else {
+                return currentProcessingResult.executePostCommitTasks();
+              }
+            },
+            abortCondition);
 
     actor.runOnCompletion(
         retryFuture,
