@@ -94,4 +94,14 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
   public ProcessingResult build() {
     return new DirectProcessingResult(context, postCommitTasks, hasResponse);
   }
+
+  @Override
+  public boolean canWriteEventOfLength(final int eventLength) {
+    return streamWriter.canWriteEventOfLength(eventLength);
+  }
+
+  @Override
+  public int getMaxEventLength() {
+    return streamWriter.getMaxEventLength();
+  }
 }

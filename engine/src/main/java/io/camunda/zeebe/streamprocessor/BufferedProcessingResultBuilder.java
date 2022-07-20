@@ -35,8 +35,10 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final int sourceIndex;
 
   BufferedProcessingResultBuilder(
-      final BinaryOperator<Integer> capacityCalculator, final int sourceIndex) {
-    bufferedStreamWriter = new BufferedStreamWriter(capacityCalculator);
+      final BinaryOperator<Integer> capacityCalculator,
+      final int maxEventLength,
+      final int sourceIndex) {
+    bufferedStreamWriter = new BufferedStreamWriter(capacityCalculator, maxEventLength);
     this.sourceIndex = sourceIndex;
 
     typeRegistry = new HashMap<>();
@@ -93,6 +95,16 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   @Override
   public ProcessingResult build() {
     throw new RuntimeException("Not yet implemented");
+  }
+
+  @Override
+  public boolean canWriteEventOfLength(final int eventLength) {
+    return bufferedStreamWriter.canWriteAdditionalEvent(eventLength);
+  }
+
+  @Override
+  public int getMaxEventLength() {
+    return bufferedStreamWriter.getMaxEventLength();
   }
 
   private ValueType initValueType(final RecordValue value) {

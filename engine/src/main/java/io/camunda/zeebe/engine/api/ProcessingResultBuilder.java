@@ -67,4 +67,8 @@ public interface ProcessingResultBuilder {
   ProcessingResultBuilder resetPostCommitTasks();
 
   ProcessingResult build();
+
+  boolean canWriteEventOfLength(int eventLength);
+
+  int getMaxEventLength();
 }
