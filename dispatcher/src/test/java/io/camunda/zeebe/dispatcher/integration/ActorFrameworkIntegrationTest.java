@@ -17,7 +17,6 @@ import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import org.agrona.DirectBuffer;
 import org.junit.Rule;
@@ -58,7 +57,40 @@ public final class ActorFrameworkIntegrationTest {
     dispatcher.close();
   }
 
-  class Consumer extends Actor implements FragmentHandler {
+  static final class ClaimingProducer extends Actor {
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    final int totalWork = 10_000;
+
+    final Dispatcher dispatcher;
+    final ClaimedFragment claim = new ClaimedFragment();
+    int counter = 1;
+
+    ClaimingProducer(final Dispatcher dispatcher) {
+      this.dispatcher = dispatcher;
+    }
+
+    @Override
+    protected void onActorStarted() {
+      actor.run(this::produce);
+    }
+
+    void produce() {
+      if (dispatcher.claimSingleFragment(claim, 4534) >= 0) {
+        claim.getBuffer().putInt(claim.getOffset(), counter++);
+        claim.commit();
+      }
+
+      if (counter < totalWork) {
+        actor.yieldThread();
+        actor.run(this::produce);
+      } else {
+        latch.countDown();
+      }
+    }
+  }
+
+  static final class Consumer extends Actor implements FragmentHandler {
     final Dispatcher dispatcher;
     Subscription subscription;
     int counter = 0;
@@ -99,7 +131,7 @@ public final class ActorFrameworkIntegrationTest {
     }
   }
 
-  class PeekingConsumer extends Actor implements FragmentHandler {
+  static final class PeekingConsumer extends Actor implements FragmentHandler {
     final Dispatcher dispatcher;
     final BlockPeek peek = new BlockPeek();
     Subscription subscription;
@@ -136,9 +168,7 @@ public final class ActorFrameworkIntegrationTest {
     }
 
     void processPeek() {
-      final Iterator<DirectBuffer> iterator = peek.iterator();
-      while (iterator.hasNext()) {
-        final DirectBuffer directBuffer = iterator.next();
+      for (final DirectBuffer directBuffer : peek) {
         final int newCounter = directBuffer.getInt(0);
         if (newCounter - 1 != counter) {
           throw new RuntimeException(newCounter + " " + counter);
@@ -161,39 +191,6 @@ public final class ActorFrameworkIntegrationTest {
       }
       counter = newCounter;
       return FragmentHandler.CONSUME_FRAGMENT_RESULT;
-    }
-  }
-
-  final class ClaimingProducer extends Actor {
-    final CountDownLatch latch = new CountDownLatch(1);
-
-    final int totalWork = 10_000;
-
-    final Dispatcher dispatcher;
-    final ClaimedFragment claim = new ClaimedFragment();
-    int counter = 1;
-
-    ClaimingProducer(final Dispatcher dispatcher) {
-      this.dispatcher = dispatcher;
-    }
-
-    @Override
-    protected void onActorStarted() {
-      actor.run(this::produce);
-    }
-
-    void produce() {
-      if (dispatcher.claimSingleFragment(claim, 4534) >= 0) {
-        claim.getBuffer().putInt(claim.getOffset(), counter++);
-        claim.commit();
-      }
-
-      if (counter < totalWork) {
-        actor.yieldThread();
-        actor.run(this::produce);
-      } else {
-        latch.countDown();
-      }
     }
   }
 }
