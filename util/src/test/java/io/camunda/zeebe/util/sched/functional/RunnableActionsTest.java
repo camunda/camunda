@@ -8,25 +8,16 @@
 package io.camunda.zeebe.util.sched.functional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 
 import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorThread;
 import io.camunda.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.InOrder;
 
 public final class RunnableActionsTest {
   @Rule public final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
@@ -128,61 +119,6 @@ public final class RunnableActionsTest {
   }
 
   @Test
-  public void shouldRunUntilDoneCalled() {
-    // given
-    final Runner actor = new Runner();
-    final Consumer<ActorControl> runnable =
-        (ctr) -> {
-          if (actor.runs == 5) {
-            ctr.done();
-          } else {
-            ctr.yieldThread();
-          }
-        };
-
-    // when
-    scheduler.submitActor(actor);
-    actor.doRunUntilDone(runnable);
-    scheduler.workUntilDone();
-
-    // then
-    assertThat(actor.runs).isEqualTo(5);
-  }
-
-  @Test
-  public void shouldNotInterruptRunUntilDone() {
-    // given
-    final Runnable otherAction = mock(Runnable.class);
-    final Runner actor = new Runner();
-    final Consumer<ActorControl> runUntilDoneAction =
-        spy(
-            new Consumer<ActorControl>() {
-              @Override
-              public void accept(final ActorControl ctr) {
-                ctr.run(otherAction); // does not interrupt this action
-
-                if (actor.runs == 5) {
-                  ctr.done();
-                } else {
-                  ctr.yieldThread();
-                }
-              }
-            });
-    doCallRealMethod().when(runUntilDoneAction).accept(any());
-
-    // when
-    scheduler.submitActor(actor);
-    actor.doRunUntilDone(runUntilDoneAction);
-    scheduler.workUntilDone();
-
-    // then
-    final InOrder inOrder = inOrder(runUntilDoneAction, otherAction);
-    inOrder.verify(runUntilDoneAction, times(5)).accept(any());
-    inOrder.verify(otherAction, times(5)).run();
-    inOrder.verifyNoMoreInteractions();
-  }
-
-  @Test
   public void shouldSubmitFromAnotherActor() {
     // given
     final AtomicInteger invocations = new AtomicInteger();
@@ -238,17 +174,6 @@ public final class RunnableActionsTest {
               onExecution.run();
             }
             runs++;
-          });
-    }
-
-    public void doRunUntilDone(final Consumer<ActorControl> runnable) {
-      actor.run(
-          () -> {
-            actor.runUntilDone(
-                () -> {
-                  runs++;
-                  runnable.accept(actor);
-                });
           });
     }
   }

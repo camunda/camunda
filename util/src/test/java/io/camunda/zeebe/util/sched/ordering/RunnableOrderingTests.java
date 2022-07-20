@@ -16,7 +16,6 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.camunda.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -170,84 +169,6 @@ public final class RunnableOrderingTests {
     assertThat(actor.actions).containsSubsequence(newArrayList(ONE, TWO));
     assertThat(actor.actions).containsSubsequence(newArrayList(THREE, TWO));
     assertThat(actor.actions).containsSubsequence(newArrayList(ONE, FOUR));
-    assertThat(actor.actions).containsSubsequence(newArrayList(THREE, FOUR));
-  }
-
-  @Test
-  public void runUntilDoneTest() {
-    // given
-    final CompletableActorFuture<Void> future = CompletableActorFuture.completed(null);
-    final ActionRecordingActor actor =
-        new ActionRecordingActor() {
-          @Override
-          protected void onActorStarted() {
-            actor.run(runnable(TWO));
-            final AtomicInteger count = new AtomicInteger();
-            actor.runUntilDone(
-                () -> {
-                  final int couter = count.incrementAndGet();
-                  if (couter > 2) {
-                    actor.done();
-                  } else {
-                    actor.runOnCompletion(future, futureConsumer(FOUR));
-                  }
-
-                  actions.add(ONE);
-                });
-            actor.run(runnable(THREE));
-          }
-        };
-
-    // when
-    schedulerRule.submitActor(actor);
-    schedulerRule.workUntilDone();
-
-    // then
-    assertThat(actor.actions).containsSequence(newArrayList(ONE, ONE, ONE));
-    assertThat(actor.actions).containsSequence(newArrayList(FOUR, FOUR));
-    assertThat(actor.actions)
-        .containsSubsequence(
-            newArrayList(ONE, FOUR)); // futures are executed after runUntilDone finishes
-    assertThat(actor.actions).containsSubsequence(newArrayList(TWO, FOUR));
-    assertThat(actor.actions).containsSubsequence(newArrayList(THREE, FOUR));
-  }
-
-  @Test
-  public void runUntilDoneWithBlockingPhaseTest() {
-    // given
-    final CompletableActorFuture<Void> future = CompletableActorFuture.completed(null);
-    final ActionRecordingActor actor =
-        new ActionRecordingActor() {
-          @Override
-          protected void onActorStarted() {
-            actor.run(runnable(TWO));
-            final AtomicInteger count = new AtomicInteger();
-            actor.runUntilDone(
-                () -> {
-                  final int couter = count.incrementAndGet();
-                  if (couter > 2) {
-                    actor.done();
-                  } else {
-                    actor.runOnCompletionBlockingCurrentPhase(future, futureConsumer(FOUR));
-                  }
-
-                  actions.add(ONE);
-                });
-            actor.run(runnable(THREE));
-          }
-        };
-
-    // when
-    schedulerRule.submitActor(actor);
-    schedulerRule.workUntilDone();
-
-    // then
-    assertThat(actor.actions).containsSequence(newArrayList(ONE, ONE, ONE));
-    assertThat(actor.actions).containsSequence(newArrayList(FOUR, FOUR));
-    assertThat(actor.actions)
-        .containsSubsequence(
-            newArrayList(ONE, FOUR)); // futures are executed after runUntilDone finishes
-    assertThat(actor.actions).containsSubsequence(newArrayList(TWO, FOUR));
     assertThat(actor.actions).containsSubsequence(newArrayList(THREE, FOUR));
   }
 
