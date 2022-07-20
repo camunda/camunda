@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.bpmn;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -37,31 +39,31 @@ public final class ProcessInstanceStateTransitionGuard {
    *
    * @return {@code true} if the preconditions are met and the transition command is valid.
    */
-  public Either<Failure, ?> isValidStateTransition(final BpmnElementContext context) {
-    return checkStateTransition(context).mapLeft(Failure::new);
+  public Either<Failure, ?> isValidStateTransition(
+      final BpmnElementContext context, final ExecutableFlowElement element) {
+    return checkStateTransition(context, element).mapLeft(Failure::new);
   }
 
-  private Either<String, ?> checkStateTransition(final BpmnElementContext context) {
+  private Either<String, ?> checkStateTransition(
+      final BpmnElementContext context, final ExecutableFlowElement element) {
     switch (context.getIntent()) {
       case ACTIVATE_ELEMENT:
-        return hasActiveFlowScopeInstance(context);
-
-      case COMPLETE_ELEMENT:
+        return hasActiveFlowScopeInstance(context)
+            .flatMap(ok -> canActivateParallelGateway(context, element));
         // an incident is resolved by writing a COMPLETE command when the element instance is in
         // state COMPLETING
+      case COMPLETE_ELEMENT:
         return hasElementInstanceWithState(
                 context,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
                 ProcessInstanceIntent.ELEMENT_COMPLETING)
             .flatMap(ok -> hasActiveFlowScopeInstance(context));
-
       case TERMINATE_ELEMENT:
         return hasElementInstanceWithState(
             context,
             ProcessInstanceIntent.ELEMENT_ACTIVATING,
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
             ProcessInstanceIntent.ELEMENT_COMPLETING);
-
       default:
         return Either.left(
             String.format(
@@ -164,6 +166,25 @@ public final class ProcessInstanceStateTransitionGuard {
                   hasFlowScopeInstanceInState(
                       flowScopeInstance, ProcessInstanceIntent.ELEMENT_ACTIVATED))
           .flatMap(flowScopeInstance -> hasNonInterruptedFlowScope(flowScopeInstance, context));
+    }
+  }
+
+  private Either<String, ?> canActivateParallelGateway(
+      final BpmnElementContext context, final ExecutableFlowElement executableFlowElement) {
+    if (context.getBpmnElementType() != BpmnElementType.PARALLEL_GATEWAY) {
+      return Either.right(null);
+    } else {
+      final var element = (ExecutableFlowNode) executableFlowElement;
+      final int numberOfIncomingSequenceFlows = element.getIncoming().size();
+      final int numberOfTakenSequenceFlows =
+          stateBehavior.getNumberOfTakenSequenceFlows(context.getFlowScopeKey(), element.getId());
+      return numberOfTakenSequenceFlows >= numberOfIncomingSequenceFlows
+          ? Either.right(null)
+          : Either.left(
+              String.format(
+                  "Expected to be able to activate parallel gateway '%s',"
+                      + " but not all sequence flows have been taken.",
+                  BufferUtil.bufferAsString(element.getId())));
     }
   }
 }

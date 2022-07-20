@@ -103,7 +103,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     final ExecutableFlowElement element = getElement(recordValue, processor);
 
     stateTransitionGuard
-        .isValidStateTransition(context)
+        .isValidStateTransition(context, element)
         .ifRightOrLeft(
             ok -> {
               LOGGER.trace("Process process instance event [context: {}]", context);
