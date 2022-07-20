@@ -164,7 +164,7 @@ public final class ActorFrameworkIntegrationTest {
     }
   }
 
-  class ClaimingProducer extends Actor {
+  final class ClaimingProducer extends Actor {
     final CountDownLatch latch = new CountDownLatch(1);
 
     final int totalWork = 10_000;
@@ -172,13 +172,14 @@ public final class ActorFrameworkIntegrationTest {
     final Dispatcher dispatcher;
     final ClaimedFragment claim = new ClaimedFragment();
     int counter = 1;
+
     ClaimingProducer(final Dispatcher dispatcher) {
       this.dispatcher = dispatcher;
-    }    final Runnable produce = this::produce;
+    }
 
     @Override
     protected void onActorStarted() {
-      actor.run(produce);
+      actor.run(this::produce);
     }
 
     void produce() {
@@ -189,12 +190,10 @@ public final class ActorFrameworkIntegrationTest {
 
       if (counter < totalWork) {
         actor.yieldThread();
-        actor.run(produce);
+        actor.run(this::produce);
       } else {
         latch.countDown();
       }
     }
-
-
   }
 }
