@@ -17,8 +17,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.RestrictedTypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
@@ -88,7 +88,7 @@ public final class CatchEventBehavior {
    */
   public void unsubscribeFromEvents(
       final BpmnElementContext context,
-      final RestrictedTypedCommandWriter commandWriter,
+      final TypedCommandWriter commandWriter,
       final SideEffects sideEffects) {
     unsubscribeFromEvents(context, commandWriter, sideEffects, elementId -> true);
   }
@@ -103,7 +103,7 @@ public final class CatchEventBehavior {
    */
   public void unsubscribeEventSubprocesses(
       final BpmnElementContext context,
-      final RestrictedTypedCommandWriter commandWriter,
+      final TypedCommandWriter commandWriter,
       final SideEffects sideEffects) {
     unsubscribeFromEvents(
         context, commandWriter, sideEffects, elementId -> isEventSubprocess(context, elementId));
@@ -131,7 +131,7 @@ public final class CatchEventBehavior {
    */
   private void unsubscribeFromEvents(
       final BpmnElementContext context,
-      final RestrictedTypedCommandWriter commandWriter,
+      final TypedCommandWriter commandWriter,
       final SideEffects sideEffects,
       final Predicate<DirectBuffer> elementIdFilter) {
 
@@ -146,7 +146,7 @@ public final class CatchEventBehavior {
       final BpmnElementContext context,
       final ExecutableCatchEventSupplier supplier,
       final SideEffects sideEffects,
-      final RestrictedTypedCommandWriter commandWriter) {
+      final TypedCommandWriter commandWriter) {
     final var evaluationResults =
         supplier.getEvents().stream()
             .filter(event -> event.isTimer() || event.isMessage())
@@ -274,7 +274,7 @@ public final class CatchEventBehavior {
   private void subscribeToTimerEvents(
       final BpmnElementContext context,
       final SideEffects sideEffects,
-      final RestrictedTypedCommandWriter commandWriter,
+      final TypedCommandWriter commandWriter,
       final List<EvalResult> results) {
     results.stream()
         .filter(EvalResult::isTimer)
@@ -299,7 +299,7 @@ public final class CatchEventBehavior {
       final long processDefinitionKey,
       final DirectBuffer handlerNodeId,
       final Timer timer,
-      final RestrictedTypedCommandWriter commandWriter,
+      final TypedCommandWriter commandWriter,
       final SideEffects sideEffects) {
     final long dueDate = timer.getDueDate(ActorClock.currentTimeMillis());
     timerRecord.reset();
@@ -324,7 +324,7 @@ public final class CatchEventBehavior {
 
   private void unsubscribeFromTimerEvents(
       final BpmnElementContext context,
-      final RestrictedTypedCommandWriter commandWriter,
+      final TypedCommandWriter commandWriter,
       final Predicate<DirectBuffer> elementIdFilter) {
     timerInstanceState.forEachTimerForElementInstance(
         context.getElementInstanceKey(),
@@ -336,7 +336,7 @@ public final class CatchEventBehavior {
   }
 
   public void unsubscribeFromTimerEvent(
-      final TimerInstance timer, final RestrictedTypedCommandWriter commandWriter) {
+      final TimerInstance timer, final TypedCommandWriter commandWriter) {
     timerRecord.reset();
     timerRecord
         .setElementInstanceKey(timer.getElementInstanceKey())

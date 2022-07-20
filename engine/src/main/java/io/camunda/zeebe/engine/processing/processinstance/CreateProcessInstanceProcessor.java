@@ -22,8 +22,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.RestrictedTypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.KeyGenerator;
@@ -80,7 +80,7 @@ public final class CreateProcessInstanceProcessor
   private final CatchEventBehavior catchEventBehavior;
 
   private final KeyGenerator keyGenerator;
-  private final RestrictedTypedCommandWriter commandWriter;
+  private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
   private final ProcessEngineMetrics metrics;
 

@@ -11,7 +11,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
 /** This interface is supposed to replace TypedCommandWriter */
-public interface RestrictedTypedCommandWriter {
+public interface TypedCommandWriter {
   void appendNewCommand(Intent intent, RecordValue value);
 
   void appendFollowUpCommand(long key, Intent intent, RecordValue value);

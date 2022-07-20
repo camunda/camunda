@@ -13,8 +13,8 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.RestrictedTypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
@@ -61,7 +61,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
 
   @Override
   public void afterAccept(
-      final RestrictedTypedCommandWriter commandWriter,
+      final TypedCommandWriter commandWriter,
       final StateWriter stateWriter,
       final long key,
       final Intent intent,

@@ -17,8 +17,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCal
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.RestrictedTypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -46,7 +46,7 @@ public final class BpmnStateTransitionBehavior {
 
   private final ProcessEngineMetrics metrics;
   private final StateWriter stateWriter;
-  private final RestrictedTypedCommandWriter commandWriter;
+  private final TypedCommandWriter commandWriter;
 
   public BpmnStateTransitionBehavior(
       final KeyGenerator keyGenerator,
