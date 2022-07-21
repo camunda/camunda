@@ -18,14 +18,15 @@ package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import io.camunda.zeebe.journal.file.record.CorruptedLogException;
+import io.camunda.zeebe.journal.CorruptedJournalException;
+import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * The segment descriptor stores the metadata of a single segment {@link JournalSegment} of a {@link
+ * The segment descriptor stores the metadata of a single segment {@link Segment} of a {@link
  * SegmentedJournal}. The descriptor is stored in the first bytes of the segment. The number of
  * bytes requires for the descriptor is dependent on the encoding used. The first byte of the
  * segment contains the version of the descriptor. The subsequent bytes contains the following
@@ -42,7 +43,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <p>{@code maxSegmentSize} (32-bit unsigned integer) - The maximum number of bytes allowed in the
  * segment.
  */
-public final class JournalSegmentDescriptor {
+final class SegmentDescriptor {
 
   private static final int VERSION_LENGTH = Byte.BYTES;
   // current descriptor version containing: header, metadata, header and descriptor
@@ -70,7 +71,7 @@ public final class JournalSegmentDescriptor {
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final ChecksumGenerator checksumGen = new ChecksumGenerator();
 
-  public JournalSegmentDescriptor(final ByteBuffer buffer) {
+  SegmentDescriptor(final ByteBuffer buffer) {
     directBuffer.wrap(buffer);
 
     final byte version = directBuffer.getByte(0);
@@ -79,14 +80,14 @@ public final class JournalSegmentDescriptor {
     } else if (version == NO_META_VERSION) {
       readV1Descriptor(directBuffer);
     } else {
-      throw new CorruptedLogException(
+      throw new CorruptedJournalException(
           String.format(
               "Expected version to be one [%d %d] but read %d instead.",
               NO_META_VERSION, CUR_VERSION, version));
     }
   }
 
-  private JournalSegmentDescriptor(final long id, final long index, final int maxSegmentSize) {
+  private SegmentDescriptor(final long id, final long index, final int maxSegmentSize) {
     this.id = id;
     this.index = index;
     this.maxSegmentSize = maxSegmentSize;
@@ -134,7 +135,7 @@ public final class JournalSegmentDescriptor {
     final long computedChecksum = checksumGen.compute(slice, 0, descriptorLength);
 
     if (computedChecksum != checksum) {
-      throw new CorruptedLogException(
+      throw new CorruptedJournalException(
           "Descriptor doesn't match checksum (possibly due to corruption).");
     }
   }
@@ -188,7 +189,7 @@ public final class JournalSegmentDescriptor {
     headerDecoder.wrap(buffer, offset);
 
     if (headerDecoder.schemaId() != schemaId || headerDecoder.templateId() != templateId) {
-      throw new CorruptedLogException(
+      throw new CorruptedJournalException(
           String.format(
               "Cannot read header. Read schema and template ids ('%d' and '%d') don't match expected '%d' and %d'.",
               headerDecoder.schemaId(), headerDecoder.templateId(), schemaId, templateId));
@@ -201,7 +202,7 @@ public final class JournalSegmentDescriptor {
    *
    * @return the number of bytes taken by this descriptor in the segment.
    */
-  public int length() {
+  int length() {
     return encodedLength;
   }
 
@@ -210,7 +211,7 @@ public final class JournalSegmentDescriptor {
    *
    * @return the encoding length
    */
-  public static int getEncodingLength() {
+  static int getEncodingLength() {
     return VERSION_LENGTH
         + MessageHeaderEncoder.ENCODED_LENGTH * 2
         + DescriptorMetadataEncoder.BLOCK_LENGTH
@@ -218,7 +219,7 @@ public final class JournalSegmentDescriptor {
   }
 
   /** The number of bytes required to read and write a descriptor of a given version. */
-  public static int getEncodingLengthForVersion(final byte version) {
+  static int getEncodingLengthForVersion(final byte version) {
     if (version == 0 || version > VERSION_LENGTHS.length) {
       throw new UnknownVersionException(
           String.format(
@@ -234,7 +235,7 @@ public final class JournalSegmentDescriptor {
    *
    * @return The descriptor builder.
    */
-  public static Builder builder() {
+  static Builder builder() {
     return new Builder();
   }
 
@@ -246,7 +247,7 @@ public final class JournalSegmentDescriptor {
    *
    * @return The segment identifier.
    */
-  public long id() {
+  long id() {
     return id;
   }
 
@@ -258,7 +259,7 @@ public final class JournalSegmentDescriptor {
    *
    * @return The segment index.
    */
-  public long index() {
+  long index() {
     return index;
   }
 
@@ -267,15 +268,15 @@ public final class JournalSegmentDescriptor {
    *
    * @return The maximum allowed number of bytes in the segment.
    */
-  public int maxSegmentSize() {
+  int maxSegmentSize() {
     return maxSegmentSize;
   }
 
   /**
    * Copies the descriptor to a new buffer. The number of bytes written will be equal to {@link
-   * JournalSegmentDescriptor#getEncodingLength()}
+   * SegmentDescriptor#getEncodingLength()}
    */
-  JournalSegmentDescriptor copyTo(final ByteBuffer buffer) {
+  SegmentDescriptor copyTo(final ByteBuffer buffer) {
     directBuffer.wrap(buffer);
     directBuffer.putByte(0, CUR_VERSION);
 
@@ -315,7 +316,7 @@ public final class JournalSegmentDescriptor {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final JournalSegmentDescriptor that = (JournalSegmentDescriptor) o;
+    final SegmentDescriptor that = (SegmentDescriptor) o;
     return id == that.id && index == that.index && maxSegmentSize == that.maxSegmentSize;
   }
 
@@ -332,7 +333,7 @@ public final class JournalSegmentDescriptor {
   }
 
   /** Segment descriptor builder. */
-  public static final class Builder {
+  static final class Builder {
 
     private long id;
     private long index;
@@ -344,7 +345,7 @@ public final class JournalSegmentDescriptor {
      * @param id The segment identifier.
      * @return The segment descriptor builder.
      */
-    public Builder withId(final long id) {
+    Builder withId(final long id) {
       checkArgument(id > 0, "id must be positive");
       this.id = id;
       return this;
@@ -356,7 +357,7 @@ public final class JournalSegmentDescriptor {
      * @param index The segment starting index.
      * @return The segment descriptor builder.
      */
-    public Builder withIndex(final long index) {
+    Builder withIndex(final long index) {
       checkArgument(index > 0, "index must be positive");
       this.index = index;
       return this;
@@ -368,7 +369,7 @@ public final class JournalSegmentDescriptor {
      * @param maxSegmentSize The maximum count of the segment.
      * @return The segment descriptor builder.
      */
-    public Builder withMaxSegmentSize(final int maxSegmentSize) {
+    Builder withMaxSegmentSize(final int maxSegmentSize) {
       checkArgument(maxSegmentSize > 0, "maxSegmentSize must be positive");
       this.maxSegmentSize = maxSegmentSize;
       return this;
@@ -379,8 +380,8 @@ public final class JournalSegmentDescriptor {
      *
      * @return The built segment descriptor.
      */
-    public JournalSegmentDescriptor build() {
-      return new JournalSegmentDescriptor(id, index, maxSegmentSize);
+    SegmentDescriptor build() {
+      return new SegmentDescriptor(id, index, maxSegmentSize);
     }
   }
 }

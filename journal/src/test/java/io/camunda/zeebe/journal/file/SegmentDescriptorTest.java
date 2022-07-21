@@ -19,51 +19,47 @@ package io.camunda.zeebe.journal.file;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.journal.file.record.CorruptedLogException;
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import java.nio.ByteBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
-class JournalSegmentDescriptorTest {
+class SegmentDescriptorTest {
 
   @Test
   void shouldWriteAndReadDescriptor() {
     // given
-    JournalSegmentDescriptor descriptor =
-        JournalSegmentDescriptor.builder()
-            .withId(2)
-            .withIndex(100)
-            .withMaxSegmentSize(1024)
-            .build();
-    final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.getEncodingLength());
+    SegmentDescriptor descriptor =
+        SegmentDescriptor.builder().withId(2).withIndex(100).withMaxSegmentSize(1024).build();
+    final ByteBuffer buffer = ByteBuffer.allocate(SegmentDescriptor.getEncodingLength());
     descriptor = descriptor.copyTo(buffer);
 
     // when
-    final JournalSegmentDescriptor descriptorRead = new JournalSegmentDescriptor(buffer);
+    final SegmentDescriptor descriptorRead = new SegmentDescriptor(buffer);
 
     // then
     assertThat(descriptorRead).isEqualTo(descriptor);
     assertThat(descriptorRead.id()).isEqualTo(2);
     assertThat(descriptorRead.index()).isEqualTo(100);
     assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
-    assertThat(descriptorRead.length()).isEqualTo(JournalSegmentDescriptor.getEncodingLength());
+    assertThat(descriptorRead.length()).isEqualTo(SegmentDescriptor.getEncodingLength());
   }
 
   @Test
   void shouldValidateDescriptorHeader() {
     // given
-    final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.getEncodingLength());
+    final ByteBuffer buffer = ByteBuffer.allocate(SegmentDescriptor.getEncodingLength());
 
     // when/then
-    assertThatThrownBy(() -> new JournalSegmentDescriptor(buffer))
-        .isInstanceOf(CorruptedLogException.class);
+    assertThatThrownBy(() -> new SegmentDescriptor(buffer))
+        .isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test
   void shouldReadV1Message() {
     // given
-    final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.getEncodingLength());
+    final ByteBuffer buffer = ByteBuffer.allocate(SegmentDescriptor.getEncodingLength());
     final MutableDirectBuffer directBuffer = new UnsafeBuffer(buffer);
     final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
     final SegmentDescriptorEncoder descriptorEncoder = new SegmentDescriptorEncoder();
@@ -76,7 +72,7 @@ class JournalSegmentDescriptorTest {
         .maxSegmentSize(789);
 
     // when
-    final JournalSegmentDescriptor descriptor = new JournalSegmentDescriptor(buffer);
+    final SegmentDescriptor descriptor = new SegmentDescriptor(buffer);
 
     // then
     assertThat(descriptor.id()).isEqualTo(123);
@@ -87,13 +83,9 @@ class JournalSegmentDescriptorTest {
   @Test
   void shouldFailWithChecksumMismatch() {
     // given
-    final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.getEncodingLength());
-    final JournalSegmentDescriptor descriptor =
-        JournalSegmentDescriptor.builder()
-            .withId(123)
-            .withIndex(456)
-            .withMaxSegmentSize(789)
-            .build();
+    final ByteBuffer buffer = ByteBuffer.allocate(SegmentDescriptor.getEncodingLength());
+    final SegmentDescriptor descriptor =
+        SegmentDescriptor.builder().withId(123).withIndex(456).withMaxSegmentSize(789).build();
     descriptor.copyTo(buffer);
 
     // when
@@ -101,7 +93,7 @@ class JournalSegmentDescriptorTest {
     buffer.put(buffer.capacity() - 1, corruptByte);
 
     // then
-    assertThatThrownBy(() -> new JournalSegmentDescriptor(buffer))
-        .isInstanceOf(CorruptedLogException.class);
+    assertThatThrownBy(() -> new SegmentDescriptor(buffer))
+        .isInstanceOf(CorruptedJournalException.class);
   }
 }

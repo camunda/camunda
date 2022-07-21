@@ -1,20 +1,13 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.journal.file.record;
+package io.camunda.zeebe.journal.record;
 
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.file.MessageHeaderDecoder;
 import io.camunda.zeebe.journal.file.MessageHeaderEncoder;
 import io.camunda.zeebe.journal.file.RecordDataDecoder;
@@ -29,7 +22,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 /** The serializer that writes and reads a journal record according to the SBE schema defined. */
 public final class SBESerializer implements JournalRecordSerializer {
-
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final RecordMetadataEncoder metadataEncoder = new RecordMetadataEncoder();
   private final RecordDataEncoder recordEncoder = new RecordDataEncoder();
@@ -88,7 +80,7 @@ public final class SBESerializer implements JournalRecordSerializer {
   @Override
   public RecordMetadata readMetadata(final DirectBuffer buffer, final int offset) {
     if (!hasMetadata(buffer, offset)) {
-      throw new CorruptedLogException("Cannot read metadata. Header does not match.");
+      throw new CorruptedJournalException("Cannot read metadata. Header does not match.");
     }
     metadataDecoder.wrap(
         buffer,
@@ -100,11 +92,11 @@ public final class SBESerializer implements JournalRecordSerializer {
   }
 
   @Override
-  public RecordData readData(final DirectBuffer buffer, final int offset, final int length) {
+  public RecordData readData(final DirectBuffer buffer, final int offset) {
     headerDecoder.wrap(buffer, offset);
     if (headerDecoder.schemaId() != recordDecoder.sbeSchemaId()
         || headerDecoder.templateId() != recordDecoder.sbeTemplateId()) {
-      throw new CorruptedLogException("Cannot read record. Header does not match.");
+      throw new CorruptedJournalException("Cannot read record. Header does not match.");
     }
     recordDecoder.wrap(
         buffer,
@@ -117,6 +109,7 @@ public final class SBESerializer implements JournalRecordSerializer {
     return new RecordData(recordDecoder.index(), recordDecoder.asqn(), data);
   }
 
+  @Override
   public int getMetadataLength(final DirectBuffer buffer, final int offset) {
     headerDecoder.wrap(buffer, offset);
     return headerDecoder.encodedLength() + headerDecoder.blockLength();

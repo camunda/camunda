@@ -19,7 +19,7 @@ import io.camunda.zeebe.journal.JournalRecord;
 import java.util.Map;
 import java.util.TreeMap;
 
-class SparseJournalIndex implements JournalIndex {
+final class SparseJournalIndex implements JournalIndex {
 
   private final int density;
   private final TreeMap<Long, Integer> indexToPosition = new TreeMap<>();
@@ -28,7 +28,7 @@ class SparseJournalIndex implements JournalIndex {
   // TODO: Check if this can be improved. https://github.com/zeebe-io/zeebe/issues/6220
   private final TreeMap<Long, Long> indexToAsqn = new TreeMap<>();
 
-  public SparseJournalIndex(final int density) {
+  SparseJournalIndex(final int density) {
     this.density = density;
   }
 
