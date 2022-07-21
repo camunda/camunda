@@ -73,11 +73,7 @@ public final class PosixPathAssert extends AbstractPathAssert<PosixPathAssert> {
   public PosixPathAssert hasRealSize(final long sizeInBytes) {
     isNotNull().isRegularFile();
 
-    if (Platform.IS_WINDOWS) {
-      return hasSize(sizeInBytes);
-    }
-
-    final var expectedSize = roundUpToBlockSize(sizeInBytes);
+    final var expectedSize = Platform.IS_WINDOWS ? sizeInBytes : roundUpToBlockSize(sizeInBytes);
     final var realSize = getRealSize(actual);
     // could use paths.assertHasSize, but I feel this error message is more descriptive
     if (expectedSize != realSize) {

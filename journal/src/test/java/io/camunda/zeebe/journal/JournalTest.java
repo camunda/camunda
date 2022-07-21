@@ -597,7 +597,8 @@ final class JournalTest {
     final RecordData data =
         new RecordData(record.index(), record.asqn(), BufferUtil.cloneBuffer(record.data()));
 
-    if (record instanceof PersistedJournalRecord p) {
+    if (record instanceof PersistedJournalRecord) {
+      final PersistedJournalRecord p = (PersistedJournalRecord) record;
       return new PersistedJournalRecord(p.metadata(), data);
     }
 
