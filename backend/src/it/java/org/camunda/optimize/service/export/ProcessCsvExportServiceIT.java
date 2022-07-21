@@ -19,30 +19,102 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.service.util.configuration.CsvConfiguration;
+import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
 
   private static final String FAKE = "FAKE";
+
+  @ParameterizedTest
+  @ValueSource(strings = {"SUPERUSER", "NONE"})
+  public void csvExportForbiddenWhenDisabledForNonSuperuserInConfig(final String authorizationType) {
+    // given
+    embeddedOptimizeExtension.getConfigurationService()
+      .getCsvConfiguration()
+      .setAuthorizedUserType(CsvConfiguration.AuthorizedUserType.valueOf(authorizationType));
+    embeddedOptimizeExtension.reloadConfiguration();
+    final String reportId = reportClient.createEmptySingleProcessReport();
+
+    // when
+    Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv", "Etc/GMT-1");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void csvExportForbiddenWhenDisabledForSuperuserInConfig() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService()
+      .getAuthConfiguration()
+      .setSuperUserIds(Collections.singletonList(DEFAULT_USERNAME));
+    embeddedOptimizeExtension.getConfigurationService()
+      .getCsvConfiguration()
+      .setAuthorizedUserType(CsvConfiguration.AuthorizedUserType.NONE);
+    embeddedOptimizeExtension.reloadConfiguration();
+    final String reportId = reportClient.createEmptySingleProcessReport();
+
+    // when
+    Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv", "Etc/GMT-1");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"SUPERUSER", "ALL"})
+  public void csvExportWorksForSuperuserWhenAuthorizedInConfig(final String authorizationType) {
+    // given
+    embeddedOptimizeExtension.getConfigurationService()
+      .getAuthConfiguration()
+      .setSuperUserIds(Collections.singletonList(DEFAULT_USERNAME));
+    embeddedOptimizeExtension.getConfigurationService()
+      .getCsvConfiguration()
+      .setAuthorizedUserType(CsvConfiguration.AuthorizedUserType.valueOf(authorizationType));
+    embeddedOptimizeExtension.reloadConfiguration();
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessReportDataDto currentReport = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(FAKE)
+      .setProcessDefinitionVersion(FAKE)
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
+    currentReport.setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
+    currentReport.setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion());
+    final String reportId = createAndStoreDefaultReportDefinition(currentReport);
+
+    // when
+    Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv", "Etc/GMT-1");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+  }
 
   @ParameterizedTest
   @MethodSource("getParameters")
@@ -320,7 +392,7 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
   public void csvExportWorksWithCustomDelimiter(ProcessReportDataDto currentReport, String expectedCSV,
                                                 char customDelimiter) {
     // given
-    embeddedOptimizeExtension.getConfigurationService().setExportCsvDelimiter(customDelimiter);
+    embeddedOptimizeExtension.getConfigurationService().getCsvConfiguration().setExportCsvDelimiter(customDelimiter);
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
     importAllEngineEntitiesFromScratch();

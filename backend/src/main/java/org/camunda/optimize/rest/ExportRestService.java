@@ -17,15 +17,18 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import org.camunda.optimize.service.entities.EntityExportService;
 import org.camunda.optimize.service.export.CsvExportService;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
 import javax.validation.Valid;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -50,6 +53,7 @@ public class ExportRestService {
   private final CsvExportService csvExportService;
   private final EntityExportService entityExportService;
   private final SessionService sessionService;
+  private final AbstractIdentityService identityService;
 
   @GET
   @Produces(value = {MediaType.APPLICATION_JSON})
@@ -87,6 +91,7 @@ public class ExportRestService {
                                @PathParam("reportId") String reportId,
                                @PathParam("fileName") String fileName) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    validateUserAuthorization(userId);
     final ZoneId timezone = extractTimezone(requestContext);
 
     final Optional<byte[]> csvForReport =
@@ -110,6 +115,7 @@ public class ExportRestService {
                                 @PathParam("fileName") final String fileName,
                                 @Valid final ProcessRawDataCsvExportRequestDto request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    validateUserAuthorization(userId);
     final ZoneId timezone = extractTimezone(requestContext);
 
     final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
@@ -144,6 +150,12 @@ public class ExportRestService {
       fileName,
       csvExportService.getCsvBytesForEvaluatedReportResult(userId, reportDefinitionDto, timezone)
     );
+  }
+
+  private void validateUserAuthorization(final String userId) {
+    if (!identityService.getUserAuthorizations(userId).contains(AuthorizationType.CSV_EXPORT)) {
+      throw new ForbiddenException("User not authorized to export CSVs");
+    }
   }
 
   private List<String> getAllExcludedDtoFields(final ProcessRawDataCsvExportRequestDto request) {

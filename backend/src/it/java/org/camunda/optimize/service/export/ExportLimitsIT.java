@@ -48,7 +48,7 @@ public class ExportLimitsIT extends AbstractIT {
     deployAndStartSimpleProcess();
     deployAndStartSimpleProcess();
 
-    embeddedOptimizeExtension.getConfigurationService().setExportCsvLimit(1);
+    embeddedOptimizeExtension.getConfigurationService().getCsvConfiguration().setExportCsvLimit(1);
 
     importAllEngineEntitiesFromScratch();
 
@@ -77,7 +77,7 @@ public class ExportLimitsIT extends AbstractIT {
     addProcessInstancesToElasticsearch(instanceCount, processDefinitionKey);
 
     // the CSV export limit is higher than the default record export limit
-    embeddedOptimizeExtension.getConfigurationService().setExportCsvLimit(highExportCsvLimit);
+    embeddedOptimizeExtension.getConfigurationService().getCsvConfiguration().setExportCsvLimit(highExportCsvLimit);
 
     // when
     Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");
@@ -106,7 +106,7 @@ public class ExportLimitsIT extends AbstractIT {
     addProcessInstancesToElasticsearch(instanceCount, processDefinitionKey);
 
     // the CSV export limit is higher than the max response limit
-    embeddedOptimizeExtension.getConfigurationService().setExportCsvLimit(highExportCsvLimit);
+    embeddedOptimizeExtension.getConfigurationService().getCsvConfiguration().setExportCsvLimit(highExportCsvLimit);
 
     // when
     Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");

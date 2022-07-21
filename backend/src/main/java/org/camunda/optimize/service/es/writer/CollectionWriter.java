@@ -78,7 +78,7 @@ public class CollectionWriter {
   public IdResponseDto createNewCollectionAndReturnId(@NonNull String userId,
                                                       @NonNull PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto,
                                                       @NonNull String id,
-                                                      @NonNull boolean automaticallyCreated) {
+                                                      boolean automaticallyCreated) {
     log.debug("Writing new collection to Elasticsearch");
     CollectionDefinitionDto collectionDefinitionDto = new CollectionDefinitionDto();
     collectionDefinitionDto.setId(id);

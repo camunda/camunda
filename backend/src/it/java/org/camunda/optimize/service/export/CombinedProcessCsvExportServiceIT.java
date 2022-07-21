@@ -14,16 +14,21 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.service.util.configuration.CsvConfiguration;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
@@ -32,6 +37,72 @@ public class CombinedProcessCsvExportServiceIT extends AbstractIT {
   private static final String START = "aStart";
   private static final String END = "anEnd";
   private static final String VARIABLE_NAME = "var";
+
+  @ParameterizedTest
+  @ValueSource(strings = {"SUPERUSER", "NONE"})
+  public void csvExportForbiddenWhenDisabledForNonSuperuserInConfig(final String authorizationType) {
+    // given
+    embeddedOptimizeExtension.getConfigurationService()
+      .getCsvConfiguration()
+      .setAuthorizedUserType(CsvConfiguration.AuthorizedUserType.valueOf(authorizationType));
+    embeddedOptimizeExtension.reloadConfiguration();
+    final String reportId = reportClient.createEmptyCombinedReport(null);
+
+    // when
+    Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv", "Etc/GMT-1");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void csvExportForbiddenWhenDisabledForSuperuserInConfig() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService()
+      .getAuthConfiguration()
+      .setSuperUserIds(Collections.singletonList(DEFAULT_USERNAME));
+    embeddedOptimizeExtension.getConfigurationService()
+      .getCsvConfiguration()
+      .setAuthorizedUserType(CsvConfiguration.AuthorizedUserType.NONE);
+    embeddedOptimizeExtension.reloadConfiguration();
+    final String reportId = reportClient.createEmptyCombinedReport(null);
+
+    // when
+    Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv", "Etc/GMT-1");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"SUPERUSER", "ALL"})
+  public void csvExportWorksForSuperuserWhenAuthorizedInConfig(final String authorizationType) {
+    // given
+    embeddedOptimizeExtension.getConfigurationService()
+      .getAuthConfiguration()
+      .setSuperUserIds(Collections.singletonList(DEFAULT_USERNAME));
+    embeddedOptimizeExtension.getConfigurationService()
+      .getCsvConfiguration()
+      .setAuthorizedUserType(CsvConfiguration.AuthorizedUserType.valueOf(authorizationType));
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
+    ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(
+      "aProcess",
+      START,
+      END
+    ));
+    String singleReportId1 = createNewSingleNumberReport(processInstance1);
+    String singleReportId2 = createNewSingleNumberReport(processInstance2);
+    String combinedReportId = reportClient.createNewCombinedReport(singleReportId1, singleReportId2);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv", "Etc/GMT-1");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+  }
 
   @Test
   public void combinedMapReport_missingFlowNodesAreAutomaticallyAdded() {
@@ -289,7 +360,7 @@ public class CombinedProcessCsvExportServiceIT extends AbstractIT {
   @Test
   public void combinedReportCsvExportWorksWithSemiColonDelimiter() {
     // given
-    embeddedOptimizeExtension.getConfigurationService().setExportCsvDelimiter(';');
+    embeddedOptimizeExtension.getConfigurationService().getCsvConfiguration().setExportCsvDelimiter(';');
     final OffsetDateTime startDate = OffsetDateTime.now();
     final OffsetDateTime endDate = startDate.plus(1, ChronoUnit.MILLIS);
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();

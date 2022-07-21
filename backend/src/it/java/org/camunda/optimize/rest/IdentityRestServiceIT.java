@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.UserResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.providers.GenericExceptionMapper;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.util.SuperUserType;
@@ -407,7 +408,7 @@ public class IdentityRestServiceIT extends AbstractIT {
         DEFAULT_FIRSTNAME,
         DEFAULT_LASTNAME,
         KERMIT_USER + DEFAULT_EMAIL_DOMAIN
-      ), Collections.emptyList());
+      ), AbstractIdentityService.getDefaultUserAuthorizations());
 
     assertThat(currentUserDto).isEqualTo(expectedUser);
   }
@@ -434,7 +435,7 @@ public class IdentityRestServiceIT extends AbstractIT {
         DEFAULT_LASTNAME,
         KERMIT_USER + DEFAULT_EMAIL_DOMAIN,
         List.of("myRole")
-      ), Collections.emptyList());
+      ), AbstractIdentityService.getDefaultUserAuthorizations());
 
     assertThat(currentUserDto).isEqualTo(expectedUser);
   }
@@ -453,7 +454,10 @@ public class IdentityRestServiceIT extends AbstractIT {
     final UserResponseDto currentUserDto = identityClient.getCurrentUserIdentity(KERMIT_USER, KERMIT_USER);
 
     // then only user ID property is set and `getName` returns user ID
-    assertThat(currentUserDto).isEqualTo(new UserResponseDto(new UserDto(KERMIT_USER), Collections.emptyList()));
+    assertThat(currentUserDto).isEqualTo(new UserResponseDto(
+      new UserDto(KERMIT_USER),
+      AbstractIdentityService.getDefaultUserAuthorizations()
+    ));
     assertThat(currentUserDto.getUserDto().getName()).isEqualTo(KERMIT_USER);
   }
 
@@ -480,7 +484,7 @@ public class IdentityRestServiceIT extends AbstractIT {
         DEFAULT_FIRSTNAME,
         DEFAULT_LASTNAME,
         KERMIT_USER + DEFAULT_EMAIL_DOMAIN
-      ), Arrays.asList(AuthorizationType.TELEMETRY, AuthorizationType.IMPORT_EXPORT));
+      ), AbstractIdentityService.getSuperuserAuthorizations());
 
     assertThat(currentUserDto).isEqualTo(expectedUser);
   }

@@ -42,11 +42,14 @@ public class CsvExportService {
       final AuthorizedReportEvaluationResult reportResult = reportEvaluationHandler.evaluateReport(evaluationInfo);
       final List<String[]> resultAsCsv = reportResult.getEvaluationResult()
         .getResultAsCsv(
-          Optional.ofNullable(configurationService.getExportCsvLimit()).orElse(DEFAULT_RECORD_LIMIT),
+          Optional.ofNullable(configurationService.getCsvConfiguration().getExportCsvLimit()).orElse(DEFAULT_RECORD_LIMIT),
           0,
           timezone
         );
-      return Optional.ofNullable(CSVUtils.mapCsvLinesToCsvBytes(resultAsCsv, configurationService.getExportCsvDelimiter()));
+      return Optional.ofNullable(CSVUtils.mapCsvLinesToCsvBytes(
+        resultAsCsv,
+        configurationService.getCsvConfiguration().getExportCsvDelimiter()
+      ));
     } catch (NotFoundException e) {
       log.debug("Could not find report with id {} to export the result to csv!", reportId, e);
       return Optional.empty();
@@ -70,11 +73,11 @@ public class CsvExportService {
         reportEvaluationHandler.evaluateReport(evaluationInfo);
       final List<String[]> resultAsCsv = reportResult.getEvaluationResult()
         .getResultAsCsv(
-          Optional.ofNullable(configurationService.getExportCsvLimit()).orElse(DEFAULT_RECORD_LIMIT),
+          Optional.ofNullable(configurationService.getCsvConfiguration().getExportCsvLimit()).orElse(DEFAULT_RECORD_LIMIT),
           0,
           timezone
         );
-      return CSVUtils.mapCsvLinesToCsvBytes(resultAsCsv, configurationService.getExportCsvDelimiter());
+      return CSVUtils.mapCsvLinesToCsvBytes(resultAsCsv, configurationService.getCsvConfiguration().getExportCsvDelimiter());
     } catch (Exception e) {
       log.error("Could not evaluate report to export the result to csv!", e);
       throw e;
