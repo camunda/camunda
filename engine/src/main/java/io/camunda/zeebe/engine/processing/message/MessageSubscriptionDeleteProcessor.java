@@ -13,8 +13,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -50,8 +48,6 @@ public final class MessageSubscriptionDeleteProcessor
   @Override
   public void processRecord(
       final TypedRecord<MessageSubscriptionRecord> record,
-      final TypedResponseWriter deprecated1,
-      final TypedStreamWriter deprecated2,
       final Consumer<SideEffectProducer> sideEffect) {
     subscriptionRecord = record.getValue();
 
