@@ -20,15 +20,13 @@ import {useProcessInstancePageParams} from './useProcessInstancePageParams';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {useNotifications} from 'modules/notifications';
 import {Breadcrumb} from './Breadcrumb';
-import {Container, PanelContainer, Content, BottomPanel} from './styled';
+import {Container, PanelContainer, BottomPanel} from './styled';
 import {Locations} from 'modules/routes';
 import {
   ResizablePanel,
   SplitDirection,
 } from 'modules/components/ResizablePanel';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
-import {PanelHeader} from 'modules/components/PanelHeader';
-import {TimeStampPill} from './TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
 
 const ProcessInstance: React.FC = () => {
@@ -117,13 +115,8 @@ const ProcessInstance: React.FC = () => {
         >
           <TopPanel />
           <BottomPanel>
-            <PanelHeader title="Instance History">
-              <TimeStampPill />
-            </PanelHeader>
-            <Content>
-              <FlowNodeInstanceLog />
-              <VariablePanel />
-            </Content>
+            <FlowNodeInstanceLog />
+            <VariablePanel />
           </BottomPanel>
         </ResizablePanel>
       </PanelContainer>

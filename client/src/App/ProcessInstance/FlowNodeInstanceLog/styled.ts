@@ -11,7 +11,11 @@ import {Panel as BasePanel} from 'modules/components/Panel';
 import {StatusMessage} from 'modules/components/StatusMessage';
 
 const Panel = styled(BasePanel)`
-  border-right: none;
+  ${({theme}) => {
+    return css`
+      border-right: solid 1px ${theme.colors.borderColor};
+    `;
+  }}
 `;
 
 const NodeContainer = styled.div`
@@ -39,10 +43,6 @@ const InstanceHistory = styled.div`
       display: flex;
       flex: 1;
       overflow: auto;
-      border: solid 1px ${theme.colors.borderColor};
-      border-top: none;
-      border-left: none;
-      border-bottom: none;
       color: ${colors.color};
     `;
   }}

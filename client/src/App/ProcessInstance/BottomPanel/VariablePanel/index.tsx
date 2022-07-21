@@ -13,8 +13,9 @@ import {StatusMessage} from 'modules/components/StatusMessage';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {Form} from 'react-final-form';
 import {useNotifications} from 'modules/notifications';
+import {PanelHeader} from 'modules/components/PanelHeader';
 
-import {VariablesPanel} from './styled';
+import {VariablesPanel, Content} from './styled';
 
 type FormValues = {
   name?: string;
@@ -37,64 +38,67 @@ const VariablePanel = observer(function VariablePanel() {
 
   return (
     <VariablesPanel>
-      {displayStatus === 'error' ? (
-        <StatusMessage variant="error">
-          Variables could not be fetched
-        </StatusMessage>
-      ) : displayStatus === 'multi-instances' ? (
-        <StatusMessage variant="default">
-          To view the Variables, select a single Flow Node Instance in the
-          Instance History.
-        </StatusMessage>
-      ) : (
-        <Form<FormValues>
-          onSubmit={async (values, form) => {
-            const {initialValues} = form.getState();
+      <PanelHeader title="Variables" />
+      <Content>
+        {displayStatus === 'error' ? (
+          <StatusMessage variant="error">
+            Variables could not be fetched
+          </StatusMessage>
+        ) : displayStatus === 'multi-instances' ? (
+          <StatusMessage variant="default">
+            To view the Variables, select a single Flow Node Instance in the
+            Instance History.
+          </StatusMessage>
+        ) : (
+          <Form<FormValues>
+            onSubmit={async (values, form) => {
+              const {initialValues} = form.getState();
 
-            const {name, value} = values;
+              const {name, value} = values;
 
-            if (name === undefined || value === undefined) {
-              return;
-            }
-
-            const params = {
-              id: processInstanceId,
-              name,
-              value,
-              onSuccess: () => {
-                notifications.displayNotification('success', {
-                  headline: 'Variable added',
-                });
-                form.reset({});
-              },
-              onError: () => {
-                notifications.displayNotification('error', {
-                  headline: 'Variable could not be saved',
-                });
-                form.reset({});
-              },
-            };
-
-            if (initialValues.name === '') {
-              const result = await variablesStore.addVariable(params);
-              if (result === 'VALIDATION_ERROR') {
-                return {name: 'Variable should be unique'};
+              if (name === undefined || value === undefined) {
+                return;
               }
-            } else if (initialValues.name === name) {
-              variablesStore.updateVariable(params);
-              form.reset({});
-            }
-          }}
-        >
-          {({handleSubmit}) => {
-            return (
-              <form onSubmit={handleSubmit}>
-                <Variables />
-              </form>
-            );
-          }}
-        </Form>
-      )}
+
+              const params = {
+                id: processInstanceId,
+                name,
+                value,
+                onSuccess: () => {
+                  notifications.displayNotification('success', {
+                    headline: 'Variable added',
+                  });
+                  form.reset({});
+                },
+                onError: () => {
+                  notifications.displayNotification('error', {
+                    headline: 'Variable could not be saved',
+                  });
+                  form.reset({});
+                },
+              };
+
+              if (initialValues.name === '') {
+                const result = await variablesStore.addVariable(params);
+                if (result === 'VALIDATION_ERROR') {
+                  return {name: 'Variable should be unique'};
+                }
+              } else if (initialValues.name === name) {
+                variablesStore.updateVariable(params);
+                form.reset({});
+              }
+            }}
+          >
+            {({handleSubmit}) => {
+              return (
+                <form onSubmit={handleSubmit}>
+                  <Variables />
+                </form>
+              );
+            }}
+          </Form>
+        )}
+      </Content>
     </VariablesPanel>
   );
 });

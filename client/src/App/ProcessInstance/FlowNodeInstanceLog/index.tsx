@@ -19,6 +19,8 @@ import {
 } from './styled';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {StatusMessage} from 'modules/components/StatusMessage';
+import {PanelHeader} from 'modules/components/PanelHeader';
+import {TimeStampPill} from './TimeStampPill';
 
 const FlowNodeInstanceLog: React.FC = observer(() => {
   const {
@@ -36,6 +38,9 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
 
   return (
     <Panel>
+      <PanelHeader title="Instance History">
+        <TimeStampPill />
+      </PanelHeader>
       {areDiagramDefinitionsAvailable && isInstanceExecutionHistoryAvailable ? (
         <InstanceHistory
           data-testid="instance-history"

@@ -14,7 +14,12 @@ import {styles} from '@carbon/elements';
 const VariablesPanel = styled(Panel)`
   ${({theme}) => {
     return css`
+      height: 100%;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
       ${styles.bodyShort01};
+
       border-left: none;
       color: ${theme.colors.text01};
 
@@ -24,4 +29,10 @@ const VariablesPanel = styled(Panel)`
     `;
   }}
 `;
-export {VariablesPanel};
+
+const Content = styled.div`
+  position: relative;
+  height: 100%;
+`;
+
+export {VariablesPanel, Content};

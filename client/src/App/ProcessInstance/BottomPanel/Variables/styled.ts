@@ -84,7 +84,7 @@ const THead = styled.thead<THeadProps>`
 
           border-top: none;
           position: absolute;
-          top: 37px;
+          top: 8px;
           background: ${colors.backgroundColor};
 
           > th {
@@ -220,7 +220,7 @@ const ModalBody = styled(Modal.Body)`
 
 const EmptyPanel = styled(EmptyPanelComponent)`
   position: absolute;
-  top: 19px;
+  top: 0;
   z-index: 1;
 `;
 
@@ -268,17 +268,6 @@ const EditButtonsContainer = styled.div`
   display: flex;
 `;
 
-const Header = styled.div`
-  ${({theme}) => {
-    return css`
-      margin-top: 8px;
-      margin-left: 20px;
-      ${styles.productiveHeading02};
-      color: ${theme.colors.text01};
-    `;
-  }}
-`;
-
 const ValueField = styled(TextField)`
   display: block;
 `;
@@ -304,6 +293,5 @@ export {
   Plus,
   Footer,
   EditButtonsContainer,
-  Header,
   ValueField,
 };

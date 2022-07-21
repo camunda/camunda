@@ -73,8 +73,6 @@ const Variables: React.FC = observer(() => {
         )}
         {(!isViewMode || displayStatus === 'variables') && (
           <>
-            <Styled.Header>Variables</Styled.Header>
-
             <Styled.TableScroll ref={scrollableContentRef}>
               <Table data-testid="variables-list">
                 <Styled.THead

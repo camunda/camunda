@@ -11,15 +11,11 @@ const Container = styled.main`
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 100%;
 `;
 
 const PanelContainer = styled.div`
   overflow: hidden;
-  height: 100%;
-`;
-
-const Content = styled.div`
-  display: flex;
   height: 100%;
 `;
 
@@ -28,10 +24,10 @@ const BottomPanel = styled.div`
     return css`
       border-top: 1px solid ${theme.colors.borderColor};
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       height: 100%;
     `;
   }}
 `;
 
-export {Container, PanelContainer, Content, BottomPanel};
+export {Container, PanelContainer, BottomPanel};

@@ -70,48 +70,48 @@ pipeline {
         }
       }
     }
-    stage('Unit tests') {
-      parallel {
-        stage('Backend - Tests') {
-          steps {
-            container('maven') {
-              configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-                // MaxRAMFraction = LIMITS_CPU+1 because there are LIMITS_CPU surefire threads + one maven thread
-                sh '''
-                  JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
-                  mvn verify -s $MAVEN_SETTINGS_XML -P -docker,skipFrontendBuild -B -T$LIMITS_CPU --fail-at-end
-                  '''
-              }
-            }
-          }
-          post {
-            always {
-              junit testResults: 'qa/integration-tests/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
-              junit testResults: 'importer/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
-            }
-          }
-        }
-        //https://github.com/camunda/operate/issues/2471
-//        stage('Backend - Tests (old Zeebe)') {
-//          steps {
-//            container('maven') {
-//              configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-//                // MaxRAMFraction = LIMITS_CPU+1 because there are LIMITS_CPU surefire threads + one maven thread
-//                sh '''
-//                  JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
-//                  mvn verify -f qa/integration-tests -s $MAVEN_SETTINGS_XML -P -docker,-skipTests,old-zeebe -B -T$OLD_ZEEBE_TESTS_THREADS --fail-at-end
-//                  '''
-//              }
-//            }
-//          }
-//          post {
-//            always {
-//              junit testResults: 'qa/integration-tests/target-old-zeebe/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
-//            }
-//          }
-//        }
-      }
-    }
+//     stage('Unit tests') {
+//       parallel {
+//         stage('Backend - Tests') {
+//           steps {
+//             container('maven') {
+//               configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+//                 // MaxRAMFraction = LIMITS_CPU+1 because there are LIMITS_CPU surefire threads + one maven thread
+//                 sh '''
+//                   JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
+//                   mvn verify -s $MAVEN_SETTINGS_XML -P -docker,skipFrontendBuild -B -T$LIMITS_CPU --fail-at-end
+//                   '''
+//               }
+//             }
+//           }
+//           post {
+//             always {
+//               junit testResults: 'qa/integration-tests/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
+//               junit testResults: 'importer/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
+//             }
+//           }
+//         }
+//         //https://github.com/camunda/operate/issues/2471
+// //        stage('Backend - Tests (old Zeebe)') {
+// //          steps {
+// //            container('maven') {
+// //              configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+// //                // MaxRAMFraction = LIMITS_CPU+1 because there are LIMITS_CPU surefire threads + one maven thread
+// //                sh '''
+// //                  JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
+// //                  mvn verify -f qa/integration-tests -s $MAVEN_SETTINGS_XML -P -docker,-skipTests,old-zeebe -B -T$OLD_ZEEBE_TESTS_THREADS --fail-at-end
+// //                  '''
+// //              }
+// //            }
+// //          }
+// //          post {
+// //            always {
+// //              junit testResults: 'qa/integration-tests/target-old-zeebe/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
+// //            }
+// //          }
+// //        }
+//       }
+//     }
     stage('Prepare Docker login') {
       environment {
         HARBOR_REGISTRY = credentials('camunda-nexus')
