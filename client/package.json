@@ -97,7 +97,7 @@
     "testcafe": "^1.20.0",
     "testcafe-browser-provider-browserstack": "^1.14.0",
     "tree-kill": "^1.2.2",
-    "ws": "^8.8.0",
+    "ws": "^8.8.1",
     "xml2js": "^0.4.23",
     "old-bpmn-js": "npm:bpmn-js@8.10"
   },
