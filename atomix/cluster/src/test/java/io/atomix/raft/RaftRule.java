@@ -56,6 +56,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -666,12 +667,22 @@ public final class RaftRule extends ExternalResource {
     }
   }
 
-  private record CopiedRaftLogEntry(long index, long term, RaftEntry entry)
-      implements IndexedRaftLogEntry {
+  private static final class CopiedRaftLogEntry implements IndexedRaftLogEntry {
+    private final long index;
+    private final long term;
+    private final RaftEntry entry;
+
+    private CopiedRaftLogEntry(final long index, final long term, final RaftEntry entry) {
+      this.index = index;
+      this.term = term;
+      this.entry = entry;
+    }
+
     private static CopiedRaftLogEntry of(final IndexedRaftLogEntry entry) {
       final RaftEntry copiedEntry;
 
-      if (entry.entry() instanceof ApplicationEntry app) {
+      if (entry.entry() instanceof ApplicationEntry) {
+        final ApplicationEntry app = (ApplicationEntry) entry.entry();
         copiedEntry =
             new ApplicationEntry(
                 app.lowestPosition(), app.highestPosition(), BufferUtil.cloneBuffer(app.data()));
@@ -683,6 +694,21 @@ public final class RaftRule extends ExternalResource {
     }
 
     @Override
+    public long index() {
+      return index;
+    }
+
+    @Override
+    public long term() {
+      return term;
+    }
+
+    @Override
+    public RaftEntry entry() {
+      return entry;
+    }
+
+    @Override
     public ApplicationEntry getApplicationEntry() {
       return (ApplicationEntry) entry;
     }
@@ -690,6 +716,23 @@ public final class RaftRule extends ExternalResource {
     @Override
     public PersistedRaftRecord getPersistedRaftRecord() {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(index, term, entry);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof CopiedRaftLogEntry)) {
+        return false;
+      }
+      final CopiedRaftLogEntry that = (CopiedRaftLogEntry) o;
+      return index == that.index && term == that.term && entry.equals(that.entry);
     }
   }
 }
