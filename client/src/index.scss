@@ -9,3 +9,87 @@
   $font-path: 'https://fonts.camunda.io',
   $css--reset: false // Remove on #2773
 );
+
+@use '@carbon/react/scss/fonts/sans';
+@include sans.medium();
+@include sans.bold();
+
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -moz-osx-font-smoothing: antialiased;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: "IBM Plex Sans";  // Remove on #2773 
+  margin: 0;
+  padding: 0;
+}
+
+body.nsResizing {
+  cursor: ns-resize !important;
+}
+
+body.ewResizing {
+  cursor: ew-resize !important;
+}
+
+html,
+body,
+#root {
+  height: 100vh;
+  width: 100vw;
+  overflow: auto;
+}
+
+#root {
+  min-width: 960px;
+  min-height: 540px;
+}
+
+#root.hideFixedDimensions {
+  min-width: auto;
+  min-height: auto;
+}
+
+button {
+  font-family: "IBM Plex Sans";  // Remove on #2773
+  cursor: pointer;
+  border-width: 0;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* removes dotted default focus */
+button::-moz-focus-inner {
+  border: 0;
+}
+
+ul {
+  padding: 0px;
+  margin: 0px;
+  list-style-type: none;
+}
+
+svg {
+  fill: currentColor;
+}
+
+.bjs-powered-by {
+  display: none;
+}
+
+a {
+  color: currentColor;
+  text-decoration: none;
+}
+
+textarea {
+  margin: 0;
+}

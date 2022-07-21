@@ -8,7 +8,6 @@
 import ReactDOM from 'react-dom';
 import {App} from './App';
 import './index.scss';
-import './index.css';
 import '@camunda-cloud/common-ui/dist/common-ui/common-ui.css';
 import 'dmn-js/dist/assets/dmn-js-decision-table.css';
 import 'dmn-js/dist/assets/dmn-js-shared.css';
