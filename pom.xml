@@ -47,7 +47,7 @@
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.18.0</elasticsearch.log4j.version>
     <guava.version>31.1-jre</guava.version>
-    <spring.boot.version>2.7.1</spring.boot.version>
+    <spring.boot.version>2.7.2</spring.boot.version>
     <spring.version>5.3.22</spring.version>
     <mockito.version>4.6.1</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
