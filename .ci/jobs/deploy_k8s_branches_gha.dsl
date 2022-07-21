@@ -12,7 +12,6 @@ pipelineJob('deploy-branch-to-k8s-gha') {
 
   parameters {
     booleanParam('DRY_RUN', false, 'Enable dry-run mode.')
-    stringParam('DOCKER_TAG', 'latest', 'Docker tag to deploy.')
     stringParam('CAMBPM_VERSION', 'latest', 'CAMBPM Docker tag to deploy.')
     stringParam('ES_VERSION', 'latest', 'ES Docker tag to deploy.')
     stringParam('ZEEBE_VERSION', 'latest', 'Zeebe Docker tag to deploy.')

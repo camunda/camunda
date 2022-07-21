@@ -10,10 +10,6 @@ on:
       chart_ref:
         description: 'Deployable ref, commit or branch. This will be checked out.'
         required: true
-      docker_tag:
-        description: 'Docker tag to deploy'
-        required: false
-        default: latest
       es_version:
         description: 'ES docker tag to deploy'
         required: true
@@ -58,7 +54,6 @@ jobs:
         with:
           deployment_id: ${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
           revision: ${{ github.event.inputs.chart_ref }}
-          docker_tag: ${{ github.event.inputs.docker_tag }}
           es_version: ${{ github.event.inputs.es_version }}
           zeebe_version: ${{ github.event.inputs.zeebe_version }}
           identity_version: ${{ github.event.inputs.identity_version }}
