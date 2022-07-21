@@ -9,6 +9,7 @@ import styled, {css} from 'styled-components';
 import {rgba} from 'polished';
 import BasicCollapseButton from 'modules/components/CollapseButton';
 import {Panel as BasePanel} from 'modules/components/Panel';
+import {styles} from '@carbon/elements';
 
 const COLLAPSABLE_PANEL_MIN_WIDTH = '56px';
 type PanelPosition = 'RIGHT' | 'LEFT';
@@ -162,8 +163,7 @@ const ExpandButton = styled.button`
       border: none;
       border-radius: inherit;
       opacity: 0.9;
-      font-size: 16px;
-      font-weight: 600;
+      ${styles.productiveHeading02};
       position: relative;
     `;
   }}
@@ -179,7 +179,7 @@ const Vertical = styled.span<VerticalProps>`
       padding-right: ${offset}px;
       position: absolute;
       top: 0;
-      left: 0;
+      left: -3px;
       transform: rotate(-90deg) translateX(-100%) translateY(100%);
       transform-origin: 0 0;
       display: flex;

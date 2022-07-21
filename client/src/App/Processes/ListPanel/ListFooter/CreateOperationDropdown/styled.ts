@@ -6,6 +6,7 @@
  */
 
 import styled, {css, ThemedInterpolationFunction} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 const MENU_WIDTH = 165;
 const MENU_RIGHT_OFFSET = 52;
@@ -39,9 +40,8 @@ const dropdownButtonStyles: ThemedInterpolationFunction = ({theme}) => {
   const colors = theme.colors.createOperationDropdown.dropdownButtonStyles;
 
   return css`
-    font-size: 13px;
+    ${styles.label02};
     font-weight: 600;
-
     background-color: ${theme.colors.selections};
     color: ${colors.color};
 

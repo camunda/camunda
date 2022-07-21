@@ -7,7 +7,6 @@
 
 import styled, {css} from 'styled-components';
 import Dropdown from 'modules/components/Dropdown';
-import {Button} from 'modules/components/Button';
 
 const FiltersWrapper = styled.div`
   ${({theme}) => {
@@ -162,11 +161,6 @@ const PillsWrapper = styled.div`
   flex-grow: 1;
 `;
 
-const ClearButton = styled(Button)`
-  font-weight: bold;
-  font-size: 13px;
-`;
-
 export {
   FiltersWrapper,
   Content,
@@ -176,5 +170,4 @@ export {
   MoreDropdown,
   ButtonWrapper,
   PillsWrapper,
-  ClearButton,
 };

@@ -11,6 +11,7 @@ import {ReactComponent as RetryOperation} from 'modules/components/Icon/retry.sv
 import {ReactComponent as CancelOperation} from 'modules/components/Icon/stop.svg';
 import {ReactComponent as EditOperation} from 'modules/components/Icon/edit.svg';
 import {ReactComponent as DeleteOperation} from 'modules/components/Icon/delete.svg';
+import {styles} from '@carbon/elements';
 
 type EntryProps = {
   isRunning?: boolean;
@@ -42,14 +43,12 @@ const EntryStatus = styled.div`
 `;
 
 const Type = styled.div`
-  font-size: 15px;
-  line-height: 19px;
-  font-weight: 600;
+  ${styles.productiveHeading01};
   margin-bottom: 6px;
 `;
 
 const Id = styled.div`
-  font-size: 11px;
+  ${styles.label01};
 `;
 
 const EntryDetails = styled.div`
@@ -59,14 +58,14 @@ const EntryDetails = styled.div`
 `;
 
 const EndDate = styled.div`
-  font-size: 14px;
+  ${styles.label02};
   margin-left: auto;
 `;
 
 const InstancesCount = styled.div`
   ${({theme}) => {
     return css`
-      font-size: 14px;
+      ${styles.label02};
       color: ${theme.colors.linkDefault};
       text-decoration: underline;
       cursor: pointer;

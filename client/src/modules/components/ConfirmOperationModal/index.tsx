@@ -7,6 +7,7 @@
 
 import React from 'react';
 import Modal, {SIZES} from 'modules/components/Modal';
+import {BodyText} from './styled';
 
 type Props = {
   onModalClose: () => void;
@@ -26,10 +27,10 @@ const ConfirmOperationModal: React.FC<Props> = ({
   <Modal onModalClose={onModalClose} isVisible={isVisible} size={SIZES.SMALL}>
     <Modal.Header>Apply Operation</Modal.Header>
     <Modal.Body>
-      <Modal.BodyText>
-        {bodyText}
-        <p>Click "Apply" to proceed.</p>
-      </Modal.BodyText>
+      <BodyText>
+        <div>{bodyText}</div>
+        <div>Click "Apply" to proceed.</div>
+      </BodyText>
     </Modal.Body>
     <Modal.Footer>
       <Modal.SecondaryButton title="Cancel" onClick={onCancelClick}>

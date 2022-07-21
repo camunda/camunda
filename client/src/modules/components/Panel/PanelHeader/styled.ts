@@ -6,6 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 const Header = styled.div`
   ${({theme}) => {
@@ -15,8 +16,7 @@ const Header = styled.div`
       background-color: ${colors.backgroundColor};
       color: ${theme.colors.text01};
       border-bottom: solid 1px ${theme.colors.borderColor};
-      font-size: 16px;
-      font-weight: 600;
+      ${styles.productiveHeading02};
       padding: 8px 10px;
       padding-left: 20px;
       min-height: 37px;

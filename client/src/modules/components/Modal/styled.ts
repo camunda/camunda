@@ -14,6 +14,7 @@ import {Button} from 'modules/components/Button';
 import {Transition as TransitionComponent} from 'modules/components/Transition';
 
 import {SIZES} from './constants';
+import {styles} from '@carbon/elements';
 
 const ModalRoot = styled.div`
   ${({theme}) => {
@@ -180,7 +181,7 @@ const ModalBodyText = styled.div`
     const opacity = theme.opacity.modules.modal.modalBodyText;
 
     return css`
-      font-size: 13px;
+      ${styles.bodyShort01};
       opacity: ${opacity};
     `;
   }}

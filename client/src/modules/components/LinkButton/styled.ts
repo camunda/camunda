@@ -6,6 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 type LinkButtonProps = {
   size?: 'small';
@@ -18,7 +19,7 @@ const LinkButton = styled.button<LinkButtonProps>`
       margin: 0;
       background: transparent;
       border: 0;
-      font-size: ${size === 'small' ? 12 : 14}px;
+      ${size === 'small' ? styles.label01 : styles.label02};
       text-decoration: underline;
       color: ${theme.colors.linkDefault};
 

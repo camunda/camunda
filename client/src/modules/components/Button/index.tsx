@@ -18,7 +18,7 @@ const getSizeVariant: ThemedInterpolationFunction<Props> = ({size}) => {
     case 'small':
       return css`
         height: 22px;
-        ${styles.label01};
+        ${styles.label02};
       `;
     case 'medium':
       return css`

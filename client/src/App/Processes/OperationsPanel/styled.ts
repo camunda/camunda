@@ -7,6 +7,7 @@
 
 import styled, {css} from 'styled-components';
 import {CollapsablePanel as CollapsablePanelBase} from 'modules/components/CollapsablePanel';
+import {styles} from '@carbon/elements';
 
 type OperationsListProps = {
   isInitialLoadComplete?: boolean;
@@ -38,8 +39,7 @@ const EmptyMessage = styled.div`
       margin: 30px 17px 0 18px;
       padding: 29px 44px 29px 32px;
       text-align: center;
-      font-size: 13px;
-      font-family: IBM Plex Sans;
+      ${styles.bodyShort01};
       color: ${colors.color};
       background-color: ${colors.backgroundColor};
     `;

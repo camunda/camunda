@@ -229,8 +229,8 @@ const Button = styled(BaseButton)`
   justify-content: center;
   align-items: center;
   height: 22px;
-  width: 119px;
   margin-left: 20px;
+  padding: 0 10px;
 `;
 
 const Plus = styled(DefaultPlus)`

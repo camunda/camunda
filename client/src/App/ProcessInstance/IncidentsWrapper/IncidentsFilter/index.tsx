@@ -11,6 +11,7 @@ import * as Styled from './styled';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 import {tracking} from 'modules/tracking';
+import {Button} from 'modules/components/Button';
 
 const IncidentsFilter: React.FC = observer(function IncidentsFilter() {
   const {
@@ -119,7 +120,7 @@ const IncidentsFilter: React.FC = observer(function IncidentsFilter() {
           </Styled.FilterRow>
         </Styled.PillsWrapper>
         <Styled.ButtonWrapper>
-          <Styled.ClearButton
+          <Button
             data-testid="clear-button"
             size="small"
             title="Clear All"
@@ -135,7 +136,7 @@ const IncidentsFilter: React.FC = observer(function IncidentsFilter() {
             type="button"
           >
             Clear All
-          </Styled.ClearButton>
+          </Button>
         </Styled.ButtonWrapper>
       </Styled.Content>
     </Styled.FiltersWrapper>

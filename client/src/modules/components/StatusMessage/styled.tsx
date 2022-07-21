@@ -8,6 +8,7 @@
 import styled, {css} from 'styled-components';
 import {ReactComponent as Check} from 'modules/components/Icon/check.svg';
 import {ReactComponent as Warning} from 'modules/components/Icon/warning.svg';
+import {styles} from '@carbon/elements';
 
 const CheckIcon = styled(Check)``;
 const WarningIcon = styled(Warning)``;
@@ -25,7 +26,7 @@ const Container = styled.div<Props>`
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      ${styles.bodyShort02};
       color: ${colors[$variant].color};
 
       ${CheckIcon}, ${WarningIcon} {

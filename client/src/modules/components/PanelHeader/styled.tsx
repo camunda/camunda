@@ -6,6 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 const Container = styled.div`
   ${({theme}) => {
@@ -19,8 +20,7 @@ const Container = styled.div`
       align-items: center;
       background-color: ${colors.backgroundColor};
       padding: 8px 0 8px 19px;
-      font-size: 16px;
-      font-weight: 600;
+      ${styles.productiveHeading02};
       color: ${theme.colors.text01};
       border-bottom: solid 1px ${theme.colors.borderColor};
     `;
@@ -32,8 +32,7 @@ const InstancesCount = styled.span`
     return css`
       border-left: 1px solid ${theme.colors.borderColor};
       padding-left: 30px;
-      font-size: 14px;
-      font-weight: 500;
+      ${styles.bodyShort01};
       margin-left: 34px;
     `;
   }}

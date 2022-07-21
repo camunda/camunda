@@ -6,6 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 const EmptyMessage = styled.div`
   ${({theme}) => {
@@ -13,11 +14,9 @@ const EmptyMessage = styled.div`
 
     return css`
       padding-top: 40px;
-      font-family: IBM Plex Sans;
-      font-size: 16px;
-      font-weight: 500;
+      ${styles.bodyShort02};
       text-align: center;
-      line-height: 20px;
+
       color: ${colors.color};
 
       span {
