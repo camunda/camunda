@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -54,6 +53,7 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
 
   private RejectionType rejectionType;
   private String rejectionReason;
+  private final TypedResponseWriter responseWriter;
 
   public CommandProcessorImpl(
       final CommandProcessor<T> commandProcessor,
@@ -64,14 +64,12 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
     stateWriter = writers.state();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
   }
 
   @Override
   public void processRecord(
-      final TypedRecord<T> command,
-      final TypedResponseWriter deprecated1,
-      final TypedStreamWriter deprecated2,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<T> command, final Consumer<SideEffectProducer> sideEffect) {
 
     entityKey = command.getKey();
 
@@ -86,12 +84,12 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
       stateWriter.appendFollowUpEvent(entityKey, newState, updatedValue);
       wrappedProcessor.afterAccept(commandWriter, stateWriter, entityKey, newState, updatedValue);
       if (respond) {
-        deprecated1.writeEventOnCommand(entityKey, newState, updatedValue, command);
+        responseWriter.writeEventOnCommand(entityKey, newState, updatedValue, command);
       }
     } else {
       rejectionWriter.appendRejection(command, rejectionType, rejectionReason);
       if (respond) {
-        deprecated1.writeRejectionOnCommand(command, rejectionType, rejectionReason);
+        responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
       }
     }
   }
