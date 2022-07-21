@@ -12,8 +12,6 @@ import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.ReplayMetrics;
-import io.camunda.zeebe.engine.processing.streamprocessor.LastProcessingPositions;
-import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingException;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
