@@ -481,6 +481,8 @@ webhookAlerting:
 
 export:
   csv:
+    # which users are authorized to download CSVs. Available options: 'all', 'superuser', 'none'
+    authorizedUsers: 'all'
     # Maximum number of records returned by CSV export
     # Note: Increasing this value comes at a memory cost for the Optimize application that varies based on the actual data.
     # As a rough guideline, an export of a 50000 records raw data report containing 8 variables on each instance

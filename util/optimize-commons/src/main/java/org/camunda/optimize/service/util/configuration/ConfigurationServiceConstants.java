@@ -96,9 +96,9 @@ public class ConfigurationServiceConstants {
   public static final String CONTAINER_HTTP_PORT = "$.container.ports.http";
   public static final String CONTAINER_STATUS_MAX_CONNECTIONS = "$.container.status.connections.max";
 
-  public static final String CONTAINER_ACCESSURL = "$.container.accessUrl";
+  public static final String CONTAINER_ACCESS_URL = "$.container.accessUrl";
 
-  public static final String EXPORT_CSV_LIMIT = "$.export.csv.limit";
+  public static final String CSV_CONFIGURATION = "$.export.csv";
   public static final String EXPORT_CSV_DELIMITER = "$.export.csv.delimiter";
 
   public static final String HISTORY_CLEANUP = "$.historyCleanup";

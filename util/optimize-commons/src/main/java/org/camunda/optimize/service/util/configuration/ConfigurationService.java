@@ -179,8 +179,7 @@ public class ConfigurationService {
 
   private Map<String, WebhookConfiguration> configuredWebhooks;
 
-  private Integer exportCsvLimit;
-  private char exportCsvDelimiter;
+  private CsvConfiguration csvConfiguration;
 
   private Properties quartzProperties;
 
@@ -557,7 +556,7 @@ public class ConfigurationService {
   }
 
   public boolean getCustomerOnboardingImport() {
-    if(customerOnboarding == null) {
+    if (customerOnboarding == null) {
       customerOnboarding = configJsonContext.read(ConfigurationServiceConstants.CUSTOMER_ONBOARDING_DATA, Boolean.class);
     }
     return customerOnboarding;
@@ -727,7 +726,7 @@ public class ConfigurationService {
   public Optional<String> getContainerAccessUrl() {
     if (containerAccessUrl == null) {
       containerAccessUrl =
-        Optional.ofNullable(configJsonContext.read(ConfigurationServiceConstants.CONTAINER_ACCESSURL));
+        Optional.ofNullable(configJsonContext.read(ConfigurationServiceConstants.CONTAINER_ACCESS_URL));
     }
     return containerAccessUrl;
   }
@@ -890,7 +889,7 @@ public class ConfigurationService {
     return emailAuthenticationConfiguration;
   }
 
-  public Boolean getImportDmnDataEnabled() {
+  private Boolean getImportDmnDataEnabled() {
     if (importDmnDataEnabled == null) {
       importDmnDataEnabled = configJsonContext.read(ConfigurationServiceConstants.IMPORT_DMN_DATA, Boolean.class);
     }
@@ -902,7 +901,7 @@ public class ConfigurationService {
     return getImportDmnDataEnabled();
   }
 
-  public Boolean getImportUserTaskWorkerDataEnabled() {
+  private Boolean getImportUserTaskWorkerDataEnabled() {
     if (importUserTaskWorkerDataEnabled == null) {
       importUserTaskWorkerDataEnabled = configJsonContext.read(
         ConfigurationServiceConstants.IMPORT_USER_TASK_WORKER_DATA,
@@ -968,23 +967,14 @@ public class ConfigurationService {
     return configuredWebhooks;
   }
 
-  public Integer getExportCsvLimit() {
-    if (exportCsvLimit == null) {
-      exportCsvLimit = configJsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_LIMIT, Integer.class);
+  public CsvConfiguration getCsvConfiguration() {
+    if (csvConfiguration == null) {
+      csvConfiguration = configJsonContext.read(
+        ConfigurationServiceConstants.CSV_CONFIGURATION,
+        CsvConfiguration.class
+      );
     }
-    return exportCsvLimit;
-  }
-
-  public char getExportCsvDelimiter() {
-    if (exportCsvDelimiter == 0) {
-      String delimiter = configJsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_DELIMITER);
-      if (delimiter != null) {
-        exportCsvDelimiter = delimiter.charAt(0);
-      } else {
-        exportCsvDelimiter = ',';
-      }
-    }
-    return exportCsvDelimiter;
+    return csvConfiguration;
   }
 
   public String getElasticsearchSecurityUsername() {

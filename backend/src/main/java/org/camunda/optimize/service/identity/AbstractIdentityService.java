@@ -13,7 +13,10 @@ import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
+import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.CsvConfiguration;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -22,18 +25,26 @@ import java.util.List;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.service.util.configuration.CsvConfiguration.AuthorizedUserType.ALL;
+import static org.camunda.optimize.service.util.configuration.CsvConfiguration.AuthorizedUserType.SUPERUSER;
 
 @Component
 @Slf4j
-public abstract class AbstractIdentityService {
+public abstract class AbstractIdentityService implements ConfigurationReloadable {
 
-  private static final List<AuthorizationType> SUPERUSER_AUTHORIZATIONS =
-    ImmutableList.copyOf(AuthorizationType.values());
+  private static List<AuthorizationType> superuserAuthorizations;
+  private static List<AuthorizationType> defaultUserAuthorizations;
 
   protected final ConfigurationService configurationService;
 
   protected AbstractIdentityService(final ConfigurationService configurationService) {
     this.configurationService = configurationService;
+    initializeAuthorizations(configurationService);
+  }
+
+  @Override
+  public void reloadConfiguration(ApplicationContext context) {
+    initializeAuthorizations(configurationService);
   }
 
   public abstract Optional<UserDto> getUserById(final String userId);
@@ -49,6 +60,14 @@ public abstract class AbstractIdentityService {
                                                                             final int maxResults,
                                                                             final boolean excludeUserGroups);
 
+  public static List<AuthorizationType> getSuperuserAuthorizations() {
+    return ImmutableList.copyOf(superuserAuthorizations);
+  }
+
+  public static List<AuthorizationType> getDefaultUserAuthorizations() {
+    return ImmutableList.copyOf(defaultUserAuthorizations);
+  }
+
   public boolean isSuperUserIdentity(final String userId) {
     return configurationService.getAuthConfiguration().getSuperUserIds().contains(userId) ||
       isInSuperUserGroup(userId);
@@ -56,9 +75,9 @@ public abstract class AbstractIdentityService {
 
   public List<AuthorizationType> getUserAuthorizations(final String userId) {
     if (isSuperUserIdentity(userId)) {
-      return SUPERUSER_AUTHORIZATIONS;
+      return getSuperuserAuthorizations();
     }
-    return Collections.emptyList();
+    return getDefaultUserAuthorizations();
   }
 
   public Optional<IdentityWithMetadataResponseDto> getIdentityWithMetadataForId(final String userOrGroupId) {
@@ -115,6 +134,22 @@ public abstract class AbstractIdentityService {
       .stream()
       .map(IdentityDto::getId)
       .anyMatch(authorizedGroupIds::contains);
+  }
+
+  private static void initializeAuthorizations(final ConfigurationService configurationService) {
+    final CsvConfiguration.AuthorizedUserType authorizedUsers = configurationService.getCsvConfiguration()
+      .getAuthorizedUserType();
+    if (authorizedUsers == ALL) {
+      superuserAuthorizations = ImmutableList.copyOf(AuthorizationType.values());
+      defaultUserAuthorizations = List.of(AuthorizationType.CSV_EXPORT);
+    } else {
+      if (authorizedUsers == SUPERUSER) {
+        superuserAuthorizations = ImmutableList.copyOf(AuthorizationType.values());
+      } else {
+        superuserAuthorizations = List.of(AuthorizationType.IMPORT_EXPORT, AuthorizationType.TELEMETRY);
+      }
+      defaultUserAuthorizations = Collections.emptyList();
+    }
   }
 
 }
