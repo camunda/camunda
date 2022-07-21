@@ -77,8 +77,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   @Override
   public void processRecord(
       final TypedRecord<ProcessMessageSubscriptionRecord> command,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprecated2) {
 
     final var record = command.getValue();
     final var elementInstanceKey = record.getElementInstanceKey();

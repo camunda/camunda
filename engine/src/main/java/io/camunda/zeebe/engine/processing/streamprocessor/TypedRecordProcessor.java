@@ -27,8 +27,8 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
    */
   default void processRecord(
       final TypedRecord<T> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprecated2) {
     processRecord(record);
   }
 
@@ -37,18 +37,18 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
    */
   default void processRecord(
       final TypedRecord<T> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprecated2,
       final Consumer<SideEffectProducer> sideEffect) {
-    processRecord(record, responseWriter, streamWriter);
+    processRecord(record, deprecated1, deprecated2);
   }
 
   /**
    * @param position the position of the current record to process
    * @param record the record to process
-   * @param responseWriter the default side effect that can be used for sending responses. {@link
+   * @param deprecated1 the default side effect that can be used for sending responses. {@link
    *     TypedResponseWriter#flush()} must not be called in this method.
-   * @param streamWriter
+   * @param deprectaed2
    * @param sideEffect consumer to replace the default side effect (response writer). Can be used to
    *     implement other types of side effects or composite side effects. If a composite side effect
    *     involving the response writer is used, {@link TypedResponseWriter#flush()} must be called
@@ -57,9 +57,9 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
   default void processRecord(
       final long position,
       final TypedRecord<T> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprectaed2,
       final Consumer<SideEffectProducer> sideEffect) {
-    processRecord(record, responseWriter, streamWriter, sideEffect);
+    processRecord(record, deprecated1, deprectaed2, sideEffect);
   }
 }

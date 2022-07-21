@@ -162,8 +162,8 @@ public final class SkipFailingEventsTest {
                     @Override
                     public void processRecord(
                         final TypedRecord<UnifiedRecordValue> record,
-                        final TypedResponseWriter responseWriter,
-                        final TypedStreamWriter streamWriter) {
+                        final TypedResponseWriter deprecated1,
+                        final TypedStreamWriter deprecated2) {
                       throw new NullPointerException();
                     }
                   });
@@ -320,11 +320,11 @@ public final class SkipFailingEventsTest {
               @Override
               public void processRecord(
                   final TypedRecord<JobRecord> record,
-                  final TypedResponseWriter responseWriter,
-                  final TypedStreamWriter streamWriter) {
+                  final TypedResponseWriter deprecated1,
+                  final TypedStreamWriter deprecated2) {
                 processedInstances.add(record.getValue().getProcessInstanceKey());
                 final var processInstanceKey = (int) record.getValue().getProcessInstanceKey();
-                streamWriter.appendFollowUpCommand(
+                deprecated2.appendFollowUpCommand(
                     record.getKey(),
                     ProcessInstanceIntent.COMPLETE_ELEMENT,
                     Records.processInstance(processInstanceKey));
@@ -335,8 +335,8 @@ public final class SkipFailingEventsTest {
           @Override
           public void processRecord(
               final TypedRecord<JobRecord> record,
-              final TypedResponseWriter responseWriter,
-              final TypedStreamWriter streamWriter) {
+              final TypedResponseWriter deprecated1,
+              final TypedStreamWriter deprecated2) {
             throw new RuntimeException("expected");
           }
         };
@@ -403,13 +403,13 @@ public final class SkipFailingEventsTest {
           @Override
           public void processRecord(
               final TypedRecord<DeploymentRecord> record,
-              final TypedResponseWriter responseWriter,
-              final TypedStreamWriter streamWriter) {
+              final TypedResponseWriter deprecated1,
+              final TypedStreamWriter deprecated2) {
             if (record.getKey() == 0) {
               throw new RuntimeException("expected");
             }
             processedInstances.add(TimerInstance.NO_ELEMENT_INSTANCE);
-            streamWriter.appendFollowUpEvent(
+            deprecated2.appendFollowUpEvent(
                 record.getKey(),
                 TimerIntent.CREATED,
                 Records.timer(TimerInstance.NO_ELEMENT_INSTANCE));
@@ -479,8 +479,8 @@ public final class SkipFailingEventsTest {
     @Override
     public void processRecord(
         final TypedRecord<ProcessInstanceRecord> record,
-        final TypedResponseWriter responseWriter,
-        final TypedStreamWriter streamWriter) {
+        final TypedResponseWriter deprecated1,
+        final TypedStreamWriter deprecated2) {
       processCount.incrementAndGet();
       throw new RuntimeException("expected");
     }
@@ -496,10 +496,10 @@ public final class SkipFailingEventsTest {
     @Override
     public void processRecord(
         final TypedRecord<ProcessInstanceRecord> record,
-        final TypedResponseWriter responseWriter,
-        final TypedStreamWriter streamWriter) {
+        final TypedResponseWriter deprecated1,
+        final TypedStreamWriter deprecated2) {
       processedInstances.add(record.getValue().getProcessInstanceKey());
-      streamWriter.appendFollowUpEvent(
+      deprecated2.appendFollowUpEvent(
           record.getKey(), ProcessInstanceIntent.ELEMENT_COMPLETED, record.getValue());
     }
   }

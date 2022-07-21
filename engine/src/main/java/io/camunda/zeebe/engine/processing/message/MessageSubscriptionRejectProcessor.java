@@ -48,8 +48,8 @@ public final class MessageSubscriptionRejectProcessor
   @Override
   public void processRecord(
       final TypedRecord<MessageSubscriptionRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprecated2,
       final Consumer<SideEffectProducer> sideEffect) {
 
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();

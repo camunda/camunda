@@ -60,8 +60,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   @Override
   public void processRecord(
       final TypedRecord<JobBatchRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprecated2) {
     final JobBatchRecord value = record.getValue();
     if (isValid(value)) {
       activateJobs(record);

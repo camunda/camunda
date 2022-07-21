@@ -44,8 +44,8 @@ public final class UpdateVariableDocumentProcessor
   @Override
   public void processRecord(
       final TypedRecord<VariableDocumentRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprecated2) {
     final VariableDocumentRecord value = record.getValue();
 
     final ElementInstance scope = elementInstanceState.getInstance(value.getScopeKey());
@@ -54,8 +54,8 @@ public final class UpdateVariableDocumentProcessor
           String.format(
               "Expected to update variables for element with key '%d', but no such element was found",
               value.getScopeKey());
-      streamWriter.appendRejection(record, RejectionType.NOT_FOUND, reason);
-      responseWriter.writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
+      deprecated2.appendRejection(record, RejectionType.NOT_FOUND, reason);
+      deprecated1.writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
       return;
     }
 
@@ -83,14 +83,14 @@ public final class UpdateVariableDocumentProcessor
           String.format(
               "Expected document to be valid msgpack, but it could not be read: '%s'",
               e.getMessage());
-      streamWriter.appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
-      responseWriter.writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
+      deprecated2.appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
+      deprecated1.writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
       return;
     }
 
     final long key = keyGenerator.nextKey();
 
     stateWriter.appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
-    responseWriter.writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
+    deprecated1.writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
   }
 }

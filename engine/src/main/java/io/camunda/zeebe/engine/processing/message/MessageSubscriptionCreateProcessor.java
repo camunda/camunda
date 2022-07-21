@@ -55,8 +55,8 @@ public final class MessageSubscriptionCreateProcessor
   @Override
   public void processRecord(
       final TypedRecord<MessageSubscriptionRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprecated2,
       final Consumer<SideEffectProducer> sideEffect) {
     subscriptionRecord = record.getValue();
 
@@ -64,7 +64,7 @@ public final class MessageSubscriptionCreateProcessor
         subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
       sideEffect.accept(this::sendAcknowledgeCommand);
 
-      streamWriter.appendRejection(
+      deprecated2.appendRejection(
           record,
           RejectionType.INVALID_STATE,
           String.format(

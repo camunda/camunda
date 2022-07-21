@@ -41,8 +41,8 @@ public final class ProcessMessageSubscriptionDeleteProcessor
   @Override
   public void processRecord(
       final TypedRecord<ProcessMessageSubscriptionRecord> command,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprecated2) {
 
     final ProcessMessageSubscriptionRecord subscriptionRecord = command.getValue();
 

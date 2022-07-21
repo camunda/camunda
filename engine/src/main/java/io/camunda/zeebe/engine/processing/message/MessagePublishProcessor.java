@@ -74,10 +74,10 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   @Override
   public void processRecord(
       final TypedRecord<MessageRecord> command,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprecated2,
       final Consumer<SideEffectProducer> sideEffect) {
-    this.responseWriter = responseWriter;
+    responseWriter = deprecated1;
     messageRecord = command.getValue();
 
     correlatingSubscriptions.clear();
@@ -91,11 +91,10 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
           String.format(
               ALREADY_PUBLISHED_MESSAGE, bufferAsString(messageRecord.getMessageIdBuffer()));
 
-      streamWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionReason);
-      responseWriter.writeRejectionOnCommand(
-          command, RejectionType.ALREADY_EXISTS, rejectionReason);
+      deprecated2.appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionReason);
+      deprecated1.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, rejectionReason);
     } else {
-      handleNewMessage(command, responseWriter, sideEffect);
+      handleNewMessage(command, deprecated1, sideEffect);
     }
   }
 

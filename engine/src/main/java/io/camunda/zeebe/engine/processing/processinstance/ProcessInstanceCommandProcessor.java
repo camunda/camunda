@@ -32,9 +32,9 @@ public final class ProcessInstanceCommandProcessor
   @Override
   public void processRecord(
       final TypedRecord<ProcessInstanceRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
-    populateCommandContext(record, responseWriter, streamWriter);
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprecated2) {
+    populateCommandContext(record, deprecated1, deprecated2);
     commandHandlers.handle(context);
   }
 

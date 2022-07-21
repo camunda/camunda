@@ -65,23 +65,23 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   @Override
   public void processRecord(
       final TypedRecord<IncidentRecord> command,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprecated2,
       final Consumer<SideEffectProducer> sideEffect) {
     final long key = command.getKey();
 
     final var incident = incidentState.getIncidentRecord(key);
     if (incident == null) {
       final var errorMessage = String.format(NO_INCIDENT_FOUND_MSG, key);
-      rejectResolveCommand(command, responseWriter, errorMessage, RejectionType.NOT_FOUND);
+      rejectResolveCommand(command, deprecated1, errorMessage, RejectionType.NOT_FOUND);
       return;
     }
 
     stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
-    responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
+    deprecated1.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
 
     // if it fails, a new incident is raised
-    attemptToContinueProcessProcessing(command, streamWriter, sideEffect, incident);
+    attemptToContinueProcessProcessing(command, deprecated2, sideEffect, incident);
   }
 
   private void rejectResolveCommand(

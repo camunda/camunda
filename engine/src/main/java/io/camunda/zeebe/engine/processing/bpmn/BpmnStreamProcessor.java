@@ -88,8 +88,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   @Override
   public void processRecord(
       final TypedRecord<ProcessInstanceRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprecated2,
       final Consumer<SideEffectProducer> sideEffect) {
 
     // initialize

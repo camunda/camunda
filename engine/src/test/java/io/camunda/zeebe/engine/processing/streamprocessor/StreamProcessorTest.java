@@ -272,10 +272,10 @@ public final class StreamProcessorTest {
                       @Override
                       public void processRecord(
                           final TypedRecord<UnifiedRecordValue> record,
-                          final TypedResponseWriter responseWriter,
-                          final TypedStreamWriter streamWriter) {
+                          final TypedResponseWriter deprecated1,
+                          final TypedStreamWriter deprecated2) {
 
-                        streamWriter.appendFollowUpEvent(
+                        deprecated2.appendFollowUpEvent(
                             record.getKey(),
                             ProcessInstanceIntent.ELEMENT_ACTIVATING,
                             record.getValue());
@@ -310,8 +310,8 @@ public final class StreamProcessorTest {
                   @Override
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
+                      final TypedResponseWriter deprecated1,
+                      final TypedStreamWriter deprecated2,
                       final Consumer<SideEffectProducer> sideEffect) {
 
                     sideEffect.accept(
@@ -343,8 +343,8 @@ public final class StreamProcessorTest {
                   @Override
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
+                      final TypedResponseWriter deprecated1,
+                      final TypedStreamWriter deprecated2,
                       final Consumer<SideEffectProducer> sideEffect) {
                     sideEffect.accept(
                         () -> {
@@ -375,8 +375,8 @@ public final class StreamProcessorTest {
                   @Override
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
+                      final TypedResponseWriter deprecated1,
+                      final TypedStreamWriter deprecated2,
                       final Consumer<SideEffectProducer> sideEffect) {
 
                     sideEffect.accept(
@@ -492,10 +492,10 @@ public final class StreamProcessorTest {
                   @Override
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter) {
+                      final TypedResponseWriter deprecated1,
+                      final TypedStreamWriter deprecated2) {
 
-                    responseWriter.writeEventOnCommand(
+                    deprecated1.writeEventOnCommand(
                         3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
                   }
                 }));
@@ -531,10 +531,10 @@ public final class StreamProcessorTest {
                   @Override
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter) {
+                      final TypedResponseWriter deprecated1,
+                      final TypedStreamWriter deprecated2) {
 
-                    responseWriter.writeEventOnCommand(
+                    deprecated1.writeEventOnCommand(
                         3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
 
                     throw new RuntimeException("expected");
@@ -687,10 +687,10 @@ public final class StreamProcessorTest {
                       @Override
                       public void processRecord(
                           final TypedRecord<UnifiedRecordValue> record,
-                          final TypedResponseWriter responseWriter,
-                          final TypedStreamWriter streamWriter) {
+                          final TypedResponseWriter deprecated1,
+                          final TypedStreamWriter deprecated2) {
 
-                        streamWriter.appendFollowUpEvent(
+                        deprecated2.appendFollowUpEvent(
                             record.getKey(),
                             ProcessInstanceIntent.ELEMENT_ACTIVATING,
                             record.getValue());

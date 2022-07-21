@@ -192,14 +192,13 @@ public final class TypedStreamProcessorTest {
     @Override
     public void processRecord(
         final TypedRecord<DeploymentRecord> record,
-        final TypedResponseWriter responseWriter,
-        final TypedStreamWriter streamWriter) {
+        final TypedResponseWriter deprecated1,
+        final TypedStreamWriter deprecated2) {
       if (record.getKey() == 0) {
         throw new RuntimeException("expected");
       }
-      streamWriter.appendFollowUpEvent(
-          record.getKey(), DeploymentIntent.CREATED, record.getValue());
-      streamWriter.flush();
+      deprecated2.appendFollowUpEvent(record.getKey(), DeploymentIntent.CREATED, record.getValue());
+      deprecated2.flush();
     }
   }
 
@@ -208,11 +207,11 @@ public final class TypedStreamProcessorTest {
     @Override
     public void processRecord(
         final TypedRecord<DeploymentRecord> record,
-        final TypedResponseWriter responseWriter,
-        final TypedStreamWriter streamWriter) {
-      streamWriter.appendFollowUpEvent(
+        final TypedResponseWriter deprecated1,
+        final TypedStreamWriter deprecated2) {
+      deprecated2.appendFollowUpEvent(
           keyGenerator.nextKey(), DeploymentIntent.CREATED, record.getValue());
-      streamWriter.flush();
+      deprecated2.flush();
     }
   }
 }

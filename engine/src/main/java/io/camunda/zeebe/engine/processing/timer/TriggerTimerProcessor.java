@@ -88,8 +88,8 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
   @Override
   public void processRecord(
       final TypedRecord<TimerRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprecated2,
       final Consumer<SideEffectProducer> sideEffects) {
     final var timer = record.getValue();
     final var elementInstanceKey = timer.getElementInstanceKey();

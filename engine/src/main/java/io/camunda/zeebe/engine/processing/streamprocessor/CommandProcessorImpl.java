@@ -69,8 +69,8 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
   @Override
   public void processRecord(
       final TypedRecord<T> command,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprecated2,
       final Consumer<SideEffectProducer> sideEffect) {
 
     entityKey = command.getKey();
@@ -86,12 +86,12 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
       stateWriter.appendFollowUpEvent(entityKey, newState, updatedValue);
       wrappedProcessor.afterAccept(commandWriter, stateWriter, entityKey, newState, updatedValue);
       if (respond) {
-        responseWriter.writeEventOnCommand(entityKey, newState, updatedValue, command);
+        deprecated1.writeEventOnCommand(entityKey, newState, updatedValue, command);
       }
     } else {
       rejectionWriter.appendRejection(command, rejectionType, rejectionReason);
       if (respond) {
-        responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
+        deprecated1.writeRejectionOnCommand(command, rejectionType, rejectionReason);
       }
     }
   }

@@ -51,8 +51,8 @@ public final class MessageSubscriptionCorrelateProcessor
   @Override
   public void processRecord(
       final TypedRecord<MessageSubscriptionRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprecated2,
       final Consumer<SideEffectProducer> sideEffect) {
 
     final MessageSubscriptionRecord command = record.getValue();

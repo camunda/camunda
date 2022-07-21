@@ -26,8 +26,8 @@ public final class MessageExpireProcessor implements TypedRecordProcessor<Messag
   @Override
   public void processRecord(
       final TypedRecord<MessageRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+      final TypedResponseWriter deprecated1,
+      final TypedStreamWriter deprecated2) {
 
     stateWriter.appendFollowUpEvent(record.getKey(), MessageIntent.EXPIRED, record.getValue());
   }
