@@ -14,5 +14,5 @@ jobs:
         with:
           project-url: https://github.com/orgs/camunda/projects/24
           github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
-          labeled: kind/bug, kind/feature
+          labeled: kind/bug, kind/feature, kind/spike, kind/task 
           label-operator: OR
