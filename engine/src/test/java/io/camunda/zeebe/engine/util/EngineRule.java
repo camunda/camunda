@@ -35,6 +35,7 @@ import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -63,6 +64,7 @@ import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -178,6 +180,7 @@ public final class EngineRule extends ExternalResource {
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     final UnsafeBuffer deploymentBuffer = new UnsafeBuffer(new byte[deploymentRecord.getLength()]);
     deploymentRecord.write(deploymentBuffer, 0);
+    final var interPartitionCommandSenders = new ArrayList<TestInterPartitionCommandSender>();
 
     forEachPartition(
         partitionId -> {
@@ -185,6 +188,8 @@ public final class EngineRule extends ExternalResource {
           partitionReprocessingCompleteListeners.put(partitionId, reprocessingCompletedListener);
           final var featureFlags = FeatureFlags.createDefaultForTests();
 
+          final var interPartitionCommandSender = new TestInterPartitionCommandSender();
+          interPartitionCommandSenders.add(interPartitionCommandSender);
           environmentRule.startTypedStreamProcessor(
               partitionId,
               (recordProcessorContext) ->
@@ -204,8 +209,7 @@ public final class EngineRule extends ExternalResource {
                                 }
                               }),
                           partitionCount,
-                          new SubscriptionCommandSender(
-                              partitionId, new TestInterPartitionCommandSender()),
+                          new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
                           deploymentDistributor,
                           (key, partition) -> {},
                           jobsAvailableCallback,
@@ -213,6 +217,7 @@ public final class EngineRule extends ExternalResource {
                       .withListener(new ProcessingExporterTransistor())
                       .withListener(reprocessingCompletedListener));
         });
+    interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
   }
 
   public void awaitReprocessingCompleted() {
@@ -499,6 +504,8 @@ public final class EngineRule extends ExternalResource {
 
   private class TestInterPartitionCommandSender implements InterPartitionCommandSender {
 
+    private final Map<Integer, LogStreamRecordWriter> writers = new HashMap<>();
+
     @Override
     public void sendCommand(
         final int receiverPartitionId,
@@ -517,13 +524,22 @@ public final class EngineRule extends ExternalResource {
         final BufferWriter command) {
       final var metadata =
           new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
-
-      final var writer = environmentRule.getLogStreamRecordWriter(receiverPartitionId);
+      final var writer = writers.get(receiverPartitionId);
       writer.reset();
       if (recordKey != null) {
         writer.key(recordKey);
       }
       writer.metadataWriter(metadata).valueWriter(command).tryWrite();
+    }
+
+    // Pre-initialize dedicated writers.
+    // We must build new writers because reusing the writers from the environmentRule is unsafe.
+    // We can't build them on-demand during `sendCommand` because that might run within an actor
+    // context where we can't build new `SyncLogStream`s.
+    private void initializeWriters(final int partitionCount) {
+      for (int i = PARTITION_ID; i < PARTITION_ID + partitionCount; i++) {
+        writers.put(i, environmentRule.newLogStreamRecordWriter(i));
+      }
     }
   }
 }
