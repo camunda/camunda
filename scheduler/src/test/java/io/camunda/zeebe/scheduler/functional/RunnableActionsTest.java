@@ -149,13 +149,13 @@ public final class RunnableActionsTest {
     assertThat(exceptionOnSubmit).isFalse();
   }
 
-  class Submitter extends Actor {
+  private static final class Submitter extends Actor {
     public void submit(final Runnable r) {
       actor.submit(r);
     }
   }
 
-  class Runner extends Actor {
+  private static class Runner extends Actor {
     int runs = 0;
     final Runnable onExecution;
 
