@@ -10,7 +10,7 @@ package io.camunda.zeebe.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.Engine;
-import io.camunda.zeebe.engine.api.RecordProcessor;
+import io.camunda.zeebe.engine.EngineContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.LastProcessingPositions;
@@ -117,7 +117,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
   private final Function<LogStreamBatchWriter, TypedStreamWriter> typedStreamWriterFactory;
 
-  private final RecordProcessor engine;
+  private final Engine engine;
   private StreamProcessorDbState streamProcessorDbState;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
@@ -331,8 +331,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void initEngine() {
-    final var recordProcessorContext =
-        new RecordProcessorContextImpl(
+    final var engineContext =
+        new EngineContext(
             partitionId,
             streamProcessorContext.getScheduleService(),
             zeebeDb,
@@ -341,14 +341,14 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             streamProcessorContext.getTypedResponseWriter(),
             eventApplierFactory,
             typedRecordProcessorFactory);
-    engine.init(recordProcessorContext);
+    engine.init(engineContext);
 
-    lifecycleAwareListeners.addAll(recordProcessorContext.getLifecycleListeners());
-    final var listener = recordProcessorContext.getStreamProcessorListener();
+    lifecycleAwareListeners.addAll(engineContext.getLifecycleListeners());
+    final var listener = engineContext.getStreamProcessorListener();
     if (listener != null) {
-      streamProcessorContext.listener(recordProcessorContext.getStreamProcessorListener());
+      streamProcessorContext.listener(engineContext.getStreamProcessorListener());
     }
-    streamProcessorContext.writers(recordProcessorContext.getWriters());
+    streamProcessorContext.writers(engineContext.getWriters());
   }
 
   private long recoverFromSnapshot() {

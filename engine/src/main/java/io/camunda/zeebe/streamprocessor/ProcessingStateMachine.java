@@ -10,7 +10,6 @@ package io.camunda.zeebe.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.engine.api.EmptyProcessingResult;
-import io.camunda.zeebe.engine.api.ProcessingContext;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.RecordProcessor;
@@ -264,8 +263,6 @@ public final class ProcessingStateMachine {
 
       final ProcessingResultBuilder processingResultBuilder =
           new DirectProcessingResultBuilder(context);
-      final ProcessingContext processingContext =
-          new ProcessingContextImpl(processingResultBuilder);
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
@@ -275,7 +272,7 @@ public final class ProcessingStateMachine {
             final long position = typedCommand.getPosition();
             resetOutput(position);
 
-            currentProcessingResult = engine.process(typedCommand, processingContext);
+            currentProcessingResult = engine.process(typedCommand, processingResultBuilder);
 
             lastProcessedPositionState.markAsProcessed(position);
           });
@@ -350,10 +347,7 @@ public final class ProcessingStateMachine {
               new DirectProcessingResultBuilder(context);
 
           currentProcessingResult =
-              engine.onProcessingError(
-                  processingException,
-                  typedCommand,
-                  new ErrorHandlingContextImpl(processingResultBuilder));
+              engine.onProcessingError(processingException, typedCommand, processingResultBuilder);
         });
   }
 

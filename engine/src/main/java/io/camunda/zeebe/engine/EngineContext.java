@@ -5,12 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.streamprocessor;
+package io.camunda.zeebe.engine;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
-import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -23,7 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-public final class RecordProcessorContextImpl implements RecordProcessorContext {
+public final class EngineContext {
 
   private final int partitionId;
   private final ProcessingScheduleService scheduleService;
@@ -37,7 +36,7 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   private StreamProcessorListener streamProcessorListener;
   private Writers writers;
 
-  public RecordProcessorContextImpl(
+  public EngineContext(
       final int partitionId,
       final ProcessingScheduleService scheduleService,
       final ZeebeDb zeebeDb,
@@ -56,52 +55,42 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
     this.typedRecordProcessorFactory = typedRecordProcessorFactory;
   }
 
-  @Override
   public int getPartitionId() {
     return partitionId;
   }
 
-  @Override
   public ProcessingScheduleService getScheduleService() {
     return scheduleService;
   }
 
-  @Override
   public ZeebeDb getZeebeDb() {
     return zeebeDb;
   }
 
-  @Override
   public TransactionContext getTransactionContext() {
     return transactionContext;
   }
 
-  @Override
   public TypedStreamWriter getStreamWriterProxy() {
     return streamWriter;
   }
 
-  @Override
   public TypedResponseWriter getTypedResponseWriter() {
     return responseWriter;
   }
 
-  @Override
   public Function<MutableZeebeState, EventApplier> getEventApplierFactory() {
     return eventApplierFactory;
   }
 
-  @Override
   public TypedRecordProcessorFactory getTypedRecordProcessorFactory() {
     return typedRecordProcessorFactory;
   }
 
-  @Deprecated // will likely be moved to engine
   public List<StreamProcessorLifecycleAware> getLifecycleListeners() {
     return lifecycleListeners;
   }
 
-  @Override
   public void setLifecycleListeners(final List<StreamProcessorLifecycleAware> lifecycleListeners) {
     this.lifecycleListeners = lifecycleListeners;
   }
@@ -110,7 +99,6 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
     return streamProcessorListener;
   }
 
-  @Override
   public void setStreamProcessorListener(final StreamProcessorListener streamProcessorListener) {
     this.streamProcessorListener = streamProcessorListener;
   }
@@ -119,7 +107,6 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
     return writers;
   }
 
-  @Override
   public void setWriters(final Writers writers) {
     this.writers = writers;
   }

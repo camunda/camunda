@@ -11,14 +11,14 @@ package io.camunda.zeebe.engine.api;
  * Interface for record processors. A record processor is responsible for handling a single record.
  * (The class {@code StreamProcessor} in turn is responsible for handling a stream of records.
  */
-public interface RecordProcessor {
+public interface RecordProcessor<CONTEXT> {
 
   /**
    * Called by platform to initialize the processor
    *
    * @param recordProcessorContext context object to initialize the processor
    */
-  void init(RecordProcessorContext recordProcessorContext);
+  void init(CONTEXT recordProcessorContext);
 
   /**
    * Called by platform in order to replay a single record
@@ -52,25 +52,24 @@ public interface RecordProcessor {
    *   <li>Implementors must ensure that if they generate follow up events, these are applied to the
    *       database while this method is called
    *   <li>Implementors can produce follow up commands and events, client responses and on commit
-   *       tasks via {@code * processingContext.getProcessingResultBuilder(). ... .build()}
+   *       tasks via {@code processingResultBuilder}
+   *   <li>Implementors can indicate that the record should be skipped by returning {@code
+   *       EmptyProcessingResult.INSTANCE}
    * </ul>
    *
-   * @param record
-   * @param processingContext
    * @return the result of the processing; must be generated via {@code
-   *     processingContext.getProcessingResultBuilder().build()}
+   *     processingResultBuilder.build()}
    */
-  ProcessingResult process(TypedRecord record, ProcessingContext processingContext);
+  ProcessingResult process(TypedRecord record, ProcessingResultBuilder processingResultBuilder);
 
   /**
    * Called by platform when a processing error occurred
    *
-   * @param processingException the exception that was thrown
-   * @param record the record for which the exception was thrown
-   * @param errorHandlingContext tbd
-   * @return the result of the processing; must be generated via {@code *
-   *     processingContext.getProcessingResultBuilder().build()}
+   * @return the result of the processing; must be generated via {@code ProcessingResultBuilder
+   *     processingResultBuilder }
    */
   ProcessingResult onProcessingError(
-      Throwable processingException, TypedRecord record, ErrorHandlingContext errorHandlingContext);
+      Throwable processingException,
+      TypedRecord record,
+      ProcessingResultBuilder processingResultBuilder);
 }
