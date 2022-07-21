@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.it.clustering;
 
-import static io.camunda.zeebe.broker.engine.impl.DeploymentDistributorImpl.PUSH_REQUEST_TIMEOUT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
@@ -17,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
@@ -78,14 +78,17 @@ public final class DeploymentClusteredTest {
     // Add time in small increments to simulate gradual progression of the time.
     // For each increment, we expect the broker to retry sending the deployment.
     // https://github.com/camunda/zeebe/issues/8525
-    clusteringRule.getClock().addTime(PUSH_REQUEST_TIMEOUT);
-    clusteringRule.getClock().addTime(PUSH_REQUEST_TIMEOUT);
-    clusteringRule.getClock().addTime(PUSH_REQUEST_TIMEOUT);
+
+    // TODO: base this on the the actual retry timeout again
+    final var pushRequestTimeout = Duration.ofSeconds(15);
+    clusteringRule.getClock().addTime(pushRequestTimeout);
+    clusteringRule.getClock().addTime(pushRequestTimeout);
+    clusteringRule.getClock().addTime(pushRequestTimeout);
 
     clusteringRule.restartBroker(leaderOfPartitionThree);
 
     // increase the clock to trigger resending the deployment.
-    clusteringRule.getClock().addTime(PUSH_REQUEST_TIMEOUT);
+    clusteringRule.getClock().addTime(pushRequestTimeout);
 
     // then
     clientRule.waitUntilDeploymentIsDone(processDefinitionKey);

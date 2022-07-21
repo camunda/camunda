@@ -14,14 +14,12 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
-import io.camunda.zeebe.broker.engine.impl.DeploymentDistributorImpl;
 import io.camunda.zeebe.broker.engine.impl.LongPollingJobNotification;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
@@ -84,7 +82,6 @@ final class PartitionFactory {
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
-  private final PushDeploymentRequestHandler deploymentRequestHandler;
   private final CommandApiService commandApiService;
   private final FileBasedSnapshotStoreFactory snapshotStoreFactory;
   private final ClusterServices clusterServices;
@@ -96,7 +93,6 @@ final class PartitionFactory {
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
       final BrokerInfo localBroker,
-      final PushDeploymentRequestHandler deploymentRequestHandler,
       final CommandApiService commandApiService,
       final FileBasedSnapshotStoreFactory snapshotStoreFactory,
       final ClusterServices clusterServices,
@@ -106,7 +102,6 @@ final class PartitionFactory {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
-    this.deploymentRequestHandler = deploymentRequestHandler;
     this.commandApiService = commandApiService;
     this.snapshotStoreFactory = snapshotStoreFactory;
     this.clusterServices = clusterServices;
@@ -134,12 +129,7 @@ final class PartitionFactory {
 
     final var typedRecordProcessorsFactory =
         createFactory(
-            topologyManager,
-            localBroker,
-            communicationService,
-            eventService,
-            deploymentRequestHandler,
-            featureFlags);
+            topologyManager, localBroker, communicationService, eventService, featureFlags);
 
     for (final RaftPartition owningPartition : owningPartitions) {
       final var partitionId = owningPartition.id().id();
@@ -209,7 +199,6 @@ final class PartitionFactory {
       final BrokerInfo localBroker,
       final ClusterCommunicationService communicationService,
       final ClusterEventService eventService,
-      final PushDeploymentRequestHandler deploymentRequestHandler,
       final FeatureFlags featureFlags) {
     return (recordProcessorContext) -> {
       final var scheduleService = recordProcessorContext.getScheduleService();
@@ -217,10 +206,6 @@ final class PartitionFactory {
       final TopologyPartitionListenerImpl partitionListener =
           new TopologyPartitionListenerImpl(scheduleService);
       topologyManager.addTopologyPartitionListener(partitionListener);
-
-      final DeploymentDistributorImpl deploymentDistributor =
-          new DeploymentDistributorImpl(
-              communicationService, eventService, partitionListener, scheduleService);
 
       final InterPartitionCommandSenderImpl partitionCommandSender =
           new InterPartitionCommandSenderImpl(communicationService, partitionListener);
@@ -240,8 +225,6 @@ final class PartitionFactory {
               localBroker.getPartitionsCount(),
               subscriptionCommandSender,
               deploymentDistributionCommandSender,
-              deploymentDistributor,
-              deploymentRequestHandler,
               jobsAvailableNotification::onJobsAvailable,
               featureFlags);
 

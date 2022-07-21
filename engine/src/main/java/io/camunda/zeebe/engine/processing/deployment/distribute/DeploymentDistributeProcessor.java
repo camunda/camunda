@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
-import io.camunda.zeebe.engine.processing.deployment.DeploymentResponder;
 import io.camunda.zeebe.engine.processing.deployment.MessageStartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -22,8 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 public final class DeploymentDistributeProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
   private final MessageStartEventSubscriptionManager messageStartEventSubscriptionManager;
-  private final DeploymentResponder deploymentResponder;
-  private final int partitionId;
+
   private final StateWriter stateWriter;
   private final DeploymentDistributionCommandSender deploymentDistributionCommandSender;
 
@@ -31,16 +29,12 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
       final ProcessState processState,
       final MessageStartEventSubscriptionState messageStartEventSubscriptionState,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
-      final DeploymentResponder deploymentResponder,
-      final int partitionId,
       final Writers writers,
       final KeyGenerator keyGenerator) {
     this.deploymentDistributionCommandSender = deploymentDistributionCommandSender;
     messageStartEventSubscriptionManager =
         new MessageStartEventSubscriptionManager(
             processState, messageStartEventSubscriptionState, keyGenerator);
-    this.deploymentResponder = deploymentResponder;
-    this.partitionId = partitionId;
     stateWriter = writers.state();
   }
 
@@ -50,7 +44,6 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
     final var deploymentKey = event.getKey();
 
     stateWriter.appendFollowUpEvent(deploymentKey, DeploymentIntent.DISTRIBUTED, deploymentEvent);
-    deploymentResponder.sendDeploymentResponse(deploymentKey, partitionId);
     deploymentDistributionCommandSender.completeOnPartition(deploymentKey);
 
     messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(

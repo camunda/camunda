@@ -10,18 +10,15 @@ package io.camunda.zeebe.engine.processing;
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
-import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
-import io.camunda.zeebe.engine.processing.deployment.DeploymentResponder;
 import io.camunda.zeebe.engine.processing.deployment.distribute.CompleteDeploymentDistributionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
-import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
@@ -51,12 +48,9 @@ public final class EngineProcessors {
       final int partitionsCount,
       final SubscriptionCommandSender subscriptionCommandSender,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
-      final DeploymentDistributor deploymentDistributor,
-      final DeploymentResponder deploymentResponder,
       final Consumer<String> onJobsAvailableCallback,
       final FeatureFlags featureFlags) {
 
-    final var scheduleService = typedRecordProcessorContext.getScheduleService();
     final MutableZeebeState zeebeState = typedRecordProcessorContext.getZeebeState();
     final var writers = typedRecordProcessorContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =
@@ -97,16 +91,12 @@ public final class EngineProcessors {
 
     addDeploymentRelatedProcessorAndServices(
         catchEventBehavior,
-        partitionId,
         zeebeState,
         typedRecordProcessors,
-        deploymentResponder,
         expressionProcessor,
         writers,
         partitionsCount,
-        scheduleService,
         deploymentDistributionCommandSender,
-        deploymentDistributor,
         zeebeState.getKeyGenerator());
     addMessageProcessors(
         eventTriggerBehavior,
@@ -172,16 +162,12 @@ public final class EngineProcessors {
 
   private static void addDeploymentRelatedProcessorAndServices(
       final CatchEventBehavior catchEventBehavior,
-      final int partitionId,
       final ZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
-      final DeploymentResponder deploymentResponder,
       final ExpressionProcessor expressionProcessor,
       final Writers writers,
       final int partitionsCount,
-      final ProcessingScheduleService scheduleService,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
-      final DeploymentDistributor deploymentDistributor,
       final KeyGenerator keyGenerator) {
 
     // on deployment partition CREATE Command is received and processed
@@ -193,19 +179,14 @@ public final class EngineProcessors {
             expressionProcessor,
             partitionsCount,
             writers,
-            scheduleService,
             deploymentDistributionCommandSender,
-            deploymentDistributor,
             keyGenerator);
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
 
     // redistributes deployments after recovery
     final var deploymentRedistributor =
         new DeploymentRedistributor(
-            partitionsCount,
-            deploymentDistributionCommandSender,
-            deploymentDistributor,
-            zeebeState.getDeploymentState());
+            partitionsCount, deploymentDistributionCommandSender, zeebeState.getDeploymentState());
     typedRecordProcessors.withListener(deploymentRedistributor);
 
     // on other partitions DISTRIBUTE command is received and processed
@@ -214,8 +195,6 @@ public final class EngineProcessors {
             zeebeState.getProcessState(),
             zeebeState.getMessageStartEventSubscriptionState(),
             deploymentDistributionCommandSender,
-            deploymentResponder,
-            partitionId,
             writers,
             keyGenerator);
     typedRecordProcessors.onCommand(

@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.deployment;
 
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 
-import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -17,7 +16,6 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationE
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
-import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
@@ -67,9 +65,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final ExpressionProcessor expressionProcessor,
       final int partitionsCount,
       final Writers writers,
-      final ProcessingScheduleService scheduleService,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
-      final DeploymentDistributor deploymentDistributor,
       final KeyGenerator keyGenerator) {
     processState = zeebeState.getProcessState();
     timerInstanceState = zeebeState.getTimerState();
@@ -84,11 +80,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
             processState, zeebeState.getMessageStartEventSubscriptionState(), keyGenerator);
     deploymentDistributionBehavior =
         new DeploymentDistributionBehavior(
-            writers,
-            partitionsCount,
-            deploymentDistributionCommandSender,
-            deploymentDistributor,
-            scheduleService);
+            writers, partitionsCount, deploymentDistributionCommandSender);
   }
 
   @Override
