@@ -8,7 +8,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import ReportTemplateModal from './modals/ReportTemplateModal';
+import {ReportTemplateModal} from 'components';
 
 import {Home} from './Home';
 import {loadEntities} from './service';

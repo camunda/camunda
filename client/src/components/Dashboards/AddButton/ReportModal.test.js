@@ -89,12 +89,6 @@ it('should call the callback when adding a report', () => {
   });
 });
 
-it('should disable typeahead if no reports created yet', async () => {
-  const node = await shallow(<ReportModal {...props} />);
-
-  expect(node.find('Typeahead')).toBeDisabled();
-});
-
 it('should show a loading message while loading available reports', () => {
   const node = shallow(<ReportModal {...props} />);
 

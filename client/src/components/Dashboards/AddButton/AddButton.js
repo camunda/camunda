@@ -5,35 +5,34 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {useState} from 'react';
 
 import {Button, Icon} from 'components';
 import {t} from 'translation';
 
 import ReportModal from './ReportModal';
+import ReportCreationModal from './ReportCreationModal';
 
 const size = {width: 6, height: 4};
 
-export default class AddButton extends React.Component {
-  state = {open: false};
+export default function AddButton({addReport, existingReport}) {
+  const [open, setOpen] = useState(false);
+  const [creatingNewReport, setCreatingNewReport] = useState(false);
 
-  openModal = () => {
-    this.setState({
-      open: true,
-    });
-  };
-
-  closeModal = (evt) => {
+  const closeModal = (evt) => {
     if (evt) {
       evt.stopPropagation();
     }
-    this.setState({
-      open: false,
-    });
+    setOpen(false);
   };
 
-  addReport = (props) => {
-    this.closeModal();
+  const onConfirm = async (props) => {
+    closeModal();
+    setCreatingNewReport(false);
+
+    if (props.id === 'newReport') {
+      return setCreatingNewReport(true);
+    }
 
     // position does not matter because the report will be positioned by the user
     const payload = {
@@ -43,15 +42,20 @@ export default class AddButton extends React.Component {
       ...props,
     };
 
-    this.props.addReport(payload);
+    addReport(payload);
   };
 
-  render() {
-    return (
-      <Button main className="AddButton tool-button" onClick={this.openModal}>
-        <Icon type="plus" /> {t('dashboard.addButton.addReport')}
-        {this.state.open && <ReportModal close={this.closeModal} confirm={this.addReport} />}
-      </Button>
-    );
-  }
+  return (
+    <Button main className="AddButton tool-button" onClick={() => setOpen(true)}>
+      <Icon type="plus" /> {t('dashboard.addButton.addReport')}
+      {open && <ReportModal close={closeModal} confirm={onConfirm} />}
+      {creatingNewReport && (
+        <ReportCreationModal
+          onClose={() => setCreatingNewReport(false)}
+          existingReport={existingReport}
+          onConfirm={onConfirm}
+        />
+      )}
+    </Button>
+  );
 }

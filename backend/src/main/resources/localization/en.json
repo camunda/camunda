@@ -704,7 +704,8 @@
       "addReportLabel": "Add Report",
       "selectReportPlaceholder": "Select a Report",
       "noReports": "No reports have been created",
-      "externalUrl": "External URL"
+      "externalUrl": "External URL",
+      "newReport": "New Report from a template"
     },
     "noAuthorization": "Missing authorization",
     "noReportAccess": "No access to report",

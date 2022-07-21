@@ -20,7 +20,7 @@ import chartImg from './images/chart.png';
 
 import './ReportTemplateModal.scss';
 
-export default function ReportTemplateModal({onClose}) {
+export default function ReportTemplateModal({onClose, onConfirm, initialDefinitions}) {
   const templateGroups = [
     {
       name: 'blankGroup',
@@ -261,6 +261,8 @@ export default function ReportTemplateModal({onClose}) {
           definitions: definitions[0]?.key ? definitions : [],
         },
       })}
+      onConfirm={onConfirm}
+      initialDefinitions={initialDefinitions}
     />
   );
 }

@@ -8,7 +8,17 @@
 import React from 'react';
 import {withRouter} from 'react-router-dom';
 
-import {Modal, Button, Input, Typeahead, LoadingIndicator, Labeled, Form, Tabs} from 'components';
+import {
+  Modal,
+  Button,
+  Input,
+  Typeahead,
+  LoadingIndicator,
+  Labeled,
+  Form,
+  Tabs,
+  Icon,
+} from 'components';
 import {getCollection, loadReports} from 'services';
 import {t} from 'translation';
 
@@ -50,7 +60,6 @@ export default withRouter(
     };
 
     render() {
-      const noReports = !this.state.availableReports || this.state.availableReports.length === 0;
       const loading = this.state.availableReports === null;
 
       const {external, externalUrl, selectedReportId, availableReports} = this.state;
@@ -78,11 +87,18 @@ export default withRouter(
                       <Labeled label={t('dashboard.addButton.addReportLabel')}>
                         <Typeahead
                           initialValue={selectedReport.id}
-                          disabled={noReports}
                           placeholder={t('dashboard.addButton.selectReportPlaceholder')}
                           onChange={this.selectReport}
                           noValuesMessage={t('dashboard.addButton.noReports')}
                         >
+                          <Typeahead.Option
+                            key="newReport"
+                            value="newReport"
+                            label={`+ ${t('dashboard.addButton.newReport')}`}
+                          >
+                            <Icon type="plus" />
+                            <b>{t('dashboard.addButton.newReport')}</b>
+                          </Typeahead.Option>
                           {availableReports.map(({id, name}) => (
                             <Typeahead.Option key={id} value={id}>
                               {name}

@@ -704,7 +704,8 @@
       "addReportLabel": "Report hinzufügen",
       "selectReportPlaceholder": "Einen Report auswählen",
       "noReports": "Es wurden noch keine Berichte erstellt",
-      "externalUrl": "Externe URL"
+      "externalUrl": "Externe URL",
+      "newReport": "Neuer Bericht aus einer Vorlage"
     },
     "noAuthorization": "Fehlende Berechtigung",
     "noReportAccess": "Kein Zugriff auf Report",

@@ -13,14 +13,18 @@ import {format} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
-import {EntityList, Deleter, BulkDeleter} from 'components';
+import {
+  EntityList,
+  Deleter,
+  BulkDeleter,
+  ReportTemplateModal,
+  DashboardTemplateModal,
+} from 'components';
 import {formatters, createEntity, updateEntity, checkDeleteConflict} from 'services';
 
 import Copier from './Copier';
 import CreateNewButton from './CreateNewButton';
 import CollectionModal from './modals/CollectionModal';
-import ReportTemplateModal from './modals/ReportTemplateModal';
-import DashboardTemplateModal from './modals/DashboardTemplateModal';
 import {loadEntities, importEntity, removeEntities, checkConflicts} from './service';
 
 import {formatLink, formatType, formatSubEntities} from './formatters';

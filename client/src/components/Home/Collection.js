@@ -13,7 +13,16 @@ import {parseISO} from 'date-fns';
 import {format} from 'dates';
 import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
-import {Icon, Dropdown, EntityList, Deleter, BulkDeleter, Tooltip} from 'components';
+import {
+  Icon,
+  Dropdown,
+  EntityList,
+  Deleter,
+  BulkDeleter,
+  Tooltip,
+  ReportTemplateModal,
+  DashboardTemplateModal,
+} from 'components';
 import {formatters, loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {showError, addNotification} from 'notifications';
 import {getOptimizeProfile} from 'config';
@@ -27,8 +36,6 @@ import UserList from './UserList';
 import AlertList from './AlertList';
 import SourcesList from './SourcesList';
 import CollectionModal from './modals/CollectionModal';
-import ReportTemplateModal from './modals/ReportTemplateModal';
-import DashboardTemplateModal from './modals/DashboardTemplateModal';
 
 import {formatLink, formatType, formatSubEntities} from './formatters';
 
