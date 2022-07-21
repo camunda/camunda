@@ -100,12 +100,12 @@ updates:
     labels:
       - "dependencies"
 
-  # maintenance/3.9-0-preview-1
+  # maintenance/3.9.0-preview-1
   - package-ecosystem: "maven"
     directory: "/"
     schedule:
       interval: "daily"
-    target-branch: "maintenance/3.9-0-preview-1"
+    target-branch: "maintenance/3.9.0-preview-1"
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -126,7 +126,7 @@ updates:
     directory: "/client"
     schedule:
       interval: "daily"
-    target-branch: "maintenance/3.9-0-preview-1"
+    target-branch: "maintenance/3.9.0-preview-1"
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -143,7 +143,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    target-branch: "maintenance/3.9-0-preview-1"
+    target-branch: "maintenance/3.9.0-preview-1"
     commit-message:
       prefix: "chore"
       include: "scope"
