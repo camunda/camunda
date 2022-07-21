@@ -7,9 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
+import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
+
 import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 
 public final class DeploymentDistributionCommandSender {
@@ -30,5 +34,16 @@ public final class DeploymentDistributionCommandSender {
         DeploymentIntent.DISTRIBUTE,
         key,
         deploymentRecord);
+  }
+
+  public void completeOnPartition(final long deploymentKey) {
+    final var distributionRecord = new DeploymentDistributionRecord();
+    distributionRecord.setPartition(partitionId);
+    sender.sendCommand(
+        DEPLOYMENT_PARTITION,
+        ValueType.DEPLOYMENT_DISTRIBUTION,
+        DeploymentDistributionIntent.COMPLETE,
+        deploymentKey,
+        distributionRecord);
   }
 }

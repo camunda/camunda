@@ -213,6 +213,7 @@ public final class EngineProcessors {
         new DeploymentDistributeProcessor(
             zeebeState.getProcessState(),
             zeebeState.getMessageStartEventSubscriptionState(),
+            deploymentDistributionCommandSender,
             deploymentResponder,
             partitionId,
             writers,

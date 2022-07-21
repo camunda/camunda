@@ -25,14 +25,17 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
   private final DeploymentResponder deploymentResponder;
   private final int partitionId;
   private final StateWriter stateWriter;
+  private final DeploymentDistributionCommandSender deploymentDistributionCommandSender;
 
   public DeploymentDistributeProcessor(
       final ProcessState processState,
       final MessageStartEventSubscriptionState messageStartEventSubscriptionState,
+      final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final DeploymentResponder deploymentResponder,
       final int partitionId,
       final Writers writers,
       final KeyGenerator keyGenerator) {
+    this.deploymentDistributionCommandSender = deploymentDistributionCommandSender;
     messageStartEventSubscriptionManager =
         new MessageStartEventSubscriptionManager(
             processState, messageStartEventSubscriptionState, keyGenerator);
@@ -48,6 +51,7 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
 
     stateWriter.appendFollowUpEvent(deploymentKey, DeploymentIntent.DISTRIBUTED, deploymentEvent);
     deploymentResponder.sendDeploymentResponse(deploymentKey, partitionId);
+    deploymentDistributionCommandSender.completeOnPartition(deploymentKey);
 
     messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
         deploymentEvent, stateWriter);
