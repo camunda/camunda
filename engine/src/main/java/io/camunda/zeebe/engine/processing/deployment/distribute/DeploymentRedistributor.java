@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
+import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
+
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
@@ -30,6 +32,9 @@ public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    if (context.getPartitionId() != DEPLOYMENT_PARTITION) {
+      return;
+    }
     final var deploymentDistributionBehavior =
         new DeploymentDistributionBehavior(
             context.getWriters(), partitionsCount, deploymentDistributionCommandSender);
