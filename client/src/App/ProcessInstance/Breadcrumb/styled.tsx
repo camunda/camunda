@@ -7,6 +7,7 @@
 
 import styled, {css} from 'styled-components';
 import {Link as LinkComponent} from 'modules/components/Link';
+import {styles} from '@carbon/elements';
 
 const Container = styled.div`
   ${({theme}) => {
@@ -14,7 +15,7 @@ const Container = styled.div`
       color: ${theme.colors.text02};
       padding: 4px 20px;
       display: flex;
-      font-size: 13px;
+      ${styles.label02};
       align-items: center;
       border-bottom: 1px solid ${theme.colors.borderColor};
       min-height: 30px;
@@ -42,8 +43,7 @@ const Link = styled(LinkComponent)`
 
 const Separator = styled.div`
   margin: 0 10px 2px 11px;
-  font-size: 15px;
-  font-weight: 500;
+  ${styles.label02};
 `;
 
 const CurrentInstance = styled.span`

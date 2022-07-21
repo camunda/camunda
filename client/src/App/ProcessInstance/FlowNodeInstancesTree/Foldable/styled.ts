@@ -39,7 +39,6 @@ const SummaryLabel = styled.div<SummaryLabelProps>`
       margin: 0;
       padding: 0;
       border: none;
-      font-size: 14px;
       text-align: left;
       ${showFullBorder && !isSelected
         ? css`

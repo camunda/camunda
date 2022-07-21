@@ -7,6 +7,7 @@
 
 import styled, {css} from 'styled-components';
 import Dropdown from 'modules/components/Dropdown';
+import {styles} from '@carbon/elements';
 
 const FiltersWrapper = styled.div`
   ${({theme}) => {
@@ -42,8 +43,7 @@ const Label = styled.span`
       width: 120px;
       padding-right: 17px;
       margin-right: 18px;
-      font-size: 15px;
-      font-weight: bold;
+      ${styles.productiveHeading01};
       text-align: right;
       opacity: 0.9;
 
@@ -79,7 +79,8 @@ const MoreDropdown = styled(Dropdown)`
         display: flex;
         align-items: center;
         border-radius: 16px;
-        font-size: 13px;
+        ${styles.label02};
+        font-weight: bold;
         padding: 3px 10px;
         background-color: ${theme.colors.ui05};
         border: 1px solid ${colors.dropdownToggle.borderColor};

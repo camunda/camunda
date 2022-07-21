@@ -6,6 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 type TimeStampProps = {
   isSelected?: boolean;
@@ -20,7 +21,7 @@ const TimeStamp = styled.span<TimeStampProps>`
       padding: 2px 4px;
       color: ${theme.colors.text02};
       background: ${isSelected ? colors.backgroundColor : theme.colors.label};
-      font-size: 11px;
+      ${styles.label01};
       border-radius: 2px;
     `;
   }}

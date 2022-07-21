@@ -9,6 +9,7 @@ import styled, {css} from 'styled-components';
 
 import {ReactComponent as Check} from 'modules/components/Icon/check.svg';
 import {ReactComponent as Warning} from 'modules/components/Icon/warning-message-icon.svg';
+import {styles} from '@carbon/elements';
 
 const EmptyPanel = styled.div`
   height: 100%;
@@ -39,8 +40,8 @@ const Label = styled.span<LabelProps>`
             opacity: 0.9;
           `}
 
-      font-family: IBM Plex Sans;
-      font-size: 16px;
+      ${styles.bodyShort02};
+
       padding-top: 5px;
     `;
   }}

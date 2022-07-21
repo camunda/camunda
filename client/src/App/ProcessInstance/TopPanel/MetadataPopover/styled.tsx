@@ -6,6 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {styles} from '@carbon/elements';
 
 const Arrow = styled.div`
   &:before,
@@ -90,6 +91,7 @@ const Popover = styled.div`
       width: 354px;
       background-color: ${colors.backgroundColor};
       color: ${theme.colors.text02};
+      ${styles.bodyShort01};
       font-size: 12px;
       border: 1px solid ${colors.borderColor};
       border-radius: 3px;
@@ -110,10 +112,8 @@ const Header = styled.div`
 
 const TitleStyles = css`
   margin: 0;
-  font-size: 13px;
-  font-weight: 500;
+  ${styles.productiveHeading01}
   height: 17px;
-  line-height: 17px;
 `;
 
 const Title = styled.h2`
@@ -150,7 +150,7 @@ const PeterCaseSummaryBody = styled.div`
 `;
 
 const SummaryDataKey = styled.dt`
-  font-size: 11px;
+  ${styles.label01};
   font-weight: 500;
   white-space: nowrap;
   height: 14px;
@@ -159,13 +159,12 @@ const SummaryDataKey = styled.dt`
 `;
 
 const SummaryDataValue = styled.dd`
-  font-size: 12px;
+  ${styles.label01};
   margin-left: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   height: 15px;
-  line-height: 15px;
   margin-bottom: 8px;
 `;
 

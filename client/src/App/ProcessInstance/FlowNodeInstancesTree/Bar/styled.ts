@@ -8,6 +8,7 @@
 import styled, {css} from 'styled-components';
 
 import BasicFlowNodeIcon from 'modules/components/FlowNodeIcon';
+import {styles} from '@carbon/elements';
 
 const NodeIcon = styled(BasicFlowNodeIcon)`
   ${({theme, isSelected}) => {
@@ -30,7 +31,7 @@ const Container = styled.div<ContainerProps>`
     return css`
       display: flex;
       height: 27px;
-      font-size: 13px;
+      ${styles.label02};
       min-width: 200px;
       align-items: center;
       flex-grow: 1;

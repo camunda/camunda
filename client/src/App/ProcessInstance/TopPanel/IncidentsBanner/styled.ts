@@ -7,6 +7,7 @@
 
 import styled, {css} from 'styled-components';
 import {INCIDENTS_BAR_HEIGHT} from 'modules/constants';
+import {styles} from '@carbon/elements';
 
 const BannerButton = styled.button`
   ${({theme}) => {
@@ -15,7 +16,7 @@ const BannerButton = styled.button`
       z-index: 4;
 
       height: ${INCIDENTS_BAR_HEIGHT}px;
-      font-size: 15px;
+      ${styles.bodyShort01};
       font-weight: 500;
 
       background-color: ${theme.colors.incidentsAndErrors};

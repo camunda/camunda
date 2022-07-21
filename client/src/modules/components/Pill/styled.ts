@@ -8,6 +8,7 @@
 import styled, {css} from 'styled-components';
 
 import {ReactComponent as ClockIcon} from 'modules/components/Icon/clock.svg';
+import {styles} from '@carbon/elements';
 
 const Clock = styled(ClockIcon)`
   margin-right: 4px;
@@ -21,7 +22,6 @@ const Count = styled.span`
       padding: 0px 5px;
       margin-left: 9px;
       border-radius: 8px;
-      line-height: 16px;
       text-align: center;
       color: ${theme.colors.white};
     `;
@@ -49,7 +49,7 @@ const Pill = styled.button<PillProps>`
         : ''}
 
       border-radius: 16px;
-      font-size: 13px;
+      ${styles.label02};
       padding: ${variant === 'FILTER' ? '3px 3px 3px 10px' : '3px 10px'};
       color: ${isActive ? theme.colors.white : colors.default.color};
       border-style: solid;

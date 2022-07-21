@@ -7,6 +7,7 @@
 
 import styled, {css} from 'styled-components';
 import StateIconDefault from 'modules/components/StateIcon';
+import {styles} from '@carbon/elements';
 
 const Table = styled.table`
   width: 100%;
@@ -18,13 +19,12 @@ const Table = styled.table`
 
 const Th = styled.th`
   text-align: left;
-  font-size: 12px;
-  font-weight: normal;
+  ${styles.label01};
 `;
 
 const Td = styled.td`
+  ${styles.bodyShort01};
   font-weight: 500;
-  font-size: 15px;
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
@@ -50,6 +50,7 @@ const Container = styled.header`
       display: flex;
       align-items: center;
       padding: 9px 10px 9px 20px;
+      height: 56px;
     `;
   }}
 `;
