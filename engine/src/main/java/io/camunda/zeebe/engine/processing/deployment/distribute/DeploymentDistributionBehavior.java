@@ -54,7 +54,7 @@ public final class DeploymentDistributionBehavior {
           stateWriter.appendFollowUpEvent(
               key, DeploymentDistributionIntent.DISTRIBUTING, deploymentDistributionRecord);
 
-          distributeDeploymentToPartition(partitionId, key, copiedDeploymentBuffer);
+          distributeDeploymentToPartition(key, partitionId, copiedDeploymentBuffer);
         });
 
     if (otherPartitions.isEmpty()) {
@@ -68,7 +68,7 @@ public final class DeploymentDistributionBehavior {
   }
 
   public void distributeDeploymentToPartition(
-      final int partitionId, final long key, final DirectBuffer copiedDeploymentBuffer) {
+      final long key, final int partitionId, final DirectBuffer copiedDeploymentBuffer) {
     final var deploymentRecord = new DeploymentRecord();
     deploymentRecord.wrap(copiedDeploymentBuffer);
     deploymentDistributionCommandSender.distributeToPartition(key, partitionId, deploymentRecord);

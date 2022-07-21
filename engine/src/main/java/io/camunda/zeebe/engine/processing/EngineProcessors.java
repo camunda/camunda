@@ -183,7 +183,7 @@ public final class EngineProcessors {
             keyGenerator);
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
 
-    // redistributes deployments after recovery
+    // periodically retries deployment distribution
     final var deploymentRedistributor =
         new DeploymentRedistributor(
             partitionsCount, deploymentDistributionCommandSender, zeebeState.getDeploymentState());

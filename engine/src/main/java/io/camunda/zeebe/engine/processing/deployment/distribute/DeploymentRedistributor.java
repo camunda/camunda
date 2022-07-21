@@ -10,9 +10,11 @@ package io.camunda.zeebe.engine.processing.deployment.distribute;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
+import java.time.Duration;
 
 public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
 
+  public static final Duration DEPLOYMENT_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
   private final int partitionsCount;
   private final DeploymentDistributionCommandSender deploymentDistributionCommandSender;
   private final DeploymentState deploymentState;
@@ -28,15 +30,15 @@ public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    final var writers = context.getWriters();
-
     final var deploymentDistributionBehavior =
         new DeploymentDistributionBehavior(
-            writers, partitionsCount, deploymentDistributionCommandSender);
+            context.getWriters(), partitionsCount, deploymentDistributionCommandSender);
 
-    deploymentState.foreachPendingDeploymentDistribution(
-        (key, partitionId, deployment) ->
-            deploymentDistributionBehavior.distributeDeploymentToPartition(
-                partitionId, key, deployment));
+    final var schedulingService = context.getScheduleService();
+    schedulingService.runAtFixedRate(
+        DEPLOYMENT_REDISTRIBUTION_INTERVAL,
+        () ->
+            deploymentState.foreachPendingDeploymentDistribution(
+                deploymentDistributionBehavior::distributeDeploymentToPartition));
   }
 }
