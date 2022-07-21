@@ -30,6 +30,7 @@ c8_optimize_deploy_arguments="--dest-namespace ${APP_NAME}-c8 \
     --helm-set global.labels.commit=${SHA} \
     --name c8-${APP_NAME} \
     --project optimize-previews \
+    --auto-prune \
     --upsert"
 
 if [[ "${APP_NAME}" == "optimize-persistent" ]];
