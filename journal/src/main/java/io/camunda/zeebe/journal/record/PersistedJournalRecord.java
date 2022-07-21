@@ -8,6 +8,7 @@
 package io.camunda.zeebe.journal.record;
 
 import io.camunda.zeebe.journal.JournalRecord;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 
 /**
@@ -16,8 +17,45 @@ import org.agrona.DirectBuffer;
  * <p>A {@link PersistedJournalRecord} consists of two parts. The first part is {@link
  * RecordMetadata}. The second part is {@link RecordData}.
  */
-public record PersistedJournalRecord(RecordMetadata metadata, RecordData record)
-    implements JournalRecord {
+public final class PersistedJournalRecord implements JournalRecord {
+
+  private final RecordMetadata metadata;
+  private final RecordData record;
+
+  public PersistedJournalRecord(final RecordMetadata metadata, final RecordData record) {
+    this.metadata = metadata;
+    this.record = record;
+  }
+
+  public RecordMetadata metadata() {
+    return metadata;
+  }
+
+  public RecordData record() {
+    return record;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(metadata, record);
+  }
+
+  @Override
+  public boolean equals(final Object obj) {
+    if (obj == this) {
+      return true;
+    }
+    if (obj == null || obj.getClass() != getClass()) {
+      return false;
+    }
+    final var that = (PersistedJournalRecord) obj;
+    return Objects.equals(metadata, that.metadata) && Objects.equals(record, that.record);
+  }
+
+  @Override
+  public String toString() {
+    return "PersistedJournalRecord[" + "metadata=" + metadata + ", " + "record=" + record + ']';
+  }
 
   @Override
   public long index() {
