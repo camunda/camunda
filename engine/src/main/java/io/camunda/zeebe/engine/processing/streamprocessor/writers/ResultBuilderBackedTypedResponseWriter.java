@@ -14,14 +14,10 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilderBackedWriter
     implements TypedResponseWriter {
-
-  private final UnsafeBuffer stringWrapper = new UnsafeBuffer(0, 0);
 
   ResultBuilderBackedTypedResponseWriter(
       final Supplier<ProcessingResultBuilder> resultBuilderSupplier) {
@@ -31,9 +27,6 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   @Override
   public void writeRejectionOnCommand(
       final TypedRecord<?> command, final RejectionType type, final String reason) {
-    final byte[] bytes = reason.getBytes(StandardCharsets.UTF_8);
-    stringWrapper.wrap(bytes);
-
     resultBuilder()
         .withResponse(
             RecordType.COMMAND_REJECTION,
