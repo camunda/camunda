@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.exporter.context;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -42,6 +43,20 @@ final class ExporterConfigurationTest {
 
     // when
     final var instance = config.instantiate(ContainerConfig.class);
+
+    // then
+    assertThat(instance).isEqualTo(expected);
+  }
+
+  @Test
+  void shouldInstantiateConfigWithUnknownProperty() {
+    // given
+    final var args = Map.<String, Object>of("numberofshards", 1, "unknownProp", false);
+    final var expected = new Config(1);
+    final var config = new ExporterConfiguration("id", args);
+
+    // when
+    final var instance = config.instantiate(Config.class);
 
     // then
     assertThat(instance).isEqualTo(expected);
