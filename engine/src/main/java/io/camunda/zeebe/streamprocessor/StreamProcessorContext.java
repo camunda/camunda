@@ -17,7 +17,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandRespons
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriterImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopLegacyTypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
@@ -55,7 +54,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private ProcessingScheduleService processingScheduleService;
   private MutableLastProcessedPositionState lastProcessedPositionState;
-  private Writers writers;
+
   private LogStreamBatchWriter logStreamBatchWriter;
   private CommandResponseWriter commandResponseWriter;
 
@@ -82,11 +81,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   @Override
   public LegacyTypedStreamWriter getLogStreamWriter() {
     return streamWriterProxy;
-  }
-
-  @Override
-  public Writers getWriters() {
-    return writers;
   }
 
   @Override
@@ -214,10 +208,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public StreamProcessorMode getProcessorMode() {
     return streamProcessorMode;
-  }
-
-  public void writers(final Writers writers) {
-    this.writers = writers;
   }
 
   public void logStreamBatchWriter(final LogStreamBatchWriter batchWriter) {

@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListene
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import java.util.Collections;
@@ -34,7 +33,6 @@ public final class EngineContext {
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private List<StreamProcessorLifecycleAware> lifecycleListeners = Collections.EMPTY_LIST;
   private StreamProcessorListener streamProcessorListener;
-  private Writers writers;
 
   public EngineContext(
       final int partitionId,
@@ -101,13 +99,5 @@ public final class EngineContext {
 
   public void setStreamProcessorListener(final StreamProcessorListener streamProcessorListener) {
     this.streamProcessorListener = streamProcessorListener;
-  }
-
-  public Writers getWriters() {
-    return writers;
-  }
-
-  public void setWriters(final Writers writers) {
-    this.writers = writers;
   }
 }

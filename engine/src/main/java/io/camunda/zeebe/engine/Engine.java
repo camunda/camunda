@@ -81,8 +81,6 @@ public class Engine implements RecordProcessor<EngineContext> {
 
     engineContext.setLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
-
-    engineContext.setWriters(writers);
   }
 
   @Override
