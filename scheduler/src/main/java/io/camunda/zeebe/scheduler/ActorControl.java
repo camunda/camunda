@@ -56,7 +56,6 @@ public class ActorControl implements ConcurrencyControl {
 
     final ActorJob job = new ActorJob();
     job.setRunnable(consumer);
-    job.setAutoCompleting(false);
     job.onJobAddedToTask(task);
 
     final ChannelConsumerCondition subscription = new ChannelConsumerCondition(job, channel);
@@ -106,7 +105,6 @@ public class ActorControl implements ConcurrencyControl {
     final ActorJob job = new ActorJob();
     final ActorFuture<T> future = job.setCallable(callable);
     job.onJobAddedToTask(task);
-    job.setAutoCompleting(true);
     task.submit(job);
 
     return future;
@@ -235,7 +233,6 @@ public class ActorControl implements ConcurrencyControl {
     }
 
     job.setRunnable(action);
-    job.setAutoCompleting(true);
     job.onJobAddedToTask(task);
     task.submit(job);
 
@@ -280,7 +277,6 @@ public class ActorControl implements ConcurrencyControl {
       final Function<ActorJob, ActorFutureSubscription> futureSubscriptionSupplier) {
     final ActorJob continuationJob = new ActorJob();
     continuationJob.setRunnable(new FutureContinuationRunnable<>(future, callback));
-    continuationJob.setAutoCompleting(true);
     continuationJob.onJobAddedToTask(task);
 
     final ActorFutureSubscription subscription = futureSubscriptionSupplier.apply(continuationJob);
@@ -324,7 +320,6 @@ public class ActorControl implements ConcurrencyControl {
     final ActorJob closeJob = new ActorJob();
 
     closeJob.onJobAddedToTask(task);
-    closeJob.setAutoCompleting(true);
     closeJob.setRunnable(task::requestClose);
 
     task.submit(closeJob);
@@ -338,13 +333,11 @@ public class ActorControl implements ConcurrencyControl {
     if (currentActorThread != null && currentActorThread.getCurrentTask() == task) {
       final ActorJob newJob = currentActorThread.newJob();
       newJob.setRunnable(runnable);
-      newJob.setAutoCompleting(true);
       newJob.onJobAddedToTask(task);
       task.insertJob(newJob);
     } else {
       final ActorJob job = new ActorJob();
       job.setRunnable(runnable);
-      job.setAutoCompleting(true);
       job.onJobAddedToTask(task);
       task.submit(job);
     }

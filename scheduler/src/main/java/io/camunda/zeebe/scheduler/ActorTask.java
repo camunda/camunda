@@ -84,7 +84,6 @@ public class ActorTask {
     final ActorJob j = new ActorJob();
     j.setRunnable(actor::onActorStarting);
     j.setResultFuture(jobStartingTaskFuture);
-    j.setAutoCompleting(true);
     j.onJobAddedToTask(this);
 
     currentJob = j;
@@ -218,7 +217,6 @@ public class ActorTask {
   private void submitStartedJob() {
     final ActorJob startedJob = ActorThread.current().newJob();
     startedJob.onJobAddedToTask(this);
-    startedJob.setAutoCompleting(true);
     startedJob.setRunnable(actor::onActorStarted);
     currentJob = startedJob;
   }
@@ -226,7 +224,6 @@ public class ActorTask {
   private void submitClosedJob() {
     final ActorJob closedJob = ActorThread.current().newJob();
     closedJob.onJobAddedToTask(this);
-    closedJob.setAutoCompleting(true);
     closedJob.setRunnable(actor::onActorClosed);
     currentJob = closedJob;
   }
@@ -234,7 +231,6 @@ public class ActorTask {
   private void submitClosingJob() {
     final ActorJob closeJob = ActorThread.current().newJob();
     closeJob.onJobAddedToTask(this);
-    closeJob.setAutoCompleting(true);
     closeJob.setRunnable(actor::onActorClosing);
     closeJob.setResultFuture(jobClosingTaskFuture);
     currentJob = closeJob;

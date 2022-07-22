@@ -27,7 +27,6 @@ public final class ActorJob {
   private Callable<?> callable;
   private Runnable runnable;
   private Object invocationResult;
-  private boolean isAutoCompleting;
   private ActorFuture resultFuture;
   private ActorSubscription subscription;
   private long scheduledAt = -1;
@@ -57,7 +56,7 @@ public final class ActorJob {
       actorThread = null;
 
       // in any case, success or exception, decide if the job should be resubmitted
-      if (isTriggeredBySubscription() || (isAutoCompleting && runnable == null)) {
+      if (isTriggeredBySubscription() || runnable == null) {
         schedulingState = TaskSchedulingState.TERMINATED;
       } else {
         schedulingState = TaskSchedulingState.QUEUED;
@@ -120,14 +119,9 @@ public final class ActorJob {
     callable = null;
     runnable = null;
     invocationResult = null;
-    isAutoCompleting = true;
 
     resultFuture = null;
     subscription = null;
-  }
-
-  public void setAutoCompleting(final boolean isAutoCompleting) {
-    this.isAutoCompleting = isAutoCompleting;
   }
 
   @Override
