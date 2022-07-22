@@ -13,8 +13,8 @@ import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -28,8 +28,8 @@ public final class EngineContext {
   private final ProcessingScheduleService scheduleService;
   private final ZeebeDb zeebeDb;
   private final TransactionContext transactionContext;
-  private final TypedStreamWriter streamWriter;
-  private final TypedResponseWriter responseWriter;
+  private final LegacyTypedStreamWriter streamWriter;
+  private final LegacyTypedResponseWriter responseWriter;
   private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private List<StreamProcessorLifecycleAware> lifecycleListeners = Collections.EMPTY_LIST;
@@ -41,8 +41,8 @@ public final class EngineContext {
       final ProcessingScheduleService scheduleService,
       final ZeebeDb zeebeDb,
       final TransactionContext transactionContext,
-      final TypedStreamWriter streamWriter,
-      final TypedResponseWriter responseWriter,
+      final LegacyTypedStreamWriter streamWriter,
+      final LegacyTypedResponseWriter responseWriter,
       final Function<MutableZeebeState, EventApplier> eventApplierFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     this.partitionId = partitionId;
@@ -71,11 +71,11 @@ public final class EngineContext {
     return transactionContext;
   }
 
-  public TypedStreamWriter getStreamWriterProxy() {
+  public LegacyTypedStreamWriter getStreamWriterProxy() {
     return streamWriter;
   }
 
-  public TypedResponseWriter getTypedResponseWriter() {
+  public LegacyTypedResponseWriter getTypedResponseWriter() {
     return responseWriter;
   }
 

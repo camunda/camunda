@@ -12,7 +12,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.util.ZeebeStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -33,7 +33,7 @@ public final class JobTimeoutTriggerTest {
 
   @Mock private ActorControl someActor;
 
-  @Mock private TypedStreamWriter typedStreamWriter;
+  @Mock private LegacyTypedStreamWriter typedStreamWriter;
   private JobTimeoutTrigger jobTimeoutTrigger;
 
   @Before

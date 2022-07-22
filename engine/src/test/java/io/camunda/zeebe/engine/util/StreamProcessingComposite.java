@@ -13,7 +13,7 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -124,7 +124,7 @@ public class StreamProcessingComposite {
   public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
       final int partitionId,
       final TypedRecordProcessorFactory factory,
-      final Function<LogStreamBatchWriter, TypedStreamWriter> streamWriterFactory) {
+      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory) {
     final var result =
         streams.startStreamProcessorNotAwaitOpening(
             getLogName(partitionId),

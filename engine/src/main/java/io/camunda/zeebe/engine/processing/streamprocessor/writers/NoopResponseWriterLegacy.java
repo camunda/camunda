@@ -9,11 +9,12 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
-public final class NoopResponseWriter implements TypedResponseWriter {
+public final class NoopResponseWriterLegacy implements LegacyTypedResponseWriter {
 
   @Override
   public void writeRejectionOnCommand(
@@ -35,6 +36,18 @@ public final class NoopResponseWriter implements TypedResponseWriter {
       final Intent eventState,
       final UnpackedObject eventValue,
       final ValueType valueType,
+      final long requestId,
+      final int requestStreamId) {}
+
+  @Override
+  public void writeResponse(
+      final RecordType recordType,
+      final long key,
+      final Intent intent,
+      final UnpackedObject value,
+      final ValueType valueType,
+      final RejectionType rejectionType,
+      final String rejectionReason,
       final long requestId,
       final int requestStreamId) {}
 

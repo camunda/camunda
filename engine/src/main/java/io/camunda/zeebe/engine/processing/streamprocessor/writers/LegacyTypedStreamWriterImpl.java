@@ -23,7 +23,7 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TypedStreamWriterImpl implements TypedStreamWriter {
+public class LegacyTypedStreamWriterImpl implements LegacyTypedStreamWriter {
 
   private final Map<Class<? extends UnpackedObject>, ValueType> typeRegistry;
   private final RecordMetadata metadata = new RecordMetadata();
@@ -31,7 +31,7 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
 
   private long sourceRecordPosition = -1;
 
-  public TypedStreamWriterImpl(final LogStreamBatchWriter batchWriter) {
+  public LegacyTypedStreamWriterImpl(final LogStreamBatchWriter batchWriter) {
     this.batchWriter = batchWriter;
     typeRegistry = new HashMap<>();
     EVENT_REGISTRY.forEach((e, c) -> typeRegistry.put(c, e));

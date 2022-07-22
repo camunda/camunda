@@ -8,17 +8,17 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
-public final class TypedStreamWriterProxy implements TypedStreamWriter {
+public final class LegacyTypedStreamWriterProxy implements LegacyTypedStreamWriter {
 
-  private TypedStreamWriter writer;
+  private LegacyTypedStreamWriter writer;
 
-  public void wrap(final TypedStreamWriter writer) {
+  public void wrap(final LegacyTypedStreamWriter writer) {
     this.writer = writer;
   }
 

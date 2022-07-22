@@ -10,8 +10,8 @@ package io.camunda.zeebe.streamprocessor;
 import io.camunda.zeebe.engine.api.PostCommitTask;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -32,15 +32,19 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
   private final List<PostCommitTask> postCommitTasks = new ArrayList<>();
 
   private final StreamProcessorContext context;
-  private final TypedStreamWriter streamWriter;
-  private final TypedResponseWriter responseWriter;
+  private final LegacyTypedStreamWriter streamWriter;
+  private final LegacyTypedResponseWriter responseWriter;
 
   private boolean hasResponse =
-      true; // TODO set to false after the process builder class is used by the engine
+      true; // TODO figure out why this still needs to be true for tests to pass
+  private final long sourceRecordPosition;
 
-  DirectProcessingResultBuilder(final StreamProcessorContext context) {
+  DirectProcessingResultBuilder(
+      final StreamProcessorContext context, final long sourceRecordPosition) {
     this.context = context;
+    this.sourceRecordPosition = sourceRecordPosition;
     streamWriter = context.getLogStreamWriter();
+    streamWriter.configureSourceContext(sourceRecordPosition);
     responseWriter = context.getTypedResponseWriter();
   }
 
@@ -58,15 +62,26 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   @Override
   public ProcessingResultBuilder withResponse(
-      final long eventKey,
-      final Intent eventState,
-      final UnpackedObject eventValue,
+      final RecordType recordType,
+      final long key,
+      final Intent intent,
+      final UnpackedObject value,
       final ValueType valueType,
+      final RejectionType rejectionType,
+      final String rejectionReason,
       final long requestId,
       final int requestStreamId) {
     hasResponse = true;
     responseWriter.writeResponse(
-        eventKey, eventState, eventValue, valueType, requestId, requestStreamId);
+        recordType,
+        key,
+        intent,
+        value,
+        valueType,
+        rejectionType,
+        rejectionReason,
+        requestId,
+        requestStreamId);
     return this;
   }
 
@@ -79,6 +94,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
   @Override
   public ProcessingResultBuilder reset() {
     streamWriter.reset();
+    streamWriter.configureSourceContext(sourceRecordPosition);
     responseWriter.reset();
     postCommitTasks.clear();
     return this;
@@ -93,5 +109,15 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
   @Override
   public ProcessingResult build() {
     return new DirectProcessingResult(context, postCommitTasks, hasResponse);
+  }
+
+  @Override
+  public boolean canWriteEventOfLength(final int eventLength) {
+    return streamWriter.canWriteEventOfLength(eventLength);
+  }
+
+  @Override
+  public int getMaxEventLength() {
+    return streamWriter.getMaxEventLength();
   }
 }

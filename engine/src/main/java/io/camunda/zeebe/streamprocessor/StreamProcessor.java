@@ -17,7 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.LastProcessingPosition
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -115,7 +115,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private volatile long lastTickTime;
   private boolean shouldProcess = true;
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
-  private final Function<LogStreamBatchWriter, TypedStreamWriter> typedStreamWriterFactory;
+  private final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> typedStreamWriterFactory;
 
   private final Engine engine;
   private StreamProcessorDbState streamProcessorDbState;

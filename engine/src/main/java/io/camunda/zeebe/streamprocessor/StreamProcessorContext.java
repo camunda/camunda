@@ -10,14 +10,14 @@ package io.camunda.zeebe.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.LegacyTypedStreamWriterProxy;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriterImpl;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriterImpl;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopLegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
@@ -34,14 +34,15 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
 
-  private final TypedStreamWriterProxy streamWriterProxy = new TypedStreamWriterProxy();
-  private final NoopTypedStreamWriter noopTypedStreamWriter = new NoopTypedStreamWriter();
+  private final LegacyTypedStreamWriterProxy streamWriterProxy = new LegacyTypedStreamWriterProxy();
+  private final NoopLegacyTypedStreamWriter noopTypedStreamWriter =
+      new NoopLegacyTypedStreamWriter();
 
   private ActorControl actor;
   private LogStream logStream;
   private LogStreamReader logStreamReader;
-  private TypedStreamWriter logStreamWriter = noopTypedStreamWriter;
-  private TypedResponseWriterImpl typedResponseWriter;
+  private LegacyTypedStreamWriter logStreamWriter = noopTypedStreamWriter;
+  private LegacyTypedResponseWriterImpl typedResponseWriter;
 
   private RecordValues recordValues;
   private ZeebeDbState zeebeState;
@@ -65,7 +66,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
-    processingScheduleService = new ProcessingScheduleServiceImpl(actor);
+    processingScheduleService = new ProcessingScheduleServiceImpl(actor, streamWriterProxy);
     return this;
   }
 
@@ -80,7 +81,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   }
 
   @Override
-  public TypedStreamWriter getLogStreamWriter() {
+  public LegacyTypedStreamWriter getLogStreamWriter() {
     return streamWriterProxy;
   }
 
@@ -144,7 +145,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return this;
   }
 
-  public StreamProcessorContext logStreamWriter(final TypedStreamWriter logStreamWriter) {
+  public StreamProcessorContext logStreamWriter(final LegacyTypedStreamWriter logStreamWriter) {
     this.logStreamWriter = logStreamWriter;
     return this;
   }
@@ -153,11 +154,11 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
       final CommandResponseWriter commandResponseWriter) {
     this.commandResponseWriter = commandResponseWriter;
     typedResponseWriter =
-        new TypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId());
+        new LegacyTypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId());
     return this;
   }
 
-  public TypedResponseWriterImpl getTypedResponseWriter() {
+  public LegacyTypedResponseWriterImpl getTypedResponseWriter() {
     return typedResponseWriter;
   }
 

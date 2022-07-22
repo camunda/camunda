@@ -13,8 +13,8 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
 /** Things that only a stream processor should write to the log stream (+ commands) */
-public interface TypedStreamWriter
-    extends TypedCommandWriter, TypedEventWriter, TypedRejectionWriter {
+public interface LegacyTypedStreamWriter
+    extends LegacyTypedCommandWriter, TypedEventWriter, TypedRejectionWriter {
 
   void appendRecord(
       long key,

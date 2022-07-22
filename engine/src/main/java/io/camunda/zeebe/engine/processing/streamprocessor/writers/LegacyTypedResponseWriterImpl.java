@@ -18,7 +18,8 @@ import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectProducer {
+public final class LegacyTypedResponseWriterImpl
+    implements LegacyTypedResponseWriter, SideEffectProducer {
 
   private final CommandResponseWriter writer;
   private final int partitionId;
@@ -27,7 +28,7 @@ public final class TypedResponseWriterImpl implements TypedResponseWriter, SideE
   private int requestStreamId;
   private boolean isResponseStaged;
 
-  public TypedResponseWriterImpl(final CommandResponseWriter writer, final int partitionId) {
+  public LegacyTypedResponseWriterImpl(final CommandResponseWriter writer, final int partitionId) {
     this.writer = writer;
     this.partitionId = partitionId;
   }
@@ -106,6 +107,33 @@ public final class TypedResponseWriterImpl implements TypedResponseWriter, SideE
         requestId,
         requestStreamId,
         eventValue);
+  }
+
+  @Override
+  public void writeResponse(
+      final RecordType recordType,
+      final long key,
+      final Intent intent,
+      final UnpackedObject value,
+      final ValueType valueType,
+      final RejectionType rejectionType,
+      final String rejectionReason,
+      final long requestId,
+      final int requestStreamId) {
+
+    final byte[] bytes = rejectionReason.getBytes(StandardCharsets.UTF_8);
+    stringWrapper.wrap(bytes);
+
+    stage(
+        recordType,
+        intent,
+        key,
+        rejectionType,
+        stringWrapper,
+        valueType,
+        requestId,
+        requestStreamId,
+        value);
   }
 
   @Override

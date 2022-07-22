@@ -22,17 +22,14 @@ import io.camunda.zeebe.engine.processing.streamprocessor.MetadataFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProtocolVersionFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -125,18 +122,16 @@ public final class ProcessingStateMachine {
   private final MutableZeebeState zeebeState;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final RecordMetadata metadata = new RecordMetadata();
-  private final TypedResponseWriter responseWriter;
   private final ActorControl actor;
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
-  private final TypedStreamWriter logStreamWriter;
+  private final LegacyTypedStreamWriter logStreamWriter;
   private final TransactionContext transactionContext;
   private final RetryStrategy writeRetryStrategy;
   private final RetryStrategy sideEffectsRetryStrategy;
   private final RetryStrategy updateStateRetryStrategy;
   private final BooleanSupplier shouldProcessNext;
   private final BooleanSupplier abortCondition;
-  private final ErrorRecord errorRecord = new ErrorRecord();
   private final RecordValues recordValues;
   private final TypedRecordImpl typedCommand;
   private final StreamProcessorMetrics metrics;
@@ -181,7 +176,6 @@ public final class ProcessingStateMachine {
 
     final int partitionId = logStream.getPartitionId();
     typedCommand = new TypedRecordImpl(partitionId);
-    responseWriter = context.getWriters().response();
 
     metrics = new StreamProcessorMetrics(partitionId);
     streamProcessorListener = context.getStreamProcessorListener();
@@ -261,16 +255,16 @@ public final class ProcessingStateMachine {
       final var value = recordValues.readRecordValue(command, metadata.getValueType());
       typedCommand.wrap(command, metadata, value);
 
+      final long position = typedCommand.getPosition();
       final ProcessingResultBuilder processingResultBuilder =
-          new DirectProcessingResultBuilder(context);
+          new DirectProcessingResultBuilder(context, position);
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
       zeebeDbTransaction.run(
           () -> {
-            final long position = typedCommand.getPosition();
-            resetOutput(position);
+            processingResultBuilder.reset();
 
             currentProcessingResult = engine.process(typedCommand, processingResultBuilder);
 
@@ -299,12 +293,6 @@ public final class ProcessingStateMachine {
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, command, metadata, e);
       onError(e, this::writeRecords);
     }
-  }
-
-  private void resetOutput(final long sourceRecordPosition) {
-    responseWriter.reset();
-    logStreamWriter.reset();
-    logStreamWriter.configureSourceContext(sourceRecordPosition);
   }
 
   private void onError(final Throwable processingException, final Runnable nextStep) {
@@ -341,24 +329,14 @@ public final class ProcessingStateMachine {
     zeebeDbTransaction.run(
         () -> {
           final long position = typedCommand.getPosition();
-          resetOutput(position);
-
           final ProcessingResultBuilder processingResultBuilder =
-              new DirectProcessingResultBuilder(context);
+              new DirectProcessingResultBuilder(context, position);
+
+          logStreamWriter.configureSourceContext(position);
 
           currentProcessingResult =
               engine.onProcessingError(processingException, typedCommand, processingResultBuilder);
         });
-  }
-
-  private void writeRejectionOnCommand(final Throwable exception) {
-    final String errorMessage =
-        String.format(PROCESSING_ERROR_MESSAGE, typedCommand, exception.getMessage());
-    LOG.error(errorMessage, exception);
-
-    logStreamWriter.appendRejection(typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
-    responseWriter.writeRejectionOnCommand(
-        typedCommand, RejectionType.PROCESSING_ERROR, errorMessage);
   }
 
   private void writeRecords() {

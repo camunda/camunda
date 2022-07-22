@@ -24,9 +24,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -88,8 +88,8 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   @Override
   public void processRecord(
       final TypedRecord<DeploymentRecord> command,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final LegacyTypedResponseWriter responseWriter,
+      final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
 
     sideEffect.accept(sideEffects);
@@ -131,7 +131,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
   private void createTimerIfTimerStartEvent(
       final TypedRecord<DeploymentRecord> record,
-      final TypedStreamWriter streamWriter,
+      final LegacyTypedStreamWriter streamWriter,
       final SideEffects sideEffects) {
     for (final ProcessMetadata processMetadata : record.getValue().processesMetadata()) {
       if (!processMetadata.isDuplicate()) {
@@ -145,7 +145,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   }
 
   private void subscribeToTimerStartEventIfExists(
-      final TypedStreamWriter streamWriter,
+      final LegacyTypedStreamWriter streamWriter,
       final SideEffects sideEffects,
       final ProcessMetadata processMetadata,
       final List<ExecutableStartEvent> startEvents) {
@@ -174,14 +174,14 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   }
 
   private void unsubscribeFromPreviousTimers(
-      final TypedStreamWriter streamWriter, final ProcessMetadata processRecord) {
+      final LegacyTypedStreamWriter streamWriter, final ProcessMetadata processRecord) {
     timerInstanceState.forEachTimerForElementInstance(
         NO_ELEMENT_INSTANCE,
         timer -> unsubscribeFromPreviousTimer(streamWriter, processRecord, timer));
   }
 
   private void unsubscribeFromPreviousTimer(
-      final TypedStreamWriter streamWriter,
+      final LegacyTypedStreamWriter streamWriter,
       final ProcessMetadata processMetadata,
       final TimerInstance timer) {
     final DirectBuffer timerBpmnId =

@@ -37,11 +37,13 @@ final class BufferedStreamWriter {
   private int recordBufferOffset;
   private int recordCount;
   private final BinaryOperator<Integer> capacityCalculator;
+  private final int maxEventLength;
 
-  BufferedStreamWriter(final BinaryOperator<Integer> capacityCalculator) {
+  BufferedStreamWriter(final BinaryOperator<Integer> capacityCalculator, final int maxEventLength) {
     reset();
 
     this.capacityCalculator = capacityCalculator;
+    this.maxEventLength = maxEventLength;
   }
 
   MutableDirectBuffer getRecordBuffer() {
@@ -142,5 +144,9 @@ final class BufferedStreamWriter {
     recordBufferOffset = 0;
     recordCount = 0;
     metadata.reset();
+  }
+
+  public int getMaxEventLength() {
+    return maxEventLength;
   }
 }
