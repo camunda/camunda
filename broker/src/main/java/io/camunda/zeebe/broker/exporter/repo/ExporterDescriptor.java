@@ -37,6 +37,6 @@ public class ExporterDescriptor {
   }
 
   public String getId() {
-    return configuration.getId();
+    return configuration.id();
   }
 }
