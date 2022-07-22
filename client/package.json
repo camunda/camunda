@@ -73,7 +73,6 @@
     "@types/react-dom": "18.0.5",
     "@types/react-transition-group": "4.4.5",
     "@types/styled-components": "5.1.25",
-    "babel-loader": "8.1.0",
     "eslint-plugin-camunda-licensed": "0.4.5",
     "eslint-plugin-prettier": "4.0.0",
     "glob": "7.2.3",
@@ -115,7 +114,6 @@
     "workerDirectory": "public"
   },
   "resolutions": {
-    "react-scripts/postcss-preset-env/postcss-custom-properties": "^10.0.0",
-    "webpack": "4.44.2"
+    "react-scripts/postcss-preset-env/postcss-custom-properties": "^10.0.0"
   }
 }
