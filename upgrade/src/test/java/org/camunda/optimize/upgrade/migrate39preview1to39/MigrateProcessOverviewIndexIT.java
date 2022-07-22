@@ -31,4 +31,21 @@ public class MigrateProcessOverviewIndexIT extends AbstractUpgrade39preview1IT {
         assertThat(processAsMap).containsEntry(ProcessOverviewDto.Fields.lastKpiEvaluationResults, new HashMap<>());
       });
   }
+
+  @Test
+  public void digestCheckIntervalFieldIsRemoved() {
+    // given
+    executeBulk("steps/3.9preview1/39preview1-process-overview-without-lastKpiEvaluation.json");
+
+    // when
+    performUpgrade();
+
+    // then
+    assertThat(getAllDocumentsOfIndex(PROCESS_OVERVIEW_INDEX.getIndexName()))
+      .singleElement()
+      .satisfies(process -> {
+        final Map<String, Object> processAsMap = process.getSourceAsMap();
+        assertThat(processAsMap).doesNotContainKey("checkInterval");
+      });
+  }
 }

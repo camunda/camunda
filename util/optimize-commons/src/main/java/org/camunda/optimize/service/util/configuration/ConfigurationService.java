@@ -179,6 +179,8 @@ public class ConfigurationService {
 
   private Map<String, WebhookConfiguration> configuredWebhooks;
 
+  private String digestCronTrigger;
+
   private CsvConfiguration csvConfiguration;
 
   private Properties quartzProperties;
@@ -965,6 +967,13 @@ public class ConfigurationService {
       }
     }
     return configuredWebhooks;
+  }
+
+  public String getDigestCronTrigger() {
+    if (digestCronTrigger == null) {
+      digestCronTrigger = configJsonContext.read(ConfigurationServiceConstants.DIGEST_CRON_TRIGGER, String.class);
+    }
+    return digestCronTrigger;
   }
 
   public CsvConfiguration getCsvConfiguration() {

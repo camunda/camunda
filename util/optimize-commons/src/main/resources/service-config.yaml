@@ -479,6 +479,10 @@ webhookAlerting:
 #        # whether this proxy is using a secured connection
 #        sslEnabled: false
 
+digest:
+  # cron expression to define when enabled email digests are to be sent
+  cronTrigger: "0 0 9 * * MON"
+
 export:
   csv:
     # which users are authorized to download CSVs. Available options: 'all', 'superuser', 'none'

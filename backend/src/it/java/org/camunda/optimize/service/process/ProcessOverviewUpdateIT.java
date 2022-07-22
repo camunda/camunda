@@ -8,7 +8,6 @@ package org.camunda.optimize.service.process;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
@@ -24,8 +23,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit.DAYS;
-import static org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit.MONTHS;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
@@ -164,7 +161,7 @@ public class ProcessOverviewUpdateIT extends AbstractIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
-    processOverviewClient.updateProcess(DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(new AlertInterval(2, DAYS), true));
+    processOverviewClient.updateProcess(DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -180,7 +177,7 @@ public class ProcessOverviewUpdateIT extends AbstractIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
-    final ProcessDigestRequestDto digestConfig = new ProcessDigestRequestDto(new AlertInterval(2, DAYS), true);
+    final ProcessDigestRequestDto digestConfig = new ProcessDigestRequestDto(true);
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -208,7 +205,7 @@ public class ProcessOverviewUpdateIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
     importAllEngineEntitiesFromScratch();
-    final ProcessDigestRequestDto initialDigestConfig = new ProcessDigestRequestDto(new AlertInterval(2, DAYS), true);
+    final ProcessDigestRequestDto initialDigestConfig = new ProcessDigestRequestDto(true);
     processOverviewClient.updateProcess(DEF_KEY, DEFAULT_USERNAME, initialDigestConfig);
 
     // then
@@ -225,7 +222,7 @@ public class ProcessOverviewUpdateIT extends AbstractIT {
       );
 
     // when
-    final ProcessDigestRequestDto updatedDigestConfig = new ProcessDigestRequestDto(new AlertInterval(1, MONTHS), true);
+    final ProcessDigestRequestDto updatedDigestConfig = new ProcessDigestRequestDto(true);
     processOverviewClient.updateProcess(DEF_KEY, KERMIT_USER, updatedDigestConfig);
 
     // then
@@ -251,23 +248,7 @@ public class ProcessOverviewUpdateIT extends AbstractIT {
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateProcessRequest(
-        DEF_KEY, new ProcessUpdateDto(null, new ProcessDigestRequestDto(new AlertInterval(2, DAYS), true)))
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
-  }
-
-  @Test
-  public void updateProcess_digestEnabledButNoIntervalConfig() {
-    // given
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateProcessRequest(
-        DEF_KEY, new ProcessUpdateDto(DEFAULT_USERNAME, new ProcessDigestRequestDto(null, true)))
+        DEF_KEY, new ProcessUpdateDto(null, new ProcessDigestRequestDto(true)))
       .execute();
 
     // then
@@ -279,7 +260,7 @@ public class ProcessOverviewUpdateIT extends AbstractIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
-    final ProcessDigestRequestDto digestConfig = new ProcessDigestRequestDto(new AlertInterval(2, DAYS), false);
+    final ProcessDigestRequestDto digestConfig = new ProcessDigestRequestDto(false);
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -304,7 +285,6 @@ public class ProcessOverviewUpdateIT extends AbstractIT {
   private ProcessDigestResponseDto convertToDigestResponse(final ProcessDigestRequestDto digest) {
     final ProcessDigestResponseDto digestResponse = new ProcessDigestResponseDto();
     digestResponse.setEnabled(digest.isEnabled());
-    digestResponse.setCheckInterval(digest.getCheckInterval());
     return digestResponse;
   }
 

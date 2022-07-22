@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
-import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
@@ -19,7 +18,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DYNAMIC_PRO
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROPERTIES_PROPERTY_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_BOOLEAN;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_INTEGER;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
 
@@ -32,9 +30,6 @@ public class ProcessOverviewIndex extends DefaultIndexMappingCreator {
   public static final String LAST_KPI_EVALUATION = ProcessOverviewDto.Fields.lastKpiEvaluationResults;
   public static final String ENABLED = ProcessDigestResponseDto.Fields.enabled;
   public static final String KPI_REPORT_RESULTS = ProcessDigestDto.Fields.kpiReportResults;
-  public static final String CHECK_INTERVAL = ProcessDigestResponseDto.Fields.checkInterval;
-  public static final String INTERVAL_VALUE = AlertInterval.Fields.value;
-  public static final String INTERVAL_UNIT = AlertInterval.Fields.unit;
 
   @Override
   public String getIndexName() {
@@ -62,17 +57,6 @@ public class ProcessOverviewIndex extends DefaultIndexMappingCreator {
       .startObject(DIGEST)
         .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
         .startObject(PROPERTIES_PROPERTY_TYPE)
-          .startObject(CHECK_INTERVAL)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-            .startObject(PROPERTIES_PROPERTY_TYPE)
-              .startObject(INTERVAL_VALUE)
-                .field(MAPPING_PROPERTY_TYPE, TYPE_INTEGER)
-              .endObject()
-              .startObject(INTERVAL_UNIT)
-                .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-              .endObject()
-            .endObject()
-          .endObject()
           .startObject(ENABLED)
             .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
           .endObject()

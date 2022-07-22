@@ -8,8 +8,6 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
-import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
@@ -26,7 +24,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_OVERVIEW_INDEX_NAME;
@@ -47,11 +44,6 @@ public class ProcessOverviewWriter {
       paramMap.put("owner", overviewDto.getOwner());
       paramMap.put("processDefinitionKey", overviewDto.getProcessDefinitionKey());
       paramMap.put("digestEnabled", overviewDto.getDigest().isEnabled());
-      Optional.ofNullable(overviewDto.getDigest().getCheckInterval())
-        .ifPresent(interval -> {
-          paramMap.put("digestCheckIntervalValue", interval.getValue());
-          paramMap.put("digestCheckIntervalUnit", interval.getUnit().getId());
-        });
       final UpdateRequest updateRequest = new UpdateRequest()
         .index(PROCESS_OVERVIEW_INDEX_NAME)
         .id(processDefinitionKey)
@@ -108,7 +100,6 @@ public class ProcessOverviewWriter {
       final ProcessUpdateDto processUpdateDto = new ProcessUpdateDto();
       processUpdateDto.setOwnerId(ownerId);
       final ProcessDigestRequestDto processDigestRequestDto = new ProcessDigestRequestDto();
-      processDigestRequestDto.setCheckInterval(new AlertInterval(1, AlertIntervalUnit.WEEKS));
       processUpdateDto.setProcessDigest(processDigestRequestDto);
       final UpdateRequest updateRequest = new UpdateRequest()
         .index(PROCESS_OVERVIEW_INDEX_NAME)
@@ -181,7 +172,6 @@ public class ProcessOverviewWriter {
     processOverviewDto.setProcessDefinitionKey(processDefinitionKey);
     processOverviewDto.setOwner(processUpdateDto.getOwnerId());
     processOverviewDto.setDigest(new ProcessDigestDto(
-      processUpdateDto.getProcessDigest().getCheckInterval(),
       processUpdateDto.getProcessDigest().isEnabled(),
       Collections.emptyMap()
     ));

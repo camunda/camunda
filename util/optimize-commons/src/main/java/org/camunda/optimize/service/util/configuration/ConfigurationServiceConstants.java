@@ -26,6 +26,7 @@ public class ConfigurationServiceConstants {
   public static final String EMAIL_AUTHENTICATION = "$.email.authentication";
 
   public static final String CONFIGURED_WEBHOOKS = "$.webhookAlerting.webhooks";
+  public static final String DIGEST_CRON_TRIGGER = "$.digest.cronTrigger";
   //@formatter:off
   public static final String ELASTICSEARCH_MAX_JOB_QUEUE_SIZE = "$.import.elasticsearchJobExecutorQueueSize";
   public static final String ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT = "$.import.elasticsearchJobExecutorThreadCount";

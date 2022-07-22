@@ -32,7 +32,6 @@ public class ProcessOverviewIndex39preview1 extends DefaultIndexMappingCreator {
   public static final String DIGEST = ProcessOverviewDto.Fields.digest;
   public static final String ENABLED = ProcessDigestResponseDto.Fields.enabled;
   public static final String KPI_REPORT_RESULTS = ProcessDigestDto.Fields.kpiReportResults;
-  public static final String CHECK_INTERVAL = ProcessDigestResponseDto.Fields.checkInterval;
   public static final String INTERVAL_VALUE = AlertInterval.Fields.value;
   public static final String INTERVAL_UNIT = AlertInterval.Fields.unit;
 
@@ -59,7 +58,7 @@ public class ProcessOverviewIndex39preview1 extends DefaultIndexMappingCreator {
       .startObject(DIGEST)
         .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
           .startObject(PROPERTIES_PROPERTY_TYPE)
-            .startObject(CHECK_INTERVAL)
+            .startObject("checkInterval")
               .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
                .startObject(PROPERTIES_PROPERTY_TYPE)
                 .startObject(INTERVAL_VALUE)
