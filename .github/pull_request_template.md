@@ -26,8 +26,6 @@ Testing:
 UI/UX (for frontend issues):
 
 - [ ] Design Review is requested
-- [ ] Add new UI state to Storybook if necessary
-- [ ] UI Review is requested in Chromatic
 
 Documentation:
 
