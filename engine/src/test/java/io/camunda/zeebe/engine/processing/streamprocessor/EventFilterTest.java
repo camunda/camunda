@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.streamprocessor.EventFilter;
 import org.junit.Test;
 
 public final class EventFilterTest {

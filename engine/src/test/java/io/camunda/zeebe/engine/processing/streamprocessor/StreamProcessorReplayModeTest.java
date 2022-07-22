@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
+import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
