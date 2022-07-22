@@ -403,6 +403,41 @@ message SetVariablesResponse {
   int64 key = 1;
 }
 
+message ModifyProcessInstanceRequest {
+  // the key of the process instance that should be modified
+  int64 processInstanceKey = 1;
+  // instructions describing which elements should be activated in which scopes,
+  // and which variables should be created
+  repeated ModificationActivateInstruction activateInstructions = 2;
+  // instructions describing which elements should be terminated
+  repeated ModificationTerminateInstruction terminateInstructions = 3;
+}
+
+message ModificationActivateInstruction {
+  // the id of the element that should be activated
+  string elementId = 1;
+  // the key of the ancestor scope the element instance should be created in
+  int64 ancestorElementInstanceKey = 2;
+  // instructions describing which variables should be created
+  repeated ModificationVariableInstruction variableInstructions = 3;
+}
+
+message ModificationVariableInstruction {
+  // the variables that should be created
+  string variables = 1;
+  // the id of the element in which scope the variables should be created
+  string scopeId = 2;
+}
+
+message ModificationTerminateInstruction {
+  // the id of the element that should be terminated
+  int64 elementInstanceKey = 1;
+}
+
+message ModifyProcessInstanceResponse {
+
+}
+
 service Gateway {
   /*
     Iterates through all known partitions round-robin and activates up to the requested
@@ -589,5 +624,14 @@ service Gateway {
         - retries is not greater than 0
    */
   rpc UpdateJobRetries (UpdateJobRetriesRequest) returns (UpdateJobRetriesResponse) {
+  }
+
+  /*
+    Modifies the process instance. This is done by activating and/or terminating specific elements of the instance.
+
+    TODO: add errors section
+   */
+  rpc ModifyProcessInstance (ModifyProcessInstanceRequest) returns (ModifyProcessInstanceResponse) {
+
   }
 }
