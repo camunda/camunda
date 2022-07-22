@@ -32,7 +32,7 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/common/github.com/actions/camunda/tasklist ARGOCD_TOKEN;
+            secret/data/products/tasklist/ci/tasklist ARGOCD_TOKEN;
       #########################################################################
       # Setup: checkout code. This is required because we are using
       # composite actions and deployment manifests.
