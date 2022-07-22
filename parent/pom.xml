@@ -607,12 +607,6 @@
       </dependency>
 
       <dependency>
-        <groupId>com.google.code.gson</groupId>
-        <artifactId>gson</artifactId>
-        <version>${version.gson}</version>
-      </dependency>
-
-      <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
         <version>${version.zeebe-test-container}</version>
@@ -923,6 +917,13 @@
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-core</artifactId>
         <version>${version.hamcrest}</version>
+      </dependency>
+
+      <!-- grpc-core & protobuf-java-util require different versions of gson -->
+      <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>${version.gson}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
