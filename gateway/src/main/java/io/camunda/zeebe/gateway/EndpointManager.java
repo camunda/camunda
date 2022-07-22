@@ -34,6 +34,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
@@ -312,6 +314,16 @@ public final class EndpointManager {
         request,
         RequestMapper::toUpdateJobRetriesRequest,
         ResponseMapper::toUpdateJobRetriesResponse,
+        responseObserver);
+  }
+
+  public void modifyProcessInstance(
+      final ModifyProcessInstanceRequest request,
+      final ServerStreamObserver<ModifyProcessInstanceResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toModifyProcessInstanceRequest,
+        ResponseMapper::toModifyProcessInstanceResponse,
         responseObserver);
   }
 
