@@ -256,12 +256,14 @@ public final class ProcessingStateMachine {
       typedCommand.wrap(command, metadata, value);
 
       final long position = typedCommand.getPosition();
-      final ProcessingResultBuilder processingResultBuilder =
-          new DirectProcessingResultBuilder(context, position);
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
+
+      final ProcessingResultBuilder processingResultBuilder =
+          new DirectProcessingResultBuilder(context, zeebeDbTransaction, position);
+
       zeebeDbTransaction.run(
           () -> {
             processingResultBuilder.reset();
@@ -330,7 +332,7 @@ public final class ProcessingStateMachine {
         () -> {
           final long position = typedCommand.getPosition();
           final ProcessingResultBuilder processingResultBuilder =
-              new DirectProcessingResultBuilder(context, position);
+              new DirectProcessingResultBuilder(context, zeebeDbTransaction, position);
 
           logStreamWriter.configureSourceContext(position);
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.streamprocessor;
 
+import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.engine.api.PostCommitTask;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
@@ -38,10 +39,14 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
   private boolean hasResponse =
       true; // TODO figure out why this still needs to be true for tests to pass
   private final long sourceRecordPosition;
+  private final ZeebeDbTransaction zeebeDbTransaction;
 
   DirectProcessingResultBuilder(
-      final StreamProcessorContext context, final long sourceRecordPosition) {
+      final StreamProcessorContext context,
+      final ZeebeDbTransaction zeebeDbTransaction,
+      final long sourceRecordPosition) {
     this.context = context;
+    this.zeebeDbTransaction = zeebeDbTransaction;
     this.sourceRecordPosition = sourceRecordPosition;
     streamWriter = context.getLogStreamWriter();
     streamWriter.configureSourceContext(sourceRecordPosition);
@@ -92,9 +97,10 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
   }
 
   @Override
-  public ProcessingResultBuilder reset() {
+  public ProcessingResultBuilder reset() throws Exception {
     streamWriter.reset();
     streamWriter.configureSourceContext(sourceRecordPosition);
+    zeebeDbTransaction.rollback();
     responseWriter.reset();
     postCommitTasks.clear();
     return this;

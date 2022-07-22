@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import org.rocksdb.RocksDBException;
 
 /** Builder to compose the processing result */
 public interface ProcessingResultBuilder {
@@ -56,11 +57,11 @@ public interface ProcessingResultBuilder {
 
   /**
    * Resets the processing result build to its initial states (removes all follow-up records, the
-   * response and post-commit tasks.
+   * response, post-commit tasks and rolls back the transaction).
    *
    * @return returns itself for method chaining
    */
-  ProcessingResultBuilder reset();
+  ProcessingResultBuilder reset() throws RocksDBException, Exception;
 
   /**
    * Resets itself with the post commit tasks reset

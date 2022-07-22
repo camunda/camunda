@@ -64,8 +64,11 @@ public final class Writers {
     return responseWriter;
   }
 
-  /** Resets written records, response and post commit tasks */
-  public void reset() {
+  /**
+   * Resets written records, response, post commit tasks/side effects and rolls back current
+   * transaction
+   */
+  public void reset() throws Exception {
     resultBuilderSupplier.get().reset();
   }
 }
