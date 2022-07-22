@@ -41,8 +41,14 @@ camunda-platform:
       tag: latest
     keycloak:
       fullnameOverride: keycloak
+      externalDatabase:
+        password: postgresql
       postgresql:
         fullnameOverride: postgresql
+        # fixing the password to avoid failure on restart of keycloak pod
+        # each time the keycloak pod restarts need a restart of the database cuz a random password is given
+        auth:
+          password: postgresql
         primary:
           persistence:
             enabled: false
