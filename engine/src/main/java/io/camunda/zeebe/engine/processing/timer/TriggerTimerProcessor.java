@@ -122,7 +122,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
     }
 
     if (shouldReschedule(timer)) {
-      rescheduleTimer(timer, catchEvent, streamWriter, sideEffects);
+      rescheduleTimer(timer, catchEvent, deprecated2, sideEffects);
     }
   }
 
