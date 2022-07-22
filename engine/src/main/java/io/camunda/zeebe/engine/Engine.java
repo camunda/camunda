@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import java.util.Objects;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 
@@ -162,17 +163,18 @@ public class Engine implements RecordProcessor<EngineContext> {
     private ProcessingResultBuilder resultBuilder;
 
     private void setResultBuilder(final ProcessingResultBuilder resultBuilder) {
-      this.resultBuilder = resultBuilder;
+      this.resultBuilder = Objects.requireNonNull(resultBuilder);
     }
 
     private void unsetResultBuilder() {
-      /* TODO think about what we want to do here. Right now it is rest to null, which means NPEs
-      if accessed outside scope. We could also set a NOOP implementation, or one that logs warnings, etc.*/
       resultBuilder = null;
     }
 
     @Override
     public ProcessingResultBuilder get() {
+      if (resultBuilder == null) {
+        throw new IllegalStateException("Attempt to retrieve resultBuilder out of scope.");
+      }
       return resultBuilder;
     }
   }
