@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.exporter.context;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
+import java.util.Objects;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,7 +48,67 @@ final class ExporterConfigurationTest {
     assertThat(instance).isEqualTo(expected);
   }
 
-  private record Config(int numberOfShards) {}
+  @SuppressWarnings("unused")
+  private static final class ContainerConfig {
+    private Config nested;
 
-  private record ContainerConfig(Config nested) {}
+    public ContainerConfig(final Config nested) {
+      this.nested = nested;
+    }
+
+    public ContainerConfig() {}
+
+    public Config getNested() {
+      return nested;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(nested);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof ContainerConfig)) {
+        return false;
+      }
+      final ContainerConfig that = (ContainerConfig) o;
+      return Objects.equals(nested, that.nested);
+    }
+  }
+
+  @SuppressWarnings("unused")
+  private static final class Config {
+    private int numberOfShards;
+
+    public Config(final int numberOfShards) {
+      this.numberOfShards = numberOfShards;
+    }
+
+    public Config() {}
+
+    public int getNumberOfShards() {
+      return numberOfShards;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(numberOfShards);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof Config)) {
+        return false;
+      }
+      final Config config = (Config) o;
+      return numberOfShards == config.numberOfShards;
+    }
+  }
 }

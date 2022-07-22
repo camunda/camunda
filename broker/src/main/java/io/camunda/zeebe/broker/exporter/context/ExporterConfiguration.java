@@ -14,10 +14,9 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.util.ReflectUtil;
 import java.util.Map;
+import java.util.Objects;
 
-public record ExporterConfiguration(String id, Map<String, Object> arguments)
-    implements Configuration {
-
+public final class ExporterConfiguration implements Configuration {
   // Accepts more lenient cases, such that the property "something" would match a field "someThing"
   // Note however that if a field "something" and "someThing" are present, only one of them will be
   // instantiated (the last declared one), using the last matching value.
@@ -28,6 +27,13 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
           .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_VALUES)
           .enable(Feature.IGNORE_UNDEFINED, Feature.ALLOW_SINGLE_QUOTES)
           .build();
+  private final String id;
+  private final Map<String, Object> arguments;
+
+  public ExporterConfiguration(final String id, final Map<String, Object> arguments) {
+    this.id = id;
+    this.arguments = arguments;
+  }
 
   @Override
   public String getId() {
@@ -46,5 +52,27 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
     } else {
       return ReflectUtil.newInstance(configClass);
     }
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getId(), getArguments());
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof ExporterConfiguration)) {
+      return false;
+    }
+    final ExporterConfiguration that = (ExporterConfiguration) o;
+    return getId().equals(that.getId()) && getArguments().equals(that.getArguments());
+  }
+
+  @Override
+  public String toString() {
+    return "ExporterConfiguration{" + "id='" + id + '\'' + ", arguments=" + arguments + '}';
   }
 }
