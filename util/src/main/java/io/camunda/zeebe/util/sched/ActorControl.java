@@ -67,7 +67,6 @@ public class ActorControl implements ConcurrencyControl {
 
     final ActorJob job = new ActorJob();
     job.setRunnable(consumer);
-    job.setAutoCompleting(false);
     job.onJobAddedToTask(task);
 
     final ChannelConsumerCondition subscription = new ChannelConsumerCondition(job, channel);
@@ -117,7 +116,6 @@ public class ActorControl implements ConcurrencyControl {
     final ActorJob job = new ActorJob();
     final ActorFuture<T> future = job.setCallable(callable);
     job.onJobAddedToTask(task);
-    job.setAutoCompleting(true);
     task.submit(job);
 
     return future;
@@ -138,15 +136,6 @@ public class ActorControl implements ConcurrencyControl {
         };
 
     return call(c);
-  }
-
-  /**
-   * Run the provided runnable repeatedly until it calls {@link #done()}. To be used for jobs which
-   * may experience backpressure.
-   */
-  public void runUntilDone(final Runnable runnable) {
-    ensureCalledFromWithinActor("runUntilDone(...)");
-    scheduleRunnable(runnable, false);
   }
 
   /**
@@ -230,7 +219,7 @@ public class ActorControl implements ConcurrencyControl {
    */
   @Override
   public void run(final Runnable action) {
-    scheduleRunnable(action, true);
+    scheduleRunnable(action);
   }
 
   /**
@@ -255,7 +244,6 @@ public class ActorControl implements ConcurrencyControl {
     }
 
     job.setRunnable(action);
-    job.setAutoCompleting(true);
     job.onJobAddedToTask(task);
     task.submit(job);
 
@@ -300,7 +288,6 @@ public class ActorControl implements ConcurrencyControl {
       final Function<ActorJob, ActorFutureSubscription> futureSubscriptionSupplier) {
     final ActorJob continuationJob = new ActorJob();
     continuationJob.setRunnable(new FutureContinuationRunnable<>(future, callback));
-    continuationJob.setAutoCompleting(true);
     continuationJob.onJobAddedToTask(task);
 
     final ActorFutureSubscription subscription = futureSubscriptionSupplier.apply(continuationJob);
@@ -344,7 +331,6 @@ public class ActorControl implements ConcurrencyControl {
     final ActorJob closeJob = new ActorJob();
 
     closeJob.onJobAddedToTask(task);
-    closeJob.setAutoCompleting(true);
     closeJob.setRunnable(task::requestClose);
 
     task.submit(closeJob);
@@ -352,27 +338,20 @@ public class ActorControl implements ConcurrencyControl {
     return task.closeFuture;
   }
 
-  private void scheduleRunnable(final Runnable runnable, final boolean autocompleting) {
+  private void scheduleRunnable(final Runnable runnable) {
     final ActorThread currentActorThread = ActorThread.current();
 
     if (currentActorThread != null && currentActorThread.getCurrentTask() == task) {
       final ActorJob newJob = currentActorThread.newJob();
       newJob.setRunnable(runnable);
-      newJob.setAutoCompleting(autocompleting);
       newJob.onJobAddedToTask(task);
       task.insertJob(newJob);
     } else {
       final ActorJob job = new ActorJob();
       job.setRunnable(runnable);
-      job.setAutoCompleting(autocompleting);
       job.onJobAddedToTask(task);
       task.submit(job);
     }
-  }
-
-  public void done() {
-    final ActorJob job = ensureCalledFromWithinActor("done()");
-    job.markDone();
   }
 
   public boolean isClosing() {
