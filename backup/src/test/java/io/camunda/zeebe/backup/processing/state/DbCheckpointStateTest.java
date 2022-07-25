@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.processing.state;
 
+import static io.camunda.zeebe.backup.processing.state.CheckpointState.NO_CHECKPOINT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
@@ -40,12 +41,12 @@ final class DbCheckpointStateTest {
   }
 
   @Test
-  void shouldInitializeToZero() {
+  void shouldInitializeWhenNoCheckpoint() {
     // given
 
     // when-then
-    assertThat(state.getCheckpointId()).isZero();
-    assertThat(state.getCheckpointPosition()).isZero();
+    assertThat(state.getCheckpointId()).isEqualTo(NO_CHECKPOINT);
+    assertThat(state.getCheckpointPosition()).isEqualTo(NO_CHECKPOINT);
   }
 
   @Test

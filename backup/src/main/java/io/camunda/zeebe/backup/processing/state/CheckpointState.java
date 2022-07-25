@@ -9,7 +9,7 @@ package io.camunda.zeebe.backup.processing.state;
 
 public interface CheckpointState {
 
-  long NO_CHECKPOINT = 0L;
+  long NO_CHECKPOINT = -1L;
 
   /**
    * Returns the id of the last created checkpoint
