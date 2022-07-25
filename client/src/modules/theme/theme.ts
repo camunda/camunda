@@ -322,6 +322,13 @@ const theme = {
       operationsProgressBar: {
         shimmerColor: SEMANTIC_COLORS.shimmer,
       },
+      processInstance: {
+        modifications: {
+          footer: {
+            backgroundColor: DARK_COLORS.ui03,
+          },
+        },
+      },
       sortableTable: {
         backgroundColor: DARK_COLORS.ui02,
         hover: DARK_COLORS.rowHover,
@@ -915,6 +922,9 @@ const theme = {
       variablesPanel: {
         footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
       },
+      modificationMode: {
+        footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
+      },
       modules: {
         button: {
           default: `0 2px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.35)}`,
@@ -1180,6 +1190,13 @@ const theme = {
       },
       operationsProgressBar: {
         shimmerColor: SEMANTIC_COLORS.shimmer,
+      },
+      processInstance: {
+        modifications: {
+          footer: {
+            backgroundColor: LIGHT_COLORS.ui02,
+          },
+        },
       },
       sortableTable: {
         backgroundColor: LIGHT_COLORS.ui04,
@@ -1764,6 +1781,9 @@ const theme = {
         )}`,
       },
       variablesPanel: {
+        footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
+      },
+      modificationMode: {
         footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
       },
       modules: {

@@ -25,6 +25,8 @@ import {createMultiInstanceFlowNodeInstances} from 'modules/testUtils';
 import {statistics} from 'modules/mocks/statistics';
 import {useNotifications} from 'modules/notifications';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {modificationsStore} from 'modules/stores/modifications';
+import {IS_MODIFICATION_MODE_ENABLED} from 'modules/feature-flags';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -99,6 +101,10 @@ describe('Instance', () => {
         )
       )
     );
+  });
+
+  afterEach(() => {
+    modificationsStore.reset();
   });
 
   it('should render and set the page title', async () => {
@@ -219,4 +225,56 @@ describe('Instance', () => {
     jest.clearAllTimers();
     jest.useRealTimers();
   });
+
+  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
+    'should display the modifications header and footer when modification mode is enabled',
+    async () => {
+      mockServer.use(
+        rest.get('/api/process-instances/:id', (_, res, ctx) =>
+          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
+        )
+      );
+
+      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+      await waitForElementToBeRemoved(
+        screen.getByTestId('instance-header-skeleton')
+      );
+
+      expect(
+        screen.queryByText('Process Instance Modification Mode')
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('discard-all-button')
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('apply-modifications-button')
+      ).not.toBeInTheDocument();
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /modify instance/i,
+        })
+      );
+
+      expect(
+        screen.getByText('Process Instance Modification Mode')
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('discard-all-button')).toBeInTheDocument();
+      expect(
+        screen.getByTestId('apply-modifications-button')
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByTestId('discard-all-button'));
+
+      expect(
+        screen.queryByText('Process Instance Modification Mode')
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('discard-all-button')
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('apply-modifications-button')
+      ).not.toBeInTheDocument();
+    }
+  );
 });

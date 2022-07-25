@@ -5,12 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-// const zLayoutBase = 0;  // uncomment and use when migrating other z-indexes --> #2788
+// const zLayoutBase = 0; // uncomment and use when migrating other z-indexes --> #2788
 const zLayoutTopBase = 10000;
 
 const above = 1;
 // const below = -1; // uncomment and use when migrating other z-indexes --> #2788
 
 const zNotification = above + zLayoutTopBase;
+const zModificationFrame = above + zLayoutTopBase;
 
-export {zNotification};
+export {zNotification, zModificationFrame};

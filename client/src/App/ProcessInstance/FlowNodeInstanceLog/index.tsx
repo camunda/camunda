@@ -32,6 +32,7 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
     areDiagramDefinitionsAvailable,
     state: {status: diagramStatus},
   } = processInstanceDetailsDiagramStore;
+
   const LOADING_STATES = ['initial', 'first-fetch'];
   const flowNodeInstanceRowRef = useRef<HTMLDivElement>(null);
   const instanceHistoryRef = useRef<HTMLDivElement>(null);

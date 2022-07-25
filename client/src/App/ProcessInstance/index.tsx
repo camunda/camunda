@@ -20,7 +20,14 @@ import {useProcessInstancePageParams} from './useProcessInstancePageParams';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {useNotifications} from 'modules/notifications';
 import {Breadcrumb} from './Breadcrumb';
-import {Container, PanelContainer, BottomPanel} from './styled';
+import {
+  Container,
+  PanelContainer,
+  BottomPanel,
+  ModificationHeader,
+  ModificationFooter,
+  Button,
+} from './styled';
 import {Locations} from 'modules/routes';
 import {
   ResizablePanel,
@@ -28,8 +35,9 @@ import {
 } from 'modules/components/ResizablePanel';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {modificationsStore} from 'modules/stores/modifications';
+import {observer} from 'mobx-react';
 
-const ProcessInstance: React.FC = () => {
+const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const navigate = useNavigate();
   const notifications = useNotifications();
@@ -99,12 +107,20 @@ const ProcessInstance: React.FC = () => {
 
   const panelMinHeight = clientHeight / 4;
 
+  const {isModificationModeEnabled} = modificationsStore.state;
+
   return (
-    <Container>
+    <Container $displayBorder={isModificationModeEnabled}>
       {processInstanceId && (
         <VisuallyHiddenH1>{`Operate Process Instance ${processInstanceId}`}</VisuallyHiddenH1>
       )}
+      {isModificationModeEnabled && (
+        <ModificationHeader>
+          Process Instance Modification Mode
+        </ModificationHeader>
+      )}
       <Breadcrumb />
+
       <ProcessInstanceHeader />
 
       <PanelContainer ref={containerRef}>
@@ -119,9 +135,27 @@ const ProcessInstance: React.FC = () => {
             <VariablePanel />
           </BottomPanel>
         </ResizablePanel>
+        {modificationsStore.state.isModificationModeEnabled && (
+          <ModificationFooter>
+            <Button
+              appearance="danger"
+              label="Discard All"
+              onCmPress={() => {
+                modificationsStore.disableModificationMode();
+              }}
+              data-testid="discard-all-button"
+            />
+            <Button
+              appearance="primary"
+              label="Apply Modifications"
+              onCmPress={() => {}}
+              data-testid="apply-modifications-button"
+            />
+          </ModificationFooter>
+        )}
       </PanelContainer>
     </Container>
   );
-};
+});
 
 export {ProcessInstance};

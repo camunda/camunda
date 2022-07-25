@@ -10,12 +10,17 @@ import {Header} from './Header';
 import {Footer, Grid} from './styled';
 import {Copyright} from 'modules/components/Copyright';
 import {Paths} from 'modules/routes';
+import {modificationsStore} from 'modules/stores/modifications';
+import {observer} from 'mobx-react';
 
-const Layout: React.FC = () => {
+const Layout: React.FC = observer(() => {
   const instancesMatch = useMatch(Paths.processes());
   const decisionsMatch = useMatch(Paths.decisions());
   const dashboardMatch = useMatch(Paths.dashboard());
-  const showFooter = instancesMatch === null && decisionsMatch === null;
+  const showFooter =
+    instancesMatch === null &&
+    decisionsMatch === null &&
+    !modificationsStore.state.isModificationModeEnabled;
 
   return (
     <Grid numberOfRows={showFooter ? 3 : 2}>
@@ -28,6 +33,6 @@ const Layout: React.FC = () => {
       )}
     </Grid>
   );
-};
+});
 
 export {Layout};
