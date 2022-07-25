@@ -92,3 +92,19 @@ _Note:_ The cache is not evicting any entries right now which can in theory lead
 
 **A:**
 ![Deployment distribution](assets/deployment_distribution.png)
+
+## How are variables from different nested flow scopes collected before e.g. a service task is called?
+
+**A:**
+When a service tasks is activated the variables are collected by traversing the flow scopes from the element to the root scope of the current process, variables are added to the map of variables if the variable key is not already part of the variables map. No variables from parent processes are collected during the traversal, unless they are mapped into the current process.
+
+When a worker specifies a list of variable names to fetch we only add variables into the collected map if their name is part of the fetch variables list, and stop once all variables are found or the root scope of the current process is found. If fetch variable contains a name of a variable which does not exist in the process then the job activation response does not contain this variable (i.e. the requested variable is ignored)
+
+## After a service task was called (job completed), how are the variables returned by it redistributed/propagated into the nested flow scopes they came from?
+
+**A:**
+
+If _no output mapping_ exists: For the payload, we look at each scope (from innermost flow scope to root scope of process) whether a variable with that name exists or not. If so, it can update the variable, otherwise it continues up another level until it reaches the current root process scope. If no variable is found there, it is created new there.
+
+If _an output mapping_ exists, we apply the output mapping over the payload first, and then look at each scope whether a variable with that name exists or not. If so, it can update the variable with the new value otherwise it continues up another level until it reaches the root process scope. If the root process scope also does not contain a variable with that name, then the variable is created new at the root process scope.
+Any variables in the payload that are not part of the output mappings will be created in the service task flow scope.

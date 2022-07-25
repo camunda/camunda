@@ -11,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.journal.file.record.CorruptedLogException;
-import io.camunda.zeebe.journal.file.record.RecordData;
-import io.camunda.zeebe.journal.file.record.SBESerializer;
+import io.camunda.zeebe.journal.CorruptedJournalException;
+import io.camunda.zeebe.journal.record.RecordData;
+import io.camunda.zeebe.journal.record.SBESerializer;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -50,9 +50,8 @@ class SegmentsManagerTest {
     final File logDirectory = directory.resolve("data").toFile();
     assertThat(logDirectory)
         .isDirectoryNotContaining(
-            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(
-            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
   }
 
   @Test
@@ -69,7 +68,7 @@ class SegmentsManagerTest {
 
     // when/then
     final var segments = createSegmentsManager(index);
-    assertThatThrownBy(segments::open).isInstanceOf(CorruptedLogException.class);
+    assertThatThrownBy(segments::open).isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test
@@ -130,7 +129,7 @@ class SegmentsManagerTest {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     return new SegmentsManager(
         journalIndex,
-        entrySize + JournalSegmentDescriptor.getEncodingLength(),
+        entrySize + SegmentDescriptor.getEncodingLength(),
         directory.resolve("data").toFile(),
         lastWrittenIndex,
         JOURNAL_NAME,
@@ -145,7 +144,7 @@ class SegmentsManagerTest {
     return SegmentedJournal.builder()
         .withDirectory(directory.resolve("data").toFile())
         .withMaxSegmentSize(
-            (int) (entrySize * entriesPerSegment) + JournalSegmentDescriptor.getEncodingLength())
+            (int) (entrySize * entriesPerSegment) + SegmentDescriptor.getEncodingLength())
         .withJournalIndexDensity(journalIndexDensity)
         .withName(JOURNAL_NAME)
         .build();

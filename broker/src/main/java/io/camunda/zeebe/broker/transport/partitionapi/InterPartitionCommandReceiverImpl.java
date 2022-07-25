@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import java.util.Optional;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -46,6 +47,9 @@ public final class InterPartitionCommandReceiverImpl {
     }
 
     logStreamWriter.reset();
+
+    decoded.recordKey.ifPresent(logStreamWriter::key);
+
     final var writeResult =
         logStreamWriter.metadataWriter(decoded.metadata).valueWriter(decoded.command).tryWrite();
     if (writeResult < 0) {
@@ -72,6 +76,11 @@ public final class InterPartitionCommandReceiverImpl {
       messageBuffer.wrap(message);
       messageDecoder.wrapAndApplyHeader(messageBuffer, 0, headerDecoder);
 
+      Optional<Long> recordKey = Optional.empty();
+      if (messageDecoder.recordKey() != InterPartitionMessageDecoder.recordKeyNullValue()) {
+        recordKey = Optional.of(messageDecoder.recordKey());
+      }
+
       final var valueType = ValueType.get(messageDecoder.valueType());
       final var intent = Intent.fromProtocolValue(valueType, messageDecoder.intent());
 
@@ -86,9 +95,10 @@ public final class InterPartitionCommandReceiverImpl {
       final var commandLength = messageDecoder.commandLength();
       commandBuffer.wrap(messageBuffer, commandOffset, commandLength);
 
-      return new Decoder.DecodedMessage(recordMetadata, commandBuffer);
+      return new Decoder.DecodedMessage(recordKey, recordMetadata, commandBuffer);
     }
 
-    record DecodedMessage(RecordMetadata metadata, BufferWriter command) {}
+    record DecodedMessage(
+        Optional<Long> recordKey, RecordMetadata metadata, BufferWriter command) {}
   }
 }

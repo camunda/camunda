@@ -9,8 +9,8 @@ package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
-import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -37,8 +37,8 @@ final class SegmentsManager {
   private static final Logger LOG = LoggerFactory.getLogger(SegmentsManager.class);
 
   private final JournalMetrics journalMetrics;
-  private final NavigableMap<Long, JournalSegment> segments = new ConcurrentSkipListMap<>();
-  private volatile JournalSegment currentSegment;
+  private final NavigableMap<Long, Segment> segments = new ConcurrentSkipListMap<>();
+  private volatile Segment currentSegment;
 
   private final JournalIndex journalIndex;
   private final int maxSegmentSize;
@@ -78,17 +78,17 @@ final class SegmentsManager {
     currentSegment = null;
   }
 
-  JournalSegment getCurrentSegment() {
+  Segment getCurrentSegment() {
     return currentSegment;
   }
 
-  JournalSegment getFirstSegment() {
-    final Map.Entry<Long, JournalSegment> segment = segments.firstEntry();
+  Segment getFirstSegment() {
+    final Map.Entry<Long, Segment> segment = segments.firstEntry();
     return segment != null ? segment.getValue() : null;
   }
 
-  JournalSegment getLastSegment() {
-    final Map.Entry<Long, JournalSegment> segment = segments.lastEntry();
+  Segment getLastSegment() {
+    final Map.Entry<Long, Segment> segment = segments.lastEntry();
     return segment != null ? segment.getValue() : null;
   }
 
@@ -98,11 +98,11 @@ final class SegmentsManager {
    * @return The next segment.
    * @throws IllegalStateException if the segment manager is not open
    */
-  JournalSegment getNextSegment() {
+  Segment getNextSegment() {
 
-    final JournalSegment lastSegment = getLastSegment();
-    final JournalSegmentDescriptor descriptor =
-        JournalSegmentDescriptor.builder()
+    final Segment lastSegment = getLastSegment();
+    final SegmentDescriptor descriptor =
+        SegmentDescriptor.builder()
             .withId(lastSegment != null ? lastSegment.descriptor().id() + 1 : 1)
             .withIndex(currentSegment.lastIndex() + 1)
             .withMaxSegmentSize(maxSegmentSize)
@@ -115,12 +115,12 @@ final class SegmentsManager {
     return currentSegment;
   }
 
-  JournalSegment getNextSegment(final long index) {
-    final Map.Entry<Long, JournalSegment> nextSegment = segments.higherEntry(index);
+  Segment getNextSegment(final long index) {
+    final Map.Entry<Long, Segment> nextSegment = segments.higherEntry(index);
     return nextSegment != null ? nextSegment.getValue() : null;
   }
 
-  JournalSegment getSegment(final long index) {
+  Segment getSegment(final long index) {
     // Check if the current segment contains the given index first in order to prevent an
     // unnecessary map lookup.
     if (currentSegment != null && index > currentSegment.index()) {
@@ -128,7 +128,7 @@ final class SegmentsManager {
     }
 
     // If the index is in another segment, get the entry with the next lowest first index.
-    final Map.Entry<Long, JournalSegment> segment = segments.floorEntry(index);
+    final Map.Entry<Long, Segment> segment = segments.floorEntry(index);
     if (segment != null) {
       return segment.getValue();
     }
@@ -141,9 +141,9 @@ final class SegmentsManager {
   }
 
   void deleteUntil(final long index) {
-    final Map.Entry<Long, JournalSegment> segmentEntry = segments.floorEntry(index);
+    final Map.Entry<Long, Segment> segmentEntry = segments.floorEntry(index);
     if (segmentEntry != null) {
-      final SortedMap<Long, JournalSegment> compactSegments =
+      final SortedMap<Long, Segment> compactSegments =
           segments.headMap(segmentEntry.getValue().index());
       if (compactSegments.isEmpty()) {
         LOG.debug(
@@ -159,7 +159,7 @@ final class SegmentsManager {
           getFirstIndex(),
           compactSegments.get(compactSegments.lastKey()).index(),
           compactSegments.size());
-      for (final JournalSegment segment : compactSegments.values()) {
+      for (final Segment segment : compactSegments.values()) {
         LOG.trace("{} - Deleting segment: {}", name, segment);
         segment.delete();
         journalMetrics.decSegmentCount();
@@ -178,15 +178,15 @@ final class SegmentsManager {
    * @param index the starting index of the journal
    * @return the first segment
    */
-  JournalSegment resetSegments(final long index) {
-    for (final JournalSegment segment : segments.values()) {
+  Segment resetSegments(final long index) {
+    for (final Segment segment : segments.values()) {
       segment.delete();
       journalMetrics.decSegmentCount();
     }
     segments.clear();
 
-    final JournalSegmentDescriptor descriptor =
-        JournalSegmentDescriptor.builder()
+    final SegmentDescriptor descriptor =
+        SegmentDescriptor.builder()
             .withId(1)
             .withIndex(index)
             .withMaxSegmentSize(maxSegmentSize)
@@ -202,7 +202,7 @@ final class SegmentsManager {
    *
    * @param segment The segment to remove.
    */
-  void removeSegment(final JournalSegment segment) {
+  void removeSegment(final Segment segment) {
     segments.remove(segment.index());
     journalMetrics.decSegmentCount();
     segment.delete();
@@ -211,12 +211,12 @@ final class SegmentsManager {
 
   /** Resets the current segment, creating a new segment if necessary. */
   private void resetCurrentSegment() {
-    final JournalSegment lastSegment = getLastSegment();
+    final Segment lastSegment = getLastSegment();
     if (lastSegment != null) {
       currentSegment = lastSegment;
     } else {
-      final JournalSegmentDescriptor descriptor =
-          JournalSegmentDescriptor.builder()
+      final SegmentDescriptor descriptor =
+          SegmentDescriptor.builder()
               .withId(1)
               .withIndex(1)
               .withMaxSegmentSize(maxSegmentSize)
@@ -233,7 +233,7 @@ final class SegmentsManager {
   void open() {
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
-    for (final JournalSegment segment : loadSegments()) {
+    for (final Segment segment : loadSegments()) {
       segments.put(segment.descriptor().index(), segment);
       journalMetrics.incSegmentCount();
     }
@@ -242,8 +242,8 @@ final class SegmentsManager {
     if (!segments.isEmpty()) {
       currentSegment = segments.lastEntry().getValue();
     } else {
-      final JournalSegmentDescriptor descriptor =
-          JournalSegmentDescriptor.builder()
+      final SegmentDescriptor descriptor =
+          SegmentDescriptor.builder()
               .withId(FIRST_SEGMENT_ID)
               .withIndex(INITIAL_INDEX)
               .withMaxSegmentSize(maxSegmentSize)
@@ -263,8 +263,8 @@ final class SegmentsManager {
     deleteDeferredFiles();
   }
 
-  private JournalSegment createSegment(final JournalSegmentDescriptor descriptor) {
-    final var segmentFile = JournalSegmentFile.createSegmentFile(name, directory, descriptor.id());
+  private Segment createSegment(final SegmentDescriptor descriptor) {
+    final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
     return segmentLoader.createSegment(
         segmentFile.toPath(), descriptor, lastWrittenIndex, journalIndex);
   }
@@ -274,10 +274,10 @@ final class SegmentsManager {
    *
    * @return A collection of segments for the log.
    */
-  private Collection<JournalSegment> loadSegments() {
+  private Collection<Segment> loadSegments() {
     // Ensure log directories are created.
     directory.mkdirs();
-    final List<JournalSegment> segments = new ArrayList<>();
+    final List<Segment> segments = new ArrayList<>();
 
     final List<File> files = getSortedLogSegments();
     for (int i = 0; i < files.size(); i++) {
@@ -285,7 +285,7 @@ final class SegmentsManager {
 
       try {
         LOG.debug("Found segment file: {}", file.getName());
-        final JournalSegment segment =
+        final Segment segment =
             segmentLoader.loadExistingSegment(file.toPath(), lastWrittenIndex, journalIndex);
 
         if (i > 0) {
@@ -293,7 +293,7 @@ final class SegmentsManager {
         }
 
         segments.add(segment);
-      } catch (final CorruptedLogException e) {
+      } catch (final CorruptedJournalException e) {
         if (handleSegmentCorruption(files, segments, i)) {
           return segments;
         }
@@ -305,9 +305,9 @@ final class SegmentsManager {
     return segments;
   }
 
-  private void checkForIndexGaps(final JournalSegment prevSegment, final JournalSegment segment) {
+  private void checkForIndexGaps(final Segment prevSegment, final Segment segment) {
     if (prevSegment.lastIndex() != segment.index() - 1) {
-      throw new CorruptedLogException(
+      throw new CorruptedJournalException(
           String.format(
               "Log segment %s is not aligned with previous segment %s (last index: %d).",
               segment, prevSegment, prevSegment.lastIndex()));
@@ -316,11 +316,11 @@ final class SegmentsManager {
 
   /** Returns true if segments after corrupted segment were deleted; false, otherwise */
   private boolean handleSegmentCorruption(
-      final List<File> files, final List<JournalSegment> segments, final int failedIndex) {
+      final List<File> files, final List<Segment> segments, final int failedIndex) {
     long lastSegmentIndex = 0;
 
     if (!segments.isEmpty()) {
-      final JournalSegment previousSegment = segments.get(segments.size() - 1);
+      final Segment previousSegment = segments.get(segments.size() - 1);
       lastSegmentIndex = previousSegment.lastIndex();
     }
 
@@ -352,7 +352,7 @@ final class SegmentsManager {
   /** Returns an array of valid log segments sorted by their id which may be empty but not null. */
   private List<File> getSortedLogSegments() {
     final File[] files =
-        directory.listFiles(file -> file.isFile() && JournalSegmentFile.isSegmentFile(name, file));
+        directory.listFiles(file -> file.isFile() && SegmentFile.isSegmentFile(name, file));
 
     if (files == null) {
       throw new IllegalStateException(
@@ -361,8 +361,7 @@ final class SegmentsManager {
               directory));
     }
 
-    Arrays.sort(
-        files, Comparator.comparingInt(f -> JournalSegmentFile.getSegmentIdFromPath(f.getName())));
+    Arrays.sort(files, Comparator.comparingInt(f -> SegmentFile.getSegmentIdFromPath(f.getName())));
 
     return Arrays.asList(files);
   }
@@ -371,7 +370,7 @@ final class SegmentsManager {
     try (final DirectoryStream<Path> segmentsToDelete =
         Files.newDirectoryStream(
             directory.toPath(),
-            path -> JournalSegmentFile.isDeletedSegmentFile(name, path.getFileName().toString()))) {
+            path -> SegmentFile.isDeletedSegmentFile(name, path.getFileName().toString()))) {
       segmentsToDelete.forEach(this::deleteDeferredFile);
     } catch (final IOException e) {
       LOG.warn(

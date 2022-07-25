@@ -49,7 +49,7 @@
     <version.docker-java-api>3.2.13</version.docker-java-api>
     <version.elasticsearch>7.17.0</version.elasticsearch>
     <version.error-prone>2.14.0</version.error-prone>
-    <version.grpc>1.47.0</version.grpc>
+    <version.grpc>1.48.0</version.grpc>
     <version.gson>2.9.0</version.gson>
     <version.guava>31.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -88,7 +88,7 @@
     <version.dmn-scala>1.7.3</version.dmn-scala>
     <version.rest-assured>5.1.1</version.rest-assured>
     <version.spring>5.3.22</version.spring>
-    <version.spring-boot>2.7.1</version.spring-boot>
+    <version.spring-boot>2.7.2</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.3.0</version.kryo>
     <version.awaitility>4.0.3</version.awaitility>
@@ -130,7 +130,7 @@
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.2.0</plugin.version.resources>
     <plugin.version.revapi>0.14.7</plugin.version.revapi>
-    <plugin.version.scala>4.6.3</plugin.version.scala>
+    <plugin.version.scala>4.7.0</plugin.version.scala>
     <plugin.version.shade>3.3.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.7.1.0</plugin.version.spotbugs>
@@ -607,12 +607,6 @@
       </dependency>
 
       <dependency>
-        <groupId>com.google.code.gson</groupId>
-        <artifactId>gson</artifactId>
-        <version>${version.gson}</version>
-      </dependency>
-
-      <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
         <version>${version.zeebe-test-container}</version>
@@ -923,6 +917,13 @@
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-core</artifactId>
         <version>${version.hamcrest}</version>
+      </dependency>
+
+      <!-- grpc-core & protobuf-java-util require different versions of gson -->
+      <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>${version.gson}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

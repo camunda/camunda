@@ -10,16 +10,12 @@ package io.camunda.zeebe.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.Engine;
-import io.camunda.zeebe.engine.api.RecordProcessor;
+import io.camunda.zeebe.engine.EngineContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
-import io.camunda.zeebe.engine.processing.streamprocessor.LastProcessingPositions;
-import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -117,9 +113,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private volatile long lastTickTime;
   private boolean shouldProcess = true;
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
-  private final Function<LogStreamBatchWriter, TypedStreamWriter> typedStreamWriterFactory;
+  private final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> typedStreamWriterFactory;
 
-  private final RecordProcessor engine;
+  private final Engine engine;
   private StreamProcessorDbState streamProcessorDbState;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
@@ -143,7 +139,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     actorName = buildActorName(processorBuilder.getNodeId(), "StreamProcessor", partitionId);
     metrics = new StreamProcessorMetrics(partitionId);
 
-    engine = new Engine(partitionId, zeebeDb, processorBuilder.getEventApplierFactory());
+    engine = new Engine();
   }
 
   public static StreamProcessorBuilder builder() {
@@ -180,7 +176,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       final var startRecoveryTimer = metrics.startRecoveryTimer();
       final long snapshotPosition = recoverFromSnapshot();
 
-      initProcessors();
+      initEngine();
 
       healthCheckTick();
 
@@ -289,13 +285,15 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
           .maxFragmentSize(batchWriter.getMaxFragmentLength())
           .logStreamWriter(typedStreamWriterFactory.apply(batchWriter));
 
+      streamProcessorContext.logStreamBatchWriter(batchWriter);
+
       phase = Phase.PROCESSING;
 
       // enable writing records to the stream
       streamProcessorContext.enableLogStreamWriter();
 
       processingStateMachine =
-          new ProcessingStateMachine(streamProcessorContext, this::shouldProcessNext);
+          new ProcessingStateMachine(streamProcessorContext, this::shouldProcessNext, engine);
 
       logStream.registerRecordAvailableListener(this);
 
@@ -330,14 +328,25 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     return openFuture;
   }
 
-  private void initProcessors() {
-    final TypedRecordProcessors typedRecordProcessors =
-        typedRecordProcessorFactory.createProcessors(streamProcessorContext);
+  private void initEngine() {
+    final var engineContext =
+        new EngineContext(
+            partitionId,
+            streamProcessorContext.getScheduleService(),
+            zeebeDb,
+            streamProcessorContext.getTransactionContext(),
+            streamProcessorContext.getLogStreamWriter(),
+            streamProcessorContext.getTypedResponseWriter(),
+            eventApplierFactory,
+            typedRecordProcessorFactory);
+    engine.init(engineContext);
 
-    lifecycleAwareListeners.addAll(typedRecordProcessors.getLifecycleListeners());
-    final RecordProcessorMap recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
-
-    streamProcessorContext.recordProcessorMap(recordProcessorMap);
+    lifecycleAwareListeners.addAll(engineContext.getLifecycleListeners());
+    final var listener = engineContext.getStreamProcessorListener();
+    if (listener != null) {
+      streamProcessorContext.listener(engineContext.getStreamProcessorListener());
+    }
+    streamProcessorContext.writers(engineContext.getWriters());
   }
 
   private long recoverFromSnapshot() {

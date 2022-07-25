@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.Objects;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -40,6 +41,16 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
       final ValueType valueType,
       final Intent intent,
       final BufferWriter command) {
+    sendCommand(receiverPartitionId, valueType, intent, null, command);
+  }
+
+  @Override
+  public void sendCommand(
+      final int receiverPartitionId,
+      final ValueType valueType,
+      final Intent intent,
+      final Long recordKey,
+      final BufferWriter command) {
     final var partitionLeaders = partitionListener.getPartitionLeaders();
     if (!partitionLeaders.containsKey(receiverPartitionId)) {
       LOG.warn(
@@ -58,7 +69,7 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
         receiverPartitionId,
         partitionLeader);
 
-    final var message = Encoder.encode(receiverPartitionId, valueType, intent, command);
+    final var message = Encoder.encode(receiverPartitionId, valueType, intent, recordKey, command);
 
     communicationService.unicast(
         TOPIC_PREFIX + receiverPartitionId, message, MemberId.from("" + partitionLeader));
@@ -70,6 +81,7 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
         final int receiverPartitionId,
         final ValueType valueType,
         final Intent intent,
+        final Long recordKey,
         final BufferWriter command) {
       final var messageLength =
           MessageHeaderEncoder.ENCODED_LENGTH
@@ -88,6 +100,11 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
           .valueType(valueType.value())
           .intent(intent.value())
           .putCommand(commandBuffer, 0, command.getLength());
+
+      bodyEncoder.recordKey(
+          Objects.requireNonNullElseGet(
+              recordKey, InterPartitionMessageEncoder::recordKeyNullValue));
+
       return messageBuffer.byteArray();
     }
   }

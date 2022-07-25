@@ -36,10 +36,13 @@ public interface ProcessingResultBuilder {
    * @return returns itself for method chaining
    */
   ProcessingResultBuilder withResponse(
-      final long eventKey,
-      final Intent eventState,
-      final UnpackedObject eventValue,
+      final RecordType type,
+      final long key,
+      final Intent intent,
+      final UnpackedObject value,
       final ValueType valueType,
+      final RejectionType rejectionType,
+      final String rejectionReason,
       final long requestId,
       final int requestStreamId);
 
@@ -49,7 +52,7 @@ public interface ProcessingResultBuilder {
    *
    * @return returns itself for method chaining
    */
-  ProcessingResultBuilder appendPostCommitTask(Runnable r);
+  ProcessingResultBuilder appendPostCommitTask(PostCommitTask task);
 
   /**
    * Resets the processing result build to its initial states (removes all follow-up records, the
@@ -59,5 +62,16 @@ public interface ProcessingResultBuilder {
    */
   ProcessingResultBuilder reset();
 
+  /**
+   * Resets itself with the post commit tasks reset
+   *
+   * @return itself for method chaining
+   */
+  ProcessingResultBuilder resetPostCommitTasks();
+
   ProcessingResult build();
+
+  boolean canWriteEventOfLength(int eventLength);
+
+  int getMaxEventLength();
 }

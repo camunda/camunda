@@ -9,10 +9,10 @@ package io.camunda.zeebe.engine.processing.timer;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -39,8 +39,8 @@ public final class CancelTimerProcessor implements TypedRecordProcessor<TimerRec
   @Override
   public void processRecord(
       final TypedRecord<TimerRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+      final LegacyTypedResponseWriter responseWriter,
+      final LegacyTypedStreamWriter streamWriter) {
     final TimerRecord timer = record.getValue();
     final TimerInstance timerInstance =
         timerInstanceState.get(timer.getElementInstanceKey(), record.getKey());

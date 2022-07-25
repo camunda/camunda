@@ -16,7 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedCommandWriter;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.TriggerTimersSideEffect;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.YieldingDecorator;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
@@ -45,7 +45,7 @@ class DueDateTimerCheckerTest {
        */
 
       // given
-      final var mockTypedCommandWriter = mock(TypedCommandWriter.class);
+      final var mockTypedCommandWriter = mock(LegacyTypedCommandWriter.class);
       when(mockTypedCommandWriter.flush()).thenReturn(1L);
 
       final var mockTimer = mock(TimerInstance.class, Mockito.RETURNS_DEEP_STUBS);

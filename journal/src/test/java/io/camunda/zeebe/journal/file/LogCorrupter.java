@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.journal.file;
 
-import io.camunda.zeebe.journal.file.record.JournalRecordReaderUtil;
-import io.camunda.zeebe.journal.file.record.SBESerializer;
+import io.camunda.zeebe.journal.record.JournalRecordReaderUtil;
+import io.camunda.zeebe.journal.record.SBESerializer;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -17,7 +17,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class LogCorrupter {
+public final class LogCorrupter {
 
   /**
    * Corrupts the record associated with the specified index, if it's present in the file.
@@ -52,7 +52,7 @@ public class LogCorrupter {
   }
 
   public static void corruptDescriptor(final File file) throws IOException {
-    final byte[] bytes = new byte[JournalSegmentDescriptor.getEncodingLength()];
+    final byte[] bytes = new byte[SegmentDescriptor.getEncodingLength()];
     int read;
 
     try (final BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
@@ -76,7 +76,7 @@ public class LogCorrupter {
   private static boolean corruptRecord(final byte[] bytes, final long targetIndex) {
     final JournalRecordReaderUtil reader = new JournalRecordReaderUtil(new SBESerializer());
     final ByteBuffer buffer = ByteBuffer.wrap(bytes);
-    buffer.position(JournalSegmentDescriptor.getEncodingLength());
+    buffer.position(SegmentDescriptor.getEncodingLength());
 
     for (long index = 1;
         FrameUtil.hasValidVersion(buffer) && FrameUtil.readVersion(buffer) == 1;

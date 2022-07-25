@@ -96,8 +96,8 @@ public class SegmentedJournalBuilder {
    */
   public SegmentedJournalBuilder withMaxSegmentSize(final int maxSegmentSize) {
     checkArgument(
-        maxSegmentSize > JournalSegmentDescriptor.getEncodingLength(),
-        "maxSegmentSize must be greater than " + JournalSegmentDescriptor.getEncodingLength());
+        maxSegmentSize > SegmentDescriptor.getEncodingLength(),
+        "maxSegmentSize must be greater than " + SegmentDescriptor.getEncodingLength());
     this.maxSegmentSize = maxSegmentSize;
     return this;
   }
@@ -147,7 +147,9 @@ public class SegmentedJournalBuilder {
 
   public SegmentedJournal build() {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
-    final var segmentLoader = new SegmentLoader(preallocateSegmentFiles);
+    final var segmentAllocator =
+        preallocateSegmentFiles ? SegmentAllocator.fill() : SegmentAllocator.noop();
+    final var segmentLoader = new SegmentLoader(segmentAllocator);
     final var segmentsManager =
         new SegmentsManager(
             journalIndex, maxSegmentSize, directory, lastWrittenIndex, name, segmentLoader);

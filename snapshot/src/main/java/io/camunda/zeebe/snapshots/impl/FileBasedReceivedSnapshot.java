@@ -99,7 +99,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     final var tmpSnapshotDirectory = directory;
     try {
       FileUtil.ensureDirectoryExists(tmpSnapshotDirectory);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new SnapshotWriteException(
           String.format("Failed to ensure that directory %s exists.", tmpSnapshotDirectory), e);
     }
@@ -174,7 +174,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   private void writeReceivedSnapshotChunk(
       final SnapshotChunk snapshotChunk, final Path snapshotFile) throws SnapshotWriteException {
-    try (var channel =
+    try (final var channel =
         FileChannel.open(snapshotFile, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
       final ByteBuffer buffer = ByteBuffer.wrap(snapshotChunk.getContent());
 
@@ -185,7 +185,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       }
 
       channel.force(true);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new SnapshotWriteException(
           String.format("Failed to write snapshot chunk %s", snapshotChunk), e);
     }
@@ -273,7 +273,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         + "directory="
         + directory
         + ", snapshotStore="
-        + snapshotStore
+        + snapshotStore.getName()
         + ", metadata="
         + metadata
         + '}';

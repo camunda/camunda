@@ -20,11 +20,10 @@ import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -45,6 +44,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -243,7 +243,7 @@ public final class TestStreams {
       final String log,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory,
-      final Function<LogStreamBatchWriter, TypedStreamWriter> streamWriterFactory) {
+      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory) {
     final SynchronousLogStream stream = getLogStream(log);
     return buildStreamProcessor(
         stream, zeebeDbFactory, typedRecordProcessorFactory, streamWriterFactory, false);
@@ -253,7 +253,7 @@ public final class TestStreams {
       final SynchronousLogStream stream,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory factory,
-      final Function<LogStreamBatchWriter, TypedStreamWriter> streamWriterFactory,
+      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory,
       final boolean awaitOpening) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);

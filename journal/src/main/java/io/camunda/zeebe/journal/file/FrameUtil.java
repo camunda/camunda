@@ -17,7 +17,7 @@ package io.camunda.zeebe.journal.file;
 
 import java.nio.ByteBuffer;
 
-public final class FrameUtil {
+final class FrameUtil {
 
   private static final byte VERSION = 1;
   private static final byte IGNORE = 0;
@@ -25,18 +25,18 @@ public final class FrameUtil {
 
   private FrameUtil() {}
 
-  public static void writeVersion(final ByteBuffer buffer, final int offset) {
+  static void writeVersion(final ByteBuffer buffer, final int offset) {
     write(buffer, offset, VERSION);
   }
 
-  public static void markAsIgnored(final ByteBuffer buffer, final int offset) {
+  static void markAsIgnored(final ByteBuffer buffer, final int offset) {
     write(buffer, offset, IGNORE);
   }
 
   /**
    * Reads the version at buffer's current position. The position of the buffer will be advanced.
    */
-  public static int readVersion(final ByteBuffer buffer) {
+  static int readVersion(final ByteBuffer buffer) {
     return buffer.get();
   }
 
@@ -44,14 +44,14 @@ public final class FrameUtil {
    * Returns true if there is a valid version at buffer's current position. The position of the
    * buffer will be unchanged.
    */
-  public static boolean hasValidVersion(final ByteBuffer buffer) {
+  static boolean hasValidVersion(final ByteBuffer buffer) {
     if (buffer.capacity() < buffer.position() + LENGTH) {
       return false;
     }
     return buffer.get(buffer.position()) != IGNORE;
   }
 
-  public static int getLength() {
+  static int getLength() {
     return LENGTH;
   }
 
