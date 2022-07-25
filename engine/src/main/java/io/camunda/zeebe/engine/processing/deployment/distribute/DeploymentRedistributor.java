@@ -83,12 +83,12 @@ public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
         pending.deploymentKey, pending.partitionId, copiedDeploymentBuffer);
   }
 
-  private boolean shouldRetryNow(final PendingDistribution distributionKey) {
+  private boolean shouldRetryNow(final PendingDistribution pendingDistribution) {
     // attempt starts off at 0, ensuring that we wait between DEPLOYMENT_REDISTRIBUTION_INTERVAL and
     // 2 * DEPLOYMENT_REDISTRIBUTION_INTERVAL before retrying distribution.
     final long attempt =
         distributionAttempts.compute(
-            distributionKey, (k, attempts) -> attempts != null ? attempts + 1 : 0L);
+            pendingDistribution, (k, attempts) -> attempts != null ? attempts + 1 : 0L);
 
     if (attempt >= RETRY_MAX_BACKOFF_ATTEMPTS) {
       // Retry in intervals of RETRY_MAX_BACKOFF_DURATION
