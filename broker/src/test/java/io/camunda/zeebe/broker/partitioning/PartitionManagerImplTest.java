@@ -61,7 +61,6 @@ public final class PartitionManagerImplTest {
             mockClusterServices,
             mock(BrokerHealthCheckService.class),
             null,
-            null,
             new ArrayList<>(),
             null,
             mock(ExporterRepository.class));
@@ -85,7 +84,6 @@ public final class PartitionManagerImplTest {
             new BrokerInfo(1, "dummy"),
             mockClusterServices,
             mock(BrokerHealthCheckService.class),
-            null,
             null,
             new ArrayList<>(),
             null,

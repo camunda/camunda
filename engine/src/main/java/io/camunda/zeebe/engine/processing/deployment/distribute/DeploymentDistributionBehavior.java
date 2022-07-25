@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
-import io.camunda.zeebe.engine.api.LegacyTask;
-import io.camunda.zeebe.engine.api.ProcessingScheduleService;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.Protocol;
@@ -18,7 +15,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -28,26 +24,23 @@ public final class DeploymentDistributionBehavior {
 
   private final DeploymentDistributionRecord deploymentDistributionRecord =
       new DeploymentDistributionRecord();
-
   private final DeploymentRecord emptyDeploymentRecord = new DeploymentRecord();
 
   private final List<Integer> otherPartitions;
-  private final DeploymentDistributor deploymentDistributor;
-  private final ProcessingScheduleService scheduleService;
+  private final DeploymentDistributionCommandSender deploymentDistributionCommandSender;
+
   private final StateWriter stateWriter;
 
   public DeploymentDistributionBehavior(
       final Writers writers,
       final int partitionsCount,
-      final DeploymentDistributor deploymentDistributor,
-      final ProcessingScheduleService scheduleService) {
+      final DeploymentDistributionCommandSender deploymentDistributionCommandSender) {
     otherPartitions =
         IntStream.range(Protocol.START_PARTITION_ID, Protocol.START_PARTITION_ID + partitionsCount)
             .filter(partition -> partition != Protocol.DEPLOYMENT_PARTITION)
             .boxed()
             .collect(Collectors.toList());
-    this.deploymentDistributor = deploymentDistributor;
-    this.scheduleService = scheduleService;
+    this.deploymentDistributionCommandSender = deploymentDistributionCommandSender;
 
     stateWriter = writers.state();
   }
@@ -61,7 +54,7 @@ public final class DeploymentDistributionBehavior {
           stateWriter.appendFollowUpEvent(
               key, DeploymentDistributionIntent.DISTRIBUTING, deploymentDistributionRecord);
 
-          distributeDeploymentToPartition(partitionId, key, copiedDeploymentBuffer);
+          distributeDeploymentToPartition(key, partitionId, copiedDeploymentBuffer);
         });
 
     if (otherPartitions.isEmpty()) {
@@ -75,41 +68,9 @@ public final class DeploymentDistributionBehavior {
   }
 
   public void distributeDeploymentToPartition(
-      final int partitionId, final long key, final DirectBuffer copiedDeploymentBuffer) {
-    final var deploymentPushedFuture =
-        deploymentDistributor.pushDeploymentToPartition(key, partitionId, copiedDeploymentBuffer);
-
-    scheduleService.runOnCompletion(
-        deploymentPushedFuture, new WriteDeploymentDistributionCompleteTask(partitionId, key));
-  }
-
-  private static final class WriteDeploymentDistributionCompleteTask implements LegacyTask {
-
-    private final DeploymentDistributionRecord deploymentDistributionRecord =
-        new DeploymentDistributionRecord();
-
-    private final int partitionId;
-    private final long key;
-
-    private WriteDeploymentDistributionCompleteTask(final int partitionId, final long key) {
-      this.partitionId = partitionId;
-      this.key = key;
-    }
-
-    @Override
-    public void run(
-        final LegacyTypedCommandWriter commandWriter,
-        final ProcessingScheduleService schedulingService) {
-
-      deploymentDistributionRecord.setPartition(partitionId);
-      commandWriter.reset();
-      commandWriter.appendFollowUpCommand(
-          key, DeploymentDistributionIntent.COMPLETE, deploymentDistributionRecord);
-
-      final long pos = commandWriter.flush();
-      if (pos < 0) {
-        schedulingService.runDelayed(Duration.ofMillis(100), this);
-      }
-    }
+      final long key, final int partitionId, final DirectBuffer copiedDeploymentBuffer) {
+    final var deploymentRecord = new DeploymentRecord();
+    deploymentRecord.wrap(copiedDeploymentBuffer);
+    deploymentDistributionCommandSender.distributeToPartition(key, partitionId, deploymentRecord);
   }
 }
