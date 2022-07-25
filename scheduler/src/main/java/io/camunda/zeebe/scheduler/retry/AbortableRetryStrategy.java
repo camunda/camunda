@@ -10,6 +10,7 @@ package io.camunda.zeebe.scheduler.retry;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.retry.ActorRetryMechanism.Control;
 import java.util.function.BooleanSupplier;
 
 public final class AbortableRetryStrategy implements RetryStrategy {
@@ -34,17 +35,19 @@ public final class AbortableRetryStrategy implements RetryStrategy {
     currentFuture = new CompletableActorFuture<>();
     retryMechanism.wrap(callable, condition, currentFuture);
 
-    actor.runUntilDone(this::run);
+    actor.run(this::run);
 
     return currentFuture;
   }
 
   private void run() {
     try {
-      retryMechanism.run();
+      final var control = retryMechanism.run();
+      if (control == Control.RETRY) {
+        actor.submit(this::run);
+      }
     } catch (final Exception exception) {
       currentFuture.completeExceptionally(exception);
-      actor.done();
     }
   }
 }

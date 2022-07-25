@@ -32,15 +32,20 @@ public final class ActorRetryMechanism {
     currentFuture = resultFuture;
   }
 
-  void run() throws Exception {
+  Control run() throws Exception {
     if (currentCallable.run()) {
       currentFuture.complete(true);
-      actor.done();
+      return Control.DONE;
     } else if (currentTerminateCondition.getAsBoolean()) {
       currentFuture.complete(false);
-      actor.done();
+      return Control.DONE;
     } else {
-      actor.yieldThread();
+      return Control.RETRY;
     }
+  }
+
+  enum Control {
+    RETRY,
+    DONE;
   }
 }

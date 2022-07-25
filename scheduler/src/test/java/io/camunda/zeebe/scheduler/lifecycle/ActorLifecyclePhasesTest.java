@@ -235,17 +235,19 @@ public final class ActorLifecyclePhasesTest {
           @Override
           public void onActorStarted() {
             super.onActorStarted();
+            actor.submit(this::triggerFailure);
+          }
 
-            actor.runUntilDone(
-                () -> {
-                  final int inv = invocations.getAndIncrement();
+          @Override
+          protected void handleFailure(final Throwable failure) {
+            final int inv = invocations.getAndIncrement();
+            if (inv < 10) {
+              actor.submit(this::triggerFailure);
+            }
+          }
 
-                  if (inv == 0) {
-                    throw new RuntimeException("foo");
-                  } else if (inv == 10) {
-                    actor.done();
-                  }
-                });
+          private void triggerFailure() {
+            throw new RuntimeException("fail");
           }
         };
 

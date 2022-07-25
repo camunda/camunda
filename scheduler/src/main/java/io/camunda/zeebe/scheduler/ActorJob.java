@@ -27,8 +27,6 @@ public final class ActorJob {
   private Callable<?> callable;
   private Runnable runnable;
   private Object invocationResult;
-  private boolean isAutoCompleting;
-  private boolean isDoneCalled;
   private ActorFuture resultFuture;
   private ActorSubscription subscription;
   private long scheduledAt = -1;
@@ -58,7 +56,7 @@ public final class ActorJob {
       actorThread = null;
 
       // in any case, success or exception, decide if the job should be resubmitted
-      if (isTriggeredBySubscription() || (isAutoCompleting && runnable == null) || isDoneCalled) {
+      if (isTriggeredBySubscription() || runnable == null) {
         schedulingState = TaskSchedulingState.TERMINATED;
       } else {
         schedulingState = TaskSchedulingState.QUEUED;
@@ -87,17 +85,11 @@ public final class ActorJob {
     if (callable != null) {
       invocationResult = callable.call();
     } else {
+      // only tasks triggered by a subscription can "yield"; everything else just executes once
       if (!isTriggeredBySubscription()) {
-        // TODO: preempt after fixed number of iterations
-        while (runnable != null && !task.shouldYield && !isDoneCalled) {
-          final Runnable r = runnable;
-
-          if (isAutoCompleting) {
-            runnable = null;
-          }
-
-          r.run();
-        }
+        final Runnable r = runnable;
+        runnable = null;
+        r.run();
       } else {
         runnable.run();
       }
@@ -127,24 +119,9 @@ public final class ActorJob {
     callable = null;
     runnable = null;
     invocationResult = null;
-    isAutoCompleting = true;
-    isDoneCalled = false;
 
     resultFuture = null;
     subscription = null;
-  }
-
-  public void markDone() {
-    if (isAutoCompleting) {
-      throw new UnsupportedOperationException(
-          "Incorrect use of actor.done(). Can only be called in methods submitted using actor.runUntilDone(Runnable r)");
-    }
-
-    isDoneCalled = true;
-  }
-
-  public void setAutoCompleting(final boolean isAutoCompleting) {
-    this.isAutoCompleting = isAutoCompleting;
   }
 
   @Override
