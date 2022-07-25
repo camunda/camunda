@@ -146,11 +146,11 @@ public final class DbDecisionState implements MutableDecisionState {
   public void storeDecisionRecord(final DecisionRecord record) {
     dbDecisionKey.wrapLong(record.getDecisionKey());
     dbPersistedDecision.wrap(record);
-    decisionsByKey.insert(dbDecisionKey, dbPersistedDecision);
+    decisionsByKey.upsert(dbDecisionKey, dbPersistedDecision);
 
     dbDecisionKey.wrapLong(record.getDecisionKey());
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
-    decisionKeyByDecisionRequirementsKey.insert(
+    decisionKeyByDecisionRequirementsKey.upsert(
         dbDecisionRequirementsKeyAndDecisionKey, DbNil.INSTANCE);
 
     updateLatestDecisionVersion(record);
@@ -160,7 +160,7 @@ public final class DbDecisionState implements MutableDecisionState {
   public void storeDecisionRequirements(final DecisionRequirementsRecord record) {
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
     dbPersistedDecisionRequirements.wrap(record);
-    decisionRequirementsByKey.insert(dbDecisionRequirementsKey, dbPersistedDecisionRequirements);
+    decisionRequirementsByKey.upsert(dbDecisionRequirementsKey, dbPersistedDecisionRequirements);
 
     updateLatestDecisionRequirementsVersion(record);
   }
@@ -185,7 +185,7 @@ public final class DbDecisionState implements MutableDecisionState {
   private void insertDecisionAsLatestVersion(final DecisionRecord record) {
     dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
     dbDecisionKey.wrapLong(record.getDecisionKey());
-    latestDecisionKeysByDecisionId.insert(dbDecisionId, fkDecision);
+    latestDecisionKeysByDecisionId.upsert(dbDecisionId, fkDecision);
   }
 
   private void updateLatestDecisionRequirementsVersion(final DecisionRequirementsRecord record) {
@@ -209,6 +209,6 @@ public final class DbDecisionState implements MutableDecisionState {
   private void insertDecisionRequirementsAsLatestVersion(final DecisionRequirementsRecord record) {
     dbDecisionRequirementsId.wrapBuffer(record.getDecisionRequirementsIdBuffer());
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
-    latestDecisionRequirementsKeysById.insert(dbDecisionRequirementsId, fkDecisionRequirements);
+    latestDecisionRequirementsKeysById.upsert(dbDecisionRequirementsId, fkDecisionRequirements);
   }
 }
