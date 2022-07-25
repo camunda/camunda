@@ -17,7 +17,9 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.sched.ActorControl;
+import java.time.Duration;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
@@ -79,20 +81,36 @@ public final class DeploymentDistributionBehavior {
         deploymentDistributor.pushDeploymentToPartition(key, partitionId, copiedDeploymentBuffer);
 
     deploymentPushedFuture.onComplete(
-        (v, t) ->
-            processingActor.runUntilDone(
-                () -> {
-                  deploymentDistributionRecord.setPartition(partitionId);
-                  commandWriter.reset();
-                  commandWriter.appendFollowUpCommand(
-                      key, DeploymentDistributionIntent.COMPLETE, deploymentDistributionRecord);
+        new WriteDeploymentDistributionCompleteTask(partitionId, key));
+  }
 
-                  final long pos = commandWriter.flush();
-                  if (pos < 0) {
-                    processingActor.yieldThread();
-                  } else {
-                    processingActor.done();
-                  }
-                }));
+  private final class WriteDeploymentDistributionCompleteTask
+      implements Runnable, BiConsumer<Void, Throwable> {
+
+    private final int partitionId;
+    private final long key;
+
+    private WriteDeploymentDistributionCompleteTask(final int partitionId, final long key) {
+      this.partitionId = partitionId;
+      this.key = key;
+    }
+
+    @Override
+    public void run() {
+      deploymentDistributionRecord.setPartition(partitionId);
+      commandWriter.reset();
+      commandWriter.appendFollowUpCommand(
+          key, DeploymentDistributionIntent.COMPLETE, deploymentDistributionRecord);
+
+      final long pos = commandWriter.flush();
+      if (pos < 0) {
+        processingActor.runDelayed(Duration.ofMillis(100), this);
+      }
+    }
+
+    @Override
+    public void accept(final Void unused, final Throwable throwable) {
+      run();
+    }
   }
 }
