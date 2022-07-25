@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {runAllEffects, runAllCleanups} from 'react';
 import {shallow} from 'enzyme';
 
 import {Header, Footer} from '..';
@@ -28,6 +28,10 @@ jest.mock('notifications', () => ({
   showError: jest.fn(),
 }));
 
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
 it('should render the component if the user is logged in', () => {
   const node = shallow(<PrivateRoute component={TestComponent} />).renderProp('render')({});
 
@@ -49,23 +53,29 @@ it('should use render method to render a component when specified', () => {
 it('should render the login component', () => {
   const node = shallow(<PrivateRoute component={TestComponent} />);
 
-  node.setState({showLogin: true}, () => {
-    const wrapper = node.renderProp('render')({});
-    expect(wrapper.find(Login)).toExist();
-  });
+  runAllEffects();
+
+  const handler = addHandler.mock.calls[0][0];
+  handler({status: 401}, {url: 'api/entities'});
+
+  const wrapper = node.renderProp('render')({});
+  expect(wrapper.find(Login)).toExist();
 });
 
 it('should register a response handler', () => {
   shallow(<PrivateRoute component={TestComponent} />);
 
+  runAllEffects();
+
   expect(addHandler).toHaveBeenCalled();
 });
 
 describe('session timeout', () => {
-  const handler = addHandler.mock.calls[0][0];
-  beforeEach(() => {
-    showError.mockClear();
-  });
+  shallow(<PrivateRoute component={TestComponent} />);
+
+  runAllEffects();
+
+  const handler = addHandler.mock.calls[1][0];
 
   it('should not show an error message if the user comes to the page initially', () => {
     handler({status: 401}, {url: 'api/entities'});
@@ -90,10 +100,9 @@ describe('session timeout', () => {
 });
 
 it('should unregister the response handler when it is destroyed', async () => {
-  const node = shallow(<PrivateRoute component={TestComponent} />);
+  shallow(<PrivateRoute component={TestComponent} />);
 
-  await flushPromises();
-  node.unmount();
+  runAllCleanups();
 
   expect(removeHandler).toHaveBeenCalled();
 });
@@ -109,7 +118,10 @@ it('should include a header and footer page', () => {
 
 it('should not include a header when showing the login screen', () => {
   const node = shallow(<PrivateRoute component={TestComponent} />);
-  node.setState({showLogin: true});
+  runAllEffects();
+
+  const handler = addHandler.mock.calls[0][0];
+  handler({status: 401}, {url: 'api/entities'});
 
   const content = node.find('Route').renderProp('render')();
 
