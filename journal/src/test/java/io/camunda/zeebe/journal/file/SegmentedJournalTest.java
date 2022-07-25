@@ -20,28 +20,24 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
-import io.camunda.zeebe.journal.file.record.CorruptedLogException;
-import io.camunda.zeebe.journal.file.record.RecordData;
-import io.camunda.zeebe.journal.file.record.SBESerializer;
+import io.camunda.zeebe.journal.record.PersistedJournalRecord;
+import io.camunda.zeebe.journal.record.RecordData;
+import io.camunda.zeebe.journal.record.SBESerializer;
+import io.camunda.zeebe.journal.util.PosixPathAssert;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import jnr.posix.FileStat;
-import jnr.posix.POSIX;
-import jnr.posix.POSIXFactory;
-import jnr.posix.util.Platform;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@SuppressWarnings("resource")
 class SegmentedJournalTest {
   private static final String JOURNAL_NAME = "journal";
 
@@ -378,7 +374,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldHandlePartiallyWrittenDescriptor() throws Exception {
+  void shouldContinueAppendAfterDetectingPartiallyWrittenDescriptor() throws Exception {
     // given
     final File dataFile = getJournalDirectory();
     assertThat(dataFile.mkdirs()).isTrue();
@@ -398,7 +394,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldHandleCorruptionAtDescriptorWithoutAckedEntries() throws Exception {
+  void shouldContinueWritingAfterDetectingCorruptedDescriptorWithOutAckEntries() throws Exception {
     // given
     var journal = openJournal(1);
     journal.close();
@@ -423,7 +419,14 @@ class SegmentedJournalTest {
   void shouldHandleCorruptionAtDescriptorWithSomeAckedEntries() throws Exception {
     // given
     var journal = openJournal(1);
-    final var firstRecord = JournalTest.copyRecord(journal.append(data));
+    final var firstRecord = (PersistedJournalRecord) journal.append(data);
+    final var copiedFirstRecord =
+        new PersistedJournalRecord(
+            firstRecord.metadata(),
+            new RecordData(
+                firstRecord.index(),
+                firstRecord.asqn(),
+                BufferUtil.cloneBuffer(firstRecord.data())));
     journal.append(data);
 
     journal.close();
@@ -438,35 +441,11 @@ class SegmentedJournalTest {
     final var lastRecord = journal.append(data);
 
     // then
-    assertThat(journal.getFirstIndex()).isEqualTo(firstRecord.index());
+    assertThat(journal.getFirstIndex()).isEqualTo(copiedFirstRecord.index());
     assertThat(journal.getLastIndex()).isEqualTo(lastRecord.index());
-    assertThat(reader.next()).isEqualTo(firstRecord);
+    assertThat(reader.next()).isEqualTo(copiedFirstRecord);
     assertThat(reader.next()).isEqualTo(lastRecord);
     assertThat(reader.hasNext()).isFalse();
-  }
-
-  @Test
-  void shouldDetectCorruptionAtDescriptorWithAckedEntries() throws Exception {
-    // given
-    final var journal = openJournal(1);
-    final long index = journal.append(data).index();
-
-    journal.close();
-    final File dataFile = getJournalDirectory();
-    final File logFile =
-        Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith(".log")))[0];
-    LogCorrupter.corruptDescriptor(logFile);
-
-    // when/then
-    assertThatThrownBy(
-            () ->
-                SegmentedJournal.builder()
-                    .withDirectory(getJournalDirectory())
-                    .withMaxSegmentSize(entrySize + JournalSegmentDescriptor.getEncodingLength())
-                    .withJournalIndexDensity(journalIndexDensity)
-                    .withLastWrittenIndex(index)
-                    .build())
-        .isInstanceOf(CorruptedLogException.class);
   }
 
   @Test
@@ -485,9 +464,8 @@ class SegmentedJournalTest {
     final File logDirectory = getJournalDirectory();
     assertThat(logDirectory)
         .isDirectoryContaining(
-            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(
-            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
   }
 
   @Test
@@ -560,9 +538,8 @@ class SegmentedJournalTest {
     final File logDirectory = getJournalDirectory();
     assertThat(logDirectory)
         .isDirectoryNotContaining(
-            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(
-            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
   }
 
   @Test
@@ -578,31 +555,8 @@ class SegmentedJournalTest {
     final File logDirectory = getJournalDirectory();
     assertThat(logDirectory)
         .isDirectoryNotContaining(
-            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(
-            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
-  }
-
-  @Test
-  void shouldDeleteFilesMarkedForDeletionsOnLoad() {
-    // given
-    final var journal = openJournal(2);
-    journal.append(data);
-    journal.openReader();
-    journal.reset(100);
-
-    // when
-    // if we close the current journal, it will delete the files on closing. So we cannot test this
-    // scenario.
-    try (final var ignored = openJournal(2)) {
-      // then
-      final File logDirectory = getJournalDirectory();
-      assertThat(logDirectory)
-          .isDirectoryNotContaining(
-              file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-          .isDirectoryContaining(
-              file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
-    }
+            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
   }
 
   @Test
@@ -623,11 +577,10 @@ class SegmentedJournalTest {
     // there are two files deferred for deletion
     assertThat(
             logDirectory.listFiles(
-                file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName())))
+                file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName())))
         .hasSize(2);
     assertThat(
-            logDirectory.listFiles(
-                file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName())))
+            logDirectory.listFiles(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName())))
         .hasSize(1);
   }
 
@@ -643,7 +596,9 @@ class SegmentedJournalTest {
 
     // expect
     assertThat(segment.isOpen()).isFalse();
-    assertThatThrownBy(() -> journal.openReader()).withFailMessage("Segment not open");
+    assertThatThrownBy(journal::openReader)
+        .withFailMessage("Segment not open")
+        .isInstanceOf(IllegalStateException.class);
 
     // when
     new Thread(
@@ -658,129 +613,43 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldPreallocateSegmentFiles() {
+  void shouldPreallocateSegmentFiles(final @TempDir Path tmpDir) {
     // given
-    final var segmentSize = 1024 * 1024L;
-    final var journal = openJournal(segmentSize, true);
+    final var segmentSize = 4 * 1024 * 1024;
+    final var builder =
+        SegmentedJournal.builder()
+            .withPreallocateSegmentFiles(true)
+            .withMaxSegmentSize(segmentSize)
+            .withDirectory(tmpDir.toFile());
+    final File firstSegment;
 
     // when
-    final var segment = Objects.requireNonNull(journal.getFirstSegment());
-    final var segmentFile = segment.file().file().toPath();
+    try (final var journal = builder.build()) {
+      firstSegment = journal.getFirstSegment().file().file();
+    }
 
     // then
-    final var realSize = getRealSize(segmentFile);
-    final var maxRealSize = segmentSize + getBlockSize(segmentFile);
-    assertThat(realSize)
-        .as(
-            "Expected <%s> to have a real size between <%d> and <%d> bytes, but it had <%d>",
-            segmentFile, segmentSize, maxRealSize, realSize)
-        .isBetween((long) segmentSize, maxRealSize);
+    PosixPathAssert.assertThat(firstSegment).hasRealSize(segmentSize);
   }
 
   @Test
-  void shouldNotPreallocateSegmentFiles() {
+  void shouldNotPreallocateSegmentFiles(final @TempDir Path tmpDir) {
     // given
-    final var segmentSize = 1024 * 1024L;
-    final var journal = openJournal(segmentSize, false);
+    final var segmentSize = 4 * 1024 * 1024;
+    final var builder =
+        SegmentedJournal.builder()
+            .withPreallocateSegmentFiles(false)
+            .withMaxSegmentSize(segmentSize)
+            .withDirectory(tmpDir.toFile());
+    final File firstSegment;
 
     // when
-    final var segment = Objects.requireNonNull(journal.getFirstSegment());
-    final var segmentFile = segment.file().file().toPath();
+    try (final var journal = builder.build()) {
+      firstSegment = journal.getFirstSegment().file().file();
+    }
 
     // then
-    final var realSize = getRealSize(segmentFile);
-    assertThat(realSize)
-        .as(
-            "Expected <%s> to have a real size less than <%d> bytes, but it had <%d>",
-            segmentFile, segmentSize, realSize)
-        .isLessThan(segmentSize);
-  }
-
-  @Test
-  void shouldPreallocateNewFileIfUnusedSegmentAlreadyExists() throws IOException {
-    // given - a journal with two segments, but nothing written in the second segment
-    // it's important that the max segment size is at least more than a couple blocks, as otherwise
-    // we aren't really testing anything
-    final var segmentSize = 1024 * 1024L;
-    final var journal = openJournal(segmentSize, true);
-
-    // when - the segment is "unused" if the lastWrittenIndex is less than the expected first index
-    // this can happen if we crashed in the middle of creating the new segment
-    final var secondSegment =
-        JournalSegmentFile.createSegmentFile(JOURNAL_NAME, directory.toFile(), 2).toPath();
-    Files.writeString(secondSegment, "foo");
-
-    // write until we get to the second segment
-    JournalSegment segment = Objects.requireNonNull(journal.getLastSegment());
-    while (segment.id() != 2) {
-      journal.append(data);
-      segment = Objects.requireNonNull(journal.getLastSegment());
-    }
-    final var segmentFile = segment.file().file().toPath();
-
-    // then
-    final var realSize = getRealSize(segmentFile);
-    final var maxRealSize = segmentSize + getBlockSize(segmentFile);
-    assertThat(realSize)
-        .as(
-            "Expected <%s> to have a real size between <%d> and <%d> bytes, but it had <%d>",
-            segmentFile, segmentSize, maxRealSize, realSize)
-        .isBetween((long) segmentSize, maxRealSize);
-  }
-
-  /**
-   * Returns the actual size of the file on disk by checking the blocks allocated for this file. On
-   * most modern UNIX systems, doing {@link Files#size(Path)} returns that size as reported by the
-   * file's metadata, which may not be the real size (e.g. compressed file systems, sparse files,
-   * etc.). Using the {@code lstat} function from the C library we can get the actual size on disk
-   * of the file.
-   *
-   * <p>{@code lstat} will return the number of 512-bytes blocks used by a file. To get the real
-   * size, you simply multiply by 512. Note that unless your file size is aligned with the block
-   * size of your device, then the real size may be slightly larger, as more blocks may have been
-   * allocated.
-   *
-   * <p>NOTE: on Windows, sparse files are not the default, so {@link File#length()} is appropriate.
-   * Plus, there is no {@code lstat} function, and the equivalent function {@code wstat} does not
-   * return the number of blocks.
-   *
-   * @param file the file to get the size of
-   * @return the actual size on disk of the file
-   */
-  private long getRealSize(final Path file) {
-    if (Platform.IS_WINDOWS) {
-      try {
-        return Files.size(file);
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
-      }
-    }
-
-    final POSIX posixFunctions = POSIXFactory.getNativePOSIX();
-    final var pathString = file.toString();
-    final FileStat stat = posixFunctions.stat(pathString);
-
-    return stat.blocks() * 512;
-  }
-
-  /**
-   * Returns the I/O block size of the device containing the given file. This can be used to compute
-   * an upper bound for the real file size. On Windows, as we use {@link Files#size(Path)} for the
-   * real size, this simply returns 0.
-   *
-   * @param file the file to get the block size of
-   * @return the I/O block size of the device containing the file
-   */
-  private long getBlockSize(final Path file) {
-    if (Platform.IS_WINDOWS) {
-      return 0;
-    }
-
-    final POSIX posixFunctions = POSIXFactory.getNativePOSIX();
-    final var pathString = file.toString();
-    final FileStat stat = posixFunctions.stat(pathString);
-
-    return stat.blockSize();
+    PosixPathAssert.assertThat(firstSegment).hasRealSizeLessThan(segmentSize);
   }
 
   private SegmentedJournal openJournal(final float entriesPerSegment) {
@@ -789,7 +658,7 @@ class SegmentedJournalTest {
 
   private SegmentedJournal openJournal(final float entriesPerSegment, final int entrySize) {
     final var maxSegmentSize =
-        (long) (entrySize * entriesPerSegment) + JournalSegmentDescriptor.getEncodingLength();
+        (long) (entrySize * entriesPerSegment) + SegmentDescriptor.getEncodingLength();
     return openJournal(maxSegmentSize, true);
   }
 

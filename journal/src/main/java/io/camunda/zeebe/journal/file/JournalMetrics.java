@@ -19,7 +19,7 @@ import io.prometheus.client.Gauge;
 import io.prometheus.client.Gauge.Timer;
 import io.prometheus.client.Histogram;
 
-class JournalMetrics {
+final class JournalMetrics {
   private static final String NAMESPACE = "atomix";
   private static final String PARTITION_LABEL = "partition";
   private static final Histogram SEGMENT_CREATION_TIME =
@@ -63,31 +63,31 @@ class JournalMetrics {
 
   private final String logName;
 
-  public JournalMetrics(final String logName) {
+  JournalMetrics(final String logName) {
     this.logName = logName;
   }
 
-  public void observeSegmentCreation(final Runnable segmentCreation) {
+  void observeSegmentCreation(final Runnable segmentCreation) {
     SEGMENT_CREATION_TIME.labels(logName).time(segmentCreation);
   }
 
-  public void observeSegmentFlush(final Runnable segmentFlush) {
+  void observeSegmentFlush(final Runnable segmentFlush) {
     SEGMENT_FLUSH_TIME.labels(logName).time(segmentFlush);
   }
 
-  public void observeSegmentTruncation(final Runnable segmentTruncation) {
+  void observeSegmentTruncation(final Runnable segmentTruncation) {
     SEGMENT_TRUNCATE_TIME.labels(logName).time(segmentTruncation);
   }
 
-  public Timer startJournalOpenDurationTimer() {
+  Timer startJournalOpenDurationTimer() {
     return JOURNAL_OPEN_DURATION.labels(logName).startTimer();
   }
 
-  public void incSegmentCount() {
+  void incSegmentCount() {
     SEGMENT_COUNT.labels(logName).inc();
   }
 
-  public void decSegmentCount() {
+  void decSegmentCount() {
     SEGMENT_COUNT.labels(logName).dec();
   }
 }

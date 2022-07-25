@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.io.File;
 
 /** Raft log builder. */
+@SuppressWarnings("UnusedReturnValue")
 public class SegmentedJournalBuilder {
 
   private static final String DEFAULT_NAME = "journal";
@@ -95,8 +96,8 @@ public class SegmentedJournalBuilder {
    */
   public SegmentedJournalBuilder withMaxSegmentSize(final int maxSegmentSize) {
     checkArgument(
-        maxSegmentSize > JournalSegmentDescriptor.getEncodingLength(),
-        "maxSegmentSize must be greater than " + JournalSegmentDescriptor.getEncodingLength());
+        maxSegmentSize > SegmentDescriptor.getEncodingLength(),
+        "maxSegmentSize must be greater than " + SegmentDescriptor.getEncodingLength());
     this.maxSegmentSize = maxSegmentSize;
     return this;
   }
@@ -145,14 +146,16 @@ public class SegmentedJournalBuilder {
   }
 
   public SegmentedJournal build() {
-    final JournalIndex journalIndex = new SparseJournalIndex(journalIndexDensity);
+    final var journalIndex = new SparseJournalIndex(journalIndexDensity);
+    final var segmentAllocator =
+        preallocateSegmentFiles ? SegmentAllocator.fill() : SegmentAllocator.noop();
+    final var segmentLoader = new SegmentLoader(segmentAllocator);
+    final var segmentsManager =
+        new SegmentsManager(
+            journalIndex, maxSegmentSize, directory, lastWrittenIndex, name, segmentLoader);
+    final var journalMetrics = new JournalMetrics(name);
+
     return new SegmentedJournal(
-        name,
-        directory,
-        maxSegmentSize,
-        freeDiskSpace,
-        journalIndex,
-        lastWrittenIndex,
-        preallocateSegmentFiles);
+        directory, maxSegmentSize, freeDiskSpace, journalIndex, segmentsManager, journalMetrics);
   }
 }
