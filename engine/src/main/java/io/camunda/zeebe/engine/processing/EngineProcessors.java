@@ -186,7 +186,7 @@ public final class EngineProcessors {
     // periodically retries deployment distribution
     final var deploymentRedistributor =
         new DeploymentRedistributor(
-            partitionsCount, deploymentDistributionCommandSender, zeebeState.getDeploymentState());
+            deploymentDistributionCommandSender, zeebeState.getDeploymentState());
     typedRecordProcessors.withListener(deploymentRedistributor);
 
     // on other partitions DISTRIBUTE command is received and processed

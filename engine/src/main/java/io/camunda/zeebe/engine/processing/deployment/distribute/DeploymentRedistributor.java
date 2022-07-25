@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,17 +29,13 @@ public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
   private static final long RETRY_MAX_BACKOFF_ATTEMPTS =
       RETRY_MAX_BACKOFF_DURATION.dividedBy(DEPLOYMENT_REDISTRIBUTION_INTERVAL);
   private static final Logger LOG = LoggerFactory.getLogger(DeploymentRedistributor.class);
-  private final int partitionsCount;
   private final DeploymentDistributionCommandSender deploymentDistributionCommandSender;
   private final DeploymentState deploymentState;
   private final Map<PendingDistribution, Long> distributionAttempts = new HashMap<>();
-  private DeploymentDistributionBehavior deploymentDistributionBehavior;
 
   public DeploymentRedistributor(
-      final int partitionsCount,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final DeploymentState deploymentState) {
-    this.partitionsCount = partitionsCount;
     this.deploymentDistributionCommandSender = deploymentDistributionCommandSender;
     this.deploymentState = deploymentState;
   }
@@ -48,9 +45,6 @@ public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
     if (context.getPartitionId() != DEPLOYMENT_PARTITION) {
       return;
     }
-    deploymentDistributionBehavior =
-        new DeploymentDistributionBehavior(
-            context.getWriters(), partitionsCount, deploymentDistributionCommandSender);
 
     context
         .getScheduleService()
@@ -79,8 +73,10 @@ public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
         "Retrying to distribute deployment {} to partition {}",
         pending.deploymentKey,
         pending.partitionId);
-    deploymentDistributionBehavior.distributeDeploymentToPartition(
-        pending.deploymentKey, pending.partitionId, copiedDeploymentBuffer);
+    final var deploymentRecord = new DeploymentRecord();
+    deploymentRecord.wrap(copiedDeploymentBuffer);
+    deploymentDistributionCommandSender.distributeToPartition(
+        pending.deploymentKey, pending.partitionId, deploymentRecord);
   }
 
   private boolean shouldRetryNow(final PendingDistribution pendingDistribution) {
