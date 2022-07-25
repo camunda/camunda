@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.util.retry;
 
+import io.camunda.zeebe.util.retry.ActorRetryMechanism.Control;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -34,17 +35,19 @@ public final class AbortableRetryStrategy implements RetryStrategy {
     currentFuture = new CompletableActorFuture<>();
     retryMechanism.wrap(callable, condition, currentFuture);
 
-    actor.runUntilDone(this::run);
+    actor.run(this::run);
 
     return currentFuture;
   }
 
   private void run() {
     try {
-      retryMechanism.run();
+      final var control = retryMechanism.run();
+      if (control == Control.RETRY) {
+        actor.submit(this::run);
+      }
     } catch (final Exception exception) {
       currentFuture.completeExceptionally(exception);
-      actor.done();
     }
   }
 }

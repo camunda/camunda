@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.util.retry;
 
+import io.camunda.zeebe.util.retry.ActorRetryMechanism.Control;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -40,22 +41,24 @@ public final class EndlessRetryStrategy implements RetryStrategy {
     terminateCondition = condition;
     retryMechanism.wrap(callable, terminateCondition, currentFuture);
 
-    actor.runUntilDone(this::run);
+    actor.run(this::run);
 
     return currentFuture;
   }
 
   private void run() {
     try {
-      retryMechanism.run();
+      final var control = retryMechanism.run();
+      if (control == Control.RETRY) {
+        actor.submit(this::run);
+      }
     } catch (final Exception exception) {
       if (terminateCondition.getAsBoolean()) {
         currentFuture.complete(false);
-        actor.done();
       } else {
-        actor.yieldThread();
+        actor.submit(this::run);
         LOG.error(
-            "Catched exception {} with message {}, will retry...",
+            "Caught exception {} with message {}, will retry...",
             exception.getClass(),
             exception.getMessage(),
             exception);
