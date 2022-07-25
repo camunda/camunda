@@ -26,12 +26,12 @@ public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
 
   public static final Duration DEPLOYMENT_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
   private static final Duration RETRY_MAX_BACKOFF_DURATION = Duration.ofMinutes(5);
-  private static final long RETRY_MAX_BACKOFF_ATTEMPTS =
+  private static final long MAX_RETRY_CYCLES =
       RETRY_MAX_BACKOFF_DURATION.dividedBy(DEPLOYMENT_REDISTRIBUTION_INTERVAL);
   private static final Logger LOG = LoggerFactory.getLogger(DeploymentRedistributor.class);
   private final DeploymentDistributionCommandSender deploymentDistributionCommandSender;
   private final DeploymentState deploymentState;
-  private final Map<PendingDistribution, Long> distributionAttempts = new HashMap<>();
+  private final Map<PendingDistribution, Long> retryCyclesPerDistribution = new HashMap<>();
 
   public DeploymentRedistributor(
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
@@ -59,8 +59,8 @@ public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
           pendingDistributions.add(pending);
           retryDistribution(pending, directBuffer);
         });
-    // Remove attempts for completed distributions
-    distributionAttempts.keySet().removeIf(Predicate.not(pendingDistributions::contains));
+    // Remove retry cycle tracking for completed distributions
+    retryCyclesPerDistribution.keySet().removeIf(Predicate.not(pendingDistributions::contains));
   }
 
   private void retryDistribution(
@@ -80,19 +80,19 @@ public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
   }
 
   private boolean shouldRetryNow(final PendingDistribution pendingDistribution) {
-    // attempt starts off at 0, ensuring that we wait between DEPLOYMENT_REDISTRIBUTION_INTERVAL and
-    // 2 * DEPLOYMENT_REDISTRIBUTION_INTERVAL before retrying distribution.
-    final long attempt =
-        distributionAttempts.compute(
-            pendingDistribution, (k, attempts) -> attempts != null ? attempts + 1 : 0L);
+    // retryCycles starts off at 0, ensuring that we wait between DEPLOYMENT_REDISTRIBUTION_INTERVAL
+    // and 2 * DEPLOYMENT_REDISTRIBUTION_INTERVAL before retrying distribution.
+    final long retryCycle =
+        retryCyclesPerDistribution.compute(
+            pendingDistribution, (k, retryCycles) -> retryCycles != null ? retryCycles + 1 : 0L);
 
-    if (attempt >= RETRY_MAX_BACKOFF_ATTEMPTS) {
+    if (retryCycle >= MAX_RETRY_CYCLES) {
       // Retry in intervals of RETRY_MAX_BACKOFF_DURATION
-      return attempt % RETRY_MAX_BACKOFF_ATTEMPTS == 0;
+      return retryCycle % MAX_RETRY_CYCLES == 0;
     } else {
       // Retry in intervals of DEPLOYMENT_REDISTRIBUTION_INTERVAL
       // The interval is doubling until we reached RETRY_MAX_BACKOFF_DURATION
-      return Long.bitCount(attempt) == 1;
+      return Long.bitCount(retryCycle) == 1;
     }
   }
 
