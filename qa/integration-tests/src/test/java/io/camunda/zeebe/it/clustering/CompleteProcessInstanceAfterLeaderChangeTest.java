@@ -76,7 +76,8 @@ public class CompleteProcessInstanceAfterLeaderChangeTest {
                     .newPublishMessageCommand()
                     .messageName("msg")
                     .correlationKey("123")
-                    .send(),
+                    .send()
+                    .join(),
         (BiConsumer<ClusteringRule, GrpcClientRule>)
             (clusteringRule, clientRule) -> {
               final var processDefinitionKey =
