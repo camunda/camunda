@@ -7,20 +7,30 @@
  */
 package io.camunda.zeebe.broker.exporter.context;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import io.camunda.zeebe.exporter.api.ExporterException;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.camunda.zeebe.exporter.api.context.Configuration;
+import io.camunda.zeebe.util.ReflectUtil;
 import java.util.Map;
+import java.util.Objects;
 
 public final class ExporterConfiguration implements Configuration {
-  private static final Gson CONFIG_INSTANTIATOR = new GsonBuilder().create();
-
+  // Accepts more lenient cases, such that the property "something" would match a field "someThing"
+  // Note however that if a field "something" and "someThing" are present, only one of them will be
+  // instantiated (the last declared one), using the last matching value.
+  private static final ObjectMapper MAPPER =
+      JsonMapper.builder()
+          .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+          .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
+          .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_VALUES)
+          .enable(JsonReadFeature.ALLOW_SINGLE_QUOTES)
+          .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+          .build();
   private final String id;
   private final Map<String, Object> arguments;
-
-  private JsonElement intermediateConfiguration;
 
   public ExporterConfiguration(final String id, final Map<String, Object> arguments) {
     this.id = id;
@@ -40,25 +50,31 @@ public final class ExporterConfiguration implements Configuration {
   @Override
   public <T> T instantiate(final Class<T> configClass) {
     if (arguments != null) {
-      return CONFIG_INSTANTIATOR.fromJson(getIntermediateConfiguration(), configClass);
+      return MAPPER.convertValue(arguments, configClass);
     } else {
-      try {
-        return configClass.newInstance();
-      } catch (final Exception e) {
-        throw new ExporterException(
-            "Unable to instantiate config class "
-                + configClass.getName()
-                + " with default constructor",
-            e);
-      }
+      return ReflectUtil.newInstance(configClass);
     }
   }
 
-  private JsonElement getIntermediateConfiguration() {
-    if (intermediateConfiguration == null) {
-      intermediateConfiguration = CONFIG_INSTANTIATOR.toJsonTree(arguments);
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(getId(), getArguments());
+  }
 
-    return intermediateConfiguration;
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof ExporterConfiguration)) {
+      return false;
+    }
+    final ExporterConfiguration that = (ExporterConfiguration) o;
+    return getId().equals(that.getId()) && getArguments().equals(that.getArguments());
+  }
+
+  @Override
+  public String toString() {
+    return "ExporterConfiguration{" + "id='" + id + '\'' + ", arguments=" + arguments + '}';
   }
 }
