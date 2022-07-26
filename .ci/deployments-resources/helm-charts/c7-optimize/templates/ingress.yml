@@ -5,7 +5,6 @@ metadata:
   name: optimize
   labels: {{ include "commonLabels" $ | nindent 4 }}
   annotations: {{ include "commonAnnotations" $ | nindent 4 }}
-    kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/auth-response-headers: X-Vouch-User,X-Vouch-IdP-Claims-preferred_username
     nginx.ingress.kubernetes.io/auth-signin: |-
       {{ .Values.ingress.vouchUrl }}/login?url=$scheme://$http_host$request_uri&vouch-failcount=$auth_resp_failcount&X-Vouch-Token=$auth_resp_jwt&error=$auth_resp_err
@@ -20,6 +19,7 @@ metadata:
     nginx.ingress.kubernetes.io/session-cookie-change-on-failure: "true"
     nginx.ingress.kubernetes.io/session-cookie-conditional-samesite-none: "true"
 spec:
+  ingressClassName: nginx
   tls:
   - hosts:
     - {{ include "ingress.domain" $ | quote }}
@@ -56,8 +56,8 @@ metadata:
   name: optimize-external
   labels: {{ include "commonLabels" $ | nindent 4 }}
   annotations: {{ include "commonAnnotations" $ | nindent 4 }}
-    kubernetes.io/ingress.class: nginx
 spec:
+  ingressClassName: nginx
   tls:
     - hosts:
         - {{ include "ingress.domain" $ | quote }}
