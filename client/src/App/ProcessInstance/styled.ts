@@ -11,7 +11,7 @@ import {styles} from '@carbon/elements';
 import {zModificationFrame} from 'modules/constants/componentHierarchy';
 
 type ContainerProps = {
-  $displayBorder: boolean;
+  $isModificationOutlineVisible: boolean;
 };
 
 const frameStyles: ThemedInterpolationFunction = ({theme}) => {
@@ -26,12 +26,14 @@ const frameStyles: ThemedInterpolationFunction = ({theme}) => {
 };
 
 const Container = styled.main<ContainerProps>`
-  ${({theme, $displayBorder}) => {
+  ${({theme, $isModificationOutlineVisible}) => {
     return css`
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-rows: ${$isModificationOutlineVisible
+        ? '38px 56px 1fr'
+        : '56px 1fr'};
       height: 100%;
-      ${$displayBorder &&
+      ${$isModificationOutlineVisible &&
       css`
         border: 4px solid ${theme.colors.primaryButton04};
         border-right: none;

@@ -19,6 +19,9 @@ const Table = styled.table`
 
 const Th = styled.th`
   text-align: left;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
   ${styles.label01};
 `;
 

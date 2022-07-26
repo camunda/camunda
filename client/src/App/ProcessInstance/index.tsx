@@ -110,7 +110,7 @@ const ProcessInstance: React.FC = observer(() => {
   const {isModificationModeEnabled} = modificationsStore.state;
 
   return (
-    <Container $displayBorder={isModificationModeEnabled}>
+    <Container $isModificationOutlineVisible={isModificationModeEnabled}>
       {processInstanceId && (
         <VisuallyHiddenH1>{`Operate Process Instance ${processInstanceId}`}</VisuallyHiddenH1>
       )}
