@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Process and replays records related to Checkpoint. */
-public class CheckpointRecordsProcessor implements RecordProcessor<Context> {
+public final class CheckpointRecordsProcessor implements RecordProcessor<Context> {
 
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointRecordsProcessor.class);
 

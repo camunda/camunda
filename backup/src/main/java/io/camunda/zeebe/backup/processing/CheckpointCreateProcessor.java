@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.util.Set;
 
-public class CheckpointCreateProcessor {
+public final class CheckpointCreateProcessor {
   private final CheckpointState checkpointState;
   private final BackupManager backupManager;
 

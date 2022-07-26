@@ -10,7 +10,7 @@ package io.camunda.zeebe.backup.processing;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 
-public class CheckpointCreatedEventApplier {
+public final class CheckpointCreatedEventApplier {
 
   final CheckpointState checkpointState;
 
