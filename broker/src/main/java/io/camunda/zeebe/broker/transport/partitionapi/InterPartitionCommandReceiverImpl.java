@@ -82,6 +82,7 @@ public final class InterPartitionCommandReceiverImpl {
       messageBuffer.wrap(message);
       messageDecoder.wrapAndApplyHeader(messageBuffer, 0, headerDecoder);
 
+      final var checkpointId = messageDecoder.checkpointId();
       Optional<Long> recordKey = Optional.empty();
       if (messageDecoder.recordKey() != InterPartitionMessageDecoder.recordKeyNullValue()) {
         recordKey = Optional.of(messageDecoder.recordKey());
@@ -101,10 +102,13 @@ public final class InterPartitionCommandReceiverImpl {
       final var commandLength = messageDecoder.commandLength();
       commandBuffer.wrap(messageBuffer, commandOffset, commandLength);
 
-      return new Decoder.DecodedMessage(recordKey, recordMetadata, commandBuffer);
+      return new Decoder.DecodedMessage(checkpointId, recordKey, recordMetadata, commandBuffer);
     }
 
     record DecodedMessage(
-        Optional<Long> recordKey, RecordMetadata metadata, BufferWriter command) {}
+        long checkpointId,
+        Optional<Long> recordKey,
+        RecordMetadata metadata,
+        BufferWriter command) {}
   }
 }
