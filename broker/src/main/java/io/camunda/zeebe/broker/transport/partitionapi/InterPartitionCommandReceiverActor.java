@@ -11,6 +11,7 @@ import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionComma
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -25,7 +26,7 @@ import org.slf4j.Logger;
  * failure, are ignored. The sender is responsible for recognizing failures and retrying.
  */
 public final class InterPartitionCommandReceiverActor extends Actor
-    implements DiskSpaceUsageListener {
+    implements DiskSpaceUsageListener, CheckpointListener {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private final String actorName;
   private final ClusterCommunicationService communicationService;
@@ -73,6 +74,11 @@ public final class InterPartitionCommandReceiverActor extends Actor
   @Override
   public void onDiskSpaceAvailable() {
     actor.run(() -> receiver.setDiskSpaceAvailable(true));
+  }
+
+  @Override
+  public void onNewCheckpointCreated(final long checkpointId) {
+    actor.run(() -> receiver.setCheckpointId(checkpointId));
   }
 
   private void tryHandleMessage(final MemberId memberId, final byte[] message) {
