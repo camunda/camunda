@@ -8,13 +8,14 @@
 import React, {runAllEffects, runAllCleanups} from 'react';
 import {shallow} from 'enzyme';
 
+import {addHandler, removeHandler} from 'request';
+import {showError} from 'notifications';
+import {getOptimizeProfile} from 'config';
+
 import {Header, Footer} from '..';
 
 import {PrivateRoute} from './PrivateRoute';
 import {Login} from './Login';
-
-import {addHandler, removeHandler} from 'request';
-import {showError} from 'notifications';
 
 const TestComponent = () => <div>TestComponent</div>;
 
@@ -24,8 +25,13 @@ jest.mock('request', () => {
     removeHandler: jest.fn(),
   };
 });
+
 jest.mock('notifications', () => ({
   showError: jest.fn(),
+}));
+
+jest.mock('config', () => ({
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
 }));
 
 beforeEach(() => {
@@ -62,6 +68,21 @@ it('should render the login component', () => {
   expect(wrapper.find(Login)).toExist();
 });
 
+it('should reload the page when recieving 401 in the cloud', async () => {
+  getOptimizeProfile.mockReturnValueOnce('cloud');
+  delete window.location;
+  window.location = {reload: jest.fn()};
+  shallow(<PrivateRoute component={TestComponent} />);
+
+  runAllEffects();
+
+  const handler = addHandler.mock.calls[0][0];
+  await handler({status: 200}, {url: 'api/entities'});
+  await handler({status: 401}, {url: 'api/entities'});
+
+  expect(window.location.reload).toHaveBeenCalled();
+});
+
 it('should register a response handler', () => {
   shallow(<PrivateRoute component={TestComponent} />);
 
@@ -83,9 +104,9 @@ describe('session timeout', () => {
     expect(showError).not.toHaveBeenCalled();
   });
 
-  it('should show an error message if the session times out', () => {
-    handler({status: 200}, {url: 'api/entities'});
-    handler({status: 401}, {url: 'api/entities'});
+  it('should show an error message if the session times out', async () => {
+    await handler({status: 200}, {url: 'api/entities'});
+    await handler({status: 401}, {url: 'api/entities'});
 
     expect(showError).toHaveBeenCalled();
   });
