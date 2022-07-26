@@ -66,7 +66,7 @@ public final class InterPartitionCommandSenderImpl
     }
     final int partitionLeader = partitionLeaders.get(receiverPartitionId);
 
-    LOG.trace(
+    LOG.info(
         "Sending command {} {} to partition {}, leader {}",
         valueType,
         intent,
