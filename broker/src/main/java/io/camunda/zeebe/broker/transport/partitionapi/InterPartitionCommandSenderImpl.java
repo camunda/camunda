@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker.transport.partitionapi;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.backup.api.CheckpointListener;
+import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.clustering.management.InterPartitionMessageEncoder;
@@ -21,12 +23,14 @@ import java.util.Objects;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public final class InterPartitionCommandSenderImpl implements InterPartitionCommandSender {
+public final class InterPartitionCommandSenderImpl
+    implements InterPartitionCommandSender, CheckpointListener {
   public static final String TOPIC_PREFIX = "inter-partition-";
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private final ClusterCommunicationService communicationService;
 
   private final TopologyPartitionListenerImpl partitionListener;
+  private long checkpointId = CheckpointState.NO_CHECKPOINT;
 
   public InterPartitionCommandSenderImpl(
       final ClusterCommunicationService communicationService,
@@ -69,15 +73,22 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
         receiverPartitionId,
         partitionLeader);
 
-    final var message = Encoder.encode(receiverPartitionId, valueType, intent, recordKey, command);
+    final var message =
+        Encoder.encode(checkpointId, receiverPartitionId, valueType, intent, recordKey, command);
 
     communicationService.unicast(
         TOPIC_PREFIX + receiverPartitionId, message, MemberId.from("" + partitionLeader));
   }
 
+  @Override
+  public void onNewCheckpointCreated(final long checkpointId) {
+    this.checkpointId = checkpointId;
+  }
+
   private static final class Encoder {
 
     private static byte[] encode(
+        final long checkpointId,
         final int receiverPartitionId,
         final ValueType valueType,
         final Intent intent,
@@ -96,6 +107,7 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
       command.write(commandBuffer, 0);
       bodyEncoder
           .wrapAndApplyHeader(messageBuffer, 0, headerEncoder)
+          .checkpointId(checkpointId)
           .receiverPartitionId(receiverPartitionId)
           .valueType(valueType.value())
           .intent(intent.value())
