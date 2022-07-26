@@ -14,9 +14,11 @@ import io.camunda.zeebe.clustering.management.InterPartitionMessageDecoder;
 import io.camunda.zeebe.clustering.management.MessageHeaderDecoder;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.util.Optional;
@@ -48,19 +50,55 @@ public final class InterPartitionCommandReceiverImpl {
       return;
     }
 
-    logStreamWriter.reset();
+    if (!writeCheckpoint(decoded)) {
+      LOG.warn(
+          "Failed to write new checkpoint {} (currently at {}), ignoring command {} {} from {}",
+          decoded.checkpointId,
+          checkpointId,
+          decoded.metadata.getValueType(),
+          decoded.metadata.getIntent(),
+          memberId);
+      // It's unsafe to write this record without first writing the checkpoint, bail out early.
+      return;
+    }
 
-    decoded.recordKey.ifPresent(logStreamWriter::key);
-
-    final var writeResult =
-        logStreamWriter.metadataWriter(decoded.metadata).valueWriter(decoded.command).tryWrite();
-    if (writeResult < 0) {
+    if (!writeCommand(decoded)) {
       LOG.warn(
           "Failed to write command {} {} from {} to logstream",
           decoded.metadata.getValueType(),
           decoded.metadata.getIntent(),
           memberId);
     }
+  }
+
+  private boolean writeCheckpoint(final DecodedMessage decoded) {
+    if (decoded.checkpointId > checkpointId) {
+      LOG.debug(
+          "Received command with checkpoint {}, current checkpoint is {}",
+          decoded.checkpointId,
+          checkpointId);
+      logStreamWriter.reset();
+      final var metadata =
+          new RecordMetadata()
+              .recordType(RecordType.COMMAND)
+              .intent(CheckpointIntent.CREATE)
+              .valueType(ValueType.CHECKPOINT);
+      final var checkpointRecord = new CheckpointRecord().setCheckpointId(decoded.checkpointId);
+      final var writeResult =
+          logStreamWriter.metadataWriter(metadata).valueWriter(checkpointRecord).tryWrite();
+      return writeResult > 0;
+    }
+    return true;
+  }
+
+  private boolean writeCommand(final DecodedMessage decoded) {
+    logStreamWriter.reset();
+
+    decoded.recordKey.ifPresent(logStreamWriter::key);
+
+    final var writeResult =
+        logStreamWriter.metadataWriter(decoded.metadata).valueWriter(decoded.command).tryWrite();
+    return writeResult > 0;
   }
 
   public void setDiskSpaceAvailable(final boolean available) {
@@ -71,6 +109,9 @@ public final class InterPartitionCommandReceiverImpl {
     this.checkpointId = checkpointId;
   }
 
+  private record DecodedMessage(
+      long checkpointId, Optional<Long> recordKey, RecordMetadata metadata, BufferWriter command) {}
+
   private static final class Decoder {
     private final UnsafeBuffer messageBuffer = new UnsafeBuffer();
     private final RecordMetadata recordMetadata = new RecordMetadata();
@@ -78,7 +119,7 @@ public final class InterPartitionCommandReceiverImpl {
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final DirectBufferWriter commandBuffer = new DirectBufferWriter();
 
-    Decoder.DecodedMessage decodeMessage(final byte[] message) {
+    DecodedMessage decodeMessage(final byte[] message) {
       messageBuffer.wrap(message);
       messageDecoder.wrapAndApplyHeader(messageBuffer, 0, headerDecoder);
 
@@ -102,13 +143,7 @@ public final class InterPartitionCommandReceiverImpl {
       final var commandLength = messageDecoder.commandLength();
       commandBuffer.wrap(messageBuffer, commandOffset, commandLength);
 
-      return new Decoder.DecodedMessage(checkpointId, recordKey, recordMetadata, commandBuffer);
+      return new DecodedMessage(checkpointId, recordKey, recordMetadata, commandBuffer);
     }
-
-    record DecodedMessage(
-        long checkpointId,
-        Optional<Long> recordKey,
-        RecordMetadata metadata,
-        BufferWriter command) {}
   }
 }
