@@ -343,6 +343,12 @@
         <version>${project.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-backup</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- sibling projects -->
 
       <dependency>
