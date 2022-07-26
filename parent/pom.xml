@@ -110,6 +110,7 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.15</version.jnr-posix>
+    <version.zpt>8.0.4</version.zpt>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -340,6 +341,20 @@
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-atomix-utils</artifactId>
         <version>${project.version}</version>
+      </dependency>
+
+      <!-- sibling projects -->
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-process-test-assertions</artifactId>
+        <version>${version.zpt}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-process-test-filters</artifactId>
+        <version>${version.zpt}</version>
       </dependency>
 
       <!-- Third party dependencies -->
@@ -609,6 +624,12 @@
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
+        <version>${version.zeebe-test-container}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-test-container-engine</artifactId>
         <version>${version.zeebe-test-container}</version>
       </dependency>
 
