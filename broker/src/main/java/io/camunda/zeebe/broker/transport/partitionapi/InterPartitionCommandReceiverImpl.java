@@ -33,7 +33,7 @@ public final class InterPartitionCommandReceiverImpl {
   }
 
   public void handleMessage(final MemberId memberId, final byte[] message) {
-    LOG.trace("Received message from {}", memberId);
+    LOG.info("Received message from {}", memberId);
 
     final var decoded = decoder.decodeMessage(message);
 
