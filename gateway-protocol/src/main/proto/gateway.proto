@@ -408,30 +408,37 @@ message ModifyProcessInstanceRequest {
   int64 processInstanceKey = 1;
   // instructions describing which elements should be activated in which scopes,
   // and which variables should be created
-  repeated ModificationActivateInstruction activateInstructions = 2;
+  repeated ActivateInstruction activateInstructions = 2;
   // instructions describing which elements should be terminated
-  repeated ModificationTerminateInstruction terminateInstructions = 3;
-}
+  repeated TerminateInstruction terminateInstructions = 3;
 
-message ModificationActivateInstruction {
-  // the id of the element that should be activated
-  string elementId = 1;
-  // the key of the ancestor scope the element instance should be created in
-  int64 ancestorElementInstanceKey = 2;
-  // instructions describing which variables should be created
-  repeated ModificationVariableInstruction variableInstructions = 3;
-}
+  message ActivateInstruction {
+    // the id of the element that should be activated
+    string elementId = 1;
+    // the key of the ancestor scope the element instance should be created in;
+    // set to -1 to create the new element instance within an existing element
+    // instance of the flow scope
+    int64 ancestorElementInstanceKey = 2;
+    // instructions describing which variables should be created
+    repeated VariableInstruction variableInstructions = 3;
+  }
 
-message ModificationVariableInstruction {
-  // the variables that should be created
-  string variables = 1;
-  // the id of the element in which scope the variables should be created
-  string scopeId = 2;
-}
+  message VariableInstruction {
+    // JSON document that will instantiate the variables for the root variable scope of the
+    // process instance; it must be a JSON object, as variables will be mapped in a
+    // key-value fashion. e.g. { "a": 1, "b": 2 } will create two variables, named "a" and
+    // "b" respectively, with their associated values. [{ "a": 1, "b": 2 }] would not be a
+    // valid argument, as the root of the JSON document is an array and not an object.
+    string variables = 1;
+    // the id of the element in which scope the variables should be created;
+    // set to -1 to create the variables in the global scope of the process instance
+    string scopeId = 2;
+  }
 
-message ModificationTerminateInstruction {
-  // the id of the element that should be terminated
-  int64 elementInstanceKey = 1;
+  message TerminateInstruction {
+    // the id of the element that should be terminated
+    int64 elementInstanceKey = 1;
+  }
 }
 
 message ModifyProcessInstanceResponse {

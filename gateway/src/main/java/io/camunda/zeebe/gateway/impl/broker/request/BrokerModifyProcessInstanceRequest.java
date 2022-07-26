@@ -8,9 +8,9 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.gateway.RequestMapper;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModificationActivateInstruction;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModificationTerminateInstruction;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModificationVariableInstruction;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.ActivateInstruction;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.TerminateInstruction;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
@@ -21,7 +21,7 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-public class BrokerModifyProcessInstanceRequest
+public final class BrokerModifyProcessInstanceRequest
     extends BrokerExecuteCommand<ProcessInstanceModificationRecord> {
 
   private final ProcessInstanceModificationRecord requestDto =
@@ -38,7 +38,7 @@ public class BrokerModifyProcessInstanceRequest
   }
 
   public BrokerModifyProcessInstanceRequest addActivateInstructions(
-      final List<ModificationActivateInstruction> activateInstructions) {
+      final List<ActivateInstruction> activateInstructions) {
     activateInstructions.stream()
         .map(
             activateInstructionReq -> {
@@ -57,14 +57,14 @@ public class BrokerModifyProcessInstanceRequest
   }
 
   private ProcessInstanceModificationVariableInstruction mapVariableInstruction(
-      final ModificationVariableInstruction instruction) {
+      final VariableInstruction instruction) {
     return new ProcessInstanceModificationVariableInstruction()
         .setElementId(instruction.getScopeId())
         .setVariables(RequestMapper.ensureJsonSet(instruction.getVariables()));
   }
 
   public BrokerModifyProcessInstanceRequest addTerminateInstructions(
-      final List<ModificationTerminateInstruction> terminateInstructions) {
+      final List<TerminateInstruction> terminateInstructions) {
     terminateInstructions.stream()
         .map(
             terminateInstruction ->

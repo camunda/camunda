@@ -751,6 +751,79 @@
                 "type": "int64"
               }
             ]
+          },
+          {
+            "name": "ModifyProcessInstanceRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "processInstanceKey",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "activateInstructions",
+                "type": "ActivateInstruction",
+                "is_repeated": true
+              },
+              {
+                "id": 3,
+                "name": "terminateInstructions",
+                "type": "TerminateInstruction",
+                "is_repeated": true
+              }
+            ],
+            "messages": [
+              {
+                "name": "ActivateInstruction",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "elementId",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "ancestorElementInstanceKey",
+                    "type": "int64"
+                  },
+                  {
+                    "id": 3,
+                    "name": "variableInstructions",
+                    "type": "VariableInstruction",
+                    "is_repeated": true
+                  }
+                ]
+              },
+              {
+                "name": "VariableInstruction",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "variables",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "scopeId",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "name": "TerminateInstruction",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "elementInstanceKey",
+                    "type": "int64"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ModifyProcessInstanceResponse"
           }
         ],
         "services": [
@@ -833,6 +906,11 @@
                 "name": "UpdateJobRetries",
                 "in_type": "UpdateJobRetriesRequest",
                 "out_type": "UpdateJobRetriesResponse"
+              },
+              {
+                "name": "ModifyProcessInstance",
+                "in_type": "ModifyProcessInstanceRequest",
+                "out_type": "ModifyProcessInstanceResponse"
               }
             ]
           }
