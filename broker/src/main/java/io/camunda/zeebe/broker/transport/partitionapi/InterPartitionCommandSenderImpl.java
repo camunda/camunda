@@ -59,8 +59,8 @@ public final class InterPartitionCommandSenderImpl
     if (!partitionLeaders.containsKey(receiverPartitionId)) {
       LOG.warn(
           "Not sending command {} {} to {}, no known leader for this partition",
-          intent,
           valueType,
+          intent,
           receiverPartitionId);
       return;
     }
