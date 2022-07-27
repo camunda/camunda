@@ -179,7 +179,7 @@
     "processOverview": "Prozessübersicht",
     "configureProcess": "Prozess konfigurieren",
     "emailDigest": "Email Digest",
-    "digestInfo": "Der Prozess Digest sendet regelmäßige E-Mails mit dem KPI-Status an den Prozesseigentümer.",
+    "digestInfo": "Der Prozess Digest sendet regelmäßige E-Mails mit dem KPI-Status an den Prozesseigentümer. Standardmäßig wird der Digest jeden Montag um 9:00 Uhr versendet (wenn Sie die Standardversandzeit ändern möchten, wenden Sie sich bitte an Ihren Administrator).",
     "digestConfigured": "Ihr Prozess Digest wurde erfolgreich konfiguriert. Eine E-Mail wurde an {Name} gesendet.",
     "timeGoals": {
       "label": "Zeitziele",
