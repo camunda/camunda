@@ -12,7 +12,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 
 /** Checkpoint info stored in db in msgpack format. */
-public class CheckpointInfo extends UnpackedObject implements DbValue {
+public final class CheckpointInfo extends UnpackedObject implements DbValue {
   private final LongProperty idProperty = new LongProperty("id");
   private final LongProperty positionProperty = new LongProperty("position");
 

@@ -13,7 +13,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 
-public class DbCheckpointState implements CheckpointState {
+public final class DbCheckpointState implements CheckpointState {
   private static final String CHECKPOINT_KEY = "checkpoint";
 
   private final CheckpointInfo checkpointInfo = new CheckpointInfo();
