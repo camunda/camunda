@@ -10,5 +10,8 @@ package io.camunda.zeebe.backup.processing;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 
-/** There is a good chance that we will get rid of this context, and use a "ProcessingContext" defined by the StreamProcessor. **/
+/**
+ * There is a good chance that we will get rid of this context, and use a "ProcessingContext"
+ * defined by the StreamProcessor. *
+ */
 public record Context(ZeebeDb zeebeDb, TransactionContext transactionContext) {}
