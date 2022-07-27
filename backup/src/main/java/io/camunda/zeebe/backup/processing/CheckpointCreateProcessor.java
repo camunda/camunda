@@ -69,7 +69,12 @@ public final class CheckpointCreateProcessor {
       final CheckpointRecord checkpointRecord,
       final ProcessingResultBuilder resultBuilder) {
     resultBuilder.appendRecord(
-        command.getKey(), RecordType.EVENT, resultIntent, null, null, checkpointRecord);
+        command.getKey(),
+        RecordType.EVENT,
+        resultIntent,
+        RejectionType.NULL_VAL,
+        "",
+        checkpointRecord);
 
     if (command.hasRequestMetadata()) {
       resultBuilder.withResponse(
@@ -79,7 +84,7 @@ public final class CheckpointCreateProcessor {
           checkpointRecord,
           ValueType.CHECKPOINT,
           RejectionType.NULL_VAL,
-          null,
+          "",
           command.getRequestId(),
           command.getRequestStreamId());
     }
