@@ -431,7 +431,7 @@ message ModifyProcessInstanceRequest {
     // valid argument, as the root of the JSON document is an array and not an object.
     string variables = 1;
     // the id of the element in which scope the variables should be created;
-    // set to -1 to create the variables in the global scope of the process instance
+    // leave empty to create the variables in the global scope of the process instance
     string scopeId = 2;
   }
 
