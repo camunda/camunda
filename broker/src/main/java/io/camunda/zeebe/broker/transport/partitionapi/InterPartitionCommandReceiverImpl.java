@@ -43,10 +43,11 @@ public final class InterPartitionCommandReceiverImpl {
 
     if (!diskSpaceAvailable) {
       LOG.warn(
-          "Ignoring command {} {} from {}, no disk space available",
+          "Ignoring command {} {} from {}, checkpoint {}, no disk space available",
           decoded.metadata.getValueType(),
           decoded.metadata.getIntent(),
-          memberId);
+          memberId,
+          decoded.checkpointId);
       return;
     }
 
