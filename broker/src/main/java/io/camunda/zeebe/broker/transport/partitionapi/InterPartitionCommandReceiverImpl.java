@@ -53,7 +53,7 @@ public final class InterPartitionCommandReceiverImpl {
 
     if (!writeCheckpoint(decoded)) {
       LOG.warn(
-          "Failed to write new checkpoint {} (currently at {}), ignoring command {} {} from {}",
+          "Failed to write new command for checkpoint {} (currently at {}), ignoring command {} {} from {}",
           decoded.checkpointId,
           checkpointId,
           decoded.metadata.getValueType(),
@@ -73,23 +73,24 @@ public final class InterPartitionCommandReceiverImpl {
   }
 
   private boolean writeCheckpoint(final DecodedMessage decoded) {
-    if (decoded.checkpointId > checkpointId) {
-      LOG.debug(
-          "Received command with checkpoint {}, current checkpoint is {}",
-          decoded.checkpointId,
-          checkpointId);
-      logStreamWriter.reset();
-      final var metadata =
-          new RecordMetadata()
-              .recordType(RecordType.COMMAND)
-              .intent(CheckpointIntent.CREATE)
-              .valueType(ValueType.CHECKPOINT);
-      final var checkpointRecord = new CheckpointRecord().setCheckpointId(decoded.checkpointId);
-      final var writeResult =
-          logStreamWriter.metadataWriter(metadata).valueWriter(checkpointRecord).tryWrite();
-      return writeResult > 0;
+    if (decoded.checkpointId <= checkpointId) {
+      // No need to write a new checkpoint create record
+      return true;
     }
-    return true;
+    LOG.debug(
+        "Received command with checkpoint {}, current checkpoint is {}",
+        decoded.checkpointId,
+        checkpointId);
+    logStreamWriter.reset();
+    final var metadata =
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .intent(CheckpointIntent.CREATE)
+            .valueType(ValueType.CHECKPOINT);
+    final var checkpointRecord = new CheckpointRecord().setCheckpointId(decoded.checkpointId);
+    final var writeResult =
+        logStreamWriter.metadataWriter(metadata).valueWriter(checkpointRecord).tryWrite();
+    return writeResult > 0;
   }
 
   private boolean writeCommand(final DecodedMessage decoded) {
