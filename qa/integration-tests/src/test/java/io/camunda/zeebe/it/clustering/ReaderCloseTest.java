@@ -11,10 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.it.util.GrpcClientRule;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -43,7 +42,7 @@ public class ReaderCloseTest {
 
   // Regression test for https://github.com/camunda-cloud/zeebe/issues/7767
   @Test
-  public void shouldDeleteCompactedSegmentsFiles() throws IOException {
+  public void shouldDeleteCompactedSegmentsFiles() {
     // given
     fillSegments();
 
@@ -52,13 +51,13 @@ public class ReaderCloseTest {
 
     // then
     for (final Broker broker : clusteringRule.getBrokers()) {
-      assertThatFilesOfDeletedSegmentsDoesNotExist(broker);
+      awaitNoDanglingReaders(broker);
     }
   }
 
   // Regression test for https://github.com/camunda-cloud/zeebe/issues/7767
   @Test
-  public void shouldDeleteCompactedSegmentsFilesAfterLeaderChange() throws IOException {
+  public void shouldDeleteCompactedSegmentsFilesAfterLeaderChange() {
     // given
     fillSegments();
     final var leaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
@@ -84,35 +83,28 @@ public class ReaderCloseTest {
 
     // then
     for (final Broker broker : clusteringRule.getBrokers()) {
-      assertThatFilesOfDeletedSegmentsDoesNotExist(broker);
+      awaitNoDanglingReaders(broker);
     }
+
     assertThat(leaderId).isNotEqualTo(clusteringRule.getLeaderForPartition(1).getNodeId());
   }
 
-  private void assertThatFilesOfDeletedSegmentsDoesNotExist(final Broker leader)
-      throws IOException {
+  private void awaitNoDanglingReaders(final Broker broker) {
+    Awaitility.await("until all readers are closed, observed via segment deletion")
+        .atMost(Duration.ofSeconds(20))
+        .untilAsserted(() -> assertThatFilesOfDeletedSegmentsDoesNotExist(broker));
+  }
+
+  private void assertThatFilesOfDeletedSegmentsDoesNotExist(final Broker leader) {
     final var segmentDirectory = clusteringRule.getSegmentsDirectory(leader);
-    try (final var stream =
-        Files.newDirectoryStream(segmentDirectory, path -> !path.toFile().isDirectory())) {
-      stream.forEach(
-          path ->
-              assertThat(isEitherLogOrRaftMetaFiles(path))
-                  .as(
-                      "The files in the segment directory should be either valid log segments or raft config and metadata. %s",
-                      path)
-                  .isTrue());
-    }
+    assertThat(segmentDirectory)
+        .as(
+            "broker <%s> closed all readers as it doesn't contain any marked-for-deletion segments",
+            leader.getConfig().getCluster().getNodeId())
+        .isDirectoryNotContaining("regex:.*-deleted");
   }
 
-  private boolean isEitherLogOrRaftMetaFiles(final Path path) {
-    final var filename = path.getFileName().toString();
-    return filename.endsWith(".log")
-        || filename.endsWith(".conf")
-        || filename.endsWith(".meta")
-        || filename.endsWith(".lock");
-  }
-
-  public void fillSegments() {
+  private void fillSegments() {
     clusteringRule.runUntilSegmentsFilled(
         clusteringRule.getBrokers(),
         2,
