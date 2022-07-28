@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.transport.ClientRequest;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -35,6 +36,8 @@ public abstract class BrokerRequest<T> implements ClientRequest {
     this.schemaId = schemaId;
     this.templateId = templateId;
   }
+
+  public abstract Optional<Integer> addressesSpecificBroker();
 
   public abstract void setPartitionId(int partitionId);
 

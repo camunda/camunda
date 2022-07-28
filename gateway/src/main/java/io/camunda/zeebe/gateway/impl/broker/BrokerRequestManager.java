@@ -206,7 +206,10 @@ final class BrokerRequestManager extends Actor {
   }
 
   private BrokerAddressProvider determineBrokerNodeIdProvider(final BrokerRequest<?> request) {
-    if (request.addressesSpecificPartition()) {
+    if (request.addressesSpecificBroker().isPresent()) {
+      return new BrokerAddressProvider(
+          clusterState -> request.addressesSpecificBroker().orElseThrow());
+    } else if (request.addressesSpecificPartition()) {
       final BrokerClusterState topology = topologyManager.getTopology();
       if (topology != null && !topology.getPartitions().contains(request.getPartitionId())) {
         throw new PartitionNotFoundException(request.getPartitionId());
@@ -214,8 +217,8 @@ final class BrokerRequestManager extends Actor {
       // already know partition id
       return new BrokerAddressProvider(request.getPartitionId());
     } else if (request.requiresPartitionId()) {
-      if (request instanceof BrokerPublishMessageRequest) {
-        determinePartitionIdForPublishMessageRequest((BrokerPublishMessageRequest) request);
+      if (request instanceof BrokerPublishMessageRequest publishMessageRequest) {
+        determinePartitionIdForPublishMessageRequest(publishMessageRequest);
       } else {
         // select next partition id for request
         int partitionId = dispatchStrategy.determinePartition();

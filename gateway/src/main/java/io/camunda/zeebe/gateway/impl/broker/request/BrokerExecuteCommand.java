@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.transport.RequestType;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -45,6 +46,11 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
 
   public ValueType getValueType() {
     return request.getValueType();
+  }
+
+  @Override
+  public Optional<Integer> addressesSpecificBroker() {
+    return Optional.empty();
   }
 
   @Override
