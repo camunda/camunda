@@ -101,9 +101,7 @@ describe('Instance', () => {
         )
       )
     );
-  });
 
-  afterEach(() => {
     modificationsStore.reset();
   });
 

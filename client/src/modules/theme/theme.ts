@@ -470,7 +470,12 @@ const theme = {
           },
         },
         diagram: {
-          metadataPopover: {
+          popover: {
+            backgroundColor: DARK_COLORS.ui04,
+            borderColor: DARK_COLORS.ui06,
+            modificationsDropdown: {
+              color: DARK_COLORS.linkDefault,
+            },
             arrowStyle: {
               before: {
                 borderColor: DARK_COLORS.ui06,
@@ -478,10 +483,6 @@ const theme = {
               after: {
                 borderColor: DARK_COLORS.ui04,
               },
-            },
-            popOver: {
-              backgroundColor: DARK_COLORS.ui04,
-              borderColor: DARK_COLORS.ui06,
             },
           },
           statisticOverlay: {
@@ -937,9 +938,7 @@ const theme = {
           },
         },
         diagram: {
-          metadataPopover: {
-            popOver: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.6)}`,
-          },
+          popover: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.6)}`,
         },
         dropdown: {
           menu: {
@@ -1333,7 +1332,12 @@ const theme = {
           },
         },
         diagram: {
-          metadataPopover: {
+          popover: {
+            backgroundColor: LIGHT_COLORS.ui02,
+            borderColor: LIGHT_COLORS.ui05,
+            modificationsDropdown: {
+              color: LIGHT_COLORS.linkDefault,
+            },
             arrowStyle: {
               before: {
                 borderColor: LIGHT_COLORS.ui05,
@@ -1341,10 +1345,6 @@ const theme = {
               after: {
                 borderColor: LIGHT_COLORS.ui02,
               },
-            },
-            popOver: {
-              backgroundColor: LIGHT_COLORS.ui02,
-              borderColor: LIGHT_COLORS.ui05,
             },
           },
           statisticOverlay: {
@@ -1798,9 +1798,7 @@ const theme = {
           },
         },
         diagram: {
-          metadataPopover: {
-            popOver: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
-          },
+          popover: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
         },
         dropdown: {
           menu: {

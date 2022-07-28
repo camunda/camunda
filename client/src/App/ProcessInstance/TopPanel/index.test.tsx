@@ -9,6 +9,7 @@ import {
   render,
   waitForElementToBeRemoved,
   screen,
+  waitFor,
 } from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -18,6 +19,14 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {modificationsStore} from 'modules/stores/modifications';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {
+  calledInstanceMetadata,
+  CALL_ACTIVITY_FLOW_NODE_ID,
+  PROCESS_INSTANCE_ID,
+} from 'modules/mocks/metadata';
+import {createInstance, mockCallActivityProcessXML} from 'modules/testUtils';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -174,5 +183,65 @@ describe('TopPanel', () => {
 
     expect(screen.queryByText('Incident type:')).not.toBeInTheDocument();
     expect(screen.queryByText('Flow Node:')).not.toBeInTheDocument();
+  });
+
+  it('should render metadata for default mode and modification dropdown for modification mode', async () => {
+    processInstanceDetailsDiagramStore.init();
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockCallActivityProcessXML))
+      ),
+      rest.post(
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
+        (_, res, ctx) => res.once(ctx.json(calledInstanceMetadata))
+      )
+    );
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      })
+    );
+
+    render(<TopPanel />, {
+      wrapper: Wrapper,
+    });
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
+    });
+
+    expect(
+      await screen.findByText(/Flow Node Instance Key/)
+    ).toBeInTheDocument();
+
+    expect(screen.getByText(/Start Date/)).toBeInTheDocument();
+    expect(screen.getByText(/End Date/)).toBeInTheDocument();
+
+    modificationsStore.enableModificationMode();
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText(/Flow Node Instance Key/)
+      ).not.toBeInTheDocument()
+    );
+
+    expect(screen.queryByText(/Start Date/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/End Date/)).not.toBeInTheDocument();
+
+    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
+    expect(
+      screen.getByTitle(/Add single flow node instance/)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTitle(
+        /Cancel all running flow node instances in this flow node/
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTitle(
+        /Move all running instances in this flow node to another target/
+      )
+    ).toBeInTheDocument();
   });
 });

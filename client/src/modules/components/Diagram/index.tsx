@@ -37,7 +37,7 @@ const Diagram: React.FC<Props> = ({
   children,
   highlightedSequenceFlows,
 }) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const diagramCanvasRef = useRef<HTMLDivElement | null>(null);
   const [isDiagramRendered, setIsDiagramRendered] = useState(false);
   const viewerRef = useRef<BpmnJS | null>(null);
   const [isViewboxChanging, setIsViewboxChanging] = useState(false);
@@ -52,10 +52,10 @@ const Diagram: React.FC<Props> = ({
 
   useLayoutEffect(() => {
     async function renderDiagram() {
-      if (containerRef.current) {
+      if (diagramCanvasRef.current) {
         setIsDiagramRendered(false);
         await viewer.render({
-          container: containerRef.current,
+          container: diagramCanvasRef.current,
           xml,
           selectableFlowNodes,
           selectedFlowNodeId,
@@ -91,7 +91,7 @@ const Diagram: React.FC<Props> = ({
 
   return (
     <StyledDiagram data-testid="diagram">
-      <DiagramCanvas ref={containerRef} />
+      <DiagramCanvas ref={diagramCanvasRef} />
       {isDiagramRendered && (
         <>
           <DiagramControls
@@ -106,6 +106,7 @@ const Diagram: React.FC<Props> = ({
         isValidElement(selectedFlowNodeOverlay) &&
         React.cloneElement(selectedFlowNodeOverlay, {
           selectedFlowNodeRef: viewer.selectedFlowNode,
+          diagramCanvasRef,
         })}
     </StyledDiagram>
   );

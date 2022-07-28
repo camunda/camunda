@@ -7,100 +7,12 @@
 
 import styled, {css} from 'styled-components';
 import {styles} from '@carbon/elements';
+import {Popover as BasePopover} from 'modules/components/Diagram/Popover';
 
-const Arrow = styled.div`
-  &:before,
-  &:after {
-    position: absolute;
-    content: ' ';
-    pointer-events: none;
-    color: transparent;
-    border-style: solid;
-    border-width: 9px;
-    top: 100%;
-  }
-`;
-
-const Popper = styled.div`
-  ${({theme}) => {
-    const colors = theme.colors.modules.diagram.metadataPopover.arrowStyle;
-
-    return css`
-      z-index: 5;
-      &[data-popper-reference-hidden='true'] {
-        visibility: hidden;
-      }
-
-      &[data-popper-placement^='top'] > ${Arrow} {
-        bottom: 1px;
-        &:before {
-          left: calc(50% - 9px);
-          border-top-color: ${colors.before.borderColor};
-        }
-        &:after {
-          left: calc(50% - 8px);
-          border-top-color: ${colors.after.borderColor};
-        }
-      }
-
-      &[data-popper-placement^='bottom'] > ${Arrow} {
-        top: -17px;
-        &:before {
-          left: calc(50% - 9px);
-          border-bottom-color: ${colors.before.borderColor};
-        }
-        &:after {
-          left: calc(50% - 8px);
-          border-bottom-color: ${colors.after.borderColor};
-        }
-      }
-
-      &[data-popper-placement^='right'] > ${Arrow} {
-        left: -17px;
-        &:before {
-          top: calc(50% - 9px);
-          border-right-color: ${colors.before.borderColor};
-        }
-        &:after {
-          top: calc(50% - 8px);
-          border-right-color: ${colors.after.borderColor};
-        }
-      }
-
-      &[data-popper-placement^='left'] > ${Arrow} {
-        right: 1px;
-        &:before {
-          top: calc(50% - 9px);
-          border-left-color: ${colors.before.borderColor};
-        }
-        &:after {
-          top: calc(50% - 8px);
-          border-left-color: ${colors.after.borderColor};
-        }
-      }
-    `;
-  }}
-`;
-
-const Popover = styled.div`
-  ${({theme}) => {
-    const colors = theme.colors.modules.diagram.metadataPopover.popOver;
-    const shadow = theme.shadows.modules.diagram.metadataPopover.popOver;
-
-    return css`
-      width: 354px;
-      background-color: ${colors.backgroundColor};
-      color: ${theme.colors.text02};
-      ${styles.bodyShort01};
-      font-size: 12px;
-      border: 1px solid ${colors.borderColor};
-      border-radius: 3px;
-      box-shadow: ${shadow};
-      padding: 11px;
-      padding-top: 12px;
-      cursor: auto;
-    `;
-  }}
+const Popover = styled(BasePopover)`
+  z-index: 5;
+  width: 354px;
+  padding: 12px 11px 11px;
 `;
 
 const Header = styled.div`
@@ -132,8 +44,7 @@ const Divider = styled.hr`
     margin: 12px 0 17px 0;
     height: 1px;
     border: none;
-    border-top: solid 1px
-      ${theme.colors.modules.diagram.metadataPopover.popOver.borderColor};
+    border-top: solid 1px ${theme.colors.modules.diagram.popover.borderColor};
   `}
 `;
 
@@ -169,8 +80,6 @@ const SummaryDataValue = styled.dd`
 `;
 
 export {
-  Arrow,
-  Popper,
   Popover,
   Header,
   Title,

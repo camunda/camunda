@@ -26,6 +26,8 @@ import {IncidentsBanner} from './IncidentsBanner';
 import {StateOverlay} from './StateOverlay';
 import {tracking} from 'modules/tracking';
 import {MetadataPopover} from './MetadataPopover';
+import {modificationsStore} from 'modules/stores/modifications';
+import {ModificationDropdown} from './ModificationDropdown';
 
 const OVERLAY_TYPE = 'flowNodeState';
 
@@ -100,17 +102,21 @@ const TopPanel: React.FC<Props> = observer(() => {
     incidentsCount,
   } = incidentsStore;
 
+  const {isModificationModeEnabled} = modificationsStore.state;
+
   useEffect(() => {
-    if (flowNodeSelection?.flowNodeId) {
-      tracking.track({
-        eventName: 'diagram-popover-opened',
-      });
-    } else {
-      tracking.track({
-        eventName: 'diagram-popover-closed',
-      });
+    if (!isModificationModeEnabled) {
+      if (flowNodeSelection?.flowNodeId) {
+        tracking.track({
+          eventName: 'metadata-popover-opened',
+        });
+      } else {
+        tracking.track({
+          eventName: 'metadata-popover-closed',
+        });
+      }
     }
-  }, [flowNodeSelection?.flowNodeId]);
+  }, [flowNodeSelection?.flowNodeId, isModificationModeEnabled]);
 
   return (
     <Container>
@@ -161,7 +167,11 @@ const TopPanel: React.FC<Props> = observer(() => {
                 }}
                 overlaysData={flowNodeStateOverlays.get()}
                 selectedFlowNodeOverlay={
-                  !isIncidentBarOpen && <MetadataPopover />
+                  isModificationModeEnabled ? (
+                    <ModificationDropdown />
+                  ) : (
+                    !isIncidentBarOpen && <MetadataPopover />
+                  )
                 }
                 highlightedSequenceFlows={processedSequenceFlows}
               >
