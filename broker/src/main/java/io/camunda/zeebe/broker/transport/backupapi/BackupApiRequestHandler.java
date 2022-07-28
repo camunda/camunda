@@ -30,6 +30,8 @@ public class BackupApiRequestHandler
     implements DiskSpaceUsageListener {
   private boolean isDiskSpaceAvailable = true;
   private final LogStreamRecordWriter logStreamRecordWriter;
+  private final AtomixServerTransport transport;
+  private final int partitionId;
 
   public BackupApiRequestHandler(
       final AtomixServerTransport transport,
@@ -37,7 +39,18 @@ public class BackupApiRequestHandler
       final int partitionId) {
     super(new BackupApiRequestReader(), new BackupApiResponseWriter());
     this.logStreamRecordWriter = logStreamRecordWriter;
+    this.transport = transport;
+    this.partitionId = partitionId;
+    transport.unsubscribe(partitionId, RequestType.BACKUP);
     transport.subscribe(partitionId, RequestType.BACKUP, this);
+  }
+
+  @Override
+  public void close() {
+    transport.unsubscribe(partitionId, RequestType.BACKUP);
+    // The broker is not the leader any more.
+    transport.subscribe(partitionId, RequestType.BACKUP, new NoPartitionLeaderHandler());
+    super.close();
   }
 
   @Override
