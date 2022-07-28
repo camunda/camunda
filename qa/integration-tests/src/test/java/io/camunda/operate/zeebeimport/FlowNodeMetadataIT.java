@@ -468,8 +468,8 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
             .endEvent()
             .done();
     final long processInstanceKey = tester
-        .deployProcess(testProcess, "testProcess.bpmn")
-        .startProcessInstance(processId)
+        .deployProcess(testProcess, "testProcess.bpmn").waitUntil().processIsDeployed()
+        .startProcessInstance(processId).waitUntil().processInstanceIsStarted()
         .and().waitUntil()
         .flowNodesAreActive(taskId, 2)
         .getProcessInstanceKey();
