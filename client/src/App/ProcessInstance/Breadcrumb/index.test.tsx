@@ -11,9 +11,6 @@ import {Breadcrumb} from './index';
 import {createInstance} from 'modules/testUtils';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {mockServer} from 'modules/mock-server/node';
-import {rest} from 'msw';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 
 const createWrapper = (initialPath: string = '/processes/123') => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
@@ -30,43 +27,28 @@ const createWrapper = (initialPath: string = '/processes/123') => {
   return Wrapper;
 };
 
+const processInstance = {
+  ...createInstance(),
+  id: '123',
+  processName: 'Base instance name',
+  callHierarchy: [
+    {
+      instanceId: '546546543276',
+      processDefinitionName: 'Parent Process Name',
+    },
+    {
+      instanceId: '968765314354',
+      processDefinitionName: '1st level Child Process Name',
+    },
+    {
+      instanceId: '2251799813685447',
+      processDefinitionName: '2nd level Child Process Name',
+    },
+  ],
+};
 describe('User', () => {
-  beforeEach(() => {
-    mockServer.use(
-      rest.get(`/api/process-instances/:id`, (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...createInstance(),
-            id: '123',
-            processName: 'Base instance name',
-            callHierarchy: [
-              {
-                instanceId: '546546543276',
-                processDefinitionName: 'Parent Process Name',
-              },
-              {
-                instanceId: '968765314354',
-                processDefinitionName: '1st level Child Process Name',
-              },
-              {
-                instanceId: '2251799813685447',
-                processDefinitionName: '2nd level Child Process Name',
-              },
-            ],
-          })
-        )
-      )
-    );
-  });
-
-  afterEach(() => {
-    processInstanceDetailsStore.reset();
-  });
-
   it('should render breadcrumb', async () => {
-    await processInstanceDetailsStore.fetchProcessInstance();
-
-    render(<Breadcrumb />, {
+    render(<Breadcrumb processInstance={processInstance} />, {
       wrapper: createWrapper(),
     });
 
@@ -81,9 +63,7 @@ describe('User', () => {
   });
 
   it('should navigate to instance detail on click', async () => {
-    await processInstanceDetailsStore.fetchProcessInstance();
-
-    const {user} = render(<Breadcrumb />, {
+    const {user} = render(<Breadcrumb processInstance={processInstance} />, {
       wrapper: createWrapper('/processes/123'),
     });
 

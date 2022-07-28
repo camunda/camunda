@@ -6,22 +6,17 @@
  */
 
 import {Fragment} from 'react';
-import {observer} from 'mobx-react';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {Paths} from 'modules/routes';
 import {Container, Link, Separator, CurrentInstance} from './styled';
 import {tracking} from 'modules/tracking';
 
-const Breadcrumb: React.FC = observer(() => {
-  if (
-    processInstanceDetailsStore.state.processInstance === null ||
-    processInstanceDetailsStore.state.processInstance.callHierarchy.length === 0
-  ) {
-    return null;
-  }
+type Props = {
+  processInstance: ProcessInstanceEntity;
+};
 
-  const {id, callHierarchy, processName} =
-    processInstanceDetailsStore.state.processInstance;
+const Breadcrumb: React.FC<Props> = ({processInstance}) => {
+  const {id, callHierarchy, processName} = processInstance;
+
   return (
     <Container>
       {callHierarchy.map(({instanceId, processDefinitionName}) => {
@@ -48,6 +43,6 @@ const Breadcrumb: React.FC = observer(() => {
       </CurrentInstance>
     </Container>
   );
-});
+};
 
 export {Breadcrumb};

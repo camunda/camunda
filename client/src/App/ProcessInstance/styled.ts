@@ -12,6 +12,7 @@ import {zModificationFrame} from 'modules/constants/componentHierarchy';
 
 type ContainerProps = {
   $isModificationOutlineVisible: boolean;
+  $isBreadcrumbVisible: boolean;
 };
 
 const frameStyles: ThemedInterpolationFunction = ({theme}) => {
@@ -26,12 +27,12 @@ const frameStyles: ThemedInterpolationFunction = ({theme}) => {
 };
 
 const Container = styled.main<ContainerProps>`
-  ${({theme, $isModificationOutlineVisible}) => {
+  ${({theme, $isModificationOutlineVisible, $isBreadcrumbVisible}) => {
     return css`
       display: grid;
-      grid-template-rows: ${$isModificationOutlineVisible
-        ? '38px 56px 1fr'
-        : '56px 1fr'};
+      grid-template-rows: ${`${$isModificationOutlineVisible ? '34px' : ''} ${
+        $isBreadcrumbVisible ? '30px' : ''
+      } 56px 1fr`};
       height: 100%;
       ${$isModificationOutlineVisible &&
       css`

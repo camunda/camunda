@@ -108,9 +108,16 @@ const ProcessInstance: React.FC = observer(() => {
   const panelMinHeight = clientHeight / 4;
 
   const {isModificationModeEnabled} = modificationsStore.state;
+  const isBreadcrumbVisible =
+    processInstanceDetailsStore.state.processInstance !== null &&
+    processInstanceDetailsStore.state.processInstance?.callHierarchy?.length >
+      0;
 
   return (
-    <Container $isModificationOutlineVisible={isModificationModeEnabled}>
+    <Container
+      $isModificationOutlineVisible={isModificationModeEnabled}
+      $isBreadcrumbVisible={isBreadcrumbVisible}
+    >
       {processInstanceId && (
         <VisuallyHiddenH1>{`Operate Process Instance ${processInstanceId}`}</VisuallyHiddenH1>
       )}
@@ -119,7 +126,11 @@ const ProcessInstance: React.FC = observer(() => {
           Process Instance Modification Mode
         </ModificationHeader>
       )}
-      <Breadcrumb />
+      {isBreadcrumbVisible && (
+        <Breadcrumb
+          processInstance={processInstanceDetailsStore.state.processInstance!}
+        />
+      )}
 
       <ProcessInstanceHeader />
 
