@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.camunda.optimize.service.identity.CCSaaSUserIdentityCache;
+import org.camunda.optimize.service.identity.CCSaaSIdentityService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -23,16 +23,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CCSaaSAlertRecipientValidator implements AlertRecipientValidator {
 
-  private final CCSaaSUserIdentityCache userIdentityCacheService;
+  private final CCSaaSIdentityService identityService;
 
   @Override
   public void validateAlertRecipientEmailAddresses(final List<String> emails) {
-    final List<String> cachedUserEmails = userIdentityCacheService.getUsersByEmail(emails)
+    final List<String> userEmails = identityService.getUsersByEmail(emails)
       .stream().map(UserDto::getEmail).collect(Collectors.toList());
-    final Collection<String> uncachedUserEmails = CollectionUtils.subtract(emails, cachedUserEmails);
-    if (uncachedUserEmails.size() > emails.size()) {
+    final Collection<String> unknownEmails = CollectionUtils.subtract(emails, userEmails);
+    if (unknownEmails.size() > emails.size()) {
       throw new OptimizeValidationException(
-        "Users with the following email addresses are not available for receiving alerts: " + uncachedUserEmails);
+        "Users with the following email addresses are not available for receiving alerts: " + unknownEmails
+      );
     }
   }
 
