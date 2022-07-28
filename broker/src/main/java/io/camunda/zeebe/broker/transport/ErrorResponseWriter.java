@@ -40,6 +40,8 @@ public final class ErrorResponseWriter implements BufferWriter {
   private static final String PROCESS_NOT_FOUND_FORMAT =
       "Expected to get process with %s, but no such process found";
   private static final String RESOURCE_EXHAUSTED = "Reached maximum capacity of requests handled";
+  private static final String OUT_OF_DISK_SPACE =
+      "Cannot accept requests. Broker is out of disk space";
 
   private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
   private final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
@@ -83,6 +85,10 @@ public final class ErrorResponseWriter implements BufferWriter {
 
   public ErrorResponseWriter resourceExhausted(final String message) {
     return errorCode(ErrorCode.RESOURCE_EXHAUSTED).errorMessage(message);
+  }
+
+  public ErrorResponseWriter outOfDiskSpace() {
+    return errorCode(ErrorCode.RESOURCE_EXHAUSTED).errorMessage(OUT_OF_DISK_SPACE);
   }
 
   public ErrorResponseWriter malformedRequest(Throwable e) {
