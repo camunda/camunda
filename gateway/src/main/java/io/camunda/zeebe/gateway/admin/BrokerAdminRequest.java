@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.AdminRequestType;
 import io.camunda.zeebe.protocol.record.AdminResponseEncoder;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -86,6 +87,11 @@ public class BrokerAdminRequest extends BrokerRequest<Void> {
   @Override
   public RequestType getRequestType() {
     return RequestType.ADMIN;
+  }
+
+  @Override
+  public Optional<Integer> getBrokerId() {
+    return Optional.empty();
   }
 
   @Override
