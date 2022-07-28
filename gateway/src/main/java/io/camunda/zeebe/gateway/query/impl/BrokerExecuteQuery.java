@@ -15,7 +15,6 @@ import io.camunda.zeebe.protocol.record.ExecuteQueryResponseDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -33,11 +32,6 @@ public final class BrokerExecuteQuery extends BrokerRequest<String> {
 
   public void setValueType(final ValueType valueType) {
     request.setValueType(valueType);
-  }
-
-  @Override
-  public Optional<Integer> addressesSpecificBroker() {
-    return Optional.empty();
   }
 
   @Override

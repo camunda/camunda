@@ -206,9 +206,8 @@ final class BrokerRequestManager extends Actor {
   }
 
   private BrokerAddressProvider determineBrokerNodeIdProvider(final BrokerRequest<?> request) {
-    if (request.addressesSpecificBroker().isPresent()) {
-      return new BrokerAddressProvider(
-          clusterState -> request.addressesSpecificBroker().orElseThrow());
+    if (request.getBrokerId().isPresent()) {
+      return new BrokerAddressProvider(clusterState -> request.getBrokerId().orElseThrow());
     } else if (request.addressesSpecificPartition()) {
       final BrokerClusterState topology = topologyManager.getTopology();
       if (topology != null && !topology.getPartitions().contains(request.getPartitionId())) {

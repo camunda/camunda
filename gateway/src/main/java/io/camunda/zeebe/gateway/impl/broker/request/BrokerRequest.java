@@ -37,7 +37,9 @@ public abstract class BrokerRequest<T> implements ClientRequest {
     this.templateId = templateId;
   }
 
-  public abstract Optional<Integer> addressesSpecificBroker();
+  public Optional<Integer> getBrokerId() {
+    return Optional.empty();
+  }
 
   public abstract void setPartitionId(int partitionId);
 

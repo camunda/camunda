@@ -90,7 +90,7 @@ public class BrokerAdminRequest extends BrokerRequest<Void> {
   }
 
   @Override
-  public Optional<Integer> addressesSpecificBroker() {
+  public Optional<Integer> getBrokerId() {
     return Optional.empty();
   }
 
