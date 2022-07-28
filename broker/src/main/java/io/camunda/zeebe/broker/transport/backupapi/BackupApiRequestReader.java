@@ -19,7 +19,9 @@ public class BackupApiRequestReader implements RequestReader<BackupRequestDecode
   private final BackupRequestDecoder messageDecoder = new BackupRequestDecoder();
 
   @Override
-  public void reset() {}
+  public void reset() {
+    // No internal state to reset
+  }
 
   @Override
   public BackupRequestDecoder getMessageDecoder() {
