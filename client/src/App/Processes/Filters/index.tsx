@@ -51,6 +51,8 @@ import {
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {FieldValidator} from 'final-form';
 import {Variable} from './VariableField';
+import {DateRange} from './DateRange';
+import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 
 type OptionalFilter =
   | 'variable'
@@ -59,7 +61,9 @@ type OptionalFilter =
   | 'operationId'
   | 'errorMessage'
   | 'startDate'
-  | 'endDate';
+  | 'endDate'
+  | 'startDateRange'
+  | 'endDateRange';
 
 const optionalFilters: Array<OptionalFilter> = [
   'variable',
@@ -67,8 +71,8 @@ const optionalFilters: Array<OptionalFilter> = [
   'operationId',
   'parentInstanceId',
   'errorMessage',
-  'startDate',
-  'endDate',
+  IS_DATE_RANGE_FILTERS_ENABLED ? 'startDateRange' : 'startDate',
+  IS_DATE_RANGE_FILTERS_ENABLED ? 'endDateRange' : 'endDate',
 ];
 
 type LocationType = Omit<Location, 'state'> & {
@@ -144,6 +148,14 @@ const OPTIONAL_FILTER_FIELDS: Record<
     placeholder: 'YYYY-MM-DD hh:mm:ss',
     type: 'text',
     validate: mergeValidators(validateDateCharacters, validateDateComplete),
+  },
+  startDateRange: {
+    keys: ['startDateAfter', 'startDateBefore'],
+    label: 'Start Date Range',
+  },
+  endDateRange: {
+    keys: ['endDateAfter', 'endDateBefore'],
+    label: 'End Date Range',
   },
 };
 
@@ -282,29 +294,42 @@ const Filters: React.FC = observer(() => {
                         form.submit();
                       }}
                     />
-                    {filter === 'variable' ? (
-                      <Variable />
-                    ) : (
-                      <Field
-                        name={filter}
-                        validate={OPTIONAL_FILTER_FIELDS[filter].validate}
-                      >
-                        {({input}) => (
-                          <TextField
-                            {...input}
-                            data-testid={`optional-filter-${filter}`}
-                            label={OPTIONAL_FILTER_FIELDS[filter].label}
-                            type={OPTIONAL_FILTER_FIELDS[filter].type}
-                            rows={OPTIONAL_FILTER_FIELDS[filter].rows}
-                            placeholder={
-                              OPTIONAL_FILTER_FIELDS[filter].placeholder
-                            }
-                            shouldDebounceError={false}
-                            autoFocus
-                          />
-                        )}
-                      </Field>
-                    )}
+                    {(() => {
+                      switch (filter) {
+                        case 'variable':
+                          return <Variable />;
+                        case 'startDateRange':
+                        case 'endDateRange':
+                          return (
+                            <DateRange
+                              filterKeys={OPTIONAL_FILTER_FIELDS[filter].keys}
+                              label={OPTIONAL_FILTER_FIELDS[filter].label}
+                            />
+                          );
+                        default:
+                          return (
+                            <Field
+                              name={filter}
+                              validate={OPTIONAL_FILTER_FIELDS[filter].validate}
+                            >
+                              {({input}) => (
+                                <TextField
+                                  {...input}
+                                  data-testid={`optional-filter-${filter}`}
+                                  label={OPTIONAL_FILTER_FIELDS[filter].label}
+                                  type={OPTIONAL_FILTER_FIELDS[filter].type}
+                                  rows={OPTIONAL_FILTER_FIELDS[filter].rows}
+                                  placeholder={
+                                    OPTIONAL_FILTER_FIELDS[filter].placeholder
+                                  }
+                                  shouldDebounceError={false}
+                                  autoFocus
+                                />
+                              )}
+                            </Field>
+                          );
+                      }
+                    })()}
                   </FormGroup>
                 ))}
               </OptionalFilters>

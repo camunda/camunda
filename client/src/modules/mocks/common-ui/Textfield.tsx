@@ -16,6 +16,7 @@ type Props = {
   shouldDebounceError: boolean;
   label?: string;
   children: React.ReactNode;
+  readonly: boolean;
 };
 
 const Textfield = React.forwardRef<
@@ -31,6 +32,7 @@ const Textfield = React.forwardRef<
       onCmInput,
       shouldDebounceError,
       label,
+      readonly = false,
       ...props
     },
     ref
@@ -57,7 +59,7 @@ const Textfield = React.forwardRef<
       <>
         <label>
           {label}
-          <input {...props} onChange={onCmInput} />
+          <input {...props} onChange={onCmInput} readOnly={readonly} />
         </label>
         <div>{errorMessage}</div>
         {fieldSuffix?.type === 'icon' && (

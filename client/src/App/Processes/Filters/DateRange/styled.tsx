@@ -5,7 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-const IS_MODIFICATION_MODE_ENABLED = false;
-const IS_DATE_RANGE_FILTERS_ENABLED = false;
+import styled from 'styled-components';
+import {CmTextfield} from '@camunda-cloud/common-ui-react';
 
-export {IS_MODIFICATION_MODE_ENABLED, IS_DATE_RANGE_FILTERS_ENABLED};
+const TextField = styled(CmTextfield)`
+  padding-bottom: 21px;
+`;
+
+export {TextField};

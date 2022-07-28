@@ -26,7 +26,11 @@ type ProcessInstanceFilterField =
   | 'active'
   | 'incidents'
   | 'completed'
-  | 'canceled';
+  | 'canceled'
+  | 'startDateAfter'
+  | 'startDateBefore'
+  | 'endDateAfter'
+  | 'endDateBefore';
 
 type DecisionInstanceFilterField =
   | 'name'
@@ -53,6 +57,10 @@ type ProcessInstanceFilters = {
   incidents?: boolean;
   completed?: boolean;
   canceled?: boolean;
+  startDateAfter?: string;
+  startDateBefore?: string;
+  endDateAfter?: string;
+  endDateBefore?: string;
 };
 
 type DecisionInstanceFilters = {
