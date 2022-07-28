@@ -21,9 +21,26 @@ import java.util.Map;
 
 public interface ModifyProcessInstanceCommandStep1 {
 
-  ModifyProcessInstanceCommandStep2 activateElement(final String elementId);
+  /**
+   * Create an activate instruction for the given element id. The element will be created within an
+   * existing element instance of the flow scope.
+   *
+   * @param elementId the id of the element to activate
+   * @return the builder for this command
+   */
+  ModifyProcessInstanceCommandStep3 activateElement(final String elementId);
 
-  ModifyProcessInstanceCommandStep2 activateElement(
+  /**
+   * Create an {@link
+   * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.ActivateInstruction}
+   * for the given element id. The element will be created within the scope that is passed. This
+   * scope must be an ancestor of the element that's getting activated.
+   *
+   * @param elementId the id of the element to activate
+   * @param ancestorElementInstanceKey the element instance key in which the element will be created
+   * @return the builder for this command
+   */
+  ModifyProcessInstanceCommandStep3 activateElement(
       final String elementId, final long ancestorElementInstanceKey);
 
   /**
@@ -38,27 +55,109 @@ public interface ModifyProcessInstanceCommandStep1 {
 
   interface ModifyProcessInstanceCommandStep2
       extends FinalCommandStep<ModifyProcessInstanceResponse> {
-
-    ModifyProcessInstanceCommandStep2 withVariables(final InputStream variables);
-
-    ModifyProcessInstanceCommandStep2 withVariables(
-        final InputStream variables, final String scopeId);
-
-    ModifyProcessInstanceCommandStep2 withVariables(final String variables);
-
-    ModifyProcessInstanceCommandStep2 withVariables(final String variables, final String scopeId);
-
-    ModifyProcessInstanceCommandStep2 withVariables(final Map<String, Object> variables);
-
-    ModifyProcessInstanceCommandStep2 withVariables(
-        final Map<String, Object> variables, final String scopeId);
-
-    ModifyProcessInstanceCommandStep2 withVariables(final Object variables);
-
-    ModifyProcessInstanceCommandStep2 withVariables(final Object variables, final String scopeId);
+    /**
+     * Acts as a boundary between the different activate and terminate instructions. Use this if you
+     * want to activate or terminate another element. Otherwise, {@link #send()} the command.
+     *
+     * @return the builder for this command
+     */
+    ModifyProcessInstanceCommandStep1 and();
   }
 
-  interface ModifyProcessInstanceCommandStep3 {
-    ModifyProcessInstanceCommandStep1 and();
+  interface ModifyProcessInstanceCommandStep3 extends ModifyProcessInstanceCommandStep2 {
+
+    /**
+     * Create a {@link
+     * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction}
+     * for the element that's getting activated. These variables will be created in the global scope
+     * of the process instance.
+     *
+     * @param variables the variables JSON document as stream
+     * @return the builder for this command
+     */
+    ModifyProcessInstanceCommandStep3 withVariables(final InputStream variables);
+
+    /**
+     * Create a {@link
+     * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction}
+     * for the element that's getting activated. These variables will be created in the scope of the
+     * passed element.
+     *
+     * @param variables the variables JSON document as stream
+     * @param scopeId the id of the element in which scope the variables should be created
+     * @return the builder for this command
+     */
+    ModifyProcessInstanceCommandStep3 withVariables(
+        final InputStream variables, final String scopeId);
+
+    /**
+     * Create a {@link
+     * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction}
+     * for the element that's getting activated. These variables will be created in the global scope
+     * of the process instance.
+     *
+     * @param variables the variables JSON document as String
+     * @return the builder for this command
+     */
+    ModifyProcessInstanceCommandStep3 withVariables(final String variables);
+
+    /**
+     * Create a {@link
+     * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction}
+     * for the element that's getting activated. These variables will be created in the scope of the
+     * passed element.
+     *
+     * @param variables the variables JSON document as String
+     * @param scopeId the id of the element in which scope the variables should be created
+     * @return the builder for this command
+     */
+    ModifyProcessInstanceCommandStep3 withVariables(final String variables, final String scopeId);
+
+    /**
+     * Create a {@link
+     * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction}
+     * for the element that's getting activated. These variables will be created in the global scope
+     * of the process instance.
+     *
+     * @param variables the variables JSON document as map
+     * @return the builder for this command
+     */
+    ModifyProcessInstanceCommandStep3 withVariables(final Map<String, Object> variables);
+
+    /**
+     * Create a {@link
+     * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction}
+     * for the element that's getting activated. These variables will be created in the scope of the
+     * passed element.
+     *
+     * @param variables the variables JSON document as map
+     * @param scopeId the id of the element in which scope the variables should be created
+     * @return the builder for this command
+     */
+    ModifyProcessInstanceCommandStep3 withVariables(
+        final Map<String, Object> variables, final String scopeId);
+
+    /**
+     * Create a {@link
+     * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction}
+     * for the element that's getting activated. These variables will be created in the global scope
+     * of the process instance.
+     *
+     * @param variables the variables document as object to be serialized to JSON
+     * @return the builder for this command
+     */
+    ModifyProcessInstanceCommandStep3 withVariables(final Object variables);
+
+    /**
+     * Create a {@link
+     * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction}
+     * for the element that's getting activated. These variables will be created in the scope of the
+     * passed element.
+     *
+     * @param variables the variables document as object to be serialized to JSON
+     * @param scopeId the id of the element in which scope the variables should be created
+     * @return the builder for this command
+     */
+    ModifyProcessInstanceCommandStep3 withVariables(final Object variables, final String scopeId);
   }
 }

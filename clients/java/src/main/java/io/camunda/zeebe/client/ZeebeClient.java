@@ -309,5 +309,24 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    */
   ActivateJobsCommandStep1 newActivateJobsCommand();
 
+  /**
+   * Command to modify a process instance.
+   *
+   * <pre>
+   *   zeebeClient
+   *    .newModifyProcessInstanceCommand(processInstanceKey)
+   *    .activateElement("element1")
+   *    .and()
+   *    .activateElement("element2")
+   *    .withVariables(globalScopedVariables)
+   *    .withVariables(localScopedVariables, "element2")
+   *    .and()
+   *    .terminateElement("element3")
+   *    .send();
+   * </pre>
+   *
+   * @param processInstanceKey
+   * @return a builder for the command
+   */
   ModifyProcessInstanceCommandStep1 newModifyProcessInstanceCommand(long processInstanceKey);
 }

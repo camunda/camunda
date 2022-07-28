@@ -19,7 +19,7 @@ import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2;
+import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3;
 import io.camunda.zeebe.client.api.response.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.response.ModifyProcessInstanceResponseImpl;
@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 public class ModifyProcessInstanceCommandImpl
-    implements ModifyProcessInstanceCommandStep1, ModifyProcessInstanceCommandStep2 {
+    implements ModifyProcessInstanceCommandStep1, ModifyProcessInstanceCommandStep3 {
 
   private static final String EMPTY_SCOPE_ID = "";
   private static final long EMPTY_ANCESTOR_KEY = -1L;
@@ -63,24 +63,24 @@ public class ModifyProcessInstanceCommandImpl
   }
 
   @Override
-  public ModifyProcessInstanceCommandStep2 activateElement(final String elementId) {
+  public ModifyProcessInstanceCommandStep3 activateElement(final String elementId) {
     return activateElement(elementId, EMPTY_ANCESTOR_KEY);
   }
 
   @Override
-  public ModifyProcessInstanceCommandStep2 activateElement(
+  public ModifyProcessInstanceCommandStep3 activateElement(
       final String elementId, final long ancestorElementInstanceKey) {
     return addActivateInstruction(elementId, ancestorElementInstanceKey);
   }
 
   @Override
-  public ModifyProcessInstanceCommandStep3 terminateElement(final long elementInstanceKey) {
+  public ModifyProcessInstanceCommandStep2 terminateElement(final long elementInstanceKey) {
     requestBuilder.addTerminateInstructions(
         TerminateInstruction.newBuilder().setElementInstanceKey(elementInstanceKey).build());
     return this;
   }
 
-  private ModifyProcessInstanceCommandStep2 addActivateInstruction(
+  private ModifyProcessInstanceCommandStep3 addActivateInstruction(
       final String elementId, final long ancestorElementInstanceKey) {
     final ActivateInstruction activateInstruction =
         ActivateInstruction.newBuilder()
@@ -98,7 +98,7 @@ public class ModifyProcessInstanceCommandImpl
   }
 
   @Override
-  public ModifyProcessInstanceCommandStep2 withVariables(final InputStream variables) {
+  public ModifyProcessInstanceCommandStep3 withVariables(final InputStream variables) {
     final VariableInstruction variableInstruction =
         createVariableInstruction(variables, EMPTY_SCOPE_ID);
     latestActivateInstruction.getVariableInstructionsList().add(variableInstruction);
@@ -106,7 +106,7 @@ public class ModifyProcessInstanceCommandImpl
   }
 
   @Override
-  public ModifyProcessInstanceCommandStep2 withVariables(
+  public ModifyProcessInstanceCommandStep3 withVariables(
       final InputStream variables, final String scopeId) {
     final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
     latestActivateInstruction.getVariableInstructionsList().add(variableInstruction);
@@ -114,7 +114,7 @@ public class ModifyProcessInstanceCommandImpl
   }
 
   @Override
-  public ModifyProcessInstanceCommandStep2 withVariables(final String variables) {
+  public ModifyProcessInstanceCommandStep3 withVariables(final String variables) {
     final VariableInstruction variableInstruction =
         createVariableInstruction(variables, EMPTY_SCOPE_ID);
     latestActivateInstruction.getVariableInstructionsList().add(variableInstruction);
@@ -122,7 +122,7 @@ public class ModifyProcessInstanceCommandImpl
   }
 
   @Override
-  public ModifyProcessInstanceCommandStep2 withVariables(
+  public ModifyProcessInstanceCommandStep3 withVariables(
       final String variables, final String scopeId) {
     final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
     latestActivateInstruction.getVariableInstructionsList().add(variableInstruction);
@@ -130,7 +130,7 @@ public class ModifyProcessInstanceCommandImpl
   }
 
   @Override
-  public ModifyProcessInstanceCommandStep2 withVariables(final Map<String, Object> variables) {
+  public ModifyProcessInstanceCommandStep3 withVariables(final Map<String, Object> variables) {
     final VariableInstruction variableInstruction =
         createVariableInstruction(variables, EMPTY_SCOPE_ID);
     latestActivateInstruction.getVariableInstructionsList().add(variableInstruction);
@@ -138,7 +138,7 @@ public class ModifyProcessInstanceCommandImpl
   }
 
   @Override
-  public ModifyProcessInstanceCommandStep2 withVariables(
+  public ModifyProcessInstanceCommandStep3 withVariables(
       final Map<String, Object> variables, final String scopeId) {
     final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
     latestActivateInstruction.getVariableInstructionsList().add(variableInstruction);
@@ -146,7 +146,7 @@ public class ModifyProcessInstanceCommandImpl
   }
 
   @Override
-  public ModifyProcessInstanceCommandStep2 withVariables(final Object variables) {
+  public ModifyProcessInstanceCommandStep3 withVariables(final Object variables) {
     final VariableInstruction variableInstruction =
         createVariableInstruction(variables, EMPTY_SCOPE_ID);
     latestActivateInstruction.getVariableInstructionsList().add(variableInstruction);
@@ -154,7 +154,7 @@ public class ModifyProcessInstanceCommandImpl
   }
 
   @Override
-  public ModifyProcessInstanceCommandStep2 withVariables(
+  public ModifyProcessInstanceCommandStep3 withVariables(
       final Object variables, final String scopeId) {
     final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
     latestActivateInstruction.getVariableInstructionsList().add(variableInstruction);
