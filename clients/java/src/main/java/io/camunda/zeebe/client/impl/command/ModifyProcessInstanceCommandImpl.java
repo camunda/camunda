@@ -99,10 +99,7 @@ public class ModifyProcessInstanceCommandImpl
 
   @Override
   public ModifyProcessInstanceCommandStep3 withVariables(final InputStream variables) {
-    final VariableInstruction variableInstruction =
-        createVariableInstruction(variables, EMPTY_SCOPE_ID);
-    addVariableInstructionToLatestActivateInstruction(variableInstruction);
-    return this;
+    return withVariables(variables, EMPTY_SCOPE_ID);
   }
 
   @Override
@@ -115,10 +112,7 @@ public class ModifyProcessInstanceCommandImpl
 
   @Override
   public ModifyProcessInstanceCommandStep3 withVariables(final String variables) {
-    final VariableInstruction variableInstruction =
-        createVariableInstruction(variables, EMPTY_SCOPE_ID);
-    addVariableInstructionToLatestActivateInstruction(variableInstruction);
-    return this;
+    return withVariables(variables, EMPTY_SCOPE_ID);
   }
 
   @Override
@@ -131,10 +125,7 @@ public class ModifyProcessInstanceCommandImpl
 
   @Override
   public ModifyProcessInstanceCommandStep3 withVariables(final Map<String, Object> variables) {
-    final VariableInstruction variableInstruction =
-        createVariableInstruction(variables, EMPTY_SCOPE_ID);
-    addVariableInstructionToLatestActivateInstruction(variableInstruction);
-    return this;
+    return withVariables(variables, EMPTY_SCOPE_ID);
   }
 
   @Override
@@ -147,10 +138,7 @@ public class ModifyProcessInstanceCommandImpl
 
   @Override
   public ModifyProcessInstanceCommandStep3 withVariables(final Object variables) {
-    final VariableInstruction variableInstruction =
-        createVariableInstruction(variables, EMPTY_SCOPE_ID);
-    addVariableInstructionToLatestActivateInstruction(variableInstruction);
-    return this;
+    return withVariables(variables, EMPTY_SCOPE_ID);
   }
 
   @Override
