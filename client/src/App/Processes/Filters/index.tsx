@@ -51,7 +51,7 @@ import {
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {FieldValidator} from 'final-form';
 import {Variable} from './VariableField';
-import {DateRange} from './DateRange';
+import {DateRangeField} from 'modules/components/DateRangeField';
 import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 
 type OptionalFilter =
@@ -301,7 +301,7 @@ const Filters: React.FC = observer(() => {
                         case 'startDateRange':
                         case 'endDateRange':
                           return (
-                            <DateRange
+                            <DateRangeField
                               filterKeys={OPTIONAL_FILTER_FIELDS[filter].keys}
                               label={OPTIONAL_FILTER_FIELDS[filter].label}
                             />

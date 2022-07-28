@@ -14,7 +14,7 @@ type Props = {
   filterKeys: string[];
 };
 
-const DateRange: React.FC<Props> = ({label, filterKeys}) => {
+const DateRangeField: React.FC<Props> = ({label, filterKeys}) => {
   const cmTextFieldRef = useRef<HTMLCmTextfieldElement | null>(null);
 
   const handleClick = () => {
@@ -47,4 +47,4 @@ const DateRange: React.FC<Props> = ({label, filterKeys}) => {
   );
 };
 
-export {DateRange};
+export {DateRangeField};

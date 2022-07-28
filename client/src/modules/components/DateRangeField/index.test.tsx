@@ -7,7 +7,7 @@
 
 import {render, screen} from 'modules/testing-library';
 import {Form} from 'react-final-form';
-import {DateRange} from '.';
+import {DateRangeField} from '.';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return <Form onSubmit={() => {}}>{() => children}</Form>;
@@ -16,7 +16,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 describe('Date Range', () => {
   it('should render readonly input field', async () => {
     render(
-      <DateRange
+      <DateRangeField
         label={'Start Date Range'}
         filterKeys={['startDateBefore', 'startDateAfter']}
       />,

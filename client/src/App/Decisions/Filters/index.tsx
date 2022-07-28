@@ -8,6 +8,7 @@
 import {useEffect, useState} from 'react';
 import {Locations} from 'modules/routes';
 import {
+  DecisionInstanceFilterField,
   DecisionInstanceFilters,
   getDecisionInstanceFilters,
   updateDecisionsFiltersSearchString,
@@ -44,16 +45,19 @@ import {
 } from 'modules/validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {FieldValidator} from 'final-form';
+import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
+import {DateRangeField} from 'modules/components/DateRangeField';
 
-type OptionalFilter = keyof Pick<
-  DecisionInstanceFilters,
-  'decisionInstanceIds' | 'processInstanceId' | 'evaluationDate'
->;
+type OptionalFilter =
+  | 'decisionInstanceIds'
+  | 'processInstanceId'
+  | 'evaluationDate'
+  | 'evaluationDateRange';
 
 const optionalFilters: Array<OptionalFilter> = [
   'decisionInstanceIds',
   'processInstanceId',
-  'evaluationDate',
+  IS_DATE_RANGE_FILTERS_ENABLED ? 'evaluationDateRange' : 'evaluationDate',
 ];
 
 const OPTIONAL_FILTER_FIELDS: Record<
@@ -61,12 +65,14 @@ const OPTIONAL_FILTER_FIELDS: Record<
   {
     label: string;
     placeholder?: string;
-    type: 'multiline' | 'text';
+    type?: 'multiline' | 'text';
     rows?: number;
     validate?: FieldValidator<string | undefined>;
+    keys: DecisionInstanceFilterField[];
   }
 > = {
   decisionInstanceIds: {
+    keys: ['decisionInstanceIds'],
     label: 'Decision Instance Key(s)',
     type: 'multiline',
     placeholder: 'separated by space or comma',
@@ -78,6 +84,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     ),
   },
   processInstanceId: {
+    keys: ['processInstanceId'],
     label: 'Process Instance Key',
     type: 'text',
     validate: mergeValidators(
@@ -87,10 +94,15 @@ const OPTIONAL_FILTER_FIELDS: Record<
     ),
   },
   evaluationDate: {
+    keys: ['evaluationDate'],
     label: 'Evaluation Date',
     placeholder: 'YYYY-MM-DD hh:mm:ss',
     type: 'text',
     validate: mergeValidators(validateDateCharacters, validateDateComplete),
+  },
+  evaluationDateRange: {
+    keys: ['evaluationDateBefore', 'evaluationDateAfter'],
+    label: 'Evaluation Date Range',
   },
 };
 
@@ -209,28 +221,37 @@ const Filters: React.FC = observer(() => {
                           )
                         );
 
-                        form.change(filter, undefined);
+                        OPTIONAL_FILTER_FIELDS[filter].keys.forEach((key) => {
+                          form.change(key, undefined);
+                        });
                         form.submit();
                       }}
                     />
-                    <Field
-                      name={filter}
-                      validate={OPTIONAL_FILTER_FIELDS[filter].validate}
-                    >
-                      {({input}) => (
-                        <TextField
-                          {...input}
-                          label={OPTIONAL_FILTER_FIELDS[filter].label}
-                          type={OPTIONAL_FILTER_FIELDS[filter].type}
-                          rows={OPTIONAL_FILTER_FIELDS[filter].rows}
-                          placeholder={
-                            OPTIONAL_FILTER_FIELDS[filter].placeholder
-                          }
-                          shouldDebounceError={false}
-                          autoFocus
-                        />
-                      )}
-                    </Field>
+                    {filter === 'evaluationDateRange' ? (
+                      <DateRangeField
+                        label={OPTIONAL_FILTER_FIELDS[filter].label}
+                        filterKeys={OPTIONAL_FILTER_FIELDS[filter].keys}
+                      />
+                    ) : (
+                      <Field
+                        name={filter}
+                        validate={OPTIONAL_FILTER_FIELDS[filter].validate}
+                      >
+                        {({input}) => (
+                          <TextField
+                            {...input}
+                            label={OPTIONAL_FILTER_FIELDS[filter].label}
+                            type={OPTIONAL_FILTER_FIELDS[filter].type}
+                            rows={OPTIONAL_FILTER_FIELDS[filter].rows}
+                            placeholder={
+                              OPTIONAL_FILTER_FIELDS[filter].placeholder
+                            }
+                            shouldDebounceError={false}
+                            autoFocus
+                          />
+                        )}
+                      </Field>
+                    )}
                   </FormGroup>
                 ))}
               </OptionalFilters>

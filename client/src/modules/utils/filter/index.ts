@@ -39,7 +39,9 @@ type DecisionInstanceFilterField =
   | 'failed'
   | 'decisionInstanceIds'
   | 'processInstanceId'
-  | 'evaluationDate';
+  | 'evaluationDate'
+  | 'evaluationDateBefore'
+  | 'evaluationDateAfter';
 
 type ProcessInstanceFilters = {
   process?: string;
@@ -71,6 +73,8 @@ type DecisionInstanceFilters = {
   decisionInstanceIds?: string;
   processInstanceId?: string;
   evaluationDate?: string;
+  evaluationDateBefore?: string;
+  evaluationDateAfter?: string;
 };
 
 type RequestFilters = {
@@ -562,4 +566,5 @@ export type {
   RequestFilters,
   DecisionRequestFilters,
   DecisionInstanceFilters,
+  DecisionInstanceFilterField,
 };

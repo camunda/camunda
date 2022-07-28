@@ -15,6 +15,8 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {rest} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
+import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
+import {omit} from 'lodash';
 
 function reset() {
   jest.clearAllTimers();
@@ -113,8 +115,11 @@ describe('<Filters />', () => {
     );
 
     await user.click(screen.getByText(/^more filters$/i));
-    await user.click(screen.getByText(/evaluation date/i));
-    await user.type(screen.getByText(/evaluation date/i), '1111-11-11');
+
+    if (!IS_DATE_RANGE_FILTERS_ENABLED) {
+      await user.click(screen.getByText(/evaluation date/i));
+      await user.type(screen.getByText(/evaluation date/i), '1111-11-11');
+    }
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     await waitFor(() =>
@@ -124,7 +129,11 @@ describe('<Filters />', () => {
             screen.getByTestId('search').textContent ?? ''
           ).entries()
         )
-      ).toEqual(MOCK_FILTERS_PARAMS)
+      ).toEqual(
+        IS_DATE_RANGE_FILTERS_ENABLED
+          ? omit(MOCK_FILTERS_PARAMS, 'evaluationDate')
+          : MOCK_FILTERS_PARAMS
+      )
     );
 
     await user.click(screen.getByRole('button', {name: /reset/i}));
@@ -150,7 +159,9 @@ describe('<Filters />', () => {
     expect(screen.getByLabelText(/failed/i)).toBeChecked();
     expect(screen.getByDisplayValue(/2251799813689540-1/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/2251799813689549/i)).toBeInTheDocument();
-    expect(screen.getByDisplayValue(/1111-11-11/i)).toBeInTheDocument();
+    if (!IS_DATE_RANGE_FILTERS_ENABLED) {
+      expect(screen.getByDisplayValue(/1111-11-11/i)).toBeInTheDocument();
+    }
   });
 
   it('should remove enabled filters on unmount', async () => {
@@ -174,6 +185,15 @@ describe('<Filters />', () => {
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText(/evaluation date/i));
+
+    expect(
+      screen.getByLabelText(/decision instance key\(s\)/i)
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/process instance key/i)).toBeInTheDocument();
+
+    if (!IS_DATE_RANGE_FILTERS_ENABLED) {
+      expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
+    }
 
     unmount();
 
@@ -202,17 +222,31 @@ describe('<Filters />', () => {
     await user.click(screen.getByText(/process instance key/i));
 
     await user.click(screen.getByText(/^more filters$/i));
-    await user.click(screen.getByText(/evaluation date/i));
+    if (IS_DATE_RANGE_FILTERS_ENABLED) {
+      await user.click(screen.getByText(/evaluation date range/i));
+    } else {
+      await user.click(screen.getByText(/evaluation date/i));
+    }
 
     expect(
       screen.getByLabelText(/decision instance key\(s\)/i)
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/process instance key/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
+    if (IS_DATE_RANGE_FILTERS_ENABLED) {
+      expect(
+        screen.getByLabelText(/evaluation date range/i)
+      ).toBeInTheDocument();
+    } else {
+      expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
+    }
 
     await user.click(screen.getByTestId('delete-decisionInstanceIds'));
     await user.click(screen.getByTestId('delete-processInstanceId'));
-    await user.click(screen.getByTestId('delete-evaluationDate'));
+    if (IS_DATE_RANGE_FILTERS_ENABLED) {
+      await user.click(screen.getByTestId('delete-evaluationDateRange'));
+    } else {
+      await user.click(screen.getByTestId('delete-evaluationDate'));
+    }
 
     expect(
       screen.queryByLabelText(/decision instance key\(s\)/i)
@@ -220,7 +254,15 @@ describe('<Filters />', () => {
     expect(
       screen.queryByLabelText(/process instance key/i)
     ).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
+    if (IS_DATE_RANGE_FILTERS_ENABLED) {
+      expect(
+        screen.queryByLabelText(/evaluation date range/i)
+      ).not.toBeInTheDocument();
+    } else {
+      expect(
+        screen.queryByLabelText(/evaluation date/i)
+      ).not.toBeInTheDocument();
+    }
   });
 
   it('should select decision name and version', async () => {
@@ -379,34 +421,37 @@ describe('<Filters />', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should validate evaluation date', async () => {
-    const {user} = render(<Filters />, {
-      wrapper: getWrapper(),
-    });
-    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+  (IS_DATE_RANGE_FILTERS_ENABLED ? it.skip : it)(
+    'should validate evaluation date',
+    async () => {
+      const {user} = render(<Filters />, {
+        wrapper: getWrapper(),
+      });
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    await user.click(screen.getByText(/^more filters$/i));
-    await user.click(screen.getByText(/evaluation date/i));
-    await user.type(screen.getByLabelText(/evaluation date/i), 'a');
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText(/evaluation date/i));
+      await user.type(screen.getByLabelText(/evaluation date/i), 'a');
 
-    expect(
-      await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-    ).toBeInTheDocument();
+      expect(
+        await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
+      ).toBeInTheDocument();
 
-    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    await user.clear(screen.getByLabelText(/evaluation date/i));
+      await user.clear(screen.getByLabelText(/evaluation date/i));
 
-    expect(
-      screen.queryByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-    ).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
+      ).not.toBeInTheDocument();
 
-    await user.type(screen.getByLabelText(/evaluation date/i), '2021-05');
+      await user.type(screen.getByLabelText(/evaluation date/i), '2021-05');
 
-    expect(
-      await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-    ).toBeInTheDocument();
-  });
+      expect(
+        await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
+      ).toBeInTheDocument();
+    }
+  );
 
   it('should reset applied filters on navigation', async () => {
     const {user} = render(<Filters />, {
