@@ -207,18 +207,25 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
         response.setContentType(MediaType.TEXT_HTML);
         response.getWriter()
           // @formatter:off
-          .print(
-            String.format(
-            "<html>" +
-              "<head><meta http-equiv=\"refresh\" content=\"0; URL='%s/'\"/></head>" +
-              "<body>" +
-              "<p align=\"center\">Successfully authenticated!</p>" +
-              "<p align=\"center\">Click <a href=\"%s/\">here</a> if you don't get redirected automatically.</p>" +
-              "</body>" +
-            "</html>",
+          .print(String.format(
+            "<html>\n" +
+              "<head><meta http-equiv=\"refresh\" content=\"1; URL='%s/'\"/></head>" +
+              "<body>\n" +
+                "<script>\n" +
+                  "var path = '%s/';\n" +
+                  "if (location.hash) {\n" +
+                    "path += location.hash;\n" +
+                  "}\n" +
+                  "location = path;\n" +
+                "</script>\n" +
+                "<p align=\"center\">Successfully authenticated!</p>\n" +
+                "<p align=\"center\">Click <a href=\"%s/\">here</a> if you don't get redirected automatically.</p>\n" +
+              "</body>\n" +
+            "</html>\n",
+            getClusterIdPath(),
             getClusterIdPath(),
             getClusterIdPath()
-            ));
+          ));
         // @formatter:on
       } else {
         response.setStatus(Response.Status.FORBIDDEN.getStatusCode());
