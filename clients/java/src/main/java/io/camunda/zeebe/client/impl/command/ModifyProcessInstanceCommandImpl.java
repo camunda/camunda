@@ -101,7 +101,7 @@ public class ModifyProcessInstanceCommandImpl
   public ModifyProcessInstanceCommandStep3 withVariables(final InputStream variables) {
     final VariableInstruction variableInstruction =
         createVariableInstruction(variables, EMPTY_SCOPE_ID);
-    latestActivateInstruction.getVariableInstructionsList().add(variableInstruction);
+    addVariableInstructionToLatestActivateInstruction(variableInstruction);
     return this;
   }
 
@@ -109,7 +109,7 @@ public class ModifyProcessInstanceCommandImpl
   public ModifyProcessInstanceCommandStep3 withVariables(
       final InputStream variables, final String scopeId) {
     final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
-    latestActivateInstruction.getVariableInstructionsList().add(variableInstruction);
+    addVariableInstructionToLatestActivateInstruction(variableInstruction);
     return this;
   }
 
@@ -117,7 +117,7 @@ public class ModifyProcessInstanceCommandImpl
   public ModifyProcessInstanceCommandStep3 withVariables(final String variables) {
     final VariableInstruction variableInstruction =
         createVariableInstruction(variables, EMPTY_SCOPE_ID);
-    latestActivateInstruction.getVariableInstructionsList().add(variableInstruction);
+    addVariableInstructionToLatestActivateInstruction(variableInstruction);
     return this;
   }
 
@@ -125,7 +125,7 @@ public class ModifyProcessInstanceCommandImpl
   public ModifyProcessInstanceCommandStep3 withVariables(
       final String variables, final String scopeId) {
     final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
-    latestActivateInstruction.getVariableInstructionsList().add(variableInstruction);
+    addVariableInstructionToLatestActivateInstruction(variableInstruction);
     return this;
   }
 
@@ -133,7 +133,7 @@ public class ModifyProcessInstanceCommandImpl
   public ModifyProcessInstanceCommandStep3 withVariables(final Map<String, Object> variables) {
     final VariableInstruction variableInstruction =
         createVariableInstruction(variables, EMPTY_SCOPE_ID);
-    latestActivateInstruction.getVariableInstructionsList().add(variableInstruction);
+    addVariableInstructionToLatestActivateInstruction(variableInstruction);
     return this;
   }
 
@@ -141,7 +141,7 @@ public class ModifyProcessInstanceCommandImpl
   public ModifyProcessInstanceCommandStep3 withVariables(
       final Map<String, Object> variables, final String scopeId) {
     final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
-    latestActivateInstruction.getVariableInstructionsList().add(variableInstruction);
+    addVariableInstructionToLatestActivateInstruction(variableInstruction);
     return this;
   }
 
@@ -149,7 +149,7 @@ public class ModifyProcessInstanceCommandImpl
   public ModifyProcessInstanceCommandStep3 withVariables(final Object variables) {
     final VariableInstruction variableInstruction =
         createVariableInstruction(variables, EMPTY_SCOPE_ID);
-    latestActivateInstruction.getVariableInstructionsList().add(variableInstruction);
+    addVariableInstructionToLatestActivateInstruction(variableInstruction);
     return this;
   }
 
@@ -157,7 +157,7 @@ public class ModifyProcessInstanceCommandImpl
   public ModifyProcessInstanceCommandStep3 withVariables(
       final Object variables, final String scopeId) {
     final VariableInstruction variableInstruction = createVariableInstruction(variables, scopeId);
-    latestActivateInstruction.getVariableInstructionsList().add(variableInstruction);
+    addVariableInstructionToLatestActivateInstruction(variableInstruction);
     return this;
   }
 
@@ -186,6 +186,19 @@ public class ModifyProcessInstanceCommandImpl
         .setVariables(jsonMapper.validateJson("variables", variables))
         .setScopeId(scopeId)
         .build();
+  }
+
+  private void addVariableInstructionToLatestActivateInstruction(
+      final VariableInstruction variableInstruction) {
+    // Grpc created immutable objects. Since we have already build the activate instruction before
+    // (in case it has no variables), we will have to remove this instruction. We can then copy it
+    // using toBuilder() and add the variable instructions we need. Then we need to re-add the
+    // activate instruction.
+    requestBuilder.removeActivateInstructions(
+        requestBuilder.getActivateInstructionsList().indexOf(latestActivateInstruction));
+    latestActivateInstruction =
+        latestActivateInstruction.toBuilder().addVariableInstructions(variableInstruction).build();
+    requestBuilder.addActivateInstructions(latestActivateInstruction);
   }
 
   @Override
