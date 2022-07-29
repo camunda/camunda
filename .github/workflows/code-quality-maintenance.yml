@@ -1,0 +1,38 @@
+name: Code Quality Maintenance
+on:
+  workflow_dispatch: {}
+  workflow_run:
+    workflows: ["Code quality"]
+    types: [completed]
+    branches:
+      - main
+      - stable/*
+
+jobs:
+  dismiss-generated-code-alerts:
+    name: Dismiss alerts for generated code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v6
+        name: List and dismiss alerts
+        with:
+          # language=javascript
+          script: |
+            const request = github.rest.codeScanning.listAlertsForRepo.endpoint.merge({
+              owner: "camunda",
+              repo: "zeebe",
+              state: "open"
+            })
+            let response = await github.paginate(request)
+            let alerts = new Set(response.filter(alert => alert.most_recent_instance.classifications.includes("generated")).map(alert => alert.number))
+            alerts.forEach(async alert => {
+              console.log("Dismissing alert " + alert)
+              await github.rest.codeScanning.updateAlert({
+                owner: "camunda",
+                repo: "zeebe",
+                alert_number: alert,
+                state: "dismissed",
+                dismissed_reason: "won't fix",
+                dismissed_comment: "generated code, automatically dismissed"
+              })
+            })
