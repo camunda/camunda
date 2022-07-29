@@ -38,6 +38,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRespons
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
@@ -99,6 +101,9 @@ public final class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(ActivateJobsRequest.class, r -> ActivateJobsResponse.getDefaultInstance());
     addRequestHandler(
         ResolveIncidentRequest.class, r -> ResolveIncidentResponse.getDefaultInstance());
+    addRequestHandler(
+        ModifyProcessInstanceRequest.class,
+        r -> ModifyProcessInstanceResponse.getDefaultInstance());
   }
 
   public static Partition partition(
@@ -286,6 +291,13 @@ public final class RecordingGatewayService extends GatewayImplBase {
   public void updateJobRetries(
       final UpdateJobRetriesRequest request,
       final StreamObserver<UpdateJobRetriesResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void modifyProcessInstance(
+      final ModifyProcessInstanceRequest request,
+      final StreamObserver<ModifyProcessInstanceResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
