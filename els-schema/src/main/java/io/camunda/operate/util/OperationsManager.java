@@ -12,6 +12,7 @@ import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
+import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
@@ -19,10 +20,9 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
+
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.exceptions.PersistenceException;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -64,10 +64,13 @@ public class OperationsManager {
     this.updateFinishedInBatchOperation(batchOperationId, null);
   }
 
-  public void updateFinishedInBatchOperation(String batchOperationId, BulkRequest bulkRequest) throws PersistenceException {
-    UpdateRequest updateRequest = new UpdateRequest().index(batchOperationTemplate.getFullQualifiedName()).id(batchOperationId)
-        .script(getIncrementFinishedScript())
-        .retryOnConflict(UPDATE_RETRY_COUNT);
+  public void updateFinishedInBatchOperation(final String batchOperationId, final BulkRequest bulkRequest) throws PersistenceException {
+    final Map<String,String> ids2indexNames = getIndexNameForAliasAndId(batchOperationTemplate.getAlias(), batchOperationId);
+    final UpdateRequest updateRequest = new UpdateRequest()
+            .index(ids2indexNames.get(batchOperationId))
+            .id(batchOperationId)
+            .script(getIncrementFinishedScript())
+            .retryOnConflict(UPDATE_RETRY_COUNT);
     if (bulkRequest == null) {
       ElasticsearchUtil.executeUpdate(esClient, updateRequest);
     } else {
@@ -90,36 +93,35 @@ public class OperationsManager {
 
   }
 
-  public void completeOperation(Long zeebeCommandKey, Long processInstanceKey, Long incidentKey, OperationType operationType, BulkRequest bulkRequest)
+  public void completeOperation(final Long zeebeCommandKey, final Long processInstanceKey, final Long incidentKey,
+                                final OperationType operationType, final BulkRequest bulkRequest)
       throws PersistenceException {
-    BulkRequest theBulkRequest;
-    if (bulkRequest == null) {
-      theBulkRequest = new BulkRequest();
-    } else {
-      theBulkRequest = bulkRequest;
-    }
-    List<OperationEntity> operations = getOperations(zeebeCommandKey, processInstanceKey, incidentKey, operationType);
-    for (OperationEntity o: operations) {
+    final BulkRequest theBulkRequest = Objects.requireNonNullElseGet(bulkRequest, BulkRequest::new);
+    final List<OperationEntity> operationEntities = getOperations(zeebeCommandKey, processInstanceKey, incidentKey, operationType);
+    final List<String> operationIds = operationEntities.stream().map(OperateEntity::getId).collect(Collectors.toList());
+    final Map<String,String> ids2indexNames = getIndexNameForAliasAndIds(operationTemplate.getAlias(), operationIds);
+    for (final OperationEntity o: operationEntities) {
       if (o.getBatchOperationId() != null) {
         updateFinishedInBatchOperation(o.getBatchOperationId(), theBulkRequest);
       }
-      completeOperation(o.getId(), theBulkRequest);
+      completeOperation(ids2indexNames.get(o.getId()),o.getId(), theBulkRequest);
     }
     if (bulkRequest == null) {
       ElasticsearchUtil.processBulkRequest(esClient, theBulkRequest);
     }
   }
 
-  public void completeOperation(OperationEntity operationEntity) throws PersistenceException {
+  public void completeOperation(final OperationEntity operationEntity) throws PersistenceException {
     final BulkRequest bulkRequest = new BulkRequest();
     if (operationEntity.getBatchOperationId() != null) {
         updateFinishedInBatchOperation(operationEntity.getBatchOperationId(), bulkRequest);
     }
-    completeOperation(operationEntity.getId(), bulkRequest);
+    final Map<String,String> ids2indexNames =  getIndexNameForAliasAndId(operationTemplate.getAlias(), operationEntity.getId());
+    completeOperation(ids2indexNames.get(operationEntity.getId()), operationEntity.getId(), bulkRequest);
     ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
   }
 
-  public List<OperationEntity> getOperations(Long zeebeCommandKey, Long processInstanceKey, Long incidentKey, OperationType operationType){
+  private List<OperationEntity> getOperations(Long zeebeCommandKey, Long processInstanceKey, Long incidentKey, OperationType operationType){
     if (processInstanceKey == null && zeebeCommandKey == null) {
       throw new OperateRuntimeException("Wrong call to search for operation. Not enough parameters.");
     }
@@ -148,19 +150,24 @@ public class OperationsManager {
     }
   }
 
-  public void completeOperation(String operationId, BulkRequest bulkRequest) {
-    UpdateRequest updateRequest = new UpdateRequest().index(operationTemplate.getFullQualifiedName()).id(operationId)
+  private void completeOperation(final String indexName, final String operationId, final BulkRequest bulkRequest) {
+    final UpdateRequest updateRequest = new UpdateRequest().index(indexName).id(operationId)
         .script(getUpdateOperationScript())
         .retryOnConflict(UPDATE_RETRY_COUNT);
     bulkRequest.add(updateRequest);
   }
 
   private Script getUpdateOperationScript() {
-    String script =
-        "ctx._source.state = '" + OperationState.COMPLETED.toString() + "';" +
-            "ctx._source.lockOwner = null;" +
-            "ctx._source.lockExpirationTime = null;";
+    final String script =
+        "ctx._source.state = '" + OperationState.COMPLETED + "';" +
+        "ctx._source.lockOwner = null;" +
+        "ctx._source.lockExpirationTime = null;";
     return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, Collections.emptyMap());
   }
-
+  private Map<String,String> getIndexNameForAliasAndId(final String alias, final String id){
+     return getIndexNameForAliasAndIds(alias, List.of(id));
+  }
+  private Map<String,String> getIndexNameForAliasAndIds(final String alias,final Collection<String> ids){
+      return ElasticsearchUtil.getIndexNames(alias, ids, esClient);
+  }
 }
