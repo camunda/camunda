@@ -6,7 +6,8 @@
  */
 package io.camunda.tasklist.util.apps.nobeans;
 
+import com.graphql.spring.boot.test.GraphQLTestAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = GraphQLTestAutoConfiguration.class)
 public class TestApplicationWithNoBeans {}
