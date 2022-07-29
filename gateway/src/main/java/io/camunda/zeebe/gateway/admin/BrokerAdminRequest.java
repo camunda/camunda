@@ -32,6 +32,10 @@ public class BrokerAdminRequest extends BrokerRequest<Void> {
     request.setType(AdminRequestType.STEP_DOWN_IF_NOT_PRIMARY);
   }
 
+  public void pauseExporting() {
+    request.setType(AdminRequestType.PAUSE_EXPORTING);
+  }
+
   @Override
   public Optional<Integer> getBrokerId() {
     final var brokerId = request.getBrokerId();
