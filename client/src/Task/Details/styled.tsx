@@ -17,6 +17,7 @@ const Container = styled.div`
 `;
 
 const ClaimButton = styled(Button)`
+  flex-shrink: 0;
   margin-left: 22px;
   padding: 0 10px;
   display: flex;
