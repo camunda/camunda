@@ -14,11 +14,15 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -227,6 +231,66 @@ public final class ProcessInstanceClient {
           new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey));
 
       return expectation.apply(processInstanceKey);
+    }
+
+    public ProcessInstanceModificationClient modification() {
+      return new ProcessInstanceModificationClient(environmentRule, processInstanceKey);
+    }
+  }
+
+  public static class ProcessInstanceModificationClient {
+
+    private static final Function<Long, Record<ProcessInstanceModificationRecordValue>>
+        SUCCESS_EXPECTATION =
+            (position) ->
+                RecordingExporter.processInstanceModificationRecords()
+                    .withIntent(ProcessInstanceModificationIntent.MODIFIED)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+
+    private static final Function<Long, Record<ProcessInstanceModificationRecordValue>>
+        REJECTION_EXPECTATION =
+            (processInstanceKey) ->
+                RecordingExporter.processInstanceModificationRecords()
+                    .onlyCommandRejections()
+                    .withIntent(ProcessInstanceModificationIntent.MODIFY)
+                    .withRecordKey(processInstanceKey)
+                    .withProcessInstanceKey(processInstanceKey)
+                    .getFirst();
+
+    private Function<Long, Record<ProcessInstanceModificationRecordValue>> expectation =
+        SUCCESS_EXPECTATION;
+
+    private final StreamProcessorRule environmentRule;
+    private final long processInstanceKey;
+    private final ProcessInstanceModificationRecord record;
+
+    public ProcessInstanceModificationClient(
+        final StreamProcessorRule environmentRule, final long processInstanceKey) {
+      this.environmentRule = environmentRule;
+      this.processInstanceKey = processInstanceKey;
+      record = new ProcessInstanceModificationRecord();
+    }
+
+    public ProcessInstanceModificationClient activateElement(final String elementId) {
+      record.addActivateInstruction(
+          new ProcessInstanceModificationActivateInstruction().setElementId(elementId));
+      return this;
+    }
+
+    public ProcessInstanceModificationClient expectRejection() {
+      expectation = REJECTION_EXPECTATION;
+      return this;
+    }
+
+    public Record<ProcessInstanceModificationRecordValue> modify() {
+      record.setProcessInstanceKey(processInstanceKey);
+
+      final var position =
+          environmentRule.writeCommand(
+              processInstanceKey, ProcessInstanceModificationIntent.MODIFY, record);
+
+      return expectation.apply(position);
     }
   }
 }
