@@ -33,14 +33,14 @@ public final class ProcessInstanceModificationProcessor
   @Override
   public void processRecord(final TypedRecord<ProcessInstanceModificationRecord> command) {
     final long commandKey = command.getKey();
-    final ProcessInstanceModificationRecord record = command.getValue();
+    final var value = command.getValue();
 
     // if set, the command's key should take precedence over the processInstanceKey
-    final long eventKey = commandKey > -1 ? commandKey : record.getProcessInstanceKey();
+    final long eventKey = commandKey > -1 ? commandKey : value.getProcessInstanceKey();
 
-    stateWriter.appendFollowUpEvent(eventKey, ProcessInstanceModificationIntent.MODIFIED, record);
+    stateWriter.appendFollowUpEvent(eventKey, ProcessInstanceModificationIntent.MODIFIED, value);
 
     responseWriter.writeEventOnCommand(
-        eventKey, ProcessInstanceModificationIntent.MODIFIED, record, command);
+        eventKey, ProcessInstanceModificationIntent.MODIFIED, value, command);
   }
 }
