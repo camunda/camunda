@@ -7,6 +7,7 @@
 
 import styled from 'styled-components';
 import {TextField} from 'modules/components/TextField';
+import {EditButtons as BaseEditButtons} from '../EditButtons';
 
 const Container = styled.div`
   display: flex;
@@ -18,7 +19,6 @@ const Container = styled.div`
 const InputFieldContainer = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: center;
   width: 70%;
   padding-right: 16px;
 `;
@@ -35,4 +35,8 @@ const ValueField = styled(TextField)`
   margin: 4px 0 4px 0;
 `;
 
-export {Container, NameField, ValueField, InputFieldContainer};
+const EditButtons = styled(BaseEditButtons)`
+  margin-top: 8px;
+`;
+
+export {Container, NameField, ValueField, InputFieldContainer, EditButtons};

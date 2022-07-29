@@ -43,6 +43,9 @@ const VariablePanel = observer(function VariablePanel() {
 
   const {displayStatus} = variablesStore;
 
+  const hasEmptyNewVariable = (values: VariableFormValues) =>
+    values.newVariables?.some((variable) => variable === undefined);
+
   return (
     <VariablesPanel>
       <PanelHeader title="Variables" />
@@ -106,7 +109,7 @@ const VariablePanel = observer(function VariablePanel() {
             }
           }}
         >
-          {({form, handleSubmit}) => {
+          {({form, handleSubmit, values}) => {
             return (
               <Form onSubmit={handleSubmit}>
                 {isModificationModeEnabled && (
@@ -114,6 +117,12 @@ const VariablePanel = observer(function VariablePanel() {
                     onClick={() => {
                       form.mutators.push?.('newVariables');
                     }}
+                    disabled={
+                      form.getState().submitting ||
+                      form.getState().hasValidationErrors ||
+                      form.getState().validating ||
+                      hasEmptyNewVariable(values)
+                    }
                   />
                 )}
                 <VariablesContainer>

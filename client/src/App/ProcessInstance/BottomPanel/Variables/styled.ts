@@ -48,10 +48,6 @@ const TD = styled.td`
     return css`
       color: ${theme.colors.text01};
 
-      &:not(:nth-child(2)) {
-        white-space: nowrap;
-      }
-
       &:first-child {
         vertical-align: top;
       }
@@ -126,7 +122,6 @@ const DisplayText = styled.div<DisplayTextProps>`
 
 const EditInputTD = styled(TD)`
   position: relative;
-
   &:nth-child(2) {
     width: 100%;
   }
@@ -200,7 +195,6 @@ const ValueField = styled(TextField)`
 const EditInputContainer = styled.div`
   display: flex;
   padding-right: 16px;
-  align-items: center;
 `;
 
 const DisplayTextContainer = styled.div`

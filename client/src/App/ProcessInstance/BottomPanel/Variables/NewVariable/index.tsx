@@ -7,11 +7,17 @@
 
 import React, {useState} from 'react';
 import {Field, useForm, useFormState} from 'react-final-form';
-import {Container, NameField, ValueField, InputFieldContainer} from './styled';
-import {EditButtons} from '../EditButtons';
+import {
+  Container,
+  NameField,
+  ValueField,
+  InputFieldContainer,
+  EditButtons,
+} from './styled';
 import {
   validateNameCharacters,
   validateNameComplete,
+  validateNameNotDuplicate,
   validateValueComplete,
 } from '../validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
@@ -27,7 +33,11 @@ const NewVariable: React.FC = () => {
     <Container data-testid="add-variable-row">
       <Field
         name="name"
-        validate={mergeValidators(validateNameCharacters, validateNameComplete)}
+        validate={mergeValidators(
+          validateNameCharacters,
+          validateNameComplete,
+          validateNameNotDuplicate
+        )}
         allowNull={false}
         parse={(value) => value}
       >

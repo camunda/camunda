@@ -13,12 +13,20 @@ import {
   DeleteIcon,
   FlexContainer,
   ActionButtons,
+  NewValueTD,
 } from './styled';
-import {TD, EditInputTD, EditInputContainer} from '../styled';
+import {TD, EditInputContainer} from '../styled';
 import {get} from 'lodash';
 import {createNewVariableFieldName} from '../createVariableFieldName';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {ActionButton} from 'modules/components/ActionButton';
+import {mergeValidators} from 'modules/utils/validators/mergeValidators';
+import {
+  validateNameCharacters,
+  validateModifiedNameComplete,
+  validateModifiedValueComplete,
+  validateModifiedNameNotDuplicate,
+} from '../validators';
 
 type Props = {
   variableName: string;
@@ -37,6 +45,11 @@ const NewVariableModification: React.FC<Props> = ({variableName, onRemove}) => {
         <FlexContainer>
           <Field
             name={createNewVariableFieldName(variableName, 'name')}
+            validate={mergeValidators(
+              validateNameCharacters,
+              validateModifiedNameComplete,
+              validateModifiedNameNotDuplicate
+            )}
             allowNull={false}
             parse={(value) => value}
           >
@@ -52,9 +65,13 @@ const NewVariableModification: React.FC<Props> = ({variableName, onRemove}) => {
           </Field>
         </FlexContainer>
       </TD>
-      <EditInputTD>
+      <NewValueTD>
         <EditInputContainer>
-          <Field name={valueFieldName} parse={(value) => value}>
+          <Field
+            name={valueFieldName}
+            validate={validateModifiedValueComplete}
+            parse={(value) => value}
+          >
             {({input, meta}) => (
               <ValueField
                 {...input}
@@ -80,7 +97,7 @@ const NewVariableModification: React.FC<Props> = ({variableName, onRemove}) => {
             />
           </ActionButtons>
         </EditInputContainer>
-      </EditInputTD>
+      </NewValueTD>
 
       <JSONEditorModal
         title="Edit a new Variable"

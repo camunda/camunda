@@ -9,6 +9,7 @@ import styled, {css} from 'styled-components';
 import {TextField} from 'modules/components/TextField';
 import {ReactComponent as DefaultDelete} from 'modules/components/Icon/delete.svg';
 import {ActionButtons as DefaultActionButtons} from 'modules/components/ActionButtons';
+import {TD} from '../styled';
 
 const DeleteIcon = styled(DefaultDelete)`
   ${({theme}) => {
@@ -37,7 +38,18 @@ const FlexContainer = styled.div`
 `;
 
 const ActionButtons = styled(DefaultActionButtons)`
-  padding-left: 4px;
+  padding: 8px 0 0 4px;
 `;
 
-export {NameField, ValueField, DeleteIcon, FlexContainer, ActionButtons};
+const NewValueTD = styled(TD)`
+  vertical-align: top;
+`;
+
+export {
+  NameField,
+  ValueField,
+  FlexContainer,
+  DeleteIcon,
+  ActionButtons,
+  NewValueTD,
+};

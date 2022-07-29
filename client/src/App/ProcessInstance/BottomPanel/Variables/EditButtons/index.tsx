@@ -11,7 +11,11 @@ import {getError} from '../getError';
 import {useFieldError} from 'modules/hooks/useFieldError';
 import {ActionButton} from 'modules/components/ActionButton';
 
-const EditButtons: React.FC = () => {
+type Props = {
+  className?: string;
+};
+
+const EditButtons: React.FC<Props> = ({className}) => {
   const form = useForm();
   const {values, initialValues, validating, hasValidationErrors} =
     useFormState();
@@ -24,7 +28,7 @@ const EditButtons: React.FC = () => {
   );
 
   return (
-    <Container>
+    <Container className={className}>
       <ActionButton
         title="Exit edit mode"
         onClick={() => form.reset({})}

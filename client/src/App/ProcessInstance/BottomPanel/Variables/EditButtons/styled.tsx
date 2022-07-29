@@ -29,7 +29,12 @@ const CheckIcon = styled(DefaultCheck)`
   ${iconStyle}
 `;
 
-const Container = styled(ActionButtons)`
+type ContainerProps = {
+  className?: string;
+};
+
+const Container = styled(ActionButtons)<ContainerProps>`
+  margin-top: 4px;
   min-width: 78px;
 `;
 

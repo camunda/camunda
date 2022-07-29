@@ -7,6 +7,7 @@
 
 import {useField, useFormState} from 'react-final-form';
 import {useEffect, useState} from 'react';
+import {get} from 'lodash';
 
 const useFieldError = (name: string) => {
   const {
@@ -16,8 +17,10 @@ const useFieldError = (name: string) => {
 
   const {errors, submitErrors, validating: formValidating} = useFormState();
 
-  const error = errors?.[name];
-  const submitError = dirtySinceLastSubmit ? undefined : submitErrors?.[name];
+  const error = get(errors, name);
+  const submitError = dirtySinceLastSubmit
+    ? undefined
+    : get(submitErrors, name);
 
   const [computedError, setComputedError] = useState<string | undefined>();
 
