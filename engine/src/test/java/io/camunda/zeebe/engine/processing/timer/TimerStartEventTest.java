@@ -1192,4 +1192,42 @@ public final class TimerStartEventTest {
                 .count())
         .isEqualTo(2);
   }
+
+  @Test
+  public void shouldCreateCronTimer() {
+    // when
+    final long now = engine.getClock().getCurrentTimeInMillis();
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .timerWithCycle("*/10 * * * * *")
+            .endEvent("end")
+            .done();
+    final var deployedProcess =
+        engine
+            .deployment()
+            .withXmlResource(model)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+
+    // when
+    engine.increaseTime(Duration.ofSeconds(15));
+
+    // then
+    final var timerRecord =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
+            .getFirst()
+            .getValue();
+
+    assertThat(timerRecord.getDueDate()).isBetween(now, now + 10_000L);
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementId("end")
+                .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
+                .exists())
+        .isTrue();
+  }
 }

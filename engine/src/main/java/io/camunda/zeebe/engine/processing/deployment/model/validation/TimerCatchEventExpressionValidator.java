@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.timer.CronTimer;
 import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
@@ -89,7 +90,13 @@ public class TimerCatchEventExpressionValidator implements ModelElementValidator
         try {
           return expressionProcessor
               .evaluateStringExpression(expression, NO_VARIABLE_SCOPE)
-              .map(RepeatingInterval::parse)
+              .map(
+                  text -> {
+                    if (text.startsWith("R")) {
+                      return RepeatingInterval.parse(text);
+                    }
+                    return CronTimer.parse(text);
+                  })
               .mapLeft(wrapFailure("cycle"));
         } catch (final DateTimeParseException e) {
           final var failureDetails = new Failure(e.getMessage());

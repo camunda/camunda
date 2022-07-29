@@ -157,6 +157,22 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       // todo(#4208): raise incident instead of throwing an exception
     }
 
+    final Timer refreshedTimer = refreshTimer(timer.get(), record);
+    catchEventBehavior.subscribeToTimerEvent(
+        record.getElementInstanceKey(),
+        record.getProcessInstanceKey(),
+        record.getProcessDefinitionKey(),
+        event.getId(),
+        refreshedTimer,
+        writer,
+        sideEffects::accept);
+  }
+
+  private Timer refreshTimer(final Timer timer, final TimerRecord record) {
+    if (timer instanceof CronTimer) {
+      return timer;
+    }
+
     int repetitions = record.getRepetitions();
     if (repetitions != RepeatingInterval.INFINITE) {
       repetitions--;
@@ -164,18 +180,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
 
     // Use the timer's last due date instead of the current time to avoid a time shift.
     final Interval refreshedInterval =
-        timer
-            .map(Timer::getInterval)
-            .map(interval -> interval.withStart(Instant.ofEpochMilli(record.getDueDate())))
-            .get();
-    final Timer repeatingInterval = new RepeatingInterval(repetitions, refreshedInterval);
-    catchEventBehavior.subscribeToTimerEvent(
-        record.getElementInstanceKey(),
-        record.getProcessInstanceKey(),
-        record.getProcessDefinitionKey(),
-        event.getId(),
-        repeatingInterval,
-        writer,
-        sideEffects::accept);
+        timer.getInterval().withStart(Instant.ofEpochMilli(record.getDueDate()));
+    return new RepeatingInterval(repetitions, refreshedInterval);
   }
 }
