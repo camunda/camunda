@@ -145,6 +145,27 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   CreateProcessInstanceCommandStep1 newCreateInstanceCommand();
 
   /**
+   * Command to modify a process instance.
+   *
+   * <pre>
+   *   zeebeClient
+   *    .newModifyProcessInstanceCommand(processInstanceKey)
+   *    .activateElement("element1")
+   *    .and()
+   *    .activateElement("element2")
+   *    .withVariables(globalScopedVariables)
+   *    .withVariables(localScopedVariables, "element2")
+   *    .and()
+   *    .terminateElement("element3")
+   *    .send();
+   * </pre>
+   *
+   * @param processInstanceKey the key which identifies the corresponding process instance
+   * @return a builder for the command
+   */
+  ModifyProcessInstanceCommandStep1 newModifyProcessInstanceCommand(long processInstanceKey);
+
+  /**
    * Command to cancel a process instance.
    *
    * <pre>
@@ -308,25 +329,4 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   ActivateJobsCommandStep1 newActivateJobsCommand();
-
-  /**
-   * Command to modify a process instance.
-   *
-   * <pre>
-   *   zeebeClient
-   *    .newModifyProcessInstanceCommand(processInstanceKey)
-   *    .activateElement("element1")
-   *    .and()
-   *    .activateElement("element2")
-   *    .withVariables(globalScopedVariables)
-   *    .withVariables(localScopedVariables, "element2")
-   *    .and()
-   *    .terminateElement("element3")
-   *    .send();
-   * </pre>
-   *
-   * @param processInstanceKey
-   * @return a builder for the command
-   */
-  ModifyProcessInstanceCommandStep1 newModifyProcessInstanceCommand(long processInstanceKey);
 }

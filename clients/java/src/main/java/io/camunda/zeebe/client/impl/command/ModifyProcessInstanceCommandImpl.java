@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class ModifyProcessInstanceCommandImpl
+public final class ModifyProcessInstanceCommandImpl
     implements ModifyProcessInstanceCommandStep1, ModifyProcessInstanceCommandStep3 {
 
   private static final String EMPTY_SCOPE_ID = "";
@@ -94,6 +94,7 @@ public class ModifyProcessInstanceCommandImpl
 
   @Override
   public ModifyProcessInstanceCommandStep1 and() {
+    latestActivateInstruction = null;
     return this;
   }
 
@@ -214,7 +215,8 @@ public class ModifyProcessInstanceCommandImpl
   }
 
   private void send(
-      final ModifyProcessInstanceRequest request, final StreamObserver streamObserver) {
+      final ModifyProcessInstanceRequest request,
+      final StreamObserver<GatewayOuterClass.ModifyProcessInstanceResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .modifyProcessInstance(request, streamObserver);

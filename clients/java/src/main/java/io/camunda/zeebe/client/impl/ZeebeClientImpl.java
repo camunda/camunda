@@ -259,6 +259,17 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
+  public ModifyProcessInstanceCommandStep1 newModifyProcessInstanceCommand(
+      final long processInstanceKey) {
+    return new ModifyProcessInstanceCommandImpl(
+        processInstanceKey,
+        jsonMapper,
+        asyncStub,
+        config.getDefaultRequestTimeout(),
+        credentialsProvider::shouldRetryRequest);
+  }
+
+  @Override
   public CancelProcessInstanceCommandStep1 newCancelInstanceCommand(final long processInstanceKey) {
     return new CancelProcessInstanceCommandImpl(
         asyncStub,
@@ -322,17 +333,6 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public ActivateJobsCommandStep1 newActivateJobsCommand() {
     return new ActivateJobsCommandImpl(
         asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
-  }
-
-  @Override
-  public ModifyProcessInstanceCommandStep1 newModifyProcessInstanceCommand(
-      final long processInstanceKey) {
-    return new ModifyProcessInstanceCommandImpl(
-        processInstanceKey,
-        jsonMapper,
-        asyncStub,
-        config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
   }
 
   private JobClient newJobClient() {

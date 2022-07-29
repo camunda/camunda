@@ -22,8 +22,11 @@ import java.util.Map;
 public interface ModifyProcessInstanceCommandStep1 {
 
   /**
-   * Create an activate instruction for the given element id. The element will be created within an
-   * existing element instance of the flow scope.
+   * Create an {@link
+   * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.ActivateInstruction}
+   * for the given element id. The element will be created within an existing element instance of
+   * the flow scope. When activating an element inside a multi-instance element the element instance
+   * key of the ancestor must be defined. For this use {@link #activateElement(String, long)}.
    *
    * @param elementId the id of the element to activate
    * @return the builder for this command
