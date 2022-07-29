@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.security.oauth2;
 
 import static io.camunda.operate.util.CollectionUtil.firstOrDefault;
 import static io.camunda.operate.util.CollectionUtil.getOrDefaultFromMap;
+import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
 import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_AUTH_PROFILE;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -15,6 +16,7 @@ import io.camunda.operate.property.OperateProperties;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,8 +46,7 @@ public class CCSaaSJwtAuthenticationTokenValidator implements JwtAuthenticationT
       //FIXME clean up usage of audience and scope: scope should not be directly compared to clusterId
       //but to some new parameter e.g. CAMUNDA_CLOUD_CLIENT_SCOPE
       //final String audience = getAudience(payload);
-      final String scope = getScope(payload);
-      return operateProperties.getCloud().getClusterId().equals(scope);
+      return getScope(payload).equals(getScopeFromConfiguration());
     } catch (Exception e) {
       logger.error(
           String.format("Validation of JWT payload failed due to %s. Request is not authenticated.", e.getMessage()), e);
@@ -69,5 +70,18 @@ public class CCSaaSJwtAuthenticationTokenValidator implements JwtAuthenticationT
   private String getAudience(final Map<String, Object> payload) {
     return firstOrDefault(
         (List<String>) getOrDefaultFromMap(payload, AUDIENCE, Collections.emptyList()), null);
+  }
+
+  private String getScopeFromConfiguration(){
+    String clusterId = operateProperties.getCloud().getClusterId();
+    if(stringIsEmpty(clusterId)){
+      // fallback to old configuration from client properties
+      logger.warn("ClusterId should come from 'CAMUNDA_OPERATE_CLOUD_CLUSTERID' try 'CAMUNDA_OPERATE_CLIENT_CLUSTERID'");
+      clusterId = operateProperties.getClient().getClusterId();
+    }
+    if(stringIsEmpty(clusterId)){
+      throw new OperateRuntimeException("No configuration found in 'CAMUNDA_OPERATE_CLOUD_CLUSTERID' or 'CAMUNDA_OPERATE_CLIENT_CLUSTERID'");
+    }
+    return clusterId;
   }
 }
