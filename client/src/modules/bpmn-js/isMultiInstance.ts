@@ -5,9 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {BpmnJSElement} from './BpmnJS';
+import {BpmnElement} from 'bpmn-js/lib/NavigatedViewer';
 
-function isMultiInstance(element: BpmnJSElement) {
+function isMultiInstance(element: BpmnElement) {
   return (
     element.businessObject.loopCharacteristics?.$type ===
     'bpmn:MultiInstanceLoopCharacteristics'

@@ -5,8 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-// @ts-expect-error ts-migrate(7016) FIXME: Try `npm install @types/bpmn-js` if it exists or a... Remove this comment to see the full error message
-import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
+import NavigatedViewer, {
+  Event,
+  OverlayPosition,
+} from 'bpmn-js/lib/NavigatedViewer';
 // @ts-expect-error Could not find a declaration file for module '@bpmn-io/element-templates-icons-renderer'
 import ElementTemplatesIconsRenderer from '@bpmn-io/element-templates-icons-renderer';
 import {IReactionDisposer, reaction} from 'mobx';
@@ -14,28 +16,10 @@ import {isEqual} from 'lodash';
 import {theme} from 'modules/theme';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
-import {OverlayPosition} from 'modules/types/modeler';
 import {isNonSelectableFlowNode} from './isNonSelectableFlowNode';
 import {isMultiInstance} from './isMultiInstance';
 import {tracking} from 'modules/tracking';
-
-interface BpmnJSModule {
-  [member: string]: any;
-}
-
-type BpmnJSElement = {
-  id: string;
-  type: string;
-  businessObject: {loopCharacteristics?: {$type: string}};
-  di: {set: Function};
-};
-
-type BpmnJSOverlay = {
-  type: string;
-  elementId: string;
-  position: OverlayPosition;
-  children: HTMLElement;
-};
+import {OutlineModule} from './modules/Outline';
 
 type OverlayData = {
   payload: unknown;
@@ -44,16 +28,8 @@ type OverlayData = {
   position: OverlayPosition;
 };
 
-type NavigatedViewerType = {
-  importXML: (xml: string) => Promise<{warnings: string[]}>;
-  destroy: () => void;
-  get: (moduleName: string) => BpmnJSModule | undefined;
-  on: (event: string, callback: Function) => void;
-  off: (event: string, callback: Function) => void;
-} | null;
-
 type OnFlowNodeSelection = (
-  elementId?: BpmnJSElement['id'],
+  elementId?: string,
   isMultiInstance?: boolean
 ) => void;
 
@@ -67,7 +43,7 @@ type RenderOptions = {
 };
 
 class BpmnJS {
-  #navigatedViewer: NavigatedViewerType = null;
+  #navigatedViewer: NavigatedViewer | null = null;
   #themeType: typeof currentTheme.state.selectedTheme =
     currentTheme.state.selectedTheme;
   #themeChangeReactionDisposer: IReactionDisposer | null = null;
@@ -155,14 +131,15 @@ class BpmnJS {
       this.#nonSelectableFlowNodes.forEach((flowNodeId) => {
         this.#removeMarker(flowNodeId, 'op-non-selectable');
       });
-      const nonSelectableFlowNodes: BpmnJSElement[] = elementRegistry?.filter(
-        (element: BpmnJSElement) =>
-          isNonSelectableFlowNode(element, selectableFlowNodes)
+      const nonSelectableFlowNodes = elementRegistry?.filter((element) =>
+        isNonSelectableFlowNode(element, selectableFlowNodes)
       );
-      nonSelectableFlowNodes.forEach(({id}) => {
+      nonSelectableFlowNodes?.forEach(({id}) => {
         this.#addMarker(id, 'op-non-selectable');
       });
-      this.#nonSelectableFlowNodes = nonSelectableFlowNodes.map(({id}) => id);
+      this.#nonSelectableFlowNodes = nonSelectableFlowNodes
+        ? nonSelectableFlowNodes.map(({id}) => id)
+        : [];
     }
 
     // handle op-selected markers and selected flow node ref
@@ -226,7 +203,7 @@ class BpmnJS {
       container,
       bpmnRenderer:
         theme[currentTheme.state.selectedTheme].colors.modules.diagram,
-      additionalModules: [ElementTemplatesIconsRenderer],
+      additionalModules: [ElementTemplatesIconsRenderer, OutlineModule],
     });
   };
 
@@ -236,23 +213,20 @@ class BpmnJS {
 
     if (elementRegistry?.get(elementId) !== undefined) {
       canvas?.addMarker(elementId, className);
-      const gfx = elementRegistry
-        .getGraphics(elementId)
-        .querySelector('.djs-outline');
-      gfx.setAttribute('rx', '14px');
-      gfx.setAttribute('ry', '14px');
     }
   };
 
   #colorSequenceFlow = (id: string, color: string) => {
     const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
     const graphicsFactory = this.#navigatedViewer?.get('graphicsFactory');
-    const element: BpmnJSElement | undefined = elementRegistry?.get(id);
+    const element = elementRegistry?.get(id);
     if (element?.di !== undefined) {
       element.di.set('stroke', color);
 
       const gfx = elementRegistry?.getGraphics(element);
-      graphicsFactory?.update('connection', element, gfx);
+      if (gfx !== undefined) {
+        graphicsFactory?.update('connection', element, gfx);
+      }
     }
   };
 
@@ -261,7 +235,12 @@ class BpmnJS {
     children,
     position,
     type,
-  }: BpmnJSOverlay): string => {
+  }: {
+    elementId: string;
+    children: HTMLElement;
+    position: OverlayPosition;
+    type: string;
+  }): string => {
     return this.#navigatedViewer?.get('overlays')?.add(elementId, type, {
       html: children,
       position: position,
@@ -281,7 +260,7 @@ class BpmnJS {
     }
   };
 
-  #handleElementClick = (event: {element: BpmnJSElement}) => {
+  #handleElementClick = (event: Event) => {
     const flowNode = event.element;
     if (
       isNonSelectableFlowNode(flowNode, this.#selectableFlowNodes) ||
@@ -337,4 +316,4 @@ class BpmnJS {
 }
 
 export {BpmnJS};
-export type {BpmnJSElement, OnFlowNodeSelection, OverlayData};
+export type {OnFlowNodeSelection, OverlayData};

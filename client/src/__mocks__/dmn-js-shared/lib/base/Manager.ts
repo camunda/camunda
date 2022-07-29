@@ -5,6 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
+import {View} from 'dmn-js-shared/lib/base/Manager';
+
 const mockedModules: {[module: string]: any} = {
   canvas: {
     zoom: jest.fn(),

@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {EventCallback} from 'dmn-js-shared/lib/base/Manager';
 import {
   append as svgAppend,
   attr as svgAttr,
@@ -13,7 +14,7 @@ import {
 
 const OFFSET = 4;
 
-function Outline(eventBus: DiagramJSEventBus) {
+function Outline(eventBus: {on: EventCallback}) {
   eventBus.on('shape.added', (event) => {
     const element = event.element;
     const gfx = event.gfx;

@@ -5,11 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
+import {BpmnElement} from 'bpmn-js/lib/NavigatedViewer';
 import {isFlowNode} from 'modules/utils/flowNodes';
-import {BpmnJSElement} from './BpmnJS';
 
 function isNonSelectableFlowNode(
-  element: BpmnJSElement,
+  element: BpmnElement,
   selectableFlowNodes?: string[]
 ) {
   return (

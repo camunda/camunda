@@ -5,16 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-type OverlayPosition = {
-  top?: number;
-  right?: number;
-  bottom?: number;
-  left?: number;
-};
+const is = () => true;
 
-type OverlayType = {
-  position: OverlayPosition;
-  html: HTMLDivElement;
-};
-
-export type {OverlayType, OverlayPosition};
+export {is};

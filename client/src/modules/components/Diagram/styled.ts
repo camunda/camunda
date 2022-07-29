@@ -14,7 +14,7 @@ const Diagram = styled.div`
 
 const DiagramCanvas = styled.div`
   ${({theme}) => {
-    const colors = theme.colors.modules.diagram.outline;
+    const elementColors = theme.colors.modules.diagram.element;
 
     return css`
       position: absolute;
@@ -27,19 +27,22 @@ const DiagramCanvas = styled.div`
         cursor: pointer;
       }
 
-      .op-selectable:hover .djs-outline {
-        stroke-width: 3px;
-        stroke: ${theme.colors.selections};
+      .op-selectable:hover .djs-outline,
+      .op-selected .djs-outline {
+        stroke-width: 2px;
+        stroke: ${elementColors.outline};
       }
 
       .op-non-selectable {
         cursor: not-allowed;
       }
 
-      .op-selected .djs-outline {
-        stroke-width: 3px;
-        stroke: ${theme.colors.selections};
-        fill: ${colors.fill} !important;
+      .op-selected .djs-visual {
+        rect,
+        circle,
+        polygon {
+          fill: ${elementColors.background.selected} !important;
+        }
       }
     `;
   }}

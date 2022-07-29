@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {Event} from 'dmn-js-shared/lib/base/Manager';
 import {isEqual} from 'lodash';
 import {drdDataStore} from 'modules/stores/drdData';
 import {OutlineModule} from './modules/Outline';
@@ -36,7 +37,7 @@ class DrdViewer {
     this.#onDecisionSelection = onDecisionSelection;
   }
 
-  #handleDecisionSelection = (event: DiagramJSEvent) => {
+  #handleDecisionSelection = (event: Event) => {
     this.#onDecisionSelection?.(event.element.id);
   };
 
