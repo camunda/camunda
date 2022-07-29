@@ -156,7 +156,10 @@ class Variables extends NetworkReconnectionHandler {
 
   shouldFetchPreviousVariables = () => {
     const {items, status} = this.state;
-    if (['fetching-prev', 'fetching-next', 'fetching'].includes(status)) {
+    if (
+      ['fetching-prev', 'fetching-next', 'fetching'].includes(status) ||
+      items.length < MAX_VARIABLES_PER_REQUEST
+    ) {
       return false;
     }
 
@@ -165,7 +168,10 @@ class Variables extends NetworkReconnectionHandler {
 
   shouldFetchNextVariables = () => {
     const {latestFetch, items, status} = this.state;
-    if (['fetching-prev', 'fetching-next', 'fetching'].includes(status)) {
+    if (
+      ['fetching-prev', 'fetching-next', 'fetching'].includes(status) ||
+      items.length < MAX_VARIABLES_PER_REQUEST
+    ) {
       return false;
     }
 

@@ -41,13 +41,8 @@ const TR = styled.tr<TRProps>`
         padding-right: 23px;
       }
       > td:nth-child(2) {
-        width: 60%;
+        width: 70%;
         padding-left: 0;
-      }
-      > td:last-child {
-        width: 10%;
-        min-width: 94px;
-        padding-top: 8px;
       }
 
       ${hasActiveOperation

@@ -7,7 +7,7 @@
 
 import React, {useRef} from 'react';
 import {Skeleton} from './Skeleton';
-import EmptyPanel from 'modules/components/EmptyPanel';
+import {EmptyPanel} from 'modules/components/EmptyPanel';
 import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
 import {observer} from 'mobx-react';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';

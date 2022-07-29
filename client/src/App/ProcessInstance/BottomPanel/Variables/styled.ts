@@ -9,16 +9,11 @@ import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 
 import {Panel} from 'modules/components/Panel';
 import {OperationSpinner} from 'modules/components/OperationSpinner';
-import IconButton from 'modules/components/IconButton';
 import Modal from 'modules/components/Modal';
 
 import {ReactComponent as DefaultEdit} from 'modules/components/Icon/edit.svg';
-import {ReactComponent as DefaultClose} from 'modules/components/Icon/close.svg';
-import {ReactComponent as DefaultCheck} from 'modules/components/Icon/check.svg';
 import {ReactComponent as DefaultPlus} from 'modules/components/Icon/plus.svg';
 
-import EmptyPanelComponent from 'modules/components/EmptyPanel';
-import {Button as BaseButton} from 'modules/components/Button';
 import {TextField} from 'modules/components/TextField';
 import {styles} from '@carbon/elements';
 
@@ -65,49 +60,39 @@ const TD = styled.td`
 `;
 
 type THeadProps = {
-  isVariableHeaderVisible: boolean;
   scrollBarWidth: number;
 };
 
 const THead = styled.thead<THeadProps>`
-  ${({isVariableHeaderVisible, theme, scrollBarWidth}) => {
+  ${({theme, scrollBarWidth}) => {
     const colors = theme.colors.variables.tHead;
 
     return css`
-      ${isVariableHeaderVisible &&
-      css`
-        tr:first-child {
-          display: flex;
+      tr:first-child {
+        display: flex;
 
-          width: 100%;
-          min-width: ${scrollBarWidth + 400}px;
+        width: 100%;
+        min-width: ${scrollBarWidth + 400}px;
 
-          border-top: none;
-          position: absolute;
-          top: 8px;
-          background: ${colors.backgroundColor};
+        border-top: none;
+        position: absolute;
+        top: 8px;
+        background: ${colors.backgroundColor};
 
-          > th {
-            padding-top: 11px;
-            padding-bottom: 5px;
-          }
-          > th:first-child {
-            width: 30%;
-            padding-right: 23px;
-          }
-          > th:nth-child(2) {
-            width: 60%;
-            padding-left: 9px;
-          }
-          > th:last-child {
-            width: 10%;
-            min-width: 94px;
-            flex-grow: 1;
-          }
+        > th {
+          padding-top: 11px;
         }
-      `}
+        > th:first-child {
+          width: 30%;
+          padding-right: 23px;
+        }
+        > th:nth-child(2) {
+          width: 70%;
+          padding-left: 9px;
+        }
+      }
     `;
-  }}
+  }}}
 `;
 
 const VariableName = styled.div`
@@ -139,12 +124,6 @@ const DisplayText = styled.div<DisplayTextProps>`
   }}
 `;
 
-const EditButtonsTD = styled(TD)`
-  padding-right: 16px;
-  display: flex;
-  justify-content: flex-end;
-`;
-
 const EditInputTD = styled(TD)`
   position: relative;
 
@@ -157,33 +136,6 @@ const DisplayTextTD = styled(TD)`
   width: 100%;
 `;
 
-const EditButton = styled(IconButton)`
-  ${({theme}) => {
-    const colors = theme.colors.variables.editButton;
-
-    return css`
-      margin-left: 8px;
-      z-index: 0;
-
-      svg {
-        margin-top: 4px;
-      }
-
-      &:disabled,
-      &:disabled :hover {
-        svg {
-          color: ${colors.disabled.color};
-          opacity: 0.5;
-        }
-
-        &:before {
-          background-color: transparent;
-        }
-      }
-    `;
-  }}
-`;
-
 const iconStyle: ThemedInterpolationFunction = ({theme}) => {
   const colors = theme.colors.variables.icons;
 
@@ -194,14 +146,6 @@ const iconStyle: ThemedInterpolationFunction = ({theme}) => {
     color: ${colors.color};
   `;
 };
-
-const CloseIcon = styled(DefaultClose)`
-  ${iconStyle}
-`;
-
-const CheckIcon = styled(DefaultCheck)`
-  ${iconStyle}
-`;
 
 const EditIcon = styled(DefaultEdit)`
   ${iconStyle}
@@ -216,21 +160,6 @@ const ModalBody = styled(Modal.Body)`
   & pre {
     margin: 0;
   }
-`;
-
-const EmptyPanel = styled(EmptyPanelComponent)`
-  position: absolute;
-  top: 0;
-  z-index: 1;
-`;
-
-const Button = styled(BaseButton)`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 22px;
-  margin-left: 20px;
-  padding: 0 10px;
 `;
 
 const Plus = styled(DefaultPlus)`
@@ -264,12 +193,20 @@ const Footer = styled(Panel.Footer)<FooterProps>`
   }}
 `;
 
-const EditButtonsContainer = styled.div`
-  display: flex;
-`;
-
 const ValueField = styled(TextField)`
   display: block;
+`;
+
+const EditInputContainer = styled.div`
+  display: flex;
+  padding-right: 16px;
+  align-items: center;
+`;
+
+const DisplayTextContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  padding-right: 16px;
 `;
 
 export {
@@ -280,18 +217,13 @@ export {
   THead,
   VariableName,
   DisplayText,
-  EditButtonsTD,
   EditInputTD,
   DisplayTextTD,
-  EditButton,
-  CloseIcon,
-  CheckIcon,
   EditIcon,
   ModalBody,
-  EmptyPanel,
-  Button,
   Plus,
   Footer,
-  EditButtonsContainer,
   ValueField,
+  EditInputContainer,
+  DisplayTextContainer,
 };

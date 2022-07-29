@@ -26,6 +26,7 @@ import {createInstance} from 'modules/testUtils';
 import {Form} from 'react-final-form';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {authenticationStore} from 'modules/stores/authentication';
+import arrayMutators from 'final-form-arrays';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
@@ -50,7 +51,7 @@ const Wrapper: React.FC<Props> = ({children}) => {
           <Route
             path="/processes/:processInstanceId"
             element={
-              <Form onSubmit={() => {}}>
+              <Form onSubmit={() => {}} mutators={{...arrayMutators}}>
                 {({handleSubmit}) => {
                   return <form onSubmit={handleSubmit}>{children} </form>;
                 }}
@@ -111,42 +112,6 @@ describe('Variables', () => {
 
       expect(screen.getByTestId('skeleton-rows')).toBeInTheDocument();
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
-    });
-
-    it('should display spinner on second variable fetch', async () => {
-      processInstanceDetailsStore.setProcessInstance(instanceMock);
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
-      variablesStore.fetchVariables({
-        fetchType: 'initial',
-        instanceId: '1',
-        payload: {pageSize: 10, scopeId: '1'},
-      });
-
-      render(<Variables />, {wrapper: Wrapper});
-      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
-
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
-      variablesStore.fetchVariables({
-        fetchType: 'initial',
-        instanceId: '1',
-        payload: {pageSize: 10, scopeId: '1'},
-      });
-
-      expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();
-
-      await waitForElementToBeRemoved(() =>
-        screen.getByTestId('variables-spinner')
-      );
     });
   });
 

@@ -5,10 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {EditButton, CloseIcon, CheckIcon, EditButtonsContainer} from './styled';
+import {Container, CloseIcon, CheckIcon} from './styled';
 import {useForm, useFormState} from 'react-final-form';
-import {getError} from './getError';
+import {getError} from '../getError';
 import {useFieldError} from 'modules/hooks/useFieldError';
+import {ActionButton} from 'modules/components/ActionButton';
 
 const EditButtons: React.FC = () => {
   const form = useForm();
@@ -23,31 +24,24 @@ const EditButtons: React.FC = () => {
   );
 
   return (
-    <EditButtonsContainer>
-      <EditButton
-        type="button"
+    <Container>
+      <ActionButton
         title="Exit edit mode"
         onClick={() => form.reset({})}
-        size="large"
-        iconButtonTheme="default"
         icon={<CloseIcon />}
       />
-
-      <EditButton
-        type="button"
+      <ActionButton
         title="Save variable"
-        disabled={
+        isDisabled={
           initialValues.value === values.value ||
           validating ||
           hasValidationErrors ||
           errorMessage !== undefined
         }
         onClick={() => form.submit()}
-        size="large"
-        iconButtonTheme="default"
         icon={<CheckIcon />}
       />
-    </EditButtonsContainer>
+    </Container>
   );
 };
 

@@ -25,10 +25,10 @@ const PendingVariable: React.FC = observer(() => {
       <Name title={pendingItem.name}>{pendingItem.name}</Name>
       <Value>
         <DisplayText>{pendingItem.value}</DisplayText>
+        <SpinnerContainer>
+          <Spinner data-testid="edit-variable-spinner" />
+        </SpinnerContainer>
       </Value>
-      <SpinnerContainer>
-        <Spinner data-testid="edit-variable-spinner" />
-      </SpinnerContainer>
     </Container>
   );
 });

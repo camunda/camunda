@@ -7,7 +7,7 @@
 
 import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import EmptyPanel, {WithRowCount} from './index';
+import {EmptyPanel, WithRowCount} from './index';
 
 const label = 'someLabel';
 

@@ -15,10 +15,12 @@ const Container = styled.div`
   min-width: 400px;
 `;
 
-const EditButtonsContainer = styled.div`
-  padding-top: 8px;
-  width: 10%;
-  min-width: 80px;
+const InputFieldContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 70%;
+  padding-right: 16px;
 `;
 
 const NameField = styled(TextField)`
@@ -29,9 +31,8 @@ const NameField = styled(TextField)`
 `;
 
 const ValueField = styled(TextField)`
-  width: 60%;
   margin-right: 2px;
-  margin: 4px 15px 4px 0px;
+  margin: 4px 0 4px 0;
 `;
 
-export {Container, NameField, ValueField, EditButtonsContainer};
+export {Container, NameField, ValueField, InputFieldContainer};

@@ -8,7 +8,7 @@
 import React from 'react';
 import * as Styled from './styled';
 import {Rows} from './Rows';
-import EmptyPanel from 'modules/components/EmptyPanel';
+import {EmptyPanel} from 'modules/components/EmptyPanel';
 
 type Props = {
   type: 'info' | 'warning' | 'skeleton';

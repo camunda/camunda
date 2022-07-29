@@ -11,20 +11,27 @@ import {variablesStore} from 'modules/stores/variables';
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
-import {Form} from 'react-final-form';
+import {Form as ReactFinalForm} from 'react-final-form';
 import {useNotifications} from 'modules/notifications';
 import {PanelHeader} from 'modules/components/PanelHeader';
+import {VariableFormValues} from 'modules/types/variables';
 
-import {VariablesPanel, Content} from './styled';
-
-type FormValues = {
-  name?: string;
-  value?: string;
-};
+import {
+  VariablesPanel,
+  Content,
+  AddVariableButton,
+  Form,
+  VariablesContainer,
+  EmptyPanel,
+} from './styled';
+import arrayMutators from 'final-form-arrays';
+import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
+import {modificationsStore} from 'modules/stores/modifications';
 
 const VariablePanel = observer(function VariablePanel() {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const notifications = useNotifications();
+  const {isModificationModeEnabled} = modificationsStore.state;
 
   useEffect(() => {
     variablesStore.init(processInstanceId);
@@ -40,64 +47,82 @@ const VariablePanel = observer(function VariablePanel() {
     <VariablesPanel>
       <PanelHeader title="Variables" />
       <Content>
-        {displayStatus === 'error' ? (
+        {displayStatus === 'error' && (
           <StatusMessage variant="error">
             Variables could not be fetched
           </StatusMessage>
-        ) : displayStatus === 'multi-instances' ? (
+        )}
+        {displayStatus === 'multi-instances' && (
           <StatusMessage variant="default">
             To view the Variables, select a single Flow Node Instance in the
             Instance History.
           </StatusMessage>
-        ) : (
-          <Form<FormValues>
-            onSubmit={async (values, form) => {
-              const {initialValues} = form.getState();
-
-              const {name, value} = values;
-
-              if (name === undefined || value === undefined) {
-                return;
-              }
-
-              const params = {
-                id: processInstanceId,
-                name,
-                value,
-                onSuccess: () => {
-                  notifications.displayNotification('success', {
-                    headline: 'Variable added',
-                  });
-                  form.reset({});
-                },
-                onError: () => {
-                  notifications.displayNotification('error', {
-                    headline: 'Variable could not be saved',
-                  });
-                  form.reset({});
-                },
-              };
-
-              if (initialValues.name === '') {
-                const result = await variablesStore.addVariable(params);
-                if (result === 'VALIDATION_ERROR') {
-                  return {name: 'Variable should be unique'};
-                }
-              } else if (initialValues.name === name) {
-                variablesStore.updateVariable(params);
-                form.reset({});
-              }
-            }}
-          >
-            {({handleSubmit}) => {
-              return (
-                <form onSubmit={handleSubmit}>
-                  <Variables />
-                </form>
-              );
-            }}
-          </Form>
         )}
+        {displayStatus === 'spinner' && (
+          <EmptyPanel
+            data-testid="variables-spinner"
+            type="skeleton"
+            Skeleton={SpinnerSkeleton}
+          />
+        )}
+
+        <ReactFinalForm<VariableFormValues>
+          mutators={{...arrayMutators}}
+          onSubmit={async (values, form) => {
+            const {initialValues} = form.getState();
+
+            const {name, value} = values;
+
+            if (name === undefined || value === undefined) {
+              return;
+            }
+
+            const params = {
+              id: processInstanceId,
+              name,
+              value,
+              onSuccess: () => {
+                notifications.displayNotification('success', {
+                  headline: 'Variable added',
+                });
+                form.reset({});
+              },
+              onError: () => {
+                notifications.displayNotification('error', {
+                  headline: 'Variable could not be saved',
+                });
+                form.reset({});
+              },
+            };
+
+            if (initialValues.name === '') {
+              const result = await variablesStore.addVariable(params);
+              if (result === 'VALIDATION_ERROR') {
+                return {name: 'Variable should be unique'};
+              }
+            } else if (initialValues.name === name) {
+              variablesStore.updateVariable(params);
+              form.reset({});
+            }
+          }}
+        >
+          {({form, handleSubmit}) => {
+            return (
+              <Form onSubmit={handleSubmit}>
+                {isModificationModeEnabled && (
+                  <AddVariableButton
+                    onClick={() => {
+                      form.mutators.push?.('newVariables');
+                    }}
+                  />
+                )}
+                <VariablesContainer>
+                  <Variables />
+                </VariablesContainer>
+              </Form>
+            );
+          }}
+        </ReactFinalForm>
       </Content>
     </VariablesPanel>
   );

@@ -601,4 +601,35 @@ describe('VariablePanel', () => {
     jest.clearAllTimers();
     jest.useRealTimers();
   });
+
+  it('should display spinner on second variable fetch', async () => {
+    render(<VariablePanel />, {wrapper: Wrapper});
+    await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+    mockServer.use(
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            id: '9007199254742796-test',
+            name: 'test',
+            value: '123',
+            scopeId: '9007199254742796',
+            processInstanceId: '9007199254742796',
+            hasActiveOperation: false,
+          })
+        )
+      )
+    );
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
+
+    expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('variables-spinner')
+    );
+  });
 });

@@ -7,7 +7,7 @@
 
 import React, {useState} from 'react';
 import {Field, useForm, useFormState} from 'react-final-form';
-import {Container, NameField, ValueField, EditButtonsContainer} from './styled';
+import {Container, NameField, ValueField, InputFieldContainer} from './styled';
 import {EditButtons} from '../EditButtons';
 import {
   validateNameCharacters,
@@ -42,36 +42,37 @@ const NewVariable: React.FC = () => {
           />
         )}
       </Field>
-      <Field
-        name="value"
-        validate={validateValueComplete}
-        parse={(value) => value}
-      >
-        {({input, meta}) => (
-          <ValueField
-            {...input}
-            type="text"
-            placeholder="Value"
-            data-testid="add-variable-value"
-            fieldSuffix={{
-              type: 'icon',
-              icon: 'window',
-              press: () => {
-                setIsModalVisible(true);
-                tracking.track({
-                  eventName: 'json-editor-opened',
-                  variant: 'add-variable',
-                });
-              },
-              tooltip: 'Open JSON editor modal',
-            }}
-            shouldDebounceError={!meta.dirty && formState.dirty}
-          />
-        )}
-      </Field>
-      <EditButtonsContainer>
+      <InputFieldContainer>
+        <Field
+          name="value"
+          validate={validateValueComplete}
+          parse={(value) => value}
+        >
+          {({input, meta}) => (
+            <ValueField
+              {...input}
+              type="text"
+              placeholder="Value"
+              data-testid="add-variable-value"
+              fieldSuffix={{
+                type: 'icon',
+                icon: 'window',
+                press: () => {
+                  setIsModalVisible(true);
+                  tracking.track({
+                    eventName: 'json-editor-opened',
+                    variant: 'add-variable',
+                  });
+                },
+                tooltip: 'Open JSON editor modal',
+              }}
+              shouldDebounceError={!meta.dirty && formState.dirty}
+            />
+          )}
+        </Field>
         <EditButtons />
-      </EditButtonsContainer>
+      </InputFieldContainer>
+
       <JSONEditorModal
         isVisible={isModalVisible}
         title={

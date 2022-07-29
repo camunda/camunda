@@ -21,7 +21,6 @@ const Container = styled.div`
   ${({theme}) => {
     return css`
       display: flex;
-      padding-right: 16px;
       align-items: center;
       width: 100%;
       min-width: 400px;
@@ -34,7 +33,7 @@ const Name = styled.div`
   ${styles.bodyShort01};
   font-weight: 500;
   height: 100%;
-  padding: 4px 0 4px 20px;
+  padding: 4px 0 4px 19px;
   margin: 3px 0;
   display: block;
   text-overflow: ellipsis;
@@ -46,7 +45,8 @@ const Value = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 60%;
+  width: 70%;
+  padding-right: 16px;
 `;
 
 const SpinnerContainer = styled.div`

@@ -15,13 +15,13 @@ type Props = {
   Skeleton?: React.FC;
 };
 
-export default function EmptyPanel({
+const EmptyPanel: React.FC<Props> = ({
   type,
   label,
   rowHeight,
   Skeleton,
   ...props
-}: Props) {
+}) => {
   const containerRef = useRef(null);
 
   return (
@@ -41,7 +41,7 @@ export default function EmptyPanel({
       )}
     </Styled.EmptyPanel>
   );
-}
+};
 
 /**
  * @returns {number} the number of rows a skelton should show, based on the available screen height and the row height of the data expected to be shown
@@ -84,3 +84,5 @@ export const WithRowCount = function ({
 
   return renderChildren();
 };
+
+export {EmptyPanel};
