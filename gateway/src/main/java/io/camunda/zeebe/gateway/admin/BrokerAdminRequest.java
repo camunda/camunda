@@ -46,6 +46,10 @@ public class BrokerAdminRequest extends BrokerRequest<Void> {
     }
   }
 
+  public void setBrokerId(final int brokerId) {
+    request.setBrokerId(brokerId);
+  }
+
   @Override
   public int getPartitionId() {
     return request.getPartitionId();

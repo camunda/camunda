@@ -23,16 +23,9 @@ public class AdminRequest implements BufferReader, BufferWriter {
   private final AdminRequestEncoder bodyEncoder = new AdminRequestEncoder();
   private final AdminRequestDecoder bodyDecoder = new AdminRequestDecoder();
 
-  private int brokerId;
-  private int partitionId;
-  private AdminRequestType type;
-
-  public AdminRequest reset() {
-    brokerId = AdminRequestEncoder.brokerIdNullValue();
-    partitionId = AdminRequestEncoder.partitionIdNullValue();
-    type = AdminRequestType.NULL_VAL;
-    return this;
-  }
+  private int brokerId = AdminRequestEncoder.brokerIdNullValue();
+  private int partitionId = AdminRequestEncoder.partitionIdNullValue();
+  private AdminRequestType type = AdminRequestType.NULL_VAL;
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
