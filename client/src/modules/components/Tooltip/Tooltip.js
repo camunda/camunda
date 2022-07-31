@@ -20,7 +20,6 @@ export default function Tooltip({
   delay = 800,
   overflowOnly = false,
 }) {
-  const [timeout, setTimeout] = useState();
   const [hovering, setHovering] = useState(false);
   const [style, setStyle] = useState();
   const [tooltipAlign, setTooltipAlign] = useState(align);
@@ -28,6 +27,7 @@ export default function Tooltip({
 
   const hoverElement = useRef();
   const tooltip = useRef();
+  const timeout = useRef();
 
   useEffect(() => {
     if (!tooltip.current || !hoverElement.current) {
@@ -87,20 +87,18 @@ export default function Tooltip({
             const {currentTarget} = evt;
             if (!overflowOnly || currentTarget.scrollWidth > currentTarget.clientWidth) {
               hoverElement.current = currentTarget;
-              setTimeout(window.setTimeout(() => setHovering(true), delay));
+              timeout.current = window.setTimeout(() => setHovering(true), delay);
             }
-            child.props.onMouseEnter && child.props.onMouseEnter(evt);
+            child.props.onMouseEnter?.(evt);
           },
           onMouseLeave: (evt) => {
             hoverElement.current = null;
-            window.clearTimeout(timeout);
-            setTimeout(
-              window.setTimeout(() => {
-                setHovering(false);
-                setStyle();
-              }, delay)
-            );
-            child.props.onMouseLeave && child.props.onMouseLeave(evt);
+            window.clearTimeout(timeout.current);
+            timeout.current = window.setTimeout(() => {
+              setHovering(false);
+              setStyle();
+            }, delay);
+            child.props.onMouseLeave?.(evt);
           },
         })
       )}
@@ -115,7 +113,7 @@ export default function Tooltip({
             )}
             style={style}
             ref={tooltip}
-            onMouseEnter={() => window.clearTimeout(timeout)}
+            onMouseEnter={() => window.clearTimeout(timeout.current)}
             onMouseLeave={() => setHovering(false)}
           >
             {content}
