@@ -9,10 +9,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.rest.security.AuthenticationCookieFilter;
-import org.camunda.optimize.rest.security.AuthenticationCookieRefreshFilter;
 import org.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
 import org.camunda.optimize.rest.security.oauth.AudienceValidator;
 import org.camunda.optimize.rest.security.oauth.ScopeValidator;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -43,7 +43,6 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.security.web.session.SessionManagementFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -52,9 +51,12 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
@@ -79,7 +81,6 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
   private final SessionService sessionService;
   private final AuthCookieService authCookieService;
   private final ConfigurationService configurationService;
-  private final AuthenticationCookieRefreshFilter authenticationCookieRefreshFilter;
   private final CustomPreAuthenticatedAuthenticationProvider preAuthenticatedAuthenticationProvider;
 
   private final ClientRegistrationRepository clientRegistrationRepository;
@@ -88,18 +89,6 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
   @Override
   public void configure(AuthenticationManagerBuilder auth) throws Exception {
     auth.authenticationProvider(preAuthenticatedAuthenticationProvider);
-  }
-
-  @Bean
-  public AuthenticationCookieFilter authenticationCookieFilter() throws Exception {
-    return new AuthenticationCookieFilter(sessionService, authenticationManager());
-  }
-
-  @Bean
-  public HttpCookieOAuth2AuthorizationRequestRepository cookieOAuth2AuthorizationRequestRepository() {
-    return new HttpCookieOAuth2AuthorizationRequestRepository(
-      configurationService, new AuthorizationRequestCookieValueMapper()
-    );
   }
 
   @SneakyThrows
@@ -143,7 +132,6 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
         .successHandler(getAuthenticationSuccessHandler())
       .and()
       .addFilterBefore(authenticationCookieFilter(), OAuth2AuthorizationRequestRedirectFilter.class)
-      .addFilterAfter(authenticationCookieRefreshFilter, SessionManagementFilter.class)
       .exceptionHandling()
         .defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED), new AntPathRequestMatcher(REST_API_PATH + "/**"))
         .defaultAuthenticationEntryPointFor(new AddClusterIdSubPathToRedirectAuthenticationEntryPoint(OAUTH_AUTH_ENDPOINT + "/auth0"), new AntPathRequestMatcher("/**"))
@@ -153,8 +141,16 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
     //@formatter:on
   }
 
-  private String getPrometheusEndpoint() {
-    return ACTUATOR_ENDPOINT + PROMETHEUS_ENDPOINT;
+  @Bean
+  public AuthenticationCookieFilter authenticationCookieFilter() throws Exception {
+    return new AuthenticationCookieFilter(sessionService, authenticationManager());
+  }
+
+  @Bean
+  public HttpCookieOAuth2AuthorizationRequestRepository cookieOAuth2AuthorizationRequestRepository() {
+    return new HttpCookieOAuth2AuthorizationRequestRepository(
+      configurationService, new AuthorizationRequestCookieValueMapper()
+    );
   }
 
   public JwtDecoder jwtDecoder() {
@@ -169,6 +165,10 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
     return jwtDecoder;
   }
 
+  private String getPrometheusEndpoint() {
+    return ACTUATOR_ENDPOINT + PROMETHEUS_ENDPOINT;
+  }
+
   private String readJwtSetUriFromConfig() {
     return Optional.ofNullable(configurationService.getOptimizeApiConfiguration().getJwtSetUri()).orElse("");
   }
@@ -177,22 +177,26 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
     return (request, response, authentication) -> {
       final DefaultOidcUser user = (DefaultOidcUser) authentication.getPrincipal();
       final String userId = user.getIdToken().getSubject();
-      final String authToken = sessionService.createAuthToken(userId);
+      final String sessionToken = sessionService.createAuthToken(userId);
 
       if (hasAccess(user)) {
-        final String optimizeAuthCookie =
-          authCookieService.createNewOptimizeAuthCookie(authToken, request.getScheme());
-        response.addHeader(HttpHeaders.SET_COOKIE, optimizeAuthCookie);
-
         // spring security internally stores the access token as an authorized client, we retrieve it here to store it
-        // in a cookie to allow potential other Optimize webapps to reuse it
+        // in a cookie to allow potential other Optimize webapps to reuse it and keep the server stateless
         final OAuth2AccessToken serviceAccessToken = oAuth2AuthorizedClientService
           .loadAuthorizedClient(AUTH_0_CLIENT_REGISTRATION_ID, userId)
           .getAccessToken();
-        final String serviceTokenCookie = authCookieService.createOptimizeServiceTokenCookie(
-          serviceAccessToken, request.getScheme()
+
+        final Instant cookieExpiryDate = determineCookieExpiryDate(sessionToken, serviceAccessToken)
+          .orElseThrow(() -> new OptimizeRuntimeException(
+            "Could not determine a cookie expiry date. This is likely a bug, please report."));
+        response.addHeader(
+          HttpHeaders.SET_COOKIE,
+          authCookieService.createOptimizeServiceTokenCookie(serviceAccessToken, cookieExpiryDate, request.getScheme())
         );
-        response.addHeader(HttpHeaders.SET_COOKIE, serviceTokenCookie);
+        response.addHeader(
+          HttpHeaders.SET_COOKIE,
+          authCookieService.createNewOptimizeAuthCookie(sessionToken, cookieExpiryDate, request.getScheme())
+        );
 
         // we can't redirect to the previously accesses path or the root of the application as the Optimize Cookie
         // won't be sent by the browser in this case. This is because the chain of requests that lead to the
@@ -231,6 +235,14 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
         response.setStatus(Response.Status.FORBIDDEN.getStatusCode());
       }
     };
+  }
+
+  private Optional<Instant> determineCookieExpiryDate(final String sessionToken, final OAuth2AccessToken serviceAccessToken) {
+    final Instant serviceTokenExpiry = serviceAccessToken.getExpiresAt();
+    final Instant sessionTokenExpiry = authCookieService.getOptimizeAuthCookieTokenExpiryDate(sessionToken).orElse(null);
+    return Stream.of(serviceTokenExpiry, sessionTokenExpiry)
+      .filter(Objects::nonNull)
+      .min(Instant::compareTo);
   }
 
   private boolean hasAccess(final DefaultOidcUser user) {

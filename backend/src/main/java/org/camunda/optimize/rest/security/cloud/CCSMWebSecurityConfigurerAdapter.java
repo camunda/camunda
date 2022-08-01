@@ -29,7 +29,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
-import org.springframework.security.web.session.SessionManagementFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import javax.servlet.http.HttpServletRequest;
@@ -108,7 +107,6 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
       .anyRequest().authenticated()
       .and()
       .addFilterBefore(authenticationCookieFilter(), AbstractPreAuthenticatedProcessingFilter.class)
-      .addFilterAfter(authenticationCookieRefreshFilter, SessionManagementFilter.class)
       .exceptionHandling()
         .defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED), new AntPathRequestMatcher(REST_API_PATH + "/**"))
         .defaultAuthenticationEntryPointFor(this::redirectToIdentity, new AntPathRequestMatcher("/**"));

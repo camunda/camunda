@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.NewCookie;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
@@ -48,24 +49,43 @@ public class AuthCookieService {
     );
   }
 
-  public String createNewOptimizeAuthCookie(final String securityToken, final String requestScheme) {
-    log.trace("Creating Optimize authentication cookie.");
-    final Date expiryDate = getTokenIssuedAt(securityToken)
-      .map(Date::toInstant)
-      .map(issuedAt -> issuedAt.plus(getAuthConfiguration().getTokenLifeTimeMinutes(), ChronoUnit.MINUTES))
-      .map(Date::from)
-      .orElse(null);
-    return createCookie(
-      OPTIMIZE_AUTHORIZATION, AuthCookieService.createOptimizeAuthCookieValue(securityToken), requestScheme, expiryDate
+  public String createNewOptimizeAuthCookie(final String optimizeAuthCookieToken, final String requestScheme) {
+    return createNewOptimizeAuthCookie(
+      optimizeAuthCookieToken,
+      getOptimizeAuthCookieTokenExpiryDate(optimizeAuthCookieToken).orElse(null),
+      requestScheme
     );
   }
 
-  public String createOptimizeServiceTokenCookie(final OAuth2AccessToken accessToken, final String requestScheme) {
+  public String createNewOptimizeAuthCookie(final String optimizeAuthCookieToken,
+                                            final Instant expiresAt,
+                                            final String requestScheme) {
+    log.trace("Creating Optimize authentication cookie.");
+
+    return createCookie(
+      OPTIMIZE_AUTHORIZATION,
+      AuthCookieService.createOptimizeAuthCookieValue(optimizeAuthCookieToken),
+      requestScheme,
+      convertInstantToDate(expiresAt)
+    );
+  }
+
+  public String createOptimizeServiceTokenCookie(final OAuth2AccessToken accessToken,
+                                                 final Instant expiresAt,
+                                                 final String requestScheme) {
     log.trace("Creating Optimize service token cookie.");
     return createCookie(
-      OPTIMIZE_SERVICE_TOKEN, accessToken.getTokenValue(), requestScheme,
-      Optional.ofNullable(accessToken.getExpiresAt()).map(Date::from).orElse(null)
+      OPTIMIZE_SERVICE_TOKEN,
+      accessToken.getTokenValue(),
+      requestScheme,
+      convertInstantToDate(expiresAt)
     );
+  }
+
+  public Optional<Instant> getOptimizeAuthCookieTokenExpiryDate(final String optimizeAuthCookieToken) {
+    return getTokenIssuedAt(optimizeAuthCookieToken)
+      .map(Date::toInstant)
+      .map(issuedAt -> issuedAt.plus(getAuthConfiguration().getTokenLifeTimeMinutes(), ChronoUnit.MINUTES));
   }
 
   public static Optional<String> getAuthCookieToken(ContainerRequestContext requestContext) {
@@ -88,6 +108,10 @@ public class AuthCookieService {
 
   public static String createOptimizeAuthCookieValue(final String securityToken) {
     return AUTH_COOKIE_TOKEN_VALUE_PREFIX + securityToken;
+  }
+
+  private Date convertInstantToDate(final Instant expiresAt) {
+    return Optional.ofNullable(expiresAt).map(Date::from).orElse(null);
   }
 
   private String createCookie(final String cookieName, final String cookieValue, final String requestScheme,
