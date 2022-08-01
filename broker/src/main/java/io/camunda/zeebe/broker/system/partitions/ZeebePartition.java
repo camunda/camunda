@@ -90,7 +90,7 @@ public final class ZeebePartition extends Actor
   }
 
   public PartitionAdminAccess createAdminAccess() {
-    return new ZeebePartitionAdminAccess(actor, adminControl);
+    return new ZeebePartitionAdminAccess(actor, getPartitionId(), adminControl);
   }
 
   @Override

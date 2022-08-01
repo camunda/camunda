@@ -21,12 +21,27 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private final ConcurrencyControl concurrencyControl;
+  private final int partitionId;
   private final PartitionAdminControl adminControl;
 
   ZeebePartitionAdminAccess(
-      final ConcurrencyControl concurrencyControl, final PartitionAdminControl adminControl) {
+      final ConcurrencyControl concurrencyControl,
+      final int partitionId,
+      final PartitionAdminControl adminControl) {
     this.concurrencyControl = requireNonNull(concurrencyControl);
+    this.partitionId = partitionId;
     this.adminControl = requireNonNull(adminControl);
+  }
+
+  @Override
+  public PartitionAdminAccess forPartition(final int partitionId) {
+    if (this.partitionId == partitionId) {
+      return this;
+    } else {
+      throw new IllegalArgumentException(
+          "Requested PartitionAdminAccess for partition %s, this PartitionAdminAccess only manages partition %s"
+              .formatted(partitionId, this.partitionId));
+    }
   }
 
   @Override

@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.partitioning;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 public interface PartitionAdminAccess {
+  PartitionAdminAccess forPartition(int partitionId);
+
   ActorFuture<Void> takeSnapshot();
 
   ActorFuture<Void> pauseExporting();

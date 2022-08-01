@@ -17,6 +17,11 @@ public final class NoOpPartitionAdminAccess implements PartitionAdminAccess {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   @Override
+  public PartitionAdminAccess forPartition(final int partitionId) {
+    return this;
+  }
+
+  @Override
   public ActorFuture<Void> takeSnapshot() {
     logCall();
     return CompletableActorFuture.completed(null);
