@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.TypedRecord;
@@ -58,6 +59,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private ConcurrencyControl concurrencyControl;
   private InterPartitionCommandReceiverActor interPartitionCommandReceiver;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
+  private AtomixServerTransport gatewayBrokerTransport;
+  private BackupApiRequestHandler backupApiRequestHandler;
 
   @Override
   public int getPartitionId() {
@@ -187,7 +190,21 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public AtomixServerTransport getGatewayBrokerTransport() {
-    return null;
+    return gatewayBrokerTransport;
+  }
+
+  @Override
+  public BackupApiRequestHandler getBackupApiRequestHandler() {
+    return backupApiRequestHandler;
+  }
+
+  @Override
+  public void setBackupApiRequestHandler(final BackupApiRequestHandler backupApiRequestHandler) {
+    this.backupApiRequestHandler = backupApiRequestHandler;
+  }
+
+  public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {
+    this.gatewayBrokerTransport = gatewayBrokerTransport;
   }
 
   public void setDiskSpaceUsageMonitor(final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
