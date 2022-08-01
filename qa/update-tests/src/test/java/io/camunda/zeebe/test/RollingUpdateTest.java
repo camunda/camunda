@@ -329,7 +329,7 @@ final class RollingUpdateTest {
         .hasEntrySatisfying(
             "1",
             status ->
-                assertThat(status.snapshotId)
+                assertThat(status.snapshotId())
                     .as("partition 1 reports the presence of a snapshot")
                     .isNotBlank());
   }

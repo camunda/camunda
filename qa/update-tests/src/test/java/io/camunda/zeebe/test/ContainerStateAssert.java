@@ -63,7 +63,7 @@ final class ContainerStateAssert
 
     // the IDE is unaware that if null, failWithMessage will throw and we won't reach here, so
     // disable the warning
-    if (partitionStatus.snapshotId == null || partitionStatus.snapshotId.isBlank()) {
+    if (partitionStatus.snapshotId() == null || partitionStatus.snapshotId().isBlank()) {
       failWithMessage("expected to have a snapshot, but got nothing");
     }
 
@@ -96,8 +96,8 @@ final class ContainerStateAssert
 
     // the IDE is unaware that if null, failWithMessage will throw and we won't reach here, so
     // disable the warning
-    if (partitionStatus.snapshotId != null && !partitionStatus.snapshotId.isBlank()) {
-      failWithMessage("expected to have no snapshot, but got %s", partitionStatus.snapshotId);
+    if (partitionStatus.snapshotId() != null && !partitionStatus.snapshotId().isBlank()) {
+      failWithMessage("expected to have no snapshot, but got %s", partitionStatus.snapshotId());
     }
 
     return myself;
