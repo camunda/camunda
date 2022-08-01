@@ -146,7 +146,9 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
             });
   }
 
-  /** @return an optional job poller if not already in use, otherwise an empty optional */
+  /**
+   * @return an optional job poller if not already in use, otherwise an empty optional
+   */
   private Optional<JobPoller> tryClaimJobPoller() {
     return Optional.ofNullable(claimableJobPoller.getAndSet(null));
   }

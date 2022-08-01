@@ -12,25 +12,25 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTI
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.mockito.Mockito.mock;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthStatus;
-import io.camunda.zeebe.util.sched.Actor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,7 +43,6 @@ public class StreamProcessorHealthTest {
   @Rule public final StreamProcessorRule streamProcessorRule = new StreamProcessorRule();
 
   private StreamProcessor streamProcessor;
-  private TypedStreamWriter mockedLogStreamWriter;
   private AtomicBoolean shouldFlushThrowException;
   private AtomicInteger invocation;
   private AtomicBoolean shouldFailErrorHandlingInTransaction;
@@ -156,28 +155,21 @@ public class StreamProcessorHealthTest {
         streamProcessorRule.startTypedStreamProcessorNotAwaitOpening(
             processingContext -> {
               final MutableZeebeState zeebeState = processingContext.getZeebeState();
-              mockedLogStreamWriter = new WrappedStreamWriter();
-              processingContext.logStreamWriter(mockedLogStreamWriter);
               return processors(zeebeState.getKeyGenerator(), processingContext.getWriters())
                   .onCommand(
                       ValueType.PROCESS_INSTANCE,
                       ACTIVATE_ELEMENT,
                       new TypedRecordProcessor<>() {
                         @Override
-                        public void processRecord(
-                            final long position,
-                            final TypedRecord<UnifiedRecordValue> record,
-                            final TypedResponseWriter responseWriter,
-                            final TypedStreamWriter streamWriter,
-                            final Consumer<SideEffectProducer> sideEffect) {
-
+                        public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
                           invocation.getAndIncrement();
                           if (shouldProcessingThrowException.get()) {
                             throw new RuntimeException("Expected failure on processing");
                           }
                         }
                       });
-            });
+            },
+            batchWriter -> new WrappedStreamWriterLegacy());
 
     return streamProcessor;
   }
@@ -200,7 +192,7 @@ public class StreamProcessorHealthTest {
     }
   }
 
-  private final class WrappedStreamWriter implements TypedStreamWriter {
+  private final class WrappedStreamWriterLegacy implements LegacyTypedStreamWriter {
 
     @Override
     public void appendRejection(
@@ -209,14 +201,23 @@ public class StreamProcessorHealthTest {
         final String reason) {}
 
     @Override
-    public void configureSourceContext(final long sourceRecordPosition) {}
-
-    @Override
-    public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
+    public void appendRecord(
+        final long key,
+        final RecordType type,
+        final Intent intent,
+        final RejectionType rejectionType,
+        final String rejectionReason,
+        final RecordValue value) {
       if (shouldFailErrorHandlingInTransaction.get()) {
         throw new RuntimeException("Expected failure on append followup event");
       }
     }
+
+    @Override
+    public void configureSourceContext(final long sourceRecordPosition) {}
+
+    @Override
+    public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {}
 
     @Override
     public int getMaxEventLength() {

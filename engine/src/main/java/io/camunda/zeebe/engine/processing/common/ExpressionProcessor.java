@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.common;
 
-import static io.camunda.zeebe.util.EnsureUtil.ensureGreaterThan;
-
 import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
@@ -32,13 +30,39 @@ public final class ExpressionProcessor {
   private final DirectBuffer resultView = new UnsafeBuffer();
 
   private final ExpressionLanguage expressionLanguage;
-  private final VariableStateEvaluationContext evaluationContext;
+  private final EvaluationContextLookup evaluationContextLookup;
 
   public ExpressionProcessor(
-      final ExpressionLanguage expressionLanguage, final VariablesLookup lookup) {
+      final ExpressionLanguage expressionLanguage, final EvaluationContextLookup lookup) {
     this.expressionLanguage = expressionLanguage;
+    evaluationContextLookup = lookup;
+  }
 
-    evaluationContext = new VariableStateEvaluationContext(lookup);
+  /**
+   * Returns a new {@code ExpressionProcessor} instance. This new instance will use {@code
+   * primaryContext} for all lookups. Only if it doesn't find a variable in {@code primaryContext},
+   * it will lookup variables in the evaluation context of {@code this} evaluation processor
+   *
+   * @param primaryContext new top level evaluation context
+   * @return new instance which uses {@code primaryContext} as new top level evaluation context
+   */
+  public ExpressionProcessor withPrimaryContext(final EvaluationContext primaryContext) {
+    final EvaluationContextLookup combinedLookup =
+        scopeKey -> primaryContext.combine(evaluationContextLookup.getContext(scopeKey));
+    return new ExpressionProcessor(expressionLanguage, combinedLookup);
+  }
+
+  /**
+   * Returns a new {@code ExpressionProcessor} instance. This new instance will use {@code
+   * secondaryContext} for all lookups which it cannot find in its primary evaluation context
+   *
+   * @param secondaryContext fallback evaluation context
+   * @return new instance which uses {@code secondaryContext} as fallback
+   */
+  public ExpressionProcessor withSecondaryContext(final EvaluationContext secondaryContext) {
+    final EvaluationContextLookup combinedLookup =
+        scopeKey -> evaluationContextLookup.getContext(scopeKey).combine(secondaryContext);
+    return new ExpressionProcessor(expressionLanguage, combinedLookup);
   }
 
   /**
@@ -350,8 +374,7 @@ public final class ExpressionProcessor {
     if (variableScopeKey < 0) {
       context = EMPTY_EVALUATION_CONTEXT;
     } else {
-      evaluationContext.variableScopeKey = variableScopeKey;
-      context = evaluationContext;
+      context = evaluationContextLookup.getContext(variableScopeKey);
     }
 
     return expressionLanguage.evaluateExpression(expression, context);
@@ -378,31 +401,8 @@ public final class ExpressionProcessor {
     }
   }
 
-  private static class VariableStateEvaluationContext implements EvaluationContext {
-
-    private final DirectBuffer variableNameBuffer = new UnsafeBuffer();
-
-    private final VariablesLookup lookup;
-
-    private long variableScopeKey;
-
-    public VariableStateEvaluationContext(final VariablesLookup lookup) {
-      this.lookup = lookup;
-    }
-
-    @Override
-    public DirectBuffer getVariable(final String variableName) {
-      ensureGreaterThan("variable scope key", variableScopeKey, 0);
-
-      variableNameBuffer.wrap(variableName.getBytes());
-
-      return lookup.getVariable(variableScopeKey, variableNameBuffer);
-    }
-  }
-
   @FunctionalInterface
-  public interface VariablesLookup {
-
-    DirectBuffer getVariable(final long scopeKey, final DirectBuffer name);
+  public interface EvaluationContextLookup {
+    EvaluationContext getContext(final long scopeKey);
   }
 }

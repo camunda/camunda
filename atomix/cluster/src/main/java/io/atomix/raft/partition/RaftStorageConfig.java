@@ -29,11 +29,14 @@ public class RaftStorageConfig {
   private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024;
   private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
 
+  private static final boolean DEFAULT_PREALLOCATE_SEGMENT_FILES = true;
+
   private String directory;
   private long segmentSize = DEFAULT_MAX_SEGMENT_SIZE;
   private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
   private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
   private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
+  private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
 
   @Optional("SnapshotStoreFactory")
   private ReceivableSnapshotStoreFactory persistedSnapshotStoreFactory;
@@ -151,5 +154,22 @@ public class RaftStorageConfig {
   public RaftStorageConfig setJournalIndexDensity(final int journalIndexDensity) {
     this.journalIndexDensity = journalIndexDensity;
     return this;
+  }
+
+  /**
+   * @return true to preallocate segment files, false otherwise
+   */
+  public boolean isPreallocateSegmentFiles() {
+    return preallocateSegmentFiles;
+  }
+
+  /**
+   * Sets whether segment files are pre-allocated at creation. If true, segment files are
+   * pre-allocated to {@link #segmentSize} at creation before any writes happen.
+   *
+   * @param preallocateSegmentFiles true to preallocate files, false otherwise
+   */
+  public void setPreallocateSegmentFiles(final boolean preallocateSegmentFiles) {
+    this.preallocateSegmentFiles = preallocateSegmentFiles;
   }
 }

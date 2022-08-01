@@ -29,14 +29,14 @@
     </group>
   </sbe:message>
 
-  <sbe:message name="PushDeploymentRequest" id="2">
-    <field name="partitionId" id="0" type="uint16"/>
-    <field name="deploymentKey" id="1" type="uint64"/>
-    <data name="deployment" id="2" type="varDataEncoding"/>
+  <sbe:message name="InterPartitionMessage" id="4">
+    <field name="receiverPartitionId" id="0" type="uint16"/>
+    <field name="valueType" id="1" type="uint8"/>
+    <field name="intent" id="2" type="uint8"/>
+    <field name="recordKey" id="3" type="uint64" presence="optional"/>
+    <field name="checkpointId" id="4" type="int64"/>
+
+    <data name="command" id="32" type="blob"/>
   </sbe:message>
 
-  <sbe:message name="PushDeploymentResponse" id="3">
-    <field name="partitionId" id="0" type="uint16"/>
-    <field name="deploymentKey" id="1" type="uint64"/>
-  </sbe:message>
 </sbe:messageSchema>

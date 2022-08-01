@@ -13,7 +13,7 @@ import static org.junit.Assert.fail;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.VariablesLookup;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationContextLookup;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -399,7 +399,7 @@ public final class ZeebeRuntimeValidationTest {
     final ModelWalker walker = new ModelWalker(model);
     final ExpressionLanguage expressionLanguage =
         ExpressionLanguageFactory.createExpressionLanguage();
-    final VariablesLookup emptyLookup = (name, scopeKey) -> null;
+    final EvaluationContextLookup emptyLookup = scopeKey -> name -> null;
     final var expressionProcessor = new ExpressionProcessor(expressionLanguage, emptyLookup);
     final ValidationVisitor visitor =
         new ValidationVisitor(

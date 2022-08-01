@@ -1,9 +1,10 @@
 [
   {
     "extension": "revapi.filter",
-    "justification": "Ignore everything not included in the module itself",
+    "id": "filter",
     "configuration": {
       "archives": {
+        "justification": "Ignore everything not included in the module itself",
         "include": [
           "io\\.camunda:zeebe-client-java:.*"
         ]
@@ -21,8 +22,8 @@
   },
   {
     "extension": "revapi.differences",
+    "id": "differences",
     "configuration": {
-      "ignore": true,
       "differences": [
         {
           "justification": "Ignore new methods on all types, as these are not meant to be implemented but simply consumed; as such, new methods are perfectly fine to add",

@@ -15,10 +15,10 @@
 package worker
 
 import (
-	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/entities"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/commands"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 	"github.com/stretchr/testify/suite"
 	"sync"
 	"testing"
@@ -193,6 +193,10 @@ type jobClientStub struct {
 func (stub *jobClientStub) NewCompleteJobCommand() commands.CompleteJobCommandStep1 {
 	stub.invoked = true
 	return nil
+}
+
+func (stub *jobClientStub) NewThrowErrorCommand() commands.ThrowErrorCommandStep1 {
+	panic("implement me")
 }
 
 func (jobClientStub) NewFailJobCommand() commands.FailJobCommandStep1 {

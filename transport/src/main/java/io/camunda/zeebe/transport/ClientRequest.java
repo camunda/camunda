@@ -11,9 +11,13 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 
 public interface ClientRequest extends BufferWriter {
 
-  /** @return the partition id to which the request should be send to */
+  /**
+   * @return the partition id to which the request should be send to
+   */
   int getPartitionId();
 
-  /** @return the type of this request */
+  /**
+   * @return the type of this request
+   */
   RequestType getRequestType();
 }

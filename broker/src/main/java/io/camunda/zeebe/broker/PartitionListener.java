@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker;
 
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 /**
  * Can be implemented and used to react on partition role changes, like on Leader on Actor should be

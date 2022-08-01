@@ -20,7 +20,9 @@ import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class PartitionElementTest extends BpmnModelElementInstanceTest {
 
   @Override

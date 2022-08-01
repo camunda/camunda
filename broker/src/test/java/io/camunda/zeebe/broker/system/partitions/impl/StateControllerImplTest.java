@@ -12,15 +12,17 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
+import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
+import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.SnapshotMetrics;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
-import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -45,6 +48,14 @@ public final class StateControllerImplTest {
   private StateControllerImpl snapshotController;
   private FileBasedSnapshotStore store;
   private Path runtimeDirectory;
+
+  private final AtomixRecordEntrySupplier indexedRaftLogEntry =
+      l ->
+          Optional.of(
+              new TestIndexedRaftLogEntry(l, 1, new ApplicationEntry(1, 10, new UnsafeBuffer())));
+  private final AtomixRecordEntrySupplier emptyEntrySupplier = l -> Optional.empty();
+  private final AtomicReference<AtomixRecordEntrySupplier> atomixRecordEntrySupplier =
+      new AtomicReference<>(indexedRaftLogEntry);
 
   @Before
   public void setup() throws IOException {
@@ -64,10 +75,7 @@ public final class StateControllerImplTest {
             DefaultZeebeDbFactory.defaultFactory(),
             store,
             runtimeDirectory,
-            l ->
-                Optional.of(
-                    new TestIndexedRaftLogEntry(
-                        l, 1, new ApplicationEntry(1, 10, new UnsafeBuffer()))),
+            l -> atomixRecordEntrySupplier.get().getPreviousIndexedEntry(l),
             db -> exporterPosition.get(),
             store);
 
@@ -82,6 +90,17 @@ public final class StateControllerImplTest {
     assertThat(snapshotController.isDbOpened()).isFalse();
     assertThatThrownBy(() -> snapshotController.takeTransientSnapshot(1).join())
         .hasCauseInstanceOf(StateClosedException.class);
+  }
+
+  @Test
+  public void shouldNotTakeSnapshotIfNoIndexedEntry() {
+    // given
+    atomixRecordEntrySupplier.set(emptyEntrySupplier);
+    snapshotController.recover().join();
+
+    // then
+    assertThatThrownBy(() -> snapshotController.takeTransientSnapshot(1).join())
+        .hasCauseInstanceOf(NoEntryAtSnapshotPosition.class);
   }
 
   @Test

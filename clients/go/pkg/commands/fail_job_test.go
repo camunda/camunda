@@ -17,11 +17,12 @@ package commands
 
 import (
 	"context"
-	"github.com/camunda-cloud/zeebe/clients/go/internal/mock_pb"
-	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/v8/internal/mock_pb"
+	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 	"github.com/golang/mock/gomock"
 	"testing"
+	"time"
 )
 
 func TestFailJobCommand(t *testing.T) {
@@ -44,6 +45,36 @@ func TestFailJobCommand(t *testing.T) {
 	defer cancel()
 
 	response, err := command.JobKey(123).Retries(12).Send(ctx)
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+func TestFailJobCommand_RetryBackoff(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	request := &pb.FailJobRequest{
+		JobKey:       123,
+		Retries:      12,
+		RetryBackOff: 10_000,
+	}
+	stub := &pb.FailJobResponse{}
+
+	client.EXPECT().FailJob(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewFailJobCommand(client, func(context.Context, error) bool { return false })
+
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := command.JobKey(123).Retries(12).RetryBackoff(time.Second * 10).Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")

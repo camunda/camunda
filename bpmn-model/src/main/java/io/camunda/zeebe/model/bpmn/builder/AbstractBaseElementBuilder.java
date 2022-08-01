@@ -52,7 +52,9 @@ import java.util.Iterator;
 import java.util.function.Consumer;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractBaseElementBuilder<
         B extends AbstractBaseElementBuilder<B, E>, E extends BaseElement>
     extends AbstractBpmnModelElementBuilder<B, E> {

@@ -18,12 +18,12 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorBuilder;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.scheduler.testing.TestActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessorBuilder;
 import io.camunda.zeebe.util.health.HealthMonitor;
-import io.camunda.zeebe.util.sched.TestConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.TestActorFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;

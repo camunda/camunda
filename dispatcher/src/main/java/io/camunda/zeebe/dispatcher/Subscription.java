@@ -26,9 +26,9 @@ import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffse
 import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.camunda.zeebe.dispatcher.impl.log.LogBuffer;
 import io.camunda.zeebe.dispatcher.impl.log.LogBufferPartition;
-import io.camunda.zeebe.util.sched.ActorCondition;
-import io.camunda.zeebe.util.sched.channel.ActorConditions;
-import io.camunda.zeebe.util.sched.channel.ConsumableChannel;
+import io.camunda.zeebe.scheduler.ActorCondition;
+import io.camunda.zeebe.scheduler.channel.ActorConditions;
+import io.camunda.zeebe.scheduler.channel.ConsumableChannel;
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -82,7 +82,7 @@ public class Subscription implements ConsumableChannel {
 
   @Override
   public void removeConsumer(final ActorCondition consumer) {
-    actorConditions.registerConsumer(consumer);
+    actorConditions.removeConsumer(consumer);
   }
 
   protected long getLimit() {

@@ -146,6 +146,11 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     return recordValue;
   }
 
+  @Override
+  public Record<T> copyOf() {
+    return new CopiedRecord<>(this);
+  }
+
   /**
    * Please be aware that this method is not thread-safe. Some records contain properties that will
    * get modified when iterating over it (eg. Records containing an
@@ -157,11 +162,6 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   @Override
   public String toJson() {
     return MsgPackConverter.convertJsonSerializableObjectToJson(this);
-  }
-
-  @Override
-  public Record<T> clone() {
-    return new CopiedRecord<>(this);
   }
 
   @Override

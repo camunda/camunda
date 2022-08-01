@@ -16,9 +16,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
-import io.camunda.zeebe.util.sched.ActorSchedulingService;
-import io.camunda.zeebe.util.sched.TestConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

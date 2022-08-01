@@ -11,6 +11,7 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
@@ -18,7 +19,6 @@ import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkWrapper;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -169,7 +169,9 @@ public class FileBasedReceivedSnapshotTest {
             persistedSnapshot.getDirectory(),
             persistedSnapshot.getChecksumFile(),
             0xDEADBEEFL,
-            persistedSnapshot.getMetadata());
+            persistedSnapshot.getMetadata(),
+            s -> {},
+            null);
 
     // when
     final var receivedSnapshot = receiveSnapshot(corruptedSnapshot);

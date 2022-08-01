@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ActorThread;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -18,10 +22,6 @@ import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.ActorThread;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -30,6 +30,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Map;
@@ -66,6 +67,9 @@ public final class FileBasedSnapshotStore extends Actor
   // used to write concurrently received snapshots in different pending directories
   private final AtomicLong receivingSnapshotStartCount;
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
+
+  private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
+
   private final String actorName;
   private final int partitionId;
 
@@ -99,7 +103,11 @@ public final class FileBasedSnapshotStore extends Actor
 
   @Override
   protected void onActorStarting() {
-    currentPersistedSnapshotRef.set(loadLatestSnapshot(snapshotsDirectory));
+    final FileBasedSnapshot latestSnapshot = loadLatestSnapshot(snapshotsDirectory);
+    currentPersistedSnapshotRef.set(latestSnapshot);
+    if (latestSnapshot != null) {
+      availableSnapshots.add(latestSnapshot);
+    }
     purgePendingSnapshotsDirectory();
   }
 
@@ -193,7 +201,13 @@ public final class FileBasedSnapshotStore extends Actor
         return null;
       }
 
-      return new FileBasedSnapshot(path, checksumPath, actualChecksum.getCombinedValue(), metadata);
+      return new FileBasedSnapshot(
+          path,
+          checksumPath,
+          actualChecksum.getCombinedValue(),
+          metadata,
+          this::onSnapshotDeleted,
+          actor);
     } catch (final Exception e) {
       LOGGER.warn("Could not load snapshot in {}", path, e);
       return null;
@@ -224,6 +238,12 @@ public final class FileBasedSnapshotStore extends Actor
   @Override
   public Optional<PersistedSnapshot> getLatestSnapshot() {
     return Optional.ofNullable(currentPersistedSnapshotRef.get());
+  }
+
+  @Override
+  public ActorFuture<Set<PersistedSnapshot>> getAvailableSnapshots() {
+    // return a new set so that caller cannot modify availableSnapshot
+    return actor.call(() -> Collections.unmodifiableSet(availableSnapshots));
   }
 
   @Override
@@ -499,7 +519,12 @@ public final class FileBasedSnapshotStore extends Actor
 
     final var newPersistedSnapshot =
         new FileBasedSnapshot(
-            destination, checksumPath, actualChecksum.getCombinedValue(), metadata);
+            destination,
+            checksumPath,
+            actualChecksum.getCombinedValue(),
+            metadata,
+            this::onSnapshotDeleted,
+            actor);
     final var failed =
         !currentPersistedSnapshotRef.compareAndSet(currentPersistedSnapshot, newPersistedSnapshot);
     if (failed) {
@@ -515,25 +540,35 @@ public final class FileBasedSnapshotStore extends Actor
               currentPersistedSnapshotRef.get()));
     }
 
+    availableSnapshots.add(newPersistedSnapshot);
+
     LOGGER.info("Committed new snapshot {}", newPersistedSnapshot.getId());
 
     snapshotMetrics.incrementSnapshotCount();
     observeSnapshotSize(newPersistedSnapshot);
 
-    LOGGER.trace(
-        "Purging snapshots older than {}",
-        newPersistedSnapshot.getMetadata().getSnapshotIdAsString());
-    if (currentPersistedSnapshot != null) {
-      LOGGER.debug(
-          "Deleting previous snapshot {}",
-          currentPersistedSnapshot.getMetadata().getSnapshotIdAsString());
-      currentPersistedSnapshot.delete();
-    }
-    purgePendingSnapshots(newPersistedSnapshot.getMetadata());
+    deleteOlderSnapshots(newPersistedSnapshot);
 
     listeners.forEach(listener -> listener.onNewSnapshot(newPersistedSnapshot));
 
     return newPersistedSnapshot;
+  }
+
+  private void deleteOlderSnapshots(final FileBasedSnapshot newPersistedSnapshot) {
+    LOGGER.trace(
+        "Purging snapshots older than {}",
+        newPersistedSnapshot.getMetadata().getSnapshotIdAsString());
+    final var snapshotsToDelete =
+        availableSnapshots.stream()
+            .filter(s -> !s.getId().equals(newPersistedSnapshot.getId()))
+            .filter(s -> !s.isReserved())
+            .toList();
+    snapshotsToDelete.forEach(
+        previousSnapshot -> {
+          LOGGER.debug("Deleting previous snapshot {}", previousSnapshot.getId());
+          previousSnapshot.delete();
+        });
+    purgePendingSnapshots(newPersistedSnapshot.getMetadata());
   }
 
   private void moveToSnapshotDirectory(final Path directory, final Path destination) {
@@ -596,5 +631,34 @@ public final class FileBasedSnapshotStore extends Actor
 
   SnapshotMetrics getSnapshotMetrics() {
     return snapshotMetrics;
+  }
+
+  void onSnapshotDeleted(final FileBasedSnapshot snapshot) {
+    availableSnapshots.remove(snapshot);
+  }
+
+  @Override
+  public String toString() {
+    return "FileBasedSnapshotStore{"
+        + "snapshotsDirectory="
+        + snapshotsDirectory
+        + ", pendingDirectory="
+        + pendingDirectory
+        + ", listeners="
+        + listeners
+        + ", currentPersistedSnapshotRef="
+        + currentPersistedSnapshotRef
+        + ", receivingSnapshotStartCount="
+        + receivingSnapshotStartCount
+        + ", pendingSnapshots="
+        + pendingSnapshots
+        + ", availableSnapshots="
+        + availableSnapshots
+        + ", actorName='"
+        + actorName
+        + '\''
+        + ", partitionId="
+        + partitionId
+        + "}";
   }
 }

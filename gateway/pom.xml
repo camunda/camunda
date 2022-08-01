@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.4.0-SNAPSHOT</version>
+    <version>8.1.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -24,6 +24,19 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-scheduler</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-scheduler</artifactId>
+      <classifier>tests</classifier>
+      <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -278,7 +291,6 @@
       <artifactId>bcprov-jdk15on</artifactId>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 
   <build>

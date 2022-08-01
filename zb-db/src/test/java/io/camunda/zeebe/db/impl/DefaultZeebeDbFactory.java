@@ -17,7 +17,7 @@ public final class DefaultZeebeDbFactory {
   public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
       ZeebeDbFactory<ColumnFamilyType> getDefaultFactory() {
     // enable consistency checks for tests
-    final var consistencyChecks = new ConsistencyChecksSettings(true);
+    final var consistencyChecks = new ConsistencyChecksSettings(true, true);
     return new ZeebeRocksDbFactory<>(new RocksDbConfiguration(), consistencyChecks);
   }
 }

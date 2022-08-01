@@ -41,7 +41,9 @@ grafana:
   dashboards:
     default:
       zeebe:
-        url: https://raw.githubusercontent.com/camunda-cloud/zeebe/main/monitor/grafana/zeebe.json
+        url: https://raw.githubusercontent.com/camunda/zeebe/main/monitor/grafana/zeebe.json
+      zeebe-overview:
+        url: https://raw.githubusercontent.com/camunda/zeebe/main/monitor/grafana/zeebe-overview.json
   persistence:
     enabled: true
     storageClassName: ssd
@@ -55,6 +57,7 @@ prometheusOperator:
 
 prometheus:
   prometheusSpec:
+    retention: 30d
     storageSpec:
       volumeClaimTemplate:
         metadata:
@@ -67,6 +70,6 @@ prometheus:
             - ReadWriteOnce
           resources:
             requests:
-              storage: 50Gi
+              storage: 150Gi
           storageClassName: ssd
 

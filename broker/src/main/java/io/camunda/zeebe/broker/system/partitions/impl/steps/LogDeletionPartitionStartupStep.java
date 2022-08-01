@@ -12,9 +12,9 @@ import io.camunda.zeebe.broker.logstreams.LogCompactor;
 import io.camunda.zeebe.broker.logstreams.LogDeletionService;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupStep;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
-import java.util.List;
+import io.camunda.zeebe.scheduler.SchedulingHints;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 
 public class LogDeletionPartitionStartupStep implements PartitionStartupStep {
 
@@ -33,15 +33,13 @@ public class LogDeletionPartitionStartupStep implements PartitionStartupStep {
             partitionStartupContext.getNodeId(),
             partitionStartupContext.getPartitionId(),
             logCompactor,
-            List.of(
-                partitionStartupContext.getConstructableSnapshotStore(),
-                partitionStartupContext.getReceivableSnapshotStore()));
+            partitionStartupContext.getPersistedSnapshotStore());
 
     partitionStartupContext.setLogDeletionService(deletionService);
     final ActorFuture<PartitionStartupContext> startupFuture = new CompletableActorFuture<>();
     partitionStartupContext
         .getActorSchedulingService()
-        .submitActor(deletionService)
+        .submitActor(deletionService, SchedulingHints.ioBound())
         .onComplete(
             (success, failure) -> {
               if (failure != null) {

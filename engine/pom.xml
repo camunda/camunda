@@ -6,21 +6,24 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.4.0-SNAPSHOT</version>
+    <version>8.1.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <artifactId>zeebe-workflow-engine</artifactId>
-  <version>1.4.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Zeebe Workflow Engine</name>
 
   <dependencies>
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-scheduler</artifactId>
     </dependency>
 
     <dependency>
@@ -89,11 +92,6 @@
     </dependency>
 
     <dependency>
-      <groupId>uk.co.real-logic</groupId>
-      <artifactId>sbe-tool</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>io.prometheus</groupId>
       <artifactId>simpleclient</artifactId>
     </dependency>
@@ -103,8 +101,12 @@
       <artifactId>commons-text</artifactId>
     </dependency>
 
-    <!--    TEST DEPENDENCIES-->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
 
+    <!-- TEST DEPENDENCIES -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-asserts</artifactId>
@@ -112,8 +114,22 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-scheduler</artifactId>
+      <classifier>tests</classifier>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.vintage</groupId>
+      <artifactId>junit-vintage-engine</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -126,6 +142,12 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -154,14 +176,15 @@
     </dependency>
 
     <dependency>
-      <groupId>org.awaitility</groupId>
-      <artifactId>awaitility</artifactId>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -169,8 +192,6 @@
       <artifactId>junit-platform-commons</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <!-- TEMPORARY -->
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -180,73 +201,28 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit-junit5-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit-junit5-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
     <plugins>
-
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>add-source</id>
-            <goals>
-              <goal>add-source</goal>
-            </goals>
-            <phase>generate-sources</phase>
-            <configuration>
-              <sources combine.children="append">
-                <!-- merging with parent config for benchmarks -->
-                <source>${project.build.directory}/generated-sources/sbe</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <configuration>
-          <executableDependency>
-            <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe</artifactId>
-          </executableDependency>
-          <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
-          <arguments>
-            <argument>${project.build.resources[0].directory}/subscription-schema.xml</argument>
-          </arguments>
-          <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
-          <!-- system properties defined in zeebe-parent -->
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe-all</artifactId>
-            <version>${version.sbe}</version>
-          </dependency>
-        </dependencies>
-        <executions>
-          <execution>
-            <goals>
-              <goal>java</goal>
-            </goals>
-            <phase>generate-sources</phase>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <usedDependencies>
-            <!-- dependency used but plugin seems to report a false positive here -->
-            <dependency>uk.co.real-logic:sbe-tool</dependency>
-          </usedDependencies>
-        </configuration>
-      </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
@@ -258,8 +234,6 @@
           </execution>
         </executions>
       </plugin>
-
     </plugins>
   </build>
-
 </project>

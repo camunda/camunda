@@ -21,7 +21,9 @@ import io.camunda.zeebe.model.bpmn.impl.instance.Supports;
 import java.util.Arrays;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ProcessTest extends BpmnModelElementInstanceTest {
 
   @Override

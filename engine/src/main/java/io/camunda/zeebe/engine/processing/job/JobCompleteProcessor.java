@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;

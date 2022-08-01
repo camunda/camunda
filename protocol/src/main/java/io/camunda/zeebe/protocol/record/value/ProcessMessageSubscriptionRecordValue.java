@@ -15,36 +15,54 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import org.immutables.value.Value;
 
 /**
  * Represents a process message subscription command or event.
  *
  * <p>See {@link ProcessMessageSubscriptionIntent} for intents.
  */
+@Value.Immutable
+@ImmutableProtocol(builder = ImmutableProcessMessageSubscriptionRecordValue.Builder.class)
 public interface ProcessMessageSubscriptionRecordValue
     extends RecordValueWithVariables, ProcessInstanceRelated {
-  /** @return the process instance key */
+  /**
+   * @return the process instance key
+   */
   @Override
   long getProcessInstanceKey();
 
-  /** @return the element instance key */
+  /**
+   * @return the element instance key
+   */
   long getElementInstanceKey();
 
-  /** @return the BPMN process id */
+  /**
+   * @return the BPMN process id
+   */
   String getBpmnProcessId();
 
-  /** @return the key of the correlated message */
+  /**
+   * @return the key of the correlated message
+   */
   long getMessageKey();
 
-  /** @return the message name */
+  /**
+   * @return the message name
+   */
   String getMessageName();
 
-  /** @return the correlation key */
+  /**
+   * @return the correlation key
+   */
   String getCorrelationKey();
 
-  /** @return the id of the element tied to the subscription. */
+  /**
+   * @return the id of the element tied to the subscription.
+   */
   String getElementId();
 
   /**

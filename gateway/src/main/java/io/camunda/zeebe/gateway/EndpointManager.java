@@ -30,8 +30,12 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
@@ -47,8 +51,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.util.VersionUtil;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -209,6 +211,17 @@ public final class EndpointManager {
         responseObserver);
   }
 
+  public void deployResource(
+      final DeployResourceRequest request,
+      final ServerStreamObserver<DeployResourceResponse> responseObserver) {
+
+    sendRequest(
+        request,
+        RequestMapper::toDeployResourceRequest,
+        ResponseMapper::toDeployResourceResponse,
+        responseObserver);
+  }
+
   public void failJob(
       final FailJobRequest request, final ServerStreamObserver<FailJobResponse> responseObserver) {
     sendRequest(
@@ -263,18 +276,6 @@ public final class EndpointManager {
     final TopologyResponse.Builder topologyResponseBuilder = TopologyResponse.newBuilder();
     final BrokerClusterState topology = topologyManager.getTopology();
 
-    if (topology == null) {
-      final StatusRuntimeException error =
-          Status.UNAVAILABLE.augmentDescription("No brokers available").asRuntimeException();
-      responseObserver.onError(error);
-      return;
-    }
-
-    topologyResponseBuilder
-        .setClusterSize(topology.getClusterSize())
-        .setPartitionsCount(topology.getPartitionsCount())
-        .setReplicationFactor(topology.getReplicationFactor());
-
     final String gatewayVersion = VersionUtil.getVersion();
     if (gatewayVersion != null && !gatewayVersion.isBlank()) {
       topologyResponseBuilder.setGatewayVersion(gatewayVersion);
@@ -282,16 +283,23 @@ public final class EndpointManager {
 
     final ArrayList<BrokerInfo> brokers = new ArrayList<>();
 
-    topology
-        .getBrokers()
-        .forEach(
-            brokerId -> {
-              final Builder brokerInfo = BrokerInfo.newBuilder();
-              addBrokerInfo(brokerInfo, brokerId, topology);
-              addPartitionInfoToBrokerInfo(brokerInfo, brokerId, topology);
+    if (topology != null) {
+      topologyResponseBuilder
+          .setClusterSize(topology.getClusterSize())
+          .setPartitionsCount(topology.getPartitionsCount())
+          .setReplicationFactor(topology.getReplicationFactor());
 
-              brokers.add(brokerInfo.build());
-            });
+      topology
+          .getBrokers()
+          .forEach(
+              brokerId -> {
+                final Builder brokerInfo = BrokerInfo.newBuilder();
+                addBrokerInfo(brokerInfo, brokerId, topology);
+                addPartitionInfoToBrokerInfo(brokerInfo, brokerId, topology);
+
+                brokers.add(brokerInfo.build());
+              });
+    }
 
     topologyResponseBuilder.addAllBrokers(brokers);
     final TopologyResponse response = topologyResponseBuilder.build();
@@ -306,6 +314,16 @@ public final class EndpointManager {
         request,
         RequestMapper::toUpdateJobRetriesRequest,
         ResponseMapper::toUpdateJobRetriesResponse,
+        responseObserver);
+  }
+
+  public void modifyProcessInstance(
+      final ModifyProcessInstanceRequest request,
+      final ServerStreamObserver<ModifyProcessInstanceResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toModifyProcessInstanceRequest,
+        ResponseMapper::toModifyProcessInstanceResponse,
         responseObserver);
   }
 

@@ -155,7 +155,7 @@ public final class ConditionIncidentTest {
     assertThat(
             RecordingExporter.records()
                 .onlyEvents()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .incidentRecords())
         .extracting(Record::getIntent)
         .hasSize(2)
@@ -194,7 +194,7 @@ public final class ConditionIncidentTest {
     assertThat(
             RecordingExporter.records()
                 .onlyEvents()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .incidentRecords())
         .extracting(Record::getIntent)
         .hasSize(2)

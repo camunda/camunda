@@ -9,17 +9,16 @@ package io.camunda.zeebe.engine.processing.message;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
@@ -30,7 +29,6 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public final class ProcessMessageSubscriptionCorrelateProcessor
@@ -79,9 +77,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   @Override
   public void processRecord(
       final TypedRecord<ProcessMessageSubscriptionRecord> command,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final LegacyTypedResponseWriter responseWriter,
+      final LegacyTypedStreamWriter streamWriter) {
 
     final var record = command.getValue();
     final var elementInstanceKey = record.getElementInstanceKey();
@@ -97,7 +94,9 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
     } else {
       final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
-      final var canTriggerElement = eventHandle.canTriggerElement(elementInstance);
+      final var canTriggerElement =
+          eventHandle.canTriggerElement(
+              elementInstance, subscription.getRecord().getElementIdBuffer());
 
       if (!canTriggerElement) {
         rejectCommand(command, RejectionType.INVALID_STATE, NO_EVENT_OCCURRED_MESSAGE);

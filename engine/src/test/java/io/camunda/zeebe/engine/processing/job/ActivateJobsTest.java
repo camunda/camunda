@@ -27,11 +27,11 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.ByteValue;
-import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -40,7 +40,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.assertj.core.internal.bytebuddy.utility.RandomString;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -49,7 +48,7 @@ import org.junit.Test;
 public final class ActivateJobsTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-  private static final String LONG_CUSTOM_HEADER_VALUE = RandomString.make(128);
+  private static final String LONG_CUSTOM_HEADER_VALUE = "foo".repeat(128);
   private static final String PROCESS_ID = "process";
   private static final Function<String, BpmnModelInstance> MODEL_SUPPLIER =
       (type) ->
@@ -220,7 +219,7 @@ public final class ActivateJobsTest {
   @Test
   public void shouldReturnEmptyBatchIfNoJobsAvailable() {
     // when
-    final List<Long> jobEvents = activateJobs(RandomString.make(5), 3);
+    final List<Long> jobEvents = activateJobs(Strings.newRandomValidBpmnId(), 3);
 
     // then
     assertThat(jobEvents).isEmpty();
@@ -407,7 +406,7 @@ public final class ActivateJobsTest {
     assertThat(remainingJobKeys).hasSize(jobCount - expectedJobsInBatch);
   }
 
-  // regression test for https://github.com/camunda-cloud/zeebe/issues/6207
+  // regression test for https://github.com/camunda/zeebe/issues/6207
   @Test
   public void shouldActivateJobUpToMaxMessageSize() {
     // given

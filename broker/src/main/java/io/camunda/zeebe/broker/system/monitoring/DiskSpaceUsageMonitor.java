@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.system.monitoring;
 import static io.camunda.zeebe.broker.Broker.LOG;
 
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
-import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.scheduler.Actor;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;

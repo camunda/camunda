@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class IntermediateThrowEventBuilder
     extends AbstractIntermediateThrowEventBuilder<IntermediateThrowEventBuilder> {
 

@@ -32,7 +32,9 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 import org.camunda.bpm.model.xml.type.reference.AttributeReference;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ErrorImpl extends RootElementImpl implements Error {
 
   protected static Attribute<String> nameAttribute;

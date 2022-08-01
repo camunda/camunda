@@ -13,12 +13,12 @@ import io.atomix.raft.partition.RaftPartitionGroup.Builder;
 import io.atomix.raft.partition.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistributor;
 import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistributorBuilder;
+import io.camunda.zeebe.broker.raft.ZeebeEntryValidator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
 import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
-import io.camunda.zeebe.logstreams.impl.log.ZeebeEntryValidator;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -77,7 +77,8 @@ final class RaftPartitionGroupFactory {
             .withMaxQuorumResponseTimeout(experimentalCfg.getRaft().getMaxQuorumResponseTimeout())
             .withMinStepDownFailureCount(experimentalCfg.getRaft().getMinStepDownFailureCount())
             .withPreferSnapshotReplicationThreshold(
-                experimentalCfg.getRaft().getPreferSnapshotReplicationThreshold());
+                experimentalCfg.getRaft().getPreferSnapshotReplicationThreshold())
+            .withPreallocateSegmentFiles(experimentalCfg.getRaft().isPreallocateSegmentFiles());
 
     final int maxMessageSize = (int) networkCfg.getMaxMessageSizeInBytes();
 

@@ -20,7 +20,9 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractBusinessRuleTaskBuilder<B extends AbstractBusinessRuleTaskBuilder<B>>
     extends AbstractJobWorkerTaskBuilder<B, BusinessRuleTask> {
 

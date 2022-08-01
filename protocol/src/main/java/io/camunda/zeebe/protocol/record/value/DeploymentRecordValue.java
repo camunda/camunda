@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
@@ -22,22 +23,33 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMet
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.util.List;
+import org.immutables.value.Value;
 
 /**
  * Represents a single deployment event or command.
  *
  * <p>See {@link DeploymentIntent} for intents.
  */
+@Value.Immutable
+@ImmutableProtocol(builder = ImmutableDeploymentRecordValue.Builder.class)
 public interface DeploymentRecordValue extends RecordValue {
-  /** @return the resources to deploy */
+  /**
+   * @return the resources to deploy
+   */
   List<DeploymentResource> getResources();
 
-  /** @return the deployed processes */
+  /**
+   * @return the deployed processes
+   */
   List<ProcessMetadataValue> getProcessesMetadata();
 
-  /** @return the deployed decisions */
+  /**
+   * @return the deployed decisions
+   */
   List<DecisionRecordValue> getDecisionsMetadata();
 
-  /** @return the deployed decision requirements (DRGs) */
+  /**
+   * @return the deployed decision requirements (DRGs)
+   */
   List<DecisionRequirementsMetadataValue> getDecisionRequirementsMetadata();
 }

@@ -329,7 +329,7 @@ public class JobWorkerElementIncidentTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .incidentRecords()
                 .withRecordKey(incidentCreated.getKey()))
         .extracting(Record::getIntent)

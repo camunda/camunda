@@ -20,7 +20,9 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
  */
 public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
 
-  /** @return the class that represents the BPMN element */
+  /**
+   * @return the class that represents the BPMN element
+   */
   Class<T> getType();
 
   /**

@@ -77,6 +77,8 @@ public class ElasticsearchExporterConfiguration {
         return index.processInstance;
       case PROCESS_INSTANCE_CREATION:
         return index.processInstanceCreation;
+      case PROCESS_INSTANCE_MODIFICATION:
+        return index.processInstanceModification;
       case PROCESS_MESSAGE_SUBSCRIPTION:
         return index.processMessageSubscription;
       case DECISION_REQUIREMENTS:
@@ -85,6 +87,8 @@ public class ElasticsearchExporterConfiguration {
         return index.decision;
       case DECISION_EVALUATION:
         return index.decisionEvaluation;
+      case CHECKPOINT:
+        return index.checkpoint;
       default:
         return false;
     }
@@ -116,22 +120,25 @@ public class ElasticsearchExporterConfiguration {
     public boolean rejection = false;
 
     // value types to export
-    public boolean deployment = false;
-    public boolean process = true;
+    public boolean decision = true;
+    public boolean decisionEvaluation = true;
+    public boolean decisionRequirements = true;
+    public boolean deployment = true;
     public boolean error = true;
     public boolean incident = true;
     public boolean job = true;
     public boolean jobBatch = false;
-    public boolean message = false;
-    public boolean messageSubscription = false;
-    public boolean variable = true;
-    public boolean variableDocument = true;
+    public boolean message = true;
+    public boolean messageSubscription = true;
+    public boolean process = true;
     public boolean processInstance = true;
     public boolean processInstanceCreation = false;
-    public boolean processMessageSubscription = false;
-    public boolean decisionRequirements = true;
-    public boolean decision = true;
-    public boolean decisionEvaluation = true;
+    public boolean processInstanceModification = false;
+    public boolean processMessageSubscription = true;
+    public boolean variable = true;
+    public boolean variableDocument = true;
+
+    public boolean checkpoint = false;
 
     // index settings
     private Integer numberOfShards = null;
@@ -189,6 +196,8 @@ public class ElasticsearchExporterConfiguration {
           + processInstance
           + ", processInstanceCreation="
           + processInstanceCreation
+          + ", processInstanceModification="
+          + processInstanceModification
           + ", processMessageSubscription="
           + processMessageSubscription
           + ", decisionRequirements="
@@ -197,6 +206,8 @@ public class ElasticsearchExporterConfiguration {
           + decision
           + ", decisionEvaluation="
           + decisionEvaluation
+          + ", checkpoint="
+          + checkpoint
           + '}';
     }
   }

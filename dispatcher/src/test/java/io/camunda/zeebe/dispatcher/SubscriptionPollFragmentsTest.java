@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.camunda.zeebe.dispatcher.impl.log.LogBuffer;
 import io.camunda.zeebe.dispatcher.impl.log.LogBufferPartition;
-import io.camunda.zeebe.util.sched.ActorCondition;
+import io.camunda.zeebe.scheduler.ActorCondition;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;

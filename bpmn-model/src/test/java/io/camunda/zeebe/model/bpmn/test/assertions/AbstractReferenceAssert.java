@@ -21,7 +21,9 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 import org.camunda.bpm.model.xml.type.reference.Reference;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractReferenceAssert<
         S extends AbstractReferenceAssert<S, T>, T extends Reference<?>>
     extends AbstractAssert<S, T> {

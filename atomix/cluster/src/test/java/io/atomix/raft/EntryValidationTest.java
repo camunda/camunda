@@ -16,20 +16,17 @@
 package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.zeebe.EntryValidator;
-import io.atomix.raft.zeebe.ValidationResult;
+import io.atomix.raft.zeebe.EntryValidator.ValidationResult;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class EntryValidationTest {
+public final class EntryValidationTest {
 
   private final TestEntryValidator entryValidator = new TestEntryValidator();
 
@@ -41,20 +38,20 @@ public class EntryValidationTest {
     // given
     entryValidator.validation =
         (last, current) -> {
-          assertNull(last);
-          return ValidationResult.success();
+          assertThat(last).isNull();
+          return ValidationResult.ok();
         };
     raftRule.appendEntry();
 
     final CountDownLatch latch = new CountDownLatch(1);
     entryValidator.validation =
         (last, current) -> {
-          assertNotNull(last);
+          assertThat(last).isNotNull();
           assertThat(last.lowestPosition()).isEqualTo(1);
           assertThat(last.highestPosition()).isEqualTo(11);
           latch.countDown();
 
-          return ValidationResult.success();
+          return ValidationResult.ok();
         };
     raftRule.shutdownLeader();
     raftRule.awaitNewLeader();
@@ -63,7 +60,7 @@ public class EntryValidationTest {
     raftRule.appendEntry();
 
     // then
-    assertTrue(latch.await(10, TimeUnit.SECONDS));
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
   }
 
   private static class TestEntryValidator implements EntryValidator {

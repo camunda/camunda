@@ -11,13 +11,13 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployProcessRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import org.agrona.DirectBuffer;
 
 public final class DeployProcessStub
-    implements RequestStub<BrokerDeployProcessRequest, BrokerResponse<DeploymentRecord>> {
+    implements RequestStub<BrokerDeployResourceRequest, BrokerResponse<DeploymentRecord>> {
 
   private static final long KEY = 123;
   private static final long PROCESS_KEY = 456;
@@ -26,7 +26,7 @@ public final class DeployProcessStub
 
   @Override
   public void registerWith(final StubbedBrokerClient gateway) {
-    gateway.registerHandler(BrokerDeployProcessRequest.class, this);
+    gateway.registerHandler(BrokerDeployResourceRequest.class, this);
   }
 
   protected long getKey() {
@@ -42,7 +42,7 @@ public final class DeployProcessStub
   }
 
   @Override
-  public BrokerResponse<DeploymentRecord> handle(final BrokerDeployProcessRequest request)
+  public BrokerResponse<DeploymentRecord> handle(final BrokerDeployResourceRequest request)
       throws Exception {
     final DeploymentRecord deploymentRecord = request.getRequestWriter();
     deploymentRecord

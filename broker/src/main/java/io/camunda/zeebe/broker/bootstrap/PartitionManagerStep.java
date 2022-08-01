@@ -8,8 +8,8 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.util.sched.ConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.concurrent.CompletableFuture;
 
 final class PartitionManagerStep extends AbstractBrokerStartupStep {
@@ -30,10 +30,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             brokerStartupContext.getBrokerInfo(),
             brokerStartupContext.getClusterServices(),
             brokerStartupContext.getHealthCheckService(),
-            brokerStartupContext
-                .getLeaderManagementRequestHandler()
-                .getPushDeploymentRequestHandler(),
-            brokerStartupContext::addDiskSpaceUsageListener,
+            brokerStartupContext.getDiskSpaceUsageMonitor(),
             brokerStartupContext.getPartitionListeners(),
             brokerStartupContext.getCommandApiService(),
             brokerStartupContext.getExporterRepository());

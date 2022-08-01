@@ -23,6 +23,9 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
+import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
@@ -42,6 +45,12 @@ public final class BusinessRuleTaskTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
+  private static final String DMN_RESOURCE_WITH_NAMELESS_OUTPUTS =
+      "/dmn/drg-force-user-nameless-input-outputs.dmn";
+
+  private static final String DMN_DECISION_TABLE = "/dmn/decision-table.dmn";
+  private static final String DMN_DECISION_TABLE_RENAMED_DRG =
+      "/dmn/decision-table-with-renamed-drg.dmn";
   private static final String PROCESS_ID = "process";
   private static final String TASK_ID = "task";
   private static final String RESULT_VARIABLE = "result";
@@ -306,7 +315,7 @@ public final class BusinessRuleTaskTest {
                         assertThat(matchedRule.getEvaluatedOutputs()).hasSize(1);
                         assertThat(matchedRule.getEvaluatedOutputs().get(0))
                             .hasOutputId("Output_1")
-                            .hasOutputName("jedi_or_sith")
+                            .hasOutputName("Jedi or Sith")
                             .hasOutputValue("\"Jedi\"");
                       });
             });
@@ -339,7 +348,7 @@ public final class BusinessRuleTaskTest {
                         assertThat(matchedRule.getEvaluatedOutputs()).hasSize(1);
                         assertThat(matchedRule.getEvaluatedOutputs().get(0))
                             .hasOutputId("OutputClause_0hhe1yo")
-                            .hasOutputName("force_user")
+                            .hasOutputName("Force user")
                             .hasOutputValue("\"Obi-Wan Kenobi\"");
                       });
             });
@@ -459,8 +468,106 @@ public final class BusinessRuleTaskTest {
         .hasDecisionOutput("null")
         .satisfies(
             evaluatedDecision -> {
-              assertThat(evaluatedDecision.getEvaluatedInputs()).hasSize(0);
-              assertThat(evaluatedDecision.getMatchedRules()).hasSize(0);
+              assertThat(evaluatedDecision.getEvaluatedInputs()).isEmpty();
+              assertThat(evaluatedDecision.getMatchedRules()).isEmpty();
             });
+  }
+
+  /**
+   * Names are not mandatory for the Outputs of a decision table. In the case that they are missing
+   * from the decision model, the decision should still be evaluated and the evaluated decision
+   * result should be written with all information that is present. Note that this is not the case
+   * for Inputs, as these always have an expression which is used in case the label is undefined.
+   * See https://github.com/camunda-cloud/zeebe/issues/8909
+   */
+  @Test
+  public void shouldWriteDecisionEvaluationEventIfInputOutputNamesAreNull() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource(DMN_RESOURCE_WITH_NAMELESS_OUTPUTS)
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                t -> t.zeebeCalledDecisionId("force_user").zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.ofEntries(entry("lightsaberColor", "blue"), entry("height", 182)))
+            .create();
+
+    // then
+    final var decisionEvaluationRecord =
+        RecordingExporter.decisionEvaluationRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(decisionEvaluationRecord.getValue().getEvaluatedDecisions())
+        .isNotEmpty()
+        .flatMap(EvaluatedDecisionValue::getMatchedRules)
+        .isNotEmpty()
+        .flatMap(MatchedRuleValue::getEvaluatedOutputs)
+        .isNotEmpty()
+        .extracting(EvaluatedOutputValue::getOutputName)
+        .describedAs("Expect that evaluated output's name is empty string")
+        .containsOnly("");
+  }
+
+  /**
+   * Regression test for https://github.com/camunda/zeebe/issues/9272. An exception occurred if two
+   * DRGs were deployed with a different id but the same decision id.
+   */
+  @Test
+  public void shouldEvaluateDecisionIfMultipleDrgsWithSameDecisionId() {
+    // given
+    ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+
+    ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_RENAMED_DRG).deploy();
+
+    final var deploymentCreated =
+        ENGINE
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE)
+            .withXmlResource(
+                processWithBusinessRuleTask(
+                    t ->
+                        t.zeebeCalledDecisionId("jedi_or_sith")
+                            .zeebeResultVariable(RESULT_VARIABLE)))
+            .deploy();
+
+    final var lastDeployment = deploymentCreated.getValue();
+    final var lastDeployedDecisionRequirements =
+        lastDeployment.getDecisionRequirementsMetadata().get(0);
+    final var lastDeployedDecision = lastDeployment.getDecisionsMetadata().get(0);
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.ofEntries(entry("lightsaberColor", "blue")))
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.BUSINESS_RULE_TASK))
+        .describedAs("expected the business rule task to be completed")
+        .extracting(Record::getIntent)
+        .contains(ProcessInstanceIntent.ELEMENT_COMPLETED);
+
+    final var decisionEvaluationRecord =
+        RecordingExporter.decisionEvaluationRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(decisionEvaluationRecord.getValue())
+        .hasDecisionKey(lastDeployedDecision.getDecisionKey())
+        .hasDecisionRequirementsKey(lastDeployedDecisionRequirements.getDecisionRequirementsKey());
   }
 }

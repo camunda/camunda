@@ -71,7 +71,7 @@ final class ProcessInstanceElementActivatingApplier
           flowScopeEventTrigger, flowScopeInstance.getParentKey(), elementInstanceKey);
     }
 
-    manageMultiInstanceLoopCounter(elementInstanceKey, flowScopeInstance, flowScopeElementType);
+    manageMultiInstance(elementInstanceKey, flowScopeInstance, flowScopeElementType);
   }
 
   private void cleanupSequenceFlowsTaken(final ProcessInstanceRecord value) {
@@ -206,13 +206,15 @@ final class ProcessInstanceElementActivatingApplier
         ExecutableFlowElementContainer.class);
   }
 
-  private void manageMultiInstanceLoopCounter(
+  private void manageMultiInstance(
       final long elementInstanceKey,
       final ElementInstance flowScopeInstance,
       final BpmnElementType flowScopeElementType) {
     if (flowScopeElementType == BpmnElementType.MULTI_INSTANCE_BODY) {
       // update the loop counter of the multi-instance body (starting by 1)
       flowScopeInstance.incrementMultiInstanceLoopCounter();
+      // update the numberOfInstances of the multi-instance body
+      flowScopeInstance.incrementNumberOfElementInstances();
       elementInstanceState.updateInstance(flowScopeInstance);
 
       // set the loop counter of the inner instance
@@ -239,18 +241,21 @@ final class ProcessInstanceElementActivatingApplier
             elementRecord.getElementIdBuffer(),
             flowElementClass);
 
-    if (flowElement instanceof ExecutableCatchEventSupplier) {
-      final var eventSupplier = (ExecutableCatchEventSupplier) flowElement;
+    if (flowElement instanceof final ExecutableCatchEventSupplier eventSupplier) {
 
       final var hasEvents = !eventSupplier.getEvents().isEmpty();
       if (hasEvents
           || flowElement instanceof ExecutableJobWorkerElement
           || flowElement instanceof ExecutableCallActivity) {
         eventScopeInstanceState.createInstance(
-            elementInstanceKey, eventSupplier.getInterruptingElementIds());
+            elementInstanceKey,
+            eventSupplier.getInterruptingElementIds(),
+            eventSupplier.getBoundaryElementIds());
       }
     } else if (flowElement instanceof ExecutableJobWorkerElement) {
-      eventScopeInstanceState.createInstance(elementInstanceKey, Collections.emptyList());
+      // job worker elements without events (e.g. message throw events)
+      eventScopeInstanceState.createInstance(
+          elementInstanceKey, Collections.emptySet(), Collections.emptySet());
     }
   }
 }

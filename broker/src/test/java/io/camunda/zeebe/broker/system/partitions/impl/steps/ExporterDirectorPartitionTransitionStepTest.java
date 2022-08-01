@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -20,9 +19,9 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.util.health.HealthMonitor;
-import io.camunda.zeebe.util.sched.ActorSchedulingService;
-import io.camunda.zeebe.util.sched.future.TestActorFuture;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +47,7 @@ class ExporterDirectorPartitionTransitionStepTest {
     when(exporterRepository.getExporters()).thenReturn(Map.of());
     transitionContext.setExporterRepository(exporterRepository);
 
-    when(actorSchedulingService.submitActor(any(), anyInt()))
+    when(actorSchedulingService.submitActor(any(), any()))
         .thenReturn(TestActorFuture.completedFuture(null));
     transitionContext.setActorSchedulingService(actorSchedulingService);
 

@@ -21,7 +21,7 @@ import (
 	"errors"
 	"io/ioutil"
 
-	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
+	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
 	"github.com/spf13/cobra"
 )
 

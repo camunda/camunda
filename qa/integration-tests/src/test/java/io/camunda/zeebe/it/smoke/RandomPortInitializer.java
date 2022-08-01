@@ -40,7 +40,6 @@ public final class RandomPortInitializer
                 "zeebe.gateway.monitoring.port", monitoringPort,
                 "zeebe.broker.gateway.network.port", gatewayPort,
                 "zeebe.broker.network.commandApi.port", commandPort,
-                "zeebe.broker.network.internalApi.port", internalPort,
-                "zeebe.broker.network.monitoringApi.port", monitoringPort)));
+                "zeebe.broker.network.internalApi.port", internalPort)));
   }
 }

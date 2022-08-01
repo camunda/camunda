@@ -26,5 +26,5 @@ cd $namespace
 sed_inplace "s/default/$namespace/g" Makefile starter.yaml timer.yaml simpleStarter.yaml worker.yaml
 
 # get latest updates from zeebe repo
-helm repo add camunda-cloud https://helm.camunda.io # skips if already exists
+helm repo add camunda https://helm.camunda.io # skips if already exists
 helm repo update

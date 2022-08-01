@@ -98,6 +98,23 @@ message CreateProcessInstanceRequest {
   // "b" respectively, with their associated values. [{ "a": 1, "b": 2 }] would not be a
   // valid argument, as the root of the JSON document is an array and not an object.
   string variables = 4;
+  // List of start instructions. If empty (default) the process instance
+  // will start at the start event. If non-empty the process instance will apply start
+  // instructions after it has been created
+  repeated ProcessInstanceCreationStartInstruction startInstructions = 5;
+}
+
+message ProcessInstanceCreationStartInstruction {
+
+  // future extensions might include
+  // - different types of start instructions
+  // - ability to set local variables for different flow scopes
+
+  // for now, however, the start instruction is implicitly a
+  // "startBeforeElement" instruction
+
+  // element ID
+  string elementId = 1;
 }
 
 message CreateProcessInstanceResponse {
@@ -142,11 +159,15 @@ message CreateProcessInstanceWithResultResponse {
 }
 
 message DeployProcessRequest {
+  // since 8, replaced by DeployResourceRequest
+  option deprecated = true;
   // List of process resources to deploy
   repeated ProcessRequestObject processes = 1;
 }
 
 message ProcessRequestObject {
+  // since 8, replaced by Resource
+  option deprecated = true;
   // the resource basename, e.g. myProcess.bpmn
   string name = 1;
   // the process definition as a UTF8-encoded string
@@ -154,10 +175,43 @@ message ProcessRequestObject {
 }
 
 message DeployProcessResponse {
+  // since 8, replaced by DeployResourceResponse
+  option deprecated = true;
   // the unique key identifying the deployment
   int64 key = 1;
   // a list of deployed processes
   repeated ProcessMetadata processes = 2;
+}
+
+message DeployResourceRequest {
+  // list of resources to deploy
+  repeated Resource resources = 1;
+}
+
+message Resource {
+  // the resource name, e.g. myProcess.bpmn or myDecision.dmn
+  string name = 1;
+  // the file content as a UTF8-encoded string
+  bytes content = 2;
+}
+
+message DeployResourceResponse {
+  // the unique key identifying the deployment
+  int64 key = 1;
+  // a list of deployed resources, e.g. processes
+  repeated Deployment deployments = 2;
+}
+
+message Deployment {
+  // each deployment has only one metadata
+  oneof Metadata {
+    // metadata of a deployed process
+    ProcessMetadata process = 1;
+    // metadata of a deployed decision
+    DecisionMetadata decision = 2;
+    // metadata of a deployed decision requirements
+    DecisionRequirementsMetadata decisionRequirements = 3;
+  }
 }
 
 message ProcessMetadata {
@@ -171,6 +225,41 @@ message ProcessMetadata {
   // the resource name (see: ProcessRequestObject.name) from which this process was
   // parsed
   string resourceName = 4;
+}
+
+message DecisionMetadata {
+  // the dmn decision ID, as parsed during deployment; together with the
+  // versions forms a unique identifier for a specific decision
+  string dmnDecisionId = 1;
+  // the dmn name of the decision, as parsed during deployment
+  string dmnDecisionName = 2;
+  // the assigned decision version
+  int32 version = 3;
+  // the assigned decision key, which acts as a unique identifier for this
+  // decision
+  int64 decisionKey = 4;
+  // the dmn ID of the decision requirements graph that this decision is part
+  // of, as parsed during deployment
+  string dmnDecisionRequirementsId = 5;
+  // the assigned key of the decision requirements graph that this decision is
+  // part of
+  int64 decisionRequirementsKey = 6;
+}
+
+message DecisionRequirementsMetadata {
+  // the dmn decision requirements ID, as parsed during deployment; together
+  // with the versions forms a unique identifier for a specific decision
+  string dmnDecisionRequirementsId = 1;
+  // the dmn name of the decision requirements, as parsed during deployment
+  string dmnDecisionRequirementsName = 2;
+  // the assigned decision requirements version
+  int32 version = 3;
+  // the assigned decision requirements key, which acts as a unique identifier
+  // for this decision requirements
+  int64 decisionRequirementsKey = 4;
+  // the resource name (see: Resource.name) from which this decision
+  // requirements was parsed
+  string resourceName = 5;
 }
 
 message FailJobRequest {
@@ -314,6 +403,48 @@ message SetVariablesResponse {
   int64 key = 1;
 }
 
+message ModifyProcessInstanceRequest {
+  // the key of the process instance that should be modified
+  int64 processInstanceKey = 1;
+  // instructions describing which elements should be activated in which scopes,
+  // and which variables should be created
+  repeated ActivateInstruction activateInstructions = 2;
+  // instructions describing which elements should be terminated
+  repeated TerminateInstruction terminateInstructions = 3;
+
+  message ActivateInstruction {
+    // the id of the element that should be activated
+    string elementId = 1;
+    // the key of the ancestor scope the element instance should be created in;
+    // set to -1 to create the new element instance within an existing element
+    // instance of the flow scope
+    int64 ancestorElementInstanceKey = 2;
+    // instructions describing which variables should be created
+    repeated VariableInstruction variableInstructions = 3;
+  }
+
+  message VariableInstruction {
+    // JSON document that will instantiate the variables for the root variable scope of the
+    // process instance; it must be a JSON object, as variables will be mapped in a
+    // key-value fashion. e.g. { "a": 1, "b": 2 } will create two variables, named "a" and
+    // "b" respectively, with their associated values. [{ "a": 1, "b": 2 }] would not be a
+    // valid argument, as the root of the JSON document is an array and not an object.
+    string variables = 1;
+    // the id of the element in which scope the variables should be created;
+    // set to -1 to create the variables in the global scope of the process instance
+    string scopeId = 2;
+  }
+
+  message TerminateInstruction {
+    // the id of the element that should be terminated
+    int64 elementInstanceKey = 1;
+  }
+}
+
+message ModifyProcessInstanceResponse {
+
+}
+
 service Gateway {
   /*
     Iterates through all known partitions round-robin and activates up to the requested
@@ -396,7 +527,24 @@ service Gateway {
           - the process is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
    */
   rpc DeployProcess (DeployProcessRequest) returns (DeployProcessResponse) {
+    // since 8, replaced by DeployResource
+    option deprecated = true;
   }
+
+  /*
+    Deploys one or more resources (e.g. processes or decision models) to Zeebe.
+    Note that this is an atomic call, i.e. either all resources are deployed, or none of them are.
+
+    Errors:
+      INVALID_ARGUMENT:
+        - no resources given.
+        - if at least one resource is invalid. A resource is considered invalid if:
+          - the content is not deserializable (e.g. detected as BPMN, but it's broken XML)
+          - the content is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
+  */
+  rpc DeployResource (DeployResourceRequest) returns (DeployResourceResponse) {
+  }
+
 
   /*
     Marks the job as failed; if the retries argument is positive, then the job will be immediately
@@ -483,5 +631,24 @@ service Gateway {
         - retries is not greater than 0
    */
   rpc UpdateJobRetries (UpdateJobRetriesRequest) returns (UpdateJobRetriesResponse) {
+  }
+
+  /*
+    Modifies the process instance. This is done by activating and/or terminating specific elements of the instance.
+
+    Errors:
+      NOT_FOUND:
+        - no process instance exists with the given key
+
+      FAILED_PRECONDITION:
+        - trying to activate element inside of a multi-instance
+
+      INVALID_ARGUMENT:
+        - activating or terminating unknown element
+        - ancestor of element for activation doesn't exist
+        - scope of variable is unknown
+   */
+  rpc ModifyProcessInstance (ModifyProcessInstanceRequest) returns (ModifyProcessInstanceResponse) {
+
   }
 }

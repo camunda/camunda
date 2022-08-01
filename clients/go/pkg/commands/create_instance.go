@@ -17,8 +17,8 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 )
 
 const LatestVersion = -1
@@ -54,6 +54,8 @@ type CreateInstanceCommandStep3 interface {
 	VariablesFromObject(interface{}) (CreateInstanceCommandStep3, error)
 	VariablesFromObjectIgnoreOmitempty(interface{}) (CreateInstanceCommandStep3, error)
 	VariablesFromMap(map[string]interface{}) (CreateInstanceCommandStep3, error)
+
+	StartBeforeElement(string) CreateInstanceCommandStep3
 
 	WithResult() CreateInstanceWithResultCommandStep1
 }
@@ -110,6 +112,17 @@ func (cmd *CreateInstanceCommand) VariablesFromObjectIgnoreOmitempty(variables i
 
 func (cmd *CreateInstanceCommand) VariablesFromMap(variables map[string]interface{}) (CreateInstanceCommandStep3, error) {
 	return cmd.VariablesFromObject(variables)
+}
+
+func (cmd *CreateInstanceCommand) StartBeforeElement(elementID string) CreateInstanceCommandStep3 {
+	startInstruction := pb.ProcessInstanceCreationStartInstruction{
+		ElementId: elementID,
+	}
+
+	updatedStartInstructions := append(cmd.request.StartInstructions, &startInstruction)
+
+	cmd.request.StartInstructions = updatedStartInstructions
+	return cmd
 }
 
 func (cmd *CreateInstanceCommand) Version(version int32) CreateInstanceCommandStep3 {

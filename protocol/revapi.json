@@ -1,17 +1,18 @@
 [
   {
     "extension": "revapi.filter",
-    "justification": "Ignore everything not included in the module itself",
+    "id": "filter",
     "configuration": {
       "archives": {
+        "justification": "Ignore everything not included in the module itself",
         "include": ["io\\.camunda:zeebe-protocol:.*"]
       }
     }
   },
   {
     "extension": "revapi.differences",
+    "id": "differences",
     "configuration": {
-      "ignore": true,
       "differences": [
         {
           "justification": "Ignore Enum order for BpmnElementType as ordinal() is not used and the elements are grouped in the enum.",
@@ -19,17 +20,23 @@
           "classQualifiedName": "io.camunda.zeebe.protocol.record.value.BpmnElementType"
         },
         {
-          "justification": "Ignore new methods for Protocol Record Value interfaces, as these are not meant to be implemented but simply consumed; as such, new methods are perfectly fine to add",
+          "justification": "Ignore new methods for Protocol Record interfaces, as these are not meant to be implemented but simply consumed; as such, new methods are perfectly fine to add",
           "code": "java.method.addedToInterface",
           "new": {
             "matcher": "java-package",
-            "match": "/io\\.camunda\\.zeebe\\.protocol\\.record\\.value(\\..*)?/"
+            "match": "/io\\.camunda\\.zeebe\\.protocol\\.record(\\..*)?/"
           }
         },
         {
           "justification": "Ignore Enum order for ValueType as ordinal() is not used",
           "code": "java.field.enumConstantOrderChanged",
           "classQualifiedName": "io.camunda.zeebe.protocol.record.ValueType"
+        },
+        {
+          "justification": "Ignore the removal of this old BpmnElementType that was used for testing.",
+          "code": "java.field.removed",
+          "classQualifiedName": "io.camunda.zeebe.protocol.record.value.BpmnElementType",
+          "fieldName": "TESTING_ONLY"
         }
       ]
     }

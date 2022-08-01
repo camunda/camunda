@@ -10,27 +10,31 @@ package io.camunda.zeebe.engine.util;
 import static io.camunda.zeebe.engine.util.StreamProcessingComposite.getLogName;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
 import io.camunda.zeebe.engine.util.TestStreams.FluentLogWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
+import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
-import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
-import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Function;
@@ -136,6 +140,10 @@ public final class StreamProcessorRule implements TestRule {
     return streamProcessingComposite.getLogStreamRecordWriter(partitionId);
   }
 
+  public LogStreamRecordWriter newLogStreamRecordWriter(final int partitionId) {
+    return streamProcessingComposite.newLogStreamRecordWriter(partitionId);
+  }
+
   public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
     return streamProcessingComposite.startTypedStreamProcessor(factory);
   }
@@ -149,6 +157,13 @@ public final class StreamProcessorRule implements TestRule {
       final TypedRecordProcessorFactory factory) {
     return streamProcessingComposite.startTypedStreamProcessorNotAwaitOpening(
         startPartitionId, factory);
+  }
+
+  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+      final TypedRecordProcessorFactory processorFactory,
+      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory) {
+    return streamProcessingComposite.startTypedStreamProcessorNotAwaitOpening(
+        startPartitionId, processorFactory, streamWriterFactory);
   }
 
   public StreamProcessor startTypedStreamProcessor(
@@ -299,6 +314,10 @@ public final class StreamProcessorRule implements TestRule {
   public void snapshot() {
     final var partitionId = startPartitionId;
     streamProcessingComposite.snapshot(partitionId);
+  }
+
+  public MutableLastProcessedPositionState getLastProcessedPositionState() {
+    return streamProcessingComposite.getLastProcessedPositionState();
   }
 
   private class SetupRule extends ExternalResource {

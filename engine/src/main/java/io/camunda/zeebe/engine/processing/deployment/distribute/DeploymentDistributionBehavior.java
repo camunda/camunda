@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
@@ -16,7 +15,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -29,26 +27,22 @@ public final class DeploymentDistributionBehavior {
   private final DeploymentRecord emptyDeploymentRecord = new DeploymentRecord();
 
   private final List<Integer> otherPartitions;
-  private final DeploymentDistributor deploymentDistributor;
-  private final ActorControl processingActor;
+  private final DeploymentDistributionCommandSender deploymentDistributionCommandSender;
+
   private final StateWriter stateWriter;
-  private final TypedCommandWriter commandWriter;
 
   public DeploymentDistributionBehavior(
       final Writers writers,
       final int partitionsCount,
-      final DeploymentDistributor deploymentDistributor,
-      final ActorControl processingActor) {
+      final DeploymentDistributionCommandSender deploymentDistributionCommandSender) {
     otherPartitions =
         IntStream.range(Protocol.START_PARTITION_ID, Protocol.START_PARTITION_ID + partitionsCount)
             .filter(partition -> partition != Protocol.DEPLOYMENT_PARTITION)
             .boxed()
             .collect(Collectors.toList());
-    this.deploymentDistributor = deploymentDistributor;
-    this.processingActor = processingActor;
+    this.deploymentDistributionCommandSender = deploymentDistributionCommandSender;
 
     stateWriter = writers.state();
-    commandWriter = writers.command();
   }
 
   public void distributeDeployment(final DeploymentRecord deploymentEvent, final long key) {
@@ -60,7 +54,7 @@ public final class DeploymentDistributionBehavior {
           stateWriter.appendFollowUpEvent(
               key, DeploymentDistributionIntent.DISTRIBUTING, deploymentDistributionRecord);
 
-          distributeDeploymentToPartition(partitionId, key, copiedDeploymentBuffer);
+          distributeDeploymentToPartition(key, partitionId, copiedDeploymentBuffer);
         });
 
     if (otherPartitions.isEmpty()) {
@@ -74,25 +68,9 @@ public final class DeploymentDistributionBehavior {
   }
 
   public void distributeDeploymentToPartition(
-      final int partitionId, final long key, final DirectBuffer copiedDeploymentBuffer) {
-    final var deploymentPushedFuture =
-        deploymentDistributor.pushDeploymentToPartition(key, partitionId, copiedDeploymentBuffer);
-
-    deploymentPushedFuture.onComplete(
-        (v, t) ->
-            processingActor.runUntilDone(
-                () -> {
-                  deploymentDistributionRecord.setPartition(partitionId);
-                  commandWriter.reset();
-                  commandWriter.appendFollowUpCommand(
-                      key, DeploymentDistributionIntent.COMPLETE, deploymentDistributionRecord);
-
-                  final long pos = commandWriter.flush();
-                  if (pos < 0) {
-                    processingActor.yieldThread();
-                  } else {
-                    processingActor.done();
-                  }
-                }));
+      final long key, final int partitionId, final DirectBuffer copiedDeploymentBuffer) {
+    final var deploymentRecord = new DeploymentRecord();
+    deploymentRecord.wrap(copiedDeploymentBuffer);
+    deploymentDistributionCommandSender.distributeToPartition(key, partitionId, deploymentRecord);
   }
 }

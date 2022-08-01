@@ -13,8 +13,8 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
@@ -54,7 +54,7 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
-  public void onRecovered(final ReadonlyProcessingContext context) {
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
     subscriptionColumnFamily.forEach(
         subscription -> {
           if (subscription.isOpening() || subscription.isClosing()) {

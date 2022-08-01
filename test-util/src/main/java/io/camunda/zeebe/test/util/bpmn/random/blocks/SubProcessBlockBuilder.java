@@ -12,22 +12,24 @@ import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.RandomProcessGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEvent;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
  * Generates an embedded sub process. The embedded sub process contains either a sequence of random
  * blocks or a start event directly connected to the end event
  */
-public class SubProcessBlockBuilder implements BlockBuilder {
+public class SubProcessBlockBuilder extends AbstractBlockBuilder {
 
   private BlockBuilder embeddedSubProcessBuilder;
-  private final String subProcessId;
   private final String subProcessStartEventId;
   private final String subProcessEndEventId;
   private final String subProcessBoundaryTimerEventId;
@@ -36,6 +38,7 @@ public class SubProcessBlockBuilder implements BlockBuilder {
   private final boolean hasBoundaryTimerEvent;
 
   public SubProcessBlockBuilder(final ConstructionContext context) {
+    super(context.getIdGenerator().nextId());
     final Random random = context.getRandom();
     final IDGenerator idGenerator = context.getIdGenerator();
     final BlockSequenceBuilder.BlockSequenceBuilderFactory factory =
@@ -43,11 +46,10 @@ public class SubProcessBlockBuilder implements BlockBuilder {
     final int maxDepth = context.getMaxDepth();
     final int currentDepth = context.getCurrentDepth();
 
-    subProcessId = idGenerator.nextId();
     subProcessStartEventId = idGenerator.nextId();
     subProcessEndEventId = idGenerator.nextId();
 
-    subProcessBoundaryTimerEventId = "boundary_timer_" + subProcessId;
+    subProcessBoundaryTimerEventId = "boundary_timer_" + elementId;
 
     final boolean goDeeper = random.nextInt(maxDepth) > currentDepth;
 
@@ -66,7 +68,7 @@ public class SubProcessBlockBuilder implements BlockBuilder {
   @Override
   public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
       final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
-    final SubProcessBuilder subProcessBuilderStart = nodeBuilder.subProcess(subProcessId);
+    final SubProcessBuilder subProcessBuilderStart = nodeBuilder.subProcess(getElementId());
 
     AbstractFlowNodeBuilder<?, ?> workInProgress =
         subProcessBuilderStart.embeddedSubProcess().startEvent(subProcessStartEventId);
@@ -81,7 +83,7 @@ public class SubProcessBlockBuilder implements BlockBuilder {
     AbstractFlowNodeBuilder result = subProcessBuilderDone;
     if (hasBoundaryEvents) {
       final BoundaryEventBuilder boundaryEventBuilder =
-          new BoundaryEventBuilder(subProcessId, subProcessBuilderDone);
+          new BoundaryEventBuilder(getElementId(), subProcessBuilderDone);
 
       if (hasBoundaryTimerEvent) {
         result = boundaryEventBuilder.connectBoundaryTimerEvent(subProcessBoundaryTimerEventId);
@@ -92,15 +94,16 @@ public class SubProcessBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(final Random random) {
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
+    final Random random = context.getRandom();
 
     if (hasBoundaryTimerEvent) {
       // set an infinite timer as default; this can be overwritten by the execution path chosen
       result.setVariableDefault(
           subProcessBoundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
     }
-    final var activateSubProcess = new StepActivateBPMNElement(subProcessId);
+    final var activateSubProcess = new StepActivateBPMNElement(getElementId());
 
     result.appendDirectSuccessor(activateSubProcess);
 
@@ -108,7 +111,7 @@ public class SubProcessBlockBuilder implements BlockBuilder {
       return result;
     }
 
-    final var internalExecutionPath = embeddedSubProcessBuilder.findRandomExecutionPath(random);
+    final var internalExecutionPath = embeddedSubProcessBuilder.findRandomExecutionPath(context);
 
     if (!hasBoundaryEvents || !internalExecutionPath.canBeInterrupted() || random.nextBoolean()) {
       result.append(internalExecutionPath);
@@ -120,7 +123,18 @@ public class SubProcessBlockBuilder implements BlockBuilder {
             new StepTriggerTimerBoundaryEvent(subProcessBoundaryTimerEventId), activateSubProcess);
       } // extend here for other boundary events
     }
+
     return result;
+  }
+
+  @Override
+  public List<BlockBuilder> getPossibleStartingBlocks() {
+    final List<BlockBuilder> blockBuilders = new ArrayList<>();
+    blockBuilders.add(this);
+    if (embeddedSubProcessBuilder != null) {
+      blockBuilders.addAll(embeddedSubProcessBuilder.getPossibleStartingBlocks());
+    }
+    return blockBuilders;
   }
 
   public static class Factory implements BlockBuilderFactory {

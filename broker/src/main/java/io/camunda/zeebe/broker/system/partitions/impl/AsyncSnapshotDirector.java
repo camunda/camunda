@@ -9,21 +9,21 @@ package io.camunda.zeebe.broker.system.partitions.impl;
 
 import io.atomix.raft.RaftCommittedEntryListener;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.StateController;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
-import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.SchedulingHints;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Map;
@@ -51,6 +51,7 @@ public final class AsyncSnapshotDirector extends Actor
   private final String processorName;
   private final StreamProcessor streamProcessor;
   private final String actorName;
+  private final StreamProcessorMode streamProcessorMode;
   private final Set<FailureListener> listeners = new HashSet<>();
   private final BooleanSupplier isLastWrittenPositionCommitted;
 
@@ -79,6 +80,7 @@ public final class AsyncSnapshotDirector extends Actor
     this.snapshotRate = snapshotRate;
     this.partitionId = partitionId;
     actorName = buildActorName(nodeId, "SnapshotDirector", this.partitionId);
+    this.streamProcessorMode = streamProcessorMode;
     if (streamProcessorMode == StreamProcessorMode.REPLAY) {
       isLastWrittenPositionCommitted = () -> true;
     } else {
@@ -100,7 +102,6 @@ public final class AsyncSnapshotDirector extends Actor
 
   @Override
   protected void onActorStarting() {
-    actor.setSchedulingHints(SchedulingHints.ioBound());
     final var firstSnapshotTime =
         RandomDuration.getRandomDurationMinuteBased(MINIMUM_SNAPSHOT_PERIOD, snapshotRate);
     actor.runDelayed(firstSnapshotTime, this::scheduleSnapshotOnRate);
@@ -256,17 +257,27 @@ public final class AsyncSnapshotDirector extends Actor
     transientSnapshotFuture.onComplete(
         (transientSnapshot, snapshotTakenError) -> {
           if (snapshotTakenError != null) {
-            if (snapshotTakenError instanceof SnapshotException.SnapshotAlreadyExistsException) {
-              LOG.debug("Did not take a snapshot. {}", snapshotTakenError.getMessage());
-            } else {
-              LOG.error("Failed to take a snapshot for {}", processorName, snapshotTakenError);
-            }
+            logSnapshotTakenError(snapshotTakenError);
             resetStateOnFailure(snapshotTakenError);
             return;
           }
 
           onTransientSnapshotTaken(transientSnapshot);
         });
+  }
+
+  private void logSnapshotTakenError(final Throwable snapshotTakenError) {
+    if (snapshotTakenError instanceof SnapshotException.SnapshotAlreadyExistsException) {
+      LOG.debug("Did not take a snapshot. {}", snapshotTakenError.getMessage());
+    } else if (snapshotTakenError instanceof NoEntryAtSnapshotPosition
+        && streamProcessorMode == StreamProcessorMode.REPLAY) {
+      LOG.debug(
+          "Did not take a snapshot: {}. Most likely this partition has not received the entry yet. Will retry in {}",
+          snapshotTakenError.getMessage(),
+          snapshotRate);
+    } else {
+      LOG.error("Failed to take a snapshot for {}", processorName, snapshotTakenError);
+    }
   }
 
   private void onTransientSnapshotTaken(final TransientSnapshot transientSnapshot) {

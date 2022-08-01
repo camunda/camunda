@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.4.0-SNAPSHOT</version>
+    <version>8.1.0-SNAPSHOT</version>
     <relativePath>parent/pom.xml</relativePath>
   </parent>
 
@@ -21,7 +21,6 @@
     <module>atomix</module>
     <module>broker</module>
     <module>protocol-test-util</module>
-    <module>samples</module>
     <module>dist</module>
     <module>protocol</module>
     <module>bpmn-model</module>
@@ -39,6 +38,7 @@
     <module>gateway</module>
     <module>clients/java</module>
     <module>exporter-api</module>
+    <module>exporter-test</module>
     <module>protocol-asserts</module>
     <module>exporters/elasticsearch-exporter</module>
     <module>protocol-impl</module>
@@ -51,13 +51,15 @@
     <module>journal</module>
     <module>qa</module>
     <module>benchmarks/project</module>
+    <module>scheduler</module>
+    <module>backup</module>
   </modules>
 
   <scm>
-    <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda-cloud/zeebe.git</connection>
-    <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda-cloud/zeebe.git</developerConnection>
+    <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/zeebe.git</connection>
+    <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/zeebe.git</developerConnection>
     <tag>HEAD</tag>
-    <url>https://github.com/camunda-cloud/zeebe</url>
+    <url>https://github.com/camunda/zeebe</url>
   </scm>
 
   <build>

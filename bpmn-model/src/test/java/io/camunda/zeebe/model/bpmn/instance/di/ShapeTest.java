@@ -24,7 +24,9 @@ import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
 import java.util.Arrays;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ShapeTest extends BpmnModelElementInstanceTest {
   @Override
   public TypeAssumption getTypeAssumption() {

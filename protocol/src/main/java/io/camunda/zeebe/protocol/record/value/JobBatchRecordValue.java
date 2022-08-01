@@ -15,20 +15,28 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import java.util.List;
+import org.immutables.value.Value;
 
 /**
  * Represents a job batch related event or command.
  *
  * <p>See {@link JobBatchIntent} for intents.
  */
+@Value.Immutable
+@ImmutableProtocol(builder = ImmutableJobBatchRecordValue.Builder.class)
 public interface JobBatchRecordValue extends RecordValue {
-  /** @return the type of the job */
+  /**
+   * @return the type of the job
+   */
   String getType();
 
-  /** @return the assigned worker to complete the job */
+  /**
+   * @return the assigned worker to complete the job
+   */
   String getWorker();
 
   /**
@@ -38,15 +46,23 @@ public interface JobBatchRecordValue extends RecordValue {
    */
   long getTimeout();
 
-  /** @return the number of jobs to handle */
+  /**
+   * @return the number of jobs to handle
+   */
   int getMaxJobsToActivate();
 
-  /** @return list of the keys from the jobs assigned to this batch */
+  /**
+   * @return list of the keys from the jobs assigned to this batch
+   */
   List<Long> getJobKeys();
 
-  /** @return the jobs assigned to this batch */
+  /**
+   * @return the jobs assigned to this batch
+   */
   List<JobRecordValue> getJobs();
 
-  /** @return the broker has more JobRecords that couldn't fit in this batch */
+  /**
+   * @return the broker has more JobRecords that couldn't fit in this batch
+   */
   boolean isTruncated();
 }

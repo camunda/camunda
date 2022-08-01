@@ -21,7 +21,7 @@ public final class EvaluatedOutputRecord extends UnifiedRecordValue
     implements EvaluatedOutputValue {
 
   private final StringProperty outputIdProp = new StringProperty("outputId");
-  private final StringProperty outputNameProp = new StringProperty("outputName");
+  private final StringProperty outputNameProp = new StringProperty("outputName", "");
   private final BinaryProperty outputValueProp = new BinaryProperty("outputValue");
 
   public EvaluatedOutputRecord() {

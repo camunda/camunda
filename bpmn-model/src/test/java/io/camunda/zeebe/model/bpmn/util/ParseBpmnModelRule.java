@@ -23,7 +23,9 @@ import org.camunda.bpm.model.xml.impl.util.IoUtil;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
-/** @author Daniel Meyer */
+/**
+ * @author Daniel Meyer
+ */
 public class ParseBpmnModelRule extends TestWatcher {
 
   protected BpmnModelInstance bpmnModelInstance;

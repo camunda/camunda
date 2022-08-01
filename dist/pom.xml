@@ -5,11 +5,11 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.4.0-SNAPSHOT</version>
+    <version>8.1.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>camunda-cloud-zeebe</artifactId>
+  <artifactId>camunda-zeebe</artifactId>
 
   <packaging>jar</packaging>
 
@@ -39,6 +39,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-scheduler</artifactId>
     </dependency>
 
     <dependency>
@@ -206,13 +211,13 @@
   </dependencies>
 
   <build>
-    <finalName>camunda-cloud-zeebe-${project.version}</finalName>
+    <finalName>camunda-zeebe-${project.version}</finalName>
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin</artifactId>
         <configuration>
-          <assembleDirectory>${project.build.directory}/camunda-cloud-zeebe</assembleDirectory>
+          <assembleDirectory>${project.build.directory}/camunda-zeebe</assembleDirectory>
           <configurationDirectory>config</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <extraJvmArguments>-Xms128m
@@ -260,10 +265,10 @@
             <configuration>
               <target>
                 <?SORTPOM IGNORE?> <!-- ordering is important here, chmod needs to run after copying -->
-                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl.exe" />
-                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl.darwin" />
-                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl" />
-                <chmod dir="${project.build.directory}/camunda-cloud-zeebe/bin" failonerror="${zbctl.force}" includes="zbctl*" perm="ugo+rx" />
+                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/camunda-zeebe/bin/zbctl.exe" />
+                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/camunda-zeebe/bin/zbctl.darwin" />
+                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl" tofile="${project.build.directory}/camunda-zeebe/bin/zbctl" />
+                <chmod dir="${project.build.directory}/camunda-zeebe/bin" failonerror="${zbctl.force}" includes="zbctl*" perm="ugo+rx" />
                 <?SORTPOM RESUME?>
               </target>
             </configuration>

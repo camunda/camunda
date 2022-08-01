@@ -18,7 +18,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 

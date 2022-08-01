@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -85,6 +85,11 @@ final class IncidentRecordWrapper implements TypedRecord<ProcessInstanceRecord> 
   }
 
   @Override
+  public Record<ProcessInstanceRecord> copyOf() {
+    return this;
+  }
+
+  @Override
   public long getKey() {
     return key;
   }
@@ -107,10 +112,5 @@ final class IncidentRecordWrapper implements TypedRecord<ProcessInstanceRecord> 
   @Override
   public int getLength() {
     return 0;
-  }
-
-  @Override
-  public Record<ProcessInstanceRecord> clone() {
-    return this;
   }
 }

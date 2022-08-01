@@ -48,6 +48,16 @@
       # minKeepAliveInterval: 30s
 
     # cluster:
+      # Sets initial contact points (brokers), which the gateway should contact to
+      # The contact points of the internal network configuration must be specified.
+      # The format is [HOST:PORT]
+      # Example:
+      # initialContactPoints : [ 192.168.1.22:26502, 192.168.1.32:26502 ]
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
+      # specifying a comma-separated list of contact points.
+      # initialContactPoints : [127.0.0.1:26502]
+
+      # WARNING: This setting is deprecated! Use initialContactPoints instead.
       # Sets the broker the gateway should initial contact
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT.
       # contactPoint: 127.0.0.1:26502
@@ -72,6 +82,16 @@
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_PORT.
       # port: 26502
 
+      # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
+      # gateway stands behind a proxy.
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST.
+      # advertisedHost: 0.0.0.0
+
+      # Controls the advertised port; if omitted defaults to the port. This is particularly useful if your
+      # gateway stands behind a proxy.
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_ADVERTISEDPORT.
+      # advertisedPort: 25602
+
       # Configure parameters for SWIM protocol which is used to propagate cluster membership
       # information among brokers and gateways
       # membership:
@@ -79,44 +99,44 @@
         # Configure whether to broadcast member updates to all members.
         # If set to false updates will be gossiped among the members.
         # If set to true the network traffic may increase but it reduce the time to detect membership changes.
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_BROADCASTUPDATES
+        # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_MEMBERSHIP_BROADCASTUPDATES
         # broadcastUpdates: false
 
         # Configure whether to broadcast disputes to all members.
         # If set to true the network traffic may increase but it reduce the time to detect membership changes.
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_BROADCASTDISPUTES
+        # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_MEMBERSHIP_BROADCASTDISPUTES
         # broadcastDisputes: true
 
         # Configure whether to notify a suspect node on state changes.
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_NOTIFYSUSPECT
+        # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_MEMBERSHIP_NOTIFYSUSPECT
         # notifySuspect: false
 
         # Sets the interval at which the membership updates are sent to a random member.
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_GOSSIPINTERVAL
+        # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_MEMBERSHIP_GOSSIPINTERVAL
         # gossipInterval: 250ms
 
         # Sets the number of members to which membership updates are sent at each gossip interval.
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_GOSSIPFANOUT
+        # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_MEMBERSHIP_GOSSIPFANOUT
         # gossipFanout: 2
 
         # Sets the interval at which to probe a random member.
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBEINTERVAL
+        # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_MEMBERSHIP_PROBEINTERVAL
         # probeInterval: 1s
 
         # Sets the timeout for a probe response
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBETIMEOUT
+        # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_MEMBERSHIP_PROBETIMEOUT
         # probeTimeout: 100ms
 
         # Sets the number of probes failed before declaring a member is suspect
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SUSPECTPROBES
+        # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_MEMBERSHIP_SUSPECTPROBES
         # suspectProbes: 3
 
         # Sets the timeout for a suspect member is declared dead.
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_FAILURETIMEOUT
+        # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_MEMBERSHIP_FAILURETIMEOUT
         # failureTimeout: 10s
 
         # Sets the interval at which this member synchronizes its membership information with a random member.
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SYNCINTERVAL
+        # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_MEMBERSHIP_SYNCINTERVAL
         # syncInterval: 10s
 
       # security:
@@ -132,9 +152,9 @@
         # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_SECURITY_PRIVATEKEYPATH.
         # privateKeyPath:
 
-      # Configure compression algorithm for all message sent between the brokers and between the broker and
-      # the gateway. Available options are NONE, GZIP and SNAPPY.
-      # This feature is useful when the network latency between the brokers is very high (for example when the brokers are deployed in different data centers).
+      # Configure compression algorithm for all messages sent between the gateway and
+      # the brokers. Available options are NONE, GZIP and SNAPPY.
+      # This feature is useful when the network latency between the nodes is very high (for example when nodes are deployed in different data centers).
       # When latency is high, the network bandwidth is severely reduced. Hence enabling compression helps to improve the throughput.
       # Note: When there is no latency enabling this may have a performance impact.
       # Note: When this flag is enables, you must also enable compression in standalone broker configuration.

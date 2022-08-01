@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
 
 /**
  * A listener for the {@link StreamProcessor}. Allows retrieving insides of the processing and

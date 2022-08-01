@@ -3,6 +3,10 @@
 !.idea/externalDependencies.xml
 !.idea/google-java-format.xml
 !.idea/saveactions_settings.xml
+!.idea/copyright/Apache_2_0.xml
+!.idea/copyright/profiles_settings.xml
+!.idea/copyright/Zeebe_1_1.xml
+!.idea/scopes/apache_license_scope.xml
 target
 .classpath
 .checkstyle
@@ -26,6 +30,7 @@ faces-config.NavData
 *.lock.db
 .cache-main
 .cache-tests
+.jqwik-database
 
 *.DS_Store
 .java-version
@@ -41,3 +46,4 @@ hs_err*.log
 /data/
 /metrics/
 *.exe
+/clients/go/.idea/

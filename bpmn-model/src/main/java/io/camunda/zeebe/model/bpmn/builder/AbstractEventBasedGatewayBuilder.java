@@ -20,7 +20,9 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.EventBasedGatewayType;
 import io.camunda.zeebe.model.bpmn.instance.EventBasedGateway;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class AbstractEventBasedGatewayBuilder<B extends AbstractEventBasedGatewayBuilder<B>>
     extends AbstractGatewayBuilder<B, EventBasedGateway> {
 

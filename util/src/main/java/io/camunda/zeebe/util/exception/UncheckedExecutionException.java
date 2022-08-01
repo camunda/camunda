@@ -13,6 +13,10 @@ package io.camunda.zeebe.util.exception;
  */
 public final class UncheckedExecutionException extends RuntimeException {
 
+  public UncheckedExecutionException(final String message) {
+    super(message);
+  }
+
   public UncheckedExecutionException(final String message, final Throwable cause) {
     super(message, cause);
   }

@@ -28,6 +28,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest.Builder;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
 import io.grpc.stub.StreamObserver;
 import java.io.InputStream;
 import java.time.Duration;
@@ -79,6 +80,14 @@ public final class CreateProcessInstanceCommandImpl
   public CreateProcessInstanceCommandStep3 variables(final Object variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
     return setVariables(jsonMapper.toJson(variables));
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep3 startBeforeElement(final String elementId) {
+    builder.addStartInstructions(
+        ProcessInstanceCreationStartInstruction.newBuilder().setElementId(elementId).build());
+
+    return this;
   }
 
   @Override

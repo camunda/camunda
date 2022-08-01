@@ -13,6 +13,8 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbForeignKey;
+import io.camunda.zeebe.db.impl.DbForeignKey.MatchType;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
@@ -62,8 +64,9 @@ public final class DbProcessState implements MutableProcessState {
   private final DbCompositeKey<DbString, DbLong> idAndVersionKey;
 
   private final DbString processId;
+  private final DbForeignKey<DbString> fkProcessId;
 
-  private final ColumnFamily<DbString, Digest> digestByIdColumnFamily;
+  private final ColumnFamily<DbForeignKey<DbString>, Digest> digestByIdColumnFamily;
   private final Digest digest = new Digest();
 
   private final NextValueManager versionManager;
@@ -89,9 +92,12 @@ public final class DbProcessState implements MutableProcessState {
             idAndVersionKey,
             persistedProcess);
 
+    fkProcessId =
+        new DbForeignKey<>(
+            processId, ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION, MatchType.Prefix);
     digestByIdColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PROCESS_CACHE_DIGEST_BY_ID, transactionContext, processId, digest);
+            ZbColumnFamilies.PROCESS_CACHE_DIGEST_BY_ID, transactionContext, fkProcessId, digest);
 
     processesByKey = new Long2ObjectHashMap<>();
 
@@ -119,7 +125,7 @@ public final class DbProcessState implements MutableProcessState {
     processId.wrapBuffer(processIdBuffer);
     this.digest.set(digest);
 
-    digestByIdColumnFamily.upsert(processId, this.digest);
+    digestByIdColumnFamily.upsert(fkProcessId, this.digest);
   }
 
   @Override
@@ -266,7 +272,7 @@ public final class DbProcessState implements MutableProcessState {
   @Override
   public DirectBuffer getLatestVersionDigest(final DirectBuffer processIdBuffer) {
     processId.wrapBuffer(processIdBuffer);
-    final Digest latestDigest = digestByIdColumnFamily.get(processId);
+    final Digest latestDigest = digestByIdColumnFamily.get(fkProcessId);
     return latestDigest == null || digest.get().byteArray() == null ? null : latestDigest.get();
   }
 

@@ -40,6 +40,16 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
   }
 
   public RecordStream limitToProcessInstance(final long processInstanceKey) {
+    return limit(
+        r ->
+            r.getKey() == processInstanceKey
+                && Set.of(
+                        ProcessInstanceIntent.ELEMENT_COMPLETED,
+                        ProcessInstanceIntent.ELEMENT_TERMINATED)
+                    .contains(r.getIntent()));
+  }
+
+  public RecordStream betweenProcessInstance(final long processInstanceKey) {
     return between(
         r ->
             r.getKey() == processInstanceKey
@@ -85,5 +95,11 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
   public MessageSubscriptionRecordStream messageSubscriptionRecords() {
     return new MessageSubscriptionRecordStream(
         filter(r -> r.getValueType() == ValueType.MESSAGE_SUBSCRIPTION).map(Record.class::cast));
+  }
+
+  public ProcessMessageSubscriptionRecordStream processMessageSubscriptionRecords() {
+    return new ProcessMessageSubscriptionRecordStream(
+        filter(r -> r.getValueType() == ValueType.PROCESS_MESSAGE_SUBSCRIPTION)
+            .map(Record.class::cast));
   }
 }

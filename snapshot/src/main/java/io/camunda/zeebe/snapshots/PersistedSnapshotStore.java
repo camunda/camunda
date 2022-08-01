@@ -7,10 +7,11 @@
  */
 package io.camunda.zeebe.snapshots;
 
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Represents a store, which allows to persist snapshots on a storage, which is implementation
@@ -32,8 +33,17 @@ public interface PersistedSnapshotStore extends CloseableSilently {
    */
   boolean hasSnapshotId(String id);
 
-  /** @return the latest {@link PersistedSnapshot} if exists */
+  /**
+   * @return the latest {@link PersistedSnapshot} if exists
+   */
   Optional<PersistedSnapshot> getLatestSnapshot();
+
+  /**
+   * Returns a set of all available snapshots.
+   *
+   * @return
+   */
+  ActorFuture<Set<PersistedSnapshot>> getAvailableSnapshots();
 
   /**
    * Purges all ongoing pending/transient/volatile snapshots.

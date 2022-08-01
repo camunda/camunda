@@ -11,23 +11,20 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
-import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
-import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
-import io.camunda.zeebe.util.sched.ActorScheduler;
-import io.camunda.zeebe.util.sched.ActorSchedulingService;
-import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import java.util.List;
 
 /**
@@ -62,10 +59,6 @@ public interface BrokerStartupContext {
 
   void setClusterServices(ClusterServicesImpl o);
 
-  void addDiskSpaceUsageListener(DiskSpaceUsageListener listener);
-
-  void removeDiskSpaceUsageListener(DiskSpaceUsageListener listener);
-
   CommandApiServiceImpl getCommandApiService();
 
   void setCommandApiService(CommandApiServiceImpl commandApiService);
@@ -82,11 +75,6 @@ public interface BrokerStartupContext {
 
   void setApiMessagingService(ManagedMessagingService commandApiMessagingService);
 
-  SubscriptionApiCommandMessageHandlerService getSubscriptionApiService();
-
-  void setSubscriptionApiService(
-      SubscriptionApiCommandMessageHandlerService subscriptionApiService);
-
   EmbeddedGatewayService getEmbeddedGatewayService();
 
   void setEmbeddedGatewayService(EmbeddedGatewayService embeddedGatewayService);
@@ -94,10 +82,6 @@ public interface BrokerStartupContext {
   DiskSpaceUsageMonitor getDiskSpaceUsageMonitor();
 
   void setDiskSpaceUsageMonitor(DiskSpaceUsageMonitor diskSpaceUsageMonitor);
-
-  LeaderManagementRequestHandler getLeaderManagementRequestHandler();
-
-  void setLeaderManagementRequestHandler(final LeaderManagementRequestHandler handler);
 
   ExporterRepository getExporterRepository();
 

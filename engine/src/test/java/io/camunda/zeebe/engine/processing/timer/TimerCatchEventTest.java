@@ -113,7 +113,7 @@ public final class TimerCatchEventTest {
             ProcessInstanceIntent.ELEMENT_COMPLETED);
 
     assertThat(
-            RecordingExporter.records().limitToProcessInstance(processInstanceKey).timerRecords())
+            RecordingExporter.records().betweenProcessInstance(processInstanceKey).timerRecords())
         .extracting(Record::getIntent)
         .containsSubsequence(TimerIntent.CREATED, TimerIntent.TRIGGER, TimerIntent.TRIGGERED);
   }
@@ -561,7 +561,7 @@ public final class TimerCatchEventTest {
         .hasSize(expectedRepetitions);
   }
 
-  // regression test for https://github.com/camunda-cloud/zeebe/issues/5420
+  // regression test for https://github.com/camunda/zeebe/issues/5420
   @Test
   public void shouldHaveNoSourceRecordPositionOnTimerTrigger() {
     // given

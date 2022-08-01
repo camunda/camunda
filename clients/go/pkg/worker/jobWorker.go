@@ -16,14 +16,15 @@
 package worker
 
 import (
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/entities"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/commands"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
 	"sync"
 )
 
 type JobClient interface {
 	NewCompleteJobCommand() commands.CompleteJobCommandStep1
 	NewFailJobCommand() commands.FailJobCommandStep1
+	NewThrowErrorCommand() commands.ThrowErrorCommandStep1
 }
 
 type JobHandler func(client JobClient, job entities.Job)

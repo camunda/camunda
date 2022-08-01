@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.4.0-SNAPSHOT</version>
+    <version>8.1.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -26,19 +26,33 @@
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
     </dependency>
+
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
+
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>
+
     <dependency>
       <groupId>io.prometheus</groupId>
       <artifactId>simpleclient</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <!-- Test dependencies -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
@@ -52,18 +66,9 @@
     </dependency>
 
     <dependency>
-      <groupId>uk.co.real-logic</groupId>
-      <artifactId>sbe-tool</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-util</artifactId>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jnr-posix</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -103,14 +108,13 @@
           </execution>
         </executions>
       </plugin>
+
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <configuration>
-          <executableDependency>
-            <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe</artifactId>
-          </executableDependency>
+          <includeProjectDependencies>false</includeProjectDependencies>
+          <includePluginDependencies>true</includePluginDependencies>
           <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
           <arguments>
             <argument>${project.build.resources[0].directory}/journal-schema.xml</argument>
@@ -121,7 +125,7 @@
         <dependencies>
           <dependency>
             <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe-all</artifactId>
+            <artifactId>sbe-tool</artifactId>
             <version>${version.sbe}</version>
           </dependency>
         </dependencies>
@@ -134,13 +138,12 @@
           </execution>
         </executions>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <!-- dependency used but plugin seems to report a false positive here -->
-            <dependency>uk.co.real-logic:sbe-tool</dependency>
             <!--
               ensures that zeebe-protocol is built first, preventing concurrent executions
               of the sbe-tool
@@ -148,17 +151,6 @@
             <dependency>io.camunda:zeebe-protocol</dependency>
           </usedDependencies>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

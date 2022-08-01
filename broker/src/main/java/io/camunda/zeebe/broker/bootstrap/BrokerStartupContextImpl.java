@@ -14,23 +14,20 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
-import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
-import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
-import io.camunda.zeebe.util.sched.ActorScheduler;
-import io.camunda.zeebe.util.sched.ActorSchedulingService;
-import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -53,9 +50,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private ManagedMessagingService commandApiMessagingService;
   private CommandApiServiceImpl commandApiService;
   private AdminApiRequestHandler adminApiService;
-  private SubscriptionApiCommandMessageHandlerService subscriptionApiService;
   private EmbeddedGatewayService embeddedGatewayService;
-  private LeaderManagementRequestHandler leaderManagementRequestHandler;
   private PartitionManagerImpl partitionManager;
   private BrokerAdminServiceImpl brokerAdminService;
 
@@ -142,20 +137,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public void addDiskSpaceUsageListener(final DiskSpaceUsageListener listener) {
-    if (diskSpaceUsageMonitor != null) {
-      diskSpaceUsageMonitor.addDiskUsageListener(listener);
-    }
-  }
-
-  @Override
-  public void removeDiskSpaceUsageListener(final DiskSpaceUsageListener listener) {
-    if (diskSpaceUsageMonitor != null) {
-      diskSpaceUsageMonitor.removeDiskUsageListener(listener);
-    }
-  }
-
-  @Override
   public CommandApiServiceImpl getCommandApiService() {
     return commandApiService;
   }
@@ -196,17 +177,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public SubscriptionApiCommandMessageHandlerService getSubscriptionApiService() {
-    return subscriptionApiService;
-  }
-
-  @Override
-  public void setSubscriptionApiService(
-      final SubscriptionApiCommandMessageHandlerService subscriptionApiService) {
-    this.subscriptionApiService = subscriptionApiService;
-  }
-
-  @Override
   public EmbeddedGatewayService getEmbeddedGatewayService() {
     return embeddedGatewayService;
   }
@@ -224,17 +194,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setDiskSpaceUsageMonitor(final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
-  }
-
-  @Override
-  public LeaderManagementRequestHandler getLeaderManagementRequestHandler() {
-    return leaderManagementRequestHandler;
-  }
-
-  @Override
-  public void setLeaderManagementRequestHandler(
-      final LeaderManagementRequestHandler leaderManagementRequestHandler) {
-    this.leaderManagementRequestHandler = leaderManagementRequestHandler;
   }
 
   @Override

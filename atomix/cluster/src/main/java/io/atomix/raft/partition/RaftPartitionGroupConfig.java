@@ -20,7 +20,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import io.atomix.primitive.partition.PartitionGroup.Type;
 import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.raft.zeebe.EntryValidator;
-import io.atomix.raft.zeebe.NoopEntryValidator;
+import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import java.util.HashSet;
 import java.util.Set;
 

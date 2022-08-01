@@ -26,15 +26,15 @@ import io.camunda.zeebe.dispatcher.Dispatcher;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 
-public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBuilder {
+final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBuilder {
   private static final int INITIAL_BUFFER_CAPACITY = 1024 * 32;
 
   private final ClaimedFragmentBatch claimedBatch = new ClaimedFragmentBatch();
@@ -160,7 +160,7 @@ public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, Log
     return this;
   }
 
-  public void copyExistingEventToBuffer() {
+  private void copyExistingEventToBuffer() {
     // validation
     if (valueWriter == null) {
       return;

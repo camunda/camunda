@@ -52,7 +52,9 @@ public final class OAuthCredentialsProviderBuilder {
     return this;
   }
 
-  /** @see OAuthCredentialsProviderBuilder#clientId(String) */
+  /**
+   * @see OAuthCredentialsProviderBuilder#clientId(String)
+   */
   String getClientId() {
     return clientId;
   }
@@ -63,7 +65,9 @@ public final class OAuthCredentialsProviderBuilder {
     return this;
   }
 
-  /** @see OAuthCredentialsProviderBuilder#clientSecret(String) */
+  /**
+   * @see OAuthCredentialsProviderBuilder#clientSecret(String)
+   */
   String getClientSecret() {
     return clientSecret;
   }
@@ -74,7 +78,9 @@ public final class OAuthCredentialsProviderBuilder {
     return this;
   }
 
-  /** @see OAuthCredentialsProviderBuilder#audience(String) */
+  /**
+   * @see OAuthCredentialsProviderBuilder#audience(String)
+   */
   String getAudience() {
     return audience;
   }
@@ -86,7 +92,9 @@ public final class OAuthCredentialsProviderBuilder {
     return this;
   }
 
-  /** @see OAuthCredentialsProviderBuilder#authorizationServerUrl(String) */
+  /**
+   * @see OAuthCredentialsProviderBuilder#authorizationServerUrl(String)
+   */
   URL getAuthorizationServer() {
     return authorizationServer;
   }
@@ -100,7 +108,9 @@ public final class OAuthCredentialsProviderBuilder {
     return this;
   }
 
-  /** @see OAuthCredentialsProviderBuilder#credentialsCachePath(String) */
+  /**
+   * @see OAuthCredentialsProviderBuilder#credentialsCachePath(String)
+   */
   File getCredentialsCache() {
     return credentialsCache;
   }
@@ -114,7 +124,9 @@ public final class OAuthCredentialsProviderBuilder {
     return this;
   }
 
-  /** @see #connectTimeout(Duration) */
+  /**
+   * @see #connectTimeout(Duration)
+   */
   public Duration getConnectTimeout() {
     return connectTimeout;
   }
@@ -128,12 +140,16 @@ public final class OAuthCredentialsProviderBuilder {
     return this;
   }
 
-  /** @see #readTimeout(Duration) */
+  /**
+   * @see #readTimeout(Duration)
+   */
   public Duration getReadTimeout() {
     return readTimeout;
   }
 
-  /** @return a new {@link OAuthCredentialsProvider} with the provided configuration options. */
+  /**
+   * @return a new {@link OAuthCredentialsProvider} with the provided configuration options.
+   */
   public OAuthCredentialsProvider build() {
     checkEnvironmentOverrides();
     applyDefaults();

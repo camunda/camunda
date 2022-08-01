@@ -12,6 +12,8 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 /** Implementations must be thread-safe. */
 public interface RequestDispatchStrategy {
 
-  /** @return {@link BrokerClusterState#PARTITION_ID_NULL} if no partition can be determined */
+  /**
+   * @return {@link BrokerClusterState#PARTITION_ID_NULL} if no partition can be determined
+   */
   int determinePartition();
 }

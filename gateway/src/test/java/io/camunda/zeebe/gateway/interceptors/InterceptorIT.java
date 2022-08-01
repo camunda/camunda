@@ -20,8 +20,8 @@ import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.interceptors.util.ContextInspectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.util.TestInterceptor;
+import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.grpc.StatusRuntimeException;
 import io.netty.util.NetUtil;
 import java.io.IOException;
@@ -83,11 +83,11 @@ final class InterceptorIT {
     config.getInterceptors().add(interceptorCfg);
 
     // when
-    gateway.start();
+    gateway.start().join();
     try (final var client = createZeebeClient()) {
       final Future<DeploymentEvent> result =
           client
-              .newDeployCommand()
+              .newDeployResourceCommand()
               .addResourceFromClasspath("processes/one-task-process.bpmn")
               .send();
 
@@ -110,7 +110,7 @@ final class InterceptorIT {
     config.getInterceptors().add(interceptorCfg);
 
     // when
-    gateway.start();
+    gateway.start().join();
     try (final var client = createZeebeClient()) {
       try {
         client.newTopologyRequest().send().join();

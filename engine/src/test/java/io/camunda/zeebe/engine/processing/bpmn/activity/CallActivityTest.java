@@ -148,7 +148,7 @@ public final class CallActivityTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .processInstanceRecords()
                 .withParentProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValue)
@@ -167,7 +167,7 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .processInstanceRecords())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
@@ -221,7 +221,7 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValue)
@@ -249,7 +249,7 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords())
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getScopeKey(), v.getName()))
@@ -303,7 +303,7 @@ public final class CallActivityTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValue)
@@ -334,7 +334,7 @@ public final class CallActivityTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValue)
@@ -391,7 +391,7 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .processInstanceRecords())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
@@ -422,7 +422,7 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .processInstanceRecords())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
@@ -515,7 +515,7 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .processInstanceRecords())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
@@ -549,7 +549,7 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords())
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getScopeKey(), v.getName()))
@@ -650,6 +650,63 @@ public final class CallActivityTest {
                 .withElementType(BpmnElementType.START_EVENT))
         .extracting(r -> r.getValue().getElementId())
         .containsOnly("none-start");
+  }
+
+  @Test
+  public void shouldTriggerBoundaryEventOnChildInstanceTermination() {
+    // given two processes with call activities that have an interrupting message boundary event
+    final var processLevel1 =
+        Bpmn.createExecutableProcess("level1")
+            .startEvent()
+            .callActivity("call-level2", c -> c.zeebeProcessId("level2"))
+            .boundaryEvent()
+            .message(m -> m.name("cancel").zeebeCorrelationKeyExpression("key"))
+            .endEvent()
+            .done();
+
+    final var processLevel2 =
+        Bpmn.createExecutableProcess("level2")
+            .startEvent()
+            .callActivity("call-level3", c -> c.zeebeProcessId("level3"))
+            .boundaryEvent()
+            .message(m -> m.name("cancel").zeebeCorrelationKeyExpression("key"))
+            .endEvent()
+            .done();
+
+    final var processLevel3 =
+        Bpmn.createExecutableProcess("level3")
+            .startEvent()
+            .serviceTask("task-level3", t -> t.zeebeJobType("task-level3"))
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withXmlResource("level1.bpmn", processLevel1)
+        .withXmlResource("level2.bpmn", processLevel2)
+        .withXmlResource("level3.bpmn", processLevel3)
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("level1").withVariable("key", "key-1").create();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED).withType("task-level3").await();
+
+    // when publish a message to trigger the boundary events and terminate the call activities
+    ENGINE.message().withName("cancel").withCorrelationKey("key-1").publish();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   private void completeJobWith(final Map<String, Object> variables) {

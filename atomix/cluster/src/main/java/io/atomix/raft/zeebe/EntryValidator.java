@@ -30,4 +30,31 @@ public interface EntryValidator {
    * @return a ValidationResult containing the validation result and an error message, if it failed
    */
   ValidationResult validateEntry(ApplicationEntry lastEntry, ApplicationEntry entry);
+
+  /** Result of validating an entry. */
+  record ValidationResult(boolean success, String errorMessage) {
+    private static final ValidationResult OK = new ValidationResult(true, null);
+
+    public static ValidationResult ok() {
+      return OK;
+    }
+
+    public static ValidationResult failure(final String errorMessage) {
+      return new ValidationResult(false, errorMessage);
+    }
+
+    public boolean failed() {
+      return !success;
+    }
+  }
+
+  /** A simple validator which always returns {@link ValidationResult#ok()}. */
+  final class NoopEntryValidator implements EntryValidator {
+
+    @Override
+    public ValidationResult validateEntry(
+        final ApplicationEntry lastEntry, final ApplicationEntry entry) {
+      return ValidationResult.ok();
+    }
+  }
 }

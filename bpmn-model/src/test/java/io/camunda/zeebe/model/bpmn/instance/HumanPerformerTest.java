@@ -18,7 +18,9 @@ package io.camunda.zeebe.model.bpmn.instance;
 
 import java.util.Collection;
 
-/** @author Dario Campagna */
+/**
+ * @author Dario Campagna
+ */
 public class HumanPerformerTest extends BpmnModelElementInstanceTest {
 
   @Override

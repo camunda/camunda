@@ -12,6 +12,7 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractJobWorkerTaskBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.RandomProcessGenerator;
@@ -29,9 +30,8 @@ import java.util.function.Function;
  * Generates a task that is based on a job and is processed by a job worker (e.g. a service task).
  * The task may have boundary events
  */
-public class JobWorkerTaskBlockBuilder implements BlockBuilder {
+public class JobWorkerTaskBlockBuilder extends AbstractBlockBuilder {
 
-  private final String taskId;
   private final String jobType;
   private final String errorCode;
   private final String boundaryErrorEventId;
@@ -49,14 +49,14 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
       final Random random,
       final Function<AbstractFlowNodeBuilder<?, ?>, AbstractJobWorkerTaskBuilder<?, ?>>
           taskBuilder) {
+    super(idGenerator.nextId());
     this.taskBuilder = taskBuilder;
 
-    taskId = idGenerator.nextId();
-    jobType = "job_" + taskId;
-    errorCode = "error_" + taskId;
+    jobType = "job_" + elementId;
+    errorCode = "error_" + elementId;
 
-    boundaryErrorEventId = "boundary_error_" + taskId;
-    boundaryTimerEventId = "boundary_timer_" + taskId;
+    boundaryErrorEventId = "boundary_error_" + elementId;
+    boundaryTimerEventId = "boundary_timer_" + elementId;
 
     hasBoundaryErrorEvent =
         random.nextDouble() < RandomProcessGenerator.PROBABILITY_BOUNDARY_ERROR_EVENT;
@@ -74,7 +74,7 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
 
     final var jobWorkerTaskBuilder = taskBuilder.apply(nodeBuilder);
 
-    jobWorkerTaskBuilder.id(taskId).name(taskId);
+    jobWorkerTaskBuilder.id(getElementId()).name(getElementId());
     jobWorkerTaskBuilder.zeebeJobRetries("3");
     jobWorkerTaskBuilder.zeebeJobType(jobType);
 
@@ -82,7 +82,7 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
 
     if (hasBoundaryEvents) {
       final BoundaryEventBuilder boundaryEventBuilder =
-          new BoundaryEventBuilder(taskId, jobWorkerTaskBuilder);
+          new BoundaryEventBuilder(getElementId(), jobWorkerTaskBuilder);
 
       if (hasBoundaryErrorEvent) {
         result = boundaryEventBuilder.connectBoundaryErrorEvent(boundaryErrorEventId, errorCode);
@@ -101,10 +101,10 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
    * activation and complete cycle. The steps before are randomly determined failed attempts.
    */
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(final Random random) {
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    final var activateStep = new StepActivateBPMNElement(taskId);
+    final var activateStep = new StepActivateBPMNElement(getElementId());
     result.appendDirectSuccessor(activateStep);
 
     if (hasBoundaryTimerEvent) {
@@ -113,9 +113,10 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
           boundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
     }
 
-    result.append(buildStepsForFailedExecutions(random));
+    result.append(buildStepsForFailedExecutions(context.getRandom()));
 
-    result.appendExecutionSuccessor(buildStepForSuccessfulExecution(random), activateStep);
+    result.appendExecutionSuccessor(
+        buildStepForSuccessfulExecution(context.getRandom()), activateStep);
 
     return result;
   }
@@ -126,12 +127,13 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
     // If we already have a timer boundary event we should not timeout the job,
     // otherwise this makes the test too fragile (flaky).
     if (!hasBoundaryTimerEvent && random.nextBoolean()) {
-      result.appendDirectSuccessor(new StepActivateAndTimeoutJob(jobType, taskId));
+      result.appendDirectSuccessor(new StepActivateAndTimeoutJob(jobType, getElementId()));
     }
 
     if (random.nextBoolean()) {
       final boolean updateRetries = random.nextBoolean();
-      result.appendDirectSuccessor(new StepActivateAndFailJob(jobType, updateRetries, taskId));
+      result.appendDirectSuccessor(
+          new StepActivateAndFailJob(jobType, updateRetries, getElementId()));
     }
 
     return result;
@@ -147,11 +149,11 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
     final AbstractExecutionStep result;
 
     if (hasBoundaryErrorEvent && random.nextBoolean()) {
-      result = new StepActivateJobAndThrowError(jobType, errorCode, taskId);
+      result = new StepActivateJobAndThrowError(jobType, errorCode, getElementId());
     } else if (hasBoundaryTimerEvent && random.nextBoolean()) {
       result = new StepTriggerTimerBoundaryEvent(boundaryTimerEventId);
     } else {
-      result = new StepActivateAndCompleteJob(jobType, taskId);
+      result = new StepActivateAndCompleteJob(jobType, getElementId());
     }
 
     return result;

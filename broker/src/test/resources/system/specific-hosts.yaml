@@ -10,6 +10,3 @@ zeebe:
 
       internalApi:
         host: internalHost
-
-      monitoringApi:
-        host: monitoringHost

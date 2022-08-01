@@ -13,13 +13,13 @@ import static io.camunda.zeebe.util.Either.right;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
+import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
-import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.nio.ByteBuffer;
 
 public final class LogStoragePartitionTransitionStep implements PartitionTransitionStep {
@@ -107,8 +107,8 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
         .orElseGet(
             () ->
                 left(
-                    new IllegalStateException(
-                        "Not leader of partition " + context.getPartitionId())));
+                    new NotLeaderException(
+                        "Expected to get writable log storage, but the node is not the leader for the partition anymore. Failing installation of 'LogStoragePartitionStep'.")));
   }
 
   private Either<Exception, AtomixLogStorage> checkAndCreateAtomixLogStorage(
@@ -120,10 +120,18 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
 
     if (raftTerm != targetTerm) {
       return left(
-          new LogStorageTermMissmatchException(targetTerm, raftTerm, context.getPartitionId()));
+          new NotLeaderException(
+              String.format(WRONG_TERM_ERROR_MSG, targetTerm, raftTerm, context.getPartitionId())));
     } else {
       final var logStorage = AtomixLogStorage.ofPartition(server::openReader, logAppender);
       return right(logStorage);
+    }
+  }
+
+  public static final class NotLeaderException extends RecoverablePartitionTransitionException {
+
+    private NotLeaderException(final String message) {
+      super(message);
     }
   }
 
@@ -138,14 +146,6 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
           String.format(
               "Expect to append entry (positions %d - %d), but was in Follower role. Followers must not append entries to the log storage",
               lowestPosition, highestPosition));
-    }
-  }
-
-  public static final class LogStorageTermMissmatchException
-      extends RecoverablePartitionTransitionException {
-    private LogStorageTermMissmatchException(
-        final long expectedTerm, final long actualTerm, final int partitionId) {
-      super(String.format(WRONG_TERM_ERROR_MSG, expectedTerm, actualTerm, partitionId));
     }
   }
 }

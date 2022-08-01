@@ -10,7 +10,6 @@ package io.camunda.zeebe.test;
 import static io.camunda.zeebe.test.ContainerStateAssert.assertThat;
 import static io.camunda.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
 
-import io.camunda.zeebe.util.VersionUtil;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
@@ -24,8 +23,6 @@ import org.testcontainers.containers.Network;
 @ExtendWith(ContainerStateExtension.class)
 final class NoSnapshotTest {
 
-  public static final String LAST_VERSION = VersionUtil.getPreviousVersion();
-  public static final String CURRENT_VERSION = "current-test";
   private static Network network;
 
   @BeforeAll
@@ -41,15 +38,18 @@ final class NoSnapshotTest {
   @Timeout(value = 5, unit = TimeUnit.MINUTES)
   @ParameterizedTest(name = "{0}")
   @ArgumentsSource(UpdateTestCaseProvider.class)
-  void update(final String name, final UpdateTestCase testCase, final ContainerState state) {
+  void update(
+      @SuppressWarnings("unused") final String name,
+      final UpdateTestCase testCase,
+      final ContainerState state) {
     // given
-    state.withNetwork(network).broker(LAST_VERSION).start(true);
+    state.withNetwork(network).withOldBroker().start(true);
     final long processInstanceKey = testCase.setUp(state.client());
     final long key = testCase.runBefore(state);
 
     // when
     state.close();
-    state.broker(CURRENT_VERSION).start(true);
+    state.withNewBroker().start(true);
     assertThat(state).hasNoSnapshotAvailable(1);
 
     // then

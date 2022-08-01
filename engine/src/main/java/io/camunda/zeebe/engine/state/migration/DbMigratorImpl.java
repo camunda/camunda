@@ -26,7 +26,7 @@ public class DbMigratorImpl implements DbMigrator {
           new ProcessMessageSubscriptionSentTimeMigration(),
           new MessageSubscriptionSentTimeMigration(),
           new TemporaryVariableMigration());
-  // Be mindful of https://github.com/camunda-cloud/zeebe/issues/7248. In particular, that issue
+  // Be mindful of https://github.com/camunda/zeebe/issues/7248. In particular, that issue
   // should be solved first, before adding any migration that can take a long time
 
   private final MutableZeebeState zeebeState;

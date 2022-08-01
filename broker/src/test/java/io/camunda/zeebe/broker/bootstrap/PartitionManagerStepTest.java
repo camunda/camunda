@@ -23,14 +23,13 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
-import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.camunda.zeebe.util.sched.ActorScheduler;
-import io.camunda.zeebe.util.sched.TestConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
@@ -82,8 +81,6 @@ class PartitionManagerStepTest {
               mock(BrokerHealthCheckService.class),
               mock(ExporterRepository.class),
               Collections.emptyList());
-      testBrokerStartupContext.setLeaderManagementRequestHandler(
-          mock(LeaderManagementRequestHandler.class, RETURNS_DEEP_STUBS));
       testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
       testBrokerStartupContext.setBrokerAdminService(mock(BrokerAdminServiceImpl.class));
       testBrokerStartupContext.setClusterServices(

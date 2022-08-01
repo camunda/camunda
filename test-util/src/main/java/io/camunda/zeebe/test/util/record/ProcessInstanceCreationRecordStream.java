@@ -10,6 +10,7 @@ package io.camunda.zeebe.test.util.record;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
 import io.camunda.zeebe.test.util.collection.Maps;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -58,6 +59,14 @@ public final class ProcessInstanceCreationRecordStream
   public ProcessInstanceCreationRecordStream withVariables(
       final Predicate<Map<String, Object>> matcher) {
     return valueFilter(v -> matcher.test(v.getVariables()));
+  }
+
+  public ProcessInstanceCreationRecordStream withStartInstruction(final String elementId) {
+    return valueFilter(
+        v ->
+            v.getStartInstructions().stream()
+                .map(ProcessInstanceCreationStartInstructionValue::getElementId)
+                .anyMatch(elementId::equals));
   }
 
   public ProcessInstanceCreationRecordStream limitToProcessInstanceCreated(

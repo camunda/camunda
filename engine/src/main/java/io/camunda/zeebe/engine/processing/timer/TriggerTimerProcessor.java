@@ -7,20 +7,20 @@
  */
 package io.camunda.zeebe.engine.processing.timer;
 
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Instant;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -87,8 +88,8 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
   @Override
   public void processRecord(
       final TypedRecord<TimerRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final LegacyTypedResponseWriter responseWriter,
+      final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffects) {
     final var timer = record.getValue();
     final var elementInstanceKey = timer.getElementInstanceKey();
@@ -104,13 +105,14 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
         processState.getFlowElement(
             processDefinitionKey, timer.getTargetElementIdBuffer(), ExecutableCatchEvent.class);
     if (isStartEvent(elementInstanceKey)) {
-      stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
       final long processInstanceKey = keyGenerator.nextKey();
+      timer.setProcessInstanceKey(processInstanceKey);
+      stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
       eventHandle.activateProcessInstanceForStartEvent(
           processDefinitionKey, processInstanceKey, timer.getTargetElementIdBuffer(), NO_VARIABLES);
     } else {
       final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
-      if (!eventHandle.canTriggerElement(elementInstance)) {
+      if (!eventHandle.canTriggerElement(elementInstance, timer.getTargetElementIdBuffer())) {
         rejectNoActiveTimer(record);
         return;
       }
@@ -142,7 +144,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
   private void rescheduleTimer(
       final TimerRecord record,
       final ExecutableCatchEvent event,
-      final TypedCommandWriter writer,
+      final LegacyTypedCommandWriter writer,
       final Consumer<SideEffectProducer> sideEffects) {
     final Either<Failure, Timer> timer =
         event.getTimerFactory().apply(expressionProcessor, record.getElementInstanceKey());
@@ -160,8 +162,13 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       repetitions--;
     }
 
-    final Interval interval = timer.map(Timer::getInterval).get();
-    final Timer repeatingInterval = new RepeatingInterval(repetitions, interval);
+    // Use the timer's last due date instead of the current time to avoid a time shift.
+    final Interval refreshedInterval =
+        timer
+            .map(Timer::getInterval)
+            .map(interval -> interval.withStart(Instant.ofEpochMilli(record.getDueDate())))
+            .get();
+    final Timer repeatingInterval = new RepeatingInterval(repetitions, refreshedInterval);
     catchEventBehavior.subscribeToTimerEvent(
         record.getElementInstanceKey(),
         record.getProcessInstanceKey(),

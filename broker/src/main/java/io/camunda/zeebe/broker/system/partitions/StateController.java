@@ -8,8 +8,8 @@
 package io.camunda.zeebe.broker.system.partitions;
 
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 
 public interface StateController extends AutoCloseable {
   /**

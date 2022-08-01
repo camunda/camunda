@@ -17,7 +17,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.util.sched.future.TestActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import java.io.IOException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;

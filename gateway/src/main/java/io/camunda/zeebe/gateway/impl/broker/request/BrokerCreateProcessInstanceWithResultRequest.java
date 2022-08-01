@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl.broker.request;
 
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -41,6 +42,19 @@ public final class BrokerCreateProcessInstanceWithResultRequest
 
   public BrokerCreateProcessInstanceWithResultRequest setVariables(final DirectBuffer variables) {
     requestDto.setVariables(variables);
+    return this;
+  }
+
+  public BrokerCreateProcessInstanceWithResultRequest setStartInstructions(
+      final List<ProcessInstanceCreationStartInstruction> startInstructionsList) {
+    startInstructionsList.stream()
+        .map(
+            startInstructionReq ->
+                new io.camunda.zeebe.protocol.impl.record.value.processinstance
+                        .ProcessInstanceCreationStartInstruction()
+                    .setElementId(startInstructionReq.getElementId()))
+        .forEach(requestDto::addStartInstruction);
+
     return this;
   }
 

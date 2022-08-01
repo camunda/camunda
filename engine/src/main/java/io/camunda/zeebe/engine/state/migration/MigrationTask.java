@@ -25,7 +25,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
  *   <li>All methods should be implemented with the context in mind, that they will be called
  *       synchronously during recovery.
  *   <li>Migrations that are expected to potentially take a long time, should only be implemented
- *       after https://github.com/camunda-cloud/zeebe/issues/7248 has been solved
+ *       after https://github.com/camunda/zeebe/issues/7248 has been solved
  *   <li>None of the methods must commit or roll back the transaction. The transaction is handled
  *       outside
  *   <li>Methods may throw exceptions to indicate a critical error during migration

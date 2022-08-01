@@ -16,8 +16,13 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionMetadata;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
@@ -30,6 +35,7 @@ import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
@@ -53,6 +59,49 @@ public final class ResponseMapper {
                     .setVersion(process.getVersion())
                     .setProcessDefinitionKey(process.getKey())
                     .setResourceName(bufferAsString(process.getResourceNameBuffer())));
+
+    return responseBuilder.build();
+  }
+
+  public static DeployResourceResponse toDeployResourceResponse(
+      final long key, final DeploymentRecord brokerResponse) {
+    final var responseBuilder = DeployResourceResponse.newBuilder().setKey(key);
+
+    brokerResponse.processesMetadata().stream()
+        .map(
+            process ->
+                ProcessMetadata.newBuilder()
+                    .setBpmnProcessId(process.getBpmnProcessId())
+                    .setVersion(process.getVersion())
+                    .setProcessDefinitionKey(process.getKey())
+                    .setResourceName(process.getResourceName())
+                    .build())
+        .forEach(process -> responseBuilder.addDeploymentsBuilder().setProcess(process));
+
+    brokerResponse.decisionsMetadata().stream()
+        .map(
+            decision ->
+                DecisionMetadata.newBuilder()
+                    .setDmnDecisionId(decision.getDecisionId())
+                    .setDmnDecisionName(decision.getDecisionName())
+                    .setVersion(decision.getVersion())
+                    .setDecisionKey(decision.getDecisionKey())
+                    .setDmnDecisionRequirementsId(decision.getDecisionRequirementsId())
+                    .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
+                    .build())
+        .forEach(decision -> responseBuilder.addDeploymentsBuilder().setDecision(decision));
+
+    brokerResponse.decisionRequirementsMetadata().stream()
+        .map(
+            drg ->
+                DecisionRequirementsMetadata.newBuilder()
+                    .setDmnDecisionRequirementsId(drg.getDecisionRequirementsId())
+                    .setDmnDecisionRequirementsName(drg.getDecisionRequirementsName())
+                    .setVersion(drg.getDecisionRequirementsVersion())
+                    .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+                    .setResourceName(drg.getResourceName())
+                    .build())
+        .forEach(drg -> responseBuilder.addDeploymentsBuilder().setDecisionRequirements(drg));
 
     return responseBuilder.build();
   }
@@ -148,6 +197,11 @@ public final class ResponseMapper {
   public static ResolveIncidentResponse toResolveIncidentResponse(
       final long key, final IncidentRecord incident) {
     return ResolveIncidentResponse.getDefaultInstance();
+  }
+
+  public static ModifyProcessInstanceResponse toModifyProcessInstanceResponse(
+      final long key, final ProcessInstanceModificationRecord brokerResponse) {
+    return ModifyProcessInstanceResponse.getDefaultInstance();
   }
 
   private static String bufferAsJson(final DirectBuffer customHeaders) {

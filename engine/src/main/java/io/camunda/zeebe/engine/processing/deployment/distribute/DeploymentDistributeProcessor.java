@@ -7,56 +7,44 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
-import io.camunda.zeebe.engine.processing.deployment.DeploymentResponder;
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.deployment.MessageStartEventSubscriptionManager;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
-import java.util.function.Consumer;
 
 public final class DeploymentDistributeProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
   private final MessageStartEventSubscriptionManager messageStartEventSubscriptionManager;
-  private final DeploymentResponder deploymentResponder;
-  private final int partitionId;
+
   private final StateWriter stateWriter;
+  private final DeploymentDistributionCommandSender deploymentDistributionCommandSender;
 
   public DeploymentDistributeProcessor(
       final ProcessState processState,
       final MessageStartEventSubscriptionState messageStartEventSubscriptionState,
-      final DeploymentResponder deploymentResponder,
-      final int partitionId,
+      final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final Writers writers,
       final KeyGenerator keyGenerator) {
+    this.deploymentDistributionCommandSender = deploymentDistributionCommandSender;
     messageStartEventSubscriptionManager =
         new MessageStartEventSubscriptionManager(
             processState, messageStartEventSubscriptionState, keyGenerator);
-    this.deploymentResponder = deploymentResponder;
-    this.partitionId = partitionId;
     stateWriter = writers.state();
   }
 
   @Override
-  public void processRecord(
-      final long position,
-      final TypedRecord<DeploymentRecord> event,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect) {
+  public void processRecord(final TypedRecord<DeploymentRecord> event) {
     final var deploymentEvent = event.getValue();
     final var deploymentKey = event.getKey();
 
     stateWriter.appendFollowUpEvent(deploymentKey, DeploymentIntent.DISTRIBUTED, deploymentEvent);
-    deploymentResponder.sendDeploymentResponse(deploymentKey, partitionId);
+    deploymentDistributionCommandSender.completeOnPartition(deploymentKey);
 
     messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
         deploymentEvent, stateWriter);

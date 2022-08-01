@@ -23,7 +23,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import org.junit.Test;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class MessageEventDefinitionTest extends AbstractEventDefinitionTest {
 
   @Override

@@ -1,8 +1,8 @@
 # Zeebe - Workflow Engine for Microservices Orchestration
 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.camunda.zeebe/camunda-cloud-zeebe/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.camunda.zeebe/camunda-cloud-zeebe)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.camunda.zeebe/camunda-zeebe/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.camunda.zeebe/camunda-zeebe)
 
-Zeebe provides visibility into and control over business processes that span multiple microservices. It is the engine that powers [Camunda Cloud](https://camunda.com/products/cloud/workflow-engine/).
+Zeebe provides visibility into and control over business processes that span multiple microservices. It is the engine that powers [Camunda Platform 8](https://camunda.com/platform/zeebe/).
 
 **Why Zeebe?**
 
@@ -15,7 +15,7 @@ Zeebe provides visibility into and control over business processes that span mul
 * Export process data for monitoring and analysis
 * Engage with an active community
 
-[Learn more at camunda.com](https://camunda.com/products/cloud/workflow-engine/)
+[Learn more at camunda.com](https://camunda.com/platform/zeebe/)
 
 ## Release Lifecycle
 
@@ -29,28 +29,29 @@ Here is a diagram illustrating the lifecycle of minor releases over a 13-month p
 
 ## Status
 
-To learn more about what we're currently working on, check the [GitHub issues](https://github.com/camunda-cloud/zeebe/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc) and the [latest commits](https://github.com/camunda-cloud/zeebe/commits/main).
+To learn more about what we're currently working on, check the [GitHub issues](https://github.com/camunda/zeebe/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc) and the [latest commits](https://github.com/camunda/zeebe/commits/main).
 
 ## Helpful Links
 
-* [Releases](https://github.com/camunda-cloud/zeebe/releases)
+* [Releases](https://github.com/camunda/zeebe/releases)
 * [Docker images](https://hub.docker.com/r/camunda/zeebe/tags?page=1&ordering=last_updated)
 * [Blog](https://camunda.com/blog/category/process-automation-as-a-service/)
 * [Documentation Home](https://docs.camunda.io)
-* [Issue Tracker](https://github.com/camunda-cloud/zeebe/issues)
+* [Issue Tracker](https://github.com/camunda/zeebe/issues)
 * [User Forum](https://forum.camunda.io)
 * [Slack Channel](https://zeebe-slack-invite.herokuapp.com/)
 * [Contribution Guidelines](/CONTRIBUTING.md)
 
 ## Recommended Docs Entries for New Users
 
-* [What is Camunda Cloud?](https://docs.camunda.io/docs/product-manuals/concepts/what-is-camunda-cloud)
-* [Getting Started Tutorial](https://docs.camunda.io/docs/guides/getting-started/create-camunda-cloud-account)
-* [Technical Concepts](https://docs.camunda.io/docs/product-manuals/zeebe/technical-concepts/index)
-* [BPMN Processes](https://docs.camunda.io/docs/reference/bpmn-processes/bpmn-primer)
-* [Configuration](https://docs.camunda.io/docs/product-manuals/zeebe/deployment-guide/index)
-* [Java Client](https://docs.camunda.io/docs/product-manuals/clients/java-client/index)
-* [Go Client](https://docs.camunda.io/docs/product-manuals/clients/go-client/index)
+* [What is Camunda Platform 8?](https://docs.camunda.io/docs/components/concepts/what-is-camunda-platform-8/)
+* [Getting Started Tutorial](https://docs.camunda.io/docs/guides/)
+* [Technical Concepts](https://docs.camunda.io/docs/components/zeebe/technical-concepts/)
+* [BPMN Processes](https://docs.camunda.io/docs/components/modeler/bpmn/bpmn-primer/)
+* [Installation and Configuration](https://docs.camunda.io/docs/self-managed/zeebe-deployment/)
+* [Java Client](https://docs.camunda.io/docs/apis-clients/java-client/)
+* [Go Client](https://docs.camunda.io/docs/apis-clients/go-client/)
+* [Spring Integration](https://github.com/camunda-community-hub/spring-zeebe/)
 
 ## Contributing
 

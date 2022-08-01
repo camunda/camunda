@@ -14,16 +14,14 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
-import io.camunda.zeebe.broker.engine.impl.DeploymentDistributorImpl;
 import io.camunda.zeebe.broker.engine.impl.LongPollingJobNotification;
-import io.camunda.zeebe.broker.engine.impl.PartitionCommandSenderImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransition;
@@ -37,6 +35,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.InterPartitionCommandReceiverStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionTransitionStep;
@@ -46,18 +45,19 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPart
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
+import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
+import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
-import io.camunda.zeebe.util.sched.ActorSchedulingService;
-import io.camunda.zeebe.util.sched.ConcurrencyControl;
-import io.camunda.zeebe.util.startup.StartupStep;
+import io.camunda.zeebe.util.FeatureFlags;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -72,6 +72,7 @@ final class PartitionFactory {
       List.of(
           new LogStoragePartitionTransitionStep(),
           new LogStreamPartitionTransitionStep(),
+          new InterPartitionCommandReceiverStep(),
           new ZeebeDbPartitionTransitionStep(),
           new QueryServicePartitionTransitionStep(),
           new StreamProcessorTransitionStep(),
@@ -81,38 +82,39 @@ final class PartitionFactory {
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
-  private final PushDeploymentRequestHandler deploymentRequestHandler;
   private final CommandApiService commandApiService;
   private final FileBasedSnapshotStoreFactory snapshotStoreFactory;
   private final ClusterServices clusterServices;
   private final ExporterRepository exporterRepository;
   private final BrokerHealthCheckService healthCheckService;
+  private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
 
   PartitionFactory(
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
       final BrokerInfo localBroker,
-      final PushDeploymentRequestHandler deploymentRequestHandler,
       final CommandApiService commandApiService,
       final FileBasedSnapshotStoreFactory snapshotStoreFactory,
       final ClusterServices clusterServices,
       final ExporterRepository exporterRepository,
-      final BrokerHealthCheckService healthCheckService) {
+      final BrokerHealthCheckService healthCheckService,
+      final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
-    this.deploymentRequestHandler = deploymentRequestHandler;
     this.commandApiService = commandApiService;
     this.snapshotStoreFactory = snapshotStoreFactory;
     this.clusterServices = clusterServices;
     this.exporterRepository = exporterRepository;
     this.healthCheckService = healthCheckService;
+    this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
   }
 
   List<ZeebePartition> constructPartitions(
       final RaftPartitionGroup partitionGroup,
       final List<PartitionListener> partitionListeners,
-      final TopologyManager topologyManager) {
+      final TopologyManager topologyManager,
+      final FeatureFlags featureFlags) {
     final var partitions = new ArrayList<ZeebePartition>();
     final var communicationService = clusterServices.getCommunicationService();
     final var eventService = clusterServices.getEventService();
@@ -127,11 +129,7 @@ final class PartitionFactory {
 
     final var typedRecordProcessorsFactory =
         createFactory(
-            topologyManager,
-            localBroker,
-            communicationService,
-            eventService,
-            deploymentRequestHandler);
+            topologyManager, localBroker, communicationService, eventService, featureFlags);
 
     for (final RaftPartition owningPartition : owningPartitions) {
       final var partitionId = owningPartition.id().id();
@@ -147,6 +145,7 @@ final class PartitionFactory {
       final PartitionStartupAndTransitionContextImpl partitionStartupAndTransitionContext =
           new PartitionStartupAndTransitionContextImpl(
               localBroker.getNodeId(),
+              communicationService,
               owningPartition,
               partitionListeners,
               new AtomixPartitionMessagingService(
@@ -156,11 +155,11 @@ final class PartitionFactory {
               commandApiService::newCommandResponseWriter,
               () -> commandApiService.getOnProcessedListener(partitionId),
               constructableSnapshotStore,
-              snapshotStoreFactory.getReceivableSnapshotStore(partitionId),
               stateController,
               typedRecordProcessorsFactory,
               exporterRepository,
-              new PartitionProcessingState(owningPartition));
+              new PartitionProcessingState(owningPartition),
+              diskSpaceUsageMonitor);
 
       final PartitionTransition newTransitionBehavior =
           new PartitionTransitionImpl(TRANSITION_STEPS);
@@ -200,36 +199,34 @@ final class PartitionFactory {
       final BrokerInfo localBroker,
       final ClusterCommunicationService communicationService,
       final ClusterEventService eventService,
-      final PushDeploymentRequestHandler deploymentRequestHandler) {
-    return (ProcessingContext processingContext) -> {
-      final var actor = processingContext.getActor();
-
-      final LogStream stream = processingContext.getLogStream();
+      final FeatureFlags featureFlags) {
+    return (recordProcessorContext) -> {
+      final var scheduleService = recordProcessorContext.getScheduleService();
 
       final TopologyPartitionListenerImpl partitionListener =
-          new TopologyPartitionListenerImpl(actor);
+          new TopologyPartitionListenerImpl(scheduleService);
       topologyManager.addTopologyPartitionListener(partitionListener);
 
-      final DeploymentDistributorImpl deploymentDistributor =
-          new DeploymentDistributorImpl(
-              communicationService, eventService, partitionListener, actor);
-
-      final PartitionCommandSenderImpl partitionCommandSender =
-          new PartitionCommandSenderImpl(communicationService, partitionListener);
+      final InterPartitionCommandSenderImpl partitionCommandSender =
+          new InterPartitionCommandSenderImpl(communicationService, partitionListener);
       final SubscriptionCommandSender subscriptionCommandSender =
-          new SubscriptionCommandSender(stream.getPartitionId(), partitionCommandSender);
+          new SubscriptionCommandSender(
+              recordProcessorContext.getPartitionId(), partitionCommandSender);
+      final DeploymentDistributionCommandSender deploymentDistributionCommandSender =
+          new DeploymentDistributionCommandSender(
+              recordProcessorContext.getPartitionId(), partitionCommandSender);
 
       final LongPollingJobNotification jobsAvailableNotification =
           new LongPollingJobNotification(eventService);
 
       final var processor =
           EngineProcessors.createEngineProcessors(
-              processingContext,
+              recordProcessorContext,
               localBroker.getPartitionsCount(),
               subscriptionCommandSender,
-              deploymentDistributor,
-              deploymentRequestHandler,
-              jobsAvailableNotification::onJobsAvailable);
+              deploymentDistributionCommandSender,
+              jobsAvailableNotification::onJobsAvailable,
+              featureFlags);
 
       return processor.withListener(
           new StreamProcessorLifecycleAware() {

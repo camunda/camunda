@@ -11,7 +11,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
@@ -32,7 +32,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
-import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -46,7 +45,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.state.processing.DbBlackListState;
 import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
-import io.camunda.zeebe.engine.state.processing.DbLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
 import io.camunda.zeebe.protocol.Protocol;
 import java.util.function.BiConsumer;
@@ -70,7 +68,6 @@ public class ZeebeDbState implements MutableZeebeState {
   private final DbProcessMessageSubscriptionState processMessageSubscriptionState;
   private final MutableIncidentState incidentState;
   private final MutableBlackListState blackListState;
-  private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final MutableMigrationState mutableMigrationState;
   private final MutableDecisionState decisionState;
 
@@ -105,14 +102,13 @@ public class ZeebeDbState implements MutableZeebeState {
         new DbProcessMessageSubscriptionState(zeebeDb, transactionContext);
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
     blackListState = new DbBlackListState(zeebeDb, transactionContext, partitionId);
-    lastProcessedPositionState = new DbLastProcessedPositionState(zeebeDb, transactionContext);
     decisionState = new DbDecisionState(zeebeDb, transactionContext);
 
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
   }
 
   @Override
-  public void onRecovered(final ReadonlyProcessingContext context) {
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
     messageSubscriptionState.onRecovered(context);
     processMessageSubscriptionState.onRecovered(context);
   }
@@ -183,13 +179,13 @@ public class ZeebeDbState implements MutableZeebeState {
   }
 
   @Override
-  public MutableMigrationState getMigrationState() {
-    return mutableMigrationState;
+  public MutableDecisionState getDecisionState() {
+    return decisionState;
   }
 
   @Override
-  public KeyGenerator getKeyGenerator() {
-    return keyGenerator;
+  public MutableMigrationState getMigrationState() {
+    return mutableMigrationState;
   }
 
   @Override
@@ -200,6 +196,11 @@ public class ZeebeDbState implements MutableZeebeState {
   @Override
   public MutablePendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState() {
     return processMessageSubscriptionState;
+  }
+
+  @Override
+  public KeyGenerator getKeyGenerator() {
+    return keyGenerator;
   }
 
   @Override
@@ -240,15 +241,5 @@ public class ZeebeDbState implements MutableZeebeState {
 
   public KeyGeneratorControls getKeyGeneratorControls() {
     return keyGenerator;
-  }
-
-  @Override
-  public MutableLastProcessedPositionState getLastProcessedPositionState() {
-    return lastProcessedPositionState;
-  }
-
-  @Override
-  public MutableDecisionState getDecisionState() {
-    return decisionState;
   }
 }

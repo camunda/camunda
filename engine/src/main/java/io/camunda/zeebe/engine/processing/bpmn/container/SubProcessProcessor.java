@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehav
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
 public final class SubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
@@ -51,7 +50,6 @@ public final class SubProcessProcessor
 
     variableMappingBehavior
         .applyInputMappings(activating, element)
-        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, activating))
         .ifRightOrLeft(
             ok -> {
               final var activated = stateTransitionBehavior.transitionToActivated(activating);
@@ -109,33 +107,10 @@ public final class SubProcessProcessor
       final ExecutableFlowElementContainer element,
       final BpmnElementContext subProcessContext,
       final BpmnElementContext childContext) {
-    if (subProcessContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(subProcessContext);
 
-      if (childContext == null || stateBehavior.canBeTerminated(childContext)) {
-        // if we are able to terminate we try to trigger boundary events
-        eventSubscriptionBehavior
-            .findEventTrigger(subProcessContext)
-            .ifPresentOrElse(
-                eventTrigger -> {
-                  final var terminated =
-                      stateTransitionBehavior.transitionToTerminated(subProcessContext);
-                  eventSubscriptionBehavior.activateTriggeredEvent(
-                      subProcessContext.getElementInstanceKey(),
-                      subProcessContext.getFlowScopeKey(),
-                      eventTrigger,
-                      terminated);
-                },
-                () -> {
-                  final var terminated =
-                      stateTransitionBehavior.transitionToTerminated(subProcessContext);
-                  stateTransitionBehavior.onElementTerminated(element, terminated);
-                });
-      }
-
-    } else {
-      // if the flow scope is not terminating we allow
-      // * interrupting event sub processes
-      // * non interrupting boundary events
+    if (stateBehavior.isInterrupted(subProcessContext)) {
+      // an interrupting event subprocess was triggered
       eventSubscriptionBehavior
           .findEventTrigger(subProcessContext)
           .ifPresent(
@@ -145,6 +120,27 @@ public final class SubProcessProcessor
                       subProcessContext.getElementInstanceKey(),
                       eventTrigger,
                       subProcessContext));
+
+    } else if (childContext == null || stateBehavior.canBeTerminated(childContext)) {
+      // if we are able to terminate we try to trigger boundary events
+      eventSubscriptionBehavior
+          .findEventTrigger(subProcessContext)
+          .filter(eventTrigger -> flowScopeInstance.isActive())
+          .ifPresentOrElse(
+              eventTrigger -> {
+                final var terminated =
+                    stateTransitionBehavior.transitionToTerminated(subProcessContext);
+                eventSubscriptionBehavior.activateTriggeredEvent(
+                    subProcessContext.getElementInstanceKey(),
+                    subProcessContext.getFlowScopeKey(),
+                    eventTrigger,
+                    terminated);
+              },
+              () -> {
+                final var terminated =
+                    stateTransitionBehavior.transitionToTerminated(subProcessContext);
+                stateTransitionBehavior.onElementTerminated(element, terminated);
+              });
     }
   }
 }

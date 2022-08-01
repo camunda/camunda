@@ -10,11 +10,13 @@ package io.camunda.zeebe.test.util.bpmn.random.blocks;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPath;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.StartEventBlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -31,7 +33,7 @@ public final class ProcessBuilder {
               MessageStartEventBuilder::new,
               TimerStartEventBuilder::new);
 
-  private final BlockBuilder blockBuilder;
+  private final BlockSequenceBuilder blockBuilder;
   private final StartEventBlockBuilder startEventBuilder;
   private final List<BpmnModelInstance> calledChildModelInstances = new ArrayList<>();
 
@@ -76,7 +78,9 @@ public final class ProcessBuilder {
     return hasEventSubProcess;
   }
 
-  /** @return the build process and any potentially called child processes */
+  /**
+   * @return the build process and any potentially called child processes
+   */
   public List<BpmnModelInstance> buildProcess() {
     final var result = new ArrayList<BpmnModelInstance>();
 
@@ -110,7 +114,7 @@ public final class ProcessBuilder {
                 // which will not trigger the event sub process then. We use here a static value to
                 // trigger the event sub process.
                 //
-                // See https://github.com/camunda-cloud/zeebe/issues/4099
+                // See https://github.com/camunda/zeebe/issues/4099
                 b.name(eventSubProcessMessageName)
                     .zeebeCorrelationKeyExpression(
                         '\"' + EVENT_SUBPROCESS_CORRELATION_KEY_VALUE + '\"'))
@@ -118,7 +122,20 @@ public final class ProcessBuilder {
   }
 
   public ExecutionPath findRandomExecutionPath(final Random random) {
-    final var followingPath = blockBuilder.findRandomExecutionPath(random);
+    // Give processes a 1/3 chance to start in a random spot
+    final var startAnywhere = random.nextInt(3) == 0;
+
+    final ExecutionPathContext context;
+    if (startAnywhere) {
+      final var possibleStartingElementIds = blockBuilder.getPossibleStartingElementIds();
+      final int startBlockIndex = random.nextInt(possibleStartingElementIds.size());
+      final var startAtElementId = possibleStartingElementIds.get(startBlockIndex);
+      context = new ExecutionPathContext(startAtElementId, random);
+    } else {
+      context = new ExecutionPathContext(blockBuilder.getElementId(), random);
+    }
+
+    final ExecutionPathSegment followingPath = blockBuilder.findRandomExecutionPath(context);
 
     if (hasEventSubProcess) {
       final var shouldTriggerEventSubProcess = random.nextBoolean();
@@ -127,8 +144,16 @@ public final class ProcessBuilder {
       }
     }
 
-    final var startPath =
-        startEventBuilder.findRandomExecutionPath(processId, followingPath.collectVariables());
+    final ExecutionPathSegment startPath;
+    if (startAnywhere) {
+      startPath = new ExecutionPathSegment();
+      startPath.appendDirectSuccessor(
+          new StepStartProcessInstance(
+              processId, followingPath.collectVariables(), context.getStartElementIds()));
+    } else {
+      startPath =
+          startEventBuilder.findRandomExecutionPath(processId, followingPath.collectVariables());
+    }
     startPath.append(followingPath);
 
     return new ExecutionPath(processId, startPath);

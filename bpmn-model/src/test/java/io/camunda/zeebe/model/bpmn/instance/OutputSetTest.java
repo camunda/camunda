@@ -23,7 +23,9 @@ import io.camunda.zeebe.model.bpmn.impl.instance.WhileExecutingOutputRefs;
 import java.util.Arrays;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class OutputSetTest extends BpmnModelElementInstanceTest {
 
   @Override

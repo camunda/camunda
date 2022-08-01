@@ -15,7 +15,7 @@ import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.scheduler.Actor;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -36,7 +36,9 @@ public final class BrokerTopologyManagerImpl extends Actor
     topology = new AtomicReference<>(null);
   }
 
-  /** @return the current known cluster state or null if the topology was not fetched yet */
+  /**
+   * @return the current known cluster state or null if the topology was not fetched yet
+   */
   @Override
   public BrokerClusterState getTopology() {
     return topology.get();

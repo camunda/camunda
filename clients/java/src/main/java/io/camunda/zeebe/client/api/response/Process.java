@@ -16,15 +16,23 @@
 package io.camunda.zeebe.client.api.response;
 
 public interface Process {
-  /** @return the BPMN process id of the process */
+  /**
+   * @return the BPMN process id of the process
+   */
   String getBpmnProcessId();
 
-  /** @return the version of the deployed process */
+  /**
+   * @return the version of the deployed process
+   */
   int getVersion();
 
-  /** @return the key of the deployed process */
+  /**
+   * @return the key of the deployed process
+   */
   long getProcessDefinitionKey();
 
-  /** @return the name of the deployment resource which contains the process */
+  /**
+   * @return the name of the deployment resource which contains the process
+   */
   String getResourceName();
 }

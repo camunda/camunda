@@ -27,7 +27,9 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractActivityBuilder<
         B extends AbstractActivityBuilder<B, E>, E extends Activity>
     extends AbstractFlowNodeBuilder<B, E> implements ZeebeVariablesMappingBuilder<B> {

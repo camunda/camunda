@@ -19,6 +19,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class CopiedRecords {
 
+  private CopiedRecords() {}
+
   public static CopiedRecord createCopiedRecord(final int partitionId, final LoggedEvent rawEvent) {
     // we have to access the underlying buffer and copy the metadata and value bytes
     // otherwise next event will overwrite the event before, since UnpackedObject

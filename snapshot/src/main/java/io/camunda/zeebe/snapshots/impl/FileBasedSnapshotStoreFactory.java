@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.sched.ActorSchedulingService;
-import io.camunda.zeebe.util.sched.ConcurrencyControl;
-import io.camunda.zeebe.util.sched.SchedulingHints;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;

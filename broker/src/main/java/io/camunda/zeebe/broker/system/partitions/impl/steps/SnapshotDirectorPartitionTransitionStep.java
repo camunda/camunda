@@ -11,8 +11,9 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.SchedulingHints;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
 
 public final class SnapshotDirectorPartitionTransitionStep implements PartitionTransitionStep {
@@ -67,7 +68,8 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
                 snapshotPeriod);
       }
 
-      final var future = context.getActorSchedulingService().submitActor(director);
+      final var future =
+          context.getActorSchedulingService().submitActor(director, SchedulingHints.cpuBound());
       future.onComplete(
           (ok, error) -> {
             if (error == null) {

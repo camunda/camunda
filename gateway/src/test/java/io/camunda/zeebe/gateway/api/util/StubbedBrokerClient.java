@@ -134,6 +134,10 @@ public final class StubbedBrokerClient implements BrokerClient {
     return (T) brokerRequests.get(0);
   }
 
+  public List<BrokerRequest> getBrokerRequests() {
+    return brokerRequests;
+  }
+
   public interface RequestStub<
           RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>>
       extends RequestHandler<RequestT, ResponseT> {

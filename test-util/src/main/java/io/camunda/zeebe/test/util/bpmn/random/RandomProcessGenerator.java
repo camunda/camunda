@@ -61,7 +61,9 @@ public final class RandomProcessGenerator {
     processBuilder = new ProcessBuilder(context);
   }
 
-  /** @return the build process and any potentially called child processes */
+  /**
+   * @return the build process and any potentially called child processes
+   */
   public List<BpmnModelInstance> buildProcesses() {
     return processBuilder.buildProcess();
   }

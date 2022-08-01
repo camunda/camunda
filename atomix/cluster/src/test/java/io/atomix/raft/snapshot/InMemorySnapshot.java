@@ -15,15 +15,16 @@
  */
 package io.atomix.raft.snapshot;
 
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotId;
+import io.camunda.zeebe.snapshots.SnapshotReservation;
 import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.NavigableMap;
@@ -129,9 +130,6 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
   }
 
   @Override
-  public void delete() {}
-
-  @Override
   public Path getPath() {
     return null;
   }
@@ -149,6 +147,11 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
   @Override
   public long getChecksum() {
     return 0;
+  }
+
+  @Override
+  public ActorFuture<SnapshotReservation> reserve() {
+    return null;
   }
 
   @Override

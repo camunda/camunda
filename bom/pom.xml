@@ -8,12 +8,12 @@
     <artifactId>camunda-release-parent</artifactId>
     <version>3.9.1</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
-    <relativePath />
+    <relativePath></relativePath>
   </parent>
 
   <groupId>io.camunda</groupId>
   <artifactId>zeebe-bom</artifactId>
-  <version>1.4.0-SNAPSHOT</version>
+  <version>8.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Zeebe BOM</name>
@@ -22,25 +22,39 @@
   <inceptionYear>2017</inceptionYear>
 
   <scm>
-    <connection>scm:git:git@github.com:camunda-cloud/zeebe.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda-cloud/zeebe.git</developerConnection>
+    <connection>scm:git:git@github.com:camunda/zeebe.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda/zeebe.git</developerConnection>
     <tag>HEAD</tag>
-    <url>https://github.com/camunda-cloud/zeebe</url>
+    <url>https://github.com/camunda/zeebe</url>
   </scm>
 
   <issueManagement>
     <system>GitHub</system>
-    <url>https://github.com/camunda-cloud/zeebe/issues</url>
+    <url>https://github.com/camunda/zeebe/issues</url>
   </issueManagement>
 
   <properties>
     <!-- release parent settings -->
-    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</nexus.snapshot.repository>
-    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/</nexus.release.repository>
+    <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://artifacts.camunda.com/artifactory/zeebe-io/</nexus.release.repository>
     <nexus.sonatype.url>https://s01.oss.sonatype.org</nexus.sonatype.url>
 
+    <!-- Zeebe Community License v1.1 header -->
+    <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
+
     <plugin.version.flatten>1.2.7</plugin.version.flatten>
-    <plugin.version.javadoc>3.3.2</plugin.version.javadoc>
+    <plugin.version.javadoc>3.4.0</plugin.version.javadoc>
+    <plugin.version.license>4.1</plugin.version.license>
+    <plugin.version.spotless>2.24.0</plugin.version.spotless>
+
+    <!--
+      Define the skipChecks property here ONLY for the plugins defined in this module;
+      for all others, they should be defined in the parent POM
+    -->
+    <skipChecks>false</skipChecks>
+    <license.skip>${skipChecks}</license.skip>
+    <spotless.apply.skip>${skipChecks}</spotless.apply.skip>
+    <spotless.checks.skip>${skipChecks}</spotless.checks.skip>
   </properties>
 
   <dependencyManagement>
@@ -87,7 +101,7 @@
       </snapshots>
       <id>zeebe</id>
       <name>Zeebe Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io/</url>
+      <url>https://artifacts.camunda.com/artifactory/zeebe-io/</url>
     </repository>
 
     <repository>
@@ -99,11 +113,51 @@
       </snapshots>
       <id>zeebe-snapshots</id>
       <name>Zeebe Snapshot Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</url>
+      <url>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/</url>
     </repository>
   </repositories>
 
   <build>
+    <pluginManagement>
+      <plugins>
+        <!-- Formatting plugin -->
+        <plugin>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>${plugin.version.spotless}</version>
+          <configuration>
+            <pom>
+              <!-- https://github.com/diffplug/spotless/blob/main/plugin-maven/README.md#sortpom -->
+              <sortPom></sortPom>
+            </pom>
+          </configuration>
+        </plugin>
+
+        <!-- LICENSE PLUGIN -->
+        <plugin>
+          <groupId>com.mycila</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>${plugin.version.license}</version>
+          <configuration>
+            <header>${license.header}</header>
+            <properties>
+              <owner>camunda services GmbH</owner>
+              <email>info@camunda.com</email>
+            </properties>
+            <includes>
+              <include>**/*.java</include>
+              <include>**/*.scala</include>
+            </includes>
+            <excludes>
+              <exclude>benchmarks/project/**/*</exclude>
+            </excludes>
+            <mapping>
+              <java>SLASHSTAR_STYLE</java>
+            </mapping>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
 
     <plugins>
       <plugin>
@@ -125,17 +179,17 @@
         <executions>
           <execution>
             <id>flatten</id>
-            <phase>process-resources</phase>
             <goals>
               <goal>flatten</goal>
             </goals>
+            <phase>process-resources</phase>
           </execution>
           <execution>
             <id>flatten.clean</id>
-            <phase>clean</phase>
             <goals>
               <goal>clean</goal>
             </goals>
+            <phase>clean</phase>
           </execution>
         </executions>
       </plugin>
@@ -143,6 +197,84 @@
   </build>
 
   <profiles>
+    <!-- profile to auto format -->
+    <profile>
+      <id>autoFormat</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
+            <configuration>
+              <ratchetFrom>origin/main</ratchetFrom>
+            </configuration>
+            <executions>
+              <execution>
+                <id>spotless-format</id>
+                <goals>
+                  <goal>apply</goal>
+                </goals>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>com.mycila</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>add-license</id>
+                <goals>
+                  <goal>format</goal>
+                </goals>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- profile to perform strict validation checks -->
+    <profile>
+      <id>checkFormat</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>spotless-check</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <phase>validate</phase>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>com.mycila</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>check-license</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <phase>validate</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <profile>
       <id>sonatype-oss-release</id>
       <properties>

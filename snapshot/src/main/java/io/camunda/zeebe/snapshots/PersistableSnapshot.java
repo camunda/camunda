@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.snapshots;
 
-import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.nio.file.Path;
 
 /** A volatile snapshot which can be persisted. */
@@ -27,7 +27,9 @@ public interface PersistableSnapshot {
    */
   ActorFuture<PersistedSnapshot> persist();
 
-  /** @return the snapshotId of the snapshot */
+  /**
+   * @return the snapshotId of the snapshot
+   */
   SnapshotId snapshotId();
 
   /**

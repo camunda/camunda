@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.io.File;
 
 /** Raft log builder. */
+@SuppressWarnings("UnusedReturnValue")
 public class SegmentedJournalBuilder {
 
   private static final String DEFAULT_NAME = "journal";
@@ -29,6 +30,7 @@ public class SegmentedJournalBuilder {
   private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
   private static final long DEFAULT_MIN_FREE_DISK_SPACE = 1024L * 1024 * 1024;
   private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
+  private static final boolean DEFAULT_PREALLOCATE_SEGMENT_FILES = true;
 
   protected String name = DEFAULT_NAME;
   protected File directory = new File(DEFAULT_DIRECTORY);
@@ -37,6 +39,7 @@ public class SegmentedJournalBuilder {
   private long freeDiskSpace = DEFAULT_MIN_FREE_DISK_SPACE;
   private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
   private long lastWrittenIndex = -1L;
+  private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
 
   protected SegmentedJournalBuilder() {}
 
@@ -93,8 +96,8 @@ public class SegmentedJournalBuilder {
    */
   public SegmentedJournalBuilder withMaxSegmentSize(final int maxSegmentSize) {
     checkArgument(
-        maxSegmentSize > JournalSegmentDescriptor.getEncodingLength(),
-        "maxSegmentSize must be greater than " + JournalSegmentDescriptor.getEncodingLength());
+        maxSegmentSize > SegmentDescriptor.getEncodingLength(),
+        "maxSegmentSize must be greater than " + SegmentDescriptor.getEncodingLength());
     this.maxSegmentSize = maxSegmentSize;
     return this;
   }
@@ -128,9 +131,31 @@ public class SegmentedJournalBuilder {
     return this;
   }
 
+  /**
+   * Sets whether segment files are pre-allocated at creation. If true, segment files are
+   * pre-allocated to the maximum segment size (see {@link #withMaxSegmentSize(int)}}) at creation
+   * before any writes happen.
+   *
+   * @param preallocateSegmentFiles true to preallocate files, false otherwise
+   * @return this builder for chaining
+   */
+  public SegmentedJournalBuilder withPreallocateSegmentFiles(
+      final boolean preallocateSegmentFiles) {
+    this.preallocateSegmentFiles = preallocateSegmentFiles;
+    return this;
+  }
+
   public SegmentedJournal build() {
-    final JournalIndex journalIndex = new SparseJournalIndex(journalIndexDensity);
+    final var journalIndex = new SparseJournalIndex(journalIndexDensity);
+    final var segmentAllocator =
+        preallocateSegmentFiles ? SegmentAllocator.fill() : SegmentAllocator.noop();
+    final var segmentLoader = new SegmentLoader(segmentAllocator);
+    final var segmentsManager =
+        new SegmentsManager(
+            journalIndex, maxSegmentSize, directory, lastWrittenIndex, name, segmentLoader);
+    final var journalMetrics = new JournalMetrics(name);
+
     return new SegmentedJournal(
-        name, directory, maxSegmentSize, freeDiskSpace, journalIndex, lastWrittenIndex);
+        directory, maxSegmentSize, freeDiskSpace, journalIndex, segmentsManager, journalMetrics);
   }
 }

@@ -28,9 +28,7 @@ public class ElasticsearchExporter implements Exporter {
 
   private Logger log = LoggerFactory.getLogger(getClass().getPackageName());
   private Controller controller;
-
   private ElasticsearchExporterConfiguration configuration;
-
   private ElasticsearchClient client;
 
   private long lastPosition = -1;
@@ -118,6 +116,7 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
+  // TODO: remove this and instead allow client to be inject-able for testing
   protected ElasticsearchClient createClient() {
     return new ElasticsearchClient(configuration);
   }
@@ -183,6 +182,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.processInstanceCreation) {
         createValueIndexTemplate(ValueType.PROCESS_INSTANCE_CREATION);
       }
+      if (index.processInstanceModification) {
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MODIFICATION);
+      }
       if (index.processMessageSubscription) {
         createValueIndexTemplate(ValueType.PROCESS_MESSAGE_SUBSCRIPTION);
       }
@@ -195,22 +197,25 @@ public class ElasticsearchExporter implements Exporter {
       if (index.decisionEvaluation) {
         createValueIndexTemplate(ValueType.DECISION_EVALUATION);
       }
+      if (index.checkpoint) {
+        createValueIndexTemplate(ValueType.CHECKPOINT);
+      }
     }
 
     indexTemplatesCreated = true;
   }
 
   private void createComponentTemplate() {
-    final String templateName = configuration.index.prefix;
-    final String filename = ZEEBE_RECORD_TEMPLATE_JSON;
-    if (!client.createComponentTemplate(templateName, filename)) {
-      log.warn("Put index template {} from file {} was not acknowledged", templateName, filename);
+    if (!client.putComponentTemplate()) {
+      log.warn("Failed to acknowledge the creation or update of the component template");
     }
   }
 
   private void createValueIndexTemplate(final ValueType valueType) {
     if (!client.putIndexTemplate(valueType)) {
-      log.warn("Put index template for value type {} was not acknowledged", valueType);
+      log.warn(
+          "Failed to acknowledge the creation or update of the index template for value type {}",
+          valueType);
     }
   }
 

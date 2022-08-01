@@ -10,7 +10,7 @@ package io.camunda.zeebe.dispatcher;
 import static io.camunda.zeebe.dispatcher.impl.PositionUtil.position;
 
 import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.camunda.zeebe.util.sched.ActorCondition;
+import io.camunda.zeebe.scheduler.ActorCondition;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import org.agrona.DirectBuffer;

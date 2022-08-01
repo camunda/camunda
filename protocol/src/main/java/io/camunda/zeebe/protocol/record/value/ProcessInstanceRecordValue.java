@@ -15,28 +15,43 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import org.immutables.value.Value;
 
 /**
  * Represents a process instance related command or event.
  *
  * <p>See {@link ProcessInstanceIntent} for intents.
  */
+@Value.Immutable
+@ImmutableProtocol(builder = ImmutableProcessInstanceRecordValue.Builder.class)
 public interface ProcessInstanceRecordValue extends RecordValue, ProcessInstanceRelated {
-  /** @return the BPMN process id this process instance belongs to. */
+  /**
+   * @return the BPMN process id this process instance belongs to.
+   */
   String getBpmnProcessId();
 
-  /** @return the version of the deployed process this instance belongs to. */
+  /**
+   * @return the version of the deployed process this instance belongs to.
+   */
   int getVersion();
 
-  /** @return the key of the deployed process this instance belongs to. */
+  /**
+   * @return the key of the deployed process this instance belongs to.
+   */
   long getProcessDefinitionKey();
 
-  /** @return the key of the process instance */
+  /**
+   * @return the key of the process instance
+   */
+  @Override
   long getProcessInstanceKey();
 
-  /** @return the id of the current process element, or empty if the id is not specified. */
+  /**
+   * @return the id of the current process element, or empty if the id is not specified.
+   */
   String getElementId();
 
   /**
@@ -45,7 +60,9 @@ public interface ProcessInstanceRecordValue extends RecordValue, ProcessInstance
    */
   long getFlowScopeKey();
 
-  /** @return the BPMN type of the current process element. */
+  /**
+   * @return the BPMN type of the current process element.
+   */
   BpmnElementType getBpmnElementType();
 
   /**

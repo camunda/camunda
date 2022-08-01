@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
-import io.atomix.raft.storage.log.PersistedRaftRecord;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 

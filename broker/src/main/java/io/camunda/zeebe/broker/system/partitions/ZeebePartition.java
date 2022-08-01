@@ -16,19 +16,19 @@ import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
+import io.camunda.zeebe.scheduler.startup.StartupProcess;
+import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
-import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
-import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
-import io.camunda.zeebe.util.startup.StartupProcess;
-import io.camunda.zeebe.util.startup.StartupStep;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -246,11 +246,11 @@ public final class ZeebePartition extends Actor
                 t -> {
                   if (t != null) {
                     onInstallFailure(t);
+                  } else {
+                    onRecoveredInternal();
                   }
                 });
-            onRecoveredInternal();
           } else {
-            LOG.error("Failed to install leader partition {}", context.getPartitionId(), error);
             onInstallFailure(error);
           }
         });
@@ -270,11 +270,11 @@ public final class ZeebePartition extends Actor
                   // Compare with the current term in case a new role transition happened
                   if (t != null) {
                     onInstallFailure(t);
+                  } else {
+                    onRecoveredInternal();
                   }
                 });
-            onRecoveredInternal();
           } else {
-            LOG.error("Failed to install follower partition {}", context.getPartitionId(), error);
             onInstallFailure(error);
           }
         });
@@ -340,6 +340,7 @@ public final class ZeebePartition extends Actor
           context.getPartitionId(),
           error.getMessage());
     } else {
+      LOG.error("Failed to install partition {}", context.getPartitionId(), error);
       handleRecoverableFailure();
     }
   }

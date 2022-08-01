@@ -11,9 +11,7 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.processing.streamprocessor.EventFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventImpl;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -23,18 +21,20 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.SchedulingHints;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.retry.BackOffRetryStrategy;
+import io.camunda.zeebe.scheduler.retry.EndlessRetryStrategy;
+import io.camunda.zeebe.scheduler.retry.RetryStrategy;
+import io.camunda.zeebe.streamprocessor.EventFilter;
+import io.camunda.zeebe.streamprocessor.TypedRecordImpl;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
-import io.camunda.zeebe.util.retry.BackOffRetryStrategy;
-import io.camunda.zeebe.util.retry.EndlessRetryStrategy;
-import io.camunda.zeebe.util.retry.RetryStrategy;
-import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.ActorSchedulingService;
-import io.camunda.zeebe.util.sched.SchedulingHints;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -234,7 +234,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         actor.getLifecyclePhase(),
         failure,
         failure);
-    actor.fail();
+    actor.fail(failure);
 
     if (failure instanceof UnrecoverableException) {
       healthReport = HealthReport.dead(this).withIssue(failure);
@@ -467,7 +467,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     private final RecordValues recordValues = new RecordValues();
     private final RecordMetadata rawMetadata = new RecordMetadata();
     private final List<ExporterContainer> containers;
-    private final TypedEventImpl typedEvent;
+    private final TypedRecordImpl typedEvent;
     private final ExporterMetrics exporterMetrics;
 
     private boolean shouldExport;
@@ -478,7 +478,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         final List<ExporterContainer> containers,
         final int partitionId) {
       this.containers = containers;
-      typedEvent = new TypedEventImpl(partitionId);
+      typedEvent = new TypedRecordImpl(partitionId);
       this.exporterMetrics = exporterMetrics;
     }
 
@@ -518,7 +518,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return true;
     }
 
-    TypedEventImpl getTypedEvent() {
+    TypedRecordImpl getTypedEvent() {
       return typedEvent;
     }
   }

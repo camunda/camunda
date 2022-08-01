@@ -174,7 +174,9 @@ public final class BufferUtil {
     return builder.toString();
   }
 
-  /** @return a new array that is a copy of the buffer's contents */
+  /**
+   * @return a new array that is a copy of the buffer's contents
+   */
   public static byte[] bufferAsArray(final DirectBuffer buffer) {
     final byte[] array;
 

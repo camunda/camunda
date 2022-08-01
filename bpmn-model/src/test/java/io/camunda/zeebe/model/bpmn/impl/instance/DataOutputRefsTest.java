@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.impl.instance;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class DataOutputRefsTest extends BpmnModelElementInstanceTest {
 
   @Override

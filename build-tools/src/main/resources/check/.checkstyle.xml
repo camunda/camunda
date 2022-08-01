@@ -11,9 +11,13 @@
     <property name="eachLine" value="true"/>
   </module>
 
+  <module name="SuppressWarningsFilter"/>
+
   <module name="TreeWalker">
     <property name="tabWidth" value="4"/>
     <property name="severity" value="error"/>
+
+    <module name="SuppressWarningsHolder"/>
 
     <module name="ConstantName"/>
 
@@ -150,7 +154,7 @@
     </module>
 
     <module name="IllegalImport">
-      <property name="illegalPkgs" value="org.testcontainers.shaded"/>
+      <property name="illegalPkgs" value="org.testcontainers.shaded,org.assertj.core.internal"/>
     </module>
   </module>
 </module>

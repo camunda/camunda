@@ -21,7 +21,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <p>This implementation assumes that blocks have no padding - they contain a contiguous series of
  * {@link LoggedEvent} which fits exactly within the block.
  */
-public final class LogStreamReaderImpl implements LogStreamReader {
+final class LogStreamReaderImpl implements LogStreamReader {
   private final LogStorageReader reader;
 
   private final LoggedEventImpl currentEvent;
@@ -32,7 +32,7 @@ public final class LogStreamReaderImpl implements LogStreamReader {
 
   private int nextEventOffset;
 
-  public LogStreamReaderImpl(final LogStorageReader reader) {
+  LogStreamReaderImpl(final LogStorageReader reader) {
     this.reader = reader;
 
     currentEvent = new LoggedEventImpl();

@@ -51,7 +51,7 @@ set -x
 
 mvn clean install -DskipTests -DskipChecks -T1C
 
-docker build --build-arg DISTBALL=dist/target/camunda-cloud-zeebe-*.tar.gz --build-arg APP_ENV=dev -t "gcr.io/zeebe-io/zeebe:$benchmark" .
+docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t "gcr.io/zeebe-io/zeebe:$benchmark" .
 docker push "gcr.io/zeebe-io/zeebe:$benchmark"
 
 cd "$pwd/benchmarks/project"

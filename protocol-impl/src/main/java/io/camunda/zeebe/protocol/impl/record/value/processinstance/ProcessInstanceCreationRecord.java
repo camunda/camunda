@@ -37,13 +37,17 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private final ArrayProperty<StringValue> fetchVariablesProperty =
       new ArrayProperty<>("fetchVariables", new StringValue());
 
+  private final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructionsProperty =
+      new ArrayProperty<>("startInstructions", new ProcessInstanceCreationStartInstruction());
+
   public ProcessInstanceCreationRecord() {
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(versionProperty)
         .declareProperty(variablesProperty)
-        .declareProperty(fetchVariablesProperty);
+        .declareProperty(fetchVariablesProperty)
+        .declareProperty(startInstructionsProperty);
   }
 
   @Override
@@ -51,6 +55,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
     return BufferUtil.bufferAsString(bpmnProcessIdProperty.getValue());
   }
 
+  @Override
   public int getVersion() {
     return versionProperty.getValue();
   }
@@ -63,6 +68,20 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   public ProcessInstanceCreationRecord setProcessDefinitionKey(final long key) {
     processDefinitionKeyProperty.setValue(key);
     return this;
+  }
+
+  @Override
+  public List<ProcessInstanceCreationStartInstructionValue> getStartInstructions() {
+    // we need to make a copy of each element in the ArrayProperty while iterating it because the
+    // inner values are updated during the iteration
+    return startInstructionsProperty.stream()
+        .map(
+            element -> {
+              final var elementCopy = new ProcessInstanceCreationStartInstruction();
+              elementCopy.copy(element);
+              return (ProcessInstanceCreationStartInstructionValue) elementCopy;
+            })
+        .toList();
   }
 
   public ProcessInstanceCreationRecord setVersion(final int version) {
@@ -78,6 +97,11 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   public ProcessInstanceCreationRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
+  }
+
+  @JsonIgnore
+  public boolean hasStartInstructions() {
+    return !startInstructionsProperty.isEmpty();
   }
 
   @Override
@@ -106,6 +130,22 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
 
   public ProcessInstanceCreationRecord setFetchVariables(final List<String> fetchVariables) {
     fetchVariables.forEach(variable -> fetchVariablesProperty.add().wrap(wrapString(variable)));
+    return this;
+  }
+
+  public ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions() {
+    return startInstructionsProperty;
+  }
+
+  public ProcessInstanceCreationRecord addStartInstructions(
+      final List<ProcessInstanceCreationStartInstruction> startInstructions) {
+    startInstructions.forEach(this::addStartInstruction);
+    return this;
+  }
+
+  public ProcessInstanceCreationRecord addStartInstruction(
+      final ProcessInstanceCreationStartInstruction startInstruction) {
+    startInstructionsProperty.add().copy(startInstruction);
     return this;
   }
 

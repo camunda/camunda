@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.util.health;
 
+import java.util.Objects;
 import java.util.StringJoiner;
 
 /**
@@ -77,6 +78,38 @@ public final class HealthReport {
 
   public HealthIssue getIssue() {
     return issue;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = component != null ? component.hashCode() : 0;
+    result = 31 * result + (componentName != null ? componentName.hashCode() : 0);
+    result = 31 * result + (status != null ? status.hashCode() : 0);
+    result = 31 * result + (issue != null ? issue.hashCode() : 0);
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final HealthReport that = (HealthReport) o;
+
+    if (!Objects.equals(component, that.component)) {
+      return false;
+    }
+    if (!Objects.equals(componentName, that.componentName)) {
+      return false;
+    }
+    if (status != that.status) {
+      return false;
+    }
+    return Objects.equals(issue, that.issue);
   }
 
   @Override

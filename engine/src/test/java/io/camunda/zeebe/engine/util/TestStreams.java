@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.util;
 
-import static io.camunda.zeebe.logstreams.impl.log.LogStorageAppender.LOG;
 import static io.camunda.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -17,14 +16,14 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -33,6 +32,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SyncLogStream;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.msgpack.UnpackedObject;
@@ -42,10 +42,11 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.Loggers;
-import io.camunda.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
@@ -62,11 +63,13 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.rules.TemporaryFolder;
+import org.slf4j.Logger;
 
 public final class TestStreams {
 
   private static final String SNAPSHOT_FOLDER = "snapshot";
   private static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
+  private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   static {
     TypedEventRegistry.EVENT_REGISTRY.forEach((v, c) -> VALUE_TYPES.put(c, v));
@@ -225,21 +228,32 @@ public final class TestStreams {
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     final SynchronousLogStream stream = getLogStream(log);
-    return buildStreamProcessor(stream, zeebeDbFactory, typedRecordProcessorFactory, true);
+    return buildStreamProcessor(stream, zeebeDbFactory, typedRecordProcessorFactory, null, true);
   }
 
   public StreamProcessor startStreamProcessorNotAwaitOpening(
       final String log,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
-    final SynchronousLogStream stream = getLogStream(log);
-    return buildStreamProcessor(stream, zeebeDbFactory, typedRecordProcessorFactory, false);
+    return startStreamProcessorNotAwaitOpening(
+        log, zeebeDbFactory, typedRecordProcessorFactory, null);
   }
 
-  private StreamProcessor buildStreamProcessor(
+  public StreamProcessor startStreamProcessorNotAwaitOpening(
+      final String log,
+      final ZeebeDbFactory zeebeDbFactory,
+      final TypedRecordProcessorFactory typedRecordProcessorFactory,
+      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory) {
+    final SynchronousLogStream stream = getLogStream(log);
+    return buildStreamProcessor(
+        stream, zeebeDbFactory, typedRecordProcessorFactory, streamWriterFactory, false);
+  }
+
+  public StreamProcessor buildStreamProcessor(
       final SynchronousLogStream stream,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory factory,
+      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory,
       final boolean awaitOpening) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
@@ -248,7 +262,7 @@ public final class TestStreams {
     final var recoveredAwaiter =
         new StreamProcessorLifecycleAware() {
           @Override
-          public void onRecovered(final ReadonlyProcessingContext context) {
+          public void onRecovered(final ReadonlyStreamProcessorContext context) {
             recoveredLatch.countDown();
           }
         };
@@ -263,7 +277,7 @@ public final class TestStreams {
     }
     final String logName = stream.getLogName();
 
-    final StreamProcessor streamProcessor =
+    final var builder =
         StreamProcessor.builder()
             .logStream(stream.getAsyncLogStream())
             .zeebeDb(zeebeDb)
@@ -272,8 +286,12 @@ public final class TestStreams {
             .listener(mockStreamProcessorListener)
             .streamProcessorFactory(wrappedFactory)
             .eventApplierFactory(eventApplierFactory)
-            .streamProcessorMode(streamProcessorMode)
-            .build();
+            .streamProcessorMode(streamProcessorMode);
+
+    if (streamWriterFactory != null) {
+      builder.typedStreamWriterFactory(streamWriterFactory);
+    }
+    final StreamProcessor streamProcessor = builder.build();
     final var openFuture = streamProcessor.openAsync(false);
 
     if (awaitOpening) { // and recovery
@@ -493,7 +511,8 @@ public final class TestStreams {
       if (closed) {
         return;
       }
-      Loggers.IO_LOGGER.debug("Close stream processor");
+
+      LOG.debug("Close stream processor");
       streamProcessor.closeAsync().join();
       zeebeDb.close();
       if (runtimePath.toFile().exists()) {

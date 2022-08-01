@@ -89,7 +89,7 @@ public class UnpackedObjectTest {
     }
 
     @Test
-    /* Motivated by https://github.com/camunda-cloud/zeebe/pull/7143 */
+    /* Motivated by https://github.com/camunda/zeebe/pull/7143 */
     public void shouldNotAccumulateSizeWithUndeclaredProperties() {
 
       // given

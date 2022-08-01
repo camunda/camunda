@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.raft.RaftServer.Role;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 /**
  * A PartitionTransitionStep is an action to be taken while transitioning the partition to a new
@@ -70,6 +70,8 @@ public interface PartitionTransitionStep {
   ActorFuture<Void> transitionTo(
       final PartitionTransitionContext context, final long term, final Role targetRole);
 
-  /** @return A log-friendly identification of the PartitionTransitionStep. */
+  /**
+   * @return A log-friendly identification of the PartitionTransitionStep.
+   */
   String getName();
 }

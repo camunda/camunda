@@ -23,7 +23,9 @@ import io.camunda.zeebe.model.bpmn.instance.di.LabeledShape;
 import java.util.Arrays;
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class BpmnShapeTest extends BpmnModelElementInstanceTest {
 
   @Override

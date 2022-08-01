@@ -27,11 +27,17 @@ import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
@@ -441,6 +447,18 @@ final class JsonSerializableToJsonTest {
         "{'type':'','processDefinitionVersion':-1,'elementId':'','bpmnProcessId':'','processDefinitionKey':-1,'processInstanceKey':-1,'elementInstanceKey':-1,'variables':{},'worker':'','retries':-1,'retryBackoff':0,'recurringTime':-1,'errorMessage':'','errorCode':'','customHeaders':{},'deadline':-1}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////// JobRecord with nullable variable //////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "JobRecordWithNullableVariable",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new JobRecord()
+                    .setVariables(
+                        new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{'foo':null}"))),
+        "{'type':'','errorMessage':'','bpmnProcessId':'','processDefinitionKey':-1,'processInstanceKey':-1,'elementId':'','elementInstanceKey':-1,'variables':{'foo':null},'deadline':-1,'worker':'','retries':-1,'retryBackoff':0,'recurringTime':-1,'errorCode':'','processDefinitionVersion':-1,'customHeaders':{}}"
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// MessageRecord /////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
@@ -711,9 +729,11 @@ final class JsonSerializableToJsonTest {
                   .setVariables(
                       new UnsafeBuffer(
                           MsgPackConverter.convertToMsgPack("{'foo':'bar','baz':'boz'}")))
+                  .addStartInstruction(
+                      new ProcessInstanceCreationStartInstruction().setElementId("element"))
                   .setProcessInstanceKey(instanceKey);
             },
-        "{'variables':{'foo':'bar','baz':'boz'},'bpmnProcessId':'process','processDefinitionKey':1,'version':1,'processInstanceKey':2}"
+        "{'variables':{'foo':'bar','baz':'boz'},'bpmnProcessId':'process','processDefinitionKey':1,'version':1,'processInstanceKey':2,'startInstructions':[{'elementId':'element'}]}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -722,7 +742,70 @@ final class JsonSerializableToJsonTest {
       {
         "Empty ProcessInstanceCreationRecord",
         (Supplier<UnifiedRecordValue>) ProcessInstanceCreationRecord::new,
-        "{'variables':{},'bpmnProcessId':'','processDefinitionKey':-1,'version':-1,'processInstanceKey':-1}"
+        "{'variables':{},'bpmnProcessId':'','processDefinitionKey':-1,'version':-1,'processInstanceKey':-1, 'startInstructions':[]}"
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// ProcessInstanceModificationRecord /////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProcessInstanceModificationRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final long key = 1L;
+              final var elementInstanceKeyToTerminate = 2L;
+              final var elementIdToActivate = "activity";
+              final var ancestorScopeKey = 3L;
+              final var variableInstructionElementId = "sub-process";
+
+              return new ProcessInstanceModificationRecord()
+                  .setProcessInstanceKey(key)
+                  .addTerminateInstruction(
+                      new ProcessInstanceModificationTerminateInstruction()
+                          .setElementInstanceKey(elementInstanceKeyToTerminate))
+                  .addActivateInstruction(
+                      new ProcessInstanceModificationActivateInstruction()
+                          .setElementId(elementIdToActivate)
+                          .setAncestorScopeKey(ancestorScopeKey)
+                          .addVariableInstruction(
+                              new ProcessInstanceModificationVariableInstruction()
+                                  .setVariables(VARIABLES_MSGPACK)
+                                  .setElementId(variableInstructionElementId)));
+            },
+        """
+        {
+          "processInstanceKey": 1,
+          "terminateInstructions": [{
+            "elementInstanceKey": 2
+          }],
+          "activateInstructions": [{
+            "ancestorScopeKey": 3,
+            "variableInstructions": [{
+              "elementId": "sub-process",
+              "variables": {
+                "foo": "bar"
+              }
+            }],
+            "elementId": "activity"
+          }]
+        }
+        """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty ProcessInstanceModificationRecord ///////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty ProcessInstanceModificationRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> new ProcessInstanceModificationRecord().setProcessInstanceKey(1L),
+        """
+        {
+          "processInstanceKey": 1,
+          "terminateInstructions": [],
+          "activateInstructions": []
+        }
+        """
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -939,6 +1022,20 @@ final class JsonSerializableToJsonTest {
               "evaluatedDecisions":[],
               "evaluationFailureMessage":"",
               "failedDecisionId":""
+          }
+          """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Checkpoint record ////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Checkpoint record",
+        (Supplier<UnifiedRecordValue>)
+            () -> new CheckpointRecord().setCheckpointId(1L).setCheckpointPosition(10L),
+        """
+          {
+              "checkpointId":1,
+              "checkpointPosition":10
           }
           """
       },

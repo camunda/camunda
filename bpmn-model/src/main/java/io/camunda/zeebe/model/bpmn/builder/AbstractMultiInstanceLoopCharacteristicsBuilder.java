@@ -23,7 +23,9 @@ import io.camunda.zeebe.model.bpmn.instance.LoopCardinality;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 
-/** @author Thorben Lindhauer */
+/**
+ * @author Thorben Lindhauer
+ */
 public class AbstractMultiInstanceLoopCharacteristicsBuilder<
         B extends AbstractMultiInstanceLoopCharacteristicsBuilder<B>>
     extends AbstractBaseElementBuilder<B, MultiInstanceLoopCharacteristics> {

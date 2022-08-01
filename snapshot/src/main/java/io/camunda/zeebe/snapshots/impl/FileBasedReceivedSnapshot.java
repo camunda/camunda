@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.sched.ActorControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -99,7 +99,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     final var tmpSnapshotDirectory = directory;
     try {
       FileUtil.ensureDirectoryExists(tmpSnapshotDirectory);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new SnapshotWriteException(
           String.format("Failed to ensure that directory %s exists.", tmpSnapshotDirectory), e);
     }
@@ -174,7 +174,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   private void writeReceivedSnapshotChunk(
       final SnapshotChunk snapshotChunk, final Path snapshotFile) throws SnapshotWriteException {
-    try (var channel =
+    try (final var channel =
         FileChannel.open(snapshotFile, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
       final ByteBuffer buffer = ByteBuffer.wrap(snapshotChunk.getContent());
 
@@ -185,7 +185,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       }
 
       channel.force(true);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new SnapshotWriteException(
           String.format("Failed to write snapshot chunk %s", snapshotChunk), e);
     }
@@ -273,7 +273,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         + "directory="
         + directory
         + ", snapshotStore="
-        + snapshotStore
+        + snapshotStore.getName()
         + ", metadata="
         + metadata
         + '}';

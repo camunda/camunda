@@ -11,6 +11,7 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
@@ -19,22 +20,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class EventBasedGatewayBlockBuilder implements BlockBuilder {
+public class EventBasedGatewayBlockBuilder extends AbstractBlockBuilder {
 
   private static final String CORRELATION_KEY_FIELD = "correlationKey";
   private static final String CORRELATION_KEY_VALUE = "default_correlation_key";
   private static final String MESSAGE_NAME_PREFIX = "message_";
 
-  private final String forkGatewayId;
   private final String joinGatewayId;
   private final List<Tuple<String, BlockBuilder>> branches = new ArrayList<>();
 
   public EventBasedGatewayBlockBuilder(final ConstructionContext context) {
+    super("fork_", context.getIdGenerator().nextId());
     final Random random = context.getRandom();
     final IDGenerator idGenerator = context.getIdGenerator();
     final int maxBranches = context.getMaxBranches();
 
-    forkGatewayId = "fork_" + idGenerator.nextId();
     joinGatewayId = "join_" + idGenerator.nextId();
 
     final var blockSequenceBuilderFactory = context.getBlockSequenceBuilderFactory();
@@ -54,7 +54,7 @@ public class EventBasedGatewayBlockBuilder implements BlockBuilder {
   public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
       final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
 
-    final var forkGateway = nodeBuilder.eventBasedGateway(forkGatewayId);
+    final var forkGateway = nodeBuilder.eventBasedGateway(getElementId());
 
     final var firstBranch = addBranch(forkGateway, branches.get(0));
     final var joinGateway = firstBranch.exclusiveGateway(joinGatewayId);
@@ -67,10 +67,10 @@ public class EventBasedGatewayBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(final Random random) {
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    final int branchNumber = random.nextInt(branches.size());
+    final int branchNumber = context.getRandom().nextInt(branches.size());
     final var branch = branches.get(branchNumber);
     final var blockBuilder = branch.getRight();
 
@@ -78,7 +78,7 @@ public class EventBasedGatewayBlockBuilder implements BlockBuilder {
         new StepPublishMessage(
             getMessageName(branch), CORRELATION_KEY_FIELD, CORRELATION_KEY_VALUE);
     result.appendDirectSuccessor(executionStep);
-    result.append(blockBuilder.findRandomExecutionPath(random));
+    result.append(blockBuilder.findRandomExecutionPath(context));
 
     return result;
   }

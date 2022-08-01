@@ -15,31 +15,47 @@
  */
 package io.camunda.zeebe.protocol.record.value.deployment;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import org.immutables.value.Value;
 
 /**
  * Represents a deployed decision. A decision belongs to a decision requirements graph (DRG/DRD)
  * that represents the DMN resource. The DMN resource itself is stored as part of the DRG (see
  * {@link DecisionRequirementsRecordValue}).
  */
+@Value.Immutable
+@ImmutableProtocol(builder = ImmutableDecisionRecordValue.Builder.class)
 public interface DecisionRecordValue extends RecordValue {
 
-  /** @return the ID of the decision in the DMN */
+  /**
+   * @return the ID of the decision in the DMN
+   */
   String getDecisionId();
 
-  /** @return the name of the decision in the DMN */
+  /**
+   * @return the name of the decision in the DMN
+   */
   String getDecisionName();
 
-  /** @return the version of the deployed decision */
+  /**
+   * @return the version of the deployed decision
+   */
   int getVersion();
 
-  /** @return the key of the deployed decision */
+  /**
+   * @return the key of the deployed decision
+   */
   long getDecisionKey();
 
-  /** @return the ID of the DRG in the DMN this decision belongs to */
+  /**
+   * @return the ID of the DRG in the DMN this decision belongs to
+   */
   String getDecisionRequirementsId();
 
-  /** @return the key of the deployed DRG this decision belongs to */
+  /**
+   * @return the key of the deployed DRG this decision belongs to
+   */
   long getDecisionRequirementsKey();
 
   /**

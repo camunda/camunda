@@ -8,24 +8,17 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
-import io.atomix.cluster.AtomixClusterBuilder;
-import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
-import io.atomix.cluster.protocol.GroupMembershipProtocol;
-import io.atomix.cluster.protocol.SwimMembershipProtocol;
-import io.atomix.utils.net.Address;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
-import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
+import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.shared.ActorClockConfiguration;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
-import io.camunda.zeebe.util.sched.ActorScheduler;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -59,8 +52,8 @@ public class StandaloneGateway
   private final GatewayCfg configuration;
   private final SpringGatewayBridge springGatewayBridge;
   private final ActorClockConfiguration clockConfig;
+  private final AtomixCluster atomixCluster;
 
-  private AtomixCluster atomixCluster;
   private Gateway gateway;
   private ActorScheduler actorScheduler;
 
@@ -68,10 +61,12 @@ public class StandaloneGateway
   public StandaloneGateway(
       final GatewayCfg configuration,
       final SpringGatewayBridge springGatewayBridge,
-      final ActorClockConfiguration clockConfig) {
+      final ActorClockConfiguration clockConfig,
+      final AtomixCluster atomixCluster) {
     this.configuration = configuration;
     this.springGatewayBridge = springGatewayBridge;
     this.clockConfig = clockConfig;
+    this.atomixCluster = atomixCluster;
   }
 
   public static void main(final String[] args) {
@@ -98,7 +93,6 @@ public class StandaloneGateway
       LOG.info("Starting standalone gateway with configuration {}", configuration.toJson());
     }
 
-    atomixCluster = createAtomixCluster(configuration.getCluster());
     actorScheduler = createActorScheduler(configuration);
     gateway = new Gateway(configuration, this::createBrokerClient, actorScheduler);
 
@@ -112,7 +106,7 @@ public class StandaloneGateway
 
     actorScheduler.start();
     atomixCluster.start();
-    gateway.start();
+    gateway.start().join(30, TimeUnit.SECONDS);
   }
 
   @Override
@@ -159,42 +153,6 @@ public class StandaloneGateway
         false);
   }
 
-  private AtomixCluster createAtomixCluster(final ClusterCfg config) {
-    final var membershipProtocol = createMembershipProtocol(config.getMembership());
-    final var builder =
-        AtomixCluster.builder()
-            .withMemberId(config.getMemberId())
-            .withAddress(Address.from(config.getHost(), config.getPort()))
-            .withClusterId(config.getClusterName())
-            .withMembershipProvider(
-                BootstrapDiscoveryProvider.builder()
-                    .withNodes(Address.from(config.getContactPoint()))
-                    .build())
-            .withMembershipProtocol(membershipProtocol)
-            .withMessageCompression(config.getMessageCompression());
-
-    if (config.getSecurity().isEnabled()) {
-      applyClusterSecurityConfig(config, builder);
-    }
-
-    return builder.build();
-  }
-
-  private GroupMembershipProtocol createMembershipProtocol(final MembershipCfg config) {
-    return SwimMembershipProtocol.builder()
-        .withFailureTimeout(config.getFailureTimeout())
-        .withGossipInterval(config.getGossipInterval())
-        .withProbeInterval(config.getProbeInterval())
-        .withProbeTimeout(config.getProbeTimeout())
-        .withBroadcastDisputes(config.isBroadcastDisputes())
-        .withBroadcastUpdates(config.isBroadcastUpdates())
-        .withGossipFanout(config.getGossipFanout())
-        .withNotifySuspect(config.isNotifySuspect())
-        .withSuspectProbes(config.getSuspectProbes())
-        .withSyncInterval(config.getSyncInterval())
-        .build();
-  }
-
   private ActorScheduler createActorScheduler(final GatewayCfg config) {
     return ActorScheduler.newActorScheduler()
         .setCpuBoundActorThreadCount(config.getThreads().getManagementThreads())
@@ -202,42 +160,5 @@ public class StandaloneGateway
         .setSchedulerName("gateway-scheduler")
         .setActorClock(clockConfig.getClock())
         .build();
-  }
-
-  private void applyClusterSecurityConfig(
-      final ClusterCfg config, final AtomixClusterBuilder builder) {
-    final var security = config.getSecurity();
-    final var certificateChainPath = security.getCertificateChainPath();
-    final var privateKeyPath = security.getPrivateKeyPath();
-
-    if (certificateChainPath == null) {
-      throw new IllegalArgumentException(
-          "Expected to have a valid certificate chain path for cluster security, but none "
-              + "configured");
-    }
-
-    if (privateKeyPath == null) {
-      throw new IllegalArgumentException(
-          "Expected to have a valid private key path for cluster security, but none was "
-              + "configured");
-    }
-
-    if (!certificateChainPath.canRead()) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected the configured cluster security certificate chain path '%s' to point to a"
-                  + " readable file, but it does not",
-              certificateChainPath));
-    }
-
-    if (!privateKeyPath.canRead()) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected the configured cluster security private key path '%s' to point to a "
-                  + "readable file, but it does not",
-              privateKeyPath));
-    }
-
-    builder.withSecurity(certificateChainPath, privateKeyPath);
   }
 }

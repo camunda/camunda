@@ -16,5 +16,7 @@
 
 package io.camunda.zeebe.model.bpmn.instance;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ParallelGatewayTest extends AbstractGatewayTest<ParallelGateway> {}

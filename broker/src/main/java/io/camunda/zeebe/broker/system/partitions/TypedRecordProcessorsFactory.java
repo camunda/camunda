@@ -7,11 +7,12 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 
 @FunctionalInterface
 public interface TypedRecordProcessorsFactory {
 
-  TypedRecordProcessors createTypedStreamProcessor(ProcessingContext processingContext);
+  TypedRecordProcessors createTypedStreamProcessor(
+      TypedRecordProcessorContext typedRecordProcessorContext);
 }

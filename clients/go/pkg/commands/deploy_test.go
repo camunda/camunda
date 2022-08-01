@@ -16,9 +16,9 @@ package commands
 
 import (
 	"context"
-	"github.com/camunda-cloud/zeebe/clients/go/internal/mock_pb"
-	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/v8/internal/mock_pb"
+	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 	"github.com/golang/mock/gomock"
 	"io/ioutil"
 	"testing"
@@ -35,6 +35,7 @@ func TestDeployCommand_AddResourceFile(t *testing.T) {
 	anotherName := "../../../java/src/test/resources/processes/another-demo-process.bpmn"
 	anotherBytes := readBytes(t, anotherName)
 
+	//nolint
 	request := &pb.DeployProcessRequest{
 		Processes: []*pb.ProcessRequestObject{
 			{
@@ -47,7 +48,7 @@ func TestDeployCommand_AddResourceFile(t *testing.T) {
 			},
 		},
 	}
-	stub := &pb.DeployProcessResponse{}
+	stub := &pb.DeployProcessResponse{} //nolint
 
 	client.EXPECT().DeployProcess(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
@@ -76,6 +77,7 @@ func TestDeployCommand_AddResource(t *testing.T) {
 	demoName := "../../../java/src/test/resources/processes/demo-process.bpmn"
 	demoBytes := readBytes(t, demoName)
 
+	//nolint
 	request := &pb.DeployProcessRequest{
 		Processes: []*pb.ProcessRequestObject{
 			{
@@ -84,7 +86,7 @@ func TestDeployCommand_AddResource(t *testing.T) {
 			},
 		},
 	}
-	stub := &pb.DeployProcessResponse{}
+	stub := &pb.DeployProcessResponse{} //nolint
 
 	client.EXPECT().DeployProcess(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 

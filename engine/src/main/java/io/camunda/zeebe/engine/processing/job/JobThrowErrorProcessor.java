@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.KeyGenerator;
@@ -124,8 +124,9 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       commandControl.reject(
           RejectionType.INVALID_STATE,
           "Expected to find active service task, but was " + serviceTaskInstance);
-    } else if (!eventScopeInstanceState.isAcceptingEvent(
-        foundCatchEvent.get().getElementInstance().getKey())) {
+    } else if (!eventScopeInstanceState.canTriggerEvent(
+        foundCatchEvent.get().getElementInstance().getKey(),
+        foundCatchEvent.get().getCatchEvent().getId())) {
       commandControl.reject(
           RejectionType.INVALID_STATE,
           "Expected to find event scope that is accepting events, but was "

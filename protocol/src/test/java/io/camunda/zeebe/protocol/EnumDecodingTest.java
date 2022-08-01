@@ -23,14 +23,14 @@ import io.camunda.zeebe.protocol.record.ErrorResponseEncoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public final class EnumDecodingTest {
+final class EnumDecodingTest {
 
-  protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-  protected final ErrorResponseEncoder bodyEncoder = new ErrorResponseEncoder();
-  protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-  protected final ErrorResponseDecoder bodyDecoder = new ErrorResponseDecoder();
+  private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+  private final ErrorResponseEncoder bodyEncoder = new ErrorResponseEncoder();
+  private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+  private final ErrorResponseDecoder bodyDecoder = new ErrorResponseDecoder();
 
   /**
    * This case is important for forward compatibility. Assume client in version X, broker in version
@@ -39,7 +39,7 @@ public final class EnumDecodingTest {
    * This should not result in an exception.
    */
   @Test
-  public void shouldHandleUnknownEnumValue() {
+  void shouldHandleUnknownEnumValue() {
     // given
     final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024]);
     headerEncoder

@@ -27,7 +27,9 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ModelElementTypeAssert
     extends AbstractAssert<ModelElementTypeAssert, ModelElementType> {
 

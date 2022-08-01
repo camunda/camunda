@@ -10,7 +10,7 @@ package io.camunda.zeebe.logstreams.impl.log;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 
-public class AppenderMetrics {
+final class AppenderMetrics {
 
   private static final Gauge LAST_COMMITTED_POSITION =
       Gauge.build()
@@ -45,23 +45,23 @@ public class AppenderMetrics {
 
   private final String partitionLabel;
 
-  public AppenderMetrics(final String partitionLabel) {
+  AppenderMetrics(final String partitionLabel) {
     this.partitionLabel = partitionLabel;
   }
 
-  public void setLastCommittedPosition(final long position) {
+  void setLastCommittedPosition(final long position) {
     LAST_COMMITTED_POSITION.labels(partitionLabel).set(position);
   }
 
-  public void setLastAppendedPosition(final long position) {
+  void setLastAppendedPosition(final long position) {
     LAST_APPENDED_POSITION.labels(partitionLabel).set(position);
   }
 
-  public Histogram.Timer startAppendLatencyTimer() {
+  Histogram.Timer startAppendLatencyTimer() {
     return WRITE_LATENCY.labels(partitionLabel).startTimer();
   }
 
-  public Histogram.Timer startCommitLatencyTimer() {
+  Histogram.Timer startCommitLatencyTimer() {
     return COMMIT_LATENCY.labels(partitionLabel).startTimer();
   }
 }

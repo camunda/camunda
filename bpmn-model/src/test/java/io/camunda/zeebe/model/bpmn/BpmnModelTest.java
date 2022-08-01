@@ -20,7 +20,9 @@ import io.camunda.zeebe.model.bpmn.util.ParseBpmnModelRule;
 import org.junit.Before;
 import org.junit.Rule;
 
-/** @author Daniel Meyer */
+/**
+ * @author Daniel Meyer
+ */
 public class BpmnModelTest {
 
   @Rule public final ParseBpmnModelRule parseBpmnModelRule = new ParseBpmnModelRule();

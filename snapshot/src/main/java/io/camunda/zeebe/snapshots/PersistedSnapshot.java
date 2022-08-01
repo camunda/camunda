@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.snapshots;
 
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.nio.file.Path;
 
@@ -48,10 +49,9 @@ public interface PersistedSnapshot extends CloseableSilently {
    */
   SnapshotChunkReader newChunkReader();
 
-  /** Deletes the snapshot. */
-  void delete();
-
-  /** @return a path to the snapshot location */
+  /**
+   * @return a path to the snapshot location
+   */
   Path getPath();
 
   /**
@@ -62,7 +62,9 @@ public interface PersistedSnapshot extends CloseableSilently {
    */
   long getCompactionBound();
 
-  /** @return the identifier of the snapshot */
+  /**
+   * @return the identifier of the snapshot
+   */
   String getId();
 
   /**
@@ -71,4 +73,18 @@ public interface PersistedSnapshot extends CloseableSilently {
    * @return the checksum of the snapshot
    */
   long getChecksum();
+
+  /**
+   * Reserves this snapshot. When the snapshot is reserved, it is not deleted until it is released.
+   * The reservation status is not persisted. After a restart the snapshot will be in state
+   * released.
+   *
+   * <p>Returns a SnapshotReservation if the snapshot exists and is successfully reserved. Fails
+   * exceptionally if the snapshot does not exist.
+   *
+   * <p>To release the reservation use {@link SnapshotReservation#release()}
+   *
+   * @return future with SnapshotReservation
+   */
+  ActorFuture<SnapshotReservation> reserve();
 }

@@ -29,7 +29,9 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class DataOutputImpl extends ItemAwareElementImpl implements DataOutput {
 
   protected static Attribute<String> nameAttribute;

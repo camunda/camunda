@@ -19,6 +19,8 @@ public final class Loggers {
       LoggerFactory.getLogger("io.camunda.zeebe.broker.transport");
   public static final Logger PROCESS_REPOSITORY_LOGGER =
       LoggerFactory.getLogger("io.camunda.zeebe.broker.process.repository");
+  public static final Logger LOGSTREAMS_LOGGER =
+      LoggerFactory.getLogger("io.camunda.zeebe.broker.logstreams");
 
   public static final Logger EXPORTER_LOGGER =
       LoggerFactory.getLogger("io.camunda.zeebe.broker.exporter");

@@ -8,9 +8,9 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.sched.ConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.io.IOException;
 import java.nio.file.Paths;
 

@@ -89,11 +89,11 @@ pipeline {
 
         stage('Build Distribution') {
             environment {
-                VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
+                VERSION = readMavenPom(file: 'bom/pom.xml').getVersion()
             }
             steps {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
-                    // since zbctl is included in camunda-cloud-zeebe.tar.gz, which is produced by
+                    // since zbctl is included in camunda-zeebe.tar.gz, which is produced by
                     // maven, we have to build the go artifacts first
                     container('golang') {
                         sh '.ci/scripts/distribution/build-go.sh'
@@ -102,13 +102,13 @@ pipeline {
 
                     // to simplify building the Docker image, we copy the distribution to a fixed
                     // filename that doesn't include the version
-                    runMavenContainerCommand('cp dist/target/camunda-cloud-zeebe-*.tar.gz camunda-cloud-zeebe.tar.gz')
+                    runMavenContainerCommand('cp dist/target/camunda-zeebe-*.tar.gz camunda-zeebe.tar.gz')
 
                     container('python') {
-                        gcloudSaveTmpFile('zeebe-distro', ['camunda-cloud-zeebe.tar.gz'])
+                        camundaGCloudSaveTmpFile('zeebe-distro', ['camunda-zeebe.tar.gz'])
 
                         sh "tar -cf zeebe-build.tar ./m2-repository/io/camunda/*/${VERSION}/*"
-                        gcloudSaveTmpFile('zeebe-build', ['zeebe-build.tar'])
+                        camundaGCloudSaveTmpFile('zeebe-build', ['zeebe-build.tar'])
                     }
                 }
             }
@@ -251,33 +251,33 @@ pipeline {
 
                     stages {
                         stage('Prepare') {
+                            environment {
+                                DOCKER_BUILDKIT = 1
+                                IMAGE = "camunda/zeebe"
+                                TAG = "current-test"
+                            }
+
                             steps {
                                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
                                     prepareMavenContainer()
 
                                     container('python') {
-                                        gcloudRestoreTmpFile('zeebe-build', ['zeebe-build.tar'])
+                                        camundaGCloudRestoreTmpFile('zeebe-build', ['zeebe-build.tar'])
+                                        camundaGCloudRestoreTmpFile('zeebe-distro', ['camunda-zeebe.tar.gz'])
                                         sh "tar -xf zeebe-build.tar"
                                     }
-                                    runMavenContainerCommand('.ci/scripts/distribution/it-prepare.sh')
-                                }
-                            }
-                        }
 
-                        stage('Build Docker Image') {
-                            environment {
-                                DOCKER_BUILDKIT = "1"
-                                IMAGE = "camunda/zeebe"
-                                TAG = 'current-test'
-                            }
-
-                            steps {
-                                timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
-                                    container('python') {
-                                        gcloudRestoreTmpFile('zeebe-distro', ['camunda-cloud-zeebe.tar.gz'])
-                                    }
                                     container('docker') {
-                                        sh '.ci/scripts/docker/build.sh'
+                                        sh '.ci/scripts/docker/local-registry.sh'
+                                    }
+
+                                    withVault(
+                                        [vaultSecrets: [
+                                            [path: 'secret/products/zeebe/ci/jenkins', secretValues: [
+                                                [envVar: 'TC_CLOUD_TOKEN', vaultKey: 'TC_CLOUD_TOKEN'],
+                                            ]],
+                                    ]]) {
+                                        runMavenContainerCommand('.ci/scripts/distribution/it-prepare.sh')
                                     }
                                 }
                             }
@@ -289,6 +289,7 @@ pipeline {
                                 MAVEN_PARALLELISM = 2
                                 SUREFIRE_FORK_COUNT = 12
                                 JUNIT_THREAD_COUNT = 12
+                                ZEEBE_TEST_DOCKER_IMAGE = "localhost:5000/camunda/zeebe:current-test"
                             }
 
                             steps {
@@ -355,7 +356,7 @@ pipeline {
             }
             environment {
                 IMAGE = "gcr.io/zeebe-io/zeebe"
-                VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
+                VERSION = readMavenPom(file: 'bom/pom.xml').getVersion()
                 TAG = "${env.VERSION}-${env.GIT_COMMIT}"
                 DOCKER_GCR = credentials("zeebe-gcr-serviceaccount-json")
                 ZEEBE_AUTHORIZATION_SERVER_URL = 'https://login.cloud.ultrawombat.com/oauth/token'
@@ -374,7 +375,7 @@ pipeline {
                     withVault(
                         [vaultSecrets:
                              [
-                                 [path        : 'secret/common/ci-zeebe/testbench-secrets-1.x-prod',
+                                 [path        : 'secret/products/zeebe/ci/testbench-secrets-1.x-prod',
                                   secretValues:
                                       [
                                           [envVar: 'ZEEBE_CLIENT_SECRET', vaultKey: 'clientSecret'],
@@ -393,44 +394,6 @@ pipeline {
                 failure {
                     script {
                         currentBuild.description = 'Failure in QA Stage'
-                    }
-                }
-            }
-        }
-
-        stage('Upload') {
-            when { allOf { branch mainBranchName; not { triggeredBy 'TimerTrigger' } } }
-            steps {
-                retry(3) {
-                    timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
-                        runMavenContainerCommand('.ci/scripts/distribution/upload.sh')
-                    }
-                }
-            }
-        }
-
-        stage('Post') {
-            when { not { triggeredBy 'TimerTrigger' } }
-
-            parallel {
-                stage('Docker') {
-                    when { branch mainBranchName }
-
-                    environment {
-                        VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
-                    }
-
-                    steps {
-                        retry(3) {
-                            timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
-                                build job: 'zeebe-docker', parameters: [
-                                    string(name: 'BRANCH', value: env.BRANCH_NAME),
-                                    string(name: 'VERSION', value: env.VERSION),
-                                    booleanParam(name: 'IS_LATEST', value: false),
-                                    booleanParam(name: 'PUSH', value: isMainBranch)
-                                ]
-                            }
-                        }
                     }
                 }
             }

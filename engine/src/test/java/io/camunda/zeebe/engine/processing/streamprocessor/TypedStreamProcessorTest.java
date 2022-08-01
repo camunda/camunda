@@ -14,9 +14,10 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.util.RecordStream;
@@ -30,9 +31,9 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.TestUtil;
-import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Before;
@@ -191,8 +192,8 @@ public final class TypedStreamProcessorTest {
     @Override
     public void processRecord(
         final TypedRecord<DeploymentRecord> record,
-        final TypedResponseWriter responseWriter,
-        final TypedStreamWriter streamWriter) {
+        final LegacyTypedResponseWriter responseWriter,
+        final LegacyTypedStreamWriter streamWriter) {
       if (record.getKey() == 0) {
         throw new RuntimeException("expected");
       }
@@ -207,8 +208,8 @@ public final class TypedStreamProcessorTest {
     @Override
     public void processRecord(
         final TypedRecord<DeploymentRecord> record,
-        final TypedResponseWriter responseWriter,
-        final TypedStreamWriter streamWriter) {
+        final LegacyTypedResponseWriter responseWriter,
+        final LegacyTypedStreamWriter streamWriter) {
       streamWriter.appendFollowUpEvent(
           keyGenerator.nextKey(), DeploymentIntent.CREATED, record.getValue());
       streamWriter.flush();

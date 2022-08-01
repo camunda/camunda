@@ -31,7 +31,9 @@ import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
 import org.camunda.bpm.model.xml.type.reference.AttributeReference;
 import org.camunda.bpm.model.xml.type.reference.ElementReference;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class MessageEventDefinitionImpl extends EventDefinitionImpl
     implements MessageEventDefinition {
 

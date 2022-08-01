@@ -16,6 +16,7 @@
  */
 package io.atomix.raft.storage.log;
 
+import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 
@@ -43,7 +44,9 @@ public interface IndexedRaftLogEntry {
    */
   RaftEntry entry();
 
-  /** @return true if {@code entry()} is an {@link ApplicationEntry}, otherwise false */
+  /**
+   * @return true if {@code entry()} is an {@link ApplicationEntry}, otherwise false
+   */
   default boolean isApplicationEntry() {
     return false;
   }

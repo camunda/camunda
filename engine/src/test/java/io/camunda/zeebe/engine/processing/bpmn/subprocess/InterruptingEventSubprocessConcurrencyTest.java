@@ -33,7 +33,7 @@ public class InterruptingEventSubprocessConcurrencyTest {
   @Rule public final EngineRule engineRule = EngineRule.singlePartition();
 
   @Test
-  // https://github.com/camunda-cloud/zeebe/issues/6552
+  // https://github.com/camunda/zeebe/issues/6552
   public void shouldEndProcess() {
     // given
     final ProcessBuilder process = Bpmn.createExecutableProcess(PROCESS_ID);
@@ -101,7 +101,7 @@ public class InterruptingEventSubprocessConcurrencyTest {
   }
 
   @Test
-  // https://github.com/camunda-cloud/zeebe/issues/6565
+  // https://github.com/camunda/zeebe/issues/6565
   public void shouldEndProcessWithParallelFlow() {
     // given
     final ProcessBuilder process = Bpmn.createExecutableProcess(PROCESS_ID);

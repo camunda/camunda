@@ -10,10 +10,10 @@ package io.camunda.zeebe.transport.impl;
 import static io.camunda.zeebe.transport.impl.AtomixServerTransport.topicName;
 
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.RequestType;
-import io.camunda.zeebe.util.sched.ScheduledTimer;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;

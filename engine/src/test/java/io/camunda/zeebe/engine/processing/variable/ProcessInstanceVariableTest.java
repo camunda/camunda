@@ -313,7 +313,7 @@ public final class ProcessInstanceVariableTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withIntent(VariableIntent.UPDATED)
                 .withProcessInstanceKey(processInstanceKey))

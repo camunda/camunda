@@ -16,11 +16,11 @@ import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
 import io.camunda.zeebe.logstreams.util.LogStreamWriterRule;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -30,9 +30,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
 
 public final class LogStreamBatchWriterTest {
   private static final DirectBuffer EVENT_VALUE_1 = wrapString("foo");
@@ -44,19 +42,13 @@ public final class LogStreamBatchWriterTest {
   @Rule
   public final ControlledActorSchedulerRule writerScheduler = new ControlledActorSchedulerRule();
 
-  @Rule public ExpectedException expectedException = ExpectedException.none();
-
-  public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  public final LogStreamRule logStreamRule = LogStreamRule.startByDefault(temporaryFolder);
+  public final LogStreamRule logStreamRule = LogStreamRule.startByDefault();
   public final LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
   public final LogStreamWriterRule writerRule = new LogStreamWriterRule(logStreamRule);
 
   @Rule
   public RuleChain ruleChain =
-      RuleChain.outerRule(temporaryFolder)
-          .around(logStreamRule)
-          .around(writerRule)
-          .around(readerRule);
+      RuleChain.outerRule(logStreamRule).around(writerRule).around(readerRule);
 
   private LogStreamBatchWriter writer;
 

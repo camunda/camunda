@@ -12,21 +12,21 @@ In order to do this please follow [this guide](../../gateway-protocol-impl/READM
 To regenerate the gateway mock `internal/mock_pb/mock_gateway.go` run [`mockgen`](https://github.com/golang/mock#installation):
 
 ```
-GO111MODULE=off mockgen github.com/camunda-cloud/zeebe/clients/go/pkg/pb GatewayClient,Gateway_ActivateJobsClient > internal/mock_pb/mock_gateway.go
+GO111MODULE=off mockgen github.com/camunda/zeebe/clients/go/v8/pkg/pb GatewayClient,Gateway_ActivateJobsClient > internal/mock_pb/mock_gateway.go
 ```
 
 If you see errors regarding packages which are not found then as alternative you can try this:
 
 ```
-GO111MODULE=off mockgen -source $GOPATH/src/github.com/camunda-cloud/zeebe/clients/go/pkg/pb/gateway.pb.go GatewayClient,Gateway_ActivateJobsClient > internal/mock_pb/mock_gateway.go
+GO111MODULE=off mockgen -source $GOPATH/src/github.com/camunda/zeebe/clients/go/v8/pkg/pb/gateway.pb.go GatewayClient,Gateway_ActivateJobsClient > internal/mock_pb/mock_gateway.go
 ```
 
 ### Integration tests
 
-To run the integration tests, a Docker image for Zeebe must be built with the tag 'current-test'. To do that you can run (in the camunda-cloud/zeebe dir):
+To run the integration tests, a Docker image for Zeebe must be built with the tag 'current-test'. To do that you can run (in the camunda/zeebe dir):
 
 ```
-docker build --build-arg DISTBALL=dist/target/camunda-cloud-zeebe*.tar.gz -t camunda/zeebe:current-test --target app .
+docker build --build-arg DISTBALL=dist/target/camunda-zeebe*.tar.gz -t camunda/zeebe:current-test --target app .
 ```
 
 To add new zbctl tests, you must generate a golden file with the expected output of the command you are testing. The tests ignore numbers so you can leave any keys or timestamps in your golden file, even though these will most likely be different from test command's output. However, non-numeric variables are not ignored. For instance, the help menu contains:

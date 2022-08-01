@@ -16,9 +16,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
-import io.camunda.zeebe.util.sched.ActorSchedulingService;
-import io.camunda.zeebe.util.sched.TestConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.time.Duration;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;

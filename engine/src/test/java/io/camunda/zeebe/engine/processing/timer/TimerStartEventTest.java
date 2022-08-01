@@ -64,7 +64,7 @@ public final class TimerStartEventTest {
   private static final BpmnModelInstance FEEL_DATE_TIME_EXPRESSION_MODEL =
       Bpmn.createExecutableProcess("process_5")
           .startEvent("start_5")
-          .timerWithDateExpression("date and time(date(\"3978-11-25\"),time(\"T00:00:00@UTC\"))")
+          .timerWithDateExpression("date and time(date(\"2178-11-25\"),time(\"T00:00:00@UTC\"))")
           .endEvent("end_5")
           .done();
 
@@ -143,7 +143,7 @@ public final class TimerStartEventTest {
         .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
 
     final long expected =
-        ZonedDateTime.of(LocalDate.of(3978, 11, 25), LocalTime.of(0, 0, 0), ZoneId.of("UTC"))
+        ZonedDateTime.of(LocalDate.of(2178, 11, 25), LocalTime.of(0, 0, 0), ZoneId.of("UTC"))
             .toInstant()
             .toEpochMilli();
     assertThat(timerRecord.getDueDate()).isEqualTo(expected);
@@ -876,5 +876,320 @@ public final class TimerStartEventTest {
                 .withElementType(BpmnElementType.START_EVENT))
         .extracting(r -> r.getValue().getElementId())
         .containsOnly("timer_start");
+  }
+
+  @Test
+  public void shouldWriteTriggeredEventWithProcessInstanceKey() {
+    // given
+    final var deployedProcess =
+        engine
+            .deployment()
+            .withXmlResource(SIMPLE_MODEL)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+
+    final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
+
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CREATED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .exists())
+        .isTrue();
+
+    // when
+    engine.increaseTime(Duration.ofSeconds(2));
+
+    // then
+    final var processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.PROCESS)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getKey();
+
+    final var timerTriggered =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst();
+
+    Assertions.assertThat(timerTriggered.getValue())
+        .hasProcessDefinitionKey(processDefinitionKey)
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasElementInstanceKey(-1L)
+        .hasTargetElementId("start_1");
+  }
+
+  @Test
+  public void shouldNotTriggerBeforeTheStartTime() {
+    // given
+    final ZonedDateTime start =
+        ZonedDateTime.ofInstant(
+            Instant.ofEpochMilli(engine.getClock().getCurrentTimeInMillis()),
+            ZoneId.systemDefault());
+
+    final long firstDueDate = start.plusSeconds(10).toInstant().toEpochMilli();
+    final long secondDueDate = start.plusSeconds(40).toInstant().toEpochMilli();
+    final BpmnModelInstance firstModel =
+        Bpmn.createExecutableProcess("process_1")
+            .startEvent("start_1")
+            .timerWithCycle(String.format("R1/%s/PT10S", start.plusSeconds(10)))
+            .endEvent("end_1")
+            .done();
+
+    final BpmnModelInstance secondModel =
+        Bpmn.createExecutableProcess("process_2")
+            .startEvent("start_2")
+            .timerWithCycle(String.format("R1/%s/PT10S", start.plusSeconds(40)))
+            .endEvent("end_2")
+            .done();
+
+    final var firstDeployment =
+        engine
+            .deployment()
+            .withXmlResource(firstModel)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+
+    final var secondDeployment =
+        engine
+            .deployment()
+            .withXmlResource(secondModel)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+
+    // when
+    engine.increaseTime(Duration.ofSeconds(20));
+
+    // then
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessDefinitionKey(firstDeployment.getProcessDefinitionKey())
+                .exists())
+        .isTrue();
+
+    final TimerRecordValue timerRecord =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(firstDeployment.getProcessDefinitionKey())
+            .getFirst()
+            .getValue();
+
+    Assertions.assertThat(timerRecord)
+        .hasDueDate(firstDueDate)
+        .hasTargetElementId("start_1")
+        .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withElementId("end_1")
+                .withProcessDefinitionKey(firstDeployment.getProcessDefinitionKey())
+                .exists())
+        .isTrue();
+
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2))
+        .extracting(Record::getValue)
+        .extracting(TimerRecordValue::getProcessDefinitionKey, TimerRecordValue::getDueDate)
+        .contains(
+            tuple(firstDeployment.getProcessDefinitionKey(), firstDueDate),
+            tuple(secondDeployment.getProcessDefinitionKey(), secondDueDate));
+
+    // when
+    engine.increaseTime(Duration.ofSeconds(20));
+
+    // then
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessDefinitionKey(secondDeployment.getProcessDefinitionKey())
+                .exists())
+        .isTrue();
+
+    final TimerRecordValue secondTimerRecord =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(secondDeployment.getProcessDefinitionKey())
+            .getFirst()
+            .getValue();
+
+    Assertions.assertThat(secondTimerRecord)
+        .hasDueDate(secondDueDate)
+        .hasTargetElementId("start_2")
+        .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementId("process_2")
+                .withProcessDefinitionKey(secondDeployment.getProcessDefinitionKey())
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldTriggerOnlyTwice() {
+    // given
+    final ZonedDateTime start =
+        ZonedDateTime.ofInstant(
+                Instant.ofEpochMilli(engine.getClock().getCurrentTimeInMillis()),
+                ZoneId.systemDefault())
+            .plusSeconds(10);
+
+    final BpmnModelInstance firstModel =
+        Bpmn.createExecutableProcess("process_1")
+            .startEvent("start_1")
+            .timerWithCycle(String.format("R2/%s/PT10S", start))
+            .endEvent("end_1")
+            .done();
+
+    final BpmnModelInstance secondModel =
+        Bpmn.createExecutableProcess("process_2")
+            .startEvent("start_2")
+            .timerWithCycle(String.format("R3/%s/PT10S", start))
+            .endEvent("end_2")
+            .done();
+
+    final var firstDeployment =
+        engine
+            .deployment()
+            .withXmlResource(firstModel)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+
+    final var secondDeployment =
+        engine
+            .deployment()
+            .withXmlResource(secondModel)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+    final long firstDeploymentProcessDefinitionKey = firstDeployment.getProcessDefinitionKey();
+    final long secondDeploymentProcessDefinitionKey = secondDeployment.getProcessDefinitionKey();
+
+    // when
+    engine.increaseTime(Duration.ofSeconds(25));
+
+    // then
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessDefinitionKey(firstDeploymentProcessDefinitionKey)
+                .exists())
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessDefinitionKey(secondDeploymentProcessDefinitionKey)
+                .exists())
+        .isTrue();
+
+    // when
+    engine.increaseTime(Duration.ofSeconds(5));
+
+    // then
+    assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(4))
+        .extracting(record -> record.getValue().getProcessDefinitionKey())
+        .containsExactly(
+            firstDeploymentProcessDefinitionKey,
+            secondDeploymentProcessDefinitionKey,
+            firstDeploymentProcessDefinitionKey,
+            secondDeploymentProcessDefinitionKey);
+
+    // when
+    engine.increaseTime(Duration.ofSeconds(10));
+
+    // then
+    assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(5))
+        .extracting(record -> record.getValue().getProcessDefinitionKey())
+        .containsExactly(
+            firstDeploymentProcessDefinitionKey,
+            secondDeploymentProcessDefinitionKey,
+            firstDeploymentProcessDefinitionKey,
+            secondDeploymentProcessDefinitionKey,
+            secondDeploymentProcessDefinitionKey);
+  }
+
+  @Test
+  public void shouldAvoidTimeShifting() {
+    // given
+    // Set the start time to 10 seconds later
+    final ZonedDateTime start =
+        ZonedDateTime.ofInstant(
+                Instant.ofEpochMilli(engine.getClock().getCurrentTimeInMillis()),
+                ZoneId.systemDefault())
+            .plusSeconds(10);
+
+    final long dueDate = start.toInstant().toEpochMilli();
+    final long lastDueDate = dueDate + 10_000L;
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .timerWithCycle(String.format("R2/%s/PT10S", start))
+            .endEvent("end")
+            .done();
+    final var deployedProcess =
+        engine
+            .deployment()
+            .withXmlResource(model)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+    final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
+
+    // when
+    engine.increaseTime(Duration.ofSeconds(15));
+
+    // then
+    final TimerRecordValue timerRecord =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
+            .getFirst()
+            .getValue();
+
+    Assertions.assertThat(timerRecord)
+        .hasDueDate(dueDate)
+        .hasTargetElementId("start")
+        .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementId("end")
+                .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
+                .exists())
+        .isTrue();
+
+    // when
+    engine.increaseTime(Duration.ofSeconds(5));
+
+    // then
+    final TimerRecordValue lastTimerRecord =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
+            .skip(1)
+            .getFirst()
+            .getValue();
+
+    Assertions.assertThat(lastTimerRecord)
+        .hasDueDate(lastDueDate)
+        .hasTargetElementId("start")
+        .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
+
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .limit(2)
+                .count())
+        .isEqualTo(2);
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                .withElementId("process")
+                .withProcessDefinitionKey(processDefinitionKey)
+                .limit(2)
+                .count())
+        .isEqualTo(2);
   }
 }

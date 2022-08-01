@@ -15,8 +15,9 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployProcessRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
@@ -28,10 +29,13 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Resource;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
@@ -42,12 +46,23 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class RequestMapper {
 
-  public static BrokerDeployProcessRequest toDeployProcessRequest(
+  public static BrokerDeployResourceRequest toDeployProcessRequest(
       final DeployProcessRequest grpcRequest) {
-    final BrokerDeployProcessRequest brokerRequest = new BrokerDeployProcessRequest();
+    final BrokerDeployResourceRequest brokerRequest = new BrokerDeployResourceRequest();
 
     for (final ProcessRequestObject process : grpcRequest.getProcessesList()) {
       brokerRequest.addResource(process.getDefinition().toByteArray(), process.getName());
+    }
+
+    return brokerRequest;
+  }
+
+  public static BrokerDeployResourceRequest toDeployResourceRequest(
+      final DeployResourceRequest grpcRequest) {
+    final BrokerDeployResourceRequest brokerRequest = new BrokerDeployResourceRequest();
+
+    for (final Resource resource : grpcRequest.getResourcesList()) {
+      brokerRequest.addResource(resource.getContent().toByteArray(), resource.getName());
     }
 
     return brokerRequest;
@@ -97,7 +112,8 @@ public final class RequestMapper {
         .setBpmnProcessId(grpcRequest.getBpmnProcessId())
         .setKey(grpcRequest.getProcessDefinitionKey())
         .setVersion(grpcRequest.getVersion())
-        .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+        .setVariables(ensureJsonSet(grpcRequest.getVariables()))
+        .setStartInstructions(grpcRequest.getStartInstructionsList());
 
     return brokerRequest;
   }
@@ -114,6 +130,7 @@ public final class RequestMapper {
         .setKey(request.getProcessDefinitionKey())
         .setVersion(request.getVersion())
         .setVariables(ensureJsonSet(request.getVariables()))
+        .setStartInstructions(request.getStartInstructionsList())
         .setFetchVariables(grpcRequest.getFetchVariablesList());
 
     return brokerRequest;
@@ -154,7 +171,15 @@ public final class RequestMapper {
     return new BrokerResolveIncidentRequest(grpcRequest.getIncidentKey());
   }
 
-  static DirectBuffer ensureJsonSet(final String value) {
+  public static BrokerModifyProcessInstanceRequest toModifyProcessInstanceRequest(
+      final ModifyProcessInstanceRequest grpcRequest) {
+    return new BrokerModifyProcessInstanceRequest()
+        .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
+        .addActivateInstructions(grpcRequest.getActivateInstructionsList())
+        .addTerminateInstructions(grpcRequest.getTerminateInstructionsList());
+  }
+
+  public static DirectBuffer ensureJsonSet(final String value) {
     if (value == null || value.trim().isEmpty()) {
       return DocumentValue.EMPTY_DOCUMENT;
     } else {

@@ -14,7 +14,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg.NodeCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
-import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
 import java.security.cert.CertificateException;

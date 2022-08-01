@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -48,7 +47,6 @@ public final class BpmnStateTransitionBehavior {
   private final ProcessEngineMetrics metrics;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
-  private final ElementInstanceState elementInstanceState;
 
   public BpmnStateTransitionBehavior(
       final KeyGenerator keyGenerator,
@@ -56,18 +54,18 @@ public final class BpmnStateTransitionBehavior {
       final ProcessEngineMetrics metrics,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookUp,
-      final Writers writers,
-      final ElementInstanceState elementInstanceState) {
+      final Writers writers) {
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
     this.metrics = metrics;
     this.processorLookUp = processorLookUp;
     stateWriter = writers.state();
     commandWriter = writers.command();
-    this.elementInstanceState = elementInstanceState;
   }
 
-  /** @return context with updated intent */
+  /**
+   * @return context with updated intent
+   */
   public BpmnElementContext transitionToActivating(final BpmnElementContext context) {
 
     final var elementInstance = stateBehavior.getElementInstance(context);
@@ -98,7 +96,9 @@ public final class BpmnStateTransitionBehavior {
     return transitionTo(transitionContext, ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
 
-  /** @return context with updated intent */
+  /**
+   * @return context with updated intent
+   */
   public BpmnElementContext transitionToActivated(final BpmnElementContext context) {
     final BpmnElementContext transitionedContext =
         transitionTo(context, ProcessInstanceIntent.ELEMENT_ACTIVATED);
@@ -106,7 +106,9 @@ public final class BpmnStateTransitionBehavior {
     return transitionedContext;
   }
 
-  /** @return context with updated intent */
+  /**
+   * @return context with updated intent
+   */
   public BpmnElementContext transitionToCompleting(final BpmnElementContext context) {
     final var elementInstance = stateBehavior.getElementInstance(context);
     if (elementInstance.getState() == ProcessInstanceIntent.ELEMENT_COMPLETING) {
@@ -130,7 +132,7 @@ public final class BpmnStateTransitionBehavior {
    * reason why we throw an exception.
    *
    * <p>Should be removed as soon as possible, e.g. as part of
-   * https://github.com/camunda-cloud/zeebe/issues/8005
+   * https://github.com/camunda/zeebe/issues/8005
    *
    * @param context the element instance context
    * @param methodName the method which is called
@@ -146,7 +148,9 @@ public final class BpmnStateTransitionBehavior {
     }
   }
 
-  /** @return context with updated intent */
+  /**
+   * @return context with updated intent
+   */
   public <T extends ExecutableFlowNode> Either<Failure, BpmnElementContext> transitionToCompleted(
       final T element, final BpmnElementContext context) {
     final boolean endOfExecutionPath;
@@ -180,7 +184,9 @@ public final class BpmnStateTransitionBehavior {
     return Either.right(completed);
   }
 
-  /** @return context with updated intent */
+  /**
+   * @return context with updated intent
+   */
   public BpmnElementContext transitionToTerminating(final BpmnElementContext context) {
     if (context.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
       throw new IllegalStateException(
@@ -192,7 +198,9 @@ public final class BpmnStateTransitionBehavior {
     return transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
   }
 
-  /** @return context with updated intent */
+  /**
+   * @return context with updated intent
+   */
   public BpmnElementContext transitionToTerminated(final BpmnElementContext context) {
     final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATED);
     metrics.elementInstanceTerminated(context);
@@ -238,26 +246,7 @@ public final class BpmnStateTransitionBehavior {
         context.copy(
             sequenceFlowKey, followUpInstanceRecord, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
 
-    if (canActivateTargetElement(context, target)) {
-      activateElementInstanceInFlowScope(sequenceFlowTaken, target);
-    }
-  }
-
-  private boolean canActivateTargetElement(
-      final BpmnElementContext context, final ExecutableFlowNode targetElement) {
-
-    final int numberOfIncomingSequenceFlows = targetElement.getIncoming().size();
-
-    if (targetElement.getElementType() == BpmnElementType.PARALLEL_GATEWAY) {
-      // activate the parallel gateway only if all incoming sequence flows are taken at least once
-      final int numberOfTakenSequenceFlows =
-          elementInstanceState.getNumberOfTakenSequenceFlows(
-              context.getFlowScopeKey(), targetElement.getId());
-      return numberOfTakenSequenceFlows == numberOfIncomingSequenceFlows;
-
-    } else {
-      return true;
-    }
+    activateElementInstanceInFlowScope(sequenceFlowTaken, target);
   }
 
   public void completeElement(final BpmnElementContext context) {

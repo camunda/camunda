@@ -8,17 +8,18 @@
 package io.camunda.zeebe.broker.system.partitions.impl;
 
 import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
+import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.sched.ConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -155,7 +156,7 @@ public class StateControllerImpl implements StateController {
 
       if (optionalIndexed.isEmpty()) {
         future.completeExceptionally(
-            new IllegalStateException(
+            new NoEntryAtSnapshotPosition(
                 String.format(
                     "Failed to take snapshot. Expected to find an indexed entry for determined snapshot position %d (processedPosition = %d, exportedPosition=%d), but found no matching indexed entry which contains this position.",
                     snapshotPosition, lowerBoundSnapshotPosition, exportedPosition)));

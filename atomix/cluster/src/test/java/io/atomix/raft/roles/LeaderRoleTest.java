@@ -29,14 +29,14 @@ import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
+import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
-import io.atomix.raft.storage.log.PersistedRaftRecord;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.raft.zeebe.ValidationResult;
+import io.atomix.raft.zeebe.EntryValidator.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.atomix.raft.zeebe.util.TestAppender;
 import io.atomix.utils.concurrent.SingleThreadContext;
@@ -84,7 +84,7 @@ public class LeaderRoleTest {
 
     final ReceivableSnapshotStore persistedSnapshotStore = mock(ReceivableSnapshotStore.class);
     when(context.getPersistedSnapshotStore()).thenReturn(persistedSnapshotStore);
-    when(context.getEntryValidator()).thenReturn((a, b) -> ValidationResult.success());
+    when(context.getEntryValidator()).thenReturn((a, b) -> ValidationResult.ok());
     when(context.getStorage()).thenReturn(RaftStorage.builder().withMaxSegmentSize(1024).build());
 
     leaderRole = new LeaderRole(context);
@@ -322,7 +322,7 @@ public class LeaderRoleTest {
                 latch.countDown();
                 return ValidationResult.failure("expected");
               }
-              return ValidationResult.success();
+              return ValidationResult.ok();
             });
     leaderRole = new LeaderRole(context);
 

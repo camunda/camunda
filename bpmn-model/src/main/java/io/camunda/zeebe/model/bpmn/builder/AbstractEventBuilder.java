@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.Event;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractEventBuilder<B extends AbstractEventBuilder<B, E>, E extends Event>
     extends AbstractFlowNodeBuilder<B, E> {
 

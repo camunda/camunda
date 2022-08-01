@@ -11,33 +11,31 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
-import java.util.Random;
 
 /**
  * Generates a receive task. It waits for a message with name {@code message_[id]} and a correlation
  * key of {@code CORRELATION_KEY_VALUE}
  */
-public class ReceiveTaskBlockBuilder implements BlockBuilder {
+public class ReceiveTaskBlockBuilder extends AbstractBlockBuilder {
 
   private static final String CORRELATION_KEY_FIELD = "correlationKey";
   private static final String CORRELATION_KEY_VALUE = "default_correlation_key";
-
-  private final String id;
   private final String messageName;
 
   public ReceiveTaskBlockBuilder(final IDGenerator idGenerator) {
-    id = idGenerator.nextId();
-    messageName = "message_" + id;
+    super(idGenerator.nextId());
+    messageName = "message_" + elementId;
   }
 
   @Override
   public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
       final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
 
-    final var receiveTask = nodeBuilder.receiveTask(id);
+    final var receiveTask = nodeBuilder.receiveTask(getElementId());
     receiveTask.message(
         messageBuilder -> {
           messageBuilder.zeebeCorrelationKeyExpression(CORRELATION_KEY_FIELD);
@@ -48,7 +46,7 @@ public class ReceiveTaskBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(final Random random) {
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
     result.appendDirectSuccessor(

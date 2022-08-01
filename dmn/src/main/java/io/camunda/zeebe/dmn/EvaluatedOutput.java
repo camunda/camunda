@@ -15,13 +15,17 @@ import org.agrona.DirectBuffer;
  */
 public interface EvaluatedOutput {
 
-  /** @return the id of the evaluated output */
+  /**
+   * @return the id of the evaluated output
+   */
   String outputId();
 
   /**
    * Returns the name of the evaluated output. Note that the name of the output can be different
    * from the label. The label is usually the one that is displayed in the decision table. But the
    * name is used in the decision output if the decision table has more than one output.
+   *
+   * <p>If a label is defined, it is favored as the output name. Otherwise, the name is used.
    *
    * @return the name of the evaluated output
    */

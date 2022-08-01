@@ -76,7 +76,8 @@ public class CompleteProcessInstanceAfterLeaderChangeTest {
                     .newPublishMessageCommand()
                     .messageName("msg")
                     .correlationKey("123")
-                    .send(),
+                    .send()
+                    .join(),
         (BiConsumer<ClusteringRule, GrpcClientRule>)
             (clusteringRule, clientRule) -> {
               final var processDefinitionKey =
@@ -93,6 +94,8 @@ public class CompleteProcessInstanceAfterLeaderChangeTest {
                   .processDefinitionKey(processDefinitionKey)
                   .variables(Map.of("key", "123"))
                   .withResult()
+                  // retry delay for message subscription commands is 10s. Set a higher timeout.
+                  .requestTimeout(Duration.ofSeconds(20))
                   .send()
                   .join();
             },

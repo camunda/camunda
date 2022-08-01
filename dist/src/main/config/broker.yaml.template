@@ -90,6 +90,16 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT.
         # port: 26501
 
+        # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
+        # broker stands behind a proxy.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_ADVERTISEDHOST.
+        # advertisedHost: 0.0.0.0
+
+        # Controls the advertised port; if omitted defaults to the port. This is particularly useful if your
+        # broker stands behind a proxy.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_ADVERTISEDPORT.
+        # advertisedPort: 25601
+
       # internalApi:
         # Overrides the host used for internal broker-to-broker communication
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_HOST.
@@ -98,6 +108,16 @@
         # Sets the port used for internal broker-to-broker communication
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT.
         # port: 26502
+
+        # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
+        # broker stands behind a proxy.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_ADVERTISEDHOST.
+        # advertisedHost: 0.0.0.0
+
+        # Controls the advertised port; if omitted defaults to the port. This is particularly useful if your
+        # broker stands behind a proxy.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_ADVERTISEDPORT.
+        # advertisedPort: 25602
 
     # data:
       # This section allows to configure Zeebe's data storage. Data is stored in
@@ -459,19 +479,23 @@
         #     event: true
         #     rejection: false
         #
-        #     deployment: false
-        #     process: true
+        #     decisionRequirements: true
+        #     decision: true
+        #     decisionEvaluation: true
+        #     deployment: true
         #     error: true
         #     incident: true
         #     job: true
         #     jobBatch: false
-        #     message: false
-        #     messageSubscription: false
-        #     variable: true
-        #     variableDocument: true
+        #     message: true
+        #     messageSubscription: true
+        #     process: true
         #     processInstance: true
         #     processInstanceCreation: false
-        #     processMessageSubscription: false
+        #     processInstanceModification: false
+        #     processMessageSubscription: true
+        #     variable: true
+        #     variableDocument: true
 
     # experimental
       # Be aware that all configuration's which are part of the experimental section
@@ -549,13 +573,13 @@
       # raft:
         # Sets the timeout for all requests send by raft leaders and followers.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_REQUESTTIMEOUT
-        # requestTimeout = 5s
+        # requestTimeout: 5s
 
         # If the leader is not able to reach the quorum, the leader may step down.
         # This is triggered after a number of requests, to a quorum of followers, has failed, and the number of failures
         # reached minStepDownFailureCount. The maxQuorumResponseTime also influences when the leader step down.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_MINSTEPDOWNFAILURECOUNT
-        # minStepDownFailureCount = 3
+        # minStepDownFailureCount: 3
 
         # If the leader is not able to reach the quorum, the leader may step down.
         # This is triggered if the leader is not able to reach the quorum of the followers for maxQuorumResponseTimeout.
@@ -564,13 +588,24 @@
         # When the timeout is lower, there might be false positives, and the leader might step down too quickly.
         # When this value is 0, it will use a default value of electionTimeout * 2.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_MAXQUORUMRESPONSETIMEOUT
-        # maxQuorumResponseTimeout = 0ms
+        # maxQuorumResponseTimeout: 0ms
 
         # Threshold used by the leader to decide between replicating a snapshot or records.
         # The unit is number of records by which the follower may lag behind before the leader
         # prefers replicating snapshots instead of records.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_PREFERSNAPSHOTREPLICATIONTHRESHOLD.
-        # preferSnapshotReplicationThreshold = 100
+        # preferSnapshotReplicationThreshold: 100
+
+        # Defines whether segment files are pre-allocated to their full size on creation or not. If
+        # true, when a new segment is created on demand, disk space will be reserved for its full
+        # maximum size. This helps avoid potential out of disk space errors which can be fatal when
+        # using memory mapped files, especially when running on network storage. In the best cases,
+        # it will also allocate contiguous blocks, giving a small performance boost.
+        #
+        # You may want to turn this off if your system does not support efficient file allocation
+        # via system calls, or if you notice an I/O penalty when creating segments.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_PREALLOCATESEGMENTFILES.
+        # preallocateSegmentFiles: true
 
       # Allows to configure RocksDB properties, which is used for state management.
       # rocksdb:
@@ -631,6 +666,10 @@
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_CONSISTENCYCHECKS_ENABLEPRECONDITIONS
         # enablePreconditions: false
 
+        # Configures if inserting or updating key-value pairs on RocksDB should check that foreign keys exist.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_CONSISTENCYCHECKS_ENABLEFOREIGNKEYCHECKS
+        # enableForeignKeyChecks: false
+
       # Allows to configure the query API. By default, the broker only offers a command API, which
       # is used by the gateway to pass commands it received along to the broker. Commands can then
       # be processed. Zeebe does not directly support querying of brokers, instead it provides a way
@@ -647,3 +686,21 @@
         # Enables the query api in the broker.
         # This setting can also be set using the environmentvariable ZEEBE_BROKER_EXPERIMENTAL_QUERYAPI_ENABLED
         # enabled: false
+
+      # Allows to configure feature flags. These are used to test new features in dev and int environments prior
+      # to rolling them out to production
+      # features:
+        # Changes the DueDateTimerChecker to give yield to other processing steps in situations where
+        # it has many (i.e. millions of) timers to process. If set to false (default) the DueDateTimerChecker will activate all
+        # due timers. In the worst case, this can lead to the node being blocked for indefinite amount of time,
+        # being subsequently flagged as unhealthy. Currently, there is no known way to recover from this situation
+        # If set to true, the DueDateTimerChecker will give yield to other processing steps. This avoids the worst case
+        # described above. However, under consistent high load it may happen that the activated timers will fall behind real time,
+        # if more timers become due than can be activated during a certain time period.
+        #
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEYIELDINGDUEDATECHECKER
+        # enableYieldingDueDateChecker: false
+
+        # Controls whether to collect metrics about actor usage such as actor job execution latencies
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEACTORMETRICS
+        # enableActorMetrics: false

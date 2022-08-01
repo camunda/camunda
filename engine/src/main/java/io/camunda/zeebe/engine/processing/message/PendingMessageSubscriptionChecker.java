@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.message.MessageSubscription;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 
 public final class PendingMessageSubscriptionChecker implements Runnable {
   private final SubscriptionCommandSender commandSender;

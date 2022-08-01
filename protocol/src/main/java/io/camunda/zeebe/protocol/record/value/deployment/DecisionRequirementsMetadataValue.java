@@ -15,32 +15,51 @@
  */
 package io.camunda.zeebe.protocol.record.value.deployment;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import org.immutables.value.Value;
+
 /**
  * The metadata of a deployed decision requirements graph (DRG/DRD). A DRG represents the DMN
  * resource and all decisions of the DMN belongs to it. The metadata contains relevant properties of
  * the DMN resource, except the binary DMN resource itself.
  */
+@Value.Immutable
+@ImmutableProtocol(builder = ImmutableDecisionRequirementsMetadataValue.Builder.class)
 public interface DecisionRequirementsMetadataValue {
 
-  /** @return the ID of the DRG in the DMN */
+  /**
+   * @return the ID of the DRG in the DMN
+   */
   String getDecisionRequirementsId();
 
-  /** @return the name of the DRG in the DMN */
+  /**
+   * @return the name of the DRG in the DMN
+   */
   String getDecisionRequirementsName();
 
-  /** @return the version of the deployed DRG */
+  /**
+   * @return the version of the deployed DRG
+   */
   int getDecisionRequirementsVersion();
 
-  /** @return the key of the deployed DRG */
+  /**
+   * @return the key of the deployed DRG
+   */
   long getDecisionRequirementsKey();
 
-  /** @return the namespace of the DRG in the DMN */
+  /**
+   * @return the namespace of the DRG in the DMN
+   */
   String getNamespace();
 
-  /** @return the name of the resource through which this DRG was deployed */
+  /**
+   * @return the name of the resource through which this DRG was deployed
+   */
   String getResourceName();
 
-  /** @return the checksum of the DMN resource (MD5) */
+  /**
+   * @return the checksum of the DMN resource (MD5)
+   */
   byte[] getChecksum();
 
   /**

@@ -27,11 +27,11 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
-import io.camunda.zeebe.util.sched.ConcurrencyControl;
-import io.camunda.zeebe.util.sched.TestConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiFunction;
@@ -164,7 +164,7 @@ class PartitionTransitionImplTest {
   }
 
   @Test
-  // regression test for https://github.com/camunda-cloud/zeebe/issues/7873
+  // regression test for https://github.com/camunda/zeebe/issues/7873
   void shouldNotStartMultipleTransitions() {
     // given
     final var firstStepFirstTransitionFuture = TEST_CONCURRENCY_CONTROL.<Void>createFuture();
@@ -217,7 +217,7 @@ class PartitionTransitionImplTest {
   }
 
   @Test
-  // regression test for https://github.com/camunda-cloud/zeebe/issues/7873
+  // regression test for https://github.com/camunda/zeebe/issues/7873
   void shouldExecuteTransitionsInOrder() {
     // given
     final var firstStepFirstTransitionFuture = TEST_CONCURRENCY_CONTROL.<Void>createFuture();

@@ -18,8 +18,8 @@ import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
-import io.camunda.zeebe.util.sched.ActorScheduler;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -263,11 +263,13 @@ public final class SystemContext {
 
     final int cpuThreads = cfg.getCpuThreadCount();
     final int ioThreads = cfg.getIoThreadCount();
+    final boolean metricsEnabled = brokerCfg.getExperimental().getFeatures().isEnableActorMetrics();
 
     return ActorScheduler.newActorScheduler()
         .setActorClock(clock)
         .setCpuBoundActorThreadCount(cpuThreads)
         .setIoBoundActorThreadCount(ioThreads)
+        .setMetricsEnabled(metricsEnabled)
         .setSchedulerName(brokerId)
         .build();
   }

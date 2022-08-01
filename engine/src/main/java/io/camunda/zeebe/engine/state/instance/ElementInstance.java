@@ -22,6 +22,12 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   private final LongProperty parentKeyProp = new LongProperty("parentKey", -1L);
   private final IntegerProperty childCountProp = new IntegerProperty("childCount", 0);
+  private final IntegerProperty childActivatedCountProp =
+      new IntegerProperty("childActivatedCount", 0);
+  private final IntegerProperty childCompletedCountProp =
+      new IntegerProperty("childCompletedCount", 0);
+  private final IntegerProperty childTerminatedCountProp =
+      new IntegerProperty("childTerminatedCount", 0);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", 0L);
   private final IntegerProperty multiInstanceLoopCounterProp =
       new IntegerProperty("multiInstanceLoopCounter", 0);
@@ -37,6 +43,9 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   ElementInstance() {
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
+        .declareProperty(childActivatedCountProp)
+        .declareProperty(childCompletedCountProp)
+        .declareProperty(childTerminatedCountProp)
         .declareProperty(jobKeyProp)
         .declareProperty(multiInstanceLoopCounterProp)
         .declareProperty(interruptingEventKeyProp)
@@ -123,6 +132,30 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     return childCountProp.getValue();
   }
 
+  public int getNumberOfCompletedElementInstances() {
+    return childCompletedCountProp.getValue();
+  }
+
+  public int getNumberOfElementInstances() {
+    return childActivatedCountProp.getValue();
+  }
+
+  public int getNumberOfTerminatedElementInstances() {
+    return childTerminatedCountProp.getValue();
+  }
+
+  public void incrementNumberOfCompletedElementInstances() {
+    childCompletedCountProp.increment();
+  }
+
+  public void incrementNumberOfElementInstances() {
+    childActivatedCountProp.increment();
+  }
+
+  public void incrementNumberOfTerminatedElementInstances() {
+    childTerminatedCountProp.increment();
+  }
+
   public int getMultiInstanceLoopCounter() {
     return multiInstanceLoopCounterProp.getValue();
   }
@@ -164,11 +197,14 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   }
 
   public void decrementActiveSequenceFlows() {
-    final var decrement = activeSequenceFlowsProp.decrement();
-
-    if (decrement < 0) {
-      throw new IllegalStateException(
-          "Not expected to have an active sequence flow count lower then zero!");
+    if (getActiveSequenceFlows() > 0) {
+      activeSequenceFlowsProp.decrement();
+      // This should never happen, but we should fix this in a better way
+      // https://github.com/camunda/zeebe/issues/9528
+      //    if (decrement < 0) {
+      //      throw new IllegalStateException(
+      //          "Not expected to have an active sequence flow count lower then zero!");
+      //    }
     }
   }
 

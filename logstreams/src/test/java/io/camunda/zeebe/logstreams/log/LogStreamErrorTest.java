@@ -13,7 +13,7 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.util.SyncLogStream;
-import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;

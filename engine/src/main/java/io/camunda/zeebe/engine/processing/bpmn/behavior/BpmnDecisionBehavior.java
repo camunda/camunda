@@ -290,12 +290,16 @@ public final class BpmnDecisionBehavior {
 
   private void addInputToEvaluationEvent(
       final EvaluatedInput evaluatedInput, final EvaluatedDecisionRecord evaluatedDecisionRecord) {
-    evaluatedDecisionRecord
-        .evaluatedInputs()
-        .add()
-        .setInputId(evaluatedInput.inputId())
-        .setInputName(evaluatedInput.inputName())
-        .setInputValue(evaluatedInput.inputValue());
+    final var inputRecord =
+        evaluatedDecisionRecord
+            .evaluatedInputs()
+            .add()
+            .setInputId(evaluatedInput.inputId())
+            .setInputValue(evaluatedInput.inputValue());
+
+    if (evaluatedInput.inputName() != null) {
+      inputRecord.setInputName(evaluatedInput.inputName());
+    }
   }
 
   private void addMatchedRuleToEvaluationEvent(
@@ -311,12 +315,16 @@ public final class BpmnDecisionBehavior {
 
   private void addOutputToEvaluationEvent(
       final EvaluatedOutput evaluatedOutput, final MatchedRuleRecord matchedRuleRecord) {
-    matchedRuleRecord
-        .evaluatedOutputs()
-        .add()
-        .setOutputId(evaluatedOutput.outputId())
-        .setOutputName(evaluatedOutput.outputName())
-        .setOutputValue(evaluatedOutput.outputValue());
+    final var outputRecord =
+        matchedRuleRecord
+            .evaluatedOutputs()
+            .add()
+            .setOutputId(evaluatedOutput.outputId())
+            .setOutputValue(evaluatedOutput.outputValue());
+
+    if (evaluatedOutput.outputName() != null) {
+      outputRecord.setOutputName(evaluatedOutput.outputName());
+    }
   }
 
   private record DecisionInfo(long key, int version) {

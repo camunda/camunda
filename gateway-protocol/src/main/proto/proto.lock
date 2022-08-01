@@ -208,6 +208,22 @@
                 "id": 4,
                 "name": "variables",
                 "type": "string"
+              },
+              {
+                "id": 5,
+                "name": "startInstructions",
+                "type": "ProcessInstanceCreationStartInstruction",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "ProcessInstanceCreationStartInstruction",
+            "fields": [
+              {
+                "id": 1,
+                "name": "elementId",
+                "type": "string"
               }
             ]
           },
@@ -296,6 +312,12 @@
                 "type": "ProcessRequestObject",
                 "is_repeated": true
               }
+            ],
+            "options": [
+              {
+                "name": "deprecated",
+                "value": "true"
+              }
             ]
           },
           {
@@ -310,6 +332,12 @@
                 "id": 2,
                 "name": "definition",
                 "type": "bytes"
+              }
+            ],
+            "options": [
+              {
+                "name": "deprecated",
+                "value": "true"
               }
             ]
           },
@@ -326,6 +354,74 @@
                 "name": "processes",
                 "type": "ProcessMetadata",
                 "is_repeated": true
+              }
+            ],
+            "options": [
+              {
+                "name": "deprecated",
+                "value": "true"
+              }
+            ]
+          },
+          {
+            "name": "DeployResourceRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "resources",
+                "type": "Resource",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "Resource",
+            "fields": [
+              {
+                "id": 1,
+                "name": "name",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "content",
+                "type": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "DeployResourceResponse",
+            "fields": [
+              {
+                "id": 1,
+                "name": "key",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "deployments",
+                "type": "Deployment",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "Deployment",
+            "fields": [
+              {
+                "id": 1,
+                "name": "process",
+                "type": "ProcessMetadata"
+              },
+              {
+                "id": 2,
+                "name": "decision",
+                "type": "DecisionMetadata"
+              },
+              {
+                "id": 3,
+                "name": "decisionRequirements",
+                "type": "DecisionRequirementsMetadata"
               }
             ]
           },
@@ -349,6 +445,71 @@
               },
               {
                 "id": 4,
+                "name": "resourceName",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "DecisionMetadata",
+            "fields": [
+              {
+                "id": 1,
+                "name": "dmnDecisionId",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "dmnDecisionName",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "version",
+                "type": "int32"
+              },
+              {
+                "id": 4,
+                "name": "decisionKey",
+                "type": "int64"
+              },
+              {
+                "id": 5,
+                "name": "dmnDecisionRequirementsId",
+                "type": "string"
+              },
+              {
+                "id": 6,
+                "name": "decisionRequirementsKey",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "DecisionRequirementsMetadata",
+            "fields": [
+              {
+                "id": 1,
+                "name": "dmnDecisionRequirementsId",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "dmnDecisionRequirementsName",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "version",
+                "type": "int32"
+              },
+              {
+                "id": 4,
+                "name": "decisionRequirementsKey",
+                "type": "int64"
+              },
+              {
+                "id": 5,
                 "name": "resourceName",
                 "type": "string"
               }
@@ -590,6 +751,79 @@
                 "type": "int64"
               }
             ]
+          },
+          {
+            "name": "ModifyProcessInstanceRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "processInstanceKey",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "activateInstructions",
+                "type": "ActivateInstruction",
+                "is_repeated": true
+              },
+              {
+                "id": 3,
+                "name": "terminateInstructions",
+                "type": "TerminateInstruction",
+                "is_repeated": true
+              }
+            ],
+            "messages": [
+              {
+                "name": "ActivateInstruction",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "elementId",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "ancestorElementInstanceKey",
+                    "type": "int64"
+                  },
+                  {
+                    "id": 3,
+                    "name": "variableInstructions",
+                    "type": "VariableInstruction",
+                    "is_repeated": true
+                  }
+                ]
+              },
+              {
+                "name": "VariableInstruction",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "variables",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "scopeId",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "name": "TerminateInstruction",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "elementInstanceKey",
+                    "type": "int64"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ModifyProcessInstanceResponse"
           }
         ],
         "services": [
@@ -625,7 +859,18 @@
               {
                 "name": "DeployProcess",
                 "in_type": "DeployProcessRequest",
-                "out_type": "DeployProcessResponse"
+                "out_type": "DeployProcessResponse",
+                "options": [
+                  {
+                    "name": "deprecated",
+                    "value": "true"
+                  }
+                ]
+              },
+              {
+                "name": "DeployResource",
+                "in_type": "DeployResourceRequest",
+                "out_type": "DeployResourceResponse"
               },
               {
                 "name": "FailJob",
@@ -661,6 +906,11 @@
                 "name": "UpdateJobRetries",
                 "in_type": "UpdateJobRetriesRequest",
                 "out_type": "UpdateJobRetriesResponse"
+              },
+              {
+                "name": "ModifyProcessInstance",
+                "in_type": "ModifyProcessInstanceRequest",
+                "out_type": "ModifyProcessInstanceResponse"
               }
             ]
           }

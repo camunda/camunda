@@ -40,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.ContainerState;
 import org.testcontainers.containers.Network;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  * These tests are here to detect when rolling update between one version to the next are not
@@ -50,9 +51,10 @@ import org.testcontainers.containers.Network;
  */
 final class RollingUpdateTest {
 
-  public static final String TEST_IMAGE_TAG = "current-test";
-  private static final String OLD_VERSION = VersionUtil.getPreviousVersion();
-  private static final String NEW_VERSION = VersionUtil.getVersion();
+  private static final DockerImageName PREVIOUS_VERSION =
+      DockerImageName.parse("camunda/zeebe").withTag(VersionUtil.getPreviousVersion());
+  private static final DockerImageName CURRENT_VERSION =
+      ZeebeTestContainerDefaults.defaultTestImage();
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess("process")
           .startEvent()
@@ -259,10 +261,7 @@ final class RollingUpdateTest {
   }
 
   private void updateBroker(final ZeebeBrokerNode<?> broker) {
-    broker.setDockerImageName(
-        ZeebeTestContainerDefaults.defaultTestImage()
-            .withTag(TEST_IMAGE_TAG)
-            .asCanonicalNameString());
+    broker.setDockerImageName(CURRENT_VERSION.asCanonicalNameString());
   }
 
   private ProcessInstanceEvent createProcessInstance(final ZeebeClient client) {
@@ -277,7 +276,7 @@ final class RollingUpdateTest {
 
   private void deployProcess(final ZeebeClient client) {
     client
-        .newDeployCommand()
+        .newDeployResourceCommand()
         .addProcessModel(PROCESS, "process.bpmn")
         .send()
         .join(10, TimeUnit.SECONDS);
@@ -288,12 +287,17 @@ final class RollingUpdateTest {
     final var topology = zeebeClient.newTopologyRequest().send().join();
     TopologyAssert.assertThat(topology)
         .as("the topology contains all the brokers")
-        .isComplete(cluster.getBrokers().size(), 1)
+        .isComplete(
+            cluster.getBrokers().size(),
+            cluster.getPartitionsCount(),
+            cluster.getReplicationFactor())
         .as("the topology contains the updated broker")
         .hasBrokerSatisfying(
             brokerInfo -> {
               assertThat(brokerInfo.getNodeId()).as("the broker's node ID").isEqualTo(brokerId);
-              assertThat(brokerInfo.getVersion()).as("the broker's version").isEqualTo(NEW_VERSION);
+              assertThat(brokerInfo.getVersion())
+                  .as("the broker's version")
+                  .isEqualTo(VersionUtil.getVersion());
             });
   }
 
@@ -302,7 +306,8 @@ final class RollingUpdateTest {
     TopologyAssert.assertThat(topology)
         .as("the topology does not contain broker %d", brokerId)
         .doesNotContainBroker(brokerId)
-        .isComplete(cluster.getBrokers().size() - 1, 1);
+        .hasLeaderForEachPartition(cluster.getPartitionsCount())
+        .hasExpectedReplicasCount(cluster.getPartitionsCount(), cluster.getBrokers().size() - 1);
   }
 
   private ZeebeClient newZeebeClient(final ZeebeGatewayNode<?> gateway) {
@@ -339,7 +344,6 @@ final class RollingUpdateTest {
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_FAILURETIMEOUT", "2s")
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SUSPECTPROBES", "2")
         .withEnv("ZEEBE_LOG_LEVEL", "DEBUG");
-    broker.setDockerImageName(
-        ZeebeTestContainerDefaults.defaultTestImage().withTag(OLD_VERSION).asCanonicalNameString());
+    broker.setDockerImageName(PREVIOUS_VERSION.asCanonicalNameString());
   }
 }

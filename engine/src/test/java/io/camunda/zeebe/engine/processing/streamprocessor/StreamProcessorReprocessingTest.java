@@ -19,9 +19,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.engine.util.Records;
@@ -33,7 +33,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.stream.StreamWrapper;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.Before;
@@ -90,7 +89,7 @@ public final class StreamProcessorReprocessingTest {
                     .withListener(
                         new StreamProcessorLifecycleAware() {
                           @Override
-                          public void onRecovered(final ReadonlyProcessingContext context) {
+                          public void onRecovered(final ReadonlyStreamProcessorContext context) {
                             onRecoveredLatch.countDown();
                           }
                         }));
@@ -144,7 +143,7 @@ public final class StreamProcessorReprocessingTest {
                     .withListener(
                         new StreamProcessorLifecycleAware() {
                           @Override
-                          public void onRecovered(final ReadonlyProcessingContext context) {
+                          public void onRecovered(final ReadonlyStreamProcessorContext context) {
                             countDownLatch.countDown();
                           }
                         }));
@@ -250,12 +249,7 @@ public final class StreamProcessorReprocessingTest {
                 ACTIVATE_ELEMENT,
                 new TypedRecordProcessor<>() {
                   @Override
-                  public void processRecord(
-                      final long position,
-                      final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
-                      final Consumer<SideEffectProducer> sideEffect) {}
+                  public void processRecord(final TypedRecord<UnifiedRecordValue> record) {}
                 }));
 
     streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
@@ -279,12 +273,7 @@ public final class StreamProcessorReprocessingTest {
                 ACTIVATE_ELEMENT,
                 new TypedRecordProcessor<>() {
                   @Override
-                  public void processRecord(
-                      final long position,
-                      final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
-                      final Consumer<SideEffectProducer> sideEffect) {}
+                  public void processRecord(final TypedRecord<UnifiedRecordValue> record) {}
                 }));
 
     final long position =
@@ -330,7 +319,7 @@ public final class StreamProcessorReprocessingTest {
                 processors.withListener(
                     new StreamProcessorLifecycleAware() {
                       @Override
-                      public void onRecovered(final ReadonlyProcessingContext context) {
+                      public void onRecovered(final ReadonlyStreamProcessorContext context) {
                         recoveredLatch.countDown();
                       }
                     }));
@@ -372,7 +361,7 @@ public final class StreamProcessorReprocessingTest {
                 processors.withListener(
                     new StreamProcessorLifecycleAware() {
                       @Override
-                      public void onRecovered(final ReadonlyProcessingContext context) {
+                      public void onRecovered(final ReadonlyStreamProcessorContext context) {
                         recoveredLatch.countDown();
                       }
                     }));
@@ -393,12 +382,7 @@ public final class StreamProcessorReprocessingTest {
                 ACTIVATE_ELEMENT,
                 new TypedRecordProcessor<>() {
                   @Override
-                  public void processRecord(
-                      final long position,
-                      final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
-                      final Consumer<SideEffectProducer> sideEffect) {}
+                  public void processRecord(final TypedRecord<UnifiedRecordValue> record) {}
                 }));
 
     streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
@@ -422,7 +406,7 @@ public final class StreamProcessorReprocessingTest {
                 processors.withListener(
                     new StreamProcessorLifecycleAware() {
                       @Override
-                      public void onRecovered(final ReadonlyProcessingContext context) {
+                      public void onRecovered(final ReadonlyStreamProcessorContext context) {
                         recoveredLatch.countDown();
                       }
                     }));

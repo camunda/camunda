@@ -94,8 +94,8 @@ final class ExporterRepositoryTest {
 
     // then
     assertThat(config.isExternal()).isTrue();
-    assertThat(descriptor.getConfiguration().getArguments()).isEqualTo(config.getArgs());
-    assertThat(descriptor.getConfiguration().getId()).isEqualTo("exported");
+    assertThat(descriptor.getConfiguration().arguments()).isEqualTo(config.getArgs());
+    assertThat(descriptor.getConfiguration().id()).isEqualTo("exported");
     assertThat(descriptor.newInstance().getClass().getCanonicalName())
         .isEqualTo(ExternalExporter.EXPORTER_CLASS_NAME);
   }

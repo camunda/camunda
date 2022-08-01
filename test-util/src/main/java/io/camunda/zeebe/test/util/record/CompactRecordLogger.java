@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecor
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
@@ -86,7 +87,7 @@ public class CompactRecordLogger {
   private final int keyDigits;
   private final int valueTypeChars;
   private final int intentChars;
-  private final boolean singlePartition;
+  private final boolean multiPartition;
   private final Map<Long, String> substitutions = new HashMap<>();
   private final ArrayList<Record<?>> records;
 
@@ -117,15 +118,8 @@ public class CompactRecordLogger {
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
     this.records = new ArrayList<>(records);
+    multiPartition = isMultiPartition();
 
-    singlePartition =
-        this.records.stream()
-                .mapToLong(Record::getKey)
-                .filter(key -> key != -1)
-                .map(Protocol::decodePartitionId)
-                .distinct()
-                .count()
-            < 2;
     final var highestPosition = this.records.get(this.records.size() - 1).getPosition();
 
     int digits = 0;
@@ -168,11 +162,21 @@ public class CompactRecordLogger {
     LOG.info(bulkMessage.toString());
   }
 
+  private boolean isMultiPartition() {
+    final long numberOfPartitions =
+        records.stream()
+            .map(r -> Math.max(Protocol.decodePartitionId(r.getKey()), r.getPartitionId()))
+            .filter(x -> x != -1)
+            .distinct()
+            .count();
+    return numberOfPartitions > 1;
+  }
+
   private void addSummarizedRecords(final StringBuilder bulkMessage) {
     bulkMessage
         .append("--------\n")
         .append(
-            "\t['C'ommand/'E'event/'R'ejection] [valueType] [intent] - #[position]->#[source record position]  P[partitionId]K[key] - [summary of value]\n")
+            "\t[Partition] ['C'ommand/'E'event/'R'ejection] [valueType] [intent] - #[position]->#[source record position]  P[partitionId]K[key] - [summary of value]\n")
         .append(
             "\tP9K999 - key; #999 - record position; \"ID\" element/process id; @\"elementid\"/[P9K999] - element with ID and key\n")
         .append(
@@ -181,10 +185,7 @@ public class CompactRecordLogger {
             "\tLong IDs are shortened (e.g. 'startEvent_5d56488e-0570-416c-ba2d-36d2a3acea78' -> 'star..acea78'\n")
         .append("--------\n");
 
-    records.forEach(
-        record -> {
-          bulkMessage.append(summarizeRecord(record)).append("\n");
-        });
+    records.forEach(record -> bulkMessage.append(summarizeRecord(record)).append("\n"));
   }
 
   private void addDeployedProcesses(final StringBuilder bulkMessage) {
@@ -217,6 +218,7 @@ public class CompactRecordLogger {
   private StringBuilder summarizeRecord(final Record<?> record) {
     final StringBuilder message = new StringBuilder();
 
+    message.append(summarizePartition(record));
     message.append(summarizeIntent(record));
     message.append(summarizePositionFields(record));
     message.append(summarizeValue(record));
@@ -227,6 +229,13 @@ public class CompactRecordLogger {
     }
 
     return message;
+  }
+
+  private String summarizePartition(final Record<?> record) {
+    if (!multiPartition) {
+      return "";
+    }
+    return record.getPartitionId() + " ";
   }
 
   private StringBuilder summarizePositionFields(final Record<?> record) {
@@ -471,8 +480,20 @@ public class CompactRecordLogger {
         .append("new <process ")
         .append(formatId(value.getBpmnProcessId()))
         .append(">")
+        .append(summarizeStartInstructions(value.getStartInstructions()))
         .append(summarizeVariables(value.getVariables()))
         .toString();
+  }
+
+  private String summarizeStartInstructions(
+      final List<ProcessInstanceCreationStartInstructionValue> startInstructions) {
+    if (startInstructions.isEmpty()) {
+      return " (default start) ";
+    } else {
+      return startInstructions.stream()
+          .map(ProcessInstanceCreationStartInstructionValue::getElementId)
+          .collect(Collectors.joining(", ", " (starting before elements: ", ") "));
+    }
   }
 
   private String summarizeProcessInstanceSubscription(final Record<?> record) {
@@ -608,7 +629,7 @@ public class CompactRecordLogger {
   private String formatKey(final long key) {
     final var result = new StringBuilder();
 
-    if (!singlePartition) {
+    if (multiPartition) {
       if (key > 0) {
         result.append("P").append(Protocol.decodePartitionId(key));
       } else {

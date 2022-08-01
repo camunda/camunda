@@ -17,9 +17,9 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/camunda-cloud/zeebe/clients/go/internal/mock_pb"
-	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/v8/internal/mock_pb"
+	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 	"github.com/golang/mock/gomock"
 	"testing"
 )
@@ -117,6 +117,46 @@ func TestCreateProcessInstanceCommandByBpmnProcessIdAndVersion(t *testing.T) {
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
 	response, err := command.BPMNProcessId("foo").Version(56).Send(context.Background())
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestCreateProcessInstanceWithStartBeforeElementDirective(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	request := &pb.CreateProcessInstanceRequest{
+		BpmnProcessId: "foo",
+		Version:       56,
+		StartInstructions: []*pb.ProcessInstanceCreationStartInstruction{
+			{
+				ElementId: "my-start-element",
+			},
+			{
+				ElementId: "my-other-start-element",
+			},
+		},
+	}
+	stub := &pb.CreateProcessInstanceResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+	}
+
+	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
+
+	response, err := command.BPMNProcessId("foo").Version(56).StartBeforeElement("my-start-element").StartBeforeElement("my-other-start-element").Send(context.Background())
 
 	if err != nil {
 		t.Errorf("Failed to send request")

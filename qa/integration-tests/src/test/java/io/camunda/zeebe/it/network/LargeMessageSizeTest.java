@@ -66,7 +66,7 @@ public final class LargeMessageSizeTest {
     final var deployment =
         CLIENT_RULE
             .getClient()
-            .newDeployCommand()
+            .newDeployResourceCommand()
             .addResourceStringUtf8(largeProcess, "process.bpmn")
             .send()
             .join();

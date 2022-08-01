@@ -11,7 +11,9 @@ import java.util.UUID;
 
 public final class Strings {
 
-  /** @return a prefixed random UUID which can be used as a valid ID for a BPMN element */
+  /**
+   * @return a prefixed random UUID which can be used as a valid ID for a BPMN element
+   */
   public static String newRandomValidBpmnId() {
     return "id-" + UUID.randomUUID().toString();
   }

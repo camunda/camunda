@@ -15,13 +15,19 @@ import org.agrona.DirectBuffer;
  */
 public interface EvaluatedDecision {
 
-  /** @return the id of the evaluated decision */
+  /**
+   * @return the id of the evaluated decision
+   */
   String decisionId();
 
-  /** @return the name of the evaluated decision */
+  /**
+   * @return the name of the evaluated decision
+   */
   String decisionName();
 
-  /** @return the type of the evaluated decision */
+  /**
+   * @return the type of the evaluated decision
+   */
   DecisionType decisionType();
 
   /**

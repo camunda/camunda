@@ -21,8 +21,12 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
@@ -93,6 +97,14 @@ public class GatewayGrpcService extends GatewayImplBase {
   }
 
   @Override
+  public void deployResource(
+      final DeployResourceRequest request,
+      final StreamObserver<DeployResourceResponse> responseObserver) {
+    endpointManager.deployResource(
+        request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
+  }
+
+  @Override
   public void failJob(
       final FailJobRequest request, final StreamObserver<FailJobResponse> responseObserver) {
     endpointManager.failJob(request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
@@ -140,6 +152,14 @@ public class GatewayGrpcService extends GatewayImplBase {
       final UpdateJobRetriesRequest request,
       final StreamObserver<UpdateJobRetriesResponse> responseObserver) {
     endpointManager.updateJobRetries(
+        request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
+  }
+
+  @Override
+  public void modifyProcessInstance(
+      final ModifyProcessInstanceRequest request,
+      final StreamObserver<ModifyProcessInstanceResponse> responseObserver) {
+    endpointManager.modifyProcessInstance(
         request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
   }
 }

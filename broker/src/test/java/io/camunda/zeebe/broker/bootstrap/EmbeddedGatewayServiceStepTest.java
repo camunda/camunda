@@ -20,10 +20,11 @@ import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.camunda.zeebe.util.sched.ActorScheduler;
-import io.camunda.zeebe.util.sched.TestConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.Collections;
 import org.junit.jupiter.api.AfterEach;
@@ -58,6 +59,7 @@ class EmbeddedGatewayServiceStepTest {
 
     private ActorFuture<BrokerStartupContext> startupFuture;
     private ActorScheduler actorScheduler;
+    private Actor actor;
 
     @BeforeEach
     void setUp() {
@@ -81,6 +83,9 @@ class EmbeddedGatewayServiceStepTest {
       final var port = SocketUtil.getNextAddress().getPort();
       final var commandApiCfg = TEST_BROKER_CONFIG.getGateway().getNetwork();
       commandApiCfg.setPort(port);
+
+      actor = Actor.newActor().build();
+      actorScheduler.submitActor(actor);
     }
 
     @AfterEach
@@ -95,7 +100,10 @@ class EmbeddedGatewayServiceStepTest {
     @Test
     void shouldCompleteFuture() {
       // when
-      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      actor.run(
+          () -> {
+            sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+          });
 
       // then
       assertThat(startupFuture).succeedsWithin(TIME_OUT);
@@ -105,7 +113,10 @@ class EmbeddedGatewayServiceStepTest {
     @Test
     void shouldStartAndInstallEmbeddedGatewayService() {
       // when
-      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      actor.run(
+          () -> {
+            sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+          });
       await().until(startupFuture::isDone);
 
       // then

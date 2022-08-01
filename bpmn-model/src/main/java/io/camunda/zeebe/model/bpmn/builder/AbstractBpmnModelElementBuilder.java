@@ -25,7 +25,9 @@ import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.Transaction;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractBpmnModelElementBuilder<
     B extends AbstractBpmnModelElementBuilder<B, E>, E extends BpmnModelElementInstance> {
 

@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.system.management;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
+import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
 
 public final class PartitionStatus {
 

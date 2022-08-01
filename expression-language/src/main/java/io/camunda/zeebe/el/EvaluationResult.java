@@ -16,10 +16,14 @@ import org.agrona.DirectBuffer;
 /** The result of an expression evaluation. */
 public interface EvaluationResult {
 
-  /** @return the (raw) expression as string */
+  /**
+   * @return the (raw) expression as string
+   */
   String getExpression();
 
-  /** @return {@code true} if the evaluation was not successful */
+  /**
+   * @return {@code true} if the evaluation was not successful
+   */
   boolean isFailure();
 
   /**
@@ -30,7 +34,9 @@ public interface EvaluationResult {
    */
   String getFailureMessage();
 
-  /** @return the type of the evaluation result, or {@code null} if the evaluation failed */
+  /**
+   * @return the type of the evaluation result, or {@code null} if the evaluation failed
+   */
   ResultType getType();
 
   /**

@@ -20,7 +20,9 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.GatewayDirection;
 import io.camunda.zeebe.model.bpmn.instance.Gateway;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractGatewayBuilder<
         B extends AbstractGatewayBuilder<B, E>, E extends Gateway>
     extends AbstractFlowNodeBuilder<B, E> {

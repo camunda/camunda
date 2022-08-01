@@ -16,9 +16,13 @@ package io.camunda.zeebe.dmn;
  */
 public interface ParsedDecision {
 
-  /** @return the name of the decision */
+  /**
+   * @return the name of the decision
+   */
   String getName();
 
-  /** @return the id of the decision */
+  /**
+   * @return the id of the decision
+   */
   String getId();
 }

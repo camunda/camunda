@@ -29,8 +29,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/camunda-cloud/zeebe/clients/go/internal/containersuite"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
+	"github.com/camunda/zeebe/clients/go/v8/internal/containersuite"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/zbc"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/suite"
 )
@@ -101,9 +101,15 @@ var tests = []testCase{
 		useHostAndPort: true,
 	},
 	{
-		name:       "deploy process",
+		name:       "deploy processes",
 		cmd:        strings.Fields("--insecure deploy testdata/model.bpmn testdata/job_model.bpmn --resourceNames=model.bpmn,job.bpmn"),
 		goldenFile: "testdata/deploy.golden",
+		jsonOutput: true,
+	},
+	{
+		name:       "deploy resources",
+		cmd:        strings.Fields("--insecure deploy resource testdata/model.bpmn testdata/drg-force-user.dmn --resourceNames=model.bpmn,drg-force-user.dmn"),
+		goldenFile: "testdata/deploy_resources.golden",
 		jsonOutput: true,
 	},
 	{
@@ -116,7 +122,7 @@ var tests = []testCase{
 	{
 		name:       "create instance with process key",
 		setupCmds:  [][]string{strings.Fields("--insecure deploy testdata/model.bpmn")},
-		cmd:        strings.Fields("--insecure create instance 2251799813685252"),
+		cmd:        strings.Fields("--insecure create instance 2251799813685256"),
 		goldenFile: "testdata/create_instance.golden",
 		jsonOutput: true,
 	},

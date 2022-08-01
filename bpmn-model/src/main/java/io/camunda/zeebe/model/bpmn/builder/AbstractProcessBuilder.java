@@ -20,7 +20,9 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.ProcessType;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractProcessBuilder<B extends AbstractProcessBuilder<B>>
     extends AbstractCallableElementBuilder<B, Process> {
 

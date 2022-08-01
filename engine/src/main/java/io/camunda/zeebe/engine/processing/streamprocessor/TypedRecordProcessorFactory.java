@@ -13,9 +13,9 @@ public interface TypedRecordProcessorFactory {
   /**
    * Creates typed record processors with the given context.
    *
-   * @param processingContext the processing context which contains value information to create
-   *     record processors
+   * @param typedRecordProcessorContext the processing context which contains value information to
+   *     create record processors
    * @return the created typed record processors
    */
-  TypedRecordProcessors createProcessors(ProcessingContext processingContext);
+  TypedRecordProcessors createProcessors(TypedRecordProcessorContext typedRecordProcessorContext);
 }

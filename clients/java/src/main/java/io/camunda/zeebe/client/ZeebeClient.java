@@ -19,6 +19,7 @@ import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
@@ -44,17 +45,23 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
     return newClientBuilder().build();
   }
 
-  /** @return a new {@link ZeebeClient} using the provided configuration. */
+  /**
+   * @return a new {@link ZeebeClient} using the provided configuration.
+   */
   static ZeebeClient newClient(final ZeebeClientConfiguration configuration) {
     return new ZeebeClientImpl(configuration);
   }
 
-  /** @return a builder to configure and create a new {@link ZeebeClient}. */
+  /**
+   * @return a builder to configure and create a new {@link ZeebeClient}.
+   */
   static ZeebeClientBuilder newClientBuilder() {
     return new ZeebeClientBuilderImpl();
   }
 
-  /** @return a builder with convenient methods to connect to the Camunda Cloud cluster. */
+  /**
+   * @return a builder with convenient methods to connect to the Camunda Cloud cluster.
+   */
   static ZeebeClientCloudBuilderStep1 newCloudClientBuilder() {
     return new ZeebeClientCloudBuilderImpl();
   }
@@ -79,7 +86,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    */
   TopologyRequestStep1 newTopologyRequest();
 
-  /** @return the client's configuration */
+  /**
+   * @return the client's configuration
+   */
   ZeebeClientConfiguration getConfiguration();
 
   @Override
@@ -97,8 +106,26 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * </pre>
    *
    * @return a builder for the command
+   * @deprecated since 8 for removal with 8.1, replaced by {@link
+   *     ZeebeClient#newDeployResourceCommand()}
    */
   DeployProcessCommandStep1 newDeployCommand();
+
+  /**
+   * Command to deploy new resources, i.e. BPMN process models and DMN decision models.
+   *
+   * <pre>
+   * zeebeClient
+   *  .newDeployCommand()
+   *  .addResourceFile("~/wf/process1.bpmn")
+   *  .addResourceFile("~/wf/process2.bpmn")
+   *  .addResourceFile("~/dmn/decision.dmn")
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  DeployResourceCommandStep1 newDeployResourceCommand();
 
   /**
    * Command to create/start a new instance of a process.

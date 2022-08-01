@@ -10,10 +10,10 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import java.util.function.BiFunction;
 
 public final class StreamProcessorTransitionStep implements PartitionTransitionStep {

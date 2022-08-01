@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.security;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.utils.net.Address;
@@ -15,9 +15,9 @@ import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
+import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
 import java.io.IOException;
@@ -49,7 +49,7 @@ final class SecurityTest {
 
     // when
     gateway = buildGateway(cfg);
-    gateway.start();
+    gateway.start().join();
 
     // then
     SslAssert.assertThat(cfg.getNetwork().toSocketAddress()).isSecuredBy(certificate);
@@ -65,9 +65,9 @@ final class SecurityTest {
     gateway = buildGateway(cfg);
 
     // then
-    assertThatCode(() -> gateway.start())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage(
+    assertThatThrownBy(() -> gateway.start().join())
+        .hasRootCauseInstanceOf(IllegalArgumentException.class)
+        .hasRootCauseMessage(
             "Expected to find a certificate chain file at the provided location '%s' but none was found.",
             cfg.getSecurity().getCertificateChainPath());
   }
@@ -82,9 +82,9 @@ final class SecurityTest {
     gateway = buildGateway(cfg);
 
     // then
-    assertThatCode(() -> gateway.start())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage(
+    assertThatThrownBy(() -> gateway.start().join())
+        .hasRootCauseInstanceOf(IllegalArgumentException.class)
+        .hasRootCauseMessage(
             "Expected to find a private key file at the provided location '%s' but none was found.",
             cfg.getSecurity().getPrivateKeyPath());
   }
@@ -99,9 +99,9 @@ final class SecurityTest {
     gateway = buildGateway(cfg);
 
     // then
-    assertThatCode(() -> gateway.start())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage(
+    assertThatThrownBy(() -> gateway.start().join())
+        .hasRootCauseInstanceOf(IllegalArgumentException.class)
+        .hasRootCauseMessage(
             "Expected to find a valid path to a private key but none was found. "
                 + "Edit the gateway configuration file to provide one or to disable TLS.");
   }
@@ -116,9 +116,9 @@ final class SecurityTest {
     gateway = buildGateway(cfg);
 
     // then
-    assertThatCode(() -> gateway.start())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage(
+    assertThatThrownBy(() -> gateway.start().join())
+        .hasRootCauseInstanceOf(IllegalArgumentException.class)
+        .hasRootCauseMessage(
             "Expected to find a valid path to a certificate chain but none was found. "
                 + "Edit the gateway configuration file to provide one or to disable TLS.");
   }

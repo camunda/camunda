@@ -15,26 +15,39 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import org.immutables.value.Value;
 
 /**
  * Represents a timer event or command.
  *
  * <p>See {@link TimerIntent} for intents.
  */
+@Value.Immutable
+@ImmutableProtocol(builder = ImmutableTimerRecordValue.Builder.class)
 public interface TimerRecordValue extends RecordValue, ProcessInstanceRelated {
 
-  /** @return the key of the process in which this timer was created */
+  /**
+   * @return the key of the process in which this timer was created
+   */
   long getProcessDefinitionKey();
 
-  /** @return the key of the related element instance. */
+  /**
+   * @return the key of the related element instance.
+   */
   long getElementInstanceKey();
 
-  /** @return the key of the related process instance */
+  /**
+   * @return the key of the related process instance
+   */
+  @Override
   long getProcessInstanceKey();
 
-  /** @return the due date of the timer as Unix timestamp in millis. */
+  /**
+   * @return the due date of the timer as Unix timestamp in millis.
+   */
   long getDueDate();
 
   /**
@@ -47,6 +60,8 @@ public interface TimerRecordValue extends RecordValue, ProcessInstanceRelated {
    */
   String getTargetElementId();
 
-  /** @return the number of times this timer should trigger */
+  /**
+   * @return the number of times this timer should trigger
+   */
   int getRepetitions();
 }

@@ -8,9 +8,9 @@
 package io.camunda.zeebe.logstreams.log;
 
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBuilderImpl;
+import io.camunda.zeebe.scheduler.AsyncClosable;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.health.HealthMonitorable;
-import io.camunda.zeebe.util.sched.AsyncClosable;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 
 /**
  * Represents a stream of events. New events are append to the end of the log. With {@link
@@ -21,12 +21,16 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
  */
 public interface LogStream extends AsyncClosable, AutoCloseable, HealthMonitorable {
 
-  /** @return a new default LogStream builder */
+  /**
+   * @return a new default LogStream builder
+   */
   static LogStreamBuilder builder() {
     return new LogStreamBuilderImpl();
   }
 
-  /** @return the partition id of the log stream */
+  /**
+   * @return the partition id of the log stream
+   */
   int getPartitionId();
 
   /**
@@ -36,7 +40,9 @@ public interface LogStream extends AsyncClosable, AutoCloseable, HealthMonitorab
    */
   String getLogName();
 
-  /** @return a future, when successfully completed it returns a newly created log stream reader */
+  /**
+   * @return a future, when successfully completed it returns a newly created log stream reader
+   */
   ActorFuture<LogStreamReader> newLogStreamReader();
 
   /**

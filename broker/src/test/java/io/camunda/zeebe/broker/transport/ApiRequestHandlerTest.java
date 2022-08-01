@@ -13,10 +13,10 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.broker.transport.ApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.ApiRequestHandler.ResponseWriter;
+import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.sched.ActorControl;
-import io.camunda.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;

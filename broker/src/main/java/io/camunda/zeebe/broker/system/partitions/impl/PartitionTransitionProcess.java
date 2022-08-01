@@ -13,8 +13,8 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
-import io.camunda.zeebe.util.sched.ConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -84,9 +84,7 @@ final class PartitionTransitionProcess {
 
   private void onStepCompletion(final ActorFuture<Void> future, final Throwable error) {
     if (error != null) {
-      LOG.error(error.getMessage(), error);
       future.completeExceptionally(error);
-
       return;
     }
 

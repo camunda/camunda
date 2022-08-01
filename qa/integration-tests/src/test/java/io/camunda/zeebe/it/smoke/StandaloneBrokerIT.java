@@ -27,7 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -79,7 +79,7 @@ final class StandaloneBrokerIT {
     try (final var client = createClient()) {
       await("until topology is complete").untilAsserted(() -> assertTopologyIsComplete(client));
 
-      client.newDeployCommand().addProcessModel(process, processId + ".bpmn").send().join();
+      client.newDeployResourceCommand().addProcessModel(process, processId + ".bpmn").send().join();
       return client
           .newCreateInstanceCommand()
           .bpmnProcessId(processId)
@@ -117,7 +117,7 @@ final class StandaloneBrokerIT {
   }
 
   private void assertTopologyIsComplete(final ZeebeClient client) {
-    TopologyAssert.assertThat(client.newTopologyRequest().send().join()).isComplete(1, 1);
+    TopologyAssert.assertThat(client.newTopologyRequest().send().join()).isComplete(1, 1, 1);
   }
 
   private ZeebeClient createClient() {

@@ -14,8 +14,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.ZeebeStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.test.util.MsgPackUtil;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
@@ -368,20 +368,25 @@ public final class MessageStateTest {
   @Test
   public void shouldExistCorrelatedMessage() {
     // when
-    messageState.putMessageCorrelation(1L, wrapString("a"));
+    final var messageKey = 1L;
+    final var message = createMessage("name", "correlationKey", "{}", "id1", 1234);
+    messageState.put(messageKey, message);
+    messageState.putMessageCorrelation(messageKey, wrapString("a"));
 
     // then
-    assertThat(messageState.existMessageCorrelation(1L, wrapString("a"))).isTrue();
+    assertThat(messageState.existMessageCorrelation(messageKey, wrapString("a"))).isTrue();
 
-    assertThat(messageState.existMessageCorrelation(3L, wrapString("a"))).isFalse();
-    assertThat(messageState.existMessageCorrelation(1L, wrapString("b"))).isFalse();
+    assertThat(messageState.existMessageCorrelation(messageKey + 1, wrapString("a"))).isFalse();
+    assertThat(messageState.existMessageCorrelation(messageKey, wrapString("b"))).isFalse();
   }
 
   @Test
   public void shouldRemoveMessageCorrelation() {
     // given
     final long messageKey = 6L;
-    final long processInstanceKey = 9L;
+    final var message = createMessage("name", "correlationKey", "{}", "id1", 1234);
+    messageState.put(messageKey, message);
+
     messageState.putMessageCorrelation(messageKey, wrapString("a"));
 
     // when

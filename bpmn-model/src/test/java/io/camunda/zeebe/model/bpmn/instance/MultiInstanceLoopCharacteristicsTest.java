@@ -22,7 +22,9 @@ import io.camunda.zeebe.model.bpmn.impl.instance.LoopDataOutputRef;
 import java.util.Arrays;
 import java.util.Collection;
 
-/** @author Filip Hrisafov */
+/**
+ * @author Filip Hrisafov
+ */
 public class MultiInstanceLoopCharacteristicsTest extends BpmnModelElementInstanceTest {
 
   @Override

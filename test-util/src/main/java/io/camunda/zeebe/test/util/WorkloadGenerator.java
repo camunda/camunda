@@ -42,17 +42,24 @@ public final class WorkloadGenerator {
           .endEvent()
           .done();
 
+  private WorkloadGenerator() {}
+
   /**
    * Given a client, deploy a process, start instances, work on service tasks, create and resolve
    * incidents and finish the instance.
    */
   public static void performSampleWorkload(final ZeebeClient client) {
-    client.newDeployCommand().addProcessModel(SAMPLE_PROCESS, "sample_process.bpmn").send().join();
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(SAMPLE_PROCESS, "sample_process.bpmn")
+        .send()
+        .join();
 
     final Map<String, Object> variables = new HashMap<>();
     variables.put("orderId", "foo-bar-123");
     variables.put("largeValue", "x".repeat(8192));
     variables.put("unicode", "Á");
+    variables.put("nullable", null);
 
     final long processInstanceKey =
         client
@@ -111,6 +118,7 @@ public final class WorkloadGenerator {
 
     // wrap up
     Awaitility.await("the process instance was completed")
+        .timeout(Duration.ofMinutes(1))
         .until(
             () ->
                 RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)

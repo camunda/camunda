@@ -6,12 +6,11 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.4.0-SNAPSHOT</version>
+    <version>8.1.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <artifactId>zeebe-logstreams</artifactId>
-  <version>1.4.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Zeebe Logstreams</name>
@@ -28,6 +27,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-scheduler</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
     </dependency>
@@ -37,6 +41,29 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.netflix.concurrency-limits</groupId>
+      <artifactId>concurrency-limits-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
+    </dependency>
+
+    <!-- Test dependencies -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-scheduler</artifactId>
+      <classifier>tests</classifier>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -59,26 +86,6 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.netflix.concurrency-limits</groupId>
-      <artifactId>concurrency-limits-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.prometheus</groupId>
-      <artifactId>simpleclient</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-atomix-cluster</artifactId>
     </dependency>
 
     <dependency>

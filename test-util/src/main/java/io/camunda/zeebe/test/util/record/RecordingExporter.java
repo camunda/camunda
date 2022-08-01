@@ -80,7 +80,7 @@ public final class RecordingExporter implements Exporter {
   public void export(final Record<?> record) {
     LOCK.lock();
     try {
-      RECORDS.add(record.clone());
+      RECORDS.add(record.copyOf());
       IS_EMPTY.signal();
       if (controller != null) { // the engine tests do not open the exporter
         controller.updateLastExportedRecordPosition(record.getPosition());
@@ -97,6 +97,7 @@ public final class RecordingExporter implements Exporter {
   public static void reset() {
     LOCK.lock();
     try {
+      maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
       RECORDS.clear();
     } finally {
       LOCK.unlock();

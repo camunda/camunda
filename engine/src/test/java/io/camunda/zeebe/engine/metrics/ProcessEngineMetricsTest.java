@@ -16,11 +16,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.prometheus.client.CollectorRegistry;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -37,6 +33,7 @@ public class ProcessEngineMetricsTest {
   public void resetMetrics() {
     ProcessEngineMetrics.EVALUATED_DMN_ELEMENTS.clear();
     ProcessEngineMetrics.EXECUTED_INSTANCES.clear();
+    ProcessEngineMetrics.CREATED_PROCESS_INSTANCES.clear();
   }
 
   @Test
@@ -148,6 +145,40 @@ public class ProcessEngineMetricsTest {
         .isEqualTo(1);
   }
 
+  @Test
+  public void shouldIncreaseProcessInstanceCreatedAtDefaultStartEvent() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent("start").endEvent("end").done())
+        .deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(processInstanceCreationsMetric("creation_at_given_element")).isNull();
+    assertThat(processInstanceCreationsMetric("creation_at_default_start_event")).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldIncreaseProcessInstanceCreatedAtGivenElement() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent("start").endEvent("end").done())
+        .deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withStartInstruction("end").create();
+
+    // then
+    assertThat(processInstanceCreationsMetric("creation_at_default_start_event")).isNull();
+    assertThat(processInstanceCreationsMetric("creation_at_given_element")).isEqualTo(1);
+  }
+
   private Double activatedProcessInstanceMetric() {
     return executedProcessInstanceMetric("activated");
   }
@@ -161,12 +192,19 @@ public class ProcessEngineMetricsTest {
   }
 
   private Double executedProcessInstanceMetric(final String action) {
-    return metricValue(
+    return MetricsTestHelper.readMetricValue(
         "zeebe_executed_instances_total",
         entry("organizationId", "null"),
         entry("type", "ROOT_PROCESS_INSTANCE"),
         entry("action", action),
         entry("partition", "1"));
+  }
+
+  private Double processInstanceCreationsMetric(final String creationMode) {
+    return MetricsTestHelper.readMetricValue(
+        "zeebe_process_instance_creations_total",
+        entry("partition", "1"),
+        entry("creation_mode", creationMode));
   }
 
   private Double succeededEvaluatedDmnElementsMetric() {
@@ -178,18 +216,10 @@ public class ProcessEngineMetricsTest {
   }
 
   private Double evaluatedDmnElementsMetric(final String action) {
-    return metricValue(
+    return MetricsTestHelper.readMetricValue(
         "zeebe_evaluated_dmn_elements_total",
         entry("organizationId", "null"),
         entry("action", action),
         entry("partition", "1"));
-  }
-
-  @SafeVarargs
-  private Double metricValue(final String name, final Entry<String, String>... labels) {
-    final List<String> labelNames = Arrays.stream(labels).map(Entry::getKey).toList();
-    final List<String> labelValues = Arrays.stream(labels).map(Entry::getValue).toList();
-    return CollectorRegistry.defaultRegistry.getSampleValue(
-        name, labelNames.toArray(new String[] {}), labelValues.toArray(new String[] {}));
   }
 }

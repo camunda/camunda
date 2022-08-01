@@ -17,11 +17,11 @@ package worker
 
 import (
 	"fmt"
-	"github.com/camunda-cloud/zeebe/clients/go/internal/mock_pb"
-	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/entities"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/v8/internal/mock_pb"
+	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/commands"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 	"github.com/golang/mock/gomock"
 	"google.golang.org/protobuf/proto"
 	"testing"

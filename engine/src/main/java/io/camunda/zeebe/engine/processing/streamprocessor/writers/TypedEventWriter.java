@@ -37,6 +37,8 @@ public interface TypedEventWriter {
     return eventLength <= getMaxEventLength();
   }
 
-  /** @return the maximum event length */
+  /**
+   * @return the maximum event length
+   */
   int getMaxEventLength();
 }

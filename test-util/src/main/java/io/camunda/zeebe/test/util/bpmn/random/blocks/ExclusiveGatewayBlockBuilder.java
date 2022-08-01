@@ -12,6 +12,7 @@ import io.camunda.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPickConditionCase;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.test.util.bpmn.random.steps.StepPickDefaultCase;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepRaiseIncidentThenResolveAndPickConditionCase;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 /**
@@ -30,23 +32,22 @@ import java.util.Random;
  * "[edge_id]"} so one only needs to set the right variables when starting the process to make sure
  * that a certain edge will be executed
  */
-public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
+public class ExclusiveGatewayBlockBuilder extends AbstractBlockBuilder {
 
   private final List<BlockBuilder> blockBuilders = new ArrayList<>();
   private final List<String> branchIds = new ArrayList<>();
-  private final String forkGatewayId;
   private final String joinGatewayId;
   private final String gatewayConditionVariable;
 
   public ExclusiveGatewayBlockBuilder(final ConstructionContext context) {
+    super("fork_", context.getIdGenerator().nextId());
     final Random random = context.getRandom();
     final IDGenerator idGenerator = context.getIdGenerator();
     final int maxBranches = context.getMaxBranches();
 
-    forkGatewayId = "fork_" + idGenerator.nextId();
     joinGatewayId = "join_" + idGenerator.nextId();
 
-    gatewayConditionVariable = forkGatewayId + "_branch";
+    gatewayConditionVariable = elementId + "_branch";
 
     final BlockSequenceBuilder.BlockSequenceBuilderFactory blockSequenceBuilderFactory =
         context.getBlockSequenceBuilderFactory();
@@ -63,7 +64,7 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
   @Override
   public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
       final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
-    final ExclusiveGatewayBuilder forkGateway = nodeBuilder.exclusiveGateway(forkGatewayId);
+    final ExclusiveGatewayBuilder forkGateway = nodeBuilder.exclusiveGateway(getElementId());
 
     AbstractFlowNodeBuilder<?, ?> workInProgress =
         blockBuilders
@@ -77,7 +78,7 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
 
       final AbstractFlowNodeBuilder<?, ?> outgoingEdge =
           workInProgress
-              .moveToNode(forkGatewayId)
+              .moveToNode(getElementId())
               .sequenceFlowId(edgeId)
               .conditionExpression(gatewayConditionVariable + " = \"" + edgeId + "\"");
 
@@ -88,31 +89,58 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
   }
 
   @Override
-  public ExecutionPathSegment findRandomExecutionPath(final Random random) {
+  public ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
+    final Random random = context.getRandom();
 
-    final int branch = random.nextInt(branchIds.size());
+    final Optional<Integer> branchContainingStartElement =
+        blockBuilders.stream()
+            .filter(b -> b.equalsOrContains(context.getStartElementIds()))
+            .map(blockBuilders::indexOf)
+            .findFirst();
 
-    if (branch == 0) {
-      result.appendDirectSuccessor(
-          new StepPickDefaultCase(forkGatewayId, gatewayConditionVariable));
-    } else if (random.nextBoolean()) {
-      // take a non-default branch
-      result.appendDirectSuccessor(
-          new StepPickConditionCase(
-              forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
-    } else {
-      // cause an incident then resolve it and set a variable
-      result.appendDirectSuccessor(
-          new StepRaiseIncidentThenResolveAndPickConditionCase(
-              forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
+    final int branch = branchContainingStartElement.orElse(random.nextInt(branchIds.size()));
+    if (branchContainingStartElement.isEmpty()) {
+      addRandomGatewayExecutionStep(result, random, branch);
     }
-
-    final BlockBuilder blockBuilder = blockBuilders.get(branch);
-
-    result.append(blockBuilder.findRandomExecutionPath(random));
+    addRandomBranchExecutionSteps(context, result, branch);
 
     return result;
+  }
+
+  @Override
+  public List<BlockBuilder> getPossibleStartingBlocks() {
+    final List<BlockBuilder> allBlockBuilders = new ArrayList<>();
+    allBlockBuilders.add(this);
+    blockBuilders.forEach(
+        blockBuilder -> allBlockBuilders.addAll(blockBuilder.getPossibleStartingBlocks()));
+    return allBlockBuilders;
+  }
+
+  private void addRandomGatewayExecutionStep(
+      final ExecutionPathSegment result, final Random random, final int branch) {
+    // If the branch is the default flow we should always add the default steps
+    // If not we randomly match the condition, or throw an incident and resolve it before matching
+    final int randomNextStepNumber = isDefaultFlow(branch) ? 0 : random.nextInt(1, 3);
+    final var executionStep =
+        switch (randomNextStepNumber) {
+          case 0 -> new StepPickDefaultCase(getElementId(), gatewayConditionVariable);
+          case 1 -> new StepPickConditionCase(
+              getElementId(), gatewayConditionVariable, branchIds.get(branch));
+          default -> new StepRaiseIncidentThenResolveAndPickConditionCase(
+              getElementId(), gatewayConditionVariable, branchIds.get(branch));
+        };
+    result.appendDirectSuccessor(executionStep);
+  }
+
+  final boolean isDefaultFlow(final int branch) {
+    return branch == 0;
+  }
+
+  private void addRandomBranchExecutionSteps(
+      final ExecutionPathContext context, final ExecutionPathSegment result, final int branch) {
+    final BlockBuilder blockBuilder = blockBuilders.get(branch);
+    result.append(blockBuilder.findRandomExecutionPath(context));
   }
 
   static class Factory implements BlockBuilderFactory {

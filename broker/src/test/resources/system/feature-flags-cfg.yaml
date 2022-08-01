@@ -1,0 +1,6 @@
+zeebe:
+  broker:
+    experimental:
+      features:
+        enableYieldingDueDateChecker: true
+        enableActorMetrics: true

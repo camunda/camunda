@@ -304,7 +304,7 @@ public final class MultiInstanceActivityTest {
       final var expectedNumberOfTerminatedServiceTasks = INPUT_COLLECTION.size() - completedJobs;
       assertThat(
               RecordingExporter.records()
-                  .limitToProcessInstance(processInstanceKey)
+                  .betweenProcessInstance(processInstanceKey)
                   .processInstanceRecords()
                   .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
                   .withElementType(BpmnElementType.SERVICE_TASK)
@@ -314,7 +314,7 @@ public final class MultiInstanceActivityTest {
     } else {
       assertThat(
               RecordingExporter.records()
-                  .limitToProcessInstance(processInstanceKey)
+                  .betweenProcessInstance(processInstanceKey)
                   .processInstanceRecords()
                   .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                   .withElementType(BpmnElementType.SERVICE_TASK)
@@ -401,7 +401,7 @@ public final class MultiInstanceActivityTest {
       final var expectedNumberOfTerminatedServiceTasks = INPUT_COLLECTION.size() - completedJobs;
       assertThat(
               RecordingExporter.records()
-                  .limitToProcessInstance(processInstanceKey)
+                  .betweenProcessInstance(processInstanceKey)
                   .processInstanceRecords()
                   .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
                   .withElementType(BpmnElementType.SERVICE_TASK)
@@ -411,7 +411,7 @@ public final class MultiInstanceActivityTest {
     } else {
       assertThat(
               RecordingExporter.records()
-                  .limitToProcessInstance(processInstanceKey)
+                  .betweenProcessInstance(processInstanceKey)
                   .processInstanceRecords()
                   .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                   .withElementType(BpmnElementType.SERVICE_TASK)
@@ -539,7 +539,7 @@ public final class MultiInstanceActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withScopeKey(processInstanceKey))
@@ -791,7 +791,7 @@ public final class MultiInstanceActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .map(Record::getValue)
                 .map(VariableRecordValue::getName))
@@ -941,7 +941,7 @@ public final class MultiInstanceActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withScopeKey(processInstanceKey))
@@ -966,7 +966,7 @@ public final class MultiInstanceActivityTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withScopeKey(processInstanceKey))
@@ -1001,7 +1001,7 @@ public final class MultiInstanceActivityTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withName("loopCounter"))
@@ -1011,6 +1011,193 @@ public final class MultiInstanceActivityTest {
             tuple(elementInstanceKeys.get(0), "1"),
             tuple(elementInstanceKeys.get(1), "2"),
             tuple(elementInstanceKeys.get(2), "3"));
+  }
+
+  @Test
+  public void shouldCompleteBodyWhenCompleteConditionAccessNumberOfInstancesEvaluateTrue() {
+    // given
+    int completedJobs = 2;
+    String completionCondition = "= numberOfInstances = 2";
+    if ("parallel".equals(loopCharacteristics)) {
+      completionCondition = "= numberOfInstances = 3";
+      completedJobs = 1;
+    }
+    final String finalCompletionCondition = completionCondition;
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(miBuilder.andThen(m -> m.completionCondition(finalCompletionCondition))))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(processInstanceKey, completedJobs);
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementId(ELEMENT_ID))
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.COMPLETE_ELEMENT),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    if ("parallel".equals(loopCharacteristics)) {
+      // after 1 has completed, the others must be terminated
+      assertThat(
+              RecordingExporter.records()
+                  .betweenProcessInstance(processInstanceKey)
+                  .processInstanceRecords()
+                  .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                  .withElementType(BpmnElementType.SERVICE_TASK)
+                  .count())
+          .describedAs("all non-completed service tasks have terminated")
+          .isEqualTo(2);
+    } else {
+      assertThat(
+              RecordingExporter.records()
+                  .betweenProcessInstance(processInstanceKey)
+                  .processInstanceRecords()
+                  .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                  .withElementType(BpmnElementType.SERVICE_TASK)
+                  .count())
+          .describedAs("only 2 out of 3 sequential service tasks has activated")
+          .isEqualTo(2);
+    }
+  }
+
+  @Test
+  public void shouldCompleteBodyWhenCompleteConditionAccessNumberOfActiveInstancesEvaluateTrue() {
+    // given
+    int completedJobs = 1;
+    String completionCondition = "= numberOfActiveInstances = 0";
+    if ("parallel".equals(loopCharacteristics)) {
+      completedJobs = 2;
+      completionCondition = "= numberOfActiveInstances = 1";
+    }
+    final String finalCompletionCondition = completionCondition;
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(miBuilder.andThen(m -> m.completionCondition(finalCompletionCondition))))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(processInstanceKey, completedJobs);
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementId(ELEMENT_ID))
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.COMPLETE_ELEMENT),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    if ("parallel".equals(loopCharacteristics)) {
+      // after 2 has completed, the others must be terminated
+      assertThat(
+              RecordingExporter.records()
+                  .betweenProcessInstance(processInstanceKey)
+                  .processInstanceRecords()
+                  .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                  .withElementType(BpmnElementType.SERVICE_TASK)
+                  .count())
+          .describedAs("all non-completed service tasks have terminated")
+          .isEqualTo(1);
+    } else {
+      assertThat(
+              RecordingExporter.records()
+                  .betweenProcessInstance(processInstanceKey)
+                  .processInstanceRecords()
+                  .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                  .withElementType(BpmnElementType.SERVICE_TASK)
+                  .count())
+          .describedAs("only 1 out of 3 sequential service tasks has activated")
+          .isEqualTo(1);
+    }
+  }
+
+  @Test
+  public void
+      shouldCompleteBodyWhenCompleteConditionAccessNumberOfCompletedInstancesEvaluateTrue() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(
+                miBuilder.andThen(m -> m.completionCondition("= numberOfCompletedInstances = 2"))))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
+            .create();
+
+    final int completedJobs = 2;
+    completeJobs(processInstanceKey, completedJobs);
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementId(ELEMENT_ID))
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.COMPLETE_ELEMENT),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    if ("parallel".equals(loopCharacteristics)) {
+      // after 2 has completed, the others must be terminated
+      final var expectedNumberOfTerminatedServiceTasks = INPUT_COLLECTION.size() - completedJobs;
+      assertThat(
+              RecordingExporter.records()
+                  .betweenProcessInstance(processInstanceKey)
+                  .processInstanceRecords()
+                  .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                  .withElementType(BpmnElementType.SERVICE_TASK)
+                  .count())
+          .describedAs("all non-completed service tasks have terminated")
+          .isEqualTo(expectedNumberOfTerminatedServiceTasks);
+    } else {
+      assertThat(
+              RecordingExporter.records()
+                  .betweenProcessInstance(processInstanceKey)
+                  .processInstanceRecords()
+                  .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                  .withElementType(BpmnElementType.SERVICE_TASK)
+                  .count())
+          .describedAs("only 2 out of 3 sequential service tasks has activated")
+          .isEqualTo(2);
+    }
   }
 
   @Test
@@ -1047,7 +1234,7 @@ public final class MultiInstanceActivityTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValue)
@@ -1095,7 +1282,7 @@ public final class MultiInstanceActivityTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withName("global"))
@@ -1194,7 +1381,7 @@ public final class MultiInstanceActivityTest {
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .variableRecords()
                 .withScopeKey(processInstanceKey))
         .extracting(r -> r.getValue().getName())

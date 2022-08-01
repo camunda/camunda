@@ -78,6 +78,52 @@ public final class FailJobTest extends ClientTest {
   }
 
   @Test
+  public void shouldFailJobWithBackoff() {
+    // given
+    final long jobKey = 12;
+    final int newRetries = 23;
+
+    // when
+    final Duration backoffTimeout = Duration.ofSeconds(1);
+    client.newFailCommand(jobKey).retries(newRetries).retryBackoff(backoffTimeout).send().join();
+
+    // then
+    final FailJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobKey()).isEqualTo(jobKey);
+    assertThat(request.getRetries()).isEqualTo(newRetries);
+    assertThat(request.getRetryBackOff()).isEqualTo(backoffTimeout.toMillis());
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldFailJobWithBackoffAndMessage() {
+    // given
+    final long jobKey = 12;
+    final int newRetries = 23;
+    final String message = "failed message";
+
+    // when
+    final Duration backoffTimeout = Duration.ofSeconds(1);
+    client
+        .newFailCommand(jobKey)
+        .retries(newRetries)
+        .retryBackoff(backoffTimeout)
+        .errorMessage(message)
+        .send()
+        .join();
+
+    // then
+    final FailJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobKey()).isEqualTo(jobKey);
+    assertThat(request.getRetries()).isEqualTo(newRetries);
+    assertThat(request.getRetryBackOff()).isEqualTo(backoffTimeout.toMillis());
+    assertThat(request.getErrorMessage()).isEqualTo(message);
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
   public void shouldSetRequestTimeout() {
     // given
     final Duration requestTimeout = Duration.ofHours(124);

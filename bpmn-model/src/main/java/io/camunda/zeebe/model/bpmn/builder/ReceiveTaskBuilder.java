@@ -19,7 +19,9 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ReceiveTask;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class ReceiveTaskBuilder extends AbstractReceiveTaskBuilder<ReceiveTaskBuilder> {
 
   public ReceiveTaskBuilder(final BpmnModelInstance modelInstance, final ReceiveTask element) {

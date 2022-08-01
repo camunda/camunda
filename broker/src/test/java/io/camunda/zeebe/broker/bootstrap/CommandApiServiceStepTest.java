@@ -21,11 +21,11 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
-import io.camunda.zeebe.util.sched.ActorScheduler;
-import io.camunda.zeebe.util.sched.TestConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,6 +65,7 @@ class CommandApiServiceStepTest {
             mock(ExporterRepository.class),
             Collections.emptyList());
     testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
+    testBrokerStartupContext.setDiskSpaceUsageMonitor(mock(DiskSpaceUsageMonitor.class));
   }
 
   @Test
@@ -179,7 +180,10 @@ class CommandApiServiceStepTest {
       testBrokerStartupContext.setCommandApiServerTransport(mockAtomixServerTransport);
       testBrokerStartupContext.setCommandApiService(mockCommandApiService);
       testBrokerStartupContext.addPartitionListener(mockCommandApiService);
-      testBrokerStartupContext.addDiskSpaceUsageListener(mockCommandApiService);
+      testBrokerStartupContext.setDiskSpaceUsageMonitor(mock(DiskSpaceUsageMonitor.class));
+      testBrokerStartupContext
+          .getDiskSpaceUsageMonitor()
+          .addDiskUsageListener(mockCommandApiService);
 
       shutdownFuture = CONCURRENCY_CONTROL.createFuture();
     }

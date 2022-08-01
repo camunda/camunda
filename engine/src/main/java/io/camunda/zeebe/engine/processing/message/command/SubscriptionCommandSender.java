@@ -7,7 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.message.command;
 
+import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import org.agrona.DirectBuffer;
 
 /**
@@ -32,34 +38,13 @@ import org.agrona.DirectBuffer;
  * <pre>
  */
 public class SubscriptionCommandSender {
-
-  private final OpenMessageSubscriptionCommand openMessageSubscriptionCommand =
-      new OpenMessageSubscriptionCommand();
-
-  private final OpenProcessMessageSubscriptionCommand openProcessMessageSubscriptionCommand =
-      new OpenProcessMessageSubscriptionCommand();
-
-  private final CorrelateProcessMessageSubscriptionCommand
-      correlateProcessMessageSubscriptionCommand = new CorrelateProcessMessageSubscriptionCommand();
-
-  private final CorrelateMessageSubscriptionCommand correlateMessageSubscriptionCommand =
-      new CorrelateMessageSubscriptionCommand();
-
-  private final CloseMessageSubscriptionCommand closeMessageSubscriptionCommand =
-      new CloseMessageSubscriptionCommand();
-
-  private final CloseProcessMessageSubscriptionCommand closeProcessMessageSubscriptionCommand =
-      new CloseProcessMessageSubscriptionCommand();
-
-  private final RejectCorrelateMessageSubscriptionCommand
-      rejectCorrelateMessageSubscriptionCommand = new RejectCorrelateMessageSubscriptionCommand();
-  private final PartitionCommandSender partitionCommandSender;
+  private final InterPartitionCommandSender interPartitionCommandSender;
   private final int senderPartition;
 
   public SubscriptionCommandSender(
-      final int senderPartition, final PartitionCommandSender partitionCommandSender) {
+      final int senderPartition, final InterPartitionCommandSender interPartitionCommandSender) {
     this.senderPartition = senderPartition;
-    this.partitionCommandSender = partitionCommandSender;
+    this.interPartitionCommandSender = interPartitionCommandSender;
   }
 
   public boolean openMessageSubscription(
@@ -70,16 +55,20 @@ public class SubscriptionCommandSender {
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
       final boolean closeOnCorrelate) {
-    openMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
-    openMessageSubscriptionCommand.setProcessInstanceKey(processInstanceKey);
-    openMessageSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
-    openMessageSubscriptionCommand.getBpmnProcessId().wrap(bpmnProcessId);
-    openMessageSubscriptionCommand.getMessageName().wrap(messageName);
-    openMessageSubscriptionCommand.getCorrelationKey().wrap(correlationKey);
-    openMessageSubscriptionCommand.setCloseOnCorrelate(closeOnCorrelate);
 
-    return partitionCommandSender.sendCommand(
-        subscriptionPartitionId, openMessageSubscriptionCommand);
+    interPartitionCommandSender.sendCommand(
+        subscriptionPartitionId,
+        ValueType.MESSAGE_SUBSCRIPTION,
+        MessageSubscriptionIntent.CREATE,
+        new MessageSubscriptionRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setBpmnProcessId(bpmnProcessId)
+            .setMessageKey(-1)
+            .setMessageName(messageName)
+            .setCorrelationKey(correlationKey)
+            .setInterrupting(closeOnCorrelate));
+    return true;
   }
 
   public boolean openProcessMessageSubscription(
@@ -88,16 +77,18 @@ public class SubscriptionCommandSender {
       final DirectBuffer messageName,
       final boolean closeOnCorrelate) {
 
-    final int processInstancePartitionId = Protocol.decodePartitionId(processInstanceKey);
-
-    openProcessMessageSubscriptionCommand.setSubscriptionPartitionId(senderPartition);
-    openProcessMessageSubscriptionCommand.setProcessInstanceKey(processInstanceKey);
-    openProcessMessageSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
-    openProcessMessageSubscriptionCommand.getMessageName().wrap(messageName);
-    openProcessMessageSubscriptionCommand.setCloseOnCorrelate(closeOnCorrelate);
-
-    return partitionCommandSender.sendCommand(
-        processInstancePartitionId, openProcessMessageSubscriptionCommand);
+    interPartitionCommandSender.sendCommand(
+        Protocol.decodePartitionId(processInstanceKey),
+        ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+        ProcessMessageSubscriptionIntent.CREATE,
+        new ProcessMessageSubscriptionRecord()
+            .setSubscriptionPartitionId(senderPartition)
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setMessageKey(-1)
+            .setMessageName(messageName)
+            .setInterrupting(closeOnCorrelate));
+    return true;
   }
 
   public boolean correlateProcessMessageSubscription(
@@ -109,19 +100,20 @@ public class SubscriptionCommandSender {
       final DirectBuffer variables,
       final DirectBuffer correlationKey) {
 
-    final int processInstancePartitionId = Protocol.decodePartitionId(processInstanceKey);
-
-    correlateProcessMessageSubscriptionCommand.setSubscriptionPartitionId(senderPartition);
-    correlateProcessMessageSubscriptionCommand.setProcessInstanceKey(processInstanceKey);
-    correlateProcessMessageSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
-    correlateProcessMessageSubscriptionCommand.getBpmnProcessId().wrap(bpmnProcessId);
-    correlateProcessMessageSubscriptionCommand.setMessageKey(messageKey);
-    correlateProcessMessageSubscriptionCommand.getMessageName().wrap(messageName);
-    correlateProcessMessageSubscriptionCommand.getVariables().wrap(variables);
-    correlateProcessMessageSubscriptionCommand.getCorrelationKey().wrap(correlationKey);
-
-    return partitionCommandSender.sendCommand(
-        processInstancePartitionId, correlateProcessMessageSubscriptionCommand);
+    interPartitionCommandSender.sendCommand(
+        Protocol.decodePartitionId(processInstanceKey),
+        ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+        ProcessMessageSubscriptionIntent.CORRELATE,
+        new ProcessMessageSubscriptionRecord()
+            .setSubscriptionPartitionId(senderPartition)
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setBpmnProcessId(bpmnProcessId)
+            .setMessageKey(messageKey)
+            .setMessageName(messageName)
+            .setVariables(variables)
+            .setCorrelationKey(correlationKey));
+    return true;
   }
 
   public boolean correlateMessageSubscription(
@@ -130,15 +122,17 @@ public class SubscriptionCommandSender {
       final long elementInstanceKey,
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName) {
-
-    correlateMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
-    correlateMessageSubscriptionCommand.setProcessInstanceKey(processInstanceKey);
-    correlateMessageSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
-    correlateMessageSubscriptionCommand.getBpmnProcessId().wrap(bpmnProcessId);
-    correlateMessageSubscriptionCommand.getMessageName().wrap(messageName);
-
-    return partitionCommandSender.sendCommand(
-        subscriptionPartitionId, correlateMessageSubscriptionCommand);
+    interPartitionCommandSender.sendCommand(
+        subscriptionPartitionId,
+        ValueType.MESSAGE_SUBSCRIPTION,
+        MessageSubscriptionIntent.CORRELATE,
+        new MessageSubscriptionRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setBpmnProcessId(bpmnProcessId)
+            .setMessageKey(-1)
+            .setMessageName(messageName));
+    return true;
   }
 
   public boolean closeMessageSubscription(
@@ -147,29 +141,33 @@ public class SubscriptionCommandSender {
       final long elementInstanceKey,
       final DirectBuffer messageName) {
 
-    closeMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
-    closeMessageSubscriptionCommand.setProcessInstanceKey(processInstanceKey);
-    closeMessageSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
-    closeMessageSubscriptionCommand.setMessageName(messageName);
-
-    return partitionCommandSender.sendCommand(
-        subscriptionPartitionId, closeMessageSubscriptionCommand);
+    interPartitionCommandSender.sendCommand(
+        subscriptionPartitionId,
+        ValueType.MESSAGE_SUBSCRIPTION,
+        MessageSubscriptionIntent.DELETE,
+        new MessageSubscriptionRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setMessageKey(-1L)
+            .setMessageName(messageName));
+    return true;
   }
 
   public boolean closeProcessMessageSubscription(
       final long processInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer messageName) {
-
-    final int processInstancePartitionId = Protocol.decodePartitionId(processInstanceKey);
-
-    closeProcessMessageSubscriptionCommand.setSubscriptionPartitionId(senderPartition);
-    closeProcessMessageSubscriptionCommand.setProcessInstanceKey(processInstanceKey);
-    closeProcessMessageSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
-    closeProcessMessageSubscriptionCommand.setMessageName(messageName);
-
-    return partitionCommandSender.sendCommand(
-        processInstancePartitionId, closeProcessMessageSubscriptionCommand);
+    interPartitionCommandSender.sendCommand(
+        Protocol.decodePartitionId(processInstanceKey),
+        ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+        ProcessMessageSubscriptionIntent.DELETE,
+        new ProcessMessageSubscriptionRecord()
+            .setSubscriptionPartitionId(senderPartition)
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setMessageKey(-1)
+            .setMessageName(messageName));
+    return true;
   }
 
   public boolean rejectCorrelateMessageSubscription(
@@ -179,16 +177,18 @@ public class SubscriptionCommandSender {
       final DirectBuffer messageName,
       final DirectBuffer correlationKey) {
 
-    final int processInstancePartitionId = Protocol.decodePartitionId(processInstanceKey);
-
-    rejectCorrelateMessageSubscriptionCommand.setSubscriptionPartitionId(senderPartition);
-    rejectCorrelateMessageSubscriptionCommand.setProcessInstanceKey(processInstanceKey);
-    rejectCorrelateMessageSubscriptionCommand.getBpmnProcessId().wrap(bpmnProcessId);
-    rejectCorrelateMessageSubscriptionCommand.setMessageKey(messageKey);
-    rejectCorrelateMessageSubscriptionCommand.getMessageName().wrap(messageName);
-    rejectCorrelateMessageSubscriptionCommand.getCorrelationKey().wrap(correlationKey);
-
-    return partitionCommandSender.sendCommand(
-        processInstancePartitionId, rejectCorrelateMessageSubscriptionCommand);
+    interPartitionCommandSender.sendCommand(
+        Protocol.decodePartitionId(processInstanceKey),
+        ValueType.MESSAGE_SUBSCRIPTION,
+        MessageSubscriptionIntent.REJECT,
+        new MessageSubscriptionRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(-1L)
+            .setBpmnProcessId(bpmnProcessId)
+            .setMessageName(messageName)
+            .setCorrelationKey(correlationKey)
+            .setMessageKey(messageKey)
+            .setInterrupting(false));
+    return true;
   }
 }

@@ -645,12 +645,16 @@ public class Bpmn {
     ZeebeCalledDecisionImpl.registerType(bpmnModelBuilder);
   }
 
-  /** @return the {@link Model} instance to use */
+  /**
+   * @return the {@link Model} instance to use
+   */
   public Model getBpmnModel() {
     return bpmnModel;
   }
 
-  /** @param bpmnModel the bpmnModel to set */
+  /**
+   * @param bpmnModel the bpmnModel to set
+   */
   public void setBpmnModel(final Model bpmnModel) {
     this.bpmnModel = bpmnModel;
   }

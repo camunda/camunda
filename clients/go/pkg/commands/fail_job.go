@@ -17,7 +17,8 @@ package commands
 
 import (
 	"context"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
+	"time"
 )
 
 type DispatchFailJobCommand interface {
@@ -34,6 +35,7 @@ type FailJobCommandStep2 interface {
 
 type FailJobCommandStep3 interface {
 	DispatchFailJobCommand
+	RetryBackoff(retryBackoff time.Duration) FailJobCommandStep3
 	ErrorMessage(string) FailJobCommandStep3
 }
 
@@ -49,6 +51,11 @@ func (cmd *FailJobCommand) JobKey(jobKey int64) FailJobCommandStep2 {
 
 func (cmd *FailJobCommand) Retries(retries int32) FailJobCommandStep3 {
 	cmd.request.Retries = retries
+	return cmd
+}
+
+func (cmd *FailJobCommand) RetryBackoff(retryBackoff time.Duration) FailJobCommandStep3 {
+	cmd.request.RetryBackOff = retryBackoff.Milliseconds()
 	return cmd
 }
 

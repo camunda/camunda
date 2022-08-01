@@ -25,11 +25,11 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.ClientRequest;
 import io.camunda.zeebe.transport.ClientTransport;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
@@ -206,7 +206,9 @@ final class BrokerRequestManager extends Actor {
   }
 
   private BrokerAddressProvider determineBrokerNodeIdProvider(final BrokerRequest<?> request) {
-    if (request.addressesSpecificPartition()) {
+    if (request.getBrokerId().isPresent()) {
+      return new BrokerAddressProvider(clusterState -> request.getBrokerId().orElseThrow());
+    } else if (request.addressesSpecificPartition()) {
       final BrokerClusterState topology = topologyManager.getTopology();
       if (topology != null && !topology.getPartitions().contains(request.getPartitionId())) {
         throw new PartitionNotFoundException(request.getPartitionId());
@@ -214,8 +216,8 @@ final class BrokerRequestManager extends Actor {
       // already know partition id
       return new BrokerAddressProvider(request.getPartitionId());
     } else if (request.requiresPartitionId()) {
-      if (request instanceof BrokerPublishMessageRequest) {
-        determinePartitionIdForPublishMessageRequest((BrokerPublishMessageRequest) request);
+      if (request instanceof BrokerPublishMessageRequest publishMessageRequest) {
+        determinePartitionIdForPublishMessageRequest(publishMessageRequest);
       } else {
         // select next partition id for request
         int partitionId = dispatchStrategy.determinePartition();

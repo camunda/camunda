@@ -12,24 +12,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
-import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
-import io.camunda.zeebe.engine.processing.message.command.PartitionCommandSender;
-import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandMessageHandler;
+import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventImpl;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
@@ -39,7 +35,9 @@ import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -47,25 +45,29 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
+import io.camunda.zeebe.streamprocessor.TypedRecordImpl;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import io.camunda.zeebe.util.sched.ActorControl;
-import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -93,11 +95,7 @@ public final class EngineRule extends ExternalResource {
   private Consumer<String> jobsAvailableCallback = type -> {};
   private Consumer<TypedRecord> onProcessedCallback = record -> {};
   private Consumer<LoggedEvent> onSkippedCallback = record -> {};
-  private DeploymentDistributor deploymentDistributor = new DeploymentDistributionImpl();
 
-  private final Int2ObjectHashMap<SubscriptionCommandMessageHandler> subscriptionHandlers =
-      new Int2ObjectHashMap<>();
-  private ExecutorService subscriptionHandlerExecutor;
   private final Map<Integer, ReprocessingCompletedListener> partitionReprocessingCompleteListeners =
       new Int2ObjectHashMap<>();
 
@@ -135,15 +133,11 @@ public final class EngineRule extends ExternalResource {
 
   @Override
   protected void before() {
-    subscriptionHandlerExecutor = Executors.newSingleThreadExecutor();
-
     startProcessors();
   }
 
   @Override
   protected void after() {
-    subscriptionHandlerExecutor.shutdown();
-    subscriptionHandlers.clear();
     partitionReprocessingCompleteListeners.clear();
   }
 
@@ -157,11 +151,6 @@ public final class EngineRule extends ExternalResource {
 
   public EngineRule withJobsAvailableCallback(final Consumer<String> callback) {
     jobsAvailableCallback = callback;
-    return this;
-  }
-
-  public EngineRule withDeploymentDistributor(final DeploymentDistributor deploymentDistributor) {
-    this.deploymentDistributor = deploymentDistributor;
     return this;
   }
 
@@ -184,16 +173,21 @@ public final class EngineRule extends ExternalResource {
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     final UnsafeBuffer deploymentBuffer = new UnsafeBuffer(new byte[deploymentRecord.getLength()]);
     deploymentRecord.write(deploymentBuffer, 0);
+    final var interPartitionCommandSenders = new ArrayList<TestInterPartitionCommandSender>();
 
     forEachPartition(
         partitionId -> {
           final var reprocessingCompletedListener = new ReprocessingCompletedListener();
           partitionReprocessingCompleteListeners.put(partitionId, reprocessingCompletedListener);
+          final var featureFlags = FeatureFlags.createDefaultForTests();
+
+          final var interPartitionCommandSender = new TestInterPartitionCommandSender();
+          interPartitionCommandSenders.add(interPartitionCommandSender);
           environmentRule.startTypedStreamProcessor(
               partitionId,
-              (processingContext) ->
+              (recordProcessorContext) ->
                   EngineProcessors.createEngineProcessors(
-                          processingContext.listener(
+                          recordProcessorContext.listener(
                               new StreamProcessorListener() {
                                 @Override
                                 public void onProcessed(final TypedRecord<?> processedCommand) {
@@ -208,20 +202,15 @@ public final class EngineRule extends ExternalResource {
                                 }
                               }),
                           partitionCount,
-                          new SubscriptionCommandSender(
-                              partitionId, new PartitionCommandSenderImpl()),
-                          deploymentDistributor,
-                          (key, partition) -> {},
-                          jobsAvailableCallback)
+                          new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
+                          new DeploymentDistributionCommandSender(
+                              partitionId, interPartitionCommandSender),
+                          jobsAvailableCallback,
+                          featureFlags)
                       .withListener(new ProcessingExporterTransistor())
                       .withListener(reprocessingCompletedListener));
-
-          // sequenialize the commands to avoid concurrency
-          subscriptionHandlers.put(
-              partitionId,
-              new SubscriptionCommandMessageHandler(
-                  subscriptionHandlerExecutor::submit, environmentRule::getLogStreamRecordWriter));
         });
+    interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
   }
 
   public void awaitReprocessingCompleted() {
@@ -273,7 +262,7 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.getClock();
   }
 
-  public MutableZeebeState getZeebeState() {
+  public ZeebeState getZeebeState() {
     return environmentRule.getZeebeState();
   }
 
@@ -431,16 +420,17 @@ public final class EngineRule extends ExternalResource {
     private final RecordMetadata metadata = new RecordMetadata();
 
     private LogStreamReader logStreamReader;
-    private TypedEventImpl typedEvent;
+    private TypedRecordImpl typedEvent;
 
     @Override
-    public void onRecovered(final ReadonlyProcessingContext context) {
-      final int partitionId = context.getLogStream().getPartitionId();
-      typedEvent = new TypedEventImpl(partitionId);
-      final ActorControl actor = context.getActor();
+    public void onRecovered(final ReadonlyStreamProcessorContext context) {
+      final int partitionId = context.getPartitionId();
+      typedEvent = new TypedRecordImpl(partitionId);
+      final var scheduleService = context.getScheduleService();
 
       final LogStream logStream = context.getLogStream();
-      logStream.registerRecordAvailableListener(() -> actor.run(this::onNewEventCommitted));
+      logStream.registerRecordAvailableListener(
+          () -> scheduleService.runDelayed(Duration.ZERO, this::onNewEventCommitted));
       logStream
           .newLogStreamReader()
           .onComplete(
@@ -475,7 +465,7 @@ public final class EngineRule extends ExternalResource {
     private final ActorFuture<Void> reprocessingComplete = new CompletableActorFuture<>();
 
     @Override
-    public void onRecovered(final ReadonlyProcessingContext context) {
+    public void onRecovered(final ReadonlyStreamProcessorContext context) {
       reprocessingComplete.complete(null);
     }
 
@@ -484,40 +474,44 @@ public final class EngineRule extends ExternalResource {
     }
   }
 
-  private final class DeploymentDistributionImpl implements DeploymentDistributor {
+  private class TestInterPartitionCommandSender implements InterPartitionCommandSender {
+
+    private final Map<Integer, LogStreamRecordWriter> writers = new HashMap<>();
 
     @Override
-    public ActorFuture<Void> pushDeploymentToPartition(
-        final long key, final int partitionId, final DirectBuffer deploymentBuffer) {
-
-      final DeploymentRecord deploymentRecord = new DeploymentRecord();
-      deploymentRecord.wrap(deploymentBuffer);
-
-      // we run in processor actor, we are not allowed to wait on futures
-      // which means we cant get new writer in sync way
-      new Thread(
-              () ->
-                  environmentRule.writeCommandOnPartition(
-                      partitionId, key, DeploymentIntent.DISTRIBUTE, deploymentRecord))
-          .start();
-
-      return CompletableActorFuture.completed(null);
+    public void sendCommand(
+        final int receiverPartitionId,
+        final ValueType valueType,
+        final Intent intent,
+        final BufferWriter command) {
+      sendCommand(receiverPartitionId, valueType, intent, null, command);
     }
-  }
-
-  private class PartitionCommandSenderImpl implements PartitionCommandSender {
 
     @Override
-    public boolean sendCommand(final int receiverPartitionId, final BufferWriter command) {
+    public void sendCommand(
+        final int receiverPartitionId,
+        final ValueType valueType,
+        final Intent intent,
+        final Long recordKey,
+        final BufferWriter command) {
+      final var metadata =
+          new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
+      final var writer = writers.get(receiverPartitionId);
+      writer.reset();
+      if (recordKey != null) {
+        writer.key(recordKey);
+      }
+      writer.metadataWriter(metadata).valueWriter(command).tryWrite();
+    }
 
-      final byte[] bytes = new byte[command.getLength()];
-      final UnsafeBuffer commandBuffer = new UnsafeBuffer(bytes);
-      command.write(commandBuffer, 0);
-
-      // delegate the command to the subscription handler of the receiver partition
-      subscriptionHandlers.get(receiverPartitionId).apply(bytes);
-
-      return true;
+    // Pre-initialize dedicated writers.
+    // We must build new writers because reusing the writers from the environmentRule is unsafe.
+    // We can't build them on-demand during `sendCommand` because that might run within an actor
+    // context where we can't build new `SyncLogStream`s.
+    private void initializeWriters(final int partitionCount) {
+      for (int i = PARTITION_ID; i < PARTITION_ID + partitionCount; i++) {
+        writers.put(i, environmentRule.newLogStreamRecordWriter(i));
+      }
     }
   }
 }

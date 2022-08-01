@@ -27,7 +27,9 @@ public final class VersionUtil {
 
   private VersionUtil() {}
 
-  /** @return the current version or 'development' if none can be determined. */
+  /**
+   * @return the current version or 'development' if none can be determined.
+   */
   public static String getVersion() {
     if (version == null) {
       // read version from file
@@ -52,7 +54,9 @@ public final class VersionUtil {
     return versionLowerCase;
   }
 
-  /** @return the previous stable version or null if none was found. */
+  /**
+   * @return the previous stable version or null if none was found.
+   */
   public static String getPreviousVersion() {
     if (lastVersion == null) {
       lastVersion = readProperty(LAST_VERSION_PROPERTY_NAME);

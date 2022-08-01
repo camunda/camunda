@@ -26,7 +26,9 @@ import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
 import io.camunda.zeebe.model.bpmn.instance.di.Waypoint;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public abstract class AbstractBoundaryEventBuilder<B extends AbstractBoundaryEventBuilder<B>>
     extends AbstractCatchEventBuilder<B, BoundaryEvent> {
 

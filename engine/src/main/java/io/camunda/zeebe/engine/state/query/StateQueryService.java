@@ -12,9 +12,6 @@ import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
-import io.camunda.zeebe.engine.state.immutable.JobState;
-import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -23,17 +20,12 @@ import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public final class StateQueryService implements QueryService {
-  private final ProcessState processes;
-  private final ElementInstanceState instances;
-  private final JobState jobs;
-
   private volatile boolean isClosed;
+  private ZeebeState state;
+  private final ZeebeDb<ZbColumnFamilies> zeebeDb;
 
   public StateQueryService(final ZeebeDb<ZbColumnFamilies> zeebeDb) {
-    final ZeebeState state = new ZeebeDbState(zeebeDb, zeebeDb.createContext());
-    processes = state.getProcessState();
-    instances = state.getElementInstanceState();
-    jobs = state.getJobState();
+    this.zeebeDb = zeebeDb;
   }
 
   @Override
@@ -45,7 +37,7 @@ public final class StateQueryService implements QueryService {
   public Optional<DirectBuffer> getBpmnProcessIdForProcess(final long key) {
     ensureServiceIsOpened();
 
-    return Optional.ofNullable(processes.getProcessByKey(key))
+    return Optional.ofNullable(state.getProcessState().getProcessByKey(key))
         .map(DeployedProcess::getBpmnProcessId);
   }
 
@@ -53,7 +45,7 @@ public final class StateQueryService implements QueryService {
   public Optional<DirectBuffer> getBpmnProcessIdForProcessInstance(final long key) {
     ensureServiceIsOpened();
 
-    return Optional.ofNullable(instances.getInstance(key))
+    return Optional.ofNullable(state.getElementInstanceState().getInstance(key))
         .map(ElementInstance::getValue)
         .map(ProcessInstanceRecord::getBpmnProcessIdBuffer);
   }
@@ -62,12 +54,17 @@ public final class StateQueryService implements QueryService {
   public Optional<DirectBuffer> getBpmnProcessIdForJob(final long key) {
     ensureServiceIsOpened();
 
-    return Optional.ofNullable(jobs.getJob(key)).map(JobRecord::getBpmnProcessIdBuffer);
+    return Optional.ofNullable(state.getJobState().getJob(key))
+        .map(JobRecord::getBpmnProcessIdBuffer);
   }
 
   private void ensureServiceIsOpened() {
     if (isClosed) {
       throw new ClosedServiceException();
+    }
+    if (state == null) {
+      // service is used for the first time, create state now
+      state = new ZeebeDbState(zeebeDb, zeebeDb.createContext());
     }
   }
 }

@@ -26,6 +26,7 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.primitive.TestMember;
+import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
@@ -33,8 +34,10 @@ import io.atomix.raft.snapshot.InMemorySnapshot;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.storage.log.entry.ApplicationEntry;
+import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.zeebe.EntryValidator;
-import io.atomix.raft.zeebe.NoopEntryValidator;
+import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.AbstractIdentifier;
 import io.atomix.utils.concurrent.SingleThreadContext;
@@ -42,16 +45,19 @@ import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,7 +69,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
@@ -90,6 +95,7 @@ public final class RaftRule extends ExternalResource {
   private Map<String, AtomicReference<InMemorySnapshot>> snapshots;
   private Map<String, TestSnapshotStore> snapshotStores;
   private final BiFunction<MemberId, Builder, Builder> serverConfigurator;
+  private final Random random = new Random();
 
   private RaftRule(
       final int nodeCount, final BiFunction<MemberId, Builder, Builder> serverConfigurator) {
@@ -263,6 +269,10 @@ public final class RaftRule extends ExternalResource {
     return members.stream().map(RaftMember::memberId).collect(Collectors.toList());
   }
 
+  public Collection<RaftServer> getServers() {
+    return servers.values();
+  }
+
   public void shutdownServer(final RaftServer raftServer) throws Exception {
     shutdownServer(raftServer.name());
   }
@@ -404,7 +414,7 @@ public final class RaftRule extends ExternalResource {
         try (final var raftLogReader = log.openUncommittedReader()) {
           while (raftLogReader.hasNext()) {
             final var indexedEntry = raftLogReader.next();
-            entryList.add(indexedEntry);
+            entryList.add(CopiedRaftLogEntry.of(indexedEntry));
           }
         }
 
@@ -560,11 +570,9 @@ public final class RaftRule extends ExternalResource {
   private TestAppendListener appendEntry(final int entrySize, final LeaderRole leaderRole) {
     final var appendListener = new TestAppendListener();
     position += 1;
-    leaderRole.appendEntry(
-        position,
-        position + 10,
-        ByteBuffer.wrap(RandomStringUtils.random(entrySize).getBytes()),
-        appendListener);
+    final var bytes = new byte[entrySize];
+    random.nextBytes(bytes);
+    leaderRole.appendEntry(position, position + 10, ByteBuffer.wrap(bytes), appendListener);
     position += 10;
     return appendListener;
   }
@@ -654,6 +662,33 @@ public final class RaftRule extends ExternalResource {
 
     public long awaitCommit() throws Exception {
       return commitFuture.get(30, TimeUnit.SECONDS);
+    }
+  }
+
+  private record CopiedRaftLogEntry(long index, long term, RaftEntry entry)
+      implements IndexedRaftLogEntry {
+    private static CopiedRaftLogEntry of(final IndexedRaftLogEntry entry) {
+      final RaftEntry copiedEntry;
+
+      if (entry.entry() instanceof ApplicationEntry app) {
+        copiedEntry =
+            new ApplicationEntry(
+                app.lowestPosition(), app.highestPosition(), BufferUtil.cloneBuffer(app.data()));
+      } else {
+        copiedEntry = entry.entry();
+      }
+
+      return new CopiedRaftLogEntry(entry.index(), entry.term(), copiedEntry);
+    }
+
+    @Override
+    public ApplicationEntry getApplicationEntry() {
+      return (ApplicationEntry) entry;
+    }
+
+    @Override
+    public PersistedRaftRecord getPersistedRaftRecord() {
+      throw new UnsupportedOperationException();
     }
   }
 }

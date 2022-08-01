@@ -42,4 +42,12 @@ public final class DeploymentRecordStream
   public DeploymentRecordStream withDeployedProcess(final Process process) {
     return valueFilter(v -> v.getProcessesMetadata().contains(process));
   }
+
+  public DeploymentRecordStream withResourceName(final String resourceName) {
+    return valueFilter(
+        v ->
+            v.getResources().stream()
+                .map(DeploymentResource::getResourceName)
+                .anyMatch(resourceName::equals));
+  }
 }

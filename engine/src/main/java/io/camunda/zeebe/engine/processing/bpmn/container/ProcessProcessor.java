@@ -53,13 +53,8 @@ public final class ProcessProcessor
   @Override
   public void onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-
-    eventSubscriptionBehavior
-        .subscribeToEvents(element, context)
-        .map(o -> stateTransitionBehavior.transitionToActivated(context))
-        .ifRightOrLeft(
-            activated -> activateStartEvent(element, activated),
-            failure -> incidentBehavior.createIncident(failure, context));
+    final var activatedContext = stateTransitionBehavior.transitionToActivated(context);
+    activateStartEvent(element, activatedContext);
   }
 
   @Override
@@ -138,8 +133,8 @@ public final class ProcessProcessor
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
 
-    if (flowScopeContext.getIntent() != ProcessInstanceIntent.ELEMENT_TERMINATING
-        && stateBehavior.isInterrupted(flowScopeContext)) {
+    if (stateBehavior.isInterrupted(flowScopeContext)) {
+      // an interrupting event subprocess was triggered
       eventSubscriptionBehavior
           .findEventTrigger(flowScopeContext)
           .ifPresent(
@@ -149,6 +144,7 @@ public final class ProcessProcessor
                       flowScopeContext.getElementInstanceKey(),
                       eventTrigger,
                       flowScopeContext));
+
     } else if (stateBehavior.canBeTerminated(childContext)) {
       transitionTo(
           element,

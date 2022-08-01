@@ -12,13 +12,13 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.util.ZeebeStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.streamprocessor.StreamProcessorContext;
 import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,7 +33,7 @@ public final class JobTimeoutTriggerTest {
 
   @Mock private ActorControl someActor;
 
-  @Mock private TypedStreamWriter typedStreamWriter;
+  @Mock private LegacyTypedStreamWriter typedStreamWriter;
   private JobTimeoutTrigger jobTimeoutTrigger;
 
   @Before
@@ -43,10 +43,10 @@ public final class JobTimeoutTriggerTest {
     final MutableJobState jobState = stateRule.getZeebeState().getJobState();
     jobTimeoutTrigger = new JobTimeoutTrigger(jobState);
 
-    final ProcessingContext processingContext =
-        new ProcessingContext().actor(someActor).logStreamWriter(typedStreamWriter);
-    processingContext.enableLogStreamWriter();
-    jobTimeoutTrigger.onRecovered(processingContext);
+    final StreamProcessorContext streamProcessorContext =
+        new StreamProcessorContext().actor(someActor).logStreamWriter(typedStreamWriter);
+    streamProcessorContext.enableLogStreamWriter();
+    jobTimeoutTrigger.onRecovered(streamProcessorContext);
 
     IntStream.range(0, 3)
         .forEach(

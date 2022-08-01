@@ -9,23 +9,23 @@ package io.camunda.zeebe.engine.processing.deployment;
 
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionBehavior;
-import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
+import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -38,7 +38,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.List;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
@@ -66,8 +65,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final ExpressionProcessor expressionProcessor,
       final int partitionsCount,
       final Writers writers,
-      final ActorControl actor,
-      final DeploymentDistributor deploymentDistributor,
+      final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final KeyGenerator keyGenerator) {
     processState = zeebeState.getProcessState();
     timerInstanceState = zeebeState.getTimerState();
@@ -81,18 +79,17 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
         new MessageStartEventSubscriptionManager(
             processState, zeebeState.getMessageStartEventSubscriptionState(), keyGenerator);
     deploymentDistributionBehavior =
-        new DeploymentDistributionBehavior(writers, partitionsCount, deploymentDistributor, actor);
+        new DeploymentDistributionBehavior(
+            writers, partitionsCount, deploymentDistributionCommandSender);
   }
 
   @Override
   public void processRecord(
       final TypedRecord<DeploymentRecord> command,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
+      final LegacyTypedResponseWriter responseWriter,
+      final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
 
-    // need to add multiple side-effects for sending a response and scheduling timers
-    sideEffects.add(responseWriter);
     sideEffect.accept(sideEffects);
 
     final DeploymentRecord deploymentEvent = command.getValue();
@@ -132,7 +129,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
   private void createTimerIfTimerStartEvent(
       final TypedRecord<DeploymentRecord> record,
-      final TypedStreamWriter streamWriter,
+      final LegacyTypedStreamWriter streamWriter,
       final SideEffects sideEffects) {
     for (final ProcessMetadata processMetadata : record.getValue().processesMetadata()) {
       if (!processMetadata.isDuplicate()) {
@@ -146,7 +143,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   }
 
   private void subscribeToTimerStartEventIfExists(
-      final TypedStreamWriter streamWriter,
+      final LegacyTypedStreamWriter streamWriter,
       final SideEffects sideEffects,
       final ProcessMetadata processMetadata,
       final List<ExecutableStartEvent> startEvents) {
@@ -175,14 +172,14 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   }
 
   private void unsubscribeFromPreviousTimers(
-      final TypedStreamWriter streamWriter, final ProcessMetadata processRecord) {
+      final LegacyTypedStreamWriter streamWriter, final ProcessMetadata processRecord) {
     timerInstanceState.forEachTimerForElementInstance(
         NO_ELEMENT_INSTANCE,
         timer -> unsubscribeFromPreviousTimer(streamWriter, processRecord, timer));
   }
 
   private void unsubscribeFromPreviousTimer(
-      final TypedStreamWriter streamWriter,
+      final LegacyTypedStreamWriter streamWriter,
       final ProcessMetadata processMetadata,
       final TimerInstance timer) {
     final DirectBuffer timerBpmnId =

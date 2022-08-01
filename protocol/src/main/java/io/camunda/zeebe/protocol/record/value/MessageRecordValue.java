@@ -15,19 +15,27 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import org.immutables.value.Value;
 
 /**
  * Represents a message event or command.
  *
  * <p>See {@link MessageIntent} for intents.
  */
+@Value.Immutable
+@ImmutableProtocol(builder = ImmutableMessageRecordValue.Builder.class)
 public interface MessageRecordValue extends RecordValueWithVariables {
-  /** @return the name of the message */
+  /**
+   * @return the name of the message
+   */
   String getName();
 
-  /** @return the correlation key of the message */
+  /**
+   * @return the correlation key of the message
+   */
   String getCorrelationKey();
 
   /**
@@ -38,7 +46,9 @@ public interface MessageRecordValue extends RecordValueWithVariables {
    */
   String getMessageId();
 
-  /** @return the time to live of the message */
+  /**
+   * @return the time to live of the message
+   */
   long getTimeToLive();
 
   /**

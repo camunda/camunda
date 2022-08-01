@@ -7,27 +7,30 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestActorFuture;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
-import io.camunda.zeebe.util.sched.ActorSchedulingService;
-import io.camunda.zeebe.util.sched.ConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.TestActorFuture;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -52,6 +55,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private AsyncSnapshotDirector snapshotDirector;
   private QueryService queryService;
   private ConcurrencyControl concurrencyControl;
+  private InterPartitionCommandReceiverActor interPartitionCommandReceiver;
+  private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
 
   @Override
   public int getPartitionId() {
@@ -120,6 +125,21 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
+  public ClusterCommunicationService getClusterCommunicationService() {
+    return null;
+  }
+
+  @Override
+  public InterPartitionCommandReceiverActor getPartitionCommandReceiver() {
+    return interPartitionCommandReceiver;
+  }
+
+  @Override
+  public void setPartitionCommandReceiver(final InterPartitionCommandReceiverActor receiver) {
+    interPartitionCommandReceiver = receiver;
+  }
+
+  @Override
   public boolean shouldExport() {
     return true;
   }
@@ -157,6 +177,15 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public void setQueryService(final QueryService queryService) {
     this.queryService = queryService;
+  }
+
+  @Override
+  public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
+    return diskSpaceUsageMonitor;
+  }
+
+  public void setDiskSpaceUsageMonitor(final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
+    this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
   }
 
   public void setBrokerCfg(final BrokerCfg brokerCfg) {
@@ -220,6 +249,16 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     this.streamProcessorFactory = streamProcessorFactory;
   }
 
+  @Override
+  public ConcurrencyControl getConcurrencyControl() {
+    return concurrencyControl;
+  }
+
+  @Override
+  public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
+    this.concurrencyControl = concurrencyControl;
+  }
+
   public void setRaftPartition(final RaftPartition raftPartition) {
     this.raftPartition = raftPartition;
   }
@@ -270,15 +309,5 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   public void setStateController(final StateController stateController) {
     this.stateController = stateController;
-  }
-
-  @Override
-  public ConcurrencyControl getConcurrencyControl() {
-    return concurrencyControl;
-  }
-
-  @Override
-  public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
-    this.concurrencyControl = concurrencyControl;
   }
 }

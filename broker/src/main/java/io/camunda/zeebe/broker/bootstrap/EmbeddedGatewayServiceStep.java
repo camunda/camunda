@@ -8,8 +8,8 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
-import io.camunda.zeebe.util.sched.ConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.concurrent.CompletableFuture;
 
 class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
@@ -35,13 +35,20 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
             clusterServices.getMembershipService(),
             clusterServices.getEventService());
 
-    brokerStartupContext.setEmbeddedGatewayService(embeddedGatewayService);
+    final var embeddedGatewayServiceFuture = embeddedGatewayService.start();
+    concurrencyControl.runOnCompletion(
+        embeddedGatewayServiceFuture,
+        (gateway, error) -> {
+          if (error != null) {
+            startupFuture.completeExceptionally(error);
+            return;
+          }
 
-    final var springBridge = brokerStartupContext.getSpringBrokerBridge();
-    final var gateway = embeddedGatewayService.get();
-    springBridge.registerBrokerClient(gateway::getBrokerClient);
-
-    startupFuture.complete(brokerStartupContext);
+          brokerStartupContext.setEmbeddedGatewayService(embeddedGatewayService);
+          final var springBridge = brokerStartupContext.getSpringBrokerBridge();
+          springBridge.registerBrokerClient(gateway::getBrokerClient);
+          startupFuture.complete(brokerStartupContext);
+        });
   }
 
   @Override

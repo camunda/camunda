@@ -8,7 +8,7 @@
 package io.camunda.zeebe.test.util.bpmn.random;
 
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import java.util.Random;
+import java.util.List;
 
 /**
  * Implementations of this class build blocks of processes and segments of execution paths.
@@ -35,6 +35,16 @@ public interface BlockBuilder {
    */
   AbstractFlowNodeBuilder<?, ?> buildFlowNodes(final AbstractFlowNodeBuilder<?, ?> nodeBuilder);
 
+  ExecutionPathSegment findRandomExecutionPath(final ExecutionPathContext context);
+
   /** Creates a random execution path segment. */
-  ExecutionPathSegment findRandomExecutionPath(final Random random);
+  ExecutionPathSegment generateRandomExecutionPath(final ExecutionPathContext context);
+
+  String getElementId();
+
+  List<BlockBuilder> getPossibleStartingBlocks();
+
+  List<String> getPossibleStartingElementIds();
+
+  boolean equalsOrContains(final List<String> startElementIds);
 }

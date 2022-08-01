@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.processinstance.CreateProcessInstanceProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.CreateProcessInstanceWithResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCommandProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -38,6 +40,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -61,6 +64,8 @@ public final class ProcessEventProcessors {
         new VariableBehavior(
             zeebeState.getVariableState(), writers.state(), zeebeState.getKeyGenerator());
 
+    final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
+
     addProcessInstanceCommandProcessor(typedRecordProcessors, zeebeState.getElementInstanceState());
 
     final var bpmnStreamProcessor =
@@ -71,7 +76,8 @@ public final class ProcessEventProcessors {
             eventTriggerBehavior,
             zeebeState,
             writers,
-            jobMetrics);
+            jobMetrics,
+            processEngineMetrics);
     addBpmnStepProcessor(typedRecordProcessors, bpmnStreamProcessor);
 
     addMessageStreamProcessors(
@@ -96,7 +102,13 @@ public final class ProcessEventProcessors {
         zeebeState.getKeyGenerator(),
         writers.state());
     addProcessInstanceCreationStreamProcessors(
-        typedRecordProcessors, zeebeState, writers, variableBehavior);
+        typedRecordProcessors,
+        zeebeState,
+        writers,
+        variableBehavior,
+        catchEventBehavior,
+        processEngineMetrics);
+    addProcessInstanceModificationStreamProcessors(typedRecordProcessors, zeebeState, writers);
 
     return bpmnStreamProcessor;
   }
@@ -198,13 +210,20 @@ public final class ProcessEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableZeebeState zeebeState,
       final Writers writers,
-      final VariableBehavior variableBehavior) {
+      final VariableBehavior variableBehavior,
+      final CatchEventBehavior catchEventBehavior,
+      final ProcessEngineMetrics metrics) {
     final MutableElementInstanceState elementInstanceState = zeebeState.getElementInstanceState();
     final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
 
     final CreateProcessInstanceProcessor createProcessor =
         new CreateProcessInstanceProcessor(
-            zeebeState.getProcessState(), keyGenerator, writers, variableBehavior);
+            zeebeState.getProcessState(),
+            keyGenerator,
+            writers,
+            variableBehavior,
+            catchEventBehavior,
+            metrics);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
 
@@ -212,5 +231,17 @@ public final class ProcessEventProcessors {
         ValueType.PROCESS_INSTANCE_CREATION,
         ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
         new CreateProcessInstanceWithResultProcessor(createProcessor, elementInstanceState));
+  }
+
+  private static void addProcessInstanceModificationStreamProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final MutableZeebeState zeebeState,
+      final Writers writers) {
+    final ProcessInstanceModificationProcessor modificationProcessor =
+        new ProcessInstanceModificationProcessor(writers, zeebeState.getKeyGenerator());
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE_MODIFICATION,
+        ProcessInstanceModificationIntent.MODIFY,
+        modificationProcessor);
   }
 }

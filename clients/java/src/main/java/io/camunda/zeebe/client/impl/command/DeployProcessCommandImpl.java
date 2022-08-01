@@ -69,7 +69,8 @@ public final class DeployProcessCommandImpl
     requestBuilder.addProcesses(
         ProcessRequestObject.newBuilder()
             .setName(resourceName)
-            .setDefinition(ByteString.copyFrom(resource)));
+            .setDefinition(ByteString.copyFrom(resource))
+            .build());
 
     return this;
   }

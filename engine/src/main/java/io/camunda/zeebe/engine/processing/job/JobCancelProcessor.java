@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -34,6 +34,8 @@ public final class JobCancelProcessor implements CommandProcessor<JobRecord> {
     final long jobKey = command.getKey();
     final JobRecord job = jobState.getJob(jobKey);
     if (job != null) {
+      // Note that this logic is duplicated in BpmnJobBehavior, if you change this please change
+      // it there as well.
       commandControl.accept(JobIntent.CANCELED, job);
       jobMetrics.jobCanceled(job.getType());
     } else {

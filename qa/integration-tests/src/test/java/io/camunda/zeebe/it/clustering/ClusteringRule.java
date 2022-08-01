@@ -51,16 +51,17 @@ import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
-import io.camunda.zeebe.util.sched.ActorScheduler;
-import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
@@ -77,7 +78,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -86,7 +86,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.LangUtil;
@@ -230,16 +229,15 @@ public final class ClusteringRule extends ExternalResource {
 
     // create gateway
     gateway = createGateway();
-    gateway.start();
+    gateway.start().join();
 
     // create client
     client = createClient();
 
     try {
       waitUntilBrokersStarted();
-      waitForPartitionReplicationFactor();
-      LOG.info("Full replication factor");
-      waitUntilBrokersInTopology();
+      waitForTopology(
+          assertion -> assertion.isComplete(clusterSize, partitionCount, replicationFactor));
       LOG.info("All brokers in topology {}", getTopologyFromClient());
 
     } catch (final Exception e) {
@@ -297,11 +295,7 @@ public final class ClusteringRule extends ExternalResource {
             getSpringBrokerBridge(nodeId),
             Collections.singletonList(new LeaderListener(partitionLatch, nodeId)));
 
-    new Thread(
-            () -> {
-              broker.start();
-            })
-        .start();
+    CompletableFuture.runAsync(broker::start);
     return broker;
   }
 
@@ -364,11 +358,19 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   private Gateway createGateway() {
-    final String contactPoint =
-        NetUtil.toSocketAddressString(getBrokerCfg(0).getNetwork().getInternalApi().getAddress());
+    final List<String> initialContactPoints =
+        brokerCfgs.values().stream()
+            .map(
+                brokerCfg ->
+                    NetUtil.toSocketAddressString(
+                        brokerCfg.getNetwork().getInternalApi().getAddress()))
+            .collect(Collectors.toList());
 
     final GatewayCfg gatewayCfg = new GatewayCfg();
-    gatewayCfg.getCluster().setContactPoint(contactPoint).setClusterName(clusterName);
+    gatewayCfg
+        .getCluster()
+        .setInitialContactPoints(initialContactPoints)
+        .setClusterName(clusterName);
     gatewayCfg.getNetwork().setPort(SocketUtil.getNextAddress().getPort());
     gatewayCfg.getCluster().setPort(SocketUtil.getNextAddress().getPort());
     // temporarily increase request time out, but we should make this configurable per test
@@ -387,7 +389,10 @@ public final class ClusteringRule extends ExternalResource {
             .withClusterId(clusterCfg.getClusterName())
             .withMembershipProvider(
                 BootstrapDiscoveryProvider.builder()
-                    .withNodes(Address.from(clusterCfg.getContactPoint()))
+                    .withNodes(
+                        clusterCfg.getInitialContactPoints().stream()
+                            .map(Address::from)
+                            .toArray(Address[]::new))
                     .build())
             .withMembershipProtocol(
                 SwimMembershipProtocol.builder().withSyncInterval(Duration.ofSeconds(1)).build())
@@ -427,22 +432,6 @@ public final class ClusteringRule extends ExternalResource {
     return client;
   }
 
-  private void waitUntilBrokersInTopology() {
-
-    final Set<InetSocketAddress> addresses =
-        brokers.values().stream()
-            .map(Broker::getConfig)
-            .map(b -> b.getNetwork().getCommandApi().getAddress())
-            .collect(Collectors.toSet());
-
-    waitForTopology(
-        topology ->
-            topology.stream()
-                .map(b -> new InetSocketAddress(b.getHost(), b.getPort()))
-                .collect(Collectors.toSet())
-                .containsAll(addresses));
-  }
-
   public Topology getTopologyFromClient() {
     return Awaitility.await()
         .pollInterval(Duration.ofMillis(100))
@@ -475,33 +464,6 @@ public final class ClusteringRule extends ExternalResource {
         .findFirst();
   }
 
-  /** Wait for a partition bootstrap in the cluster. */
-  public void waitForPartitionReplicationFactor() {
-    waitForTopology(
-        topology ->
-            hasPartitionsWithReplicationFactor(topology, partitionCount, replicationFactor));
-  }
-
-  private boolean hasPartitionsWithReplicationFactor(
-      final List<BrokerInfo> brokers, final int partitionCount, final int replicationFactor) {
-    final AtomicLong leaders = new AtomicLong();
-    final AtomicLong followers = new AtomicLong();
-
-    brokers.stream()
-        .flatMap(b -> b.getPartitions().stream())
-        .forEach(
-            p -> {
-              if (p.isLeader()) {
-                leaders.getAndIncrement();
-              } else {
-                followers.getAndIncrement();
-              }
-            });
-
-    return leaders.get() >= partitionCount
-        && followers.get() >= partitionCount * (replicationFactor - 1);
-  }
-
   /**
    * Restarts broker, if the broker is still running it will be closed before.
    *
@@ -513,51 +475,31 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   public void startBroker(final int nodeId) {
-    final Broker broker = getBroker(nodeId).start().join();
-    final InetSocketAddress commandApi =
-        broker.getConfig().getNetwork().getCommandApi().getAddress();
-    waitUntilBrokerIsAddedToTopology(commandApi);
-    waitForPartitionReplicationFactor();
+    final var broker = Objects.requireNonNull(getBroker(nodeId), "must get existing broker");
+    //noinspection resource
+    broker.start().join();
+
+    waitForTopology(
+        assertion ->
+            assertion
+                .containsBroker(nodeId)
+                .hasLeaderForEachPartition(partitionCount)
+                .hasExpectedReplicasCount(partitionCount, replicationFactor));
   }
 
   public void restartCluster() {
     final var brokers =
-        getBrokers().stream()
-            .map(b -> b.getConfig().getCluster().getNodeId())
-            .collect(Collectors.toList());
+        getBrokers().stream().map(b -> b.getConfig().getCluster().getNodeId()).toList();
     brokers.forEach(this::stopBroker);
     brokers.forEach(this::getBroker);
     try {
       waitUntilBrokersStarted();
-      waitForPartitionReplicationFactor();
-      waitUntilBrokersInTopology();
+      waitForTopology(
+          assertion -> assertion.isComplete(clusterSize, partitionCount, replicationFactor));
     } catch (final Exception e) {
       LOG.error("Failed to restart cluster", e);
       Assert.fail("Failed to restart cluster");
     }
-  }
-
-  private void waitUntilBrokerIsAddedToTopology(final InetSocketAddress socketAddress) {
-    waitForTopology(
-        topology ->
-            topology.stream()
-                .anyMatch(
-                    b ->
-                        b.getHost().equals(socketAddress.getHostName())
-                            && b.getPort() == socketAddress.getPort()));
-  }
-
-  /** Returns for a given broker the leading partition id's. */
-  public List<Integer> getBrokersLeadingPartitions(final InetSocketAddress socketAddress) {
-    return client.newTopologyRequest().send().join().getBrokers().stream()
-        .filter(
-            b ->
-                b.getHost().equals(socketAddress.getHostName())
-                    && b.getPort() == socketAddress.getPort())
-        .flatMap(broker -> broker.getPartitions().stream())
-        .filter(PartitionInfo::isLeader)
-        .map(PartitionInfo::getPartitionId)
-        .collect(Collectors.toList());
   }
 
   /** Returns the list of available brokers in a cluster. */
@@ -589,10 +531,6 @@ public final class ClusteringRule extends ExternalResource {
         .flatMap(broker -> broker.getPartitions().stream())
         .filter(PartitionInfo::isLeader)
         .count();
-  }
-
-  public void stepDown(final int nodeId, final int partitionId) {
-    stepDown(getBroker(nodeId), partitionId);
   }
 
   public BrokerInfo awaitOtherLeader(final int partitionId, final int previousLeader) {
@@ -637,21 +575,18 @@ public final class ClusteringRule extends ExternalResource {
   public void stopBrokerAndAwaitNewLeader(final int nodeId) {
     final Broker broker = brokers.get(nodeId);
     if (broker != null) {
-      final InetSocketAddress socketAddress =
-          broker.getConfig().getNetwork().getCommandApi().getAddress();
-      final List<Integer> brokersLeadingPartitions = getBrokersLeadingPartitions(socketAddress);
       stopBroker(nodeId);
-      waitForNewLeaderOfPartitions(brokersLeadingPartitions, socketAddress);
+      waitForTopology(
+          assertion ->
+              assertion.doesNotContainBroker(nodeId).hasLeaderForEachPartition(partitionCount));
     }
   }
 
   public void stopBroker(final int nodeId) {
     final Broker broker = brokers.remove(nodeId);
     if (broker != null) {
-      final InetSocketAddress socketAddress =
-          broker.getConfig().getNetwork().getCommandApi().getAddress();
       broker.close();
-      waitUntilBrokerIsRemovedFromTopology(socketAddress);
+      waitForTopology(assertion -> assertion.doesNotContainBroker(nodeId));
       try {
         final var systemContext = systemContexts.remove(nodeId);
         if (systemContext != null) {
@@ -686,38 +621,16 @@ public final class ClusteringRule extends ExternalResource {
     awaitOtherLeader(START_PARTITION_ID, previousLeader.getNodeId());
   }
 
-  private void waitUntilBrokerIsRemovedFromTopology(final InetSocketAddress socketAddress) {
-    waitForTopology(
-        topology ->
-            topology.stream()
-                .noneMatch(
-                    b ->
-                        b.getHost().equals(socketAddress.getHostName())
-                            && b.getPort() == socketAddress.getPort()));
-  }
-
-  private void waitForNewLeaderOfPartitions(
-      final List<Integer> partitions, final InetSocketAddress oldLeader) {
-    waitForTopology(
-        topology ->
-            topology.stream()
-                .filter(
-                    b ->
-                        !(b.getHost().equals(oldLeader.getHostName())
-                            && b.getPort() == oldLeader.getPort()))
-                .flatMap(broker -> broker.getPartitions().stream())
-                .filter(PartitionInfo::isLeader)
-                .map(PartitionInfo::getPartitionId)
-                .collect(Collectors.toSet())
-                .containsAll(partitions));
-  }
-
-  public void waitForTopology(final Predicate<List<BrokerInfo>> topologyPredicate) {
-    Awaitility.await()
+  public void waitForTopology(final Consumer<TopologyAssert> assertions) {
+    Awaitility.await("until topology satisfies a given condition")
         .pollInterval(Duration.ofMillis(100))
         .atMost(Duration.ofSeconds(60))
         .ignoreExceptions()
-        .until(() -> getTopologyFromClient().getBrokers(), topologyPredicate);
+        .untilAsserted(
+            () -> {
+              final var topology = getTopologyFromClient();
+              assertions.accept(TopologyAssert.assertThat(topology));
+            });
   }
 
   public long createProcessInstanceOnPartition(final int partitionId, final String bpmnProcessId) {

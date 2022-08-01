@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import io.camunda.zeebe.util.sched.ConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 public interface PartitionTransition {
 

@@ -18,7 +18,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/camunda-cloud/zeebe/clients/go/internal/embedded"
+	"github.com/camunda/zeebe/clients/go/v8/internal/embedded"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"os"
@@ -31,9 +31,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/worker"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/commands"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/worker"
 )
 
 const DefaultKeepAlive = 45 * time.Second
@@ -65,7 +65,10 @@ type ClientConfig struct {
 	// of 45 seconds being used
 	KeepAlive time.Duration
 
-	DialOpts []grpc.DialOption
+	// UserAgent is an optional field, to specify the user-agent header which should be sent by each
+	// gRPC request. Defaults to zeebe-client-go/%version.
+	UserAgent string
+	DialOpts  []grpc.DialOption
 }
 
 // ErrFileNotFound is returned whenever a file can't be found at the provided path. Use this value to do error comparison.
@@ -82,7 +85,11 @@ func (c *ClientImpl) NewTopologyCommand() *commands.TopologyCommand {
 }
 
 func (c *ClientImpl) NewDeployProcessCommand() *commands.DeployCommand {
-	return commands.NewDeployCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
+	return commands.NewDeployCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest) // nolint
+}
+
+func (c *ClientImpl) NewDeployResourceCommand() *commands.DeployResourceCommand {
+	return commands.NewDeployResourceCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
 func (c *ClientImpl) NewPublishMessageCommand() commands.PublishMessageCommandStep1 {
@@ -154,7 +161,11 @@ func NewClient(config *ClientConfig) (Client, error) {
 		return nil, err
 	}
 
-	config.DialOpts = append(config.DialOpts, grpc.WithUserAgent("zeebe-client-go/"+getVersion()))
+	if config.UserAgent == "" {
+		config.UserAgent = "zeebe-client-go/" + getVersion()
+	}
+
+	config.DialOpts = append(config.DialOpts, grpc.WithUserAgent(config.UserAgent))
 
 	conn, err := grpc.Dial(config.GatewayAddress, config.DialOpts...)
 	if err != nil {

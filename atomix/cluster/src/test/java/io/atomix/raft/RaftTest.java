@@ -47,12 +47,12 @@ import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
-import io.camunda.zeebe.journal.file.LogCorrupter;
-import io.camunda.zeebe.journal.file.record.CorruptedLogException;
+import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthReport;
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -65,7 +65,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.jodah.concurrentunit.ConcurrentTestCase;
@@ -331,19 +330,6 @@ public class RaftTest extends ConcurrentTestCase {
     assertThat(0.0, is(missedHeartBeats - startMissedHeartBeats));
   }
 
-  private void waitUntil(final BooleanSupplier condition, int retries) {
-    try {
-      while (!condition.getAsBoolean() && retries > 0) {
-        Thread.sleep(100);
-        retries--;
-      }
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-
-    assertThat(condition.getAsBoolean()).isTrue();
-  }
-
   @Test
   public void testRoleChangeNotificationAfterInitialEntryOnLeader() throws Throwable {
     // given
@@ -423,81 +409,11 @@ public class RaftTest extends ConcurrentTestCase {
   }
 
   @Test
-  public void shouldLeaderStepDownOnDisconnect() throws Throwable {
-    final List<RaftServer> servers = createServers(3);
-    final RaftServer leader = getLeader(servers).orElseThrow();
-    final MemberId leaderId = leader.getContext().getCluster().getLocalMember().memberId();
-
-    final CountDownLatch stepDownListener = new CountDownLatch(1);
-    leader.addRoleChangeListener(
-        (role, term) -> {
-          if (role == Role.FOLLOWER) {
-            stepDownListener.countDown();
-          }
-        });
-
-    // when
-    protocolFactory.partition(leaderId);
-
-    // then
-    assertThat(stepDownListener.await(30, TimeUnit.SECONDS)).isTrue();
-    assertThat(leader.isLeader()).isFalse();
-  }
-
-  @Test
-  public void shouldReconnect() throws Throwable {
-    // given
-    final List<RaftServer> servers = createServers(3);
-    final RaftServer leader = getLeader(servers).orElseThrow();
-    final MemberId leaderId = leader.getContext().getCluster().getLocalMember().memberId();
-    final AtomicLong commitIndex = new AtomicLong();
-    leader.getContext().addCommitListener(commitIndex::set);
-    appendEntry(leader);
-    protocolFactory.partition(leaderId);
-    waitUntil(() -> !leader.isLeader(), 100);
-
-    // when
-    final var newLeader = servers.stream().filter(RaftServer::isLeader).findFirst().orElseThrow();
-    assertThat(leader).isNotEqualTo(newLeader);
-    final var secondCommit = appendEntry(newLeader);
-    protocolFactory.heal(leaderId);
-
-    // then
-    waitUntil(() -> commitIndex.get() >= secondCommit, 200);
-  }
-
-  @Test
-  public void shouldFailOverOnLeaderDisconnect() throws Throwable {
-    final List<RaftServer> servers = createServers(3);
-
-    final RaftServer leader = getLeader(servers).orElseThrow();
-    final MemberId leaderId = leader.getContext().getCluster().getLocalMember().memberId();
-
-    final CountDownLatch newLeaderElected = new CountDownLatch(1);
-    final AtomicReference<MemberId> newLeaderId = new AtomicReference<>();
-    servers.forEach(
-        s ->
-            s.addRoleChangeListener(
-                (role, term) -> {
-                  if (role == Role.LEADER && !s.equals(leader)) {
-                    newLeaderId.set(s.getContext().getCluster().getLocalMember().memberId());
-                    newLeaderElected.countDown();
-                  }
-                }));
-    // when
-    protocolFactory.partition(leaderId);
-
-    // then
-    assertThat(newLeaderElected.await(30, TimeUnit.SECONDS)).isTrue();
-    assertThat(leaderId).isNotEqualTo(newLeaderId.get());
-  }
-
-  @Test
   public void shouldDetectCorruptionOnStart() throws Throwable {
     // given
     final RaftServer leader = createServers(1).get(0);
-    final long index = appendEntry(leader);
     final File directory = leader.getContext().getStorage().directory();
+    appendEntry(leader);
 
     final Optional<File> optLog =
         Arrays.stream(directory.listFiles()).filter(f -> f.getName().endsWith(".log")).findFirst();
@@ -506,41 +422,13 @@ public class RaftTest extends ConcurrentTestCase {
 
     // when
     leader.shutdown().join();
-    assertThat(LogCorrupter.corruptRecord(log, index)).isTrue();
+    // TODO: write tests with controllable journal - how to corrupt it is implementation detail
+    Files.writeString(log.toPath(), "i am become corrupt, destroyer of worlds");
 
     // then
     final MemberId memberId = members.get(0).memberId();
     assertThatThrownBy(() -> recreateServer(leader, memberId))
-        .isInstanceOf(CorruptedLogException.class);
-  }
-
-  @Test
-  public void shouldTruncateLogAfterPartialWrite() throws Throwable {
-    // given
-    RaftServer leader = createServers(1).get(0);
-    final long index = appendEntry(leader);
-
-    final File directory = leader.getContext().getStorage().directory();
-    final Optional<File> optLog =
-        Arrays.stream(directory.listFiles()).filter(f -> f.getName().endsWith(".log")).findFirst();
-    assertThat(optLog).isPresent();
-    final File log = optLog.get();
-
-    // when
-    leader.getContext().setLastWrittenIndex(index - 1);
-    leader.shutdown().join();
-    assertThat(LogCorrupter.corruptRecord(log, index)).isTrue();
-
-    final MemberId memberId = members.get(0).memberId();
-    leader = recreateServer(leader, memberId);
-
-    // then
-    final RaftLog raftLog = leader.getContext().getLog();
-    final RaftLogReader raftLogReader = raftLog.openUncommittedReader();
-
-    assertThat(raftLog.getLastIndex()).isEqualTo(index - 1);
-    raftLogReader.seek(raftLog.getLastIndex());
-    assertThat(raftLogReader.next().index()).isEqualTo(index - 1);
+        .isInstanceOf(CorruptedJournalException.class);
   }
 
   private RaftServer recreateServer(final RaftServer server, final MemberId memberId) {

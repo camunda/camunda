@@ -74,8 +74,6 @@ public final class BpmnProcessResultSenderBehavior {
         ValueType.PROCESS_INSTANCE_RESULT,
         requestMetadata.getRequestId(),
         requestMetadata.getRequestStreamId());
-
-    responseWriter.flush();
   }
 
   private DirectBuffer collectVariables(

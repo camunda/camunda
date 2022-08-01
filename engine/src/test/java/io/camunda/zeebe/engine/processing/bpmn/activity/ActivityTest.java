@@ -264,7 +264,7 @@ public final class ActivityTest {
     // given
     final List<Record<RecordValue>> records =
         RecordingExporter.records()
-            .limitToProcessInstance(processInstanceKey)
+            .betweenProcessInstance(processInstanceKey)
             .between(
                 r ->
                     r.getValue() instanceof ProcessInstanceRecord

@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -32,16 +32,16 @@ public final class ProcessInstanceCommandProcessor
   @Override
   public void processRecord(
       final TypedRecord<ProcessInstanceRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+      final LegacyTypedResponseWriter responseWriter,
+      final LegacyTypedStreamWriter streamWriter) {
     populateCommandContext(record, responseWriter, streamWriter);
     commandHandlers.handle(context);
   }
 
   private void populateCommandContext(
       final TypedRecord<ProcessInstanceRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+      final LegacyTypedResponseWriter responseWriter,
+      final LegacyTypedStreamWriter streamWriter) {
     context.setRecord(record);
     context.setResponseWriter(responseWriter);
     context.setStreamWriter(streamWriter);

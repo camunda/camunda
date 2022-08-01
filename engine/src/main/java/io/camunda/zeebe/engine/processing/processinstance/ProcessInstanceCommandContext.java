@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -22,8 +22,8 @@ public final class ProcessInstanceCommandContext {
 
   private TypedRecord<ProcessInstanceRecord> record;
   private ElementInstance elementInstance;
-  private TypedResponseWriter responseWriter;
-  private TypedStreamWriter streamWriter;
+  private LegacyTypedResponseWriter responseWriter;
+  private LegacyTypedStreamWriter streamWriter;
 
   public ProcessInstanceCommandContext(final MutableElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
@@ -49,11 +49,11 @@ public final class ProcessInstanceCommandContext {
     this.elementInstance = elementInstance;
   }
 
-  public TypedResponseWriter getResponseWriter() {
+  public LegacyTypedResponseWriter getResponseWriter() {
     return responseWriter;
   }
 
-  public void setResponseWriter(final TypedResponseWriter responseWriter) {
+  public void setResponseWriter(final LegacyTypedResponseWriter responseWriter) {
     this.responseWriter = responseWriter;
   }
 
@@ -66,11 +66,11 @@ public final class ProcessInstanceCommandContext {
     responseWriter.writeRejectionOnCommand(record, rejectionType, reason);
   }
 
-  public TypedStreamWriter getStreamWriter() {
+  public LegacyTypedStreamWriter getStreamWriter() {
     return streamWriter;
   }
 
-  public void setStreamWriter(final TypedStreamWriter writer) {
+  public void setStreamWriter(final LegacyTypedStreamWriter writer) {
     streamWriter = writer;
   }
 }

@@ -18,7 +18,9 @@ package io.camunda.zeebe.model.bpmn.instance;
 
 import java.util.Collection;
 
-/** @author Sebastian Menski */
+/**
+ * @author Sebastian Menski
+ */
 public class LoopCharacteristicsTest extends BpmnModelElementInstanceTest {
 
   @Override

@@ -1,6 +1,6 @@
 zbctl is a command line interface designed to create and read resources inside zeebe broker.
 It is designed for regular maintenance jobs such as:
-	* deploying processes,
+	* deploying resources,
 	* creating jobs and process instances
 	* activating, completing or failing jobs
 	* update variables and retries
@@ -15,7 +15,7 @@ Available Commands:
   complete    Complete a resource
   completion  Generate the autocompletion script for the specified shell
   create      Create resources
-  deploy      Creates a new process for each BPMN or YAML resource provided
+  deploy      Deploys new resources for each file provided
   fail        Fail a resource
   generate    Generate documentation
   help        Help about any command

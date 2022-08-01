@@ -31,11 +31,11 @@ import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
+import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
-import io.atomix.raft.storage.log.PersistedRaftRecord;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -797,6 +797,12 @@ final class LeaderAppender {
   private boolean shouldReplicateSnapshot(final RaftMemberContext member) {
     final var persistedSnapshot = raft.getCurrentSnapshot();
     if (persistedSnapshot == null) {
+      return false;
+    }
+    if (member.getSnapshotIndex() >= persistedSnapshot.getIndex()) {
+      // Member has the latest snapshot, replicating the snapshot again wouldn't help.
+      // WARNING! This is load-bearing and not just an optimization. See
+      // https://github.com/camunda/zeebe/issues/9820 for context.
       return false;
     }
     if (raft.getLog().getFirstIndex() > member.getCurrentIndex()) {

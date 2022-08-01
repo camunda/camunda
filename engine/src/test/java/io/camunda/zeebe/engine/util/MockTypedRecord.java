@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.util;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -119,12 +119,12 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   }
 
   @Override
-  public String toJson() {
+  public Record<T> copyOf() {
     throw new UnsupportedOperationException("not yet implemented");
   }
 
   @Override
-  public Record<T> clone() {
+  public String toJson() {
     throw new UnsupportedOperationException("not yet implemented");
   }
 }

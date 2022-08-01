@@ -16,7 +16,7 @@ package commands
 
 import (
 	"fmt"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/zbc"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"net"
@@ -50,7 +50,7 @@ var rootCmd = &cobra.Command{
 	Short: "zeebe command line interface",
 	Long: `zbctl is a command line interface designed to create and read resources inside zeebe broker.
 It is designed for regular maintenance jobs such as:
-	* deploying processes,
+	* deploying resources,
 	* creating jobs and process instances
 	* activating, completing or failing jobs
 	* update variables and retries
@@ -131,6 +131,7 @@ var initClient = func(cmd *cobra.Command, args []string) error {
 	client, err = zbc.NewClient(&zbc.ClientConfig{
 		GatewayAddress:      fmt.Sprintf("%s:%s", host, port),
 		CredentialsProvider: credsProvider,
+		UserAgent:           "zeebe-client-zbctl/" + Version,
 	})
 	return err
 }

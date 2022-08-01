@@ -239,7 +239,7 @@ public class BusinessRuleTaskIncidentTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .incidentRecords()
                 .onlyEvents())
         .extracting(Record::getKey, Record::getIntent)
@@ -290,7 +290,7 @@ public class BusinessRuleTaskIncidentTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .incidentRecords()
                 .onlyEvents())
         .extracting(Record::getKey, Record::getIntent)
@@ -348,7 +348,7 @@ public class BusinessRuleTaskIncidentTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
+                .betweenProcessInstance(processInstanceKey)
                 .incidentRecords()
                 .onlyEvents())
         .extracting(Record::getKey, Record::getIntent)

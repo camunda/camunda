@@ -64,6 +64,12 @@ public final class ProcessInstanceRecordStream
                 && r.getKey() == r.getValue().getProcessInstanceKey());
   }
 
+  public ProcessInstanceRecordStream limit(
+      final String elementId, final ProcessInstanceIntent intent) {
+    return limit(
+        r -> r.getValue().getElementId().equals(elementId) && r.getIntent().equals(intent));
+  }
+
   public ProcessInstanceRecordStream withElementType(final BpmnElementType elementType) {
     return valueFilter(v -> v.getBpmnElementType() == elementType);
   }
@@ -78,7 +84,9 @@ public final class ProcessInstanceRecordStream
     return valueFilter(v -> v.getParentElementInstanceKey() == parentElementInstanceKey);
   }
 
-  /** @return stream with only records for the process instance (i.e. root scope of the instance) */
+  /**
+   * @return stream with only records for the process instance (i.e. root scope of the instance)
+   */
   public ProcessInstanceRecordStream filterRootScope() {
     return filter(r -> r.getKey() == r.getValue().getProcessInstanceKey());
   }

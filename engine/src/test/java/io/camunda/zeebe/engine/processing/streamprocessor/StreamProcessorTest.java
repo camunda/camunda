@@ -19,11 +19,16 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import io.camunda.zeebe.engine.api.ProcessingScheduleService;
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
@@ -35,9 +40,12 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.util.exception.RecoverableException;
-import io.camunda.zeebe.util.sched.ActorControl;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -61,7 +69,7 @@ public final class StreamProcessorTest {
   private static final JobRecord JOB_RECORD = Records.job(1).setType("test");
 
   @Rule public final StreamProcessorRule streamProcessorRule = new StreamProcessorRule();
-  private ActorControl processingContextActor;
+  private ProcessingScheduleService scheduleService;
 
   @Test
   public void shouldCallStreamProcessorLifecycle() throws Exception {
@@ -75,7 +83,7 @@ public final class StreamProcessorTest {
                 .withListener(
                     new StreamProcessorLifecycleAware() {
                       @Override
-                      public void onRecovered(final ReadonlyProcessingContext context) {
+                      public void onRecovered(final ReadonlyStreamProcessorContext context) {
                         recoveredLatch.countDown();
                       }
                     }));
@@ -102,7 +110,7 @@ public final class StreamProcessorTest {
                 new StreamProcessorLifecycleAware() {
 
                   @Override
-                  public void onRecovered(final ReadonlyProcessingContext context) {
+                  public void onRecovered(final ReadonlyStreamProcessorContext context) {
                     throw new RuntimeException("force fail");
                   }
 
@@ -114,38 +122,6 @@ public final class StreamProcessorTest {
 
     // then
     assertThat(failedLatch.await(1000, TimeUnit.MILLISECONDS)).isTrue();
-  }
-
-  @Test
-  public void shouldCallRecordProcessorLifecycle() throws Exception {
-    // given
-    final var typedRecordProcessor = mock(TypedRecordProcessor.class);
-    final var recoveredLatch = new CountDownLatch(1);
-    streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
-            processors
-                .onCommand(
-                    ValueType.PROCESS_INSTANCE,
-                    ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                    typedRecordProcessor)
-                .withListener(
-                    new StreamProcessorLifecycleAware() {
-                      @Override
-                      public void onRecovered(final ReadonlyProcessingContext context) {
-                        recoveredLatch.countDown();
-                      }
-                    }));
-
-    // when
-    recoveredLatch.await();
-    streamProcessorRule.closeStreamProcessor();
-
-    // then
-    final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, times(1)).onRecovered(any());
-    inOrder.verify(typedRecordProcessor, times(1)).onClose();
-
-    inOrder.verifyNoMoreInteractions();
   }
 
   @Test
@@ -165,13 +141,10 @@ public final class StreamProcessorTest {
             ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1));
 
     // then
-    final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(1))
+    verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(position), any(), any(), any(), any());
 
-    inOrder.verifyNoMoreInteractions();
+    verifyNoMoreInteractions(typedRecordProcessor);
 
     Awaitility.await()
         .untilAsserted(
@@ -209,13 +182,10 @@ public final class StreamProcessorTest {
             ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
-    final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(2))
+    verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(position), any(), any(), any(), any());
 
-    inOrder.verifyNoMoreInteractions();
+    verifyNoMoreInteractions(typedRecordProcessor);
   }
 
   @Test
@@ -238,16 +208,10 @@ public final class StreamProcessorTest {
             ProcessInstanceIntent.TERMINATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
-    final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(1))
+    verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(firstPosition), any(), any(), any(), any());
-    inOrder
-        .verify(typedRecordProcessor, never())
-        .processRecord(eq(secondPosition), any(), any(), any(), any());
 
-    inOrder.verifyNoMoreInteractions();
+    verifyNoMoreInteractions(typedRecordProcessor);
   }
 
   @Test
@@ -280,7 +244,6 @@ public final class StreamProcessorTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT).onRecovered(any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT)
         .processRecord(eq(commandPosition), any(), any(), any(), any());
@@ -308,11 +271,9 @@ public final class StreamProcessorTest {
                     new TypedRecordProcessor<>() {
                       @Override
                       public void processRecord(
-                          final long position,
                           final TypedRecord<UnifiedRecordValue> record,
-                          final TypedResponseWriter responseWriter,
-                          final TypedStreamWriter streamWriter,
-                          final Consumer<SideEffectProducer> sideEffect) {
+                          final LegacyTypedResponseWriter responseWriter,
+                          final LegacyTypedStreamWriter streamWriter) {
 
                         streamWriter.appendFollowUpEvent(
                             record.getKey(),
@@ -348,10 +309,9 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final long position,
                       final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
+                      final LegacyTypedResponseWriter responseWriter,
+                      final LegacyTypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
 
                     sideEffect.accept(
@@ -382,10 +342,9 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final long position,
                       final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
+                      final LegacyTypedResponseWriter responseWriter,
+                      final LegacyTypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
                     sideEffect.accept(
                         () -> {
@@ -415,10 +374,9 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final long position,
                       final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
+                      final LegacyTypedResponseWriter responseWriter,
+                      final LegacyTypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
 
                     sideEffect.accept(
@@ -446,19 +404,14 @@ public final class StreamProcessorTest {
 
     streamProcessorRule.startTypedStreamProcessor(
         (builder, processingContext) -> {
-          processingContextActor = processingContext.getActor();
+          scheduleService = processingContext.getScheduleService();
           final MutableZeebeState state = processingContext.getZeebeState();
           return builder.onCommand(
               ValueType.PROCESS_INSTANCE,
               ProcessInstanceIntent.ACTIVATE_ELEMENT,
               new TypedRecordProcessor<>() {
                 @Override
-                public void processRecord(
-                    final long position,
-                    final TypedRecord<UnifiedRecordValue> record,
-                    final TypedResponseWriter responseWriter,
-                    final TypedStreamWriter streamWriter,
-                    final Consumer<SideEffectProducer> sideEffect) {
+                public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
 
                   state.getJobState().create(jobKey, JOB_RECORD);
 
@@ -477,8 +430,8 @@ public final class StreamProcessorTest {
     verify(streamProcessorRule.getMockStreamProcessorListener(), TIMEOUT.times(2))
         .onProcessed(any());
 
-    processingContextActor
-        .call(
+    call(
+            scheduleService,
             () -> {
               final var jobState = streamProcessorRule.getZeebeState().getJobState();
               final var job = jobState.getJob(jobKey);
@@ -495,19 +448,14 @@ public final class StreamProcessorTest {
 
     streamProcessorRule.startTypedStreamProcessor(
         (builder, processingContext) -> {
-          processingContextActor = processingContext.getActor();
+          scheduleService = processingContext.getScheduleService();
           final MutableZeebeState state = processingContext.getZeebeState();
           return builder.onCommand(
               ValueType.PROCESS_INSTANCE,
               ProcessInstanceIntent.ACTIVATE_ELEMENT,
               new TypedRecordProcessor<>() {
                 @Override
-                public void processRecord(
-                    final long position,
-                    final TypedRecord<UnifiedRecordValue> record,
-                    final TypedResponseWriter responseWriter,
-                    final TypedStreamWriter streamWriter,
-                    final Consumer<SideEffectProducer> sideEffect) {
+                public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
 
                   state.getJobState().create(jobKey, JOB_RECORD);
                 }
@@ -521,8 +469,8 @@ public final class StreamProcessorTest {
     // then
     verify(streamProcessorRule.getMockStreamProcessorListener(), TIMEOUT).onProcessed(any());
 
-    processingContextActor
-        .call(
+    call(
+            scheduleService,
             () -> {
               final var jobState = streamProcessorRule.getZeebeState().getJobState();
               final var job = jobState.getJob(jobKey);
@@ -543,11 +491,9 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final long position,
                       final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
-                      final Consumer<SideEffectProducer> sideEffect) {
+                      final LegacyTypedResponseWriter responseWriter,
+                      final LegacyTypedStreamWriter streamWriter) {
 
                     responseWriter.writeEventOnCommand(
                         3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
@@ -584,11 +530,9 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final long position,
                       final TypedRecord<UnifiedRecordValue> record,
-                      final TypedResponseWriter responseWriter,
-                      final TypedStreamWriter streamWriter,
-                      final Consumer<SideEffectProducer> sideEffect) {
+                      final LegacyTypedResponseWriter responseWriter,
+                      final LegacyTypedStreamWriter streamWriter) {
 
                     responseWriter.writeEventOnCommand(
                         3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
@@ -742,11 +686,9 @@ public final class StreamProcessorTest {
                     new TypedRecordProcessor<>() {
                       @Override
                       public void processRecord(
-                          final long position,
                           final TypedRecord<UnifiedRecordValue> record,
-                          final TypedResponseWriter responseWriter,
-                          final TypedStreamWriter streamWriter,
-                          final Consumer<SideEffectProducer> sideEffect) {
+                          final LegacyTypedResponseWriter responseWriter,
+                          final LegacyTypedStreamWriter streamWriter) {
 
                         streamWriter.appendFollowUpEvent(
                             record.getKey(),
@@ -786,5 +728,21 @@ public final class StreamProcessorTest {
                     .findAny())
         .until(Optional::isPresent)
         .get();
+  }
+
+  private ActorFuture<Void> call(
+      final ProcessingScheduleService scheduleService, final Runnable runnable) {
+    final CompletableActorFuture<Void> result = new CompletableActorFuture<>();
+    scheduleService.runDelayed(
+        Duration.ZERO,
+        () -> {
+          try {
+            runnable.run();
+            result.complete(null);
+          } catch (final Exception e) {
+            result.completeExceptionally(e);
+          }
+        });
+    return result;
   }
 }

@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
@@ -39,25 +40,29 @@ public final class DbJobState implements JobState, MutableJobState {
   private final JobRecordValue jobRecordToWrite = new JobRecordValue();
 
   private final DbLong jobKey;
+  private final DbForeignKey<DbLong> fkJob;
   private final ColumnFamily<DbLong, JobRecordValue> jobsColumnFamily;
 
   // key => job state
   private final JobStateValue jobState = new JobStateValue();
-  private final ColumnFamily<DbLong, JobStateValue> statesJobColumnFamily;
+  private final ColumnFamily<DbForeignKey<DbLong>, JobStateValue> statesJobColumnFamily;
 
   // type => [key]
   private final DbString jobTypeKey;
-  private final DbCompositeKey<DbString, DbLong> typeJobKey;
-  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, DbNil> activatableColumnFamily;
+  private final DbCompositeKey<DbString, DbForeignKey<DbLong>> typeJobKey;
+  private final ColumnFamily<DbCompositeKey<DbString, DbForeignKey<DbLong>>, DbNil>
+      activatableColumnFamily;
 
   // timeout => key
   private final DbLong deadlineKey;
-  private final DbCompositeKey<DbLong, DbLong> deadlineJobKey;
-  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> deadlinesColumnFamily;
+  private final DbCompositeKey<DbLong, DbForeignKey<DbLong>> deadlineJobKey;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbForeignKey<DbLong>>, DbNil>
+      deadlinesColumnFamily;
 
   private final DbLong backoffKey;
-  private final DbCompositeKey<DbLong, DbLong> backoffJobKey;
-  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> backoffColumnFamily;
+  private final DbCompositeKey<DbLong, DbForeignKey<DbLong>> backoffJobKey;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbForeignKey<DbLong>>, DbNil>
+      backoffColumnFamily;
   private long nextBackOffDueDate;
 
   private final JobMetrics metrics;
@@ -69,28 +74,29 @@ public final class DbJobState implements JobState, MutableJobState {
       final TransactionContext transactionContext,
       final int partitionId) {
     jobKey = new DbLong();
+    fkJob = new DbForeignKey<>(jobKey, ZbColumnFamilies.JOBS);
     jobsColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.JOBS, transactionContext, jobKey, jobRecordToRead);
 
     statesJobColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.JOB_STATES, transactionContext, jobKey, jobState);
+            ZbColumnFamilies.JOB_STATES, transactionContext, fkJob, jobState);
 
     jobTypeKey = new DbString();
-    typeJobKey = new DbCompositeKey<>(jobTypeKey, jobKey);
+    typeJobKey = new DbCompositeKey<>(jobTypeKey, fkJob);
     activatableColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.JOB_ACTIVATABLE, transactionContext, typeJobKey, DbNil.INSTANCE);
 
     deadlineKey = new DbLong();
-    deadlineJobKey = new DbCompositeKey<>(deadlineKey, jobKey);
+    deadlineJobKey = new DbCompositeKey<>(deadlineKey, fkJob);
     deadlinesColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.JOB_DEADLINES, transactionContext, deadlineJobKey, DbNil.INSTANCE);
 
     backoffKey = new DbLong();
-    backoffJobKey = new DbCompositeKey<>(backoffKey, jobKey);
+    backoffJobKey = new DbCompositeKey<>(backoffKey, fkJob);
     backoffColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.JOB_BACKOFF, transactionContext, backoffJobKey, DbNil.INSTANCE);
@@ -172,7 +178,7 @@ public final class DbJobState implements JobState, MutableJobState {
     jobKey.wrapLong(key);
     jobsColumnFamily.deleteExisting(jobKey);
 
-    statesJobColumnFamily.deleteExisting(jobKey);
+    statesJobColumnFamily.deleteExisting(fkJob);
 
     makeJobNotActivatable(type);
 
@@ -247,7 +253,7 @@ public final class DbJobState implements JobState, MutableJobState {
           final long deadline = key.first().getValue();
           final boolean isDue = deadline < upperBound;
           if (isDue) {
-            final long jobKey1 = key.second().getValue();
+            final long jobKey1 = key.second().inner().getValue();
             return visitJob(
                 jobKey1, callback::apply, () -> deadlinesColumnFamily.deleteExisting(key));
           }
@@ -265,7 +271,7 @@ public final class DbJobState implements JobState, MutableJobState {
   public State getState(final long key) {
     jobKey.wrapLong(key);
 
-    final JobStateValue storedState = statesJobColumnFamily.get(jobKey);
+    final JobStateValue storedState = statesJobColumnFamily.get(fkJob);
 
     if (storedState == null) {
       return State.NOT_FOUND;
@@ -287,7 +293,7 @@ public final class DbJobState implements JobState, MutableJobState {
     activatableColumnFamily.whileEqualPrefix(
         jobTypeKey,
         ((compositeKey, zbNil) -> {
-          final long jobKey = compositeKey.second().getValue();
+          final long jobKey = compositeKey.second().inner().getValue();
           // TODO #6521 reconsider race condition and whether or not the cleanup task is needed
           return visitJob(jobKey, callback::apply, () -> {});
         }));
@@ -313,7 +319,7 @@ public final class DbJobState implements JobState, MutableJobState {
           final long deadline = key.first().getValue();
           boolean consumed = false;
           if (deadline <= timestamp) {
-            final long jobKey = key.second().getValue();
+            final long jobKey = key.second().inner().getValue();
             consumed = visitJob(jobKey, callback, () -> backoffColumnFamily.deleteExisting(key));
           }
           if (!consumed) {
@@ -360,12 +366,12 @@ public final class DbJobState implements JobState, MutableJobState {
 
   private void initializeJobState() {
     jobState.setState(State.ACTIVATABLE);
-    statesJobColumnFamily.insert(jobKey, jobState);
+    statesJobColumnFamily.insert(fkJob, jobState);
   }
 
   private void updateJobState(final State newState) {
     jobState.setState(newState);
-    statesJobColumnFamily.update(jobKey, jobState);
+    statesJobColumnFamily.update(fkJob, jobState);
   }
 
   private void makeJobActivatable(final DirectBuffer type, final long key) {

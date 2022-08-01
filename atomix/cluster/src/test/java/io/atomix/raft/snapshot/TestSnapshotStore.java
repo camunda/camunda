@@ -15,15 +15,16 @@
  */
 package io.atomix.raft.snapshot;
 
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -46,6 +47,11 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
   @Override
   public Optional<PersistedSnapshot> getLatestSnapshot() {
     return Optional.ofNullable(currentPersistedSnapshot.get());
+  }
+
+  @Override
+  public ActorFuture<Set<PersistedSnapshot>> getAvailableSnapshots() {
+    return null;
   }
 
   @Override

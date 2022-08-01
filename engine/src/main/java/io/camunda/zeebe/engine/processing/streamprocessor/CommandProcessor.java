@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -43,7 +44,9 @@ public interface CommandProcessor<T extends UnifiedRecordValue> {
 
   interface CommandControl<T> {
 
-    /** @return the key of the entity */
+    /**
+     * @return the key of the entity
+     */
     long accept(Intent newState, T updatedValue);
 
     void reject(RejectionType type, String reason);
