@@ -8,6 +8,7 @@
 import React, {runLastEffect, useRef} from 'react';
 import {shallow} from 'enzyme';
 
+import {getNonOverflowingValues} from './service';
 import Tooltip from './Tooltip';
 
 jest.useFakeTimers();
@@ -27,6 +28,8 @@ jest.mock('react', () => {
   };
 });
 
+jest.mock('./service', () => ({getNonOverflowingValues: jest.fn()}));
+
 const element = {
   getBoundingClientRect: () => ({
     x: 0,
@@ -37,6 +40,10 @@ const element = {
     bottom: 100,
   }),
 };
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
 it('should render children content if no tooltip content is provided', () => {
   const node = shallow(<Tooltip>child content</Tooltip>);
@@ -149,20 +156,15 @@ it('should call onMouseEnter and onMouseLeave functions if specified', () => {
   expect(leave).toHaveBeenCalledWith(evt);
 });
 
-it('should switch alignment and position if no space at the edges of the screen', () => {
-  jest.spyOn(document.body, 'clientHeight', 'get').mockReturnValueOnce(100);
-  jest.spyOn(document.body, 'clientWidth', 'get').mockReturnValueOnce(100);
-  jest
-    .spyOn(window, 'getComputedStyle')
-    .mockImplementationOnce(() => ({getPropertyValue: () => '7px'}));
-
-  const tooltip = {getBoundingClientRect: () => ({width: 50, height: 50})};
-  const hoverElement = {
-    getBoundingClientRect: () => ({x: 10, y: 10, width: 10, top: 10, bottom: 20}),
-  };
-
-  useRef.mockReturnValueOnce({current: hoverElement});
-  useRef.mockReturnValueOnce({current: tooltip});
+it('should invoke getNonOverflowingValues to adjust tooltip alignment, position and styles on open', () => {
+  useRef.mockReturnValue({current: {}});
+  getNonOverflowingValues.mockReturnValue({
+    newAlign: 'left',
+    newPosition: 'bottom',
+    width: '200',
+    left: 10,
+    top: 20,
+  });
 
   const node = shallow(
     <Tooltip content="tooltip content" position="top" align="right">
