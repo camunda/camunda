@@ -8,12 +8,9 @@
 package io.camunda.zeebe.broker.transport.backupapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
@@ -31,25 +28,29 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.Answers;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-class BackupApiRequestHandlerTest {
+@ExtendWith(MockitoExtension.class)
+final class BackupApiRequestHandlerTest {
 
   @RegisterExtension
   ControlledActorSchedulerExtension scheduler = new ControlledActorSchedulerExtension();
 
-  final AtomixServerTransport transport = mock(AtomixServerTransport.class);
-  BackupApiRequestHandler handler;
-  private final LogStreamRecordWriter logStreamRecordWriter = mock(LogStreamRecordWriter.class);
-  private ServerOutput serverOutput;
+  @Mock AtomixServerTransport transport;
 
+  @Mock(answer = Answers.RETURNS_SELF)
+  LogStreamRecordWriter logStreamRecordWriter;
+
+  BackupApiRequestHandler handler;
+  private ServerOutput serverOutput;
   private CompletableFuture<Either<ErrorResponse, AdminResponse>> responseFuture;
 
   @BeforeEach
   void setup() {
-    when(logStreamRecordWriter.metadataWriter(any())).thenReturn(logStreamRecordWriter);
-    when(logStreamRecordWriter.valueWriter(any())).thenReturn(logStreamRecordWriter);
-
     handler = new BackupApiRequestHandler(transport, logStreamRecordWriter, 1);
     scheduler.submitActor(handler);
     scheduler.workUntilDone();
