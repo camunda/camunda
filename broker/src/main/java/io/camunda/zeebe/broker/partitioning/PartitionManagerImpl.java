@@ -19,7 +19,6 @@ import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListener;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.PartitionHealthBroadcaster;
@@ -55,7 +54,6 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
   private final FileBasedSnapshotStoreFactory snapshotStoreFactory;
-  private final PushDeploymentRequestHandler deploymentRequestHandler;
   private final List<PartitionListener> partitionListeners;
   private final ClusterServices clusterServices;
   private final CommandApiService commandApiService;
@@ -67,7 +65,6 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
       final BrokerInfo localBroker,
       final ClusterServices clusterServices,
       final BrokerHealthCheckService healthCheckService,
-      final PushDeploymentRequestHandler deploymentRequestHandler,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final List<PartitionListener> partitionListeners,
       final CommandApiService commandApiService,
@@ -81,7 +78,6 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     this.actorSchedulingService = actorSchedulingService;
     this.clusterServices = clusterServices;
     this.healthCheckService = healthCheckService;
-    this.deploymentRequestHandler = deploymentRequestHandler;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.commandApiService = commandApiService;
     this.exporterRepository = exporterRepository;
@@ -139,7 +135,6 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                       actorSchedulingService,
                       brokerCfg,
                       localBroker,
-                      deploymentRequestHandler,
                       commandApiService,
                       snapshotStoreFactory,
                       clusterServices,

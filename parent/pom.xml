@@ -69,7 +69,7 @@
     <version.netty>4.1.79.Final</version.netty>
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.16.0</version.prometheus>
-    <version.protobuf>3.21.2</version.protobuf>
+    <version.protobuf>3.21.4</version.protobuf>
     <version.protobuf-common>2.9.2</version.protobuf-common>
     <version.micrometer>1.9.2</version.micrometer>
     <version.rocksdbjni>7.3.1</version.rocksdbjni>
@@ -83,7 +83,7 @@
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.17.3</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
-    <version.zeebe-test-container>3.4.0</version.zeebe-test-container>
+    <version.zeebe-test-container>3.5.0</version.zeebe-test-container>
     <version.feel-scala>1.15.1</version.feel-scala>
     <version.dmn-scala>1.7.3</version.dmn-scala>
     <version.rest-assured>5.1.1</version.rest-assured>
@@ -110,6 +110,7 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.15</version.jnr-posix>
+    <version.zpt>8.0.4</version.zpt>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -128,12 +129,12 @@
     <plugin.version.proto-backwards-compatibility>1.0.7</plugin.version.proto-backwards-compatibility>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
-    <plugin.version.resources>3.2.0</plugin.version.resources>
+    <plugin.version.resources>3.3.0</plugin.version.resources>
     <plugin.version.revapi>0.14.7</plugin.version.revapi>
-    <plugin.version.scala>4.7.0</plugin.version.scala>
+    <plugin.version.scala>4.7.1</plugin.version.scala>
     <plugin.version.shade>3.3.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
-    <plugin.version.spotbugs>4.7.1.0</plugin.version.spotbugs>
+    <plugin.version.spotbugs>4.7.1.1</plugin.version.spotbugs>
     <plugin.version.surefire>3.0.0-M7</plugin.version.surefire>
     <plugin.version.versions>2.11.0</plugin.version.versions>
 
@@ -340,6 +341,26 @@
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-atomix-utils</artifactId>
         <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-backup</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- sibling projects -->
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-process-test-assertions</artifactId>
+        <version>${version.zpt}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-process-test-filters</artifactId>
+        <version>${version.zpt}</version>
       </dependency>
 
       <!-- Third party dependencies -->
@@ -609,6 +630,12 @@
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
+        <version>${version.zeebe-test-container}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-test-container-engine</artifactId>
         <version>${version.zeebe-test-container}</version>
       </dependency>
 

@@ -140,6 +140,10 @@ public final class StreamProcessorRule implements TestRule {
     return streamProcessingComposite.getLogStreamRecordWriter(partitionId);
   }
 
+  public LogStreamRecordWriter newLogStreamRecordWriter(final int partitionId) {
+    return streamProcessingComposite.newLogStreamRecordWriter(partitionId);
+  }
+
   public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
     return streamProcessingComposite.startTypedStreamProcessor(factory);
   }

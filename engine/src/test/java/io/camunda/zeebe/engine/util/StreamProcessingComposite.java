@@ -57,6 +57,11 @@ public class StreamProcessingComposite {
     return streams.getLogStreamRecordWriter(logName);
   }
 
+  public LogStreamRecordWriter newLogStreamRecordWriter(final int partitionId) {
+    final String logName = getLogName(partitionId);
+    return streams.newLogStreamRecordWriter(logName);
+  }
+
   public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
     return startTypedStreamProcessor(
         (processingContext) -> createTypedRecordProcessors(factory, processingContext));

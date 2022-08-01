@@ -17,6 +17,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
@@ -169,7 +171,15 @@ public final class RequestMapper {
     return new BrokerResolveIncidentRequest(grpcRequest.getIncidentKey());
   }
 
-  static DirectBuffer ensureJsonSet(final String value) {
+  public static BrokerModifyProcessInstanceRequest toModifyProcessInstanceRequest(
+      final ModifyProcessInstanceRequest grpcRequest) {
+    return new BrokerModifyProcessInstanceRequest()
+        .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
+        .addActivateInstructions(grpcRequest.getActivateInstructionsList())
+        .addTerminateInstructions(grpcRequest.getTerminateInstructionsList());
+  }
+
+  public static DirectBuffer ensureJsonSet(final String value) {
     if (value == null || value.trim().isEmpty()) {
       return DocumentValue.EMPTY_DOCUMENT;
     } else {

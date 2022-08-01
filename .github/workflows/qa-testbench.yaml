@@ -71,9 +71,9 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/common/github.com/actions/camunda/zeebe ZEEBE_GCR_SERVICEACCOUNT_JSON;
-            secret/data/common/github.com/actions/camunda/zeebe TESTBENCH_PROD_CLIENT_SECRET;
-            secret/data/common/github.com/actions/camunda/zeebe TESTBENCH_PROD_CONTACT_POINT;
+            secret/data/products/zeebe/ci/zeebe ZEEBE_GCR_SERVICEACCOUNT_JSON;
+            secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CLIENT_SECRET;
+            secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CONTACT_POINT;
 
       - uses: actions/setup-go@v3
         with:
@@ -129,7 +129,7 @@ jobs:
 
       - id: slack-failure-notify
         name: Send failure slack notification
-        uses: slackapi/slack-github-action@v1.19.0
+        uses: slackapi/slack-github-action@v1.21.0
         if: ${{ always() && needs.qa-testbench.result != 'success' }}
         with:
           payload: |
@@ -158,7 +158,7 @@ jobs:
 
       - id: slack-success-notify
         name: Send success slack notification
-        uses: slackapi/slack-github-action@v1.19.0
+        uses: slackapi/slack-github-action@v1.21.0
         if: ${{ always() && needs.qa-testbench.result == 'success' }}
         with:
           payload: |

@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.processinstance.CreateProcessInstanceProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.CreateProcessInstanceWithResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCommandProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -106,6 +108,7 @@ public final class ProcessEventProcessors {
         variableBehavior,
         catchEventBehavior,
         processEngineMetrics);
+    addProcessInstanceModificationStreamProcessors(typedRecordProcessors, zeebeState, writers);
 
     return bpmnStreamProcessor;
   }
@@ -228,5 +231,17 @@ public final class ProcessEventProcessors {
         ValueType.PROCESS_INSTANCE_CREATION,
         ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
         new CreateProcessInstanceWithResultProcessor(createProcessor, elementInstanceState));
+  }
+
+  private static void addProcessInstanceModificationStreamProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final MutableZeebeState zeebeState,
+      final Writers writers) {
+    final ProcessInstanceModificationProcessor modificationProcessor =
+        new ProcessInstanceModificationProcessor(writers, zeebeState.getKeyGenerator());
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE_MODIFICATION,
+        ProcessInstanceModificationIntent.MODIFY,
+        modificationProcessor);
   }
 }

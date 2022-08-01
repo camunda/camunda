@@ -28,6 +28,7 @@ import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
+import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
@@ -43,6 +44,7 @@ import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.JobUpdateRetriesCommandImpl;
+import io.camunda.zeebe.client.impl.command.ModifyProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.PublishMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.zeebe.client.impl.command.SetVariablesCommandImpl;
@@ -252,6 +254,17 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new CreateProcessInstanceCommandImpl(
         asyncStub,
         jsonMapper,
+        config.getDefaultRequestTimeout(),
+        credentialsProvider::shouldRetryRequest);
+  }
+
+  @Override
+  public ModifyProcessInstanceCommandStep1 newModifyProcessInstanceCommand(
+      final long processInstanceKey) {
+    return new ModifyProcessInstanceCommandImpl(
+        processInstanceKey,
+        jsonMapper,
+        asyncStub,
         config.getDefaultRequestTimeout(),
         credentialsProvider::shouldRetryRequest);
   }

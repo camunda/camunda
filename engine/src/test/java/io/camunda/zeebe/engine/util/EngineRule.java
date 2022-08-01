@@ -16,7 +16,7 @@ import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
-import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
+import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
@@ -35,6 +35,7 @@ import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -46,7 +47,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -63,6 +63,7 @@ import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -94,7 +95,6 @@ public final class EngineRule extends ExternalResource {
   private Consumer<String> jobsAvailableCallback = type -> {};
   private Consumer<TypedRecord> onProcessedCallback = record -> {};
   private Consumer<LoggedEvent> onSkippedCallback = record -> {};
-  private DeploymentDistributor deploymentDistributor = new DeploymentDistributionImpl();
 
   private final Map<Integer, ReprocessingCompletedListener> partitionReprocessingCompleteListeners =
       new Int2ObjectHashMap<>();
@@ -154,11 +154,6 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
-  public EngineRule withDeploymentDistributor(final DeploymentDistributor deploymentDistributor) {
-    this.deploymentDistributor = deploymentDistributor;
-    return this;
-  }
-
   public EngineRule withOnProcessedCallback(final Consumer<TypedRecord> onProcessedCallback) {
     this.onProcessedCallback = this.onProcessedCallback.andThen(onProcessedCallback);
     return this;
@@ -178,6 +173,7 @@ public final class EngineRule extends ExternalResource {
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     final UnsafeBuffer deploymentBuffer = new UnsafeBuffer(new byte[deploymentRecord.getLength()]);
     deploymentRecord.write(deploymentBuffer, 0);
+    final var interPartitionCommandSenders = new ArrayList<TestInterPartitionCommandSender>();
 
     forEachPartition(
         partitionId -> {
@@ -185,6 +181,8 @@ public final class EngineRule extends ExternalResource {
           partitionReprocessingCompleteListeners.put(partitionId, reprocessingCompletedListener);
           final var featureFlags = FeatureFlags.createDefaultForTests();
 
+          final var interPartitionCommandSender = new TestInterPartitionCommandSender();
+          interPartitionCommandSenders.add(interPartitionCommandSender);
           environmentRule.startTypedStreamProcessor(
               partitionId,
               (recordProcessorContext) ->
@@ -204,15 +202,15 @@ public final class EngineRule extends ExternalResource {
                                 }
                               }),
                           partitionCount,
-                          new SubscriptionCommandSender(
-                              partitionId, new TestInterPartitionCommandSender()),
-                          deploymentDistributor,
-                          (key, partition) -> {},
+                          new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
+                          new DeploymentDistributionCommandSender(
+                              partitionId, interPartitionCommandSender),
                           jobsAvailableCallback,
                           featureFlags)
                       .withListener(new ProcessingExporterTransistor())
                       .withListener(reprocessingCompletedListener));
         });
+    interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
   }
 
   public void awaitReprocessingCompleted() {
@@ -476,28 +474,9 @@ public final class EngineRule extends ExternalResource {
     }
   }
 
-  private final class DeploymentDistributionImpl implements DeploymentDistributor {
-
-    @Override
-    public ActorFuture<Void> pushDeploymentToPartition(
-        final long key, final int partitionId, final DirectBuffer deploymentBuffer) {
-
-      final DeploymentRecord deploymentRecord = new DeploymentRecord();
-      deploymentRecord.wrap(deploymentBuffer);
-
-      // we run in processor actor, we are not allowed to wait on futures
-      // which means we cant get new writer in sync way
-      new Thread(
-              () ->
-                  environmentRule.writeCommandOnPartition(
-                      partitionId, key, DeploymentIntent.DISTRIBUTE, deploymentRecord))
-          .start();
-
-      return CompletableActorFuture.completed(null);
-    }
-  }
-
   private class TestInterPartitionCommandSender implements InterPartitionCommandSender {
+
+    private final Map<Integer, LogStreamRecordWriter> writers = new HashMap<>();
 
     @Override
     public void sendCommand(
@@ -517,13 +496,22 @@ public final class EngineRule extends ExternalResource {
         final BufferWriter command) {
       final var metadata =
           new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
-
-      final var writer = environmentRule.getLogStreamRecordWriter(receiverPartitionId);
+      final var writer = writers.get(receiverPartitionId);
       writer.reset();
       if (recordKey != null) {
         writer.key(recordKey);
       }
       writer.metadataWriter(metadata).valueWriter(command).tryWrite();
+    }
+
+    // Pre-initialize dedicated writers.
+    // We must build new writers because reusing the writers from the environmentRule is unsafe.
+    // We can't build them on-demand during `sendCommand` because that might run within an actor
+    // context where we can't build new `SyncLogStream`s.
+    private void initializeWriters(final int partitionCount) {
+      for (int i = PARTITION_ID; i < PARTITION_ID + partitionCount; i++) {
+        writers.put(i, environmentRule.newLogStreamRecordWriter(i));
+      }
     }
   }
 }

@@ -5,9 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.deployment;
+package io.camunda.zeebe.backup.processing;
 
-public interface DeploymentResponder {
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
 
-  void sendDeploymentResponse(long deploymentKey, int partitionId);
-}
+/**
+ * There is a good chance that we will get rid of this context, and use a "ProcessingContext"
+ * defined by the StreamProcessor. *
+ */
+public record Context(ZeebeDb zeebeDb, TransactionContext transactionContext) {}

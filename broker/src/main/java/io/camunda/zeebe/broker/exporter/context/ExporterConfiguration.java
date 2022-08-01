@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.broker.exporter.context;
 
-import com.fasterxml.jackson.core.JsonParser.Feature;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -26,7 +27,8 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
           .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
           .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
           .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_VALUES)
-          .enable(Feature.IGNORE_UNDEFINED, Feature.ALLOW_SINGLE_QUOTES)
+          .enable(JsonReadFeature.ALLOW_SINGLE_QUOTES)
+          .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
           .build();
 
   @Override

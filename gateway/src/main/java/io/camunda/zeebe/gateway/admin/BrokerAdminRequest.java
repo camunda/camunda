@@ -11,10 +11,12 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.AdminRequest;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
+import io.camunda.zeebe.protocol.record.AdminRequestEncoder;
 import io.camunda.zeebe.protocol.record.AdminRequestType;
 import io.camunda.zeebe.protocol.record.AdminResponseEncoder;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -28,6 +30,24 @@ public class BrokerAdminRequest extends BrokerRequest<Void> {
 
   public void stepDownIfNotPrimary() {
     request.setType(AdminRequestType.STEP_DOWN_IF_NOT_PRIMARY);
+  }
+
+  public void pauseExporting() {
+    request.setType(AdminRequestType.PAUSE_EXPORTING);
+  }
+
+  @Override
+  public Optional<Integer> getBrokerId() {
+    final var brokerId = request.getBrokerId();
+    if (brokerId != AdminRequestEncoder.brokerIdNullValue()) {
+      return Optional.of(brokerId);
+    } else {
+      return Optional.empty();
+    }
+  }
+
+  public void setBrokerId(final int brokerId) {
+    request.setBrokerId(brokerId);
   }
 
   @Override
