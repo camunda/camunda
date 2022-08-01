@@ -115,6 +115,11 @@ public class AbstractMultiInstanceLoopCharacteristicsBuilder<
     return myself;
   }
 
+  /**
+   * Warn: the Output Element must be an expression.
+   *
+   * <p>Please use {@link #zeebeOutputElementExpression(String)} instead.
+   */
   public B zeebeOutputElement(final String outputElement) {
     final ZeebeLoopCharacteristics characteristics =
         getCreateSingleExtensionElement(ZeebeLoopCharacteristics.class);
