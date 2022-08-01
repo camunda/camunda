@@ -62,10 +62,7 @@ class BackupApiRequestHandlerTest {
   void shouldRejectRequestWithInvalidType() {
     // given
     final var request =
-        new BackupRequest()
-            .setType(BackupRequestType.NULL_VAL)
-            .setPartitionId(1)
-            .setCheckpointId(10);
+        new BackupRequest().setType(BackupRequestType.NULL_VAL).setPartitionId(1).setBackupId(10);
 
     // when
     final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);
@@ -91,7 +88,7 @@ class BackupApiRequestHandlerTest {
         new BackupRequest()
             .setType(BackupRequestType.TAKE_BACKUP)
             .setPartitionId(1)
-            .setCheckpointId(10);
+            .setBackupId(10);
 
     // when
     final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);
@@ -110,7 +107,7 @@ class BackupApiRequestHandlerTest {
         new BackupRequest()
             .setType(BackupRequestType.TAKE_BACKUP)
             .setPartitionId(1)
-            .setCheckpointId(10);
+            .setBackupId(10);
 
     handler.onDiskSpaceNotAvailable();
     scheduler.workUntilDone();
@@ -139,7 +136,7 @@ class BackupApiRequestHandlerTest {
         new BackupRequest()
             .setType(BackupRequestType.TAKE_BACKUP)
             .setPartitionId(1)
-            .setCheckpointId(10);
+            .setBackupId(10);
 
     handler.onDiskSpaceNotAvailable();
     scheduler.workUntilDone();

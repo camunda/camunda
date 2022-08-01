@@ -25,12 +25,12 @@ public class BackupRequest implements BufferReader, BufferWriter {
   private final BackupRequestDecoder bodyDecoder = new BackupRequestDecoder();
   private BackupRequestType type;
   private int partitionId;
-  private long checkpointId;
+  private long backupId;
 
   public BackupRequest reset() {
     type = BackupRequestType.NULL_VAL;
     partitionId = BackupRequestEncoder.partitionIdNullValue();
-    checkpointId = BackupRequestEncoder.checkpointIdNullValue();
+    backupId = BackupRequestEncoder.backupIdNullValue();
     return this;
   }
 
@@ -52,12 +52,12 @@ public class BackupRequest implements BufferReader, BufferWriter {
     return this;
   }
 
-  public long getCheckpointId() {
-    return checkpointId;
+  public long getBackupId() {
+    return backupId;
   }
 
-  public BackupRequest setCheckpointId(final long checkpointId) {
-    this.checkpointId = checkpointId;
+  public BackupRequest setBackupId(final long backupId) {
+    this.backupId = backupId;
     return this;
   }
 
@@ -66,7 +66,7 @@ public class BackupRequest implements BufferReader, BufferWriter {
     bodyDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
     partitionId = bodyDecoder.partitionId();
     type = bodyDecoder.type();
-    checkpointId = bodyDecoder.checkpointId();
+    backupId = bodyDecoder.backupId();
   }
 
   @Override
@@ -80,6 +80,6 @@ public class BackupRequest implements BufferReader, BufferWriter {
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .partitionId(partitionId)
         .type(type)
-        .checkpointId(checkpointId);
+        .backupId(backupId);
   }
 }

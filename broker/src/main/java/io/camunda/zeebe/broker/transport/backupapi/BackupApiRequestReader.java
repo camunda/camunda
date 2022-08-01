@@ -33,8 +33,8 @@ public class BackupApiRequestReader implements RequestReader<BackupRequestDecode
     messageDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
   }
 
-  public long checkpointId() {
-    return messageDecoder.checkpointId();
+  public long backupId() {
+    return messageDecoder.backupId();
   }
 
   public long partitionId() {

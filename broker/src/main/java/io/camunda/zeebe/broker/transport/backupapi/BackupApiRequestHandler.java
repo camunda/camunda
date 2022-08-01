@@ -81,7 +81,7 @@ public class BackupApiRequestHandler
             .valueType(ValueType.CHECKPOINT)
             .intent(CheckpointIntent.CREATE);
     final CheckpointRecord checkpointRecord =
-        new CheckpointRecord().setCheckpointId(requestReader.checkpointId());
+        new CheckpointRecord().setCheckpointId(requestReader.backupId());
 
     final var written =
         logStreamRecordWriter.metadataWriter(metadata).valueWriter(checkpointRecord).tryWrite();
