@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -174,5 +175,70 @@ final class CheckpointRecordsProcessorTest {
     // state is not changed
     assertThat(state.getCheckpointId()).isEqualTo(checkpointId);
     assertThat(state.getCheckpointPosition()).isEqualTo(checkpointPosition);
+  }
+
+  @Test
+  void shouldNotifyListenerWhenNewCheckpointCreated() {
+    // given
+    final AtomicLong checkpoint = new AtomicLong();
+    processor.addCheckpointListener(checkpoint::set);
+
+    final long checkpointId = 2;
+    final long checkpointPosition = 20;
+    final CheckpointRecord value = new CheckpointRecord().setCheckpointId(checkpointId);
+    final MockTypedCheckpointRecord record =
+        new MockTypedCheckpointRecord(
+            checkpointPosition, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then
+    assertThat(checkpoint).hasValue(checkpointId);
+  }
+
+  @Test
+  void shouldNotifyListenerWhenReplayed() {
+    // given
+    final AtomicLong checkpoint = new AtomicLong();
+    processor.addCheckpointListener(checkpoint::set);
+
+    final long checkpointId = 3;
+    final long checkpointPosition = 10;
+    final CheckpointRecord value =
+        new CheckpointRecord()
+            .setCheckpointId(checkpointId)
+            .setCheckpointPosition(checkpointPosition);
+    final MockTypedCheckpointRecord record =
+        new MockTypedCheckpointRecord(
+            checkpointPosition + 1,
+            checkpointPosition,
+            CheckpointIntent.CREATED,
+            RecordType.EVENT,
+            value);
+
+    // when
+    processor.replay(record);
+
+    // then
+    assertThat(checkpoint).hasValue(checkpointId);
+  }
+
+  @Test
+  void shouldNotifyListenerOnInit() {
+    // given
+    final var context = new Context(zeebedb, zeebedb.createContext());
+    processor = new CheckpointRecordsProcessor(backupManager);
+    final long checkpointId = 3;
+    final long checkpointPosition = 30;
+    state.setCheckpointInfo(checkpointId, checkpointPosition);
+
+    // when
+    final AtomicLong checkpoint = new AtomicLong();
+    processor.addCheckpointListener(checkpoint::set);
+    processor.init(context);
+
+    // then
+    assertThat(checkpoint).hasValue(checkpointId);
   }
 }
