@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
+import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.TypedRecord;
@@ -87,6 +88,7 @@ public class PartitionStartupAndTransitionContextImpl
   private ConcurrencyControl concurrencyControl;
   private InterPartitionCommandReceiverActor interPartitionCommandReceiver;
   private final AtomixServerTransport gatewayBrokerTransport;
+  private BackupApiRequestHandler backupApiRequestHandler;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -269,6 +271,16 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public AtomixServerTransport getGatewayBrokerTransport() {
     return gatewayBrokerTransport;
+  }
+
+  @Override
+  public BackupApiRequestHandler getBackupApiRequestHandler() {
+    return backupApiRequestHandler;
+  }
+
+  @Override
+  public void setBackupApiRequestHandler(final BackupApiRequestHandler backupApiRequestHandler) {
+    this.backupApiRequestHandler = backupApiRequestHandler;
   }
 
   @Override
