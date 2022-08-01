@@ -946,6 +946,53 @@ public final class MultiInstanceActivityTest {
   }
 
   @Test
+  public void shouldNotInitializeOutputElementVariableIfSetToLoopCounter() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(
+                miBuilder.andThen(
+                    m ->
+                        m.zeebeInputElement(INPUT_ELEMENT_VARIABLE)
+                            .zeebeOutputElementExpression("loopCounter"))))
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
+            .create();
+
+    // note that this completes the jobs with a variable `result`, but these results are not
+    // collected  because the output element is set to `loopCounter` instead of `result`.
+    completeJobs(processInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.variableRecords()
+                .limit(
+                    v ->
+                        v.getIntent() == VariableIntent.UPDATED
+                            && v.getValue().getName().equals(OUTPUT_COLLECTION_VARIABLE)
+                            && v.getValue().getValue().equals("[1,2,3]")))
+        .extracting(Record::getIntent, r -> r.getValue().getName(), r -> r.getValue().getValue())
+        .describedAs("The output element variable is not nil initialized")
+        // note that output element expression is set to `loopCounter`, so we assert that
+        // the output element var is not nil initialized by checking the `loopCounter`'s value
+        .doesNotContain(tuple(VariableIntent.CREATED, "loopCounter", "null"))
+        .describedAs("The loopCounter variable is not overwritten with nil")
+        .doesNotContain(tuple(VariableIntent.UPDATED, "loopCounter", "null"))
+        .describedAs("The loopCounter variable is directly created")
+        .contains(
+            tuple(VariableIntent.CREATED, "loopCounter", "1"),
+            tuple(VariableIntent.CREATED, "loopCounter", "2"),
+            tuple(VariableIntent.CREATED, "loopCounter", "3"));
+  }
+
+  @Test
   public void shouldSetEmptyOutputCollectionIfSkip() {
     // given
     ENGINE.deployment().withXmlResource(process(miBuilder)).deploy();
