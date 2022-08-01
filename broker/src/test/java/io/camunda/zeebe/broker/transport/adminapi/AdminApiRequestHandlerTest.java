@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
@@ -20,7 +21,7 @@ import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
 import io.camunda.zeebe.protocol.record.ErrorCode;
-import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
+import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
@@ -30,39 +31,24 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-public class AdminApiRequestHandlerTest {
-  @Rule public final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
+class AdminApiRequestHandlerTest {
+  @RegisterExtension
+  final ControlledActorSchedulerExtension scheduler = new ControlledActorSchedulerExtension();
+
   final AtomixServerTransport transport = mock(AtomixServerTransport.class);
-  AdminApiRequestHandler handler;
-
-  @Before
-  public void setup() {
-    final var partitionManager = mock(PartitionManagerImpl.class);
-    final var partitionGroup = mock(RaftPartitionGroup.class);
-    final var raftPartition = mock(RaftPartition.class);
-    when(partitionManager.getPartitionGroup()).thenReturn(partitionGroup);
-    when(partitionGroup.name()).thenReturn("test");
-    when(raftPartition.stepDownIfNotPrimary()).thenReturn(CompletableFuture.completedFuture(null));
-    when(partitionGroup.getPartition(anyInt())).thenReturn(raftPartition);
-    when(partitionManager.getPartitionGroup()).thenReturn(partitionGroup);
-    handler = new AdminApiRequestHandler(transport);
-    scheduler.submitActor(handler);
-    handler.injectPartitionManager(partitionManager);
-    scheduler.workUntilDone();
-  }
 
   @Test
-  public void shouldRejectRequestWithInvalidType() {
+  void shouldRejectRequestWithInvalidType() {
     // given
+    final var handler = setupDefaultHandler();
     final var request = new AdminRequest();
     request.setType(AdminRequestType.NULL_VAL);
 
     // when
-    final var responseFuture = handleRequest(request);
+    final var responseFuture = handleRequest(request, handler);
 
     // then
     assertThat(responseFuture)
@@ -75,45 +61,90 @@ public class AdminApiRequestHandlerTest {
   }
 
   @Test
-  public void shouldInitiateStepdown() {
+  void shouldInitiateStepdown() {
     // given
+    final var handler = setupDefaultHandler();
     final var request = new AdminRequest();
     request.setType(AdminRequestType.STEP_DOWN_IF_NOT_PRIMARY);
 
     // when
-    final var responseFuture = handleRequest(request);
+    final var responseFuture = handleRequest(request, handler);
 
     // then
     assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
   }
 
   @Test
-  public void shouldRejectRequestWhenPartitionsAreNotStarted() {
+  void shouldRejectRequestWhenNoPartitionsAreKnown() {
     // given
     final var partitionManager = mock(PartitionManagerImpl.class);
     final var partitionGroup = mock(RaftPartitionGroup.class);
     when(partitionGroup.getPartitionIds()).thenReturn(List.of());
     when(partitionManager.getPartitionGroup()).thenReturn(partitionGroup);
-    handler.injectPartitionManager(partitionManager);
+    final var handler = new AdminApiRequestHandler(transport, partitionManager);
+    scheduler.submitActor(handler);
+    scheduler.workUntilDone();
 
     final var request = new AdminRequest();
     request.setType(AdminRequestType.STEP_DOWN_IF_NOT_PRIMARY);
 
     // when
-    final var responseFuture = handleRequest(request);
+    final var responseFuture = handleRequest(request, handler);
 
     // then
     assertThat(responseFuture)
         .succeedsWithin(Duration.ofMinutes(1))
         .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode)
+        .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH); // no partitions -> no handler subscribed
+  }
+
+  @Test
+  void shouldRejectRequestWhenNotLeader() {
+    // given
+    final var partitionManager = mock(PartitionManagerImpl.class);
+    final var partitionGroup = mock(RaftPartitionGroup.class);
+    final var partition = mock(RaftPartition.class);
+    when(partition.getRole()).thenReturn(Role.FOLLOWER);
+    when(partitionGroup.getPartition(anyInt())).thenReturn(partition);
+    when(partitionManager.getPartitionGroup()).thenReturn(partitionGroup);
+    final var handler = new AdminApiRequestHandler(transport, partitionManager);
+    scheduler.submitActor(handler);
+    scheduler.workUntilDone();
+
+    final var request = new AdminRequest();
+    request.setType(AdminRequestType.STEP_DOWN_IF_NOT_PRIMARY);
+
+    // when
+    final var responseFuture = handleRequest(request, handler);
+
+    // then
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofMinutes(1))
         .matches(Either::isLeft)
         .extracting(Either::getLeft)
         .extracting(ErrorResponse::getErrorCode)
-        .isEqualTo(ErrorCode.INTERNAL_ERROR); // no partitions -> no handler subscribed
+        .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH); // no partitions -> no handler subscribed
+  }
+
+  private AdminApiRequestHandler setupDefaultHandler() {
+    final var partitionManager = mock(PartitionManagerImpl.class);
+    final var partitionGroup = mock(RaftPartitionGroup.class);
+    final var raftPartition = mock(RaftPartition.class);
+    when(raftPartition.getRole()).thenReturn(Role.LEADER);
+    when(raftPartition.stepDownIfNotPrimary()).thenReturn(CompletableFuture.completedFuture(null));
+    when(partitionGroup.name()).thenReturn("test");
+    when(partitionGroup.getPartition(anyInt())).thenReturn(raftPartition);
+    when(partitionManager.getPartitionGroup()).thenReturn(partitionGroup);
+    final var handler = new AdminApiRequestHandler(transport, partitionManager);
+    scheduler.submitActor(handler);
+    scheduler.workUntilDone();
+    return handler;
   }
 
   private CompletableFuture<Either<ErrorResponse, AdminResponse>> handleRequest(
-      final BufferWriter request) {
+      final BufferWriter request, final AdminApiRequestHandler handler) {
     final var future = new CompletableFuture<Either<ErrorResponse, AdminResponse>>();
     final ServerOutput serverOutput = createServerOutput(future);
     final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);

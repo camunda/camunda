@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.broker.transport.adminapi;
 
-import io.atomix.primitive.partition.PartitionId;
-import io.atomix.raft.partition.RaftPartitionGroup;
+import io.atomix.primitive.partition.Partition;
+import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.partition.RaftPartition;
+import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.transport.ApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
@@ -18,12 +20,23 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 
 public class AdminApiRequestHandler extends ApiRequestHandler<ApiRequestReader, ApiResponseWriter> {
-  private RaftPartitionGroup partitionGroup;
+  private final PartitionAdminAccess adminAccess;
+  private final PartitionManagerImpl partitionManager;
   private final AtomixServerTransport transport;
 
-  public AdminApiRequestHandler(final AtomixServerTransport transport) {
+  public AdminApiRequestHandler(
+      final AtomixServerTransport transport, final PartitionManagerImpl partitionManager) {
     super(new ApiRequestReader(), new ApiResponseWriter());
     this.transport = transport;
+    this.partitionManager = partitionManager;
+    adminAccess = partitionManager.createAdminAccess(this);
+  }
+
+  @Override
+  protected void onActorStarting() {
+    partitionManager.getPartitionGroup().getPartitions().stream()
+        .map(Partition::id)
+        .forEach(partitionId -> transport.subscribe(partitionId.id(), RequestType.ADMIN, this));
   }
 
   @Override
@@ -49,20 +62,22 @@ public class AdminApiRequestHandler extends ApiRequestHandler<ApiRequestReader, 
       final ApiResponseWriter responseWriter,
       final int partitionId,
       final ErrorResponseWriter errorWriter) {
-    if (partitionGroup == null) {
+    final var partition = partitionManager.getPartitionGroup().getPartition(partitionId);
+    if (partition instanceof RaftPartition raftPartition) {
+      if (raftPartition.getRole() == Role.LEADER) {
+        raftPartition.stepDownIfNotPrimary();
+      } else {
+        errorWriter.partitionLeaderMismatch(partitionId);
+        return Either.left(errorWriter);
+      }
+    } else if (partition == null) {
       errorWriter.partitionLeaderMismatch(partitionId);
       return Either.left(errorWriter);
+    } else {
+      throw new IllegalStateException(
+          "Expected a raft partition, got %s".formatted(partition.getClass().getName()));
     }
-    final var partition = partitionGroup.getPartition(partitionId);
-    partition.stepDownIfNotPrimary();
 
     return Either.right(responseWriter);
-  }
-
-  public void injectPartitionManager(final PartitionManagerImpl partitionManager) {
-    partitionGroup = (RaftPartitionGroup) partitionManager.getPartitionGroup();
-    partitionGroup.getPartitionIds().stream()
-        .map(PartitionId::id)
-        .forEach(partitionId -> transport.subscribe(partitionId, RequestType.ADMIN, this));
   }
 }
