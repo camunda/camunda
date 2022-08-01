@@ -53,6 +53,7 @@ public class ProcessOverviewIndex extends DefaultIndexMappingCreator {
       .endObject()
       .startObject(LAST_KPI_EVALUATION)
         .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
+        .field(DYNAMIC_PROPERTY_TYPE, true)
       .endObject()
       .startObject(DIGEST)
         .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)

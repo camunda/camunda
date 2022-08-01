@@ -8,12 +8,15 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.importing.LastKpiEvaluationResultsDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.index.ProcessOverviewIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
@@ -108,7 +111,10 @@ public class ProcessOverviewWriter {
           getUpdateOwnerIfNotSetScript(),
           Map.of("owner", ownerId, "processDefinitionKey", processDefinitionKey)
         ))
-        .upsert(objectMapper.convertValue(createNewProcessOverviewDto(processDefinitionKey, processUpdateDto), Map.class))
+        .upsert(objectMapper.convertValue(
+          createNewProcessOverviewDto(processDefinitionKey, processUpdateDto),
+          Map.class
+        ))
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
       esClient.update(updateRequest);
@@ -119,6 +125,34 @@ public class ProcessOverviewWriter {
       );
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  public void updateKpisForProcessDefinitions(Map<String, LastKpiEvaluationResultsDto> definitionKeyToKpis) {
+    final BulkRequest bulkRequest = new BulkRequest();
+    log.debug("Updating KPI values for process definitions with keys: [{}]", definitionKeyToKpis.keySet());
+    for (Map.Entry<String, LastKpiEvaluationResultsDto> entry : definitionKeyToKpis.entrySet()) {
+      Map<String, String> reportIdToValue = entry.getValue().getReportIdToValue();
+      ProcessOverviewDto processOverviewDto = new ProcessOverviewDto();
+      processOverviewDto.setProcessDefinitionKey(entry.getKey());
+      processOverviewDto.setDigest(new ProcessDigestDto());
+      processOverviewDto.setLastKpiEvaluationResults(reportIdToValue);
+      UpdateRequest updateRequest = new UpdateRequest()
+        .index(PROCESS_OVERVIEW_INDEX_NAME)
+        .id(entry.getKey())
+        .upsert(objectMapper.convertValue(processOverviewDto, Map.class))
+        .script(ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+          "ctx._source.lastKpiEvaluationResults = params.lastKpiEvaluationResults;\n",
+          Map.of("lastKpiEvaluationResults", reportIdToValue)
+        ))
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      bulkRequest.add(updateRequest);
+      ElasticsearchWriterUtil.doBulkRequest(
+        esClient,
+        bulkRequest,
+        new ProcessOverviewIndex().getIndexName(),
+        false
+      );
     }
   }
 

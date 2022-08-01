@@ -61,7 +61,12 @@ public class ProcessOverviewService {
       .stream()
       .filter(def -> !def.getIsEventProcess())
       .filter(
-        def -> definitionAuthorizationService.isAuthorizedToAccessDefinition(userId, PROCESS, def.getKey(), def.getTenantIds()))
+        def -> definitionAuthorizationService.isAuthorizedToAccessDefinition(
+          userId,
+          PROCESS,
+          def.getKey(),
+          def.getTenantIds()
+        ))
       .peek(def -> {
         if (def.getName() == null || def.getName().isEmpty()) {
           def.setName(def.getKey());
@@ -146,7 +151,8 @@ public class ProcessOverviewService {
   }
 
   public void confirmOrDenyOwnershipData(final String processToBeOnboarded) {
-    Map<String, ProcessOverviewDto> pendingProcesses = processOverviewReader.getProcessOverviewsWithPendingOwnershipData();
+    Map<String, ProcessOverviewDto> pendingProcesses =
+      processOverviewReader.getProcessOverviewsWithPendingOwnershipData();
     pendingProcesses
       .keySet()
       .stream()
