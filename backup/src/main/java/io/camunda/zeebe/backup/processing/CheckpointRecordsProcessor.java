@@ -8,6 +8,8 @@
 package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.CheckpointListener;
+import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
@@ -17,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,19 +32,31 @@ public final class CheckpointRecordsProcessor implements RecordProcessor<Context
   private CheckpointCreateProcessor checkpointCreateProcessor;
   private CheckpointCreatedEventApplier checkpointCreatedEventApplier;
 
+  //  Can be accessed concurrently by other threads to add new listeners. Hence we have to use a
+  // thread safe collection
+  private final Set<CheckpointListener> checkpointListeners = new CopyOnWriteArraySet<>();
+
+  private DbCheckpointState checkpointState;
+
   public CheckpointRecordsProcessor(final BackupManager backupManager) {
     this.backupManager = backupManager;
   }
 
   @Override
   public void init(final Context recordProcessorContext) {
-    final var checkpointState =
+    checkpointState =
         new DbCheckpointState(
             recordProcessorContext.zeebeDb(), recordProcessorContext.transactionContext());
 
     checkpointCreateProcessor =
-        new CheckpointCreateProcessor(checkpointState, backupManager, Set.of());
-    checkpointCreatedEventApplier = new CheckpointCreatedEventApplier(checkpointState);
+        new CheckpointCreateProcessor(checkpointState, backupManager, checkpointListeners);
+    checkpointCreatedEventApplier =
+        new CheckpointCreatedEventApplier(checkpointState, checkpointListeners);
+
+    if (checkpointState.getCheckpointId() != CheckpointState.NO_CHECKPOINT) {
+      checkpointListeners.forEach(
+          listener -> listener.onNewCheckpointCreated(checkpointState.getCheckpointId()));
+    }
   }
 
   @Override
@@ -79,5 +94,14 @@ public final class CheckpointRecordsProcessor implements RecordProcessor<Context
     // checkpointing algorithm. The only way to guarantee correctness is preventing StreamProcessor
     // from making progress.
     throw new RuntimeException(processingException);
+  }
+
+  /**
+   * Registers a listener.
+   *
+   * @param checkpointListener
+   */
+  public void addCheckpointListener(final CheckpointListener checkpointListener) {
+    checkpointListeners.add(checkpointListener);
   }
 }

@@ -13,8 +13,10 @@ public interface CheckpointListener {
   /**
    * Called when ever a new checkpoint is created.
    *
-   * <p>Will be called immediately after CHECKPOINT:CREATE record is processed if it results in a
-   * new checkpoint.
+   * <p>This will be called
+   * <li>When the processor is initialized with the latest checkpoint
+   * <li>When CHECKPOINT:CREATE record is processed and if it results in a new checkpoint.
+   * <li>When CHECKPOINT:CREATED record is replayed
    */
   void onNewCheckpointCreated(long checkpointId);
 }
