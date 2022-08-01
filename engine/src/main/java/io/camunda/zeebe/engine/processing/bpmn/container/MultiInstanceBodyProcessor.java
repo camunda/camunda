@@ -323,6 +323,8 @@ public final class MultiInstanceBodyProcessor
     //
     // We can make an exception for output expressions that refer to the same variable as the input
     // element, because the input variable is already created at the local scope.
+    //
+    // Likewise, we can make the same exception for the `loopCounter` variable.
     loopCharacteristics
         .getOutputElement()
         .flatMap(Expression::getVariableName)
@@ -333,6 +335,7 @@ public final class MultiInstanceBodyProcessor
                     .getInputElement()
                     .map(input -> !BufferUtil.equals(input, output))
                     .orElse(true))
+        .filter(output -> !BufferUtil.equals(output, LOOP_COUNTER_VARIABLE))
         .ifPresent(
             variableName -> stateBehavior.setLocalVariable(childContext, variableName, NIL_VALUE));
 
