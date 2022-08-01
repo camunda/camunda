@@ -12,14 +12,17 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.broker.transport.ApiRequestHandler;
+import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 
-public class AdminApiRequestHandler extends ApiRequestHandler<ApiRequestReader, ApiResponseWriter> {
+public class AdminApiRequestHandler
+    extends AsyncApiRequestHandler<ApiRequestReader, ApiResponseWriter> {
   private final PartitionAdminAccess adminAccess;
   private final PartitionManagerImpl partitionManager;
   private final AtomixServerTransport transport;
@@ -40,22 +43,49 @@ public class AdminApiRequestHandler extends ApiRequestHandler<ApiRequestReader, 
   }
 
   @Override
-  protected Either<ErrorResponseWriter, ApiResponseWriter> handle(
+  protected ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> handleAsync(
       final int partitionId,
       final long requestId,
       final ApiRequestReader requestReader,
       final ApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
-    if (requestReader.getMessageDecoder().type() == AdminRequestType.STEP_DOWN_IF_NOT_PRIMARY) {
-      return stepDownIfNotPrimary(responseWriter, partitionId, errorWriter);
-    }
-    return unknownRequest(errorWriter, requestReader.getMessageDecoder().type());
+    return switch (requestReader.getMessageDecoder().type()) {
+      case STEP_DOWN_IF_NOT_PRIMARY -> CompletableActorFuture.completed(
+          stepDownIfNotPrimary(responseWriter, partitionId, errorWriter));
+      case PAUSE_EXPORTING -> pauseExporting(responseWriter, partitionId, errorWriter);
+      default -> unknownRequest(errorWriter, requestReader.getMessageDecoder().type());
+    };
   }
 
-  private Either<ErrorResponseWriter, ApiResponseWriter> unknownRequest(
+  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> unknownRequest(
       final ErrorResponseWriter errorWriter, final AdminRequestType type) {
     errorWriter.unsupportedMessage(type, AdminRequestType.values());
-    return Either.left(errorWriter);
+    return CompletableActorFuture.completed(Either.left(errorWriter));
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> pauseExporting(
+      final ApiResponseWriter responseWriter,
+      final int partitionId,
+      final ErrorResponseWriter errorWriter) {
+    final var result = actor.<Either<ErrorResponseWriter, ApiResponseWriter>>createFuture();
+
+    adminAccess
+        .forPartition(partitionId)
+        .pauseExporting()
+        .onComplete(
+            (r, t) -> {
+              if (t == null) {
+                result.complete(Either.right(responseWriter));
+              } else {
+                LOG.error("Failed to pause exporting on partition {}", partitionId, t);
+                result.complete(
+                    Either.left(
+                        errorWriter.internalError(
+                            "Partition %s failed to pause exporting", partitionId)));
+              }
+            });
+
+    return result;
   }
 
   private Either<ErrorResponseWriter, ApiResponseWriter> stepDownIfNotPrimary(
