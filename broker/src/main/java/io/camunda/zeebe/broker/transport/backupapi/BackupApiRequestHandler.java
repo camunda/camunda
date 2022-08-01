@@ -49,7 +49,7 @@ public final class BackupApiRequestHandler
   public void close() {
     transport.unsubscribe(partitionId, RequestType.BACKUP);
     // The broker is not the leader any more.
-    transport.subscribe(partitionId, RequestType.BACKUP, new NoPartitionLeaderHandler());
+    transport.subscribe(partitionId, RequestType.BACKUP, new NotPartitionLeaderHandler());
     super.close();
   }
 

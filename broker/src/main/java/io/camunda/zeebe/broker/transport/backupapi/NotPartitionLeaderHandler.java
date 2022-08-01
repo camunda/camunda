@@ -15,7 +15,7 @@ import org.agrona.DirectBuffer;
 /**
  * This can be used when the actual handler is removed because the broker is not the leader anymore.
  */
-public class NoPartitionLeaderHandler implements RequestHandler {
+public class NotPartitionLeaderHandler implements RequestHandler {
 
   @Override
   public void onRequest(
