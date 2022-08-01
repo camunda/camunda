@@ -241,7 +241,11 @@ public final class ProcessEventProcessors {
       final Writers writers,
       final KeyGenerator keyGenerator) {
     final ProcessInstanceModificationProcessor modificationProcessor =
-        new ProcessInstanceModificationProcessor(writers, keyGenerator);
+        new ProcessInstanceModificationProcessor(
+            writers,
+            keyGenerator,
+            zeebeState.getElementInstanceState(),
+            zeebeState.getProcessState());
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         ProcessInstanceModificationIntent.MODIFY,
