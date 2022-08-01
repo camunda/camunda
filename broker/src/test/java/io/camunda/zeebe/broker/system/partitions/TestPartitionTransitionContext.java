@@ -30,6 +30,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.Collection;
 import java.util.List;
@@ -182,6 +183,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
     return diskSpaceUsageMonitor;
+  }
+
+  @Override
+  public AtomixServerTransport getGatewayBrokerTransport() {
+    return null;
   }
 
   public void setDiskSpaceUsageMonitor(final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {

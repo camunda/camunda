@@ -33,7 +33,8 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             brokerStartupContext.getDiskSpaceUsageMonitor(),
             brokerStartupContext.getPartitionListeners(),
             brokerStartupContext.getCommandApiService(),
-            brokerStartupContext.getExporterRepository());
+            brokerStartupContext.getExporterRepository(),
+            brokerStartupContext.getCommandApiServerTransport());
 
     CompletableFuture.runAsync(
         () ->

@@ -26,6 +26,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
@@ -97,4 +98,6 @@ public interface PartitionTransitionContext extends PartitionContext {
   void setQueryService(QueryService queryService);
 
   DiskSpaceUsageMonitor getDiskSpaceUsageMonitor();
+
+  AtomixServerTransport getGatewayBrokerTransport();
 }
