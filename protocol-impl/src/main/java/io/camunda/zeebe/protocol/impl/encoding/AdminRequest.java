@@ -23,18 +23,14 @@ public class AdminRequest implements BufferReader, BufferWriter {
   private final AdminRequestEncoder bodyEncoder = new AdminRequestEncoder();
   private final AdminRequestDecoder bodyDecoder = new AdminRequestDecoder();
 
-  private int partitionId;
-  private AdminRequestType type;
-
-  public AdminRequest reset() {
-    partitionId = AdminRequestEncoder.partitionIdNullValue();
-    type = AdminRequestType.NULL_VAL;
-    return this;
-  }
+  private int brokerId = AdminRequestEncoder.brokerIdNullValue();
+  private int partitionId = AdminRequestEncoder.partitionIdNullValue();
+  private AdminRequestType type = AdminRequestType.NULL_VAL;
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     bodyDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
+    brokerId = bodyDecoder.brokerId();
     partitionId = bodyDecoder.partitionId();
     type = bodyDecoder.type();
   }
@@ -48,8 +44,17 @@ public class AdminRequest implements BufferReader, BufferWriter {
   public void write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
+        .brokerId(brokerId)
         .partitionId(partitionId)
         .type(type);
+  }
+
+  public int getBrokerId() {
+    return brokerId;
+  }
+
+  public void setBrokerId(final int brokerId) {
+    this.brokerId = brokerId;
   }
 
   public int getPartitionId() {
