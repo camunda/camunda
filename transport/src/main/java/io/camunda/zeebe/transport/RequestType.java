@@ -22,6 +22,8 @@ public enum RequestType {
   QUERY("query"),
   ADMIN("admin"),
 
+  BACKUP("backup"),
+
   // All other request types are considered unknown
   // This value exists mainly for testing purposes
   UNKNOWN("unknown");

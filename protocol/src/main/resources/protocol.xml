@@ -85,6 +85,10 @@
       <validValue name="PAUSE_EXPORTING">1</validValue>
     </enum>
 
+    <enum name="BackupRequestType" encodingType="uint8">
+      <validValue name="TAKE_BACKUP">0</validValue>
+    </enum>
+
   </types>
 
   <!-- L1 General Messages 0 - 99 -->
@@ -132,6 +136,15 @@
   </sbe:message>
 
   <sbe:message name="AdminResponse" id="41">
+  </sbe:message>
+
+  <sbe:message name="BackupRequest" id="42">
+    <field name="partitionId" id="1" type="uint16"/>
+    <field name="type" id="2" type="BackupRequestType"/>
+    <field name="backupId" id = "3" type="int64"/>
+  </sbe:message>
+
+  <sbe:message name="BackupResponse" id="43">
   </sbe:message>
 
   <!-- L2 Common Messages 200 - 399 -->
