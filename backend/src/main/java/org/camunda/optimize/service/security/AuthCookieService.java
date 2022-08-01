@@ -37,17 +37,14 @@ public class AuthCookieService {
 
   private final ConfigurationService configurationService;
 
-  public NewCookie createDeleteOptimizeAuthCookie(String requestScheme) {
+  public NewCookie createDeleteOptimizeAuthCookie(final String requestScheme) {
+    return createDeleteOptimizeAuthCookie(isSecureScheme(requestScheme));
+  }
+
+  public NewCookie createDeleteOptimizeAuthCookie(final boolean secure) {
     log.trace("Deleting Optimize authentication cookie.");
     return new NewCookie(
-      OPTIMIZE_AUTHORIZATION,
-      "",
-      "/",
-      null,
-      "delete cookie",
-      0,
-      configurationService.getAuthConfiguration().getCookieConfiguration().resolveSecureFlagValue(requestScheme),
-      true
+      OPTIMIZE_AUTHORIZATION, "", getCookiePath(), null, "delete cookie", 0, secure, true
     );
   }
 
@@ -96,16 +93,7 @@ public class AuthCookieService {
   private String createCookie(final String cookieName, final String cookieValue, final String requestScheme,
                               final Date expiryDate) {
     NewCookie newCookie = new NewCookie(
-      cookieName,
-      cookieValue,
-      "/" + configurationService.getAuthConfiguration().getCloudAuthConfiguration().getClusterId(),
-      null,
-      1,
-      null,
-      -1,
-      expiryDate,
-      configurationService.getAuthConfiguration().getCookieConfiguration().resolveSecureFlagValue(requestScheme),
-      true
+      cookieName, cookieValue, getCookiePath(), null, 1, null, -1, expiryDate, isSecureScheme(requestScheme), true
     );
 
     String newCookieAsString = newCookie.toString();
@@ -113,6 +101,14 @@ public class AuthCookieService {
       newCookieAsString = addSameSiteCookieFlag(newCookieAsString);
     }
     return newCookieAsString;
+  }
+
+  private String getCookiePath() {
+    return "/" + configurationService.getAuthConfiguration().getCloudAuthConfiguration().getClusterId();
+  }
+
+  private boolean isSecureScheme(final String requestScheme) {
+    return configurationService.getAuthConfiguration().getCookieConfiguration().resolveSecureFlagValue(requestScheme);
   }
 
   private AuthConfiguration getAuthConfiguration() {
