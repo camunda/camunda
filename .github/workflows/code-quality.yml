@@ -37,6 +37,22 @@ jobs:
         run: mvn -B -T1C -DskipTests -DskipChecks install
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
+        with:
+          upload: False
+          output: sarif-results
+      - name: Remove results for generated code
+        uses: advanced-security/filter-sarif@main
+        with:
+          patterns: |
+            +**/*.java
+            -**/generated-sources/**/*.java
+            -**/generated-test-sources/**/*.java
+          input: sarif-results/java.sarif
+          output: sarif-results/java.sarif
+      - name: Upload CodeQL Results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: sarif-results/java.sarif
   go-lint:
     name: Go linting
     runs-on: ubuntu-latest
