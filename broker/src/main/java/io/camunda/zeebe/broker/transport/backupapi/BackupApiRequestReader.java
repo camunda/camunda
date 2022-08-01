@@ -13,7 +13,7 @@ import io.camunda.zeebe.protocol.record.BackupRequestType;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import org.agrona.DirectBuffer;
 
-public class BackupApiRequestReader implements RequestReader<BackupRequestDecoder> {
+public final class BackupApiRequestReader implements RequestReader<BackupRequestDecoder> {
 
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final BackupRequestDecoder messageDecoder = new BackupRequestDecoder();

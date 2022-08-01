@@ -14,7 +14,7 @@ import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.ServerResponseImpl;
 import org.agrona.MutableDirectBuffer;
 
-public class BackupApiResponseWriter implements ResponseWriter {
+public final class BackupApiResponseWriter implements ResponseWriter {
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final BackupResponseEncoder responseEncoder = new BackupResponseEncoder();
   private final ServerResponseImpl response = new ServerResponseImpl();

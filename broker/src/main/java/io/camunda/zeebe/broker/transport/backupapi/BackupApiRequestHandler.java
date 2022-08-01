@@ -25,7 +25,7 @@ import io.camunda.zeebe.util.Either;
 /**
  * Request handler to handle commands and queries related to the backup ({@link RequestType#BACKUP})
  */
-public class BackupApiRequestHandler
+public final class BackupApiRequestHandler
     extends ApiRequestHandler<BackupApiRequestReader, BackupApiResponseWriter>
     implements DiskSpaceUsageListener {
   private boolean isDiskSpaceAvailable = true;
@@ -63,7 +63,7 @@ public class BackupApiRequestHandler
 
     if (requestReader.type() == BackupRequestType.TAKE_BACKUP) {
       if (!isDiskSpaceAvailable) {
-        return Either.left(errorWriter.outOfDiskSpace());
+        return Either.left(errorWriter.outOfDiskSpace(partitionId));
       }
       return handleTakeBackupRequest(requestReader, responseWriter, errorWriter);
     }
