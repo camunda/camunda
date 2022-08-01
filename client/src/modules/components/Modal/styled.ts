@@ -12,7 +12,7 @@ import {ReactComponent as CloseLarge} from 'modules/components/Icon/close-large.
 import {Panel} from 'modules/components/Panel';
 import {Button} from 'modules/components/Button';
 import {Transition as TransitionComponent} from 'modules/components/Transition';
-
+import {zModal} from 'modules/constants/componentHierarchy';
 import {SIZES} from './constants';
 import {styles} from '@carbon/elements';
 
@@ -21,7 +21,7 @@ const ModalRoot = styled.div`
     const colors = theme.colors.modules.modal.modalRoot;
 
     return css`
-      z-index: 999;
+      z-index: ${zModal};
       position: absolute;
       top: 0;
       left: 0;

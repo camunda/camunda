@@ -14,7 +14,6 @@
 @include sans.medium();
 @include sans.bold();
 
-
 * {
   box-sizing: border-box;
 }
@@ -25,7 +24,7 @@ html {
 }
 
 body {
-  font-family: "IBM Plex Sans";  // Remove on #2773 
+  font-family: 'IBM Plex Sans'; // Remove on #2773
   margin: 0;
   padding: 0;
 }
@@ -57,7 +56,7 @@ body,
 }
 
 button {
-  font-family: "IBM Plex Sans";  // Remove on #2773
+  font-family: 'IBM Plex Sans'; // Remove on #2773
   cursor: pointer;
   border-width: 0;
 }
@@ -92,4 +91,8 @@ a {
 
 textarea {
   margin: 0;
+}
+
+p {
+  @include type-style('body-01');
 }

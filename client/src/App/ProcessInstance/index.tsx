@@ -36,6 +36,9 @@ import {
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {modificationsStore} from 'modules/stores/modifications';
 import {observer} from 'mobx-react';
+import {InformationModal} from 'modules/components/InformationModal';
+import {CmButton} from '@camunda-cloud/common-ui-react';
+import Modal from 'modules/components/Modal';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -44,6 +47,10 @@ const ProcessInstance: React.FC = observer(() => {
   const location = useLocation();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [clientHeight, setClientHeight] = useState(0);
+  const [
+    isDiscardModificationsModalVisible,
+    setIsDiscardModificationsModalVisible,
+  ] = useState(false);
 
   useEffect(() => {
     setClientHeight(containerRef?.current?.clientHeight ?? 0);
@@ -152,7 +159,7 @@ const ProcessInstance: React.FC = observer(() => {
               appearance="danger"
               label="Discard All"
               onCmPress={() => {
-                modificationsStore.disableModificationMode();
+                setIsDiscardModificationsModalVisible(true);
               }}
               data-testid="discard-all-button"
             />
@@ -161,6 +168,40 @@ const ProcessInstance: React.FC = observer(() => {
               label="Apply Modifications"
               onCmPress={() => {}}
               data-testid="apply-modifications-button"
+            />
+            <InformationModal
+              isVisible={isDiscardModificationsModalVisible}
+              onClose={() => setIsDiscardModificationsModalVisible(false)}
+              title="Discard Modifications"
+              body={
+                <>
+                  <p>
+                    About to discard all added modifications for instance{' '}
+                    {processInstanceId}.
+                  </p>
+                  <p>Click "Discard" to proceed.</p>
+                </>
+              }
+              footer={
+                <>
+                  <Modal.SecondaryButton
+                    title="Cancel"
+                    onClick={() => setIsDiscardModificationsModalVisible(false)}
+                    data-testid="cancel-button"
+                  >
+                    Cancel
+                  </Modal.SecondaryButton>
+                  <CmButton
+                    appearance="danger"
+                    label="Discard"
+                    onCmPress={() => {
+                      modificationsStore.reset();
+                      setIsDiscardModificationsModalVisible(false);
+                    }}
+                    data-testid="discard-button"
+                  />
+                </>
+              }
             />
           </ModificationFooter>
         )}

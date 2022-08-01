@@ -11,10 +11,6 @@ import {DeleteOperationModal} from './index';
 import {mockProps} from './index.setup';
 
 describe('ConfirmOperationModal', () => {
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('should render', () => {
     render(<DeleteOperationModal {...mockProps} />, {wrapper: ThemeProvider});
     expect(

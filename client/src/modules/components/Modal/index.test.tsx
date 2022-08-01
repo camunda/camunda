@@ -36,10 +36,6 @@ const ModalComponent = (
 );
 
 describe('Modal', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('should render modal in a div in the document body', () => {
     render(ModalComponent, {wrapper: ThemeProvider});
 

@@ -62,7 +62,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('Operations', () => {
   afterEach(() => {
-    jest.clearAllMocks();
     modificationsStore.reset();
   });
 

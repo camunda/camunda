@@ -109,7 +109,7 @@ class Modal extends React.Component<ModalProps> {
   handleTabKeyDown = (e: any) => {
     const focusableModalElements = [
       ...this.modalRef?.current.querySelectorAll(
-        'a[href], button, textarea, code, input[type="text"], input[type="radio"], input[type="checkbox"], select'
+        'a[href], button, textarea, code, input[type="text"], input[type="radio"], input[type="checkbox"], select, cm-button'
       ),
     ].filter((element) => !!element.disabled === false);
 

@@ -27,7 +27,6 @@ describe('validators', () => {
     setTimeoutSpy = jest.spyOn(window, 'setTimeout');
   });
   afterEach(() => {
-    jest.clearAllMocks();
     jest.clearAllTimers();
     jest.useRealTimers();
   });

@@ -13,5 +13,6 @@ const above = 1;
 
 const zNotification = above + zLayoutTopBase;
 const zModificationFrame = above + zLayoutTopBase;
+const zModal = above + zModificationFrame;
 
-export {zNotification, zModificationFrame};
+export {zNotification, zModificationFrame, zModal};

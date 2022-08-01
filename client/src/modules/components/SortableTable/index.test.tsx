@@ -20,10 +20,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('SortableTable', () => {
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   describe('should display selectable table', () => {
     it('loading state', () => {
       render(

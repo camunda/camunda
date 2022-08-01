@@ -263,6 +263,7 @@ describe('Instance', () => {
       ).toBeInTheDocument();
 
       await user.click(screen.getByTestId('discard-all-button'));
+      await user.click(await screen.findByTestId('discard-button'));
 
       expect(
         screen.queryByText('Process Instance Modification Mode')
@@ -272,6 +273,50 @@ describe('Instance', () => {
       ).not.toBeInTheDocument();
       expect(
         screen.queryByTestId('apply-modifications-button')
+      ).not.toBeInTheDocument();
+    }
+  );
+
+  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
+    'should display confirmation modal when discard all is clicked during the modification mode',
+    async () => {
+      mockServer.use(
+        rest.get('/api/process-instances/:id', (_, res, ctx) =>
+          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
+        )
+      );
+
+      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+      await waitForElementToBeRemoved(
+        screen.getByTestId('instance-header-skeleton')
+      );
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /modify instance/i,
+        })
+      );
+      await user.click(screen.getByTestId('discard-all-button'));
+
+      expect(
+        await screen.findByText(
+          /about to discard all added modifications for instance/i
+        )
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByText(/click "discard" to proceed\./i)
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByTestId('cancel-button'));
+
+      await waitForElementToBeRemoved(() =>
+        screen.queryByText(
+          /About to discard all added modifications for instance/
+        )
+      );
+      expect(
+        screen.queryByText(/click "discard" to proceed\./i)
       ).not.toBeInTheDocument();
     }
   );
