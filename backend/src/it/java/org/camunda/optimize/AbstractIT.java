@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize;
 
+import org.camunda.optimize.jetty.OptimizeResourceConstants;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.engine.IncidentClient;
 import org.camunda.optimize.test.engine.OutlierDistributionClient;
@@ -46,6 +47,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.function.Supplier;
 
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.ACTUATOR_PORT_PROPERTY_KEY;
 import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTPS_PORT_KEY;
 import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTP_PORT_KEY;
 import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
@@ -117,6 +119,7 @@ public abstract class AbstractIT {
   public void startAndUseNewOptimizeInstance() {
     final String httpsPort = getPortArg(HTTPS_PORT_KEY);
     final String httpPort = getPortArg(HTTP_PORT_KEY);
+    final String actuatorPort = getArg(ACTUATOR_PORT_PROPERTY_KEY, String.valueOf(OptimizeResourceConstants.ACTUATOR_PORT + 100));
 
     // run after-test cleanups with the old context
     embeddedOptimizeExtension.afterTest();
@@ -125,15 +128,19 @@ public abstract class AbstractIT {
       ((ConfigurableApplicationContext) embeddedOptimizeExtension.getApplicationContext()).close();
     }
 
-    final ConfigurableApplicationContext context = SpringApplication.run(Main.class, httpsPort, httpPort);
+    final ConfigurableApplicationContext context = SpringApplication.run(Main.class, httpsPort, httpPort, actuatorPort);
     embeddedOptimizeExtension.setApplicationContext(context);
     embeddedOptimizeExtension.setCloseContextAfterTest(true);
     embeddedOptimizeExtension.setResetImportOnStart(false);
     embeddedOptimizeExtension.setupOptimize();
   }
 
-  private String getPortArg(String httpsPortKey) {
-    return String.format("--%s=%s", httpsPortKey, embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(httpsPortKey) + 100);
+  private String getArg(String key, String value) {
+    return String.format("--%s=%s", key, value);
+  }
+
+  private String getPortArg(String portKey) {
+    return getArg(portKey, String.valueOf(embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(portKey) + 100));
   }
 
   protected IncidentClient incidentClient = new IncidentClient(engineIntegrationExtension, engineDatabaseExtension);

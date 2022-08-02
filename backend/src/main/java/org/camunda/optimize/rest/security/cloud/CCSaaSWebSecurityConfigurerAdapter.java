@@ -59,6 +59,8 @@ import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOUR
 import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static org.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.ACTUATOR_ENDPOINT;
+import static org.camunda.optimize.rest.constants.RestConstants.PROMETHEUS_ENDPOINT;
 import static org.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.AUTH_0_CLIENT_REGISTRATION_ID;
 import static org.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.OAUTH_AUTH_ENDPOINT;
 import static org.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.OAUTH_REDIRECT_ENDPOINT;
@@ -123,6 +125,7 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
           createApiPath(UI_CONFIGURATION_PATH),
           createApiPath(LOCALIZATION_PATH)
         ).permitAll()
+        .antMatchers(getPrometheusEndpoint()).permitAll()
         // everything else requires authentication
         .anyRequest().authenticated()
       .and()
@@ -143,6 +146,10 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
       .oauth2ResourceServer()
       .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder()));
     //@formatter:on
+  }
+
+  private String getPrometheusEndpoint() {
+    return ACTUATOR_ENDPOINT + PROMETHEUS_ENDPOINT;
   }
 
   public JwtDecoder jwtDecoder() {

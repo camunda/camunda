@@ -6,10 +6,12 @@
 package org.camunda.optimize.jetty;
 
 import com.google.common.collect.ImmutableList;
-import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor
+@Configuration
 public class OptimizeResourceConstants {
 
   public static final String REST_API_PATH = "/api";
@@ -24,4 +26,15 @@ public class OptimizeResourceConstants {
       .add(INDEX_PAGE)
       .add(INDEX_HTML_PAGE)
       .build();
+  public static final String ACTUATOR_PORT_PROPERTY_KEY = "management.server.port";
+  public static String ACTUATOR_ENDPOINT;
+  public static int ACTUATOR_PORT;
+  @Value("${management.endpoints.web.base-path:/actuator}")
+  public void setActuatorEndpointStatic(String endpoint) {
+    OptimizeResourceConstants.ACTUATOR_ENDPOINT = endpoint;
+  }
+  @Value("${management.server.port:8092}")
+  public void setActuatorPortStatic(int port) {
+    OptimizeResourceConstants.ACTUATOR_PORT = port;
+  }
 }

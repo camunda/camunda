@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.zeebe.mediator;
 
+import org.camunda.optimize.OptimizeMetrics;
 import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
 import org.camunda.optimize.service.importing.PositionBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.MediatorRank;
@@ -18,6 +19,9 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
+import static org.camunda.optimize.MetricEnum.NEW_PAGE_FETCH_TIME_METRIC;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -48,8 +52,19 @@ public class ZeebeProcessDefinitionImportMediator
     return importNextPagePositionBased(getDefinitions(), importCompleteCallback);
   }
 
+  @Override
+  protected String getRecordType() {
+    return PROCESS.name();
+  }
+
+  @Override
+  protected Integer getPartitionId() {
+    return zeebeProcessDefinitionFetcher.getPartitionId();
+  }
+
   private List<ZeebeProcessDefinitionRecordDto> getDefinitions() {
-    return zeebeProcessDefinitionFetcher.getZeebeRecordsForPrefixAndPartitionFrom(importIndexHandler.getNextPage());
+    return OptimizeMetrics.getTimer(NEW_PAGE_FETCH_TIME_METRIC, getRecordType(), getPartitionId())
+      .record(() -> zeebeProcessDefinitionFetcher.getZeebeRecordsForPrefixAndPartitionFrom(importIndexHandler.getNextPage()));
   }
 
 }
