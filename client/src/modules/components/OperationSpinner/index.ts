@@ -5,13 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import styled, {css} from 'styled-components';
-
-import Spinner from 'modules/components/Spinner';
+import {Spinner} from 'modules/components/Spinner';
 
 const OperationSpinner = styled<
-  React.FC<{isSelected?: boolean; title?: string}>
+  React.FC<
+    React.ComponentProps<typeof Spinner> & {
+      isSelected?: boolean;
+      title?: string;
+    }
+  >
 >(Spinner)`
   ${({theme, isSelected = false}) => {
     const colors = theme.colors.modules.operations;

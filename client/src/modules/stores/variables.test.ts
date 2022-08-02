@@ -323,6 +323,20 @@ describe('stores/variables', () => {
     await waitFor(() => expect(variablesStore.state.loadingItemId).toBeNull());
 
     expect(mockOnError).toHaveBeenCalledTimes(2);
+
+    mockServer.use(
+      rest.get('/api/variables/:variableId', (_, res, ctx) =>
+        res.once(ctx.json({id: 'variable-id', state: 'ACTIVE'}))
+      )
+    );
+
+    expect(variablesStore.state.loadingItemId).toBeNull();
+    variablesStore.fetchVariable({
+      id: 'variable-id',
+      onError: mockOnError,
+      enableLoading: false,
+    });
+    expect(variablesStore.state.loadingItemId).toBeNull();
   });
 
   describe('Add Variable', () => {

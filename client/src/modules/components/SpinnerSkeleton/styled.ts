@@ -6,7 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
-import Spinner from 'modules/components/Spinner';
+import {Spinner} from 'modules/components/Spinner';
 
 const Skeleton = styled.div`
   ${({theme}) => {

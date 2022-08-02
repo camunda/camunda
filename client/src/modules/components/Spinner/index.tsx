@@ -5,10 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {BaseSpinner} from './styled';
 
-import * as Styled from './styled';
+type Props = {
+  'data-testid'?: string;
+};
 
-export default function Spinner(props: any) {
-  return <Styled.Spinner {...props} />;
-}
+const Spinner: React.FC<Props> = (props) => {
+  return <BaseSpinner {...props} />;
+};
+
+export {Spinner};

@@ -32,6 +32,7 @@ import {AddVariableButton} from './AddVariableButton';
 import {FieldArray, useFieldArray} from 'react-final-form-arrays';
 import {NewVariableModification} from './NewVariableModification';
 import {VariableFormValues} from 'modules/types/variables';
+import {ViewFullVariableButton} from './ViewFullVariableButton';
 
 const Variables: React.FC = observer(() => {
   const {
@@ -75,6 +76,24 @@ const Variables: React.FC = observer(() => {
     : initialValues === undefined || Object.values(initialValues).length === 0;
 
   const isAddMode = initialValues?.name === '' && initialValues?.value === '';
+
+  function fetchFullVariable({
+    id,
+    enableLoading = true,
+  }: {
+    id: VariableEntity['id'];
+    enableLoading?: boolean;
+  }) {
+    return variablesStore.fetchVariable({
+      id,
+      onError: () => {
+        notifications.displayNotification('error', {
+          headline: 'Variable could not be fetched',
+        });
+      },
+      enableLoading,
+    });
+  }
 
   return (
     <Styled.VariablesContent ref={variablesContentRef}>
@@ -184,53 +203,78 @@ const Variables: React.FC = observer(() => {
                                   {variableValue}
                                 </Styled.DisplayText>
 
-                                {processInstanceDetailsStore.isRunning &&
-                                  (hasActiveOperation ? (
-                                    <Styled.Spinner data-testid="edit-variable-spinner" />
-                                  ) : (
-                                    <Restricted scopes={['write']}>
-                                      <ActionButtons>
-                                        <ActionButton
-                                          title="Enter edit mode"
-                                          dataTestId="edit-variable-button"
-                                          isDisabled={loadingItemId !== null}
-                                          onClick={async () => {
-                                            let value = variableValue;
-                                            if (isPreview) {
-                                              const variable =
-                                                await variablesStore.fetchVariable(
-                                                  {
+                                {processInstanceDetailsStore.isRunning ? (
+                                  <>
+                                    {hasActiveOperation ? (
+                                      <Styled.Spinner data-testid="edit-variable-spinner" />
+                                    ) : (
+                                      <Restricted
+                                        scopes={['write']}
+                                        fallback={
+                                          isPreview ? (
+                                            <ViewFullVariableButton
+                                              variableName={variableName}
+                                              onClick={async () => {
+                                                const variable =
+                                                  await fetchFullVariable({
                                                     id,
-                                                    onError: () => {
-                                                      notifications.displayNotification(
-                                                        'error',
-                                                        {
-                                                          headline:
-                                                            'Variable could not be fetched',
-                                                        }
-                                                      );
-                                                    },
-                                                  }
-                                                );
+                                                    enableLoading: false,
+                                                  });
 
-                                              if (variable === null) {
-                                                return;
+                                                return variable?.value ?? null;
+                                              }}
+                                            />
+                                          ) : null
+                                        }
+                                      >
+                                        <ActionButtons>
+                                          <ActionButton
+                                            title="Enter edit mode"
+                                            data-testid="edit-variable-button"
+                                            disabled={loadingItemId !== null}
+                                            onClick={async () => {
+                                              let value = variableValue;
+                                              if (isPreview) {
+                                                const variable =
+                                                  await fetchFullVariable({id});
+
+                                                if (variable === null) {
+                                                  return;
+                                                }
+
+                                                value = variable.value;
                                               }
 
-                                              value = variable.value;
-                                            }
-
-                                            form.reset({
-                                              name: variableName,
-                                              value,
+                                              form.reset({
+                                                name: variableName,
+                                                value,
+                                              });
+                                              form.change('value', value);
+                                            }}
+                                            icon={<Styled.EditIcon />}
+                                          />
+                                        </ActionButtons>
+                                      </Restricted>
+                                    )}
+                                  </>
+                                ) : (
+                                  <>
+                                    {isPreview ? (
+                                      <ViewFullVariableButton
+                                        variableName={variableName}
+                                        onClick={async () => {
+                                          const variable =
+                                            await fetchFullVariable({
+                                              id,
+                                              enableLoading: false,
                                             });
-                                            form.change('value', value);
-                                          }}
-                                          icon={<Styled.EditIcon />}
-                                        />
-                                      </ActionButtons>
-                                    </Restricted>
-                                  ))}
+
+                                          return variable?.value ?? null;
+                                        }}
+                                      />
+                                    ) : null}
+                                  </>
+                                )}
                               </Styled.DisplayTextContainer>
                             </Styled.DisplayTextTD>
                           </>

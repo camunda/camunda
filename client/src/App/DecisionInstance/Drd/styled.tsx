@@ -7,7 +7,7 @@
 
 import styled, {css} from 'styled-components';
 import BasePanelHeader from 'modules/components/Panel/PanelHeader';
-import IconButton from 'modules/components/IconButton';
+import {IconButton} from 'modules/components/IconButton';
 import {HEADER_HEIGHT} from 'modules/constants';
 
 const Container = styled.div`

@@ -7,19 +7,19 @@
 
 import {authenticationStore, Permissions} from 'modules/stores/authentication';
 import {observer} from 'mobx-react';
-import React from 'react';
 
 type Props = {
-  children: React.ReactElement;
+  children: React.ReactNode;
   scopes: Permissions;
+  fallback?: React.ReactNode;
 };
 
-const Restricted: React.FC<Props> = observer(({children, scopes}) => {
+const Restricted: React.FC<Props> = observer(({children, scopes, fallback}) => {
   if (!authenticationStore.hasPermission(scopes)) {
-    return null;
+    return fallback ? <>{fallback}</> : null;
   }
 
-  return children;
+  return <>{children}</>;
 });
 
 export {Restricted};

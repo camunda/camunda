@@ -89,4 +89,24 @@ describe('Restricted', () => {
 
     expect(screen.getByText('test content')).toBeInTheDocument();
   });
+
+  it('should render fallback', () => {
+    authenticationStore.setUser({
+      displayName: 'demo',
+      permissions: ['read'],
+      canLogout: true,
+      userId: 'demo',
+      roles: null,
+      salesPlanType: null,
+    });
+    const mockFallback = 'i am a fallback';
+
+    render(
+      <Restricted scopes={['write']} fallback={mockFallback}>
+        <div>test content</div>
+      </Restricted>
+    );
+
+    expect(screen.getByText(mockFallback)).toBeInTheDocument();
+  });
 });

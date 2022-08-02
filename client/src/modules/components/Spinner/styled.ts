@@ -16,7 +16,7 @@ const SpinnerKeyframe = keyframes`
   }
 `;
 
-const Spinner = styled.div`
+const BaseSpinner = styled.div`
   ${({theme}) => {
     const colors = theme.colors.modules.spinner;
 
@@ -33,4 +33,4 @@ const Spinner = styled.div`
   }}
 `;
 
-export {Spinner};
+export {BaseSpinner};

@@ -6,27 +6,26 @@
  */
 
 import React from 'react';
-
-import * as Styled from './styled';
+import {Button, Icon} from './styled';
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  iconButtonTheme: 'default' | 'foldable';
+  icon: React.ReactNode;
+  variant?: 'default' | 'foldable';
   size?: 'medium' | 'large';
-  icon?: React.ReactNode;
+  children?: React.ReactNode;
 }
 
-const IconButton = React.forwardRef<any, Props>(function IconButton(
-  {children, iconButtonTheme, icon, size, ...props},
-  ref
-) {
-  return (
-    <Styled.Button {...props} iconButtonTheme={iconButtonTheme} ref={ref}>
-      <Styled.Icon size={size} iconButtonTheme={iconButtonTheme}>
-        {icon}
-      </Styled.Icon>
-      {children}
-    </Styled.Button>
-  );
-});
+const IconButton = React.forwardRef<HTMLButtonElement, Props>(
+  function IconButton({children, variant, icon, size, ...props}, ref) {
+    return (
+      <Button {...props} $variant={variant} ref={ref}>
+        <Icon $size={size} $variant={variant}>
+          {icon}
+        </Icon>
+        {children}
+      </Button>
+    );
+  }
+);
 
-export default IconButton;
+export {IconButton};

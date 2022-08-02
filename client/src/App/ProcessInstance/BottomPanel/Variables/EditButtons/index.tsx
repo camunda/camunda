@@ -36,7 +36,7 @@ const EditButtons: React.FC<Props> = ({className}) => {
       />
       <ActionButton
         title="Save variable"
-        isDisabled={
+        disabled={
           initialValues.value === values.value ||
           validating ||
           hasValidationErrors ||

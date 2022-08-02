@@ -82,7 +82,6 @@ const Drd: React.FC = observer(() => {
             <Button
               title="Maximize DRD Panel"
               size="large"
-              iconButtonTheme="default"
               icon={<Maximize />}
               onClick={() => {
                 setPanelState('maximized');
@@ -97,7 +96,6 @@ const Drd: React.FC = observer(() => {
             <Button
               title="Minimize DRD Panel"
               size="large"
-              iconButtonTheme="default"
               icon={<Minimize />}
               onClick={() => {
                 setPanelState('minimized');
@@ -111,7 +109,6 @@ const Drd: React.FC = observer(() => {
           <Button
             title="Close DRD Panel"
             size="large"
-            iconButtonTheme="default"
             icon={<Close />}
             onClick={() => {
               setPanelState('closed');

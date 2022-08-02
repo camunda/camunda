@@ -8,19 +8,19 @@
 import {Button} from './styled';
 
 type Props = {
-  isDisabled?: boolean;
+  disabled?: boolean;
   onClick: () => void;
   icon: React.ReactNode;
   title: string;
-  dataTestId?: string;
+  'data-testid'?: string;
 };
 
 const ActionButton: React.FC<Props> = ({
-  isDisabled = false,
+  disabled = false,
   onClick,
   icon,
   title,
-  dataTestId,
+  ...props
 }) => {
   return (
     <Button
@@ -28,10 +28,9 @@ const ActionButton: React.FC<Props> = ({
       title={title}
       onClick={onClick}
       size="large"
-      iconButtonTheme="default"
-      disabled={isDisabled}
+      disabled={disabled}
       icon={icon}
-      data-testid={dataTestId}
+      data-testid={props['data-testid']}
     />
   );
 };

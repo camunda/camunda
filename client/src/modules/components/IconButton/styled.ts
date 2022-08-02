@@ -7,14 +7,20 @@
 
 import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 
-import {SIZES, DEFAULT_SIZE} from './constants';
+type Variant = 'default' | 'foldable';
+type IconProps = {
+  $variant?: Variant;
+  $size?: 'medium' | 'large';
+};
 
-type IconButtonTheme = 'default' | 'foldable';
-
-const setSize: ThemedInterpolationFunction<{size?: 'medium' | 'large'}> = ({
-  size,
+const setSize: ThemedInterpolationFunction<Pick<IconProps, '$size'>> = ({
+  $size = 'medium',
 }) => {
-  const length = size === undefined ? SIZES[DEFAULT_SIZE] : SIZES[size];
+  const SIZES = {
+    medium: 16,
+    large: 24,
+  } as const;
+  const length = SIZES[$size];
 
   return css`
     height: ${length}px;
@@ -22,14 +28,8 @@ const setSize: ThemedInterpolationFunction<{size?: 'medium' | 'large'}> = ({
   `;
 };
 
-type IconProps = {
-  iconButtonTheme?: IconButtonTheme;
-  size?: 'medium' | 'large';
-};
-
 const Icon = styled.div<IconProps>`
-  ${({theme, iconButtonTheme}) => {
-    const variant = iconButtonTheme ?? 'default';
+  ${({theme, $variant = 'default'}) => {
     const colors = theme.colors.modules.iconButton;
     const opacity = theme.opacity.modules.iconButton;
 
@@ -40,8 +40,8 @@ const Icon = styled.div<IconProps>`
       ${setSize}
 
       svg {
-        color: ${colors.icon[variant].svg.color};
-        opacity: ${opacity.icon[variant].svg};
+        color: ${colors.icon[$variant].svg.color};
+        opacity: ${opacity.icon[$variant].svg};
       }
 
       &:before {
@@ -60,12 +60,11 @@ const Icon = styled.div<IconProps>`
 
 type ButtonProps = {
   disabled?: boolean;
-  iconButtonTheme?: IconButtonTheme;
+  $variant?: Variant;
 };
 
 const Button = styled.button<ButtonProps>`
-  ${({theme, disabled, iconButtonTheme}) => {
-    const variant = iconButtonTheme ?? 'default';
+  ${({theme, disabled, $variant = 'default'}) => {
     const colors = theme.colors.modules.iconButton;
     const opacity = theme.opacity.modules.iconButton;
 
@@ -80,9 +79,9 @@ const Button = styled.button<ButtonProps>`
           ${disabled
             ? ''
             : css`
-                background-color: ${colors.button[variant].hover.before
+                background-color: ${colors.button[$variant].hover.before
                   .backgroundColor};
-                opacity: ${opacity.button[variant].hover.before};
+                opacity: ${opacity.button[$variant].hover.before};
               `}
 
           transition: background 0.15s ease-out;
@@ -93,8 +92,8 @@ const Button = styled.button<ButtonProps>`
             ${disabled
               ? ''
               : css`
-                  color: ${colors.button[variant].hover.svg.color};
-                  opacity: ${opacity.button[variant].hover.svg};
+                  color: ${colors.button[$variant].hover.svg.color};
+                  opacity: ${opacity.button[$variant].hover.svg};
                 `}
           }
         }
@@ -102,15 +101,15 @@ const Button = styled.button<ButtonProps>`
 
       &:active {
         ${Icon}::before {
-          background-color: ${colors.button[variant].active.before
+          background-color: ${colors.button[$variant].active.before
             .backgroundColor};
-          opacity: ${opacity.button[variant].active.before};
+          opacity: ${opacity.button[$variant].active.before};
         }
 
         ${Icon} {
           svg {
-            color: ${colors.button[variant].active.svg.color};
-            opacity: ${opacity.button[variant].active.svg};
+            color: ${colors.button[$variant].active.svg.color};
+            opacity: ${opacity.button[$variant].active.svg};
           }
         }
       }

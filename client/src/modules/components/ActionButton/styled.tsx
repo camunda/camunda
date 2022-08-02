@@ -6,7 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
-import IconButton from 'modules/components/IconButton';
+import {IconButton} from 'modules/components/IconButton';
 
 const Button = styled(IconButton)`
   ${({theme}) => {

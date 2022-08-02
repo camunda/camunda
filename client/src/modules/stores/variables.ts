@@ -215,11 +215,15 @@ class Variables extends NetworkReconnectionHandler {
   fetchVariable = async ({
     id,
     onError,
+    enableLoading = true,
   }: {
     id: VariableEntity['id'];
     onError: () => void;
-  }) => {
-    this.setLoadingItemId(id);
+    enableLoading?: boolean;
+  }): Promise<null | VariableEntity> => {
+    if (enableLoading) {
+      this.setLoadingItemId(id);
+    }
 
     try {
       const response = await fetchVariable(id);

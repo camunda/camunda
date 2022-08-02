@@ -7,32 +7,37 @@
 
 import {MetaDataEntity} from 'modules/stores/flowNodeMetaData';
 
-const mockVariables = [
+const mockVariables: Readonly<
+  [VariableEntity, VariableEntity, VariableEntity]
+> = [
   {
     id: '2251799813686037-clientNo',
     name: 'clientNo',
     value: '"CNT-1211132-0223222"',
-    scopeId: '2251799813686037',
-    processInstanceId: '2251799813686037',
     hasActiveOperation: false,
+    isFirst: true,
+    isPreview: false,
+    sortValues: ['clientNo'],
   },
   {
     id: '2251799813686037-mwst',
     name: 'mwst',
     value: '124.26',
-    scopeId: '2251799813686037',
-    processInstanceId: '2251799813686037',
     hasActiveOperation: false,
+    isFirst: false,
+    isPreview: false,
+    sortValues: ['mwst'],
   },
   {
     id: '2251799813686037-mwst',
     name: 'active-operation-variable',
     value: '1',
-    scopeId: '2251799813686037',
-    processInstanceId: '2251799813686037',
     hasActiveOperation: true,
+    isFirst: false,
+    isPreview: false,
+    sortValues: ['active-operation-variable'],
   },
-] as const;
+];
 
 const mockMetaData: MetaDataEntity = {
   breadcrumb: [],

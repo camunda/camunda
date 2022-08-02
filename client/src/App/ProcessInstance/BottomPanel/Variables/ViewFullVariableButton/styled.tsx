@@ -5,5 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-export const DEFAULT_SIZE = 'medium';
-export const SIZES = {medium: 16, large: 24};
+import {ReactComponent as BaseModalIcon} from 'modules/components/Icon/modal.svg';
+import styled from 'styled-components';
+
+const ModalIcon = styled(BaseModalIcon)`
+  margin: 4px;
+`;
+
+export {ModalIcon};

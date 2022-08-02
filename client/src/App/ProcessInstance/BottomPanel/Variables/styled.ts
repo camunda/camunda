@@ -6,14 +6,11 @@
  */
 
 import styled, {css, ThemedInterpolationFunction} from 'styled-components';
-
 import {Panel} from 'modules/components/Panel';
 import {OperationSpinner} from 'modules/components/OperationSpinner';
 import Modal from 'modules/components/Modal';
-
 import {ReactComponent as DefaultEdit} from 'modules/components/Icon/edit.svg';
 import {ReactComponent as DefaultPlus} from 'modules/components/Icon/plus.svg';
-
 import {TextField} from 'modules/components/TextField';
 import {styles} from '@carbon/elements';
 
@@ -88,7 +85,7 @@ const THead = styled.thead<THeadProps>`
         }
       }
     `;
-  }}}
+  }}
 `;
 
 const VariableName = styled.div`

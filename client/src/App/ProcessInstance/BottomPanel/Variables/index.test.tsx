@@ -186,6 +186,35 @@ describe('Variables', () => {
         ).queryByTestId('edit-variable-spinner')
       ).not.toBeInTheDocument();
     });
+
+    it('should have a button to see full variable value', async () => {
+      processInstanceDetailsStore.setProcessInstance({
+        ...instanceMock,
+        state: 'COMPLETED',
+      });
+      mockServer.use(
+        rest.post(
+          '/api/process-instances/:instanceId/variables',
+          (_, res, ctx) =>
+            res.once(ctx.json([{...mockVariables[0], isPreview: true}]))
+        )
+      );
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
+
+      render(<Variables />, {wrapper: Wrapper});
+
+      await waitForElementToBeRemoved(() =>
+        screen.getByTestId('skeleton-rows')
+      );
+
+      expect(
+        screen.getByTitle('View full value of clientNo')
+      ).toBeInTheDocument();
+    });
   });
 
   describe('Add variable', () => {
@@ -1076,6 +1105,9 @@ describe('Variables', () => {
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res.once(ctx.json([mockVariables[0]]))
+      ),
+      rest.get('/api/variables/:instanceId', (_, res, ctx) =>
+        res.once(ctx.json(mockVariables[0]))
       )
     );
     variablesStore.fetchVariables({
@@ -1157,6 +1189,34 @@ describe('Variables', () => {
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
+    });
+
+    it('should have a button to see full variable value', async () => {
+      processInstanceDetailsStore.setProcessInstance({
+        ...instanceMock,
+      });
+      mockServer.use(
+        rest.post(
+          '/api/process-instances/:instanceId/variables',
+          (_, res, ctx) =>
+            res.once(ctx.json([{...mockVariables[0], isPreview: true}]))
+        )
+      );
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
+
+      render(<Variables />, {wrapper: Wrapper});
+
+      await waitForElementToBeRemoved(() =>
+        screen.getByTestId('skeleton-rows')
+      );
+
+      expect(
+        screen.getByTitle('View full value of clientNo')
+      ).toBeInTheDocument();
     });
   });
 });

@@ -5,35 +5,31 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-import * as Styled from './styled';
-import IconButton from 'modules/components/IconButton';
+import {Transition, ArrowIcon} from './styled';
+import {IconButton} from 'modules/components/IconButton';
 
 type Props = {
   isExpanded: boolean;
   children?: React.ReactNode;
   onClick: () => void;
   title?: string;
-  iconButtonTheme: string;
+  iconButtonTheme?: 'default' | 'foldable';
 };
 
-const ExpandButton = React.forwardRef<any, Props>(function ExpandButton(
-  {children, isExpanded, ...props},
-  ref
-) {
-  const renderIcon = () => (
-    <Styled.Transition timeout={400} in={isExpanded} appear>
-      <Styled.ArrowIcon data-testid="arrow-icon" />
-    </Styled.Transition>
-  );
-
+const ExpandButton: React.FC<Props> = ({children, isExpanded, ...props}) => {
   return (
-    // @ts-expect-error ts-migrate(2741) FIXME: Property 'iconButtonTheme' is missing in type '{ c... Remove this comment to see the full error message
-    <IconButton {...props} icon={renderIcon()}>
+    <IconButton
+      {...props}
+      icon={
+        <Transition timeout={400} in={isExpanded} appear>
+          <ArrowIcon data-testid="arrow-icon" />
+        </Transition>
+      }
+    >
       {children}
     </IconButton>
   );
-});
+};
 
 ExpandButton.defaultProps = {
   isExpanded: false,

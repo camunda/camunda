@@ -6,7 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
-import BaseSpinner from 'modules/components/Spinner';
+import {Spinner as BaseSpinner} from 'modules/components/Spinner';
 
 const Backdrop = styled.div`
   ${({theme}) => {
