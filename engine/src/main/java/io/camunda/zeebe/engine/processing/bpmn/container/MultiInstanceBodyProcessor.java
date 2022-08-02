@@ -318,13 +318,24 @@ public final class MultiInstanceBodyProcessor
                 stateBehavior.setLocalVariable(childContext, variableName, inputElement));
 
     // Output multiInstanceBody expressions that are just a variable or nested property of a
-    // variable need to
-    // be initialised with a nil-value. This makes sure that they are not written at a non-local
-    // scope.
+    // variable need to be initialised with a nil-value. This makes sure that the variable exists at
+    // the local scope.
+    //
+    // We can make an exception for output expressions that refer to the same variable as the input
+    // element, because the input variable is already created at the local scope.
+    //
+    // Likewise, we can make the same exception for the `loopCounter` variable.
     loopCharacteristics
         .getOutputElement()
         .flatMap(Expression::getVariableName)
         .map(BufferUtil::wrapString)
+        .filter(
+            output ->
+                loopCharacteristics
+                    .getInputElement()
+                    .map(input -> !BufferUtil.equals(input, output))
+                    .orElse(true))
+        .filter(output -> !BufferUtil.equals(output, LOOP_COUNTER_VARIABLE))
         .ifPresent(
             variableName -> stateBehavior.setLocalVariable(childContext, variableName, NIL_VALUE));
 
