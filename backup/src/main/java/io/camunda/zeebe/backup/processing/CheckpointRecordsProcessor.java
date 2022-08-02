@@ -13,11 +13,13 @@ import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
+import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import org.slf4j.Logger;
@@ -37,6 +39,7 @@ public final class CheckpointRecordsProcessor implements RecordProcessor<Context
   private final Set<CheckpointListener> checkpointListeners = new CopyOnWriteArraySet<>();
 
   private DbCheckpointState checkpointState;
+  private ProcessingScheduleService executor;
 
   public CheckpointRecordsProcessor(final BackupManager backupManager) {
     this.backupManager = backupManager;
@@ -44,6 +47,7 @@ public final class CheckpointRecordsProcessor implements RecordProcessor<Context
 
   @Override
   public void init(final Context recordProcessorContext) {
+    executor = recordProcessorContext.executor();
     checkpointState =
         new DbCheckpointState(
             recordProcessorContext.zeebeDb(), recordProcessorContext.transactionContext());
@@ -97,11 +101,23 @@ public final class CheckpointRecordsProcessor implements RecordProcessor<Context
   }
 
   /**
-   * Registers a listener.
+   * Registers a listener. If a checkpoint exists, then the listener will be immediately notified
+   * with the current checkpointId.
    *
    * @param checkpointListener
    */
   public void addCheckpointListener(final CheckpointListener checkpointListener) {
     checkpointListeners.add(checkpointListener);
+    // Can read the checkpoint only after init() is called.
+    if (executor != null) {
+      executor.runDelayed(
+          Duration.ZERO,
+          () -> {
+            final var checkpointId = checkpointState.getCheckpointId();
+            if (checkpointId != CheckpointState.NO_CHECKPOINT) {
+              checkpointListener.onNewCheckpointCreated(checkpointState.getCheckpointId());
+            }
+          });
+    }
   }
 }

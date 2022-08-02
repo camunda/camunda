@@ -17,6 +17,7 @@ public interface CheckpointListener {
    * <li>When the processor is initialized with the latest checkpoint
    * <li>When CHECKPOINT:CREATE record is processed and if it results in a new checkpoint.
    * <li>When CHECKPOINT:CREATED record is replayed
+   * <li>If there is a valid checkpoint, when the listener is registered
    */
   void onNewCheckpointCreated(long checkpointId);
 }
