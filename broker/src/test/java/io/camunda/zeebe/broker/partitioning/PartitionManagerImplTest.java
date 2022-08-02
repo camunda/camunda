@@ -63,7 +63,8 @@ public final class PartitionManagerImplTest {
             null,
             new ArrayList<>(),
             null,
-            mock(ExporterRepository.class));
+            mock(ExporterRepository.class),
+            null);
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);
@@ -87,7 +88,8 @@ public final class PartitionManagerImplTest {
             null,
             new ArrayList<>(),
             null,
-            mock(ExporterRepository.class));
+            mock(ExporterRepository.class),
+            null);
     // then
     final var config = getPartitionGroupConfig(partitionManager);
     assertThat(config.getStorageConfig().shouldFlushExplicitly()).isTrue();

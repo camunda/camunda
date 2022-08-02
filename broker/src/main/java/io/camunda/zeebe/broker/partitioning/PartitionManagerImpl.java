@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,6 +59,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   private final ClusterServices clusterServices;
   private final CommandApiService commandApiService;
   private final ExporterRepository exporterRepository;
+  private final AtomixServerTransport gatewayBrokerTransport;
 
   public PartitionManagerImpl(
       final ActorSchedulingService actorSchedulingService,
@@ -68,7 +70,9 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final List<PartitionListener> partitionListeners,
       final CommandApiService commandApiService,
-      final ExporterRepository exporterRepository) {
+      final ExporterRepository exporterRepository,
+      final AtomixServerTransport gatewayBrokerTransport) {
+    this.gatewayBrokerTransport = gatewayBrokerTransport;
 
     snapshotStoreFactory =
         new FileBasedSnapshotStoreFactory(actorSchedulingService, localBroker.getNodeId());
@@ -140,7 +144,8 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                       clusterServices,
                       exporterRepository,
                       healthCheckService,
-                      diskSpaceUsageMonitor);
+                      diskSpaceUsageMonitor,
+                      gatewayBrokerTransport);
 
               partitions.addAll(
                   partitionFactory.constructPartitions(

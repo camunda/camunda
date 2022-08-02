@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.TypedRecord;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
@@ -97,4 +99,10 @@ public interface PartitionTransitionContext extends PartitionContext {
   void setQueryService(QueryService queryService);
 
   DiskSpaceUsageMonitor getDiskSpaceUsageMonitor();
+
+  AtomixServerTransport getGatewayBrokerTransport();
+
+  BackupApiRequestHandler getBackupApiRequestHandler();
+
+  void setBackupApiRequestHandler(BackupApiRequestHandler backupApiRequestHandler);
 }

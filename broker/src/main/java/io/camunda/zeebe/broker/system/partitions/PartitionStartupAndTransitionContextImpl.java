@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
+import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.TypedRecord;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.Collection;
 import java.util.Collections;
@@ -85,6 +87,8 @@ public class PartitionStartupAndTransitionContextImpl
   private Role currentRole;
   private ConcurrencyControl concurrencyControl;
   private InterPartitionCommandReceiverActor interPartitionCommandReceiver;
+  private final AtomixServerTransport gatewayBrokerTransport;
+  private BackupApiRequestHandler backupApiRequestHandler;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -101,7 +105,8 @@ public class PartitionStartupAndTransitionContextImpl
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory,
       final ExporterRepository exporterRepository,
       final PartitionProcessingState partitionProcessingState,
-      final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
+      final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
+      final AtomixServerTransport gatewayBrokerTransport) {
     this.nodeId = nodeId;
     this.clusterCommunicationService = clusterCommunicationService;
     this.raftPartition = raftPartition;
@@ -119,6 +124,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.exporterRepository = exporterRepository;
     this.partitionProcessingState = partitionProcessingState;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
+    this.gatewayBrokerTransport = gatewayBrokerTransport;
   }
 
   public PartitionAdminControl getPartitionAdminControl() {
@@ -260,6 +266,21 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
     return diskSpaceUsageMonitor;
+  }
+
+  @Override
+  public AtomixServerTransport getGatewayBrokerTransport() {
+    return gatewayBrokerTransport;
+  }
+
+  @Override
+  public BackupApiRequestHandler getBackupApiRequestHandler() {
+    return backupApiRequestHandler;
+  }
+
+  @Override
+  public void setBackupApiRequestHandler(final BackupApiRequestHandler backupApiRequestHandler) {
+    this.backupApiRequestHandler = backupApiRequestHandler;
   }
 
   @Override
