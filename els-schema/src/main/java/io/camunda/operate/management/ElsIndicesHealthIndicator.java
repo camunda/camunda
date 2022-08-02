@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 public class ElsIndicesHealthIndicator implements HealthIndicator {
 
 
-  private static Logger logger = LoggerFactory.getLogger(ElsIndicesHealthIndicator.class);
+  private static final Logger logger = LoggerFactory.getLogger(ElsIndicesHealthIndicator.class);
 
   @Autowired
   private ElsIndicesCheck elsIndicesCheck;
@@ -25,7 +25,7 @@ public class ElsIndicesHealthIndicator implements HealthIndicator {
   @Override
   public Health health() {
     logger.debug("ELS indices check is called");
-    if (elsIndicesCheck.indicesArePresent()) {
+    if (elsIndicesCheck.isHealthy() && elsIndicesCheck.indicesArePresent()) {
       return Health.up().build();
     } else {
       return Health.down().build();
