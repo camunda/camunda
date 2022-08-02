@@ -71,6 +71,11 @@ pipeline {
       }
     }
     stage('Unit tests') {
+      when {
+        not {
+          expression { BRANCH_NAME ==~ /(^fe-.*)/ }
+        }
+      }
       parallel {
         stage('Backend - Tests') {
           steps {
