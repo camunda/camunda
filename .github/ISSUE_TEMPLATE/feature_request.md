@@ -2,19 +2,30 @@
 name: Feature request
 about: Suggest an idea for this project
 title: ''
-labels: ''
+labels: kind/feature-request, needs grooming
 assignees: ''
 
 ---
+### Describe the user problem that you are trying to solve
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+<!-- A clear and concise description of what the problem is, what are you trying to achieve and why is it difficult at the moment?-->
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+### Describe the solution you'd like to see implemented
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+<!-- A brief description of how you would solve the problem and what benefits this solution brings to the user.-->
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+### Describe alternatives you've considered
+
+<!-- A clear and concise description of any alternative solutions, workarounds or features you've considered.-->
+
+### Additional Context
+
+<!-- Add any other context, feature requests from customers, forum / slack mentions. -->
+
+---------------------------------------------------------------------------------------------
+<!-- As the creator of the issue, you don't have to fill anything below this line, but the assignee will take care of this as part of Backlog grooming. -->
+
+## Definition of Ready - Checklist
+
+- [ ] The issue is not duplicated - the is no other issue about the same user problem in Operate/Tasklist/PDP repository
+- [ ] The issue has a meaningful title, description and clear user problem
