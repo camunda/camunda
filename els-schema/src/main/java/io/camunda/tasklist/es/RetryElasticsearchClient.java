@@ -30,6 +30,8 @@ import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.function.CheckedSupplier;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.DocWriteResponse;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
@@ -60,6 +62,7 @@ import org.elasticsearch.client.indices.PutComponentTemplateRequest;
 import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
 import org.elasticsearch.client.tasks.GetTaskRequest;
 import org.elasticsearch.client.tasks.GetTaskResponse;
+import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.Settings;
@@ -95,6 +98,26 @@ public class RetryElasticsearchClient {
   private RequestOptions requestOptions = RequestOptions.DEFAULT;
   private int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;
   private int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
+
+  public boolean isHealthy() {
+    try {
+      final ClusterHealthResponse response =
+          esClient
+              .cluster()
+              .health(
+                  new ClusterHealthRequest().timeout(TimeValue.timeValueMillis(500)),
+                  RequestOptions.DEFAULT);
+      final ClusterHealthStatus status = response.getStatus();
+      return !response.isTimedOut() && !status.equals(ClusterHealthStatus.RED);
+    } catch (IOException e) {
+      LOGGER.error(
+          String.format(
+              "Couldn't connect to Elasticsearch due to %s. Return unhealthy state.",
+              e.getMessage()),
+          e);
+      return false;
+    }
+  }
 
   public int getNumberOfRetries() {
     return numberOfRetries;

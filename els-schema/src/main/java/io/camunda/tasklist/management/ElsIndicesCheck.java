@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.management;
 
+import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -15,7 +16,13 @@ public class ElsIndicesCheck {
 
   @Autowired private IndexSchemaValidator indexSchemaValidator;
 
+  @Autowired private RetryElasticsearchClient retryElasticsearchClient;
+
   public boolean indicesArePresent() {
     return indexSchemaValidator.schemaExists();
+  }
+
+  public boolean isHealthy() {
+    return retryElasticsearchClient.isHealthy();
   }
 }
