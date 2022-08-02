@@ -48,43 +48,25 @@ public final class InclusiveGatewayProcessor
   @Override
   public void onActivate(
       final ExecutableInclusiveGateway element, final BpmnElementContext activating) {
-    if (!element.getOutgoing().isEmpty() && element.getOutgoingWithCondition().isEmpty()) {
-      // when all the outgoing condition is not set
-      // the joining of the incoming sequence flows into the inclusive gateway happens in the
-      // sequence flow processor. The activating event of the inclusive gateway is written when all
-      // incoming sequence flows are taken
-      final var activated = stateTransitionBehavior.transitionToActivated(activating);
-      final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-      stateTransitionBehavior
-          .transitionToCompleted(element, completing)
-          .ifRightOrLeft(
-              completed ->
-                  // fork the process processing by taking all outgoing sequence flows of the
-                  // inclusive gateway
-                  stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-              failure -> incidentBehavior.createIncident(failure, completing));
-    } else {
-      // find outgoing sequence flow with fulfilled condition or the default (or none if implicit
-      // end)
-      findSequenceFlowToTake(element, activating)
-          .ifRightOrLeft(
-              optFlow -> {
-                final var activated = stateTransitionBehavior.transitionToActivated(activating);
-                final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-                stateTransitionBehavior
-                    .transitionToCompleted(element, completing)
-                    .ifRightOrLeft(
-                        completed ->
-                            optFlow.ifPresent(
-                                flowList ->
-                                    flowList.forEach(
-                                        flow ->
-                                            stateTransitionBehavior.takeSequenceFlow(
-                                                completed, flow))),
-                        failure -> incidentBehavior.createIncident(failure, completing));
-              },
-              failure -> incidentBehavior.createIncident(failure, activating));
-    }
+    // find outgoing sequence flow with fulfilled condition or the default (or none if implicit end)
+    findSequenceFlowToTake(element, activating)
+        .ifRightOrLeft(
+            optFlow -> {
+              final var activated = stateTransitionBehavior.transitionToActivated(activating);
+              final var completing = stateTransitionBehavior.transitionToCompleting(activated);
+              stateTransitionBehavior
+                  .transitionToCompleted(element, completing)
+                  .ifRightOrLeft(
+                      completed ->
+                          optFlow.ifPresent(
+                              flowList ->
+                                  flowList.forEach(
+                                      flow ->
+                                          stateTransitionBehavior.takeSequenceFlow(
+                                              completed, flow))),
+                      failure -> incidentBehavior.createIncident(failure, completing));
+            },
+            failure -> incidentBehavior.createIncident(failure, activating));
   }
 
   @Override

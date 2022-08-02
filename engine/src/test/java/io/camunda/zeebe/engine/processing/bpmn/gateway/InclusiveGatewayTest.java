@@ -697,7 +697,7 @@ public final class InclusiveGatewayTest {
   }
 
   @Test
-  public void shouldCompleteScopeWhenAllPathsCompleted() {
+  public void shouldCompleteScopeWhenForkingPathsCompleted() {
     // given
     ENGINE.deployment().withXmlResource(INCLUSIVE_PROCESS).deploy();
     final long processInstanceKey1 =
@@ -777,39 +777,6 @@ public final class InclusiveGatewayTest {
   }
 
   @Test
-  public void shouldCompleteScopeWithMultipleTokensOnSamePath() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .inclusiveGateway("inclusive")
-            .exclusiveGateway("join")
-            .endEvent("end")
-            .moveToNode("inclusive")
-            .connectTo("join")
-            .done();
-
-    ENGINE.deployment().withXmlResource(process).deploy();
-
-    // when
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // then
-    final List<Record<ProcessInstanceRecordValue>> processInstanceEvents =
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .limitToProcessInstanceCompleted()
-            .collect(Collectors.toList());
-
-    assertThat(processInstanceEvents)
-        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
-        .containsSubsequence(
-            tuple("end", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple("end", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
-  }
-
-  @Test
   public void shouldPassThroughInclusiveGateway() {
     // given
     final BpmnModelInstance process =
@@ -882,7 +849,7 @@ public final class InclusiveGatewayTest {
   }
 
   @Test
-  public void shouldMergeInclusiveBranchesWithServiceTasks() {
+  public void shouldSplitInclusiveBranchesWithServiceTasks() {
     // given
     ENGINE.deployment().withXmlResource(INCLUSIVE_JOIN_PROCESS).deploy();
 
@@ -913,154 +880,11 @@ public final class InclusiveGatewayTest {
         .containsSubsequence(
             tuple("flow3", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
-        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+        .contains(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
   }
 
   @Test
-  public void shouldOnlyTriggerGatewayWhenAllBranchesAreActivated() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .inclusiveGateway("fork")
-            .exclusiveGateway("exclusiveJoin")
-            .moveToLastGateway()
-            .connectTo("exclusiveJoin")
-            .sequenceFlowId("joinFlow1")
-            .inclusiveGateway("join")
-            .moveToNode("fork")
-            .serviceTask("waitState", b -> b.zeebeJobType("type"))
-            .sequenceFlowId("joinFlow2")
-            .connectTo("join")
-            .endEvent()
-            .done();
-
-    ENGINE.deployment().withXmlResource(process).deploy();
-
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // waiting until we have signalled the first incoming sequence flow twice
-    // => this should not trigger the gateway yet
-    RecordingExporter.processInstanceRecords()
-        .limit(r -> "joinFlow1".equals(r.getValue().getElementId()))
-        .limit(2)
-        .skip(1)
-        .getFirst();
-
-    // when
-    // we complete the job
-    ENGINE.job().ofInstance(processInstanceKey).withType("type").complete();
-
-    // then
-    final List<Record<ProcessInstanceRecordValue>> events =
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .limitToProcessInstanceCompleted()
-            .asList();
-
-    assertThat(events)
-        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
-        .containsSubsequence(
-            tuple("joinFlow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("joinFlow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("joinFlow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
-        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
-  }
-
-  @Test
-  public void shouldMergeAndSplitInOneGateway() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent("start")
-            .inclusiveGateway("fork")
-            .sequenceFlowId("s1")
-            .inclusiveGateway("join")
-            .moveToNode("fork")
-            .sequenceFlowId("s2")
-            .connectTo("join")
-            .sequenceFlowId("s3")
-            .serviceTask("task1", b -> b.zeebeJobType("type1"))
-            .moveToLastGateway()
-            .sequenceFlowId("s4")
-            .serviceTask("task2", b -> b.zeebeJobType("type2"))
-            .done();
-
-    ENGINE.deployment().withXmlResource(process).deploy();
-
-    // when
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
-    ENGINE.job().ofInstance(processInstanceKey).withType("type2").complete();
-    // then
-    final List<Record<ProcessInstanceRecordValue>> elementInstances =
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .limitToProcessInstanceCompleted()
-            .filter(
-                r ->
-                    r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED
-                        && r.getValue().getBpmnElementType() == BpmnElementType.SERVICE_TASK)
-            .asList();
-
-    assertThat(elementInstances)
-        .extracting(e -> e.getValue().getElementId())
-        .containsExactlyInAnyOrder("task1", "task2");
-  }
-
-  @Test
-  public void shouldMergeInclusiveBranchesWithManualTask() {
-    // given
-    final String processId = Strings.newRandomValidBpmnId();
-    final BpmnModelInstance processDefinition =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent("start")
-            .inclusiveGateway("fork")
-            .sequenceFlowId("flow1")
-            .inclusiveGateway("join")
-            .endEvent("end")
-            .moveToNode("fork")
-            .sequenceFlowId("flow2")
-            .manualTask("m2")
-            .connectTo("join")
-            .moveToNode("fork")
-            .sequenceFlowId("flow3")
-            .manualTask("m3")
-            .connectTo("join")
-            .done();
-    // given
-    ENGINE.deployment().withXmlResource(processDefinition).deploy();
-
-    // when
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
-
-    // then
-    final List<Record<ProcessInstanceRecordValue>> events =
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .limitToProcessInstanceCompleted()
-            .asList();
-
-    assertThat(events)
-        .describedAs(
-            "when there is no any task,after all sequence flows are taken, the joining inclusive gateway is activated exactly once")
-        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
-        .containsSubsequence(
-            tuple("flow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
-        .containsSubsequence(
-            tuple("flow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
-        .containsSubsequence(
-            tuple("flow3", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
-        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
-  }
-
-  @Test
-  public void shouldMergeInclusiveBranchesWithSomeServiceTask() {
+  public void shouldSplitInclusiveBranchesWithSomeServiceTask() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
     final BpmnModelInstance processDefinition =
@@ -1110,7 +934,7 @@ public final class InclusiveGatewayTest {
         .containsSubsequence(
             tuple("flow3", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
-        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+        .contains(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
 
     // when
     final long processInstanceKey2 =
@@ -1134,7 +958,7 @@ public final class InclusiveGatewayTest {
         .containsSubsequence(
             tuple("flow3", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
-        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+        .contains(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
 
     // when
     final long processInstanceKey3 =
@@ -1151,7 +975,7 @@ public final class InclusiveGatewayTest {
         .containsSubsequence(
             tuple("flow2", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
-        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+        .contains(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
 
     // when
     final long processInstanceKey4 =
@@ -1171,7 +995,7 @@ public final class InclusiveGatewayTest {
         .containsSubsequence(
             tuple("flow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
-        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+        .contains(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
 
     // when
     final long processInstanceKey5 =
@@ -1194,7 +1018,7 @@ public final class InclusiveGatewayTest {
         .containsSubsequence(
             tuple("flow3", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
-        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+        .contains(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
 
     // when
     final long processInstanceKey6 =
@@ -1214,7 +1038,7 @@ public final class InclusiveGatewayTest {
         .containsSubsequence(
             tuple("flow3", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
-        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+        .contains(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
 
     // when
     final long processInstanceKey7 =
@@ -1234,51 +1058,7 @@ public final class InclusiveGatewayTest {
         .containsSubsequence(
             tuple("flow1", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING))
-        .containsOnlyOnce(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
-  }
-
-  @Test
-  public void shouldMergeInclusiveBranchesWithParallelGateway() {
-    // given
-    final String processId = Strings.newRandomValidBpmnId();
-    final BpmnModelInstance processDefinition =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent("start")
-            .parallelGateway("parallel-fork")
-            .inclusiveGateway("inclusive-fork")
-            .manualTask("manual1")
-            .inclusiveGateway("inclusive-join")
-            .parallelGateway("parallel-join")
-            .endEvent("end")
-            .moveToNode("parallel-fork")
-            .serviceTask("task1", b -> b.zeebeJobType("type1"))
-            .connectTo("parallel-join")
-            .moveToNode("inclusive-fork")
-            .manualTask("manual2")
-            .connectTo("inclusive-join")
-            .done();
-    // given
-    ENGINE.deployment().withXmlResource(processDefinition).deploy();
-
-    // when
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
-
-    // then
-    ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
-    final List<Record<ProcessInstanceRecordValue>> events =
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .limitToProcessInstanceCompleted()
-            .asList();
-
-    assertThat(events)
-        .describedAs(
-            "after all sequence flows are taken, the joining inclusive and parallel gateway is activated exactly once")
-        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
-        .containsOnlyOnce(
-            tuple("inclusive-join", ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            tuple("parallel-join", ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            tuple("end", ProcessInstanceIntent.ELEMENT_ACTIVATING));
+        .contains(tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATING));
   }
 
   private static boolean isServiceTaskInProcess(

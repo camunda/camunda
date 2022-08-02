@@ -12,9 +12,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
-import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
@@ -33,15 +31,11 @@ public final class ProcessInstanceStateTransitionGuard {
 
   private final BpmnStateBehavior stateBehavior;
   private final ElementInstanceState elementInstanceState;
-  private final ProcessState processState;
 
   public ProcessInstanceStateTransitionGuard(
-      final BpmnStateBehavior stateBehavior,
-      final ElementInstanceState elementInstanceState,
-      final MutableProcessState processState) {
+      final BpmnStateBehavior stateBehavior, final ElementInstanceState elementInstanceState) {
     this.stateBehavior = stateBehavior;
     this.elementInstanceState = elementInstanceState;
-    this.processState = processState;
   }
 
   /**
@@ -58,8 +52,7 @@ public final class ProcessInstanceStateTransitionGuard {
       final BpmnElementContext context, final ExecutableFlowElement element) {
     return switch (context.getIntent()) {
       case ACTIVATE_ELEMENT -> hasActiveFlowScopeInstance(context)
-          .flatMap(ok -> canActivateParallelGateway(context, element))
-          .flatMap(ok -> canActivateInclusiveGateway(context, element));
+          .flatMap(ok -> canActivateParallelGateway(context, element));
       case COMPLETE_ELEMENT ->
       // an incident is resolved by writing a COMPLETE command when the element instance is in
       // state COMPLETING

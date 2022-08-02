@@ -53,6 +53,8 @@ final class ProcessInstanceSequenceFlowTakenApplier
     final var target = sequenceFlow.getTarget();
 
     if (target.getElementType() == BpmnElementType.PARALLEL_GATEWAY) {
+      // stores which sequence flows of the parallel gateway are taken
+      // - the gateway is only activated if all incoming sequence flows are taken at least once
       elementInstanceState.incrementNumberOfTakenSequenceFlows(
           value.getFlowScopeKey(), target.getId(), sequenceFlow.getId());
     }
