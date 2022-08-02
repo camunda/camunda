@@ -12,10 +12,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.auth0.jwt.exceptions.InvalidClaimException;
+import com.auth0.jwt.exceptions.SignatureVerificationException;
+import com.auth0.jwt.exceptions.TokenExpiredException;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.Authentication;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+
+import java.security.SignatureException;
+import java.time.Instant;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,6 +31,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
@@ -53,10 +59,18 @@ public class IdentityJwt2AuthenticationTokenConverterTest {
   @Mock
   private Authentication authentication;
 
-  @Test(expected = InvalidClaimException.class)
-  public void shouldFailIfIdentityVerificationFails(){
+  @Test(expected = InsufficientAuthenticationException.class)
+  public void shouldFailIfClaimIsInvalid(){
     when(identity.authentication()).thenThrow(
         new InvalidClaimException("The Claim 'aud' value doesn't contain the required audience."));
+    final Jwt token = createJwtTokenWith();
+    tokenConverter.convert(token);
+  }
+
+  @Test(expected = InsufficientAuthenticationException.class)
+  public void shouldFailIfTokenVerificationFails(){
+    when(identity.authentication())
+        .thenThrow(new RuntimeException("Any exception during token verification"));
     final Jwt token = createJwtTokenWith();
     tokenConverter.convert(token);
   }

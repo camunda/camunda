@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
@@ -26,9 +27,14 @@ public class IdentityJwt2AuthenticationTokenConverter implements Converter<Jwt, 
 
   @Override
   public AbstractAuthenticationToken convert(final Jwt jwt) {
-    //this will validate audience
-    identity.authentication().verifyToken(jwt.getTokenValue());
-    return new JwtAuthenticationToken(jwt, null, jwt.getSubject());
+      // this will validate audience
+      try {
+          identity.authentication().verifyToken(jwt.getTokenValue());
+      } catch (Exception e) {
+          // need to trigger HTTP error code 40x. Encapsulate the causing exception
+          throw new InsufficientAuthenticationException(e.getMessage(), e);
+      }
+      return new JwtAuthenticationToken(jwt, null, jwt.getSubject());
   }
 
 }
