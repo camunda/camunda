@@ -8,12 +8,15 @@
 package io.camunda.zeebe.gateway.grpc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
 import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
 import io.camunda.zeebe.gateway.impl.broker.RequestRetriesExhaustedException;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerError;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.util.logging.RecordingAppender;
 import io.grpc.Status.Code;
@@ -117,5 +120,27 @@ final class GrpcErrorMapperTest {
     assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
 
     assertThat(event.getThrown()).isEqualTo(executionException);
+  }
+
+  @Test
+  void shouldLogJsonParseExceptionOnDebug() {
+    // given
+    try {
+      MsgPackConverter.convertToMsgPack("{\"json\":\"invalid\"");
+      fail("Expected to throw exception");
+    } catch (final RuntimeException runtimeException) {
+      assertThat(runtimeException.getCause()).isInstanceOf(JsonParseException.class);
+      final JsonParseException exception = (JsonParseException) runtimeException.getCause();
+
+      // when
+      log.setLevel(Level.DEBUG);
+      final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+
+      // then
+      assertThat(statusException.getStatus().getCode()).isEqualTo(Code.INVALID_ARGUMENT);
+      assertThat(recorder.getAppendedEvents()).hasSize(1);
+      final LogEvent event = recorder.getAppendedEvents().get(0);
+      assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
+    }
   }
 }
