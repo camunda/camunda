@@ -130,3 +130,16 @@ jobs:
           REVISION: ${{ github.sha }}
           VERSION: ${{ steps.get-version.outputs.result }}
         run: ${PWD}/docker/test/verify.sh 'localhost:5000/camunda/zeebe:${{ steps.get-version.outputs.result }}'
+  qodana:
+    name: Qodana
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Qodana scan
+        uses: JetBrains/qodana-action@v2022.1.1
+      - name: Upload results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: ${{ runner.temp }}/qodana/results/qodana.sarif.json
