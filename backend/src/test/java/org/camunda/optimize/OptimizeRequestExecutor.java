@@ -70,7 +70,6 @@ import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.jetty.OptimizeResourceConstants;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
@@ -114,10 +113,6 @@ import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.MetricEnum.INDEXING_DURATION_METRIC;
-import static org.camunda.optimize.MetricEnum.NEW_PAGE_FETCH_TIME_METRIC;
-import static org.camunda.optimize.MetricEnum.OVERALL_IMPORT_TIME_METRIC;
-import static org.camunda.optimize.OptimizeMetrics.METRICS_ENDPOINT;
 import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_DEFINITION_SEARCH_SUB_PATH;
 import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_REPORTS_SEARCH_SUB_PATH;
 import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_RESOURCE_PATH;
@@ -152,22 +147,20 @@ public class OptimizeRequestExecutor {
 
   @Getter
   private final WebTarget defaultWebTarget;
-
-  private WebTarget webTarget;
-
   private final String defaultUser;
   private final String defaultUserPassword;
   private final ObjectMapper objectMapper;
   private final Map<String, String> cookies = new HashMap<>();
   private final Map<String, String> requestHeaders = new HashMap<>();
-  private String defaultAuthCookie;
 
+  private String defaultAuthCookie;
   private String authCookie;
   private String path;
   private String method;
   private Entity<?> body;
   private String mediaType = MediaType.APPLICATION_JSON;
   private Map<String, Object> queryParams;
+
   public OptimizeRequestExecutor(final String defaultUser,
                                  final String defaultUserPassword,
                                  final String restEndpoint) {
@@ -175,12 +168,6 @@ public class OptimizeRequestExecutor {
     this.defaultUserPassword = defaultUserPassword;
     this.objectMapper = getDefaultObjectMapper();
     this.defaultWebTarget = createWebTarget(restEndpoint);
-    this.webTarget = defaultWebTarget;
-  }
-
-  public OptimizeRequestExecutor setActuatorWebTarget() {
-    this.webTarget = createActuatorWebTarget();
-    return this;
   }
 
   public OptimizeRequestExecutor initAuthCookie() {
@@ -262,7 +249,7 @@ public class OptimizeRequestExecutor {
   }
 
   private Invocation.Builder prepareRequest() {
-    WebTarget webTarget = this.webTarget.path(this.path);
+    WebTarget webTarget = defaultWebTarget.path(this.path);
 
     if (queryParams != null && queryParams.size() != 0) {
       for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
@@ -360,7 +347,6 @@ public class OptimizeRequestExecutor {
   }
 
   private void resetBuilder() {
-    this.webTarget = defaultWebTarget;
     this.authCookie = defaultAuthCookie;
     this.body = null;
     this.path = null;
@@ -528,8 +514,7 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildGetProcessOverviewRequest(final ProcessOverviewSorter processOverviewSorter) {
     this.path = "process/overview";
     this.method = GET;
-    Optional.ofNullable(processOverviewSorter)
-      .ifPresent(sortParams -> addSortParams(processOverviewSorter.getSortRequestDto()));
+    Optional.ofNullable(processOverviewSorter).ifPresent(sortParams -> addSortParams(processOverviewSorter.getSortRequestDto()));
     return this;
   }
 
@@ -1782,27 +1767,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildIndexingTimeMetricRequest() {
-    this.path = METRICS_ENDPOINT + "/" + INDEXING_DURATION_METRIC.getName();
-    this.method = GET;
-    this.mediaType = MediaType.APPLICATION_JSON;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildPageFetchTimeMetricRequest() {
-    this.path = METRICS_ENDPOINT + "/" + NEW_PAGE_FETCH_TIME_METRIC.getName();
-    this.method = GET;
-    this.mediaType = MediaType.APPLICATION_JSON;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildOverallImportTimeMetricRequest() {
-    this.path = METRICS_ENDPOINT + "/" + OVERALL_IMPORT_TIME_METRIC.getName();
-    this.method = GET;
-    this.mediaType = MediaType.APPLICATION_JSON;
-    return this;
-  }
-
   private OptimizeRequestExecutor buildPublicExportJsonEntityDefinitionRequest(final List<String> entityIds,
                                                                                final String entityExportSubpath,
                                                                                final String accessToken) {
@@ -1861,10 +1825,6 @@ public class OptimizeRequestExecutor {
   private void addSortParams(final SortRequestDto sortRequestDto) {
     sortRequestDto.getSortBy().ifPresent(sortBy -> addSingleQueryParam(SortRequestDto.SORT_BY, sortBy));
     sortRequestDto.getSortOrder().ifPresent(sortOrder -> addSingleQueryParam(SortRequestDto.SORT_ORDER, sortOrder));
-  }
-
-  private WebTarget createActuatorWebTarget() {
-    return createWebTarget("http://localhost:" + OptimizeResourceConstants.ACTUATOR_PORT + OptimizeResourceConstants.ACTUATOR_ENDPOINT);
   }
 
   public WebTarget createWebTarget(final String targetUrl) {

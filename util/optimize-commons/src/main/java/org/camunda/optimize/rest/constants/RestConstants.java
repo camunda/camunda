@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RestConstants {
-  public static final String PROMETHEUS_ENDPOINT = "/prometheus";
 
   public static final String X_OPTIMIZE_CLIENT_TIMEZONE = "X-Optimize-Client-Timezone";
   public static final String AUTH_COOKIE_TOKEN_VALUE_PREFIX = "Bearer ";
