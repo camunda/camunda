@@ -18,7 +18,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.protocol.impl.encoding.AdminRequest;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
-import io.camunda.zeebe.protocol.record.AdminRequestType;
+import io.camunda.zeebe.protocol.management.AdminRequestType;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import io.camunda.zeebe.transport.ServerOutput;

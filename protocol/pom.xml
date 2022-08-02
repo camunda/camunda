@@ -179,6 +179,7 @@
           <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
           <arguments>
             <argument>${project.build.outputDirectory}/protocol.xml</argument>
+            <argument>${project.build.outputDirectory}/cluster-management-protocol.xml</argument>
           </arguments>
           <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
         </configuration>

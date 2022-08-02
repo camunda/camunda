@@ -16,7 +16,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
-import io.camunda.zeebe.protocol.record.BackupRequestType;
+import io.camunda.zeebe.protocol.management.BackupRequestType;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.transport.ServerOutput;

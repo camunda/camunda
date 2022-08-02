@@ -8,8 +8,8 @@
 package io.camunda.zeebe.broker.transport.adminapi;
 
 import io.camunda.zeebe.broker.transport.ApiRequestHandler.RequestReader;
-import io.camunda.zeebe.protocol.record.AdminRequestDecoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.management.AdminRequestDecoder;
+import io.camunda.zeebe.protocol.management.MessageHeaderDecoder;
 import org.agrona.DirectBuffer;
 
 public class ApiRequestReader implements RequestReader<AdminRequestDecoder> {
