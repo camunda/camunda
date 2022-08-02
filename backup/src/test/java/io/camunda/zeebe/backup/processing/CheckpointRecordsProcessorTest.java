@@ -8,6 +8,8 @@
 package io.camunda.zeebe.backup.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -23,10 +25,12 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
+import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,15 +39,13 @@ import org.junit.jupiter.api.io.TempDir;
 final class CheckpointRecordsProcessorTest {
 
   @TempDir Path database;
-
-  CheckpointRecordsProcessor processor;
-
-  ProcessingResultBuilder resultBuilder;
-
-  // Used for verifying state in the tests
-  CheckpointState state;
-
   final BackupManager backupManager = mock(BackupManager.class);
+  private final ProcessingScheduleService executor = mock(ProcessingScheduleService.class);
+
+  private CheckpointRecordsProcessor processor;
+  private ProcessingResultBuilder resultBuilder;
+  // Used for verifying state in the tests
+  private CheckpointState state;
   private ZeebeDb zeebedb;
 
   @BeforeEach
@@ -52,7 +54,7 @@ final class CheckpointRecordsProcessorTest {
         new ZeebeRocksDbFactory<>(
                 new RocksDbConfiguration(), new ConsistencyChecksSettings(true, true))
             .createDb(database.toFile());
-    final var context = new Context(zeebedb, zeebedb.createContext());
+    final var context = new Context(zeebedb, zeebedb.createContext(), executor);
 
     resultBuilder = new MockProcessingResultBuilder();
     processor = new CheckpointRecordsProcessor(backupManager);
@@ -174,5 +176,94 @@ final class CheckpointRecordsProcessorTest {
     // state is not changed
     assertThat(state.getCheckpointId()).isEqualTo(checkpointId);
     assertThat(state.getCheckpointPosition()).isEqualTo(checkpointPosition);
+  }
+
+  @Test
+  void shouldNotifyListenerWhenNewCheckpointCreated() {
+    // given
+    final AtomicLong checkpoint = new AtomicLong();
+    processor.addCheckpointListener(checkpoint::set);
+
+    final long checkpointId = 2;
+    final long checkpointPosition = 20;
+    final CheckpointRecord value = new CheckpointRecord().setCheckpointId(checkpointId);
+    final MockTypedCheckpointRecord record =
+        new MockTypedCheckpointRecord(
+            checkpointPosition, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then
+    assertThat(checkpoint).hasValue(checkpointId);
+  }
+
+  @Test
+  void shouldNotifyListenerWhenReplayed() {
+    // given
+    final AtomicLong checkpoint = new AtomicLong();
+    processor.addCheckpointListener(checkpoint::set);
+
+    final long checkpointId = 3;
+    final long checkpointPosition = 10;
+    final CheckpointRecord value =
+        new CheckpointRecord()
+            .setCheckpointId(checkpointId)
+            .setCheckpointPosition(checkpointPosition);
+    final MockTypedCheckpointRecord record =
+        new MockTypedCheckpointRecord(
+            checkpointPosition + 1,
+            checkpointPosition,
+            CheckpointIntent.CREATED,
+            RecordType.EVENT,
+            value);
+
+    // when
+    processor.replay(record);
+
+    // then
+    assertThat(checkpoint).hasValue(checkpointId);
+  }
+
+  @Test
+  void shouldNotifyListenerOnInit() {
+    // given
+    final var context = new Context(zeebedb, zeebedb.createContext(), null);
+    processor = new CheckpointRecordsProcessor(backupManager);
+    final long checkpointId = 3;
+    final long checkpointPosition = 30;
+    state.setCheckpointInfo(checkpointId, checkpointPosition);
+
+    // when
+    final AtomicLong checkpoint = new AtomicLong();
+    processor.addCheckpointListener(checkpoint::set);
+    processor.init(context);
+
+    // then
+    assertThat(checkpoint).hasValue(checkpointId);
+  }
+
+  @Test
+  void shouldNotifyWhenListenerIsRegistered() {
+    // given
+    final long checkpointId = 3;
+    final long checkpointPosition = 30;
+    state.setCheckpointInfo(checkpointId, checkpointPosition);
+
+    doAnswer(
+            invocation -> {
+              final Runnable callback = (Runnable) invocation.getArguments()[1];
+              callback.run();
+              return null;
+            })
+        .when(executor)
+        .runDelayed(any(), any(Runnable.class));
+
+    // when
+    final AtomicLong checkpoint = new AtomicLong();
+    processor.addCheckpointListener(checkpoint::set);
+
+    // then
+    assertThat(checkpoint).hasValue(checkpointId);
   }
 }
