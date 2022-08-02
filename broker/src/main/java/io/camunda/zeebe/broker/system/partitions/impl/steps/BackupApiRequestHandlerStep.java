@@ -42,7 +42,7 @@ public final class BackupApiRequestHandlerStep implements PartitionTransitionSte
 
   @Override
   public String getName() {
-    return "BackupApiRequestHandlerStep";
+    return "BackupApiRequestHandler";
   }
 
   private ActorFuture<Void> installRequestHandler(final PartitionTransitionContext context) {
