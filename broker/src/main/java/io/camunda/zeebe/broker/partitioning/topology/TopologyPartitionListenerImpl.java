@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning.topology;
 
+import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionRole;
@@ -33,6 +34,8 @@ public final class TopologyPartitionListenerImpl implements TopologyPartitionLis
     final int currentLeader = partitionLeaders.get(partitionId);
 
     if (currentLeader != member.getNodeId()) {
+      Loggers.SYSTEM_LOGGER.info(
+          "Update leader of partition {} to node {}", partitionId, member.getNodeId());
       partitionLeaders.put(partitionId, member.getNodeId());
     }
   }
