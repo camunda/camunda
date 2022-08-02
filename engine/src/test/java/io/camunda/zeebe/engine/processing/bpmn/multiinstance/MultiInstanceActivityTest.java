@@ -895,6 +895,104 @@ public final class MultiInstanceActivityTest {
   }
 
   @Test
+  public void shouldNotInitializeOutputElementVariableIfSameNameAsInputElement() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(
+                miBuilder.andThen(
+                    m ->
+                        m.zeebeInputElement(INPUT_ELEMENT_VARIABLE)
+                            .zeebeOutputElementExpression(INPUT_ELEMENT_VARIABLE))))
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
+            .create();
+
+    // note that this completes the jobs with a variable `result`, but these results are not
+    // collected  because the output element is set to `item` instead of `result`.
+    completeJobs(processInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.variableRecords()
+                .limit(
+                    v ->
+                        v.getIntent() == VariableIntent.UPDATED
+                            && v.getValue().getName().equals(OUTPUT_COLLECTION_VARIABLE)
+                            && v.getValue().getValue().equals("[10,20,30]")))
+        .extracting(Record::getIntent, r -> r.getValue().getName(), r -> r.getValue().getValue())
+        .describedAs("The output element variable is not nil initialized")
+        // note that output element expression is set to INPUT_ELEMENT_VARIABLE, so we assert that
+        // the output element var is not nil initialized by checking the input element var's value
+        .doesNotContain(tuple(VariableIntent.CREATED, INPUT_ELEMENT_VARIABLE, "null"))
+        .describedAs("The input element variable is not overwritten with nil")
+        .doesNotContain(tuple(VariableIntent.UPDATED, INPUT_ELEMENT_VARIABLE, "null"))
+        .describedAs("The input element variable is created from the input collection")
+        .contains(
+            tuple(VariableIntent.CREATED, INPUT_ELEMENT_VARIABLE, "10"),
+            tuple(VariableIntent.CREATED, INPUT_ELEMENT_VARIABLE, "20"),
+            tuple(VariableIntent.CREATED, INPUT_ELEMENT_VARIABLE, "30"))
+        .describedAs("the output element variable is collected into the output collection")
+        // note that the output element refers to a different variable than the job's `result`
+        // variable (e.g. 11). So the output collection is expected to collect unchanged values.
+        .contains(tuple(VariableIntent.UPDATED, OUTPUT_COLLECTION_VARIABLE, "[10,20,30]"));
+  }
+
+  @Test
+  public void shouldNotInitializeOutputElementVariableIfSetToLoopCounter() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(
+                miBuilder.andThen(
+                    m ->
+                        m.zeebeInputElement(INPUT_ELEMENT_VARIABLE)
+                            .zeebeOutputElementExpression("loopCounter"))))
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
+            .create();
+
+    // note that this completes the jobs with a variable `result`, but these results are not
+    // collected  because the output element is set to `loopCounter` instead of `result`.
+    completeJobs(processInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.variableRecords()
+                .limit(
+                    v ->
+                        v.getIntent() == VariableIntent.UPDATED
+                            && v.getValue().getName().equals(OUTPUT_COLLECTION_VARIABLE)
+                            && v.getValue().getValue().equals("[1,2,3]")))
+        .extracting(Record::getIntent, r -> r.getValue().getName(), r -> r.getValue().getValue())
+        .describedAs("The output element variable is not nil initialized")
+        // note that output element expression is set to `loopCounter`, so we assert that
+        // the output element var is not nil initialized by checking the `loopCounter`'s value
+        .doesNotContain(tuple(VariableIntent.CREATED, "loopCounter", "null"))
+        .describedAs("The loopCounter variable is not overwritten with nil")
+        .doesNotContain(tuple(VariableIntent.UPDATED, "loopCounter", "null"))
+        .describedAs("The loopCounter variable is directly created")
+        .contains(
+            tuple(VariableIntent.CREATED, "loopCounter", "1"),
+            tuple(VariableIntent.CREATED, "loopCounter", "2"),
+            tuple(VariableIntent.CREATED, "loopCounter", "3"));
+  }
+
+  @Test
   public void shouldSetEmptyOutputCollectionIfSkip() {
     // given
     ENGINE.deployment().withXmlResource(process(miBuilder)).deploy();
