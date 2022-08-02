@@ -33,6 +33,7 @@ import io.camunda.zeebe.engine.processing.variable.UpdateVariableDocumentProcess
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -60,9 +61,9 @@ public final class ProcessEventProcessors {
       final JobMetrics jobMetrics) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         zeebeState.getProcessMessageSubscriptionState();
+    final var keyGenerator = zeebeState.getKeyGenerator();
     final VariableBehavior variableBehavior =
-        new VariableBehavior(
-            zeebeState.getVariableState(), writers.state(), zeebeState.getKeyGenerator());
+        new VariableBehavior(zeebeState.getVariableState(), writers.state(), keyGenerator);
 
     final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
 
@@ -99,7 +100,7 @@ public final class ProcessEventProcessors {
         typedRecordProcessors,
         variableBehavior,
         zeebeState.getElementInstanceState(),
-        zeebeState.getKeyGenerator(),
+        keyGenerator,
         writers.state());
     addProcessInstanceCreationStreamProcessors(
         typedRecordProcessors,
@@ -108,7 +109,8 @@ public final class ProcessEventProcessors {
         variableBehavior,
         catchEventBehavior,
         processEngineMetrics);
-    addProcessInstanceModificationStreamProcessors(typedRecordProcessors, zeebeState, writers);
+    addProcessInstanceModificationStreamProcessors(
+        typedRecordProcessors, zeebeState, writers, keyGenerator);
 
     return bpmnStreamProcessor;
   }
@@ -235,10 +237,15 @@ public final class ProcessEventProcessors {
 
   private static void addProcessInstanceModificationStreamProcessors(
       final TypedRecordProcessors typedRecordProcessors,
-      final MutableZeebeState zeebeState,
-      final Writers writers) {
+      final ZeebeState zeebeState,
+      final Writers writers,
+      final KeyGenerator keyGenerator) {
     final ProcessInstanceModificationProcessor modificationProcessor =
-        new ProcessInstanceModificationProcessor(writers, zeebeState.getKeyGenerator());
+        new ProcessInstanceModificationProcessor(
+            writers,
+            keyGenerator,
+            zeebeState.getElementInstanceState(),
+            zeebeState.getProcessState());
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         ProcessInstanceModificationIntent.MODIFY,

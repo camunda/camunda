@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
@@ -242,6 +244,17 @@ public final class RecordingExporter implements Exporter {
   public static ProcessInstanceCreationRecordStream processInstanceCreationRecords() {
     return new ProcessInstanceCreationRecordStream(
         records(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationRecordValue.class));
+  }
+
+  public static ProcessInstanceModificationRecordStream processInstanceModificationRecords() {
+    return new ProcessInstanceModificationRecordStream(
+        records(
+            ValueType.PROCESS_INSTANCE_MODIFICATION, ProcessInstanceModificationRecordValue.class));
+  }
+
+  public static ProcessInstanceModificationRecordStream processInstanceModificationRecords(
+      final ProcessInstanceModificationIntent intent) {
+    return processInstanceModificationRecords().withIntent(intent);
   }
 
   public static ProcessInstanceResultRecordStream processInstanceResultRecords() {
