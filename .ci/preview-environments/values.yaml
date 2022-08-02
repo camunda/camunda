@@ -47,6 +47,13 @@ camunda-platform:
       requests:
         cpu: 0.5
         memory: 512Mi
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
+
   operate:
     # Defines the version of Operate to use
     image:
@@ -59,6 +66,13 @@ camunda-platform:
       requests:
         cpu: 0.5
         memory: 512Mi
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
+
   zeebe:
     fullnameOverride: zeebe
     # Defines the version of Zeebe to use
@@ -81,12 +95,26 @@ camunda-platform:
       requests:
         cpu: 500m
         memory: 512Mi
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
+
   zeebe-gateway:
     fullnameOverride: zeebe-gateway
     replicas: 1
     # Defines the version of Zeebe to use
     image:
       tag: 8.0.0
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
+
   # Configuration for ElasticSearch. Persistence is disabled by default,
   # and we're setting some reasonable defaults for the `PersistentVolumeClaim` size
   # in order to avoid being too wasteful.
@@ -121,6 +149,12 @@ camunda-platform:
       requests:
         cpu: 0.5
         memory: 512Mi
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
 
 # Configuration of global values as required by the camunda-platform chart and to comply
 # with Infra best practices.
