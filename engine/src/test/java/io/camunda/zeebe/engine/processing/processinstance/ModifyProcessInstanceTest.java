@@ -142,6 +142,65 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
+  public void shouldActivateMultipleRootElement() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("A", a -> a.zeebeJobType("A"))
+                .parallelGateway()
+                .serviceTask("B", b -> b.zeebeJobType("B"))
+                .moveToLastGateway()
+                .userTask("C")
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .getFirst()
+        .getValue();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("B")
+        .activateElement("C")
+        .modify();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .onlyEvents()
+                .withElementId("B")
+                .withProcessInstanceKey(processInstanceKey)
+                .limit("B", ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .toList())
+        .extracting(Record::getIntent)
+        .describedAs("Expect the service task to have been activated")
+        .containsExactly(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .onlyEvents()
+                .withElementId("C")
+                .withProcessInstanceKey(processInstanceKey)
+                .limit("C", ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .toList())
+        .extracting(Record::getIntent)
+        .describedAs("Expect the user task to have been activated")
+        .containsExactly(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+  }
+
+  @Test
   public void shouldBeAbleToCompleteActivatedRootElement() {
     // given
     ENGINE
