@@ -33,6 +33,7 @@ jobs:
         # Related to https://github.com/camunda/zeebe/issues/9959
       - name: Remove system-out from test xml files
         run: |
+          find . -iname TEST-*.xml
           find . -iname TEST-*.xml | xargs sed '/<system-out>/,/<\/system-out>/d' -i
 
       - name: Publish Test Results
