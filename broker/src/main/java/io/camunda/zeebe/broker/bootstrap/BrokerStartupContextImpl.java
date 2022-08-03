@@ -46,7 +46,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private ClusterServicesImpl clusterServices;
-  private AtomixServerTransport commandApiServerTransport;
+  private AtomixServerTransport gatewayBrokerTransport;
   private ManagedMessagingService commandApiMessagingService;
   private CommandApiServiceImpl commandApiService;
   private AdminApiRequestHandler adminApiService;
@@ -157,13 +157,13 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public AtomixServerTransport getCommandApiServerTransport() {
-    return commandApiServerTransport;
+  public AtomixServerTransport getGatewayBrokerTransport() {
+    return gatewayBrokerTransport;
   }
 
   @Override
-  public void setCommandApiServerTransport(final AtomixServerTransport commandApiServerTransport) {
-    this.commandApiServerTransport = commandApiServerTransport;
+  public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {
+    this.gatewayBrokerTransport = gatewayBrokerTransport;
   }
 
   @Override

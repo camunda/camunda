@@ -109,7 +109,7 @@ class CommandApiServiceStepTest {
       await().until(startupFuture::isDone);
 
       // then
-      final var serverTransport = testBrokerStartupContext.getCommandApiServerTransport();
+      final var serverTransport = testBrokerStartupContext.getGatewayBrokerTransport();
 
       assertThat(serverTransport).isNotNull();
       verify(mockActorSchedulingService).submitActor(serverTransport);
@@ -177,7 +177,7 @@ class CommandApiServiceStepTest {
       when(mockAtomixServerTransport.closeAsync())
           .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
 
-      testBrokerStartupContext.setCommandApiServerTransport(mockAtomixServerTransport);
+      testBrokerStartupContext.setGatewayBrokerTransport(mockAtomixServerTransport);
       testBrokerStartupContext.setCommandApiService(mockCommandApiService);
       testBrokerStartupContext.addPartitionListener(mockCommandApiService);
       testBrokerStartupContext.setDiskSpaceUsageMonitor(mock(DiskSpaceUsageMonitor.class));
@@ -233,7 +233,7 @@ class CommandApiServiceStepTest {
 
       // then
       verify(mockAtomixServerTransport).closeAsync();
-      final var serverTransport = testBrokerStartupContext.getCommandApiServerTransport();
+      final var serverTransport = testBrokerStartupContext.getGatewayBrokerTransport();
       assertThat(serverTransport).isNull();
     }
 

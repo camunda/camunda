@@ -24,7 +24,7 @@ public class AdminApiServiceStep extends AbstractBrokerStartupStep {
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
     final var schedulingService = brokerStartupContext.getActorSchedulingService();
-    final var transport = brokerStartupContext.getCommandApiServerTransport();
+    final var transport = brokerStartupContext.getGatewayBrokerTransport();
     final var handler = new AdminApiRequestHandler(transport);
 
     concurrencyControl.runOnCompletion(

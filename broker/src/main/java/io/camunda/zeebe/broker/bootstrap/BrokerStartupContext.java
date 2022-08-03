@@ -67,9 +67,9 @@ public interface BrokerStartupContext {
 
   void setAdminApiService(AdminApiRequestHandler adminApiService);
 
-  AtomixServerTransport getCommandApiServerTransport();
+  AtomixServerTransport getGatewayBrokerTransport();
 
-  void setCommandApiServerTransport(AtomixServerTransport commandApiServerTransport);
+  void setGatewayBrokerTransport(AtomixServerTransport gatewayBrokerTransport);
 
   ManagedMessagingService getApiMessagingService();
 
