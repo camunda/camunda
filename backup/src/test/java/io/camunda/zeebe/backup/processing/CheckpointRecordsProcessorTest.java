@@ -16,6 +16,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.backup.processing.MockProcessingResult.Event;
 import io.camunda.zeebe.backup.processing.MockProcessingResult.MockProcessingResultBuilder;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
@@ -31,7 +32,6 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.streamprocessor.RecordProcessorContextImpl;
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -187,8 +187,8 @@ final class CheckpointRecordsProcessorTest {
   @Test
   void shouldNotifyListenerWhenNewCheckpointCreated() {
     // given
-    final AtomicLong checkpoint = new AtomicLong();
-    processor.addCheckpointListener((id, checkpointPosition) -> checkpoint.set(id));
+    final var listener = mock(CheckpointListener.class);
+    processor.addCheckpointListener(listener);
 
     final long checkpointId = 2;
     final long checkpointPosition = 20;
@@ -201,14 +201,14 @@ final class CheckpointRecordsProcessorTest {
     processor.process(record, resultBuilder);
 
     // then
-    assertThat(checkpoint).hasValue(checkpointId);
+    verify(listener).onNewCheckpointCreated(checkpointId, checkpointPosition);
   }
 
   @Test
   void shouldNotifyListenerWhenReplayed() {
     // given
-    final AtomicLong checkpoint = new AtomicLong();
-    processor.addCheckpointListener((id, checkpointPosition) -> checkpoint.set(id));
+    final var listener = mock(CheckpointListener.class);
+    processor.addCheckpointListener(listener);
 
     final long checkpointId = 3;
     final long checkpointPosition = 10;
@@ -228,7 +228,7 @@ final class CheckpointRecordsProcessorTest {
     processor.replay(record);
 
     // then
-    assertThat(checkpoint).hasValue(checkpointId);
+    verify(listener).onNewCheckpointCreated(checkpointId, checkpointPosition);
   }
 
   @Test
@@ -241,12 +241,12 @@ final class CheckpointRecordsProcessorTest {
     state.setCheckpointInfo(checkpointId, checkpointPosition);
 
     // when
-    final AtomicLong checkpoint = new AtomicLong();
-    processor.addCheckpointListener((id, position) -> checkpoint.set(id));
+    final var listener = mock(CheckpointListener.class);
+    processor.addCheckpointListener(listener);
     processor.init(context);
 
     // then
-    assertThat(checkpoint).hasValue(checkpointId);
+    verify(listener).onNewCheckpointCreated(checkpointId, checkpointPosition);
   }
 
   @Test
@@ -266,10 +266,10 @@ final class CheckpointRecordsProcessorTest {
         .runDelayed(any(), any(Runnable.class));
 
     // when
-    final AtomicLong checkpoint = new AtomicLong();
-    processor.addCheckpointListener((id, position) -> checkpoint.set(id));
+    final var listener = mock(CheckpointListener.class);
+    processor.addCheckpointListener(listener);
 
     // then
-    assertThat(checkpoint).hasValue(checkpointId);
+    verify(listener).onNewCheckpointCreated(checkpointId, checkpointPosition);
   }
 }

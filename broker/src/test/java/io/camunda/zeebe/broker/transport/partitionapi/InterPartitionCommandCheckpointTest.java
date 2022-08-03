@@ -82,7 +82,7 @@ final class InterPartitionCommandCheckpointTest {
   void shouldCreateFirstCheckpoint() {
     // given
     when(logStreamRecordWriter.tryWrite()).thenReturn(1L);
-    sender.onNewCheckpointCreated(1, );
+    sender.onNewCheckpointCreated(1, 10);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -105,7 +105,7 @@ final class InterPartitionCommandCheckpointTest {
     // given
     when(logStreamRecordWriter.tryWrite()).thenReturn(1L);
     receiver.setCheckpointId(5);
-    sender.onNewCheckpointCreated(17, );
+    sender.onNewCheckpointCreated(17, 10);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -126,7 +126,7 @@ final class InterPartitionCommandCheckpointTest {
     // given
     when(logStreamRecordWriter.tryWrite()).thenReturn(1L);
     receiver.setCheckpointId(5);
-    sender.onNewCheckpointCreated(5, );
+    sender.onNewCheckpointCreated(5, 10);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -144,7 +144,7 @@ final class InterPartitionCommandCheckpointTest {
     // given
     when(logStreamRecordWriter.tryWrite()).thenReturn(1L);
     receiver.setCheckpointId(6);
-    sender.onNewCheckpointCreated(5, );
+    sender.onNewCheckpointCreated(5, 10);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -162,7 +162,7 @@ final class InterPartitionCommandCheckpointTest {
     // given
     when(logStreamRecordWriter.tryWrite()).thenReturn(-1L, 1L);
     receiver.setCheckpointId(5);
-    sender.onNewCheckpointCreated(17, );
+    sender.onNewCheckpointCreated(17, 10);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -180,7 +180,7 @@ final class InterPartitionCommandCheckpointTest {
     // given
     receiver.setDiskSpaceAvailable(false);
     receiver.setCheckpointId(5);
-    sender.onNewCheckpointCreated(17, );
+    sender.onNewCheckpointCreated(17, 10);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
