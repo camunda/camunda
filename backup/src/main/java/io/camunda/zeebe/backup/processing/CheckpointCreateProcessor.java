@@ -47,7 +47,7 @@ public final class CheckpointCreateProcessor {
       checkpointState.setCheckpointInfo(checkpointId, checkpointPosition);
 
       // Notify listeners immediately
-      listeners.forEach(l -> l.onNewCheckpointCreated(checkpointId));
+      listeners.forEach(l -> l.onNewCheckpointCreated(checkpointId, checkpointPosition));
 
       final var followupRecord =
           new CheckpointRecord()

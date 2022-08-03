@@ -60,7 +60,9 @@ public final class CheckpointRecordsProcessor implements RecordProcessor {
 
     if (checkpointState.getCheckpointId() != CheckpointState.NO_CHECKPOINT) {
       checkpointListeners.forEach(
-          listener -> listener.onNewCheckpointCreated(checkpointState.getCheckpointId()));
+          listener ->
+              listener.onNewCheckpointCreated(
+                  checkpointState.getCheckpointId(), checkpointState.getCheckpointPosition()));
     }
   }
 
@@ -116,7 +118,8 @@ public final class CheckpointRecordsProcessor implements RecordProcessor {
           () -> {
             final var checkpointId = checkpointState.getCheckpointId();
             if (checkpointId != CheckpointState.NO_CHECKPOINT) {
-              checkpointListener.onNewCheckpointCreated(checkpointState.getCheckpointId());
+              checkpointListener.onNewCheckpointCreated(
+                  checkpointState.getCheckpointId(), checkpointState.getCheckpointPosition());
             }
           });
     }

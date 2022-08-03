@@ -27,6 +27,8 @@ public final class CheckpointCreatedEventApplier {
     checkpointState.setCheckpointInfo(
         checkpointRecord.getCheckpointId(), checkpointRecord.getCheckpointPosition());
     checkpointListeners.forEach(
-        listener -> listener.onNewCheckpointCreated(checkpointState.getCheckpointId()));
+        listener ->
+            listener.onNewCheckpointCreated(
+                checkpointState.getCheckpointId(), checkpointState.getCheckpointPosition()));
   }
 }

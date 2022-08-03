@@ -81,7 +81,7 @@ public final class InterPartitionCommandSenderImpl
   }
 
   @Override
-  public void onNewCheckpointCreated(final long checkpointId) {
+  public void onNewCheckpointCreated(final long checkpointId, final long checkpointPosition) {
     this.checkpointId = checkpointId;
   }
 

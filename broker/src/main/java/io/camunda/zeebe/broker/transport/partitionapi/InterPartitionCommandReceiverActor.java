@@ -77,7 +77,7 @@ public final class InterPartitionCommandReceiverActor extends Actor
   }
 
   @Override
-  public void onNewCheckpointCreated(final long checkpointId) {
+  public void onNewCheckpointCreated(final long checkpointId, final long checkpointPosition) {
     actor.run(() -> receiver.setCheckpointId(checkpointId));
   }
 

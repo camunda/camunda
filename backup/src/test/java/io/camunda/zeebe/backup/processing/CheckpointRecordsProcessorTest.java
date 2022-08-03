@@ -188,7 +188,7 @@ final class CheckpointRecordsProcessorTest {
   void shouldNotifyListenerWhenNewCheckpointCreated() {
     // given
     final AtomicLong checkpoint = new AtomicLong();
-    processor.addCheckpointListener(checkpoint::set);
+    processor.addCheckpointListener((id, checkpointPosition) -> checkpoint.set(id));
 
     final long checkpointId = 2;
     final long checkpointPosition = 20;
@@ -208,7 +208,7 @@ final class CheckpointRecordsProcessorTest {
   void shouldNotifyListenerWhenReplayed() {
     // given
     final AtomicLong checkpoint = new AtomicLong();
-    processor.addCheckpointListener(checkpoint::set);
+    processor.addCheckpointListener((id, checkpointPosition) -> checkpoint.set(id));
 
     final long checkpointId = 3;
     final long checkpointPosition = 10;
@@ -242,7 +242,7 @@ final class CheckpointRecordsProcessorTest {
 
     // when
     final AtomicLong checkpoint = new AtomicLong();
-    processor.addCheckpointListener(checkpoint::set);
+    processor.addCheckpointListener((id, position) -> checkpoint.set(id));
     processor.init(context);
 
     // then
@@ -267,7 +267,7 @@ final class CheckpointRecordsProcessorTest {
 
     // when
     final AtomicLong checkpoint = new AtomicLong();
-    processor.addCheckpointListener(checkpoint::set);
+    processor.addCheckpointListener((id, position) -> checkpoint.set(id));
 
     // then
     assertThat(checkpoint).hasValue(checkpointId);
