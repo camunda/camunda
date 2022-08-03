@@ -32,6 +32,7 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -42,7 +43,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -141,10 +141,11 @@ final class AdminApiRequestHandlerTest {
     private final AdminApiRequestHandler handler;
 
     public PauseExportingRequest(
-        @Mock(answer = Answers.RETURNS_SELF) final PartitionAdminAccess adminAccess,
+        @Mock final PartitionAdminAccess adminAccess,
         @Mock final PartitionManagerImpl partitionManager,
         @Mock final AtomixServerTransport transport) {
       this.adminAccess = adminAccess;
+      when(adminAccess.forPartition(anyInt())).thenReturn(Optional.of(adminAccess));
       when(partitionManager.getPartitionGroup()).thenReturn(mock(ManagedPartitionGroup.class));
       when(partitionManager.getPartitions()).thenReturn(List.of());
       when(partitionManager.createAdminAccess(any())).thenReturn(adminAccess);

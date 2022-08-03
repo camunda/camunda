@@ -14,6 +14,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 final class MultiPartitionAdminAccess implements PartitionAdminAccess {
@@ -32,8 +33,8 @@ final class MultiPartitionAdminAccess implements PartitionAdminAccess {
    *     partitions
    */
   @Override
-  public PartitionAdminAccess forPartition(final int partitionId) {
-    return partitions.get(partitionId);
+  public Optional<PartitionAdminAccess> forPartition(final int partitionId) {
+    return Optional.ofNullable(partitions.get(partitionId));
   }
 
   @Override

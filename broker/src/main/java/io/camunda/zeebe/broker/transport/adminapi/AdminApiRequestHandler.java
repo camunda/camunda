@@ -67,10 +67,16 @@ public class AdminApiRequestHandler
       final ApiResponseWriter responseWriter,
       final int partitionId,
       final ErrorResponseWriter errorWriter) {
-    final var result = actor.<Either<ErrorResponseWriter, ApiResponseWriter>>createFuture();
+    final var partitionAdminAccess = adminAccess.forPartition(partitionId);
+    if (partitionAdminAccess.isEmpty()) {
+      return CompletableActorFuture.completed(
+          Either.left(
+              errorWriter.internalError("Partition %s failed to pause exporting", partitionId)));
+    }
 
-    adminAccess
-        .forPartition(partitionId)
+    final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
+    partitionAdminAccess
+        .orElseThrow()
         .pauseExporting()
         .onComplete(
             (r, t) -> {

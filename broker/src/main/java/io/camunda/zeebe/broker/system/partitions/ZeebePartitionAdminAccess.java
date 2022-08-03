@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.io.IOException;
+import java.util.Optional;
 import org.slf4j.Logger;
 
 class ZeebePartitionAdminAccess implements PartitionAdminAccess {
@@ -34,13 +35,11 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
   }
 
   @Override
-  public PartitionAdminAccess forPartition(final int partitionId) {
+  public Optional<PartitionAdminAccess> forPartition(final int partitionId) {
     if (this.partitionId == partitionId) {
-      return this;
+      return Optional.of(this);
     } else {
-      throw new IllegalArgumentException(
-          "Requested PartitionAdminAccess for partition %s, this PartitionAdminAccess only manages partition %s"
-              .formatted(partitionId, this.partitionId));
+      return Optional.empty();
     }
   }
 

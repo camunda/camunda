@@ -133,4 +133,9 @@ public final class ErrorResponse implements BufferWriter, BufferReader {
     write(buffer, 0);
     return bytes;
   }
+
+  @Override
+  public String toString() {
+    return "ErrorResponse{" + "errorCode=" + errorCode + '}';
+  }
 }
