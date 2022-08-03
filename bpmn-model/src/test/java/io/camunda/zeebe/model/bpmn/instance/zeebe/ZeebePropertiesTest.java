@@ -15,11 +15,20 @@
  */
 package io.camunda.zeebe.model.bpmn.instance.zeebe;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
+import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.camunda.bpm.model.xml.instance.ModelElementInstance;
+import org.junit.Test;
 
 public class ZeebePropertiesTest extends BpmnModelElementInstanceTest {
 
@@ -37,5 +46,36 @@ public class ZeebePropertiesTest extends BpmnModelElementInstanceTest {
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Collections.emptyList();
+  }
+
+  @Test
+  public void shouldReadExtensionElements() {
+    // given
+    modelInstance =
+        Bpmn.readModelFromStream(
+            ZeebePropertiesTest.class.getResourceAsStream("ZeebePropertiesTest.bpmn"));
+
+    final ModelElementInstance start = modelInstance.getModelElementById("start");
+    final ModelElementInstance fork = modelInstance.getModelElementById("fork");
+    final ModelElementInstance task = modelInstance.getModelElementById("task");
+
+    // when
+    final Map<String, String> startProperties = getZeebePropertiesAsMap(start);
+    final Map<String, String> forkProperties = getZeebePropertiesAsMap(fork);
+    final Map<String, String> taskProperties = getZeebePropertiesAsMap(task);
+
+    // then
+    assertThat(startProperties).containsOnly(entry("id", "start"), entry("type", "event"));
+    assertThat(forkProperties).containsOnly(entry("id", "fork"), entry("type", "gateway"));
+    assertThat(taskProperties).containsOnly(entry("id", "task"), entry("type", "task"));
+  }
+
+  private Map<String, String> getZeebePropertiesAsMap(final ModelElementInstance elementInstance) {
+    return elementInstance
+        .getUniqueChildElementByType(ExtensionElements.class)
+        .getUniqueChildElementByType(ZeebeProperties.class)
+        .getChildElementsByType(ZeebeProperty.class)
+        .stream()
+        .collect(Collectors.toMap(ZeebeProperty::getName, ZeebeProperty::getValue));
   }
 }
