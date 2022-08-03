@@ -29,7 +29,7 @@ type Props = {
 
 const ExistingVariable: React.FC<Props> = observer(
   ({variableName, variableValue}) => {
-    const {isModificationModeEnabled} = modificationsStore.state;
+    const {isModificationModeEnabled} = modificationsStore;
     const formState = useFormState();
     const [isModalVisible, setIsModalVisible] = useState(false);
     const form = useForm();

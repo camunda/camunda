@@ -44,6 +44,8 @@ const Operations: React.FC<Props> = observer(
     const [isCancellationModalVisible, setIsCancellationModalVisible] =
       useState(false);
 
+    const {isModificationModeEnabled} = modificationsStore;
+
     const applyOperation = async (
       operationType: InstanceOperationEntity['type']
     ) => {
@@ -84,24 +86,22 @@ const Operations: React.FC<Props> = observer(
         )}
 
         <OperationItems>
-          {hasIncident(instance) &&
-            !modificationsStore.state.isModificationModeEnabled && (
-              <OperationItem
-                type="RESOLVE_INCIDENT"
-                onClick={() => applyOperation('RESOLVE_INCIDENT')}
-                title={`Retry Instance ${instance.id}`}
-                disabled={isOperationActive('RESOLVE_INCIDENT')}
-              />
-            )}
-          {isRunning(instance) &&
-            !modificationsStore.state.isModificationModeEnabled && (
-              <OperationItem
-                type="CANCEL_PROCESS_INSTANCE"
-                onClick={() => setIsCancellationModalVisible(true)}
-                title={`Cancel Instance ${instance.id}`}
-                disabled={isOperationActive('CANCEL_PROCESS_INSTANCE')}
-              />
-            )}
+          {hasIncident(instance) && !isModificationModeEnabled && (
+            <OperationItem
+              type="RESOLVE_INCIDENT"
+              onClick={() => applyOperation('RESOLVE_INCIDENT')}
+              title={`Retry Instance ${instance.id}`}
+              disabled={isOperationActive('RESOLVE_INCIDENT')}
+            />
+          )}
+          {isRunning(instance) && !isModificationModeEnabled && (
+            <OperationItem
+              type="CANCEL_PROCESS_INSTANCE"
+              onClick={() => setIsCancellationModalVisible(true)}
+              title={`Cancel Instance ${instance.id}`}
+              disabled={isOperationActive('CANCEL_PROCESS_INSTANCE')}
+            />
+          )}
           {!isRunning(instance) && (
             <OperationItem
               type="DELETE_PROCESS_INSTANCE"
@@ -112,7 +112,7 @@ const Operations: React.FC<Props> = observer(
           )}
           {isInstanceModificationVisible &&
             isRunning(instance) &&
-            !modificationsStore.state.isModificationModeEnabled && (
+            !isModificationModeEnabled && (
               <OperationItem
                 type="ENTER_MODIFICATION_MODE"
                 onClick={() => modificationsStore.enableModificationMode()}

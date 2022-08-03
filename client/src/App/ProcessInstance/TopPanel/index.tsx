@@ -102,7 +102,7 @@ const TopPanel: React.FC<Props> = observer(() => {
     incidentsCount,
   } = incidentsStore;
 
-  const {isModificationModeEnabled} = modificationsStore.state;
+  const {isModificationModeEnabled} = modificationsStore;
 
   useEffect(() => {
     if (!isModificationModeEnabled) {

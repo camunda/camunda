@@ -13,11 +13,11 @@ describe('stores/modifications', () => {
   });
 
   it('should enable/disable modification mode', async () => {
-    expect(modificationsStore.state.isModificationModeEnabled).toBe(false);
+    expect(modificationsStore.isModificationModeEnabled).toBe(false);
     modificationsStore.enableModificationMode();
-    expect(modificationsStore.state.isModificationModeEnabled).toBe(true);
+    expect(modificationsStore.isModificationModeEnabled).toBe(true);
     modificationsStore.disableModificationMode();
-    expect(modificationsStore.state.isModificationModeEnabled).toBe(false);
+    expect(modificationsStore.isModificationModeEnabled).toBe(false);
   });
 
   it('should add/remove flow node modifications', async () => {

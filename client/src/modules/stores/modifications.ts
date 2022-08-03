@@ -23,13 +23,13 @@ type VariableModification = {
 };
 
 type State = {
-  isModificationModeEnabled: boolean;
+  status: 'enabled' | 'moving-token' | 'disabled';
   flowNodeModifications: FlowNodeModification[];
   variableModifications: VariableModification[];
 };
 
 const DEFAULT_STATE: State = {
-  isModificationModeEnabled: false,
+  status: 'disabled',
   flowNodeModifications: [],
   variableModifications: [],
 };
@@ -42,11 +42,11 @@ class Modifications {
   }
 
   enableModificationMode = () => {
-    this.state.isModificationModeEnabled = true;
+    this.state.status = 'enabled';
   };
 
   disableModificationMode = () => {
-    this.state.isModificationModeEnabled = false;
+    this.state.status = 'disabled';
   };
 
   addFlowNodeModification = (modification: FlowNodeModification) => {
@@ -72,6 +72,10 @@ class Modifications {
         )
     );
   };
+
+  get isModificationModeEnabled() {
+    return this.state.status !== 'disabled';
+  }
 
   reset = () => {
     this.state = {...DEFAULT_STATE};

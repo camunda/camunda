@@ -114,7 +114,7 @@ const ProcessInstance: React.FC = observer(() => {
 
   const panelMinHeight = clientHeight / 4;
 
-  const {isModificationModeEnabled} = modificationsStore.state;
+  const {isModificationModeEnabled} = modificationsStore;
   const isBreadcrumbVisible =
     processInstanceDetailsStore.state.processInstance !== null &&
     processInstanceDetailsStore.state.processInstance?.callHierarchy?.length >
@@ -153,7 +153,7 @@ const ProcessInstance: React.FC = observer(() => {
             <VariablePanel />
           </BottomPanel>
         </ResizablePanel>
-        {modificationsStore.state.isModificationModeEnabled && (
+        {isModificationModeEnabled && (
           <ModificationFooter>
             <Button
               appearance="danger"

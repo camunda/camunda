@@ -20,7 +20,7 @@ const Layout: React.FC = observer(() => {
   const showFooter =
     instancesMatch === null &&
     decisionsMatch === null &&
-    !modificationsStore.state.isModificationModeEnabled;
+    !modificationsStore.isModificationModeEnabled;
 
   return (
     <Grid numberOfRows={showFooter ? 3 : 2}>

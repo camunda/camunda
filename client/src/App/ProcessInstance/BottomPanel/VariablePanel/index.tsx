@@ -31,7 +31,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 const VariablePanel = observer(function VariablePanel() {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const notifications = useNotifications();
-  const {isModificationModeEnabled} = modificationsStore.state;
+  const {isModificationModeEnabled} = modificationsStore;
 
   useEffect(() => {
     variablesStore.init(processInstanceId);

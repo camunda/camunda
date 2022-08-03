@@ -170,7 +170,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
             }
             isInstanceModificationVisible={
               IS_MODIFICATION_MODE_ENABLED &&
-              !modificationsStore.state.isModificationModeEnabled
+              !modificationsStore.isModificationModeEnabled
             }
           />
         </>

@@ -46,7 +46,7 @@ const Variables: React.FC = observer(() => {
   const variableRowRef = useRef<HTMLTableRowElement>(null);
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const notifications = useNotifications();
-  const {isModificationModeEnabled} = modificationsStore.state;
+  const {isModificationModeEnabled} = modificationsStore;
 
   const form = useForm<VariableFormValues>();
 
@@ -56,7 +56,7 @@ const Variables: React.FC = observer(() => {
 
   useEffect(() => {
     const disposer = reaction(
-      () => modificationsStore.state.isModificationModeEnabled,
+      () => modificationsStore.isModificationModeEnabled,
       (isModificationModeEnabled) => {
         if (!isModificationModeEnabled) {
           form.reset({});
