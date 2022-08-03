@@ -66,6 +66,7 @@ class CommandApiServiceStepTest {
             Collections.emptyList());
     testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
     testBrokerStartupContext.setDiskSpaceUsageMonitor(mock(DiskSpaceUsageMonitor.class));
+    testBrokerStartupContext.setGatewayBrokerTransport(mock(AtomixServerTransport.class));
   }
 
   @Test
@@ -100,19 +101,6 @@ class CommandApiServiceStepTest {
       // then
       assertThat(startupFuture).succeedsWithin(TIME_OUT);
       assertThat(startupFuture.join()).isNotNull();
-    }
-
-    @Test
-    void shouldStartAndInstallServerTransport() {
-      // when
-      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
-      await().until(startupFuture::isDone);
-
-      // then
-      final var serverTransport = testBrokerStartupContext.getGatewayBrokerTransport();
-
-      assertThat(serverTransport).isNotNull();
-      verify(mockActorSchedulingService).submitActor(serverTransport);
     }
 
     @Test
@@ -223,18 +211,6 @@ class CommandApiServiceStepTest {
       verify(mockCommandApiService).closeAsync();
       final var commandApiService = testBrokerStartupContext.getCommandApiService();
       assertThat(commandApiService).isNull();
-    }
-
-    @Test
-    void shouldStopAndUninstallServerTransport() {
-      // when
-      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
-      await().until(shutdownFuture::isDone);
-
-      // then
-      verify(mockAtomixServerTransport).closeAsync();
-      final var serverTransport = testBrokerStartupContext.getGatewayBrokerTransport();
-      assertThat(serverTransport).isNull();
     }
 
     @Test
