@@ -32,10 +32,7 @@ public final class TimerValidationTest {
     final var process = timerEventBuilder.timerWithCycle("foo").done();
 
     ProcessValidationUtil.validateProcess(
-        process,
-        expect(
-            timerEventElementId,
-            "Invalid timer cycle expression (Repetition spec must start with R)"));
+        process, expect(timerEventElementId, "Invalid timer cycle expression"));
   }
 
   @ParameterizedTest(name = "[{index}] {0}")

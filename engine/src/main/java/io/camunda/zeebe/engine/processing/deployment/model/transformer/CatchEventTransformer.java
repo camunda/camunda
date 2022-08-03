@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMes
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.engine.processing.timer.CronTimer;
 import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
@@ -98,7 +99,13 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
             try {
               return expressionProcessor
                   .evaluateStringExpression(expression, scopeKey)
-                  .map(RepeatingInterval::parse);
+                  .map(
+                      text -> {
+                        if (text.startsWith("R")) {
+                          return RepeatingInterval.parse(text);
+                        }
+                        return CronTimer.parse(text);
+                      });
             } catch (final DateTimeParseException e) {
               // todo(#4323): replace this caught exception with Either
               return Either.left(

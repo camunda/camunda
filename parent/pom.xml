@@ -46,6 +46,7 @@
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.15</version.commons-codec>
     <version.commons-text>1.9</version.commons-text>
+    <version.cron-utils>9.2.0</version.cron-utils>
     <version.docker-java-api>3.2.13</version.docker-java-api>
     <version.elasticsearch>7.17.0</version.elasticsearch>
     <version.error-prone>2.14.0</version.error-prone>
@@ -951,6 +952,12 @@
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
         <version>${version.gson}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.cronutils</groupId>
+        <artifactId>cron-utils</artifactId>
+        <version>${version.cron-utils}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
