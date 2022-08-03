@@ -50,7 +50,22 @@ public class ZeebeGatewayValidationTest extends AbstractZeebeValidationTest {
             .conditionExpression("condition")
             .endEvent()
             .done(),
-        singletonList(expect("flow1", "Must have a condition or be default flow"))
+        singletonList(expect("flow1", "Must have a condition"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .inclusiveGateway("gateway")
+            .defaultFlow()
+            .sequenceFlowId("flow1")
+            .endEvent()
+            .moveToLastInclusiveGateway()
+            .sequenceFlowId("flow2")
+            .conditionExpression("condition")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect("flow1", "Must have a condition even if it's marked as the default flow"))
       },
       {
         Bpmn.createExecutableProcess("process")

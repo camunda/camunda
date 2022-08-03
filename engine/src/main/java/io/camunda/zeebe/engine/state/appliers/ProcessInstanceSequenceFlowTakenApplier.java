@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 
 /** Applies state changes for `ProcessInstance:Sequence_Flow_Taken` */
 final class ProcessInstanceSequenceFlowTakenApplier
@@ -60,16 +59,11 @@ final class ProcessInstanceSequenceFlowTakenApplier
     }
 
     if (target.getElementType() == BpmnElementType.INCLUSIVE_GATEWAY) {
-      for (final ExecutableSequenceFlow sequence : target.getIncoming()) {
-        if (BufferUtil.bufferAsString(sequence.getId())
-            .equals(BufferUtil.bufferAsString(sequenceFlow.getId()))) {
-          // stores which sequence flows of the inclusive gateway are taken
-          // - the gateway is only activated if the fulfilled incoming sequence flows are taken at
-          // least once
-          elementInstanceState.incrementNumberOfTakenSequenceFlows(
-              value.getFlowScopeKey(), target.getId(), sequenceFlow.getId());
-        }
-      }
+      // stores which sequence flows of the inclusive gateway are taken
+      // - the gateway is only activated if the fulfilled incoming sequence flows are taken at
+      // least once
+      elementInstanceState.incrementNumberOfTakenSequenceFlows(
+          value.getFlowScopeKey(), target.getId(), sequenceFlow.getId());
     }
   }
 }

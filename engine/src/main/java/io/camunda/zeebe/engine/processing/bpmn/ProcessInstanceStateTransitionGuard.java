@@ -11,7 +11,6 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
-import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -30,12 +29,9 @@ import java.util.Arrays;
 public final class ProcessInstanceStateTransitionGuard {
 
   private final BpmnStateBehavior stateBehavior;
-  private final ElementInstanceState elementInstanceState;
 
-  public ProcessInstanceStateTransitionGuard(
-      final BpmnStateBehavior stateBehavior, final ElementInstanceState elementInstanceState) {
+  public ProcessInstanceStateTransitionGuard(final BpmnStateBehavior stateBehavior) {
     this.stateBehavior = stateBehavior;
-    this.elementInstanceState = elementInstanceState;
   }
 
   /**
@@ -184,40 +180,6 @@ public final class ProcessInstanceStateTransitionGuard {
           : Either.left(
               String.format(
                   "Expected to be able to activate parallel gateway '%s',"
-                      + " but not all sequence flows have been taken.",
-                  BufferUtil.bufferAsString(element.getId())));
-    }
-  }
-
-  private Either<String, ?> canActivateInclusiveGateway(
-      final BpmnElementContext context, final ExecutableFlowElement executableFlowElement) {
-    if (context.getBpmnElementType() != BpmnElementType.INCLUSIVE_GATEWAY) {
-      return Either.right(null);
-    } else {
-      final var element = (ExecutableFlowNode) executableFlowElement;
-      final int numberOfIncomingSequenceFlows = element.getIncoming().size();
-
-      if (numberOfIncomingSequenceFlows == 1) {
-        return Either.right(null);
-      }
-      final int numberOfTakenSequenceFlows =
-          stateBehavior.getNumberOfTakenSequenceFlows(context.getFlowScopeKey(), element.getId());
-
-      final int numberOfActiveElementInstances =
-          elementInstanceState
-              .getInstance(context.getFlowScopeKey())
-              .getNumberOfActiveElementInstances();
-
-      // right row there is limitation for the joining behavior of the inclusive gateway support,
-      // TODO: fully support the joining behavior of the inclusive gateway.
-      return numberOfTakenSequenceFlows >= numberOfIncomingSequenceFlows
-              || (numberOfTakenSequenceFlows < numberOfIncomingSequenceFlows
-                  && numberOfActiveElementInstances == 0
-                  && numberOfTakenSequenceFlows > 0)
-          ? Either.right(null)
-          : Either.left(
-              String.format(
-                  "Expected to be able to activate inclusive gateway '%s',"
                       + " but not all sequence flows have been taken.",
                   BufferUtil.bufferAsString(element.getId())));
     }

@@ -69,9 +69,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processEngineMetrics);
 
     stateBehavior = new BpmnStateBehavior(zeebeState, variableBehavior);
-    stateTransitionGuard =
-        new ProcessInstanceStateTransitionGuard(
-            stateBehavior, zeebeState.getElementInstanceState());
+    stateTransitionGuard = new ProcessInstanceStateTransitionGuard(stateBehavior);
     variableMappingBehavior =
         new BpmnVariableMappingBehavior(expressionBehavior, zeebeState, variableBehavior);
     stateTransitionBehavior =

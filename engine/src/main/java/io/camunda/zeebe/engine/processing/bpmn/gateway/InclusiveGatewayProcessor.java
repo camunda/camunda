@@ -22,7 +22,6 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public final class InclusiveGatewayProcessor
     implements BpmnElementProcessor<ExecutableInclusiveGateway> {
@@ -49,21 +48,20 @@ public final class InclusiveGatewayProcessor
   public void onActivate(
       final ExecutableInclusiveGateway element, final BpmnElementContext activating) {
     // find outgoing sequence flow with fulfilled condition or the default (or none if implicit end)
-    findSequenceFlowToTake(element, activating)
+    findSequenceFlowsToTake(element, activating)
         .ifRightOrLeft(
-            optFlow -> {
+            optFlows -> {
               final var activated = stateTransitionBehavior.transitionToActivated(activating);
               final var completing = stateTransitionBehavior.transitionToCompleting(activated);
               stateTransitionBehavior
                   .transitionToCompleted(element, completing)
                   .ifRightOrLeft(
-                      completed ->
-                          optFlow.ifPresent(
-                              flowList ->
-                                  flowList.forEach(
-                                      flow ->
-                                          stateTransitionBehavior.takeSequenceFlow(
-                                              completed, flow))),
+                      completed -> {
+                        if (optFlows != null) {
+                          optFlows.forEach(
+                              flow -> stateTransitionBehavior.takeSequenceFlow(completed, flow));
+                        }
+                      },
                       failure -> incidentBehavior.createIncident(failure, completing));
             },
             failure -> incidentBehavior.createIncident(failure, activating));
@@ -86,19 +84,18 @@ public final class InclusiveGatewayProcessor
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 
-  private Either<Failure, Optional<List<ExecutableSequenceFlow>>> findSequenceFlowToTake(
+  private Either<Failure, List<ExecutableSequenceFlow>> findSequenceFlowsToTake(
       final ExecutableInclusiveGateway element, final BpmnElementContext context) {
     final List<ExecutableSequenceFlow> executableSequenceFlows = new ArrayList<>();
-    final List<ExecutableSequenceFlow> leftSequenceFlows = new ArrayList<>();
     if (element.getOutgoing().isEmpty()) {
       // there are no flows to take: the gateway is an implicit end for the flow scope
-      return Either.right(Optional.empty());
+      return Either.right(null);
     }
 
     if (element.getOutgoing().size() == 1) {
       // only one flow can just be taken
       executableSequenceFlows.add(element.getOutgoing().get(0));
-      return Either.right(Optional.of(executableSequenceFlows));
+      return Either.right(executableSequenceFlows);
     }
 
     for (final ExecutableSequenceFlow sequenceFlow : element.getOutgoingWithCondition()) {
@@ -114,12 +111,12 @@ public final class InclusiveGatewayProcessor
       }
     }
     if (executableSequenceFlows.size() > 0) {
-      return Either.right(Optional.of(executableSequenceFlows));
+      return Either.right(executableSequenceFlows);
     }
     // no condition is fulfilled - try to take the default flow
     if (element.getDefaultFlow() != null) {
       executableSequenceFlows.add(element.getDefaultFlow());
-      return Either.right(Optional.of(executableSequenceFlows));
+      return Either.right(executableSequenceFlows);
     }
 
     return Either.left(

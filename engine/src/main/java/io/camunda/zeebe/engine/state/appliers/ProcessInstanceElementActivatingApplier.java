@@ -194,14 +194,12 @@ final class ProcessInstanceElementActivatingApplier
 
   private void decrementInclusiveGatewayGatewaySequenceFlow(
       final ProcessInstanceRecord value, final ElementInstance flowScopeInstance) {
-    // Inclusive gateways can have more than one incoming sequence flow, we need to decrement the
-    // active sequence flows based on the incoming count.
+    // Currently the inclusive gateway can only have one incoming sequence flow.
 
     final var executableFlowNode =
         processState.getFlowElement(
             value.getProcessDefinitionKey(), value.getElementIdBuffer(), ExecutableFlowNode.class);
-    final var size = executableFlowNode.getIncoming().size();
-    IntStream.range(0, size).forEach(i -> flowScopeInstance.decrementActiveSequenceFlows());
+    flowScopeInstance.decrementActiveSequenceFlows();
     elementInstanceState.updateInstance(flowScopeInstance);
   }
 
