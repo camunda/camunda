@@ -83,6 +83,17 @@ final class AdminApiRequestHandlerTest {
     };
   }
 
+  private static void assertErrorCode(
+      final CompletableFuture<Either<ErrorResponse, AdminResponse>> response,
+      final ErrorCode expectedErrorCode) {
+    assertThat(response)
+        .succeedsWithin(Duration.ofMinutes(1))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode)
+        .isEqualTo(expectedErrorCode);
+  }
+
   @Nested
   @ExtendWith(MockitoExtension.class)
   final class OtherRequest {
@@ -116,13 +127,7 @@ final class AdminApiRequestHandlerTest {
       scheduler.workUntilDone();
 
       // then
-      assertThat(responseFuture)
-          .succeedsWithin(Duration.ofMinutes(1))
-          .matches(Either::isLeft)
-          .matches(Either::isLeft)
-          .extracting(Either::getLeft)
-          .extracting(ErrorResponse::getErrorCode)
-          .isEqualTo(ErrorCode.UNSUPPORTED_MESSAGE);
+      assertErrorCode(responseFuture, ErrorCode.UNSUPPORTED_MESSAGE);
     }
   }
 
@@ -187,12 +192,7 @@ final class AdminApiRequestHandlerTest {
       scheduler.workUntilDone();
 
       // then
-      assertThat(responseFuture)
-          .succeedsWithin(Duration.ofMinutes(1))
-          .matches(Either::isLeft)
-          .extracting(Either::getLeft)
-          .extracting(ErrorResponse::getErrorCode)
-          .isEqualTo(ErrorCode.INTERNAL_ERROR);
+      assertErrorCode(responseFuture, ErrorCode.INTERNAL_ERROR);
     }
   }
 
@@ -253,12 +253,7 @@ final class AdminApiRequestHandlerTest {
       scheduler.workUntilDone();
 
       // then
-      assertThat(responseFuture)
-          .succeedsWithin(Duration.ofMinutes(1))
-          .matches(Either::isLeft)
-          .extracting(Either::getLeft)
-          .extracting(ErrorResponse::getErrorCode)
-          .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH); // no partitions -> no handler subscribed
+      assertErrorCode(responseFuture, ErrorCode.PARTITION_LEADER_MISMATCH);
     }
 
     @Test
@@ -278,12 +273,7 @@ final class AdminApiRequestHandlerTest {
       scheduler.workUntilDone();
 
       // then
-      assertThat(responseFuture)
-          .succeedsWithin(Duration.ofMinutes(1))
-          .matches(Either::isLeft)
-          .extracting(Either::getLeft)
-          .extracting(ErrorResponse::getErrorCode)
-          .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH); // no partitions -> no handler subscribed
+      assertErrorCode(responseFuture, ErrorCode.PARTITION_LEADER_MISMATCH);
     }
   }
 }
