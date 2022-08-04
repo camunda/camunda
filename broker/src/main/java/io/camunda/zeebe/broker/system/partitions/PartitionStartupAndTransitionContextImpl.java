@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -87,6 +88,7 @@ public class PartitionStartupAndTransitionContextImpl
   private Role currentRole;
   private ConcurrencyControl concurrencyControl;
   private InterPartitionCommandReceiverActor interPartitionCommandReceiver;
+  private InterPartitionCommandSender interPartitionCommandSender;
   private final AtomixServerTransport gatewayBrokerTransport;
   private BackupApiRequestHandler backupApiRequestHandler;
 
@@ -221,6 +223,16 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setPartitionCommandReceiver(final InterPartitionCommandReceiverActor receiver) {
     interPartitionCommandReceiver = receiver;
+  }
+
+  @Override
+  public InterPartitionCommandSender getPartitionCommandSender() {
+    return interPartitionCommandSender;
+  }
+
+  @Override
+  public void setPartitionCommandSender(final InterPartitionCommandSender sender) {
+    interPartitionCommandSender = sender;
   }
 
   @Override

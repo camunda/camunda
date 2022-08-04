@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -81,6 +82,10 @@ public interface PartitionTransitionContext extends PartitionContext {
   InterPartitionCommandReceiverActor getPartitionCommandReceiver();
 
   void setPartitionCommandReceiver(InterPartitionCommandReceiverActor receiver);
+
+  InterPartitionCommandSender getPartitionCommandSender();
+
+  void setPartitionCommandSender(InterPartitionCommandSender sender);
 
   boolean shouldExport();
 
