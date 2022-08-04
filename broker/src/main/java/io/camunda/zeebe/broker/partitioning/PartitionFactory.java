@@ -166,7 +166,8 @@ final class PartitionFactory {
               exporterRepository,
               new PartitionProcessingState(owningPartition),
               diskSpaceUsageMonitor,
-              gatewayBrokerTransport);
+              gatewayBrokerTransport,
+              topologyManager);
 
       final PartitionTransition newTransitionBehavior =
           new PartitionTransitionImpl(TRANSITION_STEPS);
