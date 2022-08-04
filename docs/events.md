@@ -28,9 +28,9 @@ According to the spec, there are multiple ways to **forward a trigger**:
 
 When a trigger is forwarded to an event, it has some effect in the process. Depending on the type of event, the event is activated (e.g. start event) or completed (if already active, e.g. non-boundary intermediate event) and the process execution can continue.
 
-In addition, events that had a trigger forwarded can **interrupt** an active flow. The following events are able to interrupt:
-- start event of event sub-processes, i.e. when triggered it terminates the (sub-)process encompassing the event sub-process
-- boundary event, i.e. when triggered it terminates the activity to which it is attached
+In addition, some events that had a trigger forwarded can **interrupt** an active flow. An interrupted active flow is *terminated*. Events will only interrupt the active flow if they are *interrupting*. Events that are *non-interrupting* won't interrupt the active flow. The following events can be *interrupting* or *non-interrupting*, all others are *non-interrupting*:
+- start event of event sub-processes, i.e. when triggered it interrupts the (sub-)process encompassing the event sub-process
+- boundary event, i.e. when triggered it interrupts the activity to which it is attached
 
 See [BPMN (v2.0.2): 10.5.1 Concepts](https://www.omg.org/spec/BPMN/2.0.2/PDF#10.5.1%20Concepts) for more details about triggers.
 
