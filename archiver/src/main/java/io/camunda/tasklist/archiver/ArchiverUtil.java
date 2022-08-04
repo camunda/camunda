@@ -12,9 +12,9 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_SLICES;
 
 import io.camunda.tasklist.Metrics;
-import io.camunda.tasklist.archiver.util.Either;
 import io.camunda.tasklist.exceptions.ArchiverException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.micrometer.core.instrument.Timer;
 import java.util.List;

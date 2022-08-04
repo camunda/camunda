@@ -6,8 +6,8 @@
  */
 package io.camunda.tasklist.archiver;
 
-import io.camunda.tasklist.archiver.util.BackoffIdleStrategy;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.util.BackoffIdleStrategy;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.time.Instant;
 import java.util.Date;

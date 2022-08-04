@@ -16,11 +16,11 @@ import static org.elasticsearch.search.aggregations.PipelineAggregatorBuilders.b
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.tasklist.Metrics;
-import io.camunda.tasklist.archiver.util.Either;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
+import io.camunda.tasklist.util.Either;
 import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
 import java.util.Arrays;
