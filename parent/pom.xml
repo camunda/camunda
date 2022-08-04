@@ -40,7 +40,7 @@
     <version.awaitility>4.2.0</version.awaitility>
     <version.bouncycastle>1.70</version.bouncycastle>
     <version.camunda>7.17.0</version.camunda>
-    <version.checkstyle>10.3.1</version.checkstyle>
+    <version.checkstyle>10.3.2</version.checkstyle>
     <version.commons-lang>3.12.0</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
@@ -111,7 +111,7 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.15</version.jnr-posix>
-    <version.zpt>8.0.4</version.zpt>
+    <version.zpt>8.0.5</version.zpt>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
