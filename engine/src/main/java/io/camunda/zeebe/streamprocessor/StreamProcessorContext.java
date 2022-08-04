@@ -50,17 +50,12 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private BooleanSupplier abortCondition;
   private StreamProcessorListener streamProcessorListener = NOOP_LISTENER;
 
-  private int maxFragmentSize;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private ProcessingScheduleService processingScheduleService;
   private MutableLastProcessedPositionState lastProcessedPositionState;
 
   private LogStreamBatchWriter logStreamBatchWriter;
   private CommandResponseWriter commandResponseWriter;
-
-  public StreamProcessorContext() {
-    streamWriterProxy.wrap(logStreamWriter);
-  }
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -153,11 +148,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public LegacyTypedResponseWriterImpl getTypedResponseWriter() {
     return typedResponseWriter;
-  }
-
-  public StreamProcessorContext maxFragmentSize(final int maxFragmentSize) {
-    this.maxFragmentSize = maxFragmentSize;
-    return this;
   }
 
   public StreamProcessorContext eventApplier(final EventApplier eventApplier) {
