@@ -71,7 +71,9 @@ public class AdminApiRequestHandler
     if (partitionAdminAccess.isEmpty()) {
       return CompletableActorFuture.completed(
           Either.left(
-              errorWriter.internalError("Partition %s failed to pause exporting", partitionId)));
+              errorWriter.internalError(
+                  "Partition %s failed to pause exporting. Could not find the partition.",
+                  partitionId)));
     }
 
     final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
