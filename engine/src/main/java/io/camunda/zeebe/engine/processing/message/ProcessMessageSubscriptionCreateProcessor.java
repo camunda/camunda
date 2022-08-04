@@ -41,8 +41,7 @@ public final class ProcessMessageSubscriptionCreateProcessor
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<ProcessMessageSubscriptionRecord> command) {
+  public void processRecord(final TypedRecord<ProcessMessageSubscriptionRecord> command) {
 
     final ProcessMessageSubscriptionRecord subscriptionRecord = command.getValue();
     final ProcessMessageSubscription subscription =

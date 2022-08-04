@@ -73,8 +73,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<ProcessMessageSubscriptionRecord> command) {
+  public void processRecord(final TypedRecord<ProcessMessageSubscriptionRecord> command) {
 
     final var record = command.getValue();
     final var elementInstanceKey = record.getElementInstanceKey();

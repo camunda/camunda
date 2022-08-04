@@ -271,11 +271,8 @@ public final class StreamProcessorTest {
                     new TypedRecordProcessor<>() {
                       @Override
                       public void processRecord(
-                          final TypedRecord<UnifiedRecordValue> record,
-                          final LegacyTypedResponseWriter responseWriter,
-                          final LegacyTypedStreamWriter streamWriter) {
-
-                        streamWriter.appendFollowUpEvent(
+                          final TypedRecord<UnifiedRecordValue> record) {
+                        state.getWriters().state().appendFollowUpEvent(
                             record.getKey(),
                             ProcessInstanceIntent.ELEMENT_ACTIVATING,
                             record.getValue());
@@ -491,11 +488,8 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final TypedRecord<UnifiedRecordValue> record,
-                      final LegacyTypedResponseWriter responseWriter,
-                      final LegacyTypedStreamWriter streamWriter) {
-
-                    responseWriter.writeEventOnCommand(
+                      final TypedRecord<UnifiedRecordValue> record) {
+                    context.getWriters().response().writeEventOnCommand(
                         3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
                   }
                 }));
@@ -530,11 +524,8 @@ public final class StreamProcessorTest {
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
-                      final TypedRecord<UnifiedRecordValue> record,
-                      final LegacyTypedResponseWriter responseWriter,
-                      final LegacyTypedStreamWriter streamWriter) {
-
-                    responseWriter.writeEventOnCommand(
+                      final TypedRecord<UnifiedRecordValue> record) {
+                    context.getWriters().response().writeEventOnCommand(
                         3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
 
                     throw new RuntimeException("expected");
@@ -686,14 +677,14 @@ public final class StreamProcessorTest {
                     new TypedRecordProcessor<>() {
                       @Override
                       public void processRecord(
-                          final TypedRecord<UnifiedRecordValue> record,
-                          final LegacyTypedResponseWriter responseWriter,
-                          final LegacyTypedStreamWriter streamWriter) {
-
-                        streamWriter.appendFollowUpEvent(
-                            record.getKey(),
-                            ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                            record.getValue());
+                          final TypedRecord<UnifiedRecordValue> record) {
+                        state
+                            .getWriters()
+                            .state()
+                            .appendFollowUpEvent(
+                                record.getKey(),
+                                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                                record.getValue());
                       }
                     })
                 .onCommand(

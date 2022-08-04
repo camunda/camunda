@@ -40,8 +40,7 @@ public final class UpdateVariableDocumentProcessor
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<VariableDocumentRecord> record) {
+  public void processRecord(final TypedRecord<VariableDocumentRecord> record) {
     final VariableDocumentRecord value = record.getValue();
 
     final ElementInstance scope = elementInstanceState.getInstance(value.getScopeKey());

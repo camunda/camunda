@@ -35,8 +35,7 @@ public final class CancelTimerProcessor implements TypedRecordProcessor<TimerRec
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<TimerRecord> record) {
+  public void processRecord(final TypedRecord<TimerRecord> record) {
     final TimerRecord timer = record.getValue();
     final TimerInstance timerInstance =
         timerInstanceState.get(timer.getElementInstanceKey(), record.getKey());

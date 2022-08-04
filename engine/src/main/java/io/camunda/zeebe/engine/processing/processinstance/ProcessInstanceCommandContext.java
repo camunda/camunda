@@ -25,7 +25,8 @@ public final class ProcessInstanceCommandContext {
   private ElementInstance elementInstance;
   private final Writers writers;
 
-  public ProcessInstanceCommandContext(final MutableElementInstanceState elementInstanceState, final Writers writers) {
+  public ProcessInstanceCommandContext(
+      final MutableElementInstanceState elementInstanceState, final Writers writers) {
     this.elementInstanceState = elementInstanceState;
     this.writers = writers;
   }

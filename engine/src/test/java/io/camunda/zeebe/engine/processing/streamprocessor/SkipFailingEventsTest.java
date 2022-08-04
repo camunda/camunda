@@ -22,8 +22,8 @@ import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
@@ -59,6 +59,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
@@ -161,9 +162,7 @@ public final class SkipFailingEventsTest {
                   new TypedRecordProcessor<>() {
                     @Override
                     public void processRecord(
-                        final TypedRecord<UnifiedRecordValue> record,
-                        final LegacyTypedResponseWriter responseWriter,
-                        final LegacyTypedStreamWriter streamWriter) {
+                        final TypedRecord<UnifiedRecordValue> record) {
                       throw new NullPointerException();
                     }
                   });
@@ -194,13 +193,14 @@ public final class SkipFailingEventsTest {
   @Test
   public void shouldBlacklistInstance() {
     // given
-    final DumpProcessor dumpProcessor = spy(new DumpProcessor());
+    final AtomicReference<DumpProcessor> dumpProcessorRef = new AtomicReference<>();
     final ErrorProneProcessor processor = new ErrorProneProcessor();
 
     streams.startStreamProcessor(
         STREAM_NAME,
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
+          dumpProcessorRef.set(spy(new DumpProcessor(processingContext.getWriters())));
           zeebeState = processingContext.getZeebeState();
           return TypedRecordProcessors.processors(
                   zeebeState.getKeyGenerator(), processingContext.getWriters())
@@ -209,7 +209,7 @@ public final class SkipFailingEventsTest {
               .onCommand(
                   ValueType.PROCESS_INSTANCE,
                   ProcessInstanceIntent.COMPLETE_ELEMENT,
-                  dumpProcessor);
+                  dumpProcessorRef.get());
         });
 
     streams
@@ -251,8 +251,8 @@ public final class SkipFailingEventsTest {
         new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
     Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isTrue();
 
-    verify(dumpProcessor, times(1)).processRecord(any(), any(), any(), any());
-    assertThat(dumpProcessor.processedInstances).containsExactly(2L);
+    verify(dumpProcessorRef.get(), times(1)).processRecord(any(), any(), any(), any());
+    assertThat(dumpProcessorRef.get().processedInstances).containsExactly(2L);
   }
 
   @Test
@@ -295,7 +295,7 @@ public final class SkipFailingEventsTest {
               .onCommand(
                   ValueType.PROCESS_INSTANCE,
                   ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                  new DumpProcessor());
+                  new DumpProcessor(processingContext.getWriters()));
         });
 
     // when
@@ -314,29 +314,12 @@ public final class SkipFailingEventsTest {
     // given
     when(commandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     final List<Long> processedInstances = new ArrayList<>();
-    final TypedRecordProcessor<JobRecord> dumpProcessor =
-        spy(
-            new TypedRecordProcessor<>() {
-              @Override
-              public void processRecord(
-                  final TypedRecord<JobRecord> record,
-                  final LegacyTypedResponseWriter responseWriter,
-                  final LegacyTypedStreamWriter streamWriter) {
-                processedInstances.add(record.getValue().getProcessInstanceKey());
-                final var processInstanceKey = (int) record.getValue().getProcessInstanceKey();
-                streamWriter.appendFollowUpCommand(
-                    record.getKey(),
-                    ProcessInstanceIntent.COMPLETE_ELEMENT,
-                    Records.processInstance(processInstanceKey));
-              }
-            });
+    final AtomicReference<TypedRecordProcessor<JobRecord>> dumpProcessorRef = new AtomicReference<>();
+
     final TypedRecordProcessor<JobRecord> errorProneProcessor =
         new TypedRecordProcessor<>() {
           @Override
-          public void processRecord(
-              final TypedRecord<JobRecord> record,
-              final LegacyTypedResponseWriter responseWriter,
-              final LegacyTypedStreamWriter streamWriter) {
+          public void processRecord(final TypedRecord<JobRecord> record) {
             throw new RuntimeException("expected");
           }
         };
@@ -346,10 +329,24 @@ public final class SkipFailingEventsTest {
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
+          dumpProcessorRef.set(spy(
+              new TypedRecordProcessor<>() {
+                @Override
+                public void processRecord(
+                    final TypedRecord<JobRecord> record) {
+                  processedInstances.add(record.getValue().getProcessInstanceKey());
+                  final var processInstanceKey = (int) record.getValue().getProcessInstanceKey();
+                  processingContext.getWriters().command().appendFollowUpCommand(
+                      record.getKey(),
+                      ProcessInstanceIntent.COMPLETE_ELEMENT,
+                      Records.processInstance(processInstanceKey));
+                }
+              }));
+
           return TypedRecordProcessors.processors(
                   zeebeState.getKeyGenerator(), processingContext.getWriters())
               .onCommand(ValueType.JOB, JobIntent.COMPLETE, errorProneProcessor)
-              .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, dumpProcessor);
+              .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, dumpProcessorRef.get());
         });
 
     streams
@@ -389,7 +386,7 @@ public final class SkipFailingEventsTest {
         new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
     Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isFalse();
 
-    verify(dumpProcessor, timeout(1000).times(2)).processRecord(any(), any(), any(), any());
+    verify(dumpProcessorRef.get(), timeout(1000).times(2)).processRecord(any(), any(), any(), any());
     assertThat(processedInstances).containsExactly(1L, 2L);
   }
 
@@ -398,23 +395,7 @@ public final class SkipFailingEventsTest {
     // given
     when(commandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     final List<Long> processedInstances = new ArrayList<>();
-    final TypedRecordProcessor<DeploymentRecord> errorProneProcessor =
-        new TypedRecordProcessor<>() {
-          @Override
-          public void processRecord(
-              final TypedRecord<DeploymentRecord> record,
-              final LegacyTypedResponseWriter responseWriter,
-              final LegacyTypedStreamWriter streamWriter) {
-            if (record.getKey() == 0) {
-              throw new RuntimeException("expected");
-            }
-            processedInstances.add(TimerInstance.NO_ELEMENT_INSTANCE);
-            streamWriter.appendFollowUpEvent(
-                record.getKey(),
-                TimerIntent.CREATED,
-                Records.timer(TimerInstance.NO_ELEMENT_INSTANCE));
-          }
-        };
+
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -435,7 +416,25 @@ public final class SkipFailingEventsTest {
           zeebeState = processingContext.getZeebeState();
           return TypedRecordProcessors.processors(
                   zeebeState.getKeyGenerator(), processingContext.getWriters())
-              .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, errorProneProcessor);
+              .onCommand(
+                  ValueType.DEPLOYMENT,
+                  DeploymentIntent.CREATE,
+                  new TypedRecordProcessor<DeploymentRecord>() {
+                    @Override
+                    public void processRecord(final TypedRecord<DeploymentRecord> record) {
+                      if (record.getKey() == 0) {
+                        throw new RuntimeException("expected");
+                      }
+                      processedInstances.add(TimerInstance.NO_ELEMENT_INSTANCE);
+                      processingContext
+                          .getWriters()
+                          .state()
+                          .appendFollowUpEvent(
+                              record.getKey(),
+                              TimerIntent.CREATED,
+                              Records.timer(TimerInstance.NO_ELEMENT_INSTANCE));
+                    }
+                  });
         });
 
     streams
@@ -477,10 +476,7 @@ public final class SkipFailingEventsTest {
     public final AtomicLong processCount = new AtomicLong(0);
 
     @Override
-    public void processRecord(
-        final TypedRecord<ProcessInstanceRecord> record,
-        final LegacyTypedResponseWriter responseWriter,
-        final LegacyTypedStreamWriter streamWriter) {
+    public void processRecord(final TypedRecord<ProcessInstanceRecord> record) {
       processCount.incrementAndGet();
       throw new RuntimeException("expected");
     }
@@ -492,14 +488,17 @@ public final class SkipFailingEventsTest {
 
   protected static class DumpProcessor implements TypedRecordProcessor<ProcessInstanceRecord> {
     final List<Long> processedInstances = new ArrayList<>();
+    private final StateWriter stateWriter;
+
+    public DumpProcessor(final Writers writers) {
+      stateWriter = writers.state();
+    }
 
     @Override
     public void processRecord(
-        final TypedRecord<ProcessInstanceRecord> record,
-        final LegacyTypedResponseWriter responseWriter,
-        final LegacyTypedStreamWriter streamWriter) {
+        final TypedRecord<ProcessInstanceRecord> record) {
       processedInstances.add(record.getValue().getProcessInstanceKey());
-      streamWriter.appendFollowUpEvent(
+      stateWriter.appendFollowUpEvent(
           record.getKey(), ProcessInstanceIntent.ELEMENT_COMPLETED, record.getValue());
     }
   }

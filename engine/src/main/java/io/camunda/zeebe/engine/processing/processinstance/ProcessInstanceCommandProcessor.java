@@ -22,21 +22,20 @@ public final class ProcessInstanceCommandProcessor
   private final ElementInstanceState elementInstanceState;
   private final ProcessInstanceCommandContext context;
 
-  public ProcessInstanceCommandProcessor(final Writers writers, final MutableElementInstanceState elementInstanceState) {
+  public ProcessInstanceCommandProcessor(
+      final Writers writers, final MutableElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
     commandHandlers = new ProcessInstanceCommandHandlers();
     context = new ProcessInstanceCommandContext(elementInstanceState, writers);
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<ProcessInstanceRecord> record) {
+  public void processRecord(final TypedRecord<ProcessInstanceRecord> record) {
     populateCommandContext(record);
     commandHandlers.handle(context);
   }
 
-  private void populateCommandContext(
-      final TypedRecord<ProcessInstanceRecord> record) {
+  private void populateCommandContext(final TypedRecord<ProcessInstanceRecord> record) {
     context.setRecord(record);
 
     final ElementInstance elementInstance = elementInstanceState.getInstance(record.getKey());

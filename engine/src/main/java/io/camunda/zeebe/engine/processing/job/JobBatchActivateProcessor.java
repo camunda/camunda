@@ -57,8 +57,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<JobBatchRecord> record) {
+  public void processRecord(final TypedRecord<JobBatchRecord> record) {
     final JobBatchRecord value = record.getValue();
     if (isValid(value)) {
       activateJobs(record);
