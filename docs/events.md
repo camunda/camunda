@@ -13,11 +13,13 @@ and two different flavors of events:
 - **catch events**, i.e. events that catch a trigger
 - **throw events**, i.e. events that throw a trigger (sometimes referred to as a result)
 
+See [BPMN (v2.0.2): 10.5 Events](https://www.omg.org/spec/BPMN/2.0.2/PDF#10.5%20Events) for more details about events.
+
 ## Triggers
 
 So events represent where in the process "something" can happen. This "something" is called a **trigger**. When a *trigger occurs*, the engine *forwards the trigger* to the catch event. The spec also refers to this as *triggering the catch event*.
 
-There are multiple ways to **forward a trigger**:
+According to the spec, there are multiple ways to **forward a trigger**:
 - publication, e.g. when a message is published it can be correlated to an event
 - direct resolution, e.g. timer triggers are implicitly thrown
 - propagation, i.e. forwarded from the location where the event has been thrown to the innermost enclosing scope instance (we'll discuss scopes later) with an attached event able to catch the trigger, e.g. throwing and catching a bpmn error
@@ -28,12 +30,18 @@ When triggered, events can **interrupt** an active flow. The following events ar
 - start event of event sub-processes, i.e. when triggered it terminates the (sub-)process encompassing the event sub-process
 - boundary event, i.e. when triggered it terminates the activity to which it is attached
 
+See [BPMN (v2.0.2): 10.5.1 Concepts](https://www.omg.org/spec/BPMN/2.0.2/PDF#10.5.1%20Concepts) for more details about triggers.
+
+See [BPMN (v2.0.2): 10.5.6 Handling Events](https://www.omg.org/spec/BPMN/2.0.2/PDF#10.5.6%20Handling%20Events) for more details on what should happen when a trigger occurs.
+
 ## Scopes
 
 **Scopes** are used to define the semantics of:
 - visibility of data, i.e. an activity's visibility of process variables
 - event resolution, e.g. error propagation through the enclosing scopes
 - starting/stopping of token execution
+
+See [BPMN (v2.0.2): 10.5.7 Scopes](https://www.omg.org/spec/BPMN/2.0.2/PDF#10.5.7%20Scopes) for more details about scopes.
 
 In Zeebe, we refer to scopes in multiple forms:
 - **flow scopes**, i.e. the element encompassing a specific element, aka parent-child relation; e.g. a sub-process is the flow scope of a service task when it directly encompasses this service task. Note, sometimes the indirect encompassing element (non-parent ancestor) is also referred to as flow scope.
