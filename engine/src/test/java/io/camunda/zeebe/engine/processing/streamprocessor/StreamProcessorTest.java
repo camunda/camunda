@@ -139,8 +139,7 @@ public final class StreamProcessorTest {
             ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1));
 
     // then
-    verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(eq(position), any(), any());
+    verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(eq(position), any(), any());
 
     verifyNoMoreInteractions(typedRecordProcessor);
 
@@ -180,8 +179,7 @@ public final class StreamProcessorTest {
             ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
-    verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(eq(position), any(), any());
+    verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(eq(position), any(), any());
 
     verifyNoMoreInteractions(typedRecordProcessor);
   }
@@ -206,8 +204,7 @@ public final class StreamProcessorTest {
             ProcessInstanceIntent.TERMINATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
-    verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(eq(firstPosition), any(), any());
+    verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(eq(firstPosition), any(), any());
 
     verifyNoMoreInteractions(typedRecordProcessor);
   }
@@ -242,12 +239,8 @@ public final class StreamProcessorTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT)
-        .processRecord(eq(commandPosition), any(), any());
-    inOrder
-        .verify(typedRecordProcessor, never())
-        .processRecord(eq(eventPosition), any(), any());
+    inOrder.verify(typedRecordProcessor, TIMEOUT).processRecord(eq(commandPosition), any(), any());
+    inOrder.verify(typedRecordProcessor, never()).processRecord(eq(eventPosition), any(), any());
     inOrder
         .verify(typedRecordProcessor, never())
         .processRecord(eq(rejectionPosition), any(), any());
@@ -268,12 +261,14 @@ public final class StreamProcessorTest {
                     ProcessInstanceIntent.ACTIVATE_ELEMENT,
                     new TypedRecordProcessor<>() {
                       @Override
-                      public void processRecord(
-                          final TypedRecord<UnifiedRecordValue> record) {
-                        state.getWriters().state().appendFollowUpEvent(
-                            record.getKey(),
-                            ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                            record.getValue());
+                      public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
+                        state
+                            .getWriters()
+                            .state()
+                            .appendFollowUpEvent(
+                                record.getKey(),
+                                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                                record.getValue());
                       }
                     }));
 
@@ -479,10 +474,12 @@ public final class StreamProcessorTest {
                 ProcessInstanceIntent.ACTIVATE_ELEMENT,
                 new TypedRecordProcessor<>() {
                   @Override
-                  public void processRecord(
-                      final TypedRecord<UnifiedRecordValue> record) {
-                    context.getWriters().response().writeEventOnCommand(
-                        3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
+                  public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
+                    context
+                        .getWriters()
+                        .response()
+                        .writeEventOnCommand(
+                            3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
                   }
                 }));
 
@@ -515,10 +512,12 @@ public final class StreamProcessorTest {
                 ProcessInstanceIntent.ACTIVATE_ELEMENT,
                 new TypedRecordProcessor<>() {
                   @Override
-                  public void processRecord(
-                      final TypedRecord<UnifiedRecordValue> record) {
-                    context.getWriters().response().writeEventOnCommand(
-                        3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
+                  public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
+                    context
+                        .getWriters()
+                        .response()
+                        .writeEventOnCommand(
+                            3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
 
                     throw new RuntimeException("expected");
                   }
@@ -668,8 +667,7 @@ public final class StreamProcessorTest {
                     ProcessInstanceIntent.ACTIVATE_ELEMENT,
                     new TypedRecordProcessor<>() {
                       @Override
-                      public void processRecord(
-                          final TypedRecord<UnifiedRecordValue> record) {
+                      public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
                         state
                             .getWriters()
                             .state()

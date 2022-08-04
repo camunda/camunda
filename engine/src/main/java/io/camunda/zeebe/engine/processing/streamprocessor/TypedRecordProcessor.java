@@ -25,8 +25,7 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
    * @see #processRecord(TypedRecord, Consumer)
    */
   default void processRecord(
-      final TypedRecord<T> record,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<T> record, final Consumer<SideEffectProducer> sideEffect) {
     processRecord(record);
   }
 
@@ -34,9 +33,9 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
    * @param position the position of the current record to process
    * @param record the record to process
    * @param sideEffect consumer to replace the default side effect (response writer). Can be used to
-   * implement other types of side effects or composite side effects. If a composite side effect
-   * involving the response writer is used, {@link LegacyTypedResponseWriter#flush()} must be called
-   * in the {@link SideEffectProducer} implementation.
+   *     implement other types of side effects or composite side effects. If a composite side effect
+   *     involving the response writer is used, {@link LegacyTypedResponseWriter#flush()} must be
+   *     called in the {@link SideEffectProducer} implementation.
    */
   default void processRecord(
       final long position,

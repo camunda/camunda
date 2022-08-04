@@ -92,8 +92,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
   @Override
   public void processRecord(
-      final TypedRecord<DeploymentRecord> command,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<DeploymentRecord> command, final Consumer<SideEffectProducer> sideEffect) {
 
     sideEffect.accept(sideEffects);
 
@@ -133,8 +132,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   }
 
   private void createTimerIfTimerStartEvent(
-      final TypedRecord<DeploymentRecord> record,
-      final SideEffects sideEffects) {
+      final TypedRecord<DeploymentRecord> record, final SideEffects sideEffects) {
     for (final ProcessMetadata processMetadata : record.getValue().processesMetadata()) {
       if (!processMetadata.isDuplicate()) {
         final List<ExecutableStartEvent> startEvents =
@@ -173,16 +171,13 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     }
   }
 
-  private void unsubscribeFromPreviousTimers(
-      final ProcessMetadata processRecord) {
+  private void unsubscribeFromPreviousTimers(final ProcessMetadata processRecord) {
     timerInstanceState.forEachTimerForElementInstance(
-        NO_ELEMENT_INSTANCE,
-        timer -> unsubscribeFromPreviousTimer(processRecord, timer));
+        NO_ELEMENT_INSTANCE, timer -> unsubscribeFromPreviousTimer(processRecord, timer));
   }
 
   private void unsubscribeFromPreviousTimer(
-      final ProcessMetadata processMetadata,
-      final TimerInstance timer) {
+      final ProcessMetadata processMetadata, final TimerInstance timer) {
     final DirectBuffer timerBpmnId =
         processState.getProcessByKey(timer.getProcessDefinitionKey()).getBpmnProcessId();
 

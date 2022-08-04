@@ -66,8 +66,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
   @Override
   public void processRecord(
-      final TypedRecord<IncidentRecord> command,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<IncidentRecord> command, final Consumer<SideEffectProducer> sideEffect) {
     final long key = command.getKey();
 
     final var incident = incidentState.getIncidentRecord(key);
@@ -109,8 +108,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
             failedCommand -> {
               sideEffects.clear();
 
-              bpmnStreamProcessor.processRecord(
-                  failedCommand, sideEffects::add);
+              bpmnStreamProcessor.processRecord(failedCommand, sideEffects::add);
 
               sideEffect.accept(sideEffects);
             },

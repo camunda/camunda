@@ -84,8 +84,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
 
   @Override
   public void processRecord(
-      final TypedRecord<TimerRecord> record,
-      final Consumer<SideEffectProducer> sideEffects) {
+      final TypedRecord<TimerRecord> record, final Consumer<SideEffectProducer> sideEffects) {
     final var timer = record.getValue();
     final var elementInstanceKey = timer.getElementInstanceKey();
     final var processDefinitionKey = timer.getProcessDefinitionKey();

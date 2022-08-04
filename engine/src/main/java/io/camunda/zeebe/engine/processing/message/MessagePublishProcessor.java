@@ -76,8 +76,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
   @Override
   public void processRecord(
-      final TypedRecord<MessageRecord> command,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<MessageRecord> command, final Consumer<SideEffectProducer> sideEffect) {
     messageRecord = command.getValue();
 
     correlatingSubscriptions.clear();
@@ -100,8 +99,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   }
 
   private void handleNewMessage(
-      final TypedRecord<MessageRecord> command,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<MessageRecord> command, final Consumer<SideEffectProducer> sideEffect) {
     messageKey = keyGenerator.nextKey();
 
     // calculate the deadline based on the command's timestamp

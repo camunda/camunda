@@ -161,8 +161,7 @@ public final class SkipFailingEventsTest {
                   ProcessInstanceIntent.ACTIVATE_ELEMENT,
                   new TypedRecordProcessor<>() {
                     @Override
-                    public void processRecord(
-                        final TypedRecord<UnifiedRecordValue> record) {
+                    public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
                       throw new NullPointerException();
                     }
                   });
@@ -314,7 +313,8 @@ public final class SkipFailingEventsTest {
     // given
     when(commandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     final List<Long> processedInstances = new ArrayList<>();
-    final AtomicReference<TypedRecordProcessor<JobRecord>> dumpProcessorRef = new AtomicReference<>();
+    final AtomicReference<TypedRecordProcessor<JobRecord>> dumpProcessorRef =
+        new AtomicReference<>();
 
     final TypedRecordProcessor<JobRecord> errorProneProcessor =
         new TypedRecordProcessor<>() {
@@ -329,19 +329,23 @@ public final class SkipFailingEventsTest {
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
-          dumpProcessorRef.set(spy(
-              new TypedRecordProcessor<>() {
-                @Override
-                public void processRecord(
-                    final TypedRecord<JobRecord> record) {
-                  processedInstances.add(record.getValue().getProcessInstanceKey());
-                  final var processInstanceKey = (int) record.getValue().getProcessInstanceKey();
-                  processingContext.getWriters().command().appendFollowUpCommand(
-                      record.getKey(),
-                      ProcessInstanceIntent.COMPLETE_ELEMENT,
-                      Records.processInstance(processInstanceKey));
-                }
-              }));
+          dumpProcessorRef.set(
+              spy(
+                  new TypedRecordProcessor<>() {
+                    @Override
+                    public void processRecord(final TypedRecord<JobRecord> record) {
+                      processedInstances.add(record.getValue().getProcessInstanceKey());
+                      final var processInstanceKey =
+                          (int) record.getValue().getProcessInstanceKey();
+                      processingContext
+                          .getWriters()
+                          .command()
+                          .appendFollowUpCommand(
+                              record.getKey(),
+                              ProcessInstanceIntent.COMPLETE_ELEMENT,
+                              Records.processInstance(processInstanceKey));
+                    }
+                  }));
 
           return TypedRecordProcessors.processors(
                   zeebeState.getKeyGenerator(), processingContext.getWriters())
@@ -495,8 +499,7 @@ public final class SkipFailingEventsTest {
     }
 
     @Override
-    public void processRecord(
-        final TypedRecord<ProcessInstanceRecord> record) {
+    public void processRecord(final TypedRecord<ProcessInstanceRecord> record) {
       processedInstances.add(record.getValue().getProcessInstanceKey());
       stateWriter.appendFollowUpEvent(
           record.getKey(), ProcessInstanceIntent.ELEMENT_COMPLETED, record.getValue());

@@ -69,8 +69,7 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
 
   @Override
   public void processRecord(
-      final TypedRecord<T> command,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<T> command, final Consumer<SideEffectProducer> sideEffect) {
 
     entityKey = command.getKey();
 

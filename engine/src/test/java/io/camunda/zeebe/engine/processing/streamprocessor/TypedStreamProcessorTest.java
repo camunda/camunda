@@ -201,8 +201,7 @@ public final class TypedStreamProcessorTest {
     }
 
     @Override
-    public void processRecord(
-        final TypedRecord<DeploymentRecord> record) {
+    public void processRecord(final TypedRecord<DeploymentRecord> record) {
       if (record.getKey() == 0) {
         throw new RuntimeException("expected");
       }
@@ -221,8 +220,7 @@ public final class TypedStreamProcessorTest {
     }
 
     @Override
-    public void processRecord(
-        final TypedRecord<DeploymentRecord> record) {
+    public void processRecord(final TypedRecord<DeploymentRecord> record) {
       stateWriter.appendFollowUpEvent(
           keyGenerator.nextKey(), DeploymentIntent.CREATED, record.getValue());
     }
