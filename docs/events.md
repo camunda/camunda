@@ -26,7 +26,9 @@ According to the spec, there are multiple ways to **forward a trigger**:
 - cancellation, e.g. a termination of the process instance
 - compensation, not yet available in zeebe
 
-When triggered, events can **interrupt** an active flow. The following events are able to interrupt:
+When a trigger is forwarded to an event, it has some effect in the process. Depending on the type of event, the event is activated (e.g. start event) or completed (if already active, e.g. non-boundary intermediate event) and the process execution can continue.
+
+In addition, events that had a trigger forwarded can **interrupt** an active flow. The following events are able to interrupt:
 - start event of event sub-processes, i.e. when triggered it terminates the (sub-)process encompassing the event sub-process
 - boundary event, i.e. when triggered it terminates the activity to which it is attached
 
