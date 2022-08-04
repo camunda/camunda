@@ -42,7 +42,7 @@
     <version.jackson>2.13.3</version.jackson>
     <version.auth0>1.9.2</version.auth0>
     <version.auth0.jwt>4.0.0</version.auth0.jwt>
-    <version.gson>2.9.0</version.gson>
+    <version.gson>2.9.1</version.gson>
     <version.node>v16.15.1</version.node>
     <version.yarn>v1.22.10</version.yarn>
 
