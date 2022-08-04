@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.transport.commandapi;
 
 import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder.TEMPLATE_ID;
 
-import io.camunda.zeebe.broker.transport.ApiRequestHandler.RequestReader;
+import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.RequestReaderException;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;

@@ -11,8 +11,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.broker.transport.ApiRequestHandler.RequestReader;
-import io.camunda.zeebe.broker.transport.ApiRequestHandler.ResponseWriter;
+import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
+import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import io.camunda.zeebe.transport.ServerOutput;
