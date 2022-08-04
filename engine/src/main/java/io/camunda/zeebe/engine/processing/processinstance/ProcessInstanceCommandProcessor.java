@@ -9,8 +9,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -32,20 +30,14 @@ public final class ProcessInstanceCommandProcessor
 
   @Override
   public void processRecord(
-      final TypedRecord<ProcessInstanceRecord> record,
-      final LegacyTypedResponseWriter responseWriter,
-      final LegacyTypedStreamWriter streamWriter) {
-    populateCommandContext(record, responseWriter, streamWriter);
+      final TypedRecord<ProcessInstanceRecord> record) {
+    populateCommandContext(record);
     commandHandlers.handle(context);
   }
 
   private void populateCommandContext(
-      final TypedRecord<ProcessInstanceRecord> record,
-      final LegacyTypedResponseWriter responseWriter,
-      final LegacyTypedStreamWriter streamWriter) {
+      final TypedRecord<ProcessInstanceRecord> record) {
     context.setRecord(record);
-    context.setResponseWriter(responseWriter);
-    context.setStreamWriter(streamWriter);
 
     final ElementInstance elementInstance = elementInstanceState.getInstance(record.getKey());
     context.setElementInstance(elementInstance);
