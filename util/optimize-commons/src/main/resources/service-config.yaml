@@ -478,6 +478,11 @@ digest:
   # cron expression to define when enabled email digests are to be sent
   cronTrigger: "0 0 9 * * MON"
 
+entity:
+  # which users are authorized to create/edit/delete Optimize entities outside of a collection.
+  # Available options: 'all', 'superuser', 'none'
+  authorizedEditors: 'all'
+
 export:
   csv:
     # which users are authorized to download CSVs. Available options: 'all', 'superuser', 'none'

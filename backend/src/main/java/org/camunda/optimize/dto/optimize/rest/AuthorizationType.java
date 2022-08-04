@@ -8,9 +8,14 @@ package org.camunda.optimize.dto.optimize.rest;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum AuthorizationType {
+  // Users with this authorization are permitted to configure telemetry settings
   TELEMETRY("telemetry_administration"),
+  // Users with this authorization are permitted to import and export entities as JSON
   IMPORT_EXPORT("import_export"),
-  CSV_EXPORT("csv_export");
+  // Users with this authorization are permitted to export data as CSV
+  CSV_EXPORT("csv_export"),
+  // Users with this authorization are permitted to create/edit/delete entities outside a collection
+  ENTITY_EDITOR("entity_editor");
 
   private final String id;
 

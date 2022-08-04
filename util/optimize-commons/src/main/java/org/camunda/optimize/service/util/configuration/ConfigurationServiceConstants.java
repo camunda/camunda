@@ -99,6 +99,8 @@ public class ConfigurationServiceConstants {
 
   public static final String CONTAINER_ACCESS_URL = "$.container.accessUrl";
 
+  public static final String ENTITY_CONFIGURATION = "$.entity";
+
   public static final String CSV_CONFIGURATION = "$.export.csv";
   public static final String EXPORT_CSV_DELIMITER = "$.export.csv.delimiter";
 

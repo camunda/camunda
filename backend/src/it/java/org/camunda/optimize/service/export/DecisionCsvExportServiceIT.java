@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
-import org.camunda.optimize.service.util.configuration.CsvConfiguration;
+import org.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.util.FileReaderUtil;
@@ -39,7 +39,7 @@ public class DecisionCsvExportServiceIT extends AbstractIT {
     // given
     embeddedOptimizeExtension.getConfigurationService()
       .getCsvConfiguration()
-      .setAuthorizedUserType(CsvConfiguration.AuthorizedUserType.valueOf(authorizationType));
+      .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
     embeddedOptimizeExtension.reloadConfiguration();
     final String reportId = reportClient.createEmptySingleDecisionReport();
 
@@ -58,7 +58,7 @@ public class DecisionCsvExportServiceIT extends AbstractIT {
       .setSuperUserIds(Collections.singletonList(DEFAULT_USERNAME));
     embeddedOptimizeExtension.getConfigurationService()
       .getCsvConfiguration()
-      .setAuthorizedUserType(CsvConfiguration.AuthorizedUserType.NONE);
+      .setAuthorizedUserType(AuthorizedUserType.NONE);
     embeddedOptimizeExtension.reloadConfiguration();
     final String reportId = reportClient.createEmptySingleDecisionReport();
 
@@ -78,7 +78,7 @@ public class DecisionCsvExportServiceIT extends AbstractIT {
       .setSuperUserIds(Collections.singletonList(DEFAULT_USERNAME));
     embeddedOptimizeExtension.getConfigurationService()
       .getCsvConfiguration()
-      .setAuthorizedUserType(CsvConfiguration.AuthorizedUserType.valueOf(authorizationType));
+      .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
     embeddedOptimizeExtension.reloadConfiguration();
     DecisionDefinitionEngineDto decisionDefinitionEngineDto =
       engineIntegrationExtension.deployAndStartDecisionDefinition();

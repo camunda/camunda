@@ -181,6 +181,8 @@ public class ConfigurationService {
 
   private String digestCronTrigger;
 
+  private EntityConfiguration entityConfiguration;
+
   private CsvConfiguration csvConfiguration;
 
   private Properties quartzProperties;
@@ -974,6 +976,16 @@ public class ConfigurationService {
       digestCronTrigger = configJsonContext.read(ConfigurationServiceConstants.DIGEST_CRON_TRIGGER, String.class);
     }
     return digestCronTrigger;
+  }
+
+  public EntityConfiguration getEntityConfiguration() {
+    if (entityConfiguration == null) {
+      entityConfiguration = configJsonContext.read(
+        ConfigurationServiceConstants.ENTITY_CONFIGURATION,
+        EntityConfiguration.class
+      );
+    }
+    return entityConfiguration;
   }
 
   public CsvConfiguration getCsvConfiguration() {

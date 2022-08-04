@@ -10,13 +10,9 @@ import lombok.Data;
 import org.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
 
 @Data
-public class CsvConfiguration {
+public class EntityConfiguration {
 
-  @JsonProperty("limit")
-  private Integer exportCsvLimit;
-  @JsonProperty("delimiter")
-  private Character exportCsvDelimiter;
-  @JsonProperty("authorizedUsers")
+  @JsonProperty("authorizedEditors")
   private AuthorizedUserType authorizedUserType;
 
 }

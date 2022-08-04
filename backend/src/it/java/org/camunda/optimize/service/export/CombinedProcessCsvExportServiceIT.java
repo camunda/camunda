@@ -15,6 +15,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.service.util.configuration.CsvConfiguration;
+import org.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,7 +45,7 @@ public class CombinedProcessCsvExportServiceIT extends AbstractIT {
     // given
     embeddedOptimizeExtension.getConfigurationService()
       .getCsvConfiguration()
-      .setAuthorizedUserType(CsvConfiguration.AuthorizedUserType.valueOf(authorizationType));
+      .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
     embeddedOptimizeExtension.reloadConfiguration();
     final String reportId = reportClient.createEmptyCombinedReport(null);
 
@@ -63,7 +64,7 @@ public class CombinedProcessCsvExportServiceIT extends AbstractIT {
       .setSuperUserIds(Collections.singletonList(DEFAULT_USERNAME));
     embeddedOptimizeExtension.getConfigurationService()
       .getCsvConfiguration()
-      .setAuthorizedUserType(CsvConfiguration.AuthorizedUserType.NONE);
+      .setAuthorizedUserType(AuthorizedUserType.NONE);
     embeddedOptimizeExtension.reloadConfiguration();
     final String reportId = reportClient.createEmptyCombinedReport(null);
 
@@ -83,7 +84,7 @@ public class CombinedProcessCsvExportServiceIT extends AbstractIT {
       .setSuperUserIds(Collections.singletonList(DEFAULT_USERNAME));
     embeddedOptimizeExtension.getConfigurationService()
       .getCsvConfiguration()
-      .setAuthorizedUserType(CsvConfiguration.AuthorizedUserType.valueOf(authorizationType));
+      .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
     embeddedOptimizeExtension.reloadConfiguration();
 
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();

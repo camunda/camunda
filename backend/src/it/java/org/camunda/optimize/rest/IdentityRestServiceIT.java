@@ -11,12 +11,11 @@ import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.UserResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.providers.GenericExceptionMapper;
-import org.camunda.optimize.service.identity.AbstractIdentityService;
+import org.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.util.SuperUserType;
@@ -25,17 +24,21 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
 
 import javax.ws.rs.core.Response;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.rest.AuthorizationType.CSV_EXPORT;
+import static org.camunda.optimize.dto.optimize.rest.AuthorizationType.ENTITY_EDITOR;
+import static org.camunda.optimize.dto.optimize.rest.AuthorizationType.IMPORT_EXPORT;
+import static org.camunda.optimize.dto.optimize.rest.AuthorizationType.TELEMETRY;
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
@@ -408,7 +411,85 @@ public class IdentityRestServiceIT extends AbstractIT {
         DEFAULT_FIRSTNAME,
         DEFAULT_LASTNAME,
         KERMIT_USER + DEFAULT_EMAIL_DOMAIN
-      ), AbstractIdentityService.getDefaultUserAuthorizations());
+      ), List.of(CSV_EXPORT, ENTITY_EDITOR));
+    assertThat(currentUserDto).isEqualTo(expectedUser);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"SUPERUSER", "NONE"})
+  public void getCurrentUserIdentityForReadOnlyUser(final String authorizationType) {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    embeddedOptimizeExtension.getConfigurationService()
+      .getEntityConfiguration()
+      .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    // when
+    final UserResponseDto currentUserDto = identityClient.getCurrentUserIdentity(KERMIT_USER, KERMIT_USER);
+
+    // then
+    final UserResponseDto expectedUser = new UserResponseDto(
+      new UserDto(
+        KERMIT_USER,
+        DEFAULT_FIRSTNAME,
+        DEFAULT_LASTNAME,
+        KERMIT_USER + DEFAULT_EMAIL_DOMAIN
+      ), List.of(CSV_EXPORT));
+    assertThat(currentUserDto).isEqualTo(expectedUser);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"SUPERUSER", "ALL"})
+  public void getCurrentUserIdentityForSuperUserWithEditAuthorization(final String authorizationType) {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    embeddedOptimizeExtension.getConfigurationService()
+      .getAuthConfiguration()
+      .setSuperUserIds(Collections.singletonList(KERMIT_USER));
+    embeddedOptimizeExtension.getConfigurationService()
+      .getEntityConfiguration()
+      .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    // when
+    final UserResponseDto currentUserDto = identityClient.getCurrentUserIdentity(KERMIT_USER, KERMIT_USER);
+
+    // then
+    final UserResponseDto expectedUser = new UserResponseDto(
+      new UserDto(
+        KERMIT_USER,
+        DEFAULT_FIRSTNAME,
+        DEFAULT_LASTNAME,
+        KERMIT_USER + DEFAULT_EMAIL_DOMAIN
+      ), List.of(TELEMETRY, IMPORT_EXPORT, CSV_EXPORT, ENTITY_EDITOR));
+
+    assertThat(currentUserDto).isEqualTo(expectedUser);
+  }
+
+  @Test
+  public void getCurrentUserIdentityForSuperUserWithReadOnlyAuthorization() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    embeddedOptimizeExtension.getConfigurationService()
+      .getAuthConfiguration()
+      .setSuperUserIds(Collections.singletonList(KERMIT_USER));
+    embeddedOptimizeExtension.getConfigurationService()
+      .getEntityConfiguration()
+      .setAuthorizedUserType(AuthorizedUserType.NONE);
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    // when
+    final UserResponseDto currentUserDto = identityClient.getCurrentUserIdentity(KERMIT_USER, KERMIT_USER);
+
+    // then
+    final UserResponseDto expectedUser = new UserResponseDto(
+      new UserDto(
+        KERMIT_USER,
+        DEFAULT_FIRSTNAME,
+        DEFAULT_LASTNAME,
+        KERMIT_USER + DEFAULT_EMAIL_DOMAIN
+      ), List.of(TELEMETRY, IMPORT_EXPORT, CSV_EXPORT));
 
     assertThat(currentUserDto).isEqualTo(expectedUser);
   }
@@ -435,8 +516,7 @@ public class IdentityRestServiceIT extends AbstractIT {
         DEFAULT_LASTNAME,
         KERMIT_USER + DEFAULT_EMAIL_DOMAIN,
         List.of("myRole")
-      ), AbstractIdentityService.getDefaultUserAuthorizations());
-
+      ), List.of(CSV_EXPORT, ENTITY_EDITOR));
     assertThat(currentUserDto).isEqualTo(expectedUser);
   }
 
@@ -456,7 +536,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     // then only user ID property is set and `getName` returns user ID
     assertThat(currentUserDto).isEqualTo(new UserResponseDto(
       new UserDto(KERMIT_USER),
-      AbstractIdentityService.getDefaultUserAuthorizations()
+      List.of(CSV_EXPORT, ENTITY_EDITOR)
     ));
     assertThat(currentUserDto.getUserDto().getName()).isEqualTo(KERMIT_USER);
   }
@@ -484,7 +564,7 @@ public class IdentityRestServiceIT extends AbstractIT {
         DEFAULT_FIRSTNAME,
         DEFAULT_LASTNAME,
         KERMIT_USER + DEFAULT_EMAIL_DOMAIN
-      ), AbstractIdentityService.getSuperuserAuthorizations());
+      ), List.of(TELEMETRY, IMPORT_EXPORT, CSV_EXPORT, ENTITY_EDITOR));
 
     assertThat(currentUserDto).isEqualTo(expectedUser);
   }

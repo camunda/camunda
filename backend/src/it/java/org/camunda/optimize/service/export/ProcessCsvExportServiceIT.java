@@ -21,7 +21,7 @@ import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionI
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
-import org.camunda.optimize.service.util.configuration.CsvConfiguration;
+import org.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.Disabled;
@@ -54,7 +54,7 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     // given
     embeddedOptimizeExtension.getConfigurationService()
       .getCsvConfiguration()
-      .setAuthorizedUserType(CsvConfiguration.AuthorizedUserType.valueOf(authorizationType));
+      .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
     embeddedOptimizeExtension.reloadConfiguration();
     final String reportId = reportClient.createEmptySingleProcessReport();
 
@@ -73,7 +73,7 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
       .setSuperUserIds(Collections.singletonList(DEFAULT_USERNAME));
     embeddedOptimizeExtension.getConfigurationService()
       .getCsvConfiguration()
-      .setAuthorizedUserType(CsvConfiguration.AuthorizedUserType.NONE);
+      .setAuthorizedUserType(AuthorizedUserType.NONE);
     embeddedOptimizeExtension.reloadConfiguration();
     final String reportId = reportClient.createEmptySingleProcessReport();
 
@@ -93,7 +93,7 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
       .setSuperUserIds(Collections.singletonList(DEFAULT_USERNAME));
     embeddedOptimizeExtension.getConfigurationService()
       .getCsvConfiguration()
-      .setAuthorizedUserType(CsvConfiguration.AuthorizedUserType.valueOf(authorizationType));
+      .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
     embeddedOptimizeExtension.reloadConfiguration();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
