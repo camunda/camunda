@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
@@ -100,7 +99,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final ZeebeDb zeebeDb;
   // processing
   private final StreamProcessorContext streamProcessorContext;
-  private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private final String actorName;
   private LogStreamReader logStreamReader;
   private ProcessingStateMachine processingStateMachine;
@@ -121,8 +119,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
     lifecycleAwareListeners = processorBuilder.getLifecycleListeners();
-
-    typedRecordProcessorFactory = processorBuilder.getTypedRecordProcessorFactory();
     typedStreamWriterFactory = processorBuilder.getTypedStreamWriterFactory();
     zeebeDb = processorBuilder.getZeebeDb();
 
@@ -337,8 +333,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             streamProcessorContext.getTransactionContext(),
             streamProcessorContext.getLogStreamWriter(),
             streamProcessorContext.getTypedResponseWriter(),
-            eventApplierFactory,
-            typedRecordProcessorFactory);
+            eventApplierFactory);
     recordProcessor.init(engineContext);
 
     lifecycleAwareListeners.addAll(engineContext.getLifecycleListeners());

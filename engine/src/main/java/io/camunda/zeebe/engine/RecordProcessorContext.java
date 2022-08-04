@@ -12,7 +12,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
@@ -30,7 +29,6 @@ public final class RecordProcessorContext {
   private final LegacyTypedStreamWriter streamWriter;
   private final LegacyTypedResponseWriter responseWriter;
   private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
-  private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private List<StreamProcessorLifecycleAware> lifecycleListeners = Collections.EMPTY_LIST;
   private StreamProcessorListener streamProcessorListener;
 
@@ -41,8 +39,7 @@ public final class RecordProcessorContext {
       final TransactionContext transactionContext,
       final LegacyTypedStreamWriter streamWriter,
       final LegacyTypedResponseWriter responseWriter,
-      final Function<MutableZeebeState, EventApplier> eventApplierFactory,
-      final TypedRecordProcessorFactory typedRecordProcessorFactory) {
+      final Function<MutableZeebeState, EventApplier> eventApplierFactory) {
     this.partitionId = partitionId;
     this.scheduleService = scheduleService;
     this.zeebeDb = zeebeDb;
@@ -50,7 +47,6 @@ public final class RecordProcessorContext {
     this.streamWriter = streamWriter;
     this.responseWriter = responseWriter;
     this.eventApplierFactory = eventApplierFactory;
-    this.typedRecordProcessorFactory = typedRecordProcessorFactory;
   }
 
   public int getPartitionId() {
@@ -79,10 +75,6 @@ public final class RecordProcessorContext {
 
   public Function<MutableZeebeState, EventApplier> getEventApplierFactory() {
     return eventApplierFactory;
-  }
-
-  public TypedRecordProcessorFactory getTypedRecordProcessorFactory() {
-    return typedRecordProcessorFactory;
   }
 
   public List<StreamProcessorLifecycleAware> getLifecycleListeners() {

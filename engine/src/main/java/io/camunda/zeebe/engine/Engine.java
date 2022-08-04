@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContextImpl;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
@@ -50,8 +51,13 @@ public class Engine implements RecordProcessor {
       new ProcessingResultBuilderMutex();
 
   private Writers writers;
+  private TypedRecordProcessorFactory typedRecordProcessorFactory;
 
   public Engine() {}
+
+  public Engine(final TypedRecordProcessorFactory typedRecordProcessorFactory) {
+    this.typedRecordProcessorFactory = typedRecordProcessorFactory;
+  }
 
   @Override
   public void init(final RecordProcessorContext recordProcessorContext) {
@@ -75,7 +81,7 @@ public class Engine implements RecordProcessor {
             writers);
 
     final TypedRecordProcessors typedRecordProcessors =
-        recordProcessorContext.getTypedRecordProcessorFactory().createProcessors(typedProcessorContext);
+        typedRecordProcessorFactory.createProcessors(typedProcessorContext);
 
     recordProcessorContext.setStreamProcessorListener(typedProcessorContext.getStreamProcessorListener());
 
