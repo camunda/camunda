@@ -45,7 +45,6 @@ public final class JobTimeoutTriggerTest {
 
     final StreamProcessorContext streamProcessorContext =
         new StreamProcessorContext().actor(someActor).logStreamWriter(typedStreamWriter);
-    streamProcessorContext.enableLogStreamWriter();
     jobTimeoutTrigger.onRecovered(streamProcessorContext);
 
     IntStream.range(0, 3)

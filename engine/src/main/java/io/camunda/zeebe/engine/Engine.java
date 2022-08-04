@@ -18,8 +18,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContextImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
@@ -43,8 +41,6 @@ public class Engine implements RecordProcessor {
   private EventApplier eventApplier;
   private RecordProcessorMap recordProcessorMap;
   private ZeebeDbState zeebeState;
-  private LegacyTypedStreamWriter streamWriter;
-  private LegacyTypedResponseWriter responseWriter;
 
   private final ErrorRecord errorRecord = new ErrorRecord();
 
@@ -62,9 +58,6 @@ public class Engine implements RecordProcessor {
 
   @Override
   public void init(final RecordProcessorContext recordProcessorContext) {
-    streamWriter = recordProcessorContext.getStreamWriterProxy();
-    responseWriter = recordProcessorContext.getTypedResponseWriter();
-
     zeebeState =
         new ZeebeDbState(
             recordProcessorContext.getPartitionId(),
