@@ -368,4 +368,64 @@ public class ModifyProcessInstanceTest {
                 -1L,
                 -1L));
   }
+
+  @Test
+  public void shouldActivateMultipleElementInsideExistingFlowScope() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    sp ->
+                        sp.embeddedSubProcess()
+                            .startEvent()
+                            .serviceTask("A", a -> a.zeebeJobType("A"))
+                            .parallelGateway()
+                            .serviceTask("B", b -> b.zeebeJobType("B"))
+                            .moveToLastGateway()
+                            .userTask("C")
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var subprocessScopeKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .getFirst()
+            .getKey();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("B")
+        .activateElement("C")
+        .modify();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .onlyEvents()
+                .withElementIdIn("B", "C")
+                .withProcessInstanceKey(processInstanceKey)
+                .limit("C", ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .toList())
+        .extracting(
+            r -> r.getValue().getElementId(),
+            Record::getIntent,
+            r -> r.getValue().getFlowScopeKey())
+        .describedAs("Expect the tasks to have been activated in the correct scope")
+        .containsExactly(
+            Tuple.tuple("B", ProcessInstanceIntent.ELEMENT_ACTIVATING, subprocessScopeKey),
+            Tuple.tuple("B", ProcessInstanceIntent.ELEMENT_ACTIVATED, subprocessScopeKey),
+            Tuple.tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATING, subprocessScopeKey),
+            Tuple.tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED, subprocessScopeKey));
+  }
 }
