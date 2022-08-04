@@ -10,7 +10,7 @@ ingress:
   # Defines the domain under which to expose the ingress
   domain: zeebe-tasklist.camunda.cloud
   # Defines the Vouch IDP URL to use for authenticating against Okta
-  vouchUrl: https://dev.vouch.camunda.cloud
+  vouchUrl: https://vouch.camunda.cloud
 
 
 git:
