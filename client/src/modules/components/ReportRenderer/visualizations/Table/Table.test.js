@@ -32,9 +32,7 @@ jest.mock('services', () => {
 });
 
 beforeEach(() => {
-  processRawData.mockClear();
-  processDefaultData.mockClear();
-  loadVariables.mockClear();
+  jest.clearAllMocks();
 });
 
 const testDefinition = {key: 'definitionKey', versions: ['ver1'], tenantIds: ['id1']};
@@ -268,4 +266,25 @@ it('should pass loaded process variables to group by variable handler', async ()
   runAllEffects();
 
   expect(processDefaultData.mock.calls[0][1]).toEqual(variables);
+});
+
+it('should not pass updateSorting to the table component on dashboard or shared mode', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <Table
+      {...props}
+      report={{...report, result: {data: []}}}
+      loadReport={spy}
+      updateReport={() => {}}
+    />
+  );
+
+  node.find('Table').prop('updateSorting')();
+  expect(spy).toHaveBeenCalled();
+
+  node.setProps({context: 'dashboard'});
+  expect(node.find('Table').prop('updateSorting')).toBe(false);
+
+  node.setProps({context: 'shared'});
+  expect(node.find('Table').prop('updateSorting')).toBe(false);
 });
