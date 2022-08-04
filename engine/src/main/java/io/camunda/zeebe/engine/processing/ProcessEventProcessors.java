@@ -67,7 +67,7 @@ public final class ProcessEventProcessors {
 
     final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
 
-    addProcessInstanceCommandProcessor(typedRecordProcessors, zeebeState.getElementInstanceState());
+    addProcessInstanceCommandProcessor(writers, typedRecordProcessors, zeebeState.getElementInstanceState());
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(
@@ -116,11 +116,11 @@ public final class ProcessEventProcessors {
   }
 
   private static void addProcessInstanceCommandProcessor(
-      final TypedRecordProcessors typedRecordProcessors,
+      final Writers writers, final TypedRecordProcessors typedRecordProcessors,
       final MutableElementInstanceState elementInstanceState) {
 
     final ProcessInstanceCommandProcessor commandProcessor =
-        new ProcessInstanceCommandProcessor(elementInstanceState);
+        new ProcessInstanceCommandProcessor(writers, elementInstanceState);
 
     Arrays.stream(ProcessInstanceIntent.values())
         .filter(ProcessInstanceIntent::isProcessInstanceCommand)

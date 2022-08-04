@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -23,10 +24,10 @@ public final class ProcessInstanceCommandProcessor
   private final ElementInstanceState elementInstanceState;
   private final ProcessInstanceCommandContext context;
 
-  public ProcessInstanceCommandProcessor(final MutableElementInstanceState elementInstanceState) {
+  public ProcessInstanceCommandProcessor(final Writers writers, final MutableElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
     commandHandlers = new ProcessInstanceCommandHandlers();
-    context = new ProcessInstanceCommandContext(elementInstanceState);
+    context = new ProcessInstanceCommandContext(elementInstanceState, writers);
   }
 
   @Override
