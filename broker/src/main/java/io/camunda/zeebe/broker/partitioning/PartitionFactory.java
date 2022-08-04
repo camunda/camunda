@@ -36,7 +36,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupApiRequestHandlerStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionTransitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.InterPartitionCommandReceiverStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.InterPartitionCommandServiceStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionTransitionStep;
@@ -74,7 +74,7 @@ final class PartitionFactory {
       List.of(
           new LogStoragePartitionTransitionStep(),
           new LogStreamPartitionTransitionStep(),
-          new InterPartitionCommandReceiverStep(),
+          new InterPartitionCommandServiceStep(),
           new ZeebeDbPartitionTransitionStep(),
           new QueryServicePartitionTransitionStep(),
           new StreamProcessorTransitionStep(),
