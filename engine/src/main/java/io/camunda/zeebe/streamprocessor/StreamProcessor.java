@@ -182,8 +182,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       replayStateMachine =
           new ReplayStateMachine(engine, streamProcessorContext, this::shouldProcessNext);
-      // disable writing to the log stream
-      streamProcessorContext.disableLogStreamWriter();
 
       openFuture.complete(null);
       replayCompletedFuture = replayStateMachine.startRecover(snapshotPosition);
@@ -288,9 +286,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       streamProcessorContext.logStreamBatchWriter(batchWriter);
 
       phase = Phase.PROCESSING;
-
-      // enable writing records to the stream
-      streamProcessorContext.enableLogStreamWriter();
 
       processingStateMachine =
           new ProcessingStateMachine(streamProcessorContext, this::shouldProcessNext, engine);

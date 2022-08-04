@@ -10,7 +10,6 @@ package io.camunda.zeebe.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.LegacyTypedStreamWriterProxy;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
@@ -32,7 +31,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
 
-  private final LegacyTypedStreamWriterProxy streamWriterProxy = new LegacyTypedStreamWriterProxy();
   private final NoopLegacyTypedStreamWriter noopTypedStreamWriter =
       new NoopLegacyTypedStreamWriter();
 
@@ -58,13 +56,9 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private LogStreamBatchWriter logStreamBatchWriter;
   private CommandResponseWriter commandResponseWriter;
 
-  public StreamProcessorContext() {
-    streamWriterProxy.wrap(logStreamWriter);
-  }
-
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
-    processingScheduleService = new ProcessingScheduleServiceImpl(actor, streamWriterProxy);
+    processingScheduleService = new ProcessingScheduleServiceImpl(actor, logStreamWriter);
     return this;
   }
 
@@ -80,7 +74,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   @Override
   public LegacyTypedStreamWriter getLogStreamWriter() {
-    return streamWriterProxy;
+    return logStreamWriter;
   }
 
   @Override
@@ -196,14 +190,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public StreamProcessorListener getStreamProcessorListener() {
     return streamProcessorListener;
-  }
-
-  public void enableLogStreamWriter() {
-    streamWriterProxy.wrap(logStreamWriter);
-  }
-
-  public void disableLogStreamWriter() {
-    streamWriterProxy.wrap(noopTypedStreamWriter);
   }
 
   public StreamProcessorMode getProcessorMode() {
