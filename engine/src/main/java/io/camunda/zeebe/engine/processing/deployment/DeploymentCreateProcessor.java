@@ -26,6 +26,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -58,6 +61,9 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   private final StateWriter stateWriter;
   private final MessageStartEventSubscriptionManager messageStartEventSubscriptionManager;
   private final DeploymentDistributionBehavior deploymentDistributionBehavior;
+  private final TypedRejectionWriter rejectionWriter;
+  private final TypedResponseWriter responseWriter;
+  private final TypedCommandWriter commandWriter;
 
   public DeploymentCreateProcessor(
       final ZeebeState zeebeState,
@@ -71,6 +77,9 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     timerInstanceState = zeebeState.getTimerState();
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
+    rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
+    commandWriter = writers.command();
     deploymentTransformer =
         new DeploymentTransformer(stateWriter, zeebeState, expressionProcessor, keyGenerator);
     this.catchEventBehavior = catchEventBehavior;
@@ -99,15 +108,15 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final long key = keyGenerator.nextKey();
 
       try {
-        createTimerIfTimerStartEvent(command, streamWriter, sideEffects);
+        createTimerIfTimerStartEvent(command, sideEffects);
       } catch (final RuntimeException e) {
         final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
         responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
-        streamWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
+        rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
         return;
       }
 
-      responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
+      this.responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
 
       stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
 
@@ -116,11 +125,11 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
           deploymentEvent, stateWriter);
 
     } else {
-      responseWriter.writeRejectionOnCommand(
+      this.responseWriter.writeRejectionOnCommand(
           command,
           deploymentTransformer.getRejectionType(),
           deploymentTransformer.getRejectionReason());
-      streamWriter.appendRejection(
+      rejectionWriter.appendRejection(
           command,
           deploymentTransformer.getRejectionType(),
           deploymentTransformer.getRejectionReason());
@@ -129,21 +138,19 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
   private void createTimerIfTimerStartEvent(
       final TypedRecord<DeploymentRecord> record,
-      final LegacyTypedStreamWriter streamWriter,
       final SideEffects sideEffects) {
     for (final ProcessMetadata processMetadata : record.getValue().processesMetadata()) {
       if (!processMetadata.isDuplicate()) {
         final List<ExecutableStartEvent> startEvents =
             processState.getProcessByKey(processMetadata.getKey()).getProcess().getStartEvents();
 
-        unsubscribeFromPreviousTimers(streamWriter, processMetadata);
-        subscribeToTimerStartEventIfExists(streamWriter, sideEffects, processMetadata, startEvents);
+        unsubscribeFromPreviousTimers(processMetadata);
+        subscribeToTimerStartEventIfExists(sideEffects, processMetadata, startEvents);
       }
     }
   }
 
   private void subscribeToTimerStartEventIfExists(
-      final LegacyTypedStreamWriter streamWriter,
       final SideEffects sideEffects,
       final ProcessMetadata processMetadata,
       final List<ExecutableStartEvent> startEvents) {
@@ -184,7 +191,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
         processState.getProcessByKey(timer.getProcessDefinitionKey()).getBpmnProcessId();
 
     if (timerBpmnId.equals(processMetadata.getBpmnProcessIdBuffer())) {
-      catchEventBehavior.unsubscribeFromTimerEvent(timer, streamWriter);
+      catchEventBehavior.unsubscribeFromTimerEvent(timer, commandWriter);
     }
   }
 }
