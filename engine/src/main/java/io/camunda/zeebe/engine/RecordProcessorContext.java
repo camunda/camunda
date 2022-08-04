@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-public final class EngineContext {
+public final class RecordProcessorContext {
 
   private final int partitionId;
   private final ProcessingScheduleService scheduleService;
@@ -34,7 +34,7 @@ public final class EngineContext {
   private List<StreamProcessorLifecycleAware> lifecycleListeners = Collections.EMPTY_LIST;
   private StreamProcessorListener streamProcessorListener;
 
-  public EngineContext(
+  public RecordProcessorContext(
       final int partitionId,
       final ProcessingScheduleService scheduleService,
       final ZeebeDb zeebeDb,

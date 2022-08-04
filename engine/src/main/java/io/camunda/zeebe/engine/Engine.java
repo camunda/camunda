@@ -54,32 +54,32 @@ public class Engine implements RecordProcessor<EngineContext> {
   public Engine() {}
 
   @Override
-  public void init(final EngineContext engineContext) {
-    streamWriter = engineContext.getStreamWriterProxy();
-    responseWriter = engineContext.getTypedResponseWriter();
+  public void init(final RecordProcessorContext recordProcessorContext) {
+    streamWriter = recordProcessorContext.getStreamWriterProxy();
+    responseWriter = recordProcessorContext.getTypedResponseWriter();
 
     zeebeState =
         new ZeebeDbState(
-            engineContext.getPartitionId(),
-            engineContext.getZeebeDb(),
-            engineContext.getTransactionContext());
-    eventApplier = engineContext.getEventApplierFactory().apply(zeebeState);
+            recordProcessorContext.getPartitionId(),
+            recordProcessorContext.getZeebeDb(),
+            recordProcessorContext.getTransactionContext());
+    eventApplier = recordProcessorContext.getEventApplierFactory().apply(zeebeState);
 
     writers = new Writers(resultBuilderMutex, eventApplier);
 
     final var typedProcessorContext =
         new TypedRecordProcessorContextImpl(
-            engineContext.getPartitionId(),
-            engineContext.getScheduleService(),
+            recordProcessorContext.getPartitionId(),
+            recordProcessorContext.getScheduleService(),
             zeebeState,
             writers);
 
     final TypedRecordProcessors typedRecordProcessors =
-        engineContext.getTypedRecordProcessorFactory().createProcessors(typedProcessorContext);
+        recordProcessorContext.getTypedRecordProcessorFactory().createProcessors(typedProcessorContext);
 
-    engineContext.setStreamProcessorListener(typedProcessorContext.getStreamProcessorListener());
+    recordProcessorContext.setStreamProcessorListener(typedProcessorContext.getStreamProcessorListener());
 
-    engineContext.setLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
+    recordProcessorContext.setLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
   }
 
