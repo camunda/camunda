@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions.impl;
 
 import io.atomix.raft.RaftCommittedEntryListener;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -32,7 +33,7 @@ import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
 public final class AsyncSnapshotDirector extends Actor
-    implements RaftCommittedEntryListener, HealthMonitorable {
+    implements RaftCommittedEntryListener, HealthMonitorable, CheckpointListener {
 
   public static final Duration MINIMUM_SNAPSHOT_PERIOD = Duration.ofMinutes(1);
 
@@ -276,7 +277,10 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   private void onTransientSnapshotTaken(final TransientSnapshot transientSnapshot) {
-
+    if (!snapshotInProgress.isInProgress()) {
+      // Snapshot has been cancelled
+      return;
+    }
     snapshotInProgress.pendingSnapshot = transientSnapshot;
     onRecovered();
 
@@ -285,6 +289,10 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   private void onLastWrittenPositionReceived(final Long endPosition, final Throwable error) {
+    if (!snapshotInProgress.isInProgress()) {
+      // Snapshot is cancelled
+      return;
+    }
     if (error == null) {
       LOG.info(LOG_MSG_WAIT_UNTIL_COMMITTED, endPosition, commitPosition);
       snapshotInProgress.lastWrittenPosition = endPosition;
@@ -352,6 +360,30 @@ public final class AsyncSnapshotDirector extends Actor
     }
   }
 
+  @Override
+  public void onNewCheckpointCreated(final long checkpointId, final long checkpointPosition) {
+    actor.run(
+        () -> {
+          if (isSnapshotConcurrentToCheckpoint(snapshotInProgress, checkpointPosition)) {
+            LOG.debug(
+                "Snapshot {} is aborted to allow a concurrent backup. A new snapshot will be taken at the next snapshot interval.",
+                snapshotInProgress.pendingSnapshot.snapshotId().getSnapshotIdAsString());
+            snapshotInProgress.fail(new SnapshotException("Snapshot is aborted."));
+          }
+        });
+  }
+
+  private boolean isSnapshotConcurrentToCheckpoint(
+      final SnapshotInProgress snapshotInProgress, final long checkpointPosition) {
+    if (snapshotInProgress.lowerBoundSnapshotPosition == -1) {
+      // No snapshot in progress. The next snapshot will have position higher than
+      // checkpointPosition
+      return false;
+    }
+    return snapshotInProgress.lowerBoundSnapshotPosition < checkpointPosition
+        && (snapshotInProgress.lastWrittenPosition == null
+            || checkpointPosition < snapshotInProgress.lastWrittenPosition);
+  }
   /** Keep track of the state of an ongoing snapshotting */
   static final class SnapshotInProgress {
     private Long lastWrittenPosition;
@@ -362,6 +394,10 @@ public final class AsyncSnapshotDirector extends Actor
 
     private SnapshotInProgress() {
       reset();
+    }
+
+    private boolean isInProgress() {
+      return snapshotFuture != null;
     }
 
     void complete(final PersistedSnapshot snapshot) {
@@ -380,7 +416,7 @@ public final class AsyncSnapshotDirector extends Actor
     }
 
     boolean isWaitingForLastWrittenPositionToCommit() {
-      return pendingSnapshot != null && lastWrittenPosition != null && persistingSnapshot;
+      return pendingSnapshot != null && lastWrittenPosition != null && !persistingSnapshot;
     }
 
     void reset() {
