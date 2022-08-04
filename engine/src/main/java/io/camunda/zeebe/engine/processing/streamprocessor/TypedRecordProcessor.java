@@ -28,19 +28,9 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
   default void processRecord(
       final TypedRecord<T> record,
       final LegacyTypedResponseWriter responseWriter,
-      final LegacyTypedStreamWriter streamWriter) {
-    processRecord(record);
-  }
-
-  /**
-   * @see #processRecord(TypedRecord, LegacyTypedResponseWriter, LegacyTypedStreamWriter, Consumer)
-   */
-  default void processRecord(
-      final TypedRecord<T> record,
-      final LegacyTypedResponseWriter responseWriter,
       final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
-    processRecord(record, responseWriter, streamWriter);
+    processRecord(record);
   }
 
   /**

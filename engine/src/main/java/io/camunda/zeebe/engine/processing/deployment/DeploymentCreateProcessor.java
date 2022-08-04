@@ -111,7 +111,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
         createTimerIfTimerStartEvent(command, sideEffects);
       } catch (final RuntimeException e) {
         final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
-        responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
+        this.responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
         rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
         return;
       }
