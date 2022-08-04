@@ -177,19 +177,15 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   }
 
   private boolean sendCorrelateCommand() {
-
-    final var success =
-        correlatingSubscriptions.visitSubscriptions(
-            subscription ->
-                commandSender.correlateProcessMessageSubscription(
-                    subscription.getProcessInstanceKey(),
-                    subscription.getElementInstanceKey(),
-                    subscription.getBpmnProcessId(),
-                    messageRecord.getNameBuffer(),
-                    messageKey,
-                    messageRecord.getVariablesBuffer(),
-                    messageRecord.getCorrelationKeyBuffer()));
-
-    return success && responseWriter.flush();
+    return correlatingSubscriptions.visitSubscriptions(
+        subscription ->
+            commandSender.correlateProcessMessageSubscription(
+                subscription.getProcessInstanceKey(),
+                subscription.getElementInstanceKey(),
+                subscription.getBpmnProcessId(),
+                messageRecord.getNameBuffer(),
+                messageKey,
+                messageRecord.getVariablesBuffer(),
+                messageRecord.getCorrelationKeyBuffer()));
   }
 }
