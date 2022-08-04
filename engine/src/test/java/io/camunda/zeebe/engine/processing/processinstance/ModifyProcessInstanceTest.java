@@ -287,4 +287,85 @@ public class ModifyProcessInstanceTest {
         .describedAs("Expect the process instance to have been completed")
         .isPresent();
   }
+
+  @Test
+  public void shouldActivateInsideExistingFlowScope() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    sp ->
+                        sp.embeddedSubProcess()
+                            .startEvent()
+                            .serviceTask("A", a -> a.zeebeJobType("A"))
+                            .serviceTask("B", b -> b.zeebeJobType("B"))
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var subProcessInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .getFirst();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("B")
+        .modify();
+
+    // then
+    final var elementInstanceEvents =
+        RecordingExporter.processInstanceRecords()
+            .onlyEvents()
+            .withElementId("B")
+            .withProcessInstanceKey(processInstanceKey)
+            .limit("B", ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .toList();
+
+    Assertions.assertThat(elementInstanceEvents)
+        .extracting(Record::getIntent)
+        .describedAs("Expect the element instance to have been activated")
+        .containsExactly(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    Assertions.assertThat(elementInstanceEvents)
+        .extracting(Record::getKey)
+        .describedAs("Expect each element instance event to refer to the same entity")
+        .containsOnly(elementInstanceEvents.get(0).getKey());
+
+    Assertions.assertThat(elementInstanceEvents)
+        .extracting(Record::getValue)
+        .describedAs("Expect each element instance event to contain the complete record value")
+        .extracting(
+            ProcessInstanceRecordValue::getBpmnProcessId,
+            ProcessInstanceRecordValue::getProcessDefinitionKey,
+            ProcessInstanceRecordValue::getProcessInstanceKey,
+            ProcessInstanceRecordValue::getBpmnElementType,
+            ProcessInstanceRecordValue::getElementId,
+            ProcessInstanceRecordValue::getFlowScopeKey,
+            ProcessInstanceRecordValue::getVersion,
+            ProcessInstanceRecordValue::getParentProcessInstanceKey,
+            ProcessInstanceRecordValue::getParentElementInstanceKey)
+        .containsOnly(
+            Tuple.tuple(
+                PROCESS_ID,
+                subProcessInstance.getValue().getProcessDefinitionKey(),
+                subProcessInstance.getValue().getProcessInstanceKey(),
+                BpmnElementType.SERVICE_TASK,
+                "B",
+                subProcessInstance.getKey(),
+                subProcessInstance.getValue().getVersion(),
+                -1L,
+                -1L));
+  }
 }
