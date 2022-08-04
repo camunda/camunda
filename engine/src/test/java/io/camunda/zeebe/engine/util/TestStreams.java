@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.engine.Engine;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
@@ -284,7 +285,7 @@ public final class TestStreams {
             .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
             .listener(mockStreamProcessorListener)
-            .streamProcessorFactory(wrappedFactory)
+            .recordProcessor(new Engine(wrappedFactory))
             .eventApplierFactory(eventApplierFactory)
             .streamProcessorMode(streamProcessorMode);
 

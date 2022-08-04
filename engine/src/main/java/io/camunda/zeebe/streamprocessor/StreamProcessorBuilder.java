@@ -32,7 +32,7 @@ public final class StreamProcessorBuilder {
   private ZeebeDb zeebeDb;
   private Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private int nodeId;
-  private final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> typedStreamWriterFactory =
+  private Function<LogStreamBatchWriter, LegacyTypedStreamWriter> typedStreamWriterFactory =
       LegacyTypedStreamWriterImpl::new;
 
   private RecordProcessor recordProcessor;
@@ -132,5 +132,11 @@ public final class StreamProcessorBuilder {
 
   public Function<LogStreamBatchWriter, LegacyTypedStreamWriter> getTypedStreamWriterFactory() {
     return typedStreamWriterFactory;
+  }
+
+  public StreamProcessorBuilder typedStreamWriterFactory(
+      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory) {
+    typedStreamWriterFactory = streamWriterFactory;
+    return this;
   }
 }
