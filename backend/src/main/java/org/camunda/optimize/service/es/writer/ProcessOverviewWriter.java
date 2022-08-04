@@ -120,8 +120,8 @@ public class ProcessOverviewWriter {
       esClient.update(updateRequest);
     } catch (Exception e) {
       final String errorMessage = String.format(
-        "There was a problem while updating the owner for process with key: [%s] and digest results: %s.",
-        ownerId, processDefinitionKey
+        "There was a problem while updating the owner for process with key: [%s] and owner ID: %s.",
+        processDefinitionKey, ownerId
       );
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
@@ -135,7 +135,7 @@ public class ProcessOverviewWriter {
       Map<String, String> reportIdToValue = entry.getValue().getReportIdToValue();
       ProcessOverviewDto processOverviewDto = new ProcessOverviewDto();
       processOverviewDto.setProcessDefinitionKey(entry.getKey());
-      processOverviewDto.setDigest(new ProcessDigestDto());
+      processOverviewDto.setDigest(new ProcessDigestDto(false, new HashMap<>()));
       processOverviewDto.setLastKpiEvaluationResults(reportIdToValue);
       UpdateRequest updateRequest = new UpdateRequest()
         .index(PROCESS_OVERVIEW_INDEX_NAME)

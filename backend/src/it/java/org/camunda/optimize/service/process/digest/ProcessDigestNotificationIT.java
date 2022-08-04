@@ -254,6 +254,25 @@ public class ProcessDigestNotificationIT extends AbstractIT {
       .isEqualTo(Map.of(reportId, "1.0"));
   }
 
+  @Test
+  public void digestUpdateIsNullSafeForPreviousKpiResults() {
+    // given
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
+    importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      PROCESS_OVERVIEW_INDEX_NAME,
+      DEF_KEY,
+      new ProcessOverviewDto(DEFAULT_USERNAME, DEF_KEY, new ProcessDigestDto(false, null), Collections.emptyMap())
+    );
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    processOverviewClient.updateProcess(
+      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then email sending does not fail
+    assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
+  }
+
   private String createKpiReport(final String reportName) {
     final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
