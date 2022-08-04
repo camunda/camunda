@@ -1,35 +1,49 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: Report a problem and help us fix it.
 title: ''
-labels: kind/bug
+labels: kind/bug, needs grooming
 assignees: ''
 
 ---
 
-## Describe the bug
-A clear and concise description of what the bug is.
+### Describe the bug
+<!-- A clear and concise description of what the problem/bug is about and what is the current behavior. -->
 
-##  To Reproduce
+###  To Reproduce
 Steps to reproduce the behavior:
 1. Go to '...'
 2. Click on '....'
 3. Scroll down to '....'
 4. See error
 
-## Current behavior
-What is the current behavior
+<!-- Please attach screenshots, a screen recording, or a file (e.g. the BPMN/DMN/Form file) that has the problem you are describing to help us better debug the respective issue. -->
 
-## Expected behavior
-A clear and concise description of what you expected to happen.
+### Expected behavior
+<!-- A clear and concise description of what you expected to happen. -->
 
-## Screenshots
-If applicable, add screenshots to help explain your problem.
+### Environment
+<!-- Please provide details about the environment you were in when the problem occurred. -->
+- OS: [e.g. MacOS]
+- Browser: [e.g. chrome, safari]
+- Tasklist Version: [e.g. 8.1]
 
-## Desktop (please complete the following information):
- - OS: [e.g. MacOS]
- - Browser: [e.g. chrome, safari]
- - Tasklist Version: [e.g. 0.24]
+### Additional context
+<!-- Please add any other context about the problem. Here you can also provide us some data that you used while the bug happen like **json** file or specific **BPMN**. -->
 
-## Additional context
-Add any other context about the problem here.
+---------------------------------------------------------------------------------------------
+<!-- As the creator of the issue, you don't have to fill anything below this line, but the assignee will take care of this as part of Backlog grooming. -->
+
+### Acceptance Criteria
+<!-- the assignee will fill the Acceptance Criteria. -->
+
+### Definition of Ready - Checklist
+<!-- the assignee will check the DOR. -->
+
+- [ ] The bug has been reproduced by the assignee in the environment compatible with the provided one; otherwise, the issue is closed with a comment
+- [ ] The issue has a meaningful title, description, and testable acceptance criteria
+- [ ] Necessary screenshots, screen recordings, or files are attached to the bug report
+
+For UI changes required to solve the bug:
+
+- [ ] Design input has been collected by the assignee
