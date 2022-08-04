@@ -9,8 +9,8 @@ package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.Engine;
 import io.camunda.zeebe.engine.RecordProcessorContext;
+import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
@@ -115,7 +115,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
   private final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> typedStreamWriterFactory;
 
-  private final Engine engine;
+  private final RecordProcessor recordProcessor;
   private StreamProcessorDbState streamProcessorDbState;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
@@ -138,8 +138,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     partitionId = logStream.getPartitionId();
     actorName = buildActorName(processorBuilder.getNodeId(), "StreamProcessor", partitionId);
     metrics = new StreamProcessorMetrics(partitionId);
-
-    engine = new Engine();
+    recordProcessor = processorBuilder.getRecordProcessor();
   }
 
   public static StreamProcessorBuilder builder() {
@@ -181,7 +180,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       healthCheckTick();
 
       replayStateMachine =
-          new ReplayStateMachine(engine, streamProcessorContext, this::shouldProcessNext);
+          new ReplayStateMachine(recordProcessor, streamProcessorContext, this::shouldProcessNext);
       // disable writing to the log stream
       streamProcessorContext.disableLogStreamWriter();
 
@@ -293,7 +292,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       streamProcessorContext.enableLogStreamWriter();
 
       processingStateMachine =
-          new ProcessingStateMachine(streamProcessorContext, this::shouldProcessNext, engine);
+          new ProcessingStateMachine(streamProcessorContext, this::shouldProcessNext,
+              recordProcessor);
 
       logStream.registerRecordAvailableListener(this);
 
@@ -339,7 +339,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             streamProcessorContext.getTypedResponseWriter(),
             eventApplierFactory,
             typedRecordProcessorFactory);
-    engine.init(engineContext);
+    recordProcessor.init(engineContext);
 
     lifecycleAwareListeners.addAll(engineContext.getLifecycleListeners());
     final var listener = engineContext.getStreamProcessorListener();

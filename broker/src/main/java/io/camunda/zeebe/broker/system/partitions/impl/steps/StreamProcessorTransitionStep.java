@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.engine.Engine;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
@@ -127,6 +128,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .logStream(context.getLogStream())
         .actorSchedulingService(context.getActorSchedulingService())
         .zeebeDb(context.getZeebeDb())
+        .recordProcessor(new Engine())
         .eventApplierFactory(EventAppliers::new)
         .nodeId(context.getNodeId())
         .commandResponseWriter(context.getCommandResponseWriter())

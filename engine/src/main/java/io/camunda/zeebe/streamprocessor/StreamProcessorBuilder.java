@@ -8,6 +8,7 @@
 package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -36,6 +37,8 @@ public final class StreamProcessorBuilder {
   private Function<LogStreamBatchWriter, LegacyTypedStreamWriter> typedStreamWriterFactory =
       LegacyTypedStreamWriterImpl::new;
 
+  private RecordProcessor recordProcessor;
+
   public StreamProcessorBuilder() {
     streamProcessorContext = new StreamProcessorContext();
   }
@@ -43,6 +46,11 @@ public final class StreamProcessorBuilder {
   public StreamProcessorBuilder streamProcessorFactory(
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     this.typedRecordProcessorFactory = typedRecordProcessorFactory;
+    return this;
+  }
+
+  public StreamProcessorBuilder recordProcessor(final RecordProcessor recordProcessor) {
+    this.recordProcessor = recordProcessor;
     return this;
   }
 
@@ -111,6 +119,10 @@ public final class StreamProcessorBuilder {
 
   public int getNodeId() {
     return nodeId;
+  }
+
+  public RecordProcessor getRecordProcessor() {
+    return recordProcessor;
   }
 
   public Function<MutableZeebeState, EventApplier> getEventApplierFactory() {
