@@ -17,11 +17,15 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
+import java.util.List;
+import java.util.Optional;
+import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceModificationProcessor
     implements TypedRecordProcessor<ProcessInstanceModificationRecord> {
@@ -83,15 +87,45 @@ public final class ProcessInstanceModificationProcessor
       final AbstractFlowElement elementToActivate) {
     final var elementInstanceRecord = new ProcessInstanceRecord();
     elementInstanceRecord.wrap(processInstance);
+    // todo: deal with non-existing flow scope (#9643)
+    final Optional<Long> flowScopeKey = getFlowScopeKey(processInstance, elementToActivate);
     commandWriter.appendFollowUpCommand(
         keyGenerator.nextKey(),
         ProcessInstanceIntent.ACTIVATE_ELEMENT,
         elementInstanceRecord
-            // todo: allow non-process instance element's as flowscope
-            .setFlowScopeKey(processInstance.getProcessInstanceKey())
+            .setFlowScopeKey(flowScopeKey.get())
             .setBpmnElementType(elementToActivate.getElementType())
             .setElementId(instruction.getElementId())
             .setParentProcessInstanceKey(-1)
             .setParentElementInstanceKey(-1));
+  }
+
+  private Optional<Long> getFlowScopeKey(
+      final ProcessInstanceRecord processInstance, final AbstractFlowElement elementToActivate) {
+    final var flowScope = elementToActivate.getFlowScope();
+    if (flowScope.getId().equals(processInstance.getElementIdBuffer())) {
+      return Optional.of(processInstance.getProcessInstanceKey());
+    } else {
+      return getFlowScopeKey(processInstance.getProcessInstanceKey(), flowScope.getId());
+    }
+  }
+
+  private Optional<Long> getFlowScopeKey(
+      final long ancestorKey, final DirectBuffer targetElementId) {
+    final List<ElementInstance> children = elementInstanceState.getChildren(ancestorKey);
+
+    for (final ElementInstance child : children) {
+      if (child.getValue().getElementIdBuffer().equals(targetElementId)) {
+        // todo: instead of early return we should reject the command when multiple matching
+        //  children are found
+        return Optional.of(child.getKey());
+      } else {
+        final var optionalFlowScopeKey = getFlowScopeKey(child.getKey(), targetElementId);
+        if (optionalFlowScopeKey.isPresent()) {
+          return optionalFlowScopeKey;
+        }
+      }
+    }
+    return Optional.empty();
   }
 }
