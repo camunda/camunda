@@ -428,4 +428,55 @@ public class ModifyProcessInstanceTest {
             Tuple.tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATING, subprocessScopeKey),
             Tuple.tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED, subprocessScopeKey));
   }
+
+  @Test
+  public void shouldCompletedProcessInstanceWhenElementsInsideExistingFlowScopesAreCompleted() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    sp ->
+                        sp.embeddedSubProcess()
+                            .startEvent()
+                            .serviceTask("A", a -> a.zeebeJobType("A"))
+                            .serviceTask("B", b -> b.zeebeJobType("B"))
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.SUB_PROCESS)
+        .await();
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("B")
+        .modify();
+
+    // when
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .limit(3) // 3 jobs as A creates another B
+        .map(Record::getKey)
+        .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .limitToProcessInstanceCompleted()
+                .findAny())
+        .describedAs("Expect the process instance to have been completed")
+        .isPresent();
+  }
 }
