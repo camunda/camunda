@@ -11,8 +11,6 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -72,8 +70,6 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
   @Override
   public void processRecord(
       final TypedRecord<T> command,
-      final LegacyTypedResponseWriter responseWriter,
-      final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
 
     entityKey = command.getKey();
@@ -89,12 +85,12 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
       stateWriter.appendFollowUpEvent(entityKey, newState, updatedValue);
       wrappedProcessor.afterAccept(commandWriter, stateWriter, entityKey, newState, updatedValue);
       if (respond) {
-        this.responseWriter.writeEventOnCommand(entityKey, newState, updatedValue, command);
+        responseWriter.writeEventOnCommand(entityKey, newState, updatedValue, command);
       }
     } else {
       rejectionWriter.appendRejection(command, rejectionType, rejectionReason);
       if (respond) {
-        this.responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
+        responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
       }
     }
   }

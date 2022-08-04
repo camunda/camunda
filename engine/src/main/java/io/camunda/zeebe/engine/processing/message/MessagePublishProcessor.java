@@ -15,8 +15,6 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -79,8 +77,6 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   @Override
   public void processRecord(
       final TypedRecord<MessageRecord> command,
-      final LegacyTypedResponseWriter responseWriter,
-      final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
     messageRecord = command.getValue();
 
@@ -96,7 +92,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
               ALREADY_PUBLISHED_MESSAGE, bufferAsString(messageRecord.getMessageIdBuffer()));
 
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionReason);
-      this.responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectionOnCommand(
           command, RejectionType.ALREADY_EXISTS, rejectionReason);
     } else {
       handleNewMessage(command, sideEffect);

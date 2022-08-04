@@ -27,8 +27,6 @@ import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
@@ -142,7 +140,7 @@ public final class StreamProcessorTest {
 
     // then
     verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(eq(position), any(), any(), any(), any());
+        .processRecord(eq(position), any(), any());
 
     verifyNoMoreInteractions(typedRecordProcessor);
 
@@ -167,7 +165,7 @@ public final class StreamProcessorTest {
               return null;
             }))
         .when(typedRecordProcessor)
-        .processRecord(anyLong(), any(), any(), any(), any());
+        .processRecord(anyLong(), any(), any());
 
     streamProcessorRule.startTypedStreamProcessor(
         (processors, state) ->
@@ -183,7 +181,7 @@ public final class StreamProcessorTest {
 
     // then
     verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(eq(position), any(), any(), any(), any());
+        .processRecord(eq(position), any(), any());
 
     verifyNoMoreInteractions(typedRecordProcessor);
   }
@@ -209,7 +207,7 @@ public final class StreamProcessorTest {
 
     // then
     verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(eq(firstPosition), any(), any(), any(), any());
+        .processRecord(eq(firstPosition), any(), any());
 
     verifyNoMoreInteractions(typedRecordProcessor);
   }
@@ -246,16 +244,16 @@ public final class StreamProcessorTest {
     final InOrder inOrder = inOrder(typedRecordProcessor);
     inOrder
         .verify(typedRecordProcessor, TIMEOUT)
-        .processRecord(eq(commandPosition), any(), any(), any(), any());
+        .processRecord(eq(commandPosition), any(), any());
     inOrder
         .verify(typedRecordProcessor, never())
-        .processRecord(eq(eventPosition), any(), any(), any(), any());
+        .processRecord(eq(eventPosition), any(), any());
     inOrder
         .verify(typedRecordProcessor, never())
-        .processRecord(eq(rejectionPosition), any(), any(), any(), any());
+        .processRecord(eq(rejectionPosition), any(), any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT)
-        .processRecord(eq(nextCommandPosition), any(), any(), any(), any());
+        .processRecord(eq(nextCommandPosition), any(), any());
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -307,8 +305,6 @@ public final class StreamProcessorTest {
                   @Override
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
-                      final LegacyTypedResponseWriter responseWriter,
-                      final LegacyTypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
 
                     sideEffect.accept(
@@ -340,8 +336,6 @@ public final class StreamProcessorTest {
                   @Override
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
-                      final LegacyTypedResponseWriter responseWriter,
-                      final LegacyTypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
                     sideEffect.accept(
                         () -> {
@@ -372,8 +366,6 @@ public final class StreamProcessorTest {
                   @Override
                   public void processRecord(
                       final TypedRecord<UnifiedRecordValue> record,
-                      final LegacyTypedResponseWriter responseWriter,
-                      final LegacyTypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
 
                     sideEffect.accept(

@@ -251,7 +251,7 @@ public final class SkipFailingEventsTest {
         new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
     Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isTrue();
 
-    verify(dumpProcessorRef.get(), times(1)).processRecord(any(), any(), any(), any());
+    verify(dumpProcessorRef.get(), times(1)).processRecord(any(), any());
     assertThat(dumpProcessorRef.get().processedInstances).containsExactly(2L);
   }
 
@@ -386,7 +386,7 @@ public final class SkipFailingEventsTest {
         new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
     Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isFalse();
 
-    verify(dumpProcessorRef.get(), timeout(1000).times(2)).processRecord(any(), any(), any(), any());
+    verify(dumpProcessorRef.get(), timeout(1000).times(2)).processRecord(any(), any());
     assertThat(processedInstances).containsExactly(1L, 2L);
   }
 

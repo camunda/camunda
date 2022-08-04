@@ -106,9 +106,9 @@ public final class StreamProcessorReprocessingTest {
         ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(0xcafe));
 
     verify(typedRecordProcessor, TIMEOUT.times(0))
-        .processRecord(anyLong(), any(), any(), any(), any());
-    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any(), any(), any(), any());
-    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any(), any(), any());
+        .processRecord(anyLong(), any(), any());
+    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any(), any());
+    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any(), any());
   }
 
   @Test
@@ -159,7 +159,7 @@ public final class StreamProcessorReprocessingTest {
         ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(0xcafe));
 
     verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(anyLong(), any(), any(), any(), any());
+        .processRecord(anyLong(), any(), any());
   }
 
   @Test

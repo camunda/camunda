@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriterLegacy;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -68,8 +67,6 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   @Override
   public void processRecord(
       final TypedRecord<IncidentRecord> command,
-      final LegacyTypedResponseWriter responseWriter,
-      final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
     final long key = command.getKey();
 
@@ -81,7 +78,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     }
 
     stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
-    this.responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
+    responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
 
     // if it fails, a new incident is raised
     attemptToContinueProcessProcessing(command, sideEffect, incident);

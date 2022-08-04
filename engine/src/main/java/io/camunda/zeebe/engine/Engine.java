@@ -115,8 +115,6 @@ public class Engine implements RecordProcessor<EngineContext> {
         currentProcessor.processRecord(
             position,
             record,
-            responseWriter,
-            streamWriter,
             (sep) -> {
               processingResultBuilder.resetPostCommitTasks();
               processingResultBuilder.appendPostCommitTask(sep::flush);

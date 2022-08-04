@@ -84,7 +84,7 @@ public final class StreamProcessorReplayModeTest {
     inOrder.verify(eventApplier, TIMEOUT).applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT)
-        .processRecord(anyLong(), any(), any(), any(), any());
+        .processRecord(anyLong(), any(), any());
     inOrder.verifyNoMoreInteractions();
   }
 

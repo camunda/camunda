@@ -23,8 +23,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -95,8 +93,6 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   @Override
   public void processRecord(
       final TypedRecord<DeploymentRecord> command,
-      final LegacyTypedResponseWriter responseWriter,
-      final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
 
     sideEffect.accept(sideEffects);
@@ -111,12 +107,12 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
         createTimerIfTimerStartEvent(command, sideEffects);
       } catch (final RuntimeException e) {
         final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
-        this.responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
+        responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
         rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
         return;
       }
 
-      this.responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
+      responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
 
       stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
 
@@ -125,7 +121,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
           deploymentEvent, stateWriter);
 
     } else {
-      this.responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectionOnCommand(
           command,
           deploymentTransformer.getRejectionType(),
           deploymentTransformer.getRejectionReason());

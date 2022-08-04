@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import java.util.function.Consumer;
 
@@ -23,12 +22,10 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
   default void processRecord(final TypedRecord<T> record) {}
 
   /**
-   * @see #processRecord(TypedRecord, LegacyTypedResponseWriter, LegacyTypedStreamWriter, Consumer)
+   * @see #processRecord(TypedRecord, Consumer)
    */
   default void processRecord(
       final TypedRecord<T> record,
-      final LegacyTypedResponseWriter responseWriter,
-      final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
     processRecord(record);
   }
@@ -36,20 +33,15 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
   /**
    * @param position the position of the current record to process
    * @param record the record to process
-   * @param responseWriter the default side effect that can be used for sending responses. {@link
-   *     LegacyTypedResponseWriter#flush()} must not be called in this method.
-   * @param streamWriter
    * @param sideEffect consumer to replace the default side effect (response writer). Can be used to
-   *     implement other types of side effects or composite side effects. If a composite side effect
-   *     involving the response writer is used, {@link LegacyTypedResponseWriter#flush()} must be
-   *     called in the {@link SideEffectProducer} implementation.
+   * implement other types of side effects or composite side effects. If a composite side effect
+   * involving the response writer is used, {@link LegacyTypedResponseWriter#flush()} must be called
+   * in the {@link SideEffectProducer} implementation.
    */
   default void processRecord(
       final long position,
       final TypedRecord<T> record,
-      final LegacyTypedResponseWriter responseWriter,
-      final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
-    processRecord(record, responseWriter, streamWriter, sideEffect);
+    processRecord(record, sideEffect);
   }
 }
