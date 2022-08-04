@@ -56,16 +56,13 @@ public final class ProcessInstanceModificationProcessor
 
     final var processInstance =
         elementInstanceState.getInstance(value.getProcessInstanceKey()).getValue();
-
     // todo: reject if process instance could not be found
+    final var process = processState.getProcessByKey(processInstance.getProcessDefinitionKey());
 
     value
         .getActivateInstructions()
         .forEach(
             instruction -> {
-              // todo: consider moving this out of the foreach loop
-              final var process =
-                  processState.getProcessByKey(processInstance.getProcessDefinitionKey());
               final var elementToActivate =
                   process.getProcess().getElementById(instruction.getElementId());
 
