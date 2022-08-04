@@ -1,4 +1,4 @@
-version: '2.4'
+version: "2.4"
 
 networks:
   zeebe_network:
@@ -38,7 +38,7 @@ services:
 
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:8.1.0-alpha3
+    image: camunda/zeebe:8.1.0-alpha4
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe
@@ -96,7 +96,7 @@ services:
 
   zeebe-e2e:
     container_name: zeebe-e2e
-    image: camunda/zeebe:8.1.0-alpha3
+    image: camunda/zeebe:8.1.0-alpha4
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe-e2e

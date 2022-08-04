@@ -36,7 +36,7 @@ services:
       - keycloak
     restart: on-failure
     container_name: identity
-    image: camunda/identity:8.1.0-alpha3
+    image: camunda/identity:8.1.0-alpha4
     ports:
       - "8084:8084"
     environment:
@@ -57,7 +57,7 @@ services:
 
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:8.1.0-alpha3
+    image: camunda/zeebe:8.1.0-alpha4
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
@@ -120,4 +120,4 @@ services:
       - identity-network
 
 networks:
-  identity-network: { }
+  identity-network: {}
