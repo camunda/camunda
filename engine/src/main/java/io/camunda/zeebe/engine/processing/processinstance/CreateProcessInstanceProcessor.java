@@ -476,7 +476,7 @@ public final class CreateProcessInstanceProcessor
 
       final Either<Failure, ?> subscribedOrFailure =
           catchEventBehavior.subscribeToEvents(
-              bpmnElementContext, catchEventSupplier, sideEffectQueue, commandWriter);
+              bpmnElementContext, catchEventSupplier, sideEffectQueue);
 
       if (subscribedOrFailure.isLeft()) {
         final var message =

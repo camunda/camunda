@@ -165,21 +165,19 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
             processMetadata.getKey(),
             startEvent.getId(),
             timerOrError.get(),
-            streamWriter,
             sideEffects);
       }
     }
   }
 
   private void unsubscribeFromPreviousTimers(
-      final LegacyTypedStreamWriter streamWriter, final ProcessMetadata processRecord) {
+      final ProcessMetadata processRecord) {
     timerInstanceState.forEachTimerForElementInstance(
         NO_ELEMENT_INSTANCE,
-        timer -> unsubscribeFromPreviousTimer(streamWriter, processRecord, timer));
+        timer -> unsubscribeFromPreviousTimer(processRecord, timer));
   }
 
   private void unsubscribeFromPreviousTimer(
-      final LegacyTypedStreamWriter streamWriter,
       final ProcessMetadata processMetadata,
       final TimerInstance timer) {
     final DirectBuffer timerBpmnId =
