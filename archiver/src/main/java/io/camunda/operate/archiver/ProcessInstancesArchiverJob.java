@@ -12,11 +12,11 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import io.camunda.operate.Metrics;
-import io.camunda.operate.archiver.util.Either;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.Either;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.micrometer.core.instrument.Timer;
 

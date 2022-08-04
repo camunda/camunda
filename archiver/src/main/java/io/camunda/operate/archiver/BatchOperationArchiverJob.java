@@ -10,9 +10,9 @@ import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
 import io.camunda.operate.Metrics;
-import io.camunda.operate.archiver.util.Either;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
+import io.camunda.operate.util.Either;
 import io.camunda.operate.property.OperateProperties;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;

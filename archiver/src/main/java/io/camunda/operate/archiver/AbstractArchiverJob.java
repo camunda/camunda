@@ -14,10 +14,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import io.camunda.operate.archiver.util.BackoffIdleStrategy;
-import io.camunda.operate.archiver.util.Either;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.BackoffIdleStrategy;
+import io.camunda.operate.util.Either;
 import io.camunda.operate.util.ElasticsearchUtil;
 
 import org.elasticsearch.action.ActionListener;
