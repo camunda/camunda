@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.protocol.impl.encoding;
 
-import io.camunda.zeebe.protocol.record.AdminRequestDecoder;
-import io.camunda.zeebe.protocol.record.AdminRequestEncoder;
-import io.camunda.zeebe.protocol.record.AdminRequestType;
-import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.management.AdminRequestDecoder;
+import io.camunda.zeebe.protocol.management.AdminRequestEncoder;
+import io.camunda.zeebe.protocol.management.AdminRequestType;
+import io.camunda.zeebe.protocol.management.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.management.MessageHeaderEncoder;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;

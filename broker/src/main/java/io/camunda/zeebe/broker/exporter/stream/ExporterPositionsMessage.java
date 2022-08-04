@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
-import io.camunda.zeebe.clustering.management.ExporterPositionsDecoder;
-import io.camunda.zeebe.clustering.management.ExporterPositionsEncoder;
-import io.camunda.zeebe.clustering.management.ExporterPositionsEncoder.PositionsEncoder;
+import io.camunda.zeebe.broker.protocol.ExporterPositionsDecoder;
+import io.camunda.zeebe.broker.protocol.ExporterPositionsEncoder;
+import io.camunda.zeebe.broker.protocol.ExporterPositionsEncoder.PositionsEncoder;
 import io.camunda.zeebe.protocol.impl.encoding.SbeBufferWriterReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;

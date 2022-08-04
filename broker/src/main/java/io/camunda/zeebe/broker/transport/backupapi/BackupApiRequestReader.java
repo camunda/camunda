@@ -8,9 +8,9 @@
 package io.camunda.zeebe.broker.transport.backupapi;
 
 import io.camunda.zeebe.broker.transport.ApiRequestHandler.RequestReader;
-import io.camunda.zeebe.protocol.record.BackupRequestDecoder;
-import io.camunda.zeebe.protocol.record.BackupRequestType;
-import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.management.BackupRequestDecoder;
+import io.camunda.zeebe.protocol.management.BackupRequestType;
+import io.camunda.zeebe.protocol.management.MessageHeaderDecoder;
 import org.agrona.DirectBuffer;
 
 public final class BackupApiRequestReader implements RequestReader<BackupRequestDecoder> {

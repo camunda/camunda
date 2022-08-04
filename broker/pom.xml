@@ -387,7 +387,7 @@
           <includePluginDependencies>true</includePluginDependencies>
           <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
           <arguments>
-            <argument>${project.build.resources[0].directory}/management-schema.xml</argument>
+            <argument>${project.build.resources[0].directory}/broker-protocol.xml</argument>
           </arguments>
           <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
         </configuration>

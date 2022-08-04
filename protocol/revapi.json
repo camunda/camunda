@@ -15,17 +15,6 @@
     "configuration": {
       "differences": [
         {
-          "justification": "Upgrading the protocol version should be backwards compatible",
-          "code": "java.field.constantValueChanged",
-          "classQualifiedName": "io.camunda.zeebe.protocol.Protocol",
-          "fieldName": "PROTOCOL_VERSION"
-        },
-        {
-          "justification": "Upgrading the schema version should be backwards compatible",
-          "code": "java.field.constantValueChanged",
-          "fieldName": "SCHEMA_VERSION"
-        },
-        {
           "justification": "Ignore Enum order for BpmnElementType as ordinal() is not used and the elements are grouped in the enum.",
           "code": "java.field.enumConstantOrderChanged",
           "classQualifiedName": "io.camunda.zeebe.protocol.record.value.BpmnElementType"
@@ -42,26 +31,6 @@
           "justification": "Ignore Enum order for ValueType as ordinal() is not used",
           "code": "java.field.enumConstantOrderChanged",
           "classQualifiedName": "io.camunda.zeebe.protocol.record.ValueType"
-        },
-        {
-          "justification": "Ignore the removal of this old BpmnElementType that was used for testing.",
-          "code": "java.field.removed",
-          "classQualifiedName": "io.camunda.zeebe.protocol.record.value.BpmnElementType",
-          "fieldName": "TESTING_ONLY"
-        },
-        {
-          "justification": "Ignore Enum order for AdminRequestType as ordinal() is not used",
-          "code": "java.field.enumConstantOrderChanged",
-          "classQualifiedName": "io.camunda.zeebe.protocol.record.AdminRequestType"
-        },
-        {
-          "justification": "Adding optional fields to the end of the root block is backwards compatible",
-          "code": "java.field.constantValueChanged",
-          "regex": true,
-          "classQualifiedName": "io.camunda.zeebe.protocol.record.AdminRequest(Decoder|Encoder)",
-          "fieldName": "BLOCK_LENGTH",
-          "oldValue": 3,
-          "newValue": 5
         }
       ]
     }

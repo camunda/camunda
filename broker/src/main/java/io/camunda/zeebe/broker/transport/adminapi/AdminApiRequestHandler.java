@@ -12,7 +12,7 @@ import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.transport.ApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
-import io.camunda.zeebe.protocol.record.AdminRequestType;
+import io.camunda.zeebe.protocol.management.AdminRequestType;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
