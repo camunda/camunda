@@ -22,11 +22,20 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.Activity;
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.Definitions;
+import io.camunda.zeebe.model.bpmn.instance.EndEvent;
+import io.camunda.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.Task;
+import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnDiagram;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnPlane;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -168,5 +177,32 @@ public class ModelWalkerTest {
             Activity.class,
             Task.class,
             UserTask.class);
+  }
+
+  @Test
+  public void shouldIgnoreUnknownElementsAndAttributes() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.readModelFromStream(ModelWalkerTest.class.getResourceAsStream("ModelWalkerTest.bpmn"));
+
+    final List<BpmnModelElementInstance> visitedElements = new ArrayList<>();
+
+    final ModelWalker walker = new ModelWalker(modelInstance);
+
+    // when
+    walker.walk(visitedElements::add);
+
+    // then
+
+    assertThat(visitedElements)
+        .anyMatch(Definitions.class::isInstance)
+        .anyMatch(StartEvent.class::isInstance)
+        .anyMatch(ExclusiveGateway.class::isInstance)
+        .anyMatch(ServiceTask.class::isInstance)
+        .anyMatch(IntermediateCatchEvent.class::isInstance)
+        .anyMatch(TimerEventDefinition.class::isInstance)
+        .anyMatch(EndEvent.class::isInstance)
+        .anyMatch(BpmnDiagram.class::isInstance)
+        .anyMatch(BpmnPlane.class::isInstance);
   }
 }
