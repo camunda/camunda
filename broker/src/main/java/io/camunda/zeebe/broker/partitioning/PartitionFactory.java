@@ -215,7 +215,7 @@ final class PartitionFactory {
       topologyManager.addTopologyPartitionListener(partitionListener);
 
       final InterPartitionCommandSenderImpl partitionCommandSender =
-          new InterPartitionCommandSenderImpl(communicationService, partitionListener);
+          new InterPartitionCommandSenderImpl(communicationService);
       final SubscriptionCommandSender subscriptionCommandSender =
           new SubscriptionCommandSender(
               recordProcessorContext.getPartitionId(), partitionCommandSender);

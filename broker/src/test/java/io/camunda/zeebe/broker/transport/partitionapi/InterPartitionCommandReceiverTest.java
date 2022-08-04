@@ -249,7 +249,7 @@ final class InterPartitionCommandReceiverTest {
         mock(ClusterCommunicationService.class);
 
     final var topologyListener = mockTopologyListener(receiverPartitionId, receiverBrokerId);
-    final var sender = new InterPartitionCommandSenderImpl(communicationService, topologyListener);
+    final var sender = new InterPartitionCommandSenderImpl(communicationService);
 
     final var buffer = new UnsafeBuffer(command);
     final var bufferWriter = new DirectBufferWriter();
