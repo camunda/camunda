@@ -14,8 +14,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListene
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriterImpl;
-import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -30,7 +28,6 @@ public final class StreamProcessorBuilder {
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private ActorSchedulingService actorSchedulingService;
   private ZeebeDb zeebeDb;
-  private Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private int nodeId;
   private Function<LogStreamBatchWriter, LegacyTypedStreamWriter> typedStreamWriterFactory =
       LegacyTypedStreamWriterImpl::new;
@@ -78,12 +75,6 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder eventApplierFactory(
-      final Function<MutableZeebeState, EventApplier> eventApplierFactory) {
-    this.eventApplierFactory = eventApplierFactory;
-    return this;
-  }
-
   public StreamProcessorBuilder streamProcessorMode(final StreamProcessorMode streamProcessorMode) {
     streamProcessorContext.processorMode(streamProcessorMode);
     return this;
@@ -113,10 +104,6 @@ public final class StreamProcessorBuilder {
     return recordProcessor;
   }
 
-  public Function<MutableZeebeState, EventApplier> getEventApplierFactory() {
-    return eventApplierFactory;
-  }
-
   public StreamProcessor build() {
     validate();
 
@@ -127,7 +114,6 @@ public final class StreamProcessorBuilder {
     Objects.requireNonNull(actorSchedulingService, "No task scheduler provided.");
     Objects.requireNonNull(streamProcessorContext.getLogStream(), "No log stream provided.");
     Objects.requireNonNull(zeebeDb, "No database provided.");
-    Objects.requireNonNull(eventApplierFactory, "No factory for the event supplier provided.");
   }
 
   public Function<LogStreamBatchWriter, LegacyTypedStreamWriter> getTypedStreamWriterFactory() {
