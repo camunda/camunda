@@ -1,6 +1,6 @@
-# Event scopes
+# Events
 
-To understand what event scopes are, we first need to understand what events are. This description provides a summary of the BPMN 2.0 specification and combines it with how it works in Zeebe.
+This is a description of events and event scopes. It combines a summary of the BPMN 2.0 specification with how they work in Zeebe.
 
 In BPMN, **events** are flow nodes that represent that something can happen that affects the flow of the process.
 
@@ -12,6 +12,8 @@ There are three main types of events:
 and two different flavors of events:
 - **catch events**, i.e. events that catch a trigger
 - **throw events**, i.e. events that throw a trigger (sometimes referred to as a result)
+
+## Triggers
 
 So events represent where in the process "something" can happen. This "something" is called a **trigger**. When a *trigger occurs*, the engine *forwards the trigger* to the catch event. The spec also refers to this as *triggering the catch event*.
 
@@ -25,6 +27,8 @@ There are multiple ways to **forward a trigger**:
 When triggered, events can **interrupt** an active flow. The following events are able to interrupt:
 - start event of event sub-processes, i.e. when triggered it terminates the (sub-)process encompassing the event sub-process
 - boundary event, i.e. when triggered it terminates the activity to which it is attached
+
+## Scopes
 
 **Scopes** are used to define the semantics of:
 - visibility of data, i.e. an activity's visibility of process variables
