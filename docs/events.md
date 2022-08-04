@@ -26,15 +26,15 @@ According to the spec, there are multiple ways to **forward a trigger**:
 - cancellation, e.g. a termination of the process instance
 - compensation, not yet available in zeebe
 
-When a trigger is forwarded to an event, it has some effect in the process. Depending on the type of event, the event is activated (e.g. start event) or completed (if already active, e.g. non-boundary intermediate event) and the process execution can continue.
+When a trigger is forwarded to a catch event, it has some effect in the process. Depending on the type, the catch event is activated (e.g. start event) or completed (if already active, e.g. non-boundary intermediate event) and the process execution can continue.
 
-In addition, some events that had a trigger forwarded can **interrupt** an active flow. An interrupted active flow is *terminated*. Events will only interrupt the active flow if they are *interrupting*. Events that are *non-interrupting* won't interrupt the active flow. The following events can be *interrupting* or *non-interrupting*, all others are *non-interrupting*:
+In addition, some catch events that had a trigger forwarded can **interrupt** an active flow. An interrupted active flow is *terminated*. Catch events will only interrupt the active flow if they are *interrupting*. Catch events that are *non-interrupting* won't interrupt the active flow. The following catch events can be *interrupting* or *non-interrupting*, all others are *non-interrupting*:
 - start event of event sub-processes, i.e. when triggered it interrupts the (sub-)process encompassing the event sub-process
 - boundary event, i.e. when triggered it interrupts the activity to which it is attached
 
 See [BPMN (v2.0.2): 10.5.1 Concepts](https://www.omg.org/spec/BPMN/2.0.2/PDF#10.5.1%20Concepts) for more details about triggers.
 
-See [BPMN (v2.0.2): 10.5.6 Handling Events](https://www.omg.org/spec/BPMN/2.0.2/PDF#10.5.6%20Handling%20Events) for more details on what should happen when a trigger occurs.
+See [BPMN (v2.0.2): 10.5.6 Handling Events](https://www.omg.org/spec/BPMN/2.0.2/PDF#10.5.6%20Handling%20Events) for more details on what should happen when a trigger is forwarded to a catch event.
 
 ## Scopes
 
