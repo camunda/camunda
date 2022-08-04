@@ -12,7 +12,6 @@ import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.ServerTransport;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 
 final class CommandApiServiceStep extends AbstractBrokerStartupStep {
 
@@ -26,7 +25,12 @@ final class CommandApiServiceStep extends AbstractBrokerStartupStep {
       final BrokerStartupContext brokerStartupContext,
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
-    concurrencyControl.run(() -> startServerTransport(brokerStartupContext, startupFuture));
+    concurrencyControl.run(
+        () ->
+            startCommandApiService(
+                brokerStartupContext,
+                brokerStartupContext.getGatewayBrokerTransport(),
+                startupFuture));
   }
 
   @Override
@@ -36,10 +40,7 @@ final class CommandApiServiceStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> shutdownFuture) {
 
     final var commandApiServiceActor = brokerShutdownContext.getCommandApiService();
-    if (commandApiServiceActor == null) {
-      closeServerTransport(brokerShutdownContext, concurrencyControl, shutdownFuture);
-      return;
-    }
+
     brokerShutdownContext.removePartitionListener(commandApiServiceActor);
     brokerShutdownContext
         .getDiskSpaceUsageMonitor()
@@ -50,31 +51,9 @@ final class CommandApiServiceStep extends AbstractBrokerStartupStep {
         proceed(
             () -> {
               brokerShutdownContext.setCommandApiService(null);
-              closeServerTransport(brokerShutdownContext, concurrencyControl, shutdownFuture);
+              shutdownFuture.complete(brokerShutdownContext);
             },
             shutdownFuture));
-  }
-
-  private void startServerTransport(
-      final BrokerStartupContext brokerStartupContext,
-      final ActorFuture<BrokerStartupContext> startupFuture) {
-
-    final var concurrencyControl = brokerStartupContext.getConcurrencyControl();
-    final var brokerInfo = brokerStartupContext.getBrokerInfo();
-    final var schedulingService = brokerStartupContext.getActorSchedulingService();
-    final var messagingService = brokerStartupContext.getApiMessagingService();
-
-    final var atomixServerTransport =
-        new AtomixServerTransport(brokerInfo.getNodeId(), messagingService);
-
-    concurrencyControl.runOnCompletion(
-        schedulingService.submitActor(atomixServerTransport),
-        proceed(
-            () -> {
-              brokerStartupContext.setCommandApiServerTransport(atomixServerTransport);
-              startCommandApiService(brokerStartupContext, atomixServerTransport, startupFuture);
-            },
-            startupFuture));
   }
 
   private void startCommandApiService(
@@ -113,25 +92,5 @@ final class CommandApiServiceStep extends AbstractBrokerStartupStep {
               startupFuture.complete(brokerStartupContext);
             },
             startupFuture));
-  }
-
-  private void closeServerTransport(
-      final BrokerStartupContext brokerShutdownContext,
-      final ConcurrencyControl concurrencyControl,
-      final ActorFuture<BrokerStartupContext> shutdownFuture) {
-    final var serverTransport = brokerShutdownContext.getCommandApiServerTransport();
-
-    if (serverTransport == null) {
-      return;
-    }
-
-    concurrencyControl.runOnCompletion(
-        serverTransport.closeAsync(),
-        proceed(
-            () -> {
-              brokerShutdownContext.setCommandApiServerTransport(null);
-              shutdownFuture.complete(brokerShutdownContext);
-            },
-            shutdownFuture));
   }
 }
