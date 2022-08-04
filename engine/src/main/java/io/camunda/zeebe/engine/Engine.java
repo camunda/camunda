@@ -31,7 +31,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 
-public class Engine implements RecordProcessor<EngineContext> {
+public class Engine implements RecordProcessor {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
