@@ -23,8 +23,9 @@ According to the spec, there are multiple ways to **forward a trigger**:
 - publication, e.g. when a message is published it can be correlated to an event
 - direct resolution, e.g. timer triggers are implicitly thrown
 - propagation, i.e. forwarded from the location where the event has been thrown to the innermost enclosing scope instance (we'll discuss scopes later) with an attached event able to catch the trigger, e.g. throwing and catching a bpmn error
-- cancellation, e.g. a termination of the process instance
+- cancellation, e.g. a termination of the process instance (not handled as an event trigger in Zeebe)
 - compensation, not yet available in zeebe
+- (Zeebe also considers job completion as a trigger that is forwarded to the respective job worker task, but this is not part of the BPMN spec)
 
 When a trigger is forwarded to a catch event, it has some effect in the process. Depending on the type, the catch event is activated (e.g. start event) or completed (if already active, e.g. non-boundary intermediate event) and the process execution can continue.
 
