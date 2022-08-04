@@ -17,12 +17,6 @@ public interface ProcessingScheduleService {
 
   <T> void runOnCompletion(ActorFuture<T> precedingTask, BiConsumer<T, Throwable> followUpTask);
 
-  @Deprecated
-  <T> void runOnCompletion(ActorFuture<T> precedingTask, LegacyTask followUpTask);
-
-  @Deprecated
-  void runDelayed(Duration delay, LegacyTask followUpTask);
-
   default void runAtFixedRate(final Duration delay, final Runnable task) {
     runDelayed(
         delay,
