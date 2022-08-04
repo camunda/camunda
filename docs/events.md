@@ -65,14 +65,14 @@ Event scopes are not entities in Zeebe. Instead, Zeebe only cares about event sc
 
 ### Event scope instances
 
-An **event scope instance** is an instance of an event scope. It refers to a specific element instance, because it is stored in the state (in the event scope column family) under the key of that element instance. So, we can directly access the event scope for an element instance.
+An **event scope instance** is an instance of an event scope. It directly refers to a specific element instance, because it is stored in the state (in the event scope column family) under the key of that element instance. This means, we can directly access the event scope for an element instance. We'll see later what we use this for.
 
 :::info
 Event scope instances are persisted in the state (as `EventScopeInstance`) but not represented on the log stream. In contrast, event triggers are persisted along with the event scope instance in the state, and are represented on the log stream as `ProcessEvent` records.
 :::
 
 The engine uses event scope instances:
-- to find the relevant catch event when a trigger occurs
+- ~~to find the relevant catch event when a trigger occurs~~ - It would be reasonable to expect that the engine uses the event scope instance to find the relevant catch event for a trigger, but that is not the case. We'll discuss how this works later.
 - to determine whether the trigger can be forwarded to the catch event, e.g. boundary events attached to an activity can no longer be triggered when the activity is already interrupted by an attached boundary event
 
 An event scope can be triggered if no interrupting event was triggered (i.e. it is not interrupted). If an interrupting catch event was triggered then no other event can be triggered, except for boundary events. If an interrupting boundary event was triggered then no other events, including boundary events, can be triggered, i.e. it is not **accepting** any events.
@@ -82,4 +82,3 @@ An event scope instance has 4 properties:
 - `interrupted`, when `true` it is interrupted, but may still be accepting events for boundary events.
 - `interruptingElementIds`, the element IDs of the catch events that can interrupt the event scope instance. This property doesn't change during the event scope instance's lifetime.
 - `boundaryElementIds`, the element IDs of the boundary events that are attached to the event scope instance. This property doesn't change during the event scope instance's lifetime.
-
