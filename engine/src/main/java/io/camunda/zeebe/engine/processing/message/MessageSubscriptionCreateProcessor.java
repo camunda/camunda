@@ -11,9 +11,8 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
@@ -38,6 +37,7 @@ public final class MessageSubscriptionCreateProcessor
   private final KeyGenerator keyGenerator;
 
   private MessageSubscriptionRecord subscriptionRecord;
+  private final TypedRejectionWriter rejectionWriter;
 
   public MessageSubscriptionCreateProcessor(
       final MessageState messageState,
@@ -48,6 +48,7 @@ public final class MessageSubscriptionCreateProcessor
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
     stateWriter = writers.state();
+    rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
     messageCorrelator = new MessageCorrelator(messageState, commandSender, stateWriter);
   }
@@ -55,8 +56,6 @@ public final class MessageSubscriptionCreateProcessor
   @Override
   public void processRecord(
       final TypedRecord<MessageSubscriptionRecord> record,
-      final LegacyTypedResponseWriter responseWriter,
-      final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
     subscriptionRecord = record.getValue();
 
@@ -64,7 +63,7 @@ public final class MessageSubscriptionCreateProcessor
         subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
       sideEffect.accept(this::sendAcknowledgeCommand);
 
-      streamWriter.appendRejection(
+      rejectionWriter.appendRejection(
           record,
           RejectionType.INVALID_STATE,
           String.format(

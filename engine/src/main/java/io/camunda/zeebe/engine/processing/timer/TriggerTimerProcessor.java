@@ -16,9 +16,6 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedCommandWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -87,10 +84,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
 
   @Override
   public void processRecord(
-      final TypedRecord<TimerRecord> record,
-      final LegacyTypedResponseWriter responseWriter,
-      final LegacyTypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffects) {
+      final TypedRecord<TimerRecord> record, final Consumer<SideEffectProducer> sideEffects) {
     final var timer = record.getValue();
     final var elementInstanceKey = timer.getElementInstanceKey();
     final var processDefinitionKey = timer.getProcessDefinitionKey();
@@ -122,7 +116,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
     }
 
     if (shouldReschedule(timer)) {
-      rescheduleTimer(timer, catchEvent, streamWriter, sideEffects);
+      rescheduleTimer(timer, catchEvent, sideEffects);
     }
   }
 
@@ -144,7 +138,6 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
   private void rescheduleTimer(
       final TimerRecord record,
       final ExecutableCatchEvent event,
-      final LegacyTypedCommandWriter writer,
       final Consumer<SideEffectProducer> sideEffects) {
     final Either<Failure, Timer> timer =
         event.getTimerFactory().apply(expressionProcessor, record.getElementInstanceKey());
@@ -164,7 +157,6 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
         record.getProcessDefinitionKey(),
         event.getId(),
         refreshedTimer,
-        writer,
         sideEffects::accept);
   }
 

@@ -9,8 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -23,28 +22,21 @@ public final class ProcessInstanceCommandProcessor
   private final ElementInstanceState elementInstanceState;
   private final ProcessInstanceCommandContext context;
 
-  public ProcessInstanceCommandProcessor(final MutableElementInstanceState elementInstanceState) {
+  public ProcessInstanceCommandProcessor(
+      final Writers writers, final MutableElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
     commandHandlers = new ProcessInstanceCommandHandlers();
-    context = new ProcessInstanceCommandContext(elementInstanceState);
+    context = new ProcessInstanceCommandContext(elementInstanceState, writers);
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<ProcessInstanceRecord> record,
-      final LegacyTypedResponseWriter responseWriter,
-      final LegacyTypedStreamWriter streamWriter) {
-    populateCommandContext(record, responseWriter, streamWriter);
+  public void processRecord(final TypedRecord<ProcessInstanceRecord> record) {
+    populateCommandContext(record);
     commandHandlers.handle(context);
   }
 
-  private void populateCommandContext(
-      final TypedRecord<ProcessInstanceRecord> record,
-      final LegacyTypedResponseWriter responseWriter,
-      final LegacyTypedStreamWriter streamWriter) {
+  private void populateCommandContext(final TypedRecord<ProcessInstanceRecord> record) {
     context.setRecord(record);
-    context.setResponseWriter(responseWriter);
-    context.setStreamWriter(streamWriter);
 
     final ElementInstance elementInstance = elementInstanceState.getInstance(record.getKey());
     context.setElementInstance(elementInstance);

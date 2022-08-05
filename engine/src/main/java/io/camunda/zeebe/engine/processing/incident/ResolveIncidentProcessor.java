@@ -12,10 +12,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriterLegacy;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -48,6 +48,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   private final IncidentState incidentState;
   private final ElementInstanceState elementInstanceState;
   private final KeyGenerator keyGenerator;
+  private final TypedResponseWriter responseWriter;
 
   public ResolveIncidentProcessor(
       final ZeebeState zeebeState,
@@ -57,6 +58,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
     incidentState = zeebeState.getIncidentState();
     elementInstanceState = zeebeState.getElementInstanceState();
     this.keyGenerator = keyGenerator;
@@ -64,16 +66,13 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
   @Override
   public void processRecord(
-      final TypedRecord<IncidentRecord> command,
-      final LegacyTypedResponseWriter responseWriter,
-      final LegacyTypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<IncidentRecord> command, final Consumer<SideEffectProducer> sideEffect) {
     final long key = command.getKey();
 
     final var incident = incidentState.getIncidentRecord(key);
     if (incident == null) {
       final var errorMessage = String.format(NO_INCIDENT_FOUND_MSG, key);
-      rejectResolveCommand(command, responseWriter, errorMessage, RejectionType.NOT_FOUND);
+      rejectResolveCommand(command, errorMessage, RejectionType.NOT_FOUND);
       return;
     }
 
@@ -81,12 +80,11 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
 
     // if it fails, a new incident is raised
-    attemptToContinueProcessProcessing(command, streamWriter, sideEffect, incident);
+    attemptToContinueProcessProcessing(command, sideEffect, incident);
   }
 
   private void rejectResolveCommand(
       final TypedRecord<IncidentRecord> command,
-      final LegacyTypedResponseWriter responseWriter,
       final String errorMessage,
       final RejectionType rejectionType) {
 
@@ -96,7 +94,6 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
   private void attemptToContinueProcessProcessing(
       final TypedRecord<IncidentRecord> command,
-      final LegacyTypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect,
       final IncidentRecord incident) {
     final long jobKey = incident.getJobKey();
@@ -111,8 +108,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
             failedCommand -> {
               sideEffects.clear();
 
-              bpmnStreamProcessor.processRecord(
-                  failedCommand, noopResponseWriter, streamWriter, sideEffects::add);
+              bpmnStreamProcessor.processRecord(failedCommand, sideEffects::add);
 
               sideEffect.accept(sideEffects);
             },

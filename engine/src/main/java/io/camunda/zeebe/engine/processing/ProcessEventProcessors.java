@@ -24,7 +24,6 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCommand
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.CancelTimerProcessor;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
@@ -67,7 +66,8 @@ public final class ProcessEventProcessors {
 
     final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
 
-    addProcessInstanceCommandProcessor(typedRecordProcessors, zeebeState.getElementInstanceState());
+    addProcessInstanceCommandProcessor(
+        writers, typedRecordProcessors, zeebeState.getElementInstanceState());
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(
@@ -101,7 +101,7 @@ public final class ProcessEventProcessors {
         variableBehavior,
         zeebeState.getElementInstanceState(),
         keyGenerator,
-        writers.state());
+        writers);
     addProcessInstanceCreationStreamProcessors(
         typedRecordProcessors,
         zeebeState,
@@ -116,11 +116,12 @@ public final class ProcessEventProcessors {
   }
 
   private static void addProcessInstanceCommandProcessor(
+      final Writers writers,
       final TypedRecordProcessors typedRecordProcessors,
       final MutableElementInstanceState elementInstanceState) {
 
     final ProcessInstanceCommandProcessor commandProcessor =
-        new ProcessInstanceCommandProcessor(elementInstanceState);
+        new ProcessInstanceCommandProcessor(writers, elementInstanceState);
 
     Arrays.stream(ProcessInstanceIntent.values())
         .filter(ProcessInstanceIntent::isProcessInstanceCommand)
@@ -200,12 +201,12 @@ public final class ProcessEventProcessors {
       final VariableBehavior variableBehavior,
       final ElementInstanceState elementInstanceState,
       final KeyGenerator keyGenerator,
-      final StateWriter stateWriter) {
+      final Writers writers) {
     typedRecordProcessors.onCommand(
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,
         new UpdateVariableDocumentProcessor(
-            elementInstanceState, keyGenerator, variableBehavior, stateWriter));
+            elementInstanceState, keyGenerator, variableBehavior, writers));
   }
 
   private static void addProcessInstanceCreationStreamProcessors(

@@ -15,9 +15,9 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -46,9 +46,10 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private final EventHandle eventHandle;
   private final Subscriptions correlatingSubscriptions = new Subscriptions();
 
-  private LegacyTypedResponseWriter responseWriter;
   private MessageRecord messageRecord;
   private long messageKey;
+  private final TypedResponseWriter responseWriter;
+  private final TypedRejectionWriter rejectionWriter;
 
   public MessagePublishProcessor(
       final MessageState messageState,
@@ -66,6 +67,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     this.commandSender = commandSender;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
+    responseWriter = writers.response();
+    rejectionWriter = writers.rejection();
     eventHandle =
         new EventHandle(
             keyGenerator, eventScopeInstanceState, writers, processState, eventTriggerBehavior);
@@ -73,11 +76,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
   @Override
   public void processRecord(
-      final TypedRecord<MessageRecord> command,
-      final LegacyTypedResponseWriter responseWriter,
-      final LegacyTypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect) {
-    this.responseWriter = responseWriter;
+      final TypedRecord<MessageRecord> command, final Consumer<SideEffectProducer> sideEffect) {
     messageRecord = command.getValue();
 
     correlatingSubscriptions.clear();
@@ -91,18 +90,16 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
           String.format(
               ALREADY_PUBLISHED_MESSAGE, bufferAsString(messageRecord.getMessageIdBuffer()));
 
-      streamWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionReason);
+      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionReason);
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.ALREADY_EXISTS, rejectionReason);
     } else {
-      handleNewMessage(command, responseWriter, sideEffect);
+      handleNewMessage(command, sideEffect);
     }
   }
 
   private void handleNewMessage(
-      final TypedRecord<MessageRecord> command,
-      final LegacyTypedResponseWriter responseWriter,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<MessageRecord> command, final Consumer<SideEffectProducer> sideEffect) {
     messageKey = keyGenerator.nextKey();
 
     // calculate the deadline based on the command's timestamp
