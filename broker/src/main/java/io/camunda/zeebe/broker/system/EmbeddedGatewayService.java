@@ -15,7 +15,7 @@ import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.function.Function;
 
@@ -24,7 +24,7 @@ public final class EmbeddedGatewayService implements AutoCloseable {
 
   public EmbeddedGatewayService(
       final BrokerCfg configuration,
-      final ActorScheduler actorScheduler,
+      final ActorSchedulingService actorScheduler,
       final MessagingService messagingService,
       final ClusterMembershipService membershipService,
       final ClusterEventService eventService) {
