@@ -146,7 +146,6 @@ public class StandaloneGateway
         atomixCluster.getMessagingService(),
         atomixCluster.getMembershipService(),
         atomixCluster.getEventService(),
-        actorScheduler,
-        false);
+        actorScheduler);
   }
 }

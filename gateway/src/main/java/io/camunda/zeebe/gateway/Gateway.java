@@ -73,7 +73,9 @@ public final class Gateway {
       final ActorSchedulingService actorSchedulingService) {
     this(
         gatewayCfg,
-        cfg -> new BrokerClientImpl(cfg, messagingService, membershipService, eventService),
+        cfg ->
+            new BrokerClientImpl(
+                cfg, messagingService, membershipService, eventService, actorSchedulingService),
         DEFAULT_SERVER_BUILDER_FACTORY,
         actorSchedulingService);
   }
@@ -95,7 +97,7 @@ public final class Gateway {
     this.serverBuilderFactory = serverBuilderFactory;
     this.actorSchedulingService = actorSchedulingService;
 
-    this.healthManager = new GatewayHealthManagerImpl();
+    healthManager = new GatewayHealthManagerImpl();
   }
 
   public GatewayCfg getGatewayCfg() {
@@ -149,7 +151,7 @@ public final class Gateway {
       final var server = buildServer(serverBuilder, gatewayGrpcService);
       server.start();
       return Either.right(server);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       return Either.left(e);
     }
   }

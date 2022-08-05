@@ -31,7 +31,7 @@ public final class EmbeddedGatewayService implements AutoCloseable {
     final Function<GatewayCfg, BrokerClient> brokerClientFactory =
         cfg ->
             new BrokerClientImpl(
-                cfg, messagingService, membershipService, eventService, actorScheduler, false);
+                cfg, messagingService, membershipService, eventService, actorScheduler);
     gateway = new Gateway(configuration.getGateway(), brokerClientFactory, actorScheduler);
   }
 
