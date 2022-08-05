@@ -10,7 +10,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
-import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 
 import java.util.Map;
 
@@ -29,9 +28,8 @@ public class ProcessDigestDto extends ProcessDigestResponseDto {
 
   private Map<String, String> kpiReportResults;
 
-  public ProcessDigestDto(final AlertInterval checkInterval, final Boolean enabled,
-                          final Map<String, String> kpiReportResults) {
-    super(checkInterval, enabled);
+  public ProcessDigestDto(final Boolean enabled, final Map<String, String> kpiReportResults) {
+    super(enabled);
     this.kpiReportResults = kpiReportResults;
   }
 

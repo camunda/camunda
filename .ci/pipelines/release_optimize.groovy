@@ -11,7 +11,7 @@ static String NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 
 static String MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
 
-static String DIND_DOCKER_IMAGE() { return "docker:18.06-dind" }
+static String DIND_DOCKER_IMAGE() { return "docker:20.10.16-dind" }
 
 static String DOCKER_REGISTRY(boolean pushChanges) {
   return (pushChanges && !isStagingJenkins()) ?
@@ -87,19 +87,39 @@ spec:
       requests:
         cpu: 5
         memory: 6Gi
-  - name: docker
+  # this docker-in-docker container is used to spawn containers dynamically inside a docker container
+  - name: dind
     image: ${DIND_DOCKER_IMAGE()}
     args: ["--storage-driver=overlay2"]
     securityContext:
       privileged: true
+    env:
+      # This disabled automatic TLS setup as this is not exposed to the network anyway
+      - name: DOCKER_TLS_CERTDIR
+        value: ""
     tty: true
     resources:
       limits:
-        cpu: 2
+        cpu: 1
         memory: 1Gi
       requests:
-        cpu: 2
+        cpu: 1
         memory: 1Gi
+  # this docker image is used for docker cli as it ships with additional tooling like buildx for multiplatform builds
+  - name: docker
+    image: crazymax/docker:20.10.16
+    command: ["/bin/bash"]
+    env:
+      - name: DOCKER_HOST
+        value: tcp://localhost:2375
+    tty: true
+    resources:
+      limits:
+        cpu: 500m
+        memory: 256Mi
+      requests:
+        cpu: 500m
+        memory: 256Mi
   - name: gcloud
     image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     imagePullPolicy: Always
@@ -360,43 +380,36 @@ pipeline {
       }
       steps {
         container('docker') {
-          configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-            sh("""
-            cp \$MAVEN_SETTINGS_XML settings.xml
-            echo '${GCR_REGISTRY_CREDENTIALS}' | docker login -u _json_key https://gcr.io --password-stdin
-            echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize ${DOCKER_REGISTRY(params.PUSH_CHANGES)} --password-stdin
+          sh("""#!/bin/bash -eux
+          echo '${GCR_REGISTRY_CREDENTIALS}' | docker login -u _json_key https://gcr.io --password-stdin
+          echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize ${DOCKER_REGISTRY(params.PUSH_CHANGES)} --password-stdin
 
-            docker build -t ${PROJECT_DOCKER_IMAGE()}:${VERSION} \
-              --build-arg SKIP_DOWNLOAD=true \
-              --build-arg VERSION=${VERSION} \
-              --build-arg SNAPSHOT=false \
-              .
-
-            if [ "${PUSH_CHANGES}" = true ]; then
-              docker push ${PROJECT_DOCKER_IMAGE()}:${VERSION}
-            fi
-
-            docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${VERSION}
-            docker push ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${VERSION}
-
-            # major and minor versions are always tagged as latest
-            if [ "${MAJOR_OR_MINOR}" = true || "${DOCKER_LATEST}" ]; then
-              docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:latest
-              docker push ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:latest
-            fi
+          tags=('${PROJECT_DOCKER_IMAGE()}:${VERSION}' '${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${VERSION}')
             
-            if [ "${PUSH_CHANGES}" = true ]; then
-              docker login --username ${DOCKERHUB_REGISTRY_CREDENTIALS_USR} --password ${DOCKERHUB_REGISTRY_CREDENTIALS_PSW}
-              docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${DOCKERHUB_IMAGE()}:${VERSION}
-              docker push ${DOCKERHUB_IMAGE()}:${VERSION}
-              # major and minor versions are always tagged as latest
-              if [ "${MAJOR_OR_MINOR}" = true || "${DOCKER_LATEST}" ]; then
-                docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${DOCKERHUB_IMAGE()}:latest
-                docker push ${DOCKERHUB_IMAGE()}:latest
-              fi
+          docker_args=""
+          if [ "${PUSH_CHANGES}" = true ]; then
+            docker_args+="--push"
+
+            docker login --username ${DOCKERHUB_REGISTRY_CREDENTIALS_USR} --password ${DOCKERHUB_REGISTRY_CREDENTIALS_PSW}
+              
+            tags+=('${DOCKERHUB_IMAGE()}:${VERSION}')
+            # major and minor versions are always tagged as latest
+            if [ "${MAJOR_OR_MINOR}" = true ] || [ "${DOCKER_LATEST}" = true ]; then
+               tags+=('${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:latest')
+               tags+=('${DOCKERHUB_IMAGE()}:latest')
             fi
+          fi
+            
+          printf -v tag_arguments -- "-t %s " "\${tags[@]}"
+          docker buildx create --use
+          docker buildx build \
+            \${tag_arguments} \
+            --build-arg ARTIFACT_PATH=target/checkout/distro/target \
+            --build-arg VERSION=${VERSION} \
+            --platform linux/amd64,linux/arm64 \
+            \${docker_args} \
+            .
           """)
-          }
         }
       }
     }

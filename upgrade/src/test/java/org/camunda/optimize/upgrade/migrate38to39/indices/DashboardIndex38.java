@@ -14,7 +14,7 @@ import java.io.IOException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-public class DashboardIndexOld extends DefaultIndexMappingCreator {
+public class DashboardIndex38 extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 5;
 

@@ -19,6 +19,8 @@ pipelineJob('deploy-optimize-branch-to-k8s') {
     booleanParam('DRY_RUN', false, 'Enable dry-run mode.')
     stringParam('ES_VERSION', '', 'Elasticsearch version to use, defaults to reading it from pom.xml.')
     stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')
+    stringParam('ZEEBE_VERSION', '', 'Identity version to use, defaults to reading it from pom.xml.')
+    stringParam('IDENTITY_VERSION', '', 'Zeebe version to use, defaults to reading it from pom.xml.')
   }
 
   properties {

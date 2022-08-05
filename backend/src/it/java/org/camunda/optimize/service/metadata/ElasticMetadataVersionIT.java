@@ -56,7 +56,7 @@ public class ElasticMetadataVersionIT extends AbstractIT {
       ConfigurableApplicationContext context = SpringApplication.run(Main.class);
       context.close();
     })
-      .getCause().getCause()
+      .cause().cause()
       .hasMessageContaining("The Elasticsearch Optimize schema version [" + SCHEMA_VERSION + "]");
 
     elasticSearchIntegrationTestExtension.deleteAllOptimizeData();

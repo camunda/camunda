@@ -4,7 +4,7 @@
 
   <groupId>org.camunda.optimize</groupId>
   <artifactId>parent</artifactId>
-  <version>3.9.0-preview-1</version>
+  <version>3.9.0</version>
   <packaging>pom</packaging>
   <name>Camunda Optimize</name>
 
@@ -23,13 +23,13 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.8.0</project.previousVersion>
+    <project.previousVersion>3.9.0-preview-1-RC1</project.previousVersion>
 
     <camunda.engine.version>7.16.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.17.0-ee</camunda.maven.artifacts.version>
 
-    <zeebe.version>8.0.4</zeebe.version>
-    <identity.version>8.0.0</identity.version>
+    <zeebe.version>8.0.5</zeebe.version>
+    <identity.version>8.0.5</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
@@ -47,12 +47,12 @@
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.18.0</elasticsearch.log4j.version>
     <guava.version>31.1-jre</guava.version>
-    <spring.boot.version>2.7.1</spring.boot.version>
-    <spring.version>5.3.21</spring.version>
+    <spring.boot.version>2.7.2</spring.boot.version>
+    <spring.version>5.3.22</spring.version>
     <mockito.version>4.6.1</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
-    <junit.jupiter.version>5.8.2</junit.jupiter.version>
-    <junit.platform.version>1.8.2</junit.platform.version>
+    <junit.jupiter.version>5.9.0</junit.jupiter.version>
+    <junit.platform.version>1.9.0</junit.platform.version>
     <mockserver.version>5.11.2</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
     <assertj.version>3.23.1</assertj.version>
@@ -395,7 +395,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>3.4.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -408,7 +408,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.1.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -434,7 +434,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>2.8.2</version>
+          <version>3.0.0</version>
         </plugin>
         <plugin>
           <groupId>com.github.eirslett</groupId>

@@ -41,5 +41,5 @@ camunda.cloud/created-by: "{{ .Values.git.repoUrl }}/blob/{{ .Values.git.branch 
 {{ end }}
 
 {{- define "ingress.domain" -}}
-{{- printf "%s.%s" .Release.Name .Values.ingress.domain | trimPrefix "optimize-" -}}
+{{- printf "%s-%s.%s" .Release.Name "c8" .Values.ingress.domain | trimPrefix "c8-optimize-" -}}
 {{- end -}}

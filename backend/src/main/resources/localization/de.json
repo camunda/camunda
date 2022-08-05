@@ -168,8 +168,7 @@
     "processOwner": "Prozess Eigentümer",
     "timeKpi": "KPI: Zeit",
     "qualityKpi": "KPI: Qualität",
-    "displayData": "Ziele zeigen Daten von Instanzen an",
-    "endedThisMonth": "die in den letzten 30 Tagen beendet wurden",
+    "kpiInfo": "KPI Werte basieren auf bestimmten Berichten",
     "setGoal": "Ziel setzen",
     "editGoal": "Ziel bearbeiten",
     "goals": "Ziele",
@@ -179,7 +178,7 @@
     "processOverview": "Prozessübersicht",
     "configureProcess": "Prozess konfigurieren",
     "emailDigest": "Email Digest",
-    "digestInfo": "Der Prozess Digest sendet regelmäßige E-Mails mit dem vorhandenen KPI-Status an den Prozesseigentümer.",
+    "digestInfo": "Der Prozess Digest sendet regelmäßige E-Mails mit dem KPI-Status an den Prozesseigentümer. Standardmäßig wird der Digest jeden Montag um 9:00 Uhr versendet (wenn Sie die Standardversandzeit ändern möchten, wenden Sie sich bitte an Ihren Administrator).",
     "digestConfigured": "Ihr Prozess Digest wurde erfolgreich konfiguriert. Eine E-Mail wurde an {Name} gesendet.",
     "timeGoals": {
       "label": "Zeitziele",
@@ -704,7 +703,8 @@
       "addReportLabel": "Report hinzufügen",
       "selectReportPlaceholder": "Einen Report auswählen",
       "noReports": "Es wurden noch keine Berichte erstellt",
-      "externalUrl": "Externe URL"
+      "externalUrl": "Externe URL",
+      "newReport": "Neuer Bericht aus einer Vorlage"
     },
     "noAuthorization": "Fehlende Berechtigung",
     "noReportAccess": "Kein Zugriff auf Report",
@@ -907,6 +907,7 @@
     "view": "Anzeigen",
     "viewDocumentation": "Dokumentation anzeigen",
     "viewMore": "Mehr sehen",
+    "viewLess": "Weniger sehen",
     "configure": "Konfigurieren",
     "process": {
       "label": "Prozess",

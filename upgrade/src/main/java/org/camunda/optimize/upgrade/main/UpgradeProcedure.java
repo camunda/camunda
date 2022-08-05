@@ -59,14 +59,16 @@ public class UpgradeProcedure {
           throw new UpgradeRuntimeException("Upgrade failed.", e);
         }
       } else {
-        log.info(
-          "Target schemaVersion or a newer version is already present, no update to perform to {}.", targetVersion
-        );
+        if (!upgradePlan.isSilentUpgrade()) {
+          log.info(
+            "Target schemaVersion or a newer version is already present, no update to perform to {}.", targetVersion
+          );
+        }
       }
     } else {
-      log.info(
-        "No Connection to elasticsearch or no Optimize Metadata index found, skipping update to {}.", targetVersion
-      );
+      if (!upgradePlan.isSilentUpgrade()) {
+        log.info("No Connection to elasticsearch or no Optimize Metadata index found, skipping update to {}.", targetVersion);
+      }
     }
   }
 
@@ -111,8 +113,7 @@ public class UpgradeProcedure {
       }
       currentStepCount++;
     }
-    schemaUpgradeClient
-      .updateOptimizeVersion(upgradePlan.getFromVersion().toString(), upgradePlan.getToVersion().toString());
+    schemaUpgradeClient.updateOptimizeVersion(upgradePlan);
   }
 
   private void validateVersions(final Semver schemaVersion, final UpgradePlan upgradePlan) {

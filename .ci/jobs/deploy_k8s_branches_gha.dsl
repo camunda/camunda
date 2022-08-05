@@ -12,9 +12,10 @@ pipelineJob('deploy-branch-to-k8s-gha') {
 
   parameters {
     booleanParam('DRY_RUN', false, 'Enable dry-run mode.')
-    stringParam('DOCKER_TAG', 'latest', 'Docker tag to deploy.')
     stringParam('CAMBPM_VERSION', 'latest', 'CAMBPM Docker tag to deploy.')
     stringParam('ES_VERSION', 'latest', 'ES Docker tag to deploy.')
+    stringParam('ZEEBE_VERSION', 'latest', 'Zeebe Docker tag to deploy.')
+    stringParam('IDENTITY_VERSION', 'latest', 'Identity Docker tag to deploy.')
     stringParam('BRANCH', 'master', 'Optimize branch being deployed. Determines the name of your deployment; needs to be a DNS-compatible name.')
     stringParam('REF', 'master', 'Git ref of the workflow to trigger.')
   }

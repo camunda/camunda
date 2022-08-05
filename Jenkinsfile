@@ -8,8 +8,9 @@
 
 MAVEN_DOCKER_IMAGE = "maven:3.8.1-jdk-11-slim"
 
-static PROJECT_DOCKER_IMAGE() { return 'gcr.io/ci-30-162810/camunda-optimize' }
-static TEAM_DOCKER_IMAGE() { return 'registry.camunda.cloud/team-optimize/optimize' }
+static String PROJECT_DOCKER_IMAGE() { return 'gcr.io/ci-30-162810/camunda-optimize' }
+static String TEAM_DOCKER_IMAGE() { return 'registry.camunda.cloud/team-optimize/optimize' }
+static String DOCKERHUB_IMAGE() { return 'camunda/optimize' }
 
 static String getCamBpmDockerImage(String camBpmVersion) {
   return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}"
@@ -597,35 +598,42 @@ pipeline {
           environment {
             CRED_GCR_REGISTRY = credentials('docker-registry-ci3')
             CRED_REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
+            DOCKERHUB_REGISTRY_CREDENTIALS = credentials('camunda-dockerhub')
             DOCKER_BRANCH_TAG = getBranchSlug()
             DOCKER_IMAGE = PROJECT_DOCKER_IMAGE()
             DOCKER_IMAGE_TEAM = TEAM_DOCKER_IMAGE()
+            DOCKER_IMAGE_DOCKER_HUB = DOCKERHUB_IMAGE()
             DOCKER_LATEST_TAG = getLatestTag()
             DOCKER_TAG = getImageTag()
             PUSH_LATEST_TAG = "${isMainOrMaintenanceBranch() ? "TRUE" : "FALSE"}"
-            SNAPSHOT = readMavenPom().getVersion().contains('SNAPSHOT')
-            VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
+            VERSION = readMavenPom().getVersion()
+            IS_MAIN = "${isMainBranch() ? "TRUE" : "FALSE"}"
           }
           steps {
             container('docker') {
-              sh("""
+              sh("""#!/bin/bash -eux
               echo '${CRED_GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
               echo '${CRED_REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize registry.camunda.cloud --password-stdin
 
-              docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
-                --build-arg SKIP_DOWNLOAD=true \
-                --build-arg VERSION=${VERSION} \
-                --build-arg SNAPSHOT=${SNAPSHOT} \
-                .
-
-              docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-              docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE_TEAM}:${DOCKER_BRANCH_TAG}
-              docker push ${DOCKER_IMAGE_TEAM}:${DOCKER_BRANCH_TAG}
+              tags=('${DOCKER_IMAGE}:${DOCKER_TAG}' '${DOCKER_IMAGE_TEAM}:${DOCKER_BRANCH_TAG}')
 
               if [ "${PUSH_LATEST_TAG}" = "TRUE" ]; then
-                docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:${DOCKER_LATEST_TAG}
-                docker push ${DOCKER_IMAGE}:${DOCKER_LATEST_TAG}
+                tags+=('${DOCKER_IMAGE}:${DOCKER_LATEST_TAG}')
               fi
+
+              if [ "${IS_MAIN}" = "TRUE" ]; then
+                docker login --username ${DOCKERHUB_REGISTRY_CREDENTIALS_USR} --password ${DOCKERHUB_REGISTRY_CREDENTIALS_PSW}
+                tags+=('${DOCKER_IMAGE_DOCKER_HUB}:SNAPSHOT')
+              fi
+
+              printf -v tag_arguments -- "-t %s " "\${tags[@]}"
+              docker buildx create --use
+              docker buildx build \
+                \${tag_arguments} \
+                --build-arg VERSION=${VERSION} \
+                --platform linux/amd64,linux/arm64 \
+                --push \
+                .
               """)
             }
           }

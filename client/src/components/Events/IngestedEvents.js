@@ -161,7 +161,7 @@ export function IngestedEvents({mightFail}) {
         noData={
           <>
             {t('events.ingested.noData')}{' '}
-            <DocsLink location="technical-guide/rest-api/event-ingestion/">
+            <DocsLink location="apis-clients/optimize-api/event-ingestion/">
               {t('events.sources.learnMore')}
             </DocsLink>
           </>

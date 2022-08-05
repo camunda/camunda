@@ -5,27 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {createContext, useContext, useEffect, useState} from 'react';
-
-import {getOptimizeVersion} from 'config';
+import React, {createContext, useContext} from 'react';
 
 const DocsContext = createContext();
 
 export function DocsProvider({children}) {
-  const [optimizeVersion, setOptimizeVersion] = useState('latest');
-
-  useEffect(() => {
-    (async () => {
-      const version = (await getOptimizeVersion()).split('.');
-      version.length = 2;
-      setOptimizeVersion(version.join('.'));
-    })();
-  }, []);
-
   return (
-    <DocsContext.Provider
-      value={{docsLink: `https://docs.camunda.org/optimize/${optimizeVersion}/`}}
-    >
+    <DocsContext.Provider value={{docsLink: `https://docs.camunda.io/docs/`}}>
       {children}
     </DocsContext.Provider>
   );

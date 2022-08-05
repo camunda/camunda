@@ -215,6 +215,78 @@ pipeline {
             }
           }
         }
+        stage("8.0.1") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-zeebe-8-0-1_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenIntegrationTestSpec("${env.CAMBPM_VERSION}", "${env.ES_VERSION}")
+            }
+          }
+          steps {
+            integrationTestSteps("8.0.1", false)
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage("8.0.2") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-zeebe-8-0-2_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenIntegrationTestSpec("${env.CAMBPM_VERSION}", "${env.ES_VERSION}")
+            }
+          }
+          steps {
+            integrationTestSteps("8.0.2", false)
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage("8.0.3") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-zeebe-8-0-3_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenIntegrationTestSpec("${env.CAMBPM_VERSION}", "${env.ES_VERSION}")
+            }
+          }
+          steps {
+            integrationTestSteps("8.0.3", false)
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage("8.0.4") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-zeebe-8-0-4_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenIntegrationTestSpec("${env.CAMBPM_VERSION}", "${env.ES_VERSION}")
+            }
+          }
+          steps {
+            integrationTestSteps("8.0.4", false)
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
         stage("Release") {
           agent {
             kubernetes {

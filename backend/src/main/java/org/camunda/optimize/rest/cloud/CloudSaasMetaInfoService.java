@@ -5,8 +5,36 @@
  */
 package org.camunda.optimize.rest.cloud;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
+
 import java.util.Optional;
 
-public interface CloudSaasMetaInfoService {
-  Optional<String> getSalesPlanType();
+@Component
+@Slf4j
+@Conditional(CCSaaSCondition.class)
+@RequiredArgsConstructor
+public class CloudSaasMetaInfoService {
+  private final CCSaaSOrganizationsClient organizationsClient;
+  private final AccountsUserAccessTokenProvider accessTokenProvider;
+
+  public Optional<String> getSalesPlanType() {
+    final Optional<String> accessToken = accessTokenProvider.getCurrentUsersAccessToken();
+    if (accessToken.isPresent()) {
+      try {
+        return organizationsClient.getSalesPlanType(accessToken.get());
+      } catch (OptimizeRuntimeException e) {
+        log.warn("Failed retrieving salesPlanType.", e);
+        return Optional.empty();
+      }
+    } else {
+      log.warn("No user access token found, will not retrieve salesPlanType");
+      return Optional.empty();
+    }
+  }
+
 }

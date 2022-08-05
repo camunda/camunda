@@ -10,7 +10,6 @@ import com.icegreen.greenmail.util.GreenMailUtil;
 import com.icegreen.greenmail.util.ServerSetup;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
@@ -32,8 +31,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit.MINUTES;
-import static org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit.SECONDS;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_OVERVIEW_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
@@ -41,7 +38,6 @@ import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 public class ProcessDigestNotificationIT extends AbstractIT {
 
   private static final String DEF_KEY = "aProcessDefKey";
-
   private static GreenMail greenMail;
 
   @BeforeEach
@@ -53,6 +49,8 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     EmailAuthenticationConfiguration emailAuthenticationConfiguration =
       embeddedOptimizeExtension.getConfigurationService().getEmailAuthenticationConfiguration();
     emailAuthenticationConfiguration.setEnabled(false);
+    // adjust digest schedule to shorten wait for emails in IT
+    embeddedOptimizeExtension.getConfigurationService().setDigestCronTrigger("*/1 * * * * *");
     embeddedOptimizeExtension.reloadConfiguration();
     greenMail = new GreenMail(
       new ServerSetup(IntegrationTestConfigurationUtil.getSmtpPort(), null, ServerSetup.PROTOCOL_SMTP)
@@ -72,32 +70,14 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(new AlertInterval(1, SECONDS), true));
+      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // then we receive one email straight away and a second email after the interval of 1 second has passed
-    assertThat(greenMail.waitForIncomingEmail(1000, 2)).isTrue();
-  }
-
-  @Test
-  public void updateDigestFrequency() {
-    // given
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
-    importAllEngineEntitiesFromScratch();
-    processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(new AlertInterval(1, SECONDS), true));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // then receiving one email upon update and one after 1 second
-    assertThat(greenMail.waitForIncomingEmail(1000, 2)).isTrue();
-
-    // when
-    processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(new AlertInterval(5, SECONDS), true));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // then receiving one email upon update and one after 5 seconds
-    assertThat(greenMail.waitForIncomingEmail(5000, 2)).isTrue();
+    // then we receive one email straight away from the update
+    assertThat(greenMail.waitForIncomingEmail(10, 1)).isTrue();
+    greenMail.reset();
+    // and one after 1 second from the scheduler
+    assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
   }
 
   @Test
@@ -107,13 +87,12 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY + "2"));
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(new AlertInterval(1, SECONDS), true));
+      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     processOverviewClient.updateProcess(
-      DEF_KEY + "2", DEFAULT_USERNAME, new ProcessDigestRequestDto(new AlertInterval(1, SECONDS), false));
+      DEF_KEY + "2", DEFAULT_USERNAME, new ProcessDigestRequestDto(false));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // then wait for however many emails arrive within 1 second (could be 2 or 3 depending on run) and assert none of them are
-    // for process 2
+    // then wait a bit to ensure no emails for process 2 are being sent
     assertThat(greenMail.waitForIncomingEmail(1000, 4)).isFalse();
     final MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).noneMatch(email -> GreenMailUtil.getBody(email).contains(DEF_KEY + "2"));
@@ -125,7 +104,7 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(new AlertInterval(1, SECONDS), true));
+      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then digest is sent
@@ -136,7 +115,7 @@ public class ProcessDigestNotificationIT extends AbstractIT {
 
     // when digest is disabled
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(new AlertInterval(1, SECONDS), false));
+      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(false));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then no more emails are sent
@@ -150,7 +129,7 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(new AlertInterval(1, SECONDS), true));
+      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
@@ -167,13 +146,13 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(new AlertInterval(1, SECONDS), true));
+      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then email content for process without kpi reports is correct
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
-    MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(emails[0].getSubject()).isEqualTo("[Camunda - Optimize] Process Digest for Process \"aProcessDefKey\"");
+    assertThat(greenMail.getReceivedMessages()[0].getSubject())
+      .isEqualTo("[Camunda - Optimize] Process Digest for Process \"aProcessDefKey\"");
   }
 
   @Test
@@ -182,13 +161,12 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(new AlertInterval(1, SECONDS), true));
+      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
-    MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(GreenMailUtil.getBody(emails[0]))
+    assertThat(GreenMailUtil.getBody(greenMail.getReceivedMessages()[0]))
       .isEqualTo("Hello firstName lastName, \r\n" +
                    "Here is your KPI digest for the Process \"aProcessDefKey\":\r\n" +
                    "There are currently 0 KPI reports defined for this process.");
@@ -202,13 +180,12 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     createKpiReport("KPI Report 2");
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(new AlertInterval(4, SECONDS), true));
+      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertThat(greenMail.waitForIncomingEmail(8000, 3)).isTrue();
-    MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(GreenMailUtil.getBody(emails[1]))
+    assertThat(greenMail.waitForIncomingEmail(100, 1)).isTrue();
+    assertThat(GreenMailUtil.getBody(greenMail.getReceivedMessages()[0]))
       .isEqualTo("Hello firstName lastName, \r\n" +
                    "Here is your KPI digest for the Process \"aProcessDefKey\":\r\n" +
                    "There are currently 2 KPI reports defined for this process.\r\n" +
@@ -221,7 +198,10 @@ public class ProcessDigestNotificationIT extends AbstractIT {
                    "Target: 1\r\n" +
                    "Current Value: 1.0\r\n" +
                    "Previous Value: -");
-    assertThat(GreenMailUtil.getBody(emails[2]))
+    // then
+    greenMail.reset();
+    assertThat(greenMail.waitForIncomingEmail(1500, 1)).isTrue();
+    assertThat(GreenMailUtil.getBody(greenMail.getReceivedMessages()[0]))
       .isEqualTo("Hello firstName lastName, \r\n" +
                    "Here is your KPI digest for the Process \"aProcessDefKey\":\r\n" +
                    "There are currently 2 KPI reports defined for this process.\r\n" +
@@ -257,11 +237,11 @@ public class ProcessDigestNotificationIT extends AbstractIT {
 
     // given
     processOverviewClient.updateProcess(
-      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(new AlertInterval(1, SECONDS), true));
+      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    assertThat(greenMail.waitForIncomingEmail(2000, 2)).isTrue();
+    assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
@@ -272,6 +252,25 @@ public class ProcessDigestNotificationIT extends AbstractIT {
       .extracting(ProcessDigestDto::getKpiReportResults)
       .singleElement()
       .isEqualTo(Map.of(reportId, "1.0"));
+  }
+
+  @Test
+  public void digestUpdateIsNullSafeForPreviousKpiResults() {
+    // given
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
+    importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      PROCESS_OVERVIEW_INDEX_NAME,
+      DEF_KEY,
+      new ProcessOverviewDto(DEFAULT_USERNAME, DEF_KEY, new ProcessDigestDto(false, null), Collections.emptyMap())
+    );
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    processOverviewClient.updateProcess(
+      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then email sending does not fail
+    assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
   }
 
   private String createKpiReport(final String reportName) {

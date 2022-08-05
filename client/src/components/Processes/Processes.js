@@ -76,12 +76,7 @@ export function Processes({mightFail}) {
       )}
       <EntityList
         name={t('processes.title')}
-        headerText={
-          <div className="goalInfo">
-            {t('processes.displayData')}{' '}
-            <span className="highlighted">{t('processes.endedThisMonth')}</span>
-          </div>
-        }
+        headerText={t('processes.kpiInfo')}
         empty={t('processes.empty')}
         isLoading={!processes}
         columns={columns}

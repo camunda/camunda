@@ -263,7 +263,7 @@ export class DashboardEdit extends React.Component {
             onSave={this.save}
             onCancel={nowPristine}
           >
-            <AddButton addReport={this.addReport} />
+            <AddButton addReport={this.addReport} existingReport={reports?.[0]} />
             <AddFiltersButton
               reports={optimizeReports}
               persistReports={() => this.save(true)}

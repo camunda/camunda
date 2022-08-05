@@ -12,6 +12,7 @@ import {Button} from 'components';
 
 import ReportModal from './ReportModal';
 import AddButton from './AddButton';
+import ReportCreationModal from './ReportCreationModal';
 
 it('should open a modal on click', () => {
   const node = shallow(<AddButton />);
@@ -26,7 +27,7 @@ it('should call the callback when adding a report', () => {
   const node = shallow(<AddButton addReport={spy} />);
 
   node.find(Button).simulate('click');
-  node.find(ReportModal).prop('confirm')({id: 'newReport'});
+  node.find(ReportModal).prop('confirm')({id: 'testReport'});
 
   expect(spy).toHaveBeenCalledWith({
     configuration: null,
@@ -38,6 +39,29 @@ it('should call the callback when adding a report', () => {
       x: 0,
       y: 0,
     },
-    id: 'newReport',
+    id: 'testReport',
+  });
+});
+
+it('should call the callback when confirming the report creation modal', () => {
+  const spy = jest.fn();
+  const node = shallow(<AddButton addReport={spy} />);
+
+  node.find(Button).simulate('click');
+  node.find(ReportModal).prop('confirm')({id: 'newReport'});
+
+  node.find(ReportCreationModal).prop('onConfirm')({id: '123'});
+
+  expect(spy).toHaveBeenCalledWith({
+    configuration: null,
+    dimensions: {
+      height: 4,
+      width: 6,
+    },
+    position: {
+      x: 0,
+      y: 0,
+    },
+    id: '123',
   });
 });

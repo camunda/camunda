@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
-    <version>3.9.0-preview-1</version>
+    <version>3.9.0</version>
   </parent>
 
   <artifactId>data-generation</artifactId>
@@ -72,7 +72,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>3.0.0</version>
+        <version>3.1.0</version>
         <configuration>
           <mainClass>org.camunda.optimize.data.generation.DataGenerationMain</mainClass>
           <arguments>

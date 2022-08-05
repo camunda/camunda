@@ -35,14 +35,30 @@ camunda-platform:
       requests:
         cpu: 500m
         memory: 1Gi
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
+
   identity:
     fullnameOverride: identity
     image:
       tag: latest
     keycloak:
       fullnameOverride: keycloak
+      externalDatabase:
+        password: postgresql
       postgresql:
         fullnameOverride: postgresql
+        # fixing the password to avoid failure on restart of keycloak pod
+        # each time the keycloak pod restarts need a restart of the database cuz a random password is given
+        auth:
+          password: postgresql
+        primary:
+          persistence:
+            enabled: false
       auth:
         createAdminUser: true
         adminUser: admin
@@ -50,6 +66,12 @@ camunda-platform:
       extraEnvVars:
         - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
           value: "true"
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
 
   zeebe:
     # Defines the size of the zeebe cluster.
@@ -71,14 +93,30 @@ camunda-platform:
       requests:
         cpu: 500m
         memory: 512Mi
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
+
   operate:
     enabled: false
+
   tasklist:
     enabled: false
+
   zeebe-gateway:
     replicas: 1
     image:
       tag: latest
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
+
   # Configuration for ElasticSearch. Persistence is disabled by default,
   # and we're setting some reasonable defaults for the `PersistentVolumeClaim` size
   # in order to avoid being too wasteful.
@@ -114,6 +152,12 @@ camunda-platform:
       requests:
         cpu: 0.5
         memory: 512Mi
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
     volumeClaimTemplate:
       resources:
         requests:
@@ -138,4 +182,3 @@ global:
     camunda.cloud/source: argocd
     camunda.cloud/managed-by: Helm
     app: optimize-camunda-cloud # Should be overridden by Argo app
-    commit: master # Should be overridden by Argo app

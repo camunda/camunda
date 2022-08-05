@@ -9,8 +9,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
-import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
@@ -63,7 +61,12 @@ public class ProcessOverviewService {
       .stream()
       .filter(def -> !def.getIsEventProcess())
       .filter(
-        def -> definitionAuthorizationService.isAuthorizedToAccessDefinition(userId, PROCESS, def.getKey(), def.getTenantIds()))
+        def -> definitionAuthorizationService.isAuthorizedToAccessDefinition(
+          userId,
+          PROCESS,
+          def.getKey(),
+          def.getTenantIds()
+        ))
       .peek(def -> {
         if (def.getName() == null || def.getName().isEmpty()) {
           def.setName(def.getKey());
@@ -88,7 +91,7 @@ public class ProcessOverviewService {
             .map(owner -> new ProcessOwnerResponseDto(owner, identityService.getIdentityNameById(owner).orElse(owner)))
           ).orElse(new ProcessOwnerResponseDto()),
           overviewForKey.map(ProcessOverviewDto::getDigest)
-            .orElse(new ProcessDigestDto(new AlertInterval(1, AlertIntervalUnit.WEEKS), false, new HashMap<>())),
+            .orElse(new ProcessDigestDto(false, new HashMap<>())),
           kpiService.getKpiResultsForProcessDefinition(procDefKey, timezone),
           magicLinkToDashboard
         );
@@ -99,12 +102,8 @@ public class ProcessOverviewService {
     validateProcessDefinitionAuthorization(userId, processDefKey);
     final String ownerIdToSave = getValidatedOwnerId(userId, processUpdateDto.getOwnerId());
     processUpdateDto.setOwnerId(ownerIdToSave);
-    if (processUpdateDto.getProcessDigest().isEnabled()) {
-      if (processUpdateDto.getProcessDigest().getCheckInterval() == null) {
-        throw new BadRequestException("Check interval cannot be null if the digest is enabled");
-      } else if (processUpdateDto.getOwnerId() == null) {
-        throw new BadRequestException("Process digest cannot be enabled if no owner is set");
-      }
+    if (processUpdateDto.getProcessDigest().isEnabled() && processUpdateDto.getOwnerId() == null) {
+      throw new BadRequestException("Process digest cannot be enabled if no owner is set");
     }
     processOverviewWriter.updateProcessConfiguration(processDefKey, processUpdateDto);
     digestService.handleProcessUpdate(processDefKey, processUpdateDto);
@@ -112,7 +111,7 @@ public class ProcessOverviewService {
 
   public void updateProcessOwnerIfNotSet(final String userId, final String processDefinitionKey, final String ownerId) {
     final String ownerIdToSave = getValidatedOwnerId(userId, ownerId);
-    if(ownerIdToSave == null || ownerIdToSave.isEmpty()) {
+    if (ownerIdToSave == null || ownerIdToSave.isEmpty()) {
       throw new BadRequestException("Owner ID cannot be empty!");
     }
     if (definitionHasBeenImported(processDefinitionKey)) {
@@ -152,7 +151,8 @@ public class ProcessOverviewService {
   }
 
   public void confirmOrDenyOwnershipData(final String processToBeOnboarded) {
-    Map<String, ProcessOverviewDto> pendingProcesses = processOverviewReader.getProcessOverviewsWithPendingOwnershipData();
+    Map<String, ProcessOverviewDto> pendingProcesses =
+      processOverviewReader.getProcessOverviewsWithPendingOwnershipData();
     pendingProcesses
       .keySet()
       .stream()

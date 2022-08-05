@@ -114,12 +114,7 @@ container:
 # Configuration for fetching user data
 users:
   cloud:
-    # The URL at which access tokens can be retrieved
-    tokenUrl: ${CAMUNDA_OPTIMIZE_AUTH0_TOKEN_URL:}
-    clientId: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_CLIENTID:}
-    clientSecret: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_CLIENTSECRET:}
-    audience: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE:}
-    usersUrl: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_URL:}
+    accountsUrl: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_URL:}
 
 # Configuration for engines used to import data. Please note that you have to have at
 # least one engine configured at all times.
@@ -479,8 +474,14 @@ webhookAlerting:
 #        # whether this proxy is using a secured connection
 #        sslEnabled: false
 
+digest:
+  # cron expression to define when enabled email digests are to be sent
+  cronTrigger: "0 0 9 * * MON"
+
 export:
   csv:
+    # which users are authorized to download CSVs. Available options: 'all', 'superuser', 'none'
+    authorizedUsers: 'all'
     # Maximum number of records returned by CSV export
     # Note: Increasing this value comes at a memory cost for the Optimize application that varies based on the actual data.
     # As a rough guideline, an export of a 50000 records raw data report containing 8 variables on each instance

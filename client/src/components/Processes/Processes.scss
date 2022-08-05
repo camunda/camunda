@@ -1,5 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
-
 .Processes {
   height: 100%;
 
@@ -13,8 +11,9 @@
   }
 
   .fullscreen {
-    height: 500px;
+    height: 520px;
     padding: 0 65px;
+    border-bottom: 1px solid var(--silver-darken-80);
 
     .DashboardView .head > .EntityName {
       display: none;
@@ -93,13 +92,8 @@
       }
     }
 
-    .goalInfo {
+    .header .headerText {
       font-size: 14px;
-
-      .highlighted {
-        @include highlighted;
-        display: inline;
-      }
     }
   }
 }

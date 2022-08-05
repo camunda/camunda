@@ -5,177 +5,149 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import ReactDOM from 'react-dom';
 import {Route, Redirect} from 'react-router-dom';
-import {addHandler, removeHandler, request} from 'request';
+import {addHandler, removeHandler} from 'request';
 import {nowPristine} from 'saveGuard';
 import {withUser} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
+import {getOptimizeProfile} from 'config';
 
 import {Header, Footer} from '..';
 
+import {
+  createOutstandingRequestPromise,
+  redoOutstandingRequests,
+  resetOutstandingRequests,
+} from './outstandingRequestsService';
 import {Login} from './Login';
 
 import './PrivateRoute.scss';
 
-export class PrivateRoute extends React.Component {
-  state = {
-    showLogin: false,
-    forceGotoHome: false,
-  };
-  container = React.createRef();
-  componentContainer = document.createElement('div');
+export function PrivateRoute({user: oldUser, refreshUser, component: Component, ...rest}) {
+  const [showLogin, setShowLogin] = useState(false);
+  const [forceGoToHome, setForceGoToHome] = useState(false);
+  const container = useRef();
+  const componentContainer = useRef();
+  const isLoggedIn = useRef(false);
 
-  componentDidMount() {
-    this.appendComponent();
-    addHandler(this.handleResponse);
-  }
+  useMemo(() => {
+    componentContainer.current = document.createElement('div');
+  }, []);
 
-  componentDidUpdate() {
-    const {forceGotoHome} = this.state;
+  useEffect(() => {
+    const handleResponse = async (response, payload) => {
+      if (response.status === 401) {
+        if (isLoggedIn.current) {
+          // we need to reload in cloud mode to reinitialise the OAuth login flow
+          if ((await getOptimizeProfile()) === 'cloud') {
+            return window.location.reload();
+          }
+          showError(t('login.timeout'));
+        }
+        setShowLogin(true);
+      }
 
-    if (forceGotoHome) {
-      this.setState({forceGotoHome: false});
+      isLoggedIn.current = getNewLoginState(isLoggedIn.current, response, payload);
+      return response;
+    };
+    addHandler(handleResponse);
+
+    return () => {
+      removeHandler(handleResponse);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (
+      !showLogin &&
+      container.current &&
+      !container.current.contains(componentContainer.current)
+    ) {
+      container.current.appendChild(componentContainer.current);
     }
 
-    this.appendComponent();
-    this.removeComponentOnLogin();
-  }
-
-  appendComponent = () => {
-    const {showLogin} = this.state;
-    const container = this.container.current;
-    if (!showLogin && container && !container.contains(this.componentContainer)) {
-      container.appendChild(this.componentContainer);
-
-      // Some components might use refs in componentDidUpdate to query the size of their container.
-      // Since in the previous update cycle, they were not part of the DOM tree, their size was incorrect (usually 0 or null)
-      // Now that they have been appended to the DOM again, we trigger another update so they can get their correct size
-      this.forceUpdate();
+    if (showLogin && container.current?.contains(componentContainer.current)) {
+      container.current.removeChild(componentContainer.current);
     }
-  };
+  }, [showLogin]);
 
-  removeComponentOnLogin = () => {
-    const {showLogin} = this.state;
-    const container = this.container.current;
-    if (showLogin && container?.contains(this.componentContainer)) {
-      container.removeChild(this.componentContainer);
+  useEffect(() => {
+    if (forceGoToHome) {
+      setForceGoToHome(false);
     }
-  };
+  }, [forceGoToHome]);
 
-  handleResponse = (response) => {
-    if (response.status === 401) {
-      this.setState({
-        showLogin: true,
-      });
-    }
-
-    return response;
-  };
-
-  handleLoginSuccess = async () => {
-    const {user: oldUser, refreshUser} = this.props;
+  const handleLoginSuccess = async () => {
     const newUser = await refreshUser();
 
     if (oldUser && newUser.id !== oldUser.id) {
-      outstandingRequests.length = 0;
+      resetOutstandingRequests();
       nowPristine();
 
-      this.setState({forceGotoHome: true});
+      setForceGoToHome(true);
     }
 
-    this.setState({showLogin: false});
+    setShowLogin(false);
     redoOutstandingRequests();
   };
 
-  render() {
-    const {component: Component, ...rest} = this.props;
-    return (
-      <Route
-        {...rest}
-        render={(props) => {
-          const {showLogin, forceGotoHome} = this.state;
+  return (
+    <Route
+      {...rest}
+      render={(props) => {
+        if (forceGoToHome) {
+          return <Redirect to="/" />;
+        }
 
-          if (forceGotoHome) {
-            return <Redirect to="/" />;
-          }
-
-          return (
-            <>
-              {!showLogin && <Header />}
-              <main>
-                <div className="PrivateRoute" ref={this.container}></div>
-                <Detachable container={this.componentContainer}>
-                  {this.props.render ? this.props.render(props) : <Component {...props} />}
-                </Detachable>
-                {showLogin && <Login {...props} onLogin={this.handleLoginSuccess} />}
-              </main>
-              {!showLogin && <Footer />}
-            </>
-          );
-        }}
-      />
-    );
-  }
-
-  componentWillUnmount() {
-    removeHandler(this.handleResponse);
-  }
+        return (
+          <>
+            {!showLogin && <Header />}
+            <main>
+              <div className="PrivateRoute" ref={container}></div>
+              <Detachable container={componentContainer.current}>
+                {rest.render ? rest.render(props) : <Component {...props} />}
+              </Detachable>
+              {showLogin && <Login {...props} onLogin={handleLoginSuccess} />}
+            </main>
+            {!showLogin && <Footer />}
+          </>
+        );
+      }}
+    />
+  );
 }
+
+export default withUser(PrivateRoute);
 
 function Detachable({container, children}) {
   return ReactDOM.createPortal(children, container);
 }
 
 // keep track of whether we were logged in in the current session
-let isLoggedIn = false;
-const outstandingRequests = [];
 addHandler((response, payload) => {
-  // login detection logic does not apply to non-restricted ressources
-  if (
-    ![
-      'api/authentication',
-      'api/authentication/logout',
-      'api/onboarding/whatsnew',
-      'api/ui-configuration',
-      'api/localization',
-      'api/eventBasedProcess/isEnabled',
-      'api/share',
-    ].some((url) => payload.url.startsWith(url))
-  ) {
-    if (response.status === 401) {
-      if (isLoggedIn) {
-        // if we were logged in before, the session timed out
-        showError(t('login.timeout'));
-        isLoggedIn = false;
-      }
-      return new Promise((resolve, reject) => {
-        outstandingRequests.push({resolve, reject, payload});
-      });
-    } else {
-      // if we get a non 401 response on a restricted ressource, we know
-      // that we are logged in in the current session
-      isLoggedIn = true;
-    }
+  if (response.status === 401) {
+    return createOutstandingRequestPromise(payload);
   }
 
-  if (payload.url === 'api/authentication/logout') {
-    isLoggedIn = false;
-  }
   return response;
 }, -1);
 
-function redoOutstandingRequests() {
-  outstandingRequests.forEach(async ({resolve, reject, payload}) => {
-    try {
-      resolve(await request(payload));
-    } catch (e) {
-      reject(e);
-    }
-  });
-  outstandingRequests.length = 0;
+function getNewLoginState(currentLoginState, response, payload) {
+  if (response.status === 401 || payload.url === 'api/authentication/logout') {
+    return false;
+  }
+  if (isPrivateResource(payload)) {
+    return true;
+  }
+
+  return currentLoginState;
 }
 
-export default withUser(PrivateRoute);
+function isPrivateResource(payload) {
+  return !['api/authentication', 'api/ui-configuration', 'api/localization', 'api/share'].some(
+    (url) => payload.url.startsWith(url)
+  );
+}

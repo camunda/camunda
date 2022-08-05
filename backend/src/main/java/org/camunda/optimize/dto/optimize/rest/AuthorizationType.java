@@ -9,7 +9,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum AuthorizationType {
   TELEMETRY("telemetry_administration"),
-  IMPORT_EXPORT("import_export");
+  IMPORT_EXPORT("import_export"),
+  CSV_EXPORT("csv_export");
 
   private final String id;
 

@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.processoverview.KpiResultDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
@@ -25,28 +24,22 @@ import org.camunda.optimize.service.es.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.es.writer.ProcessOverviewWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
-import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
-import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.scheduling.support.PeriodicTrigger;
+import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.time.Duration;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -62,7 +55,6 @@ public class DigestService implements ConfigurationReloadable {
   private final EmailSendingService emailSendingService;
   private final AbstractIdentityService identityService;
   private final TenantService tenantService;
-  private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final KpiService kpiService;
   private final DefinitionService definitionService;
   private final ProcessOverviewWriter processOverviewWriter;
@@ -119,7 +111,7 @@ public class DigestService implements ConfigurationReloadable {
   private void rescheduleDigest(final String processDefKey,
                                 final ProcessDigestRequestDto digestRequestDto) {
     unscheduleDigest(processDefKey);
-    scheduleDigest(processDefKey, digestRequestDto.getCheckInterval());
+    scheduleDigest(processDefKey);
     if (digestRequestDto.isEnabled()) {
       handleDigestTask(processDefKey); // if digest is enabled, send out immediate test email
     }
@@ -138,15 +130,17 @@ public class DigestService implements ConfigurationReloadable {
   private void initExistingDigests() {
     log.debug("Scheduling digest tasks for all existing enabled process digests.");
     processOverviewReader.getAllActiveProcessDigestsByKey().forEach((processDefinitionKey, digest) -> scheduleDigest(
-      processDefinitionKey,
-      digest.getCheckInterval()
+      processDefinitionKey
     ));
   }
 
-  private void scheduleDigest(final String processDefinitionKey, final AlertInterval interval) {
+  private void scheduleDigest(final String processDefinitionKey) {
     scheduledDigestTasks.put(
       processDefinitionKey,
-      digestTaskScheduler.schedule(createDigestTask(processDefinitionKey), createDigestTrigger(interval))
+      digestTaskScheduler.schedule(
+        createDigestTask(processDefinitionKey),
+        new CronTrigger(configurationService.getDigestCronTrigger())
+      )
     );
   }
 
@@ -160,6 +154,17 @@ public class DigestService implements ConfigurationReloadable {
         overviewDto.getProcessDefinitionKey(),
         ZoneId.systemDefault()
       );
+
+    try {
+      composeAndSendDigestEmail(overviewDto, currentKpiReportResults);
+    } catch (Exception e) {
+      log.error("Failed to send digest email", e);
+    } finally {
+      updateLastKpiReportResults(overviewDto.getProcessDefinitionKey(), currentKpiReportResults);
+    }
+  }
+
+  private void composeAndSendDigestEmail(final ProcessOverviewDto overviewDto, final Map<String, KpiResultDto> currentKpiReportResults) {
     final Optional<UserDto> processOwner = identityService.getUserById(overviewDto.getOwner());
     final String definitionName = definitionService.getDefinition(
       DefinitionType.PROCESS,
@@ -183,7 +188,6 @@ public class DigestService implements ConfigurationReloadable {
         definitionName
       )
     );
-    updateLastKpiReportResults(overviewDto.getProcessDefinitionKey(), currentKpiReportResults);
   }
 
   private String composeDigestEmailText(final String ownerName, final String processDefinitionKey,
@@ -205,7 +209,9 @@ public class DigestService implements ConfigurationReloadable {
     return currentKpiReportResults.entrySet().stream()
       .sorted(Comparator.comparing(entry -> entry.getValue().getReportName()))
       .map(entry -> {
-        final String previousKpiResult = Optional.ofNullable(previousKpiReportResults.get(entry.getKey()))
+        final String previousKpiResult = previousKpiReportResults == null
+          ? "-"
+          : Optional.ofNullable(previousKpiReportResults.get(entry.getKey()))
           .map(Object::toString)
           .orElse("-");
         return String.format(
@@ -241,18 +247,6 @@ public class DigestService implements ConfigurationReloadable {
 
   private DigestTask createDigestTask(final String processDefinitionKey) {
     return new DigestTask(this, processDefinitionKey);
-  }
-
-  private Trigger createDigestTrigger(final AlertInterval digestInterval) {
-    return new PeriodicTrigger(durationInMs(digestInterval), TimeUnit.MILLISECONDS);
-  }
-
-  private long durationInMs(final AlertInterval checkInterval) {
-    final ChronoUnit parsedUnit = ChronoUnit.valueOf(checkInterval.getUnit().name().toUpperCase());
-    return Duration.between(
-      OffsetDateTime.now(),
-      OffsetDateTime.now().plus(checkInterval.getValue(), parsedUnit)
-    ).toMillis();
   }
 
 }

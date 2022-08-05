@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
+import java.util.Map;
+
 @Data
 @FieldNameConstants
 @AllArgsConstructor
@@ -19,5 +21,5 @@ public class ProcessOverviewDto implements OptimizeDto {
   private String owner;
   private String processDefinitionKey;
   private ProcessDigestDto digest;
-
+  private Map<String, String> lastKpiEvaluationResults;
 }

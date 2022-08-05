@@ -20,7 +20,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
-import org.camunda.optimize.service.util.configuration.users.CloudTokenConfiguration;
+import org.camunda.optimize.service.util.configuration.users.CloudAccountsConfiguration;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -42,7 +42,7 @@ public class CCSaaSOrganizationsClient {
                                    final ObjectMapper objectMapper) {
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
-    httpClient = HttpClients.createDefault();
+    this.httpClient = HttpClients.createDefault();
   }
 
   @PreDestroy
@@ -55,7 +55,7 @@ public class CCSaaSOrganizationsClient {
       log.info("Fetching cloud organisation.");
       final HttpGet request = new HttpGet(String.format(
         "%s/external/organizations/%s",
-        getCloudUsersConfiguration().getUsersUrl(),
+        getCloudUsersConfiguration().getAccountsUrl(),
         getCloudAuthConfiguration().getOrganizationId()
       ));
       try (final CloseableHttpResponse response = performRequest(request, accessToken)) {
@@ -80,7 +80,7 @@ public class CCSaaSOrganizationsClient {
     return httpClient.execute(request);
   }
 
-  private CloudTokenConfiguration getCloudUsersConfiguration() {
+  private CloudAccountsConfiguration getCloudUsersConfiguration() {
     return configurationService.getUsersConfiguration().getCloud();
   }
 

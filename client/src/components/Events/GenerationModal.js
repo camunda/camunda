@@ -43,7 +43,7 @@ export function GenerationModal({onClose, mightFail}) {
       <Modal.Content>
         <p className="description">
           {t('events.generationInfo')}{' '}
-          <DocsLink location="user-guide/event-based-processes#autogenerate">
+          <DocsLink location="components/optimize/userguide/additional-features/event-based-processes/#event-based-process-auto-generation">
             {t('events.sources.learnMore')}
           </DocsLink>
         </p>

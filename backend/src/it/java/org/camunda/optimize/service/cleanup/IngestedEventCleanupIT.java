@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class IngestedEventCleanupIT extends AbstractIT {
 
   @BeforeEach
-  private void enableIngestedEventCleanup() {
+  public void enableIngestedEventCleanup() {
     getIngestedEventCleanupConfiguration().setEnabled(true);
   }
 

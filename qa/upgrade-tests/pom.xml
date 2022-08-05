@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
-    <version>3.9.0-preview-1</version>
+    <version>3.9.0</version>
   </parent>
 
   <artifactId>upgrade-tests</artifactId>
@@ -19,7 +19,7 @@
     <dependency>
       <groupId>org.codehaus.groovy</groupId>
       <artifactId>groovy-all</artifactId>
-      <version>3.0.11</version>
+      <version>3.0.12</version>
       <type>pom</type>
       <scope>test</scope>
     </dependency>
@@ -65,7 +65,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-resources-plugin</artifactId>
-        <version>3.2.0</version>
+        <version>3.3.0</version>
         <executions>
           <execution>
             <id>copy-test-resources</id>

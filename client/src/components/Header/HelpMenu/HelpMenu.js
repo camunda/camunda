@@ -70,7 +70,11 @@ export class HelpMenu extends React.Component {
           </Dropdown.Option>
           <Dropdown.Option
             onClick={() => {
-              window.open(this.props.docsLink + '/user-guide', '_blank', 'noopener,noreferrer');
+              window.open(
+                this.props.docsLink + 'components/optimize/what-is-optimize/',
+                '_blank',
+                'noopener,noreferrer'
+              );
             }}
           >
             {t('navigation.userGuide')}

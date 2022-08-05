@@ -237,7 +237,7 @@ export default withErrorHandling(
                             ? t('events.sources.generatedEvents')
                             : t('events.sources.display')}
                         </h4>
-                        <DocsLink location="user-guide/event-based-processes/#camunda-events">
+                        <DocsLink location="components/optimize/userguide/additional-features/event-based-processes/#camunda-events">
                           {t('events.sources.learnMore')}
                         </DocsLink>
                       </div>
@@ -266,7 +266,7 @@ export default withErrorHandling(
                   {this.isEditing() && (
                     <MessageBox type="warning">
                       {t('events.sources.definitionChangeWarning')}{' '}
-                      <DocsLink location="user-guide/event-based-processes/#camunda-events">
+                      <DocsLink location="components/optimize/userguide/additional-features/event-based-processes/#camunda-events">
                         {t('events.sources.learnMore')}
                       </DocsLink>
                     </MessageBox>
