@@ -413,20 +413,28 @@ public class ModifyProcessInstanceTest {
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords()
                 .onlyEvents()
-                .withElementIdIn("B", "C")
+                .withElementId("B")
+                .withProcessInstanceKey(processInstanceKey)
+                .limit("B", ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .toList())
+        .extracting(Record::getIntent, r -> r.getValue().getFlowScopeKey())
+        .describedAs("Expect the tasks to have been activated in the correct scope")
+        .containsExactly(
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATING, subprocessScopeKey),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, subprocessScopeKey));
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .onlyEvents()
+                .withElementId("C")
                 .withProcessInstanceKey(processInstanceKey)
                 .limit("C", ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .toList())
-        .extracting(
-            r -> r.getValue().getElementId(),
-            Record::getIntent,
-            r -> r.getValue().getFlowScopeKey())
+        .extracting(Record::getIntent, r -> r.getValue().getFlowScopeKey())
         .describedAs("Expect the tasks to have been activated in the correct scope")
         .containsExactly(
-            Tuple.tuple("B", ProcessInstanceIntent.ELEMENT_ACTIVATING, subprocessScopeKey),
-            Tuple.tuple("B", ProcessInstanceIntent.ELEMENT_ACTIVATED, subprocessScopeKey),
-            Tuple.tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATING, subprocessScopeKey),
-            Tuple.tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED, subprocessScopeKey));
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATING, subprocessScopeKey),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, subprocessScopeKey));
   }
 
   @Test
