@@ -23,8 +23,8 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
+import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceModificationProcessor
@@ -60,7 +60,7 @@ public final class ProcessInstanceModificationProcessor
 
     final var processInstance =
         elementInstanceState.getInstance(value.getProcessInstanceKey()).getValue();
-    // todo: reject if process instance could not be found
+    // todo: reject if process instance could not be found (no issue yet)
     final var process = processState.getProcessByKey(processInstance.getProcessDefinitionKey());
 
     value
@@ -70,7 +70,7 @@ public final class ProcessInstanceModificationProcessor
               final var elementToActivate =
                   process.getProcess().getElementById(instruction.getElementId());
 
-              // todo: reject if elementToActivate could not be found
+              // todo: reject if elementToActivate could not be found (#9976)
 
               activateElement(processInstance, instruction, elementToActivate);
             });
@@ -88,44 +88,44 @@ public final class ProcessInstanceModificationProcessor
     final var elementInstanceRecord = new ProcessInstanceRecord();
     elementInstanceRecord.wrap(processInstance);
     // todo: deal with non-existing flow scope (#9643)
-    final Optional<Long> flowScopeKey = findFlowScopeKey(processInstance, elementToActivate);
+    // todo: deal with multiple flow scopes found without ancestor selection (#10008)
+    final List<Long> flowScopeKey = findFlowScopeKey(processInstance, elementToActivate);
     commandWriter.appendFollowUpCommand(
         keyGenerator.nextKey(),
         ProcessInstanceIntent.ACTIVATE_ELEMENT,
         elementInstanceRecord
-            .setFlowScopeKey(flowScopeKey.get())
+            .setFlowScopeKey(flowScopeKey.get(0))
             .setBpmnElementType(elementToActivate.getElementType())
             .setElementId(instruction.getElementId())
             .setParentProcessInstanceKey(-1)
             .setParentElementInstanceKey(-1));
   }
 
-  private Optional<Long> findFlowScopeKey(
+  private List<Long> findFlowScopeKey(
       final ProcessInstanceRecord processInstance, final AbstractFlowElement elementToActivate) {
     final var flowScope = elementToActivate.getFlowScope();
     if (flowScope.getId().equals(processInstance.getElementIdBuffer())) {
-      return Optional.of(processInstance.getProcessInstanceKey());
+      return List.of(processInstance.getProcessInstanceKey());
     } else {
       return findFlowScopeKey(processInstance.getProcessInstanceKey(), flowScope.getId());
     }
   }
 
-  private Optional<Long> findFlowScopeKey(
-      final long ancestorKey, final DirectBuffer targetElementId) {
+  private List<Long> findFlowScopeKey(final long ancestorKey, final DirectBuffer targetElementId) {
     final List<ElementInstance> children = elementInstanceState.getChildren(ancestorKey);
+    final List<Long> matches =
+        children.stream()
+            .filter(child -> child.getValue().getElementIdBuffer().equals(targetElementId))
+            .map(ElementInstance::getKey)
+            .toList();
 
-    for (final ElementInstance child : children) {
-      if (child.getValue().getElementIdBuffer().equals(targetElementId)) {
-        // todo: instead of early return we should reject the command when multiple matching
-        //  children are found
-        return Optional.of(child.getKey());
-      } else {
-        final var optionalFlowScopeKey = findFlowScopeKey(child.getKey(), targetElementId);
-        if (optionalFlowScopeKey.isPresent()) {
-          return optionalFlowScopeKey;
-        }
-      }
+    if (!matches.isEmpty()) {
+      return matches;
     }
-    return Optional.empty();
+
+    return children.stream()
+        .map(child -> findFlowScopeKey(child.getKey(), targetElementId))
+        .flatMap(Collection::stream)
+        .toList();
   }
 }
