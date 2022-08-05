@@ -320,4 +320,46 @@ describe('Instance', () => {
       ).not.toBeInTheDocument();
     }
   );
+
+  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
+    'should display no planned modifications modal when apply modifications is clicked during the modification mode',
+    async () => {
+      mockServer.use(
+        rest.get('/api/process-instances/:id', (_, res, ctx) =>
+          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
+        )
+      );
+
+      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+      await waitForElementToBeRemoved(
+        screen.getByTestId('instance-header-skeleton')
+      );
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /modify instance/i,
+        })
+      );
+      await user.click(screen.getByTestId('apply-modifications-button'));
+
+      expect(
+        await screen.findByText(
+          /no planned modifications for process instance/i
+        )
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByText(/click "ok" to return to the modification mode\./i)
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByTestId('ok-button'));
+
+      await waitForElementToBeRemoved(() =>
+        screen.queryByText(/no planned modifications for process instance/i)
+      );
+      expect(
+        screen.queryByText(/click "ok" to return to the modification mode\./i)
+      ).not.toBeInTheDocument();
+    }
+  );
 });

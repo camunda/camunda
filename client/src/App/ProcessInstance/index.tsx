@@ -51,6 +51,10 @@ const ProcessInstance: React.FC = observer(() => {
     isDiscardModificationsModalVisible,
     setIsDiscardModificationsModalVisible,
   ] = useState(false);
+  const [
+    isNoPlannedModificationsModalVisible,
+    setIsNoPlannedModificationsModalVisible,
+  ] = useState(false);
 
   useEffect(() => {
     setClientHeight(containerRef?.current?.clientHeight ?? 0);
@@ -114,7 +118,11 @@ const ProcessInstance: React.FC = observer(() => {
 
   const panelMinHeight = clientHeight / 4;
 
-  const {isModificationModeEnabled} = modificationsStore;
+  const {
+    isModificationModeEnabled,
+    state: {flowNodeModifications, variableModifications},
+  } = modificationsStore;
+
   const isBreadcrumbVisible =
     processInstanceDetailsStore.state.processInstance !== null &&
     processInstanceDetailsStore.state.processInstance?.callHierarchy?.length >
@@ -166,9 +174,43 @@ const ProcessInstance: React.FC = observer(() => {
             <Button
               appearance="primary"
               label="Apply Modifications"
-              onCmPress={() => {}}
+              onCmPress={() => {
+                if (
+                  flowNodeModifications.length === 0 &&
+                  variableModifications.length === 0
+                ) {
+                  setIsNoPlannedModificationsModalVisible(true);
+                }
+              }}
               data-testid="apply-modifications-button"
             />
+            <InformationModal
+              isVisible={isNoPlannedModificationsModalVisible}
+              onClose={() => setIsNoPlannedModificationsModalVisible(false)}
+              title="Modification Summary"
+              body={
+                <>
+                  <p>
+                    No planned modifications for Process Instance{' '}
+                    <strong>{`${processInstanceDetailsStore.state.processInstance?.processName} - ${processInstanceId}`}</strong>
+                    .
+                  </p>
+                  <p>Click "OK" to return to the modification mode.</p>
+                </>
+              }
+              footer={
+                <>
+                  <CmButton
+                    appearance="primary"
+                    label="OK"
+                    onCmPress={() =>
+                      setIsNoPlannedModificationsModalVisible(false)
+                    }
+                    data-testid="ok-button"
+                  />
+                </>
+              }
+            ></InformationModal>
             <InformationModal
               isVisible={isDiscardModificationsModalVisible}
               onClose={() => setIsDiscardModificationsModalVisible(false)}
