@@ -88,7 +88,7 @@ public final class ProcessInstanceModificationProcessor
     final var elementInstanceRecord = new ProcessInstanceRecord();
     elementInstanceRecord.wrap(processInstance);
     // todo: deal with non-existing flow scope (#9643)
-    final Optional<Long> flowScopeKey = getFlowScopeKey(processInstance, elementToActivate);
+    final Optional<Long> flowScopeKey = findFlowScopeKey(processInstance, elementToActivate);
     commandWriter.appendFollowUpCommand(
         keyGenerator.nextKey(),
         ProcessInstanceIntent.ACTIVATE_ELEMENT,
@@ -100,17 +100,17 @@ public final class ProcessInstanceModificationProcessor
             .setParentElementInstanceKey(-1));
   }
 
-  private Optional<Long> getFlowScopeKey(
+  private Optional<Long> findFlowScopeKey(
       final ProcessInstanceRecord processInstance, final AbstractFlowElement elementToActivate) {
     final var flowScope = elementToActivate.getFlowScope();
     if (flowScope.getId().equals(processInstance.getElementIdBuffer())) {
       return Optional.of(processInstance.getProcessInstanceKey());
     } else {
-      return getFlowScopeKey(processInstance.getProcessInstanceKey(), flowScope.getId());
+      return findFlowScopeKey(processInstance.getProcessInstanceKey(), flowScope.getId());
     }
   }
 
-  private Optional<Long> getFlowScopeKey(
+  private Optional<Long> findFlowScopeKey(
       final long ancestorKey, final DirectBuffer targetElementId) {
     final List<ElementInstance> children = elementInstanceState.getChildren(ancestorKey);
 
@@ -120,7 +120,7 @@ public final class ProcessInstanceModificationProcessor
         //  children are found
         return Optional.of(child.getKey());
       } else {
-        final var optionalFlowScopeKey = getFlowScopeKey(child.getKey(), targetElementId);
+        final var optionalFlowScopeKey = findFlowScopeKey(child.getKey(), targetElementId);
         if (optionalFlowScopeKey.isPresent()) {
           return optionalFlowScopeKey;
         }
