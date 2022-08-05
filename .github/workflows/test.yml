@@ -77,7 +77,6 @@ jobs:
           maven-version: 3.8.5
       - uses: ./.github/actions/use-ci-nexus-cache
       - run: mvn -B -DskipChecks -DskipTests install
-      - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
       - run: >
           mvn -B --no-snapshot-updates
           -D skipUTs -D skipChecks -D failsafe.rerunFailingTestsCount=3
@@ -249,10 +248,6 @@ jobs:
           go-version-file: 'clients/go/go.mod'
           cache: true
           cache-dependency-path: 'clients/go/go.sum'
-      - uses: actions/setup-java@v3.4.1
-        with:
-          java-version: '17'
-          distribution: 'temurin'
       - name: Check gocompat
         run: |
           curl -sL https://github.com/smola/gocompat/releases/download/v0.3.0/gocompat_linux_amd64.tar.gz | tar xzvf - gocompat_linux_amd64
@@ -263,8 +258,12 @@ jobs:
           done
           ./gocompat_linux_amd64 compare --go1compat ${EXCLUDE} ./...
         working-directory: clients/go/
-      - run: mvn -B -DskipChecks -DskipTests install
-      - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t camunda/zeebe:current-test .
+      - uses: ./.github/actions/build-docker
+        id: build-docker
+        with:
+          repository: camunda/zeebe
+          version: current-test
+          package: true
       - run: go test -mod=vendor -v ./...
         working-directory: clients/go
   java-client:

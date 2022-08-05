@@ -1,0 +1,92 @@
+# This action expects the code to have been checked out beforehand, e.g. via actions/checkout@v3
+# It will set up Java and maven as dependencies. If requested to package Zeebe, it will also set up
+# Go, build zbctl, then build the Zeebe distribution.
+#
+# If no version is given, the version is set to the Maven project version.
+#
+# This action does NOT work on self-hosted runners unless they have buildx already set up. See
+# https://github.com/docker/setup-buildx-action for more
+
+---
+name: Build Docker Image
+description: Builds the Zeebe Docker image
+
+inputs:
+  repository:
+    description: 'The image repository, e.g. camunda/zeebe'
+    default: 'camunda/zeebe'
+    required: true
+  version:
+    description: 'The image version, e.g. SNAPSHOT, 8.1.0'
+    required: false
+  package:
+    description: 'If true, will package Zeebe, otherwise uses the tar-ball under dist/target'
+    default: 'false'
+    required: false
+  push:
+    description: 'If true, will push the image'
+    required: false
+    default: 'false'
+
+outputs:
+  image:
+    description: "Fully qualified image name available in your local Docker daemon"
+    value: ${{ steps.get-image.outputs.result }}
+  date:
+    description: "The ISO 8601 date at which the image was created"
+    value: ${{ steps.get-date.outputs.result }}
+  version:
+    description: "The semantic version of the packaged artifact"
+    value: ${{ steps.get-version.outputs.result }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@v3.4.1
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    - uses: stCarolas/setup-maven@v4.4
+      with:
+        maven-version: 3.8.5
+    - if: ${{ inputs.package == 'true' }}
+      uses: actions/setup-go@v3
+      with:
+        go-version-file: 'clients/go/go.mod'
+        cache: true
+        cache-dependency-path: 'clients/go/go.sum'
+    - if: ${{ inputs.package == 'true' }}
+      name: Build Go
+      shell: bash
+      run: ./build.sh
+      working-directory: clients/go/cmd/zbctl
+    - if: ${{ inputs.package == 'true' }}
+      name: Package Zeebe
+      shell: bash
+      run: mvn -B -DskipTests -DskipChecks package -T1C
+    - name: Set semantic version from Maven project
+      id: get-version
+      shell: bash
+      run: echo ::set-output name=result::$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+    - name: Set image build label from ISO 8601 DATE
+      id: get-date
+      shell: bash
+      run: echo "::set-output name=result::$(date --iso-8601=seconds)"
+    - name: Set image name from params or project version
+      id: get-image
+      shell: bash
+      run: echo "::set-output name=result::${{ inputs.repository }}:${{ inputs.version || steps.get-version.outputs.result }}"
+    - name: Build Docker image
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        tags: ${{ steps.get-image.outputs.result }}
+        load: true
+        push: ${{ inputs.push }}
+        no-cache: true
+        build-args: |
+          DISTBALL=dist/target/camunda-zeebe-${{ steps.get-version.outputs.result }}.tar.gz
+          DATE=${{ steps.get-date.outputs.result }}
+          REVISION=${{ github.sha }}
+          VERSION=${{ steps.get-version.outputs.result }}
+        target: app

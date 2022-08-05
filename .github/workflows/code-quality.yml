@@ -95,38 +95,15 @@ jobs:
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: ./hadolint.sarif
-      - uses: actions/setup-java@v3.4.1
+      - uses: ./.github/actions/build-docker
+        id: build-docker
         with:
-          distribution: 'temurin'
-          java-version: '17'
-      - uses: stCarolas/setup-maven@v4.4
-        with:
-          maven-version: 3.8.5
-      - name: Package Zeebe
-        run: mvn -B -DskipTests -DskipChecks package -T1C
-      - name: Set project version
-        run: echo ::set-output name=result::$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
-        id: get-version
-      - name: Get build timestamp
-        id: get-date
-        run: echo "::set-output name=result::$(date --iso-8601=seconds)"
-      - name: Build Docker image
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          # give it a fake registry to make sure we don't accidentally push it
-          tags: localhost:5000/camunda/zeebe:${{ steps.get-version.outputs.result }}
-          load: true
-          no-cache: true
-          build-args: |
-            DISTBALL=dist/target/camunda-zeebe-${{ steps.get-version.outputs.result }}.tar.gz
-            DATE=${{ steps.get-date.outputs.result }}
-            REVISION=${{ github.sha }}
-            VERSION=${{ steps.get-version.outputs.result }}
-          target: app
+          # give it a fake name to ensure we never try pushing it
+          repository: localhost:5000/camunda/zeebe
+          package: true
       - name: Verify Docker image
         env:
-          DATE: ${{ steps.get-date.outputs.result }}
+          DATE: ${{ steps.build-docker.outputs.date }}
           REVISION: ${{ github.sha }}
-          VERSION: ${{ steps.get-version.outputs.result }}
-        run: ${PWD}/docker/test/verify.sh 'localhost:5000/camunda/zeebe:${{ steps.get-version.outputs.result }}'
+          VERSION: ${{ steps.build-docker.outputs.version }}
+        run: ${PWD}/docker/test/verify.sh '${{ steps.build-docker.outputs.image }}'
