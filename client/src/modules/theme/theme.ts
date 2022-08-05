@@ -326,6 +326,12 @@ const theme = {
         modifications: {
           footer: {
             backgroundColor: DARK_COLORS.ui03,
+            lastModification: {
+              backgroundColor: DARK_COLORS.ui05,
+              buttonColor: DARK_COLORS.linkDefault,
+              separatorColor: DARK_COLORS.ui06,
+              color: SEMANTIC_COLORS.white,
+            },
           },
         },
       },
@@ -925,6 +931,7 @@ const theme = {
       },
       modificationMode: {
         footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
+        lastModification: `0 3px 4px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
       },
       modules: {
         button: {
@@ -1194,6 +1201,12 @@ const theme = {
         modifications: {
           footer: {
             backgroundColor: LIGHT_COLORS.ui02,
+            lastModification: {
+              backgroundColor: LIGHT_COLORS.ui05,
+              buttonColor: LIGHT_COLORS.linkDefault,
+              separatorColor: LIGHT_COLORS.ui03,
+              color: DARK_COLORS.ui04,
+            },
           },
         },
       },
@@ -1785,6 +1798,7 @@ const theme = {
       },
       modificationMode: {
         footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
+        lastModification: `0 3px 4px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
       },
       modules: {
         button: {

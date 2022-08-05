@@ -87,7 +87,7 @@ const ModificationFooter = styled.div`
     const colors = theme.colors.processInstance.modifications.footer;
     return css`
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
       background-color: ${colors.backgroundColor};
       padding: 8px 24px 7px;
       border-top: 1px solid ${theme.colors.borderColor};
@@ -100,6 +100,12 @@ const Button = styled(CmButton)`
   margin-left: 15px;
 `;
 
+const Buttons = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  flex: 1;
+`;
+
 export {
   Container,
   PanelContainer,
@@ -107,4 +113,5 @@ export {
   ModificationHeader,
   ModificationFooter,
   Button,
+  Buttons,
 };

@@ -27,6 +27,7 @@ import {
   ModificationHeader,
   ModificationFooter,
   Button,
+  Buttons,
 } from './styled';
 import {Locations} from 'modules/routes';
 import {
@@ -39,6 +40,7 @@ import {observer} from 'mobx-react';
 import {InformationModal} from 'modules/components/InformationModal';
 import {CmButton} from '@camunda-cloud/common-ui-react';
 import Modal from 'modules/components/Modal';
+import {LastModification} from './LastModification';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -120,7 +122,7 @@ const ProcessInstance: React.FC = observer(() => {
 
   const {
     isModificationModeEnabled,
-    state: {flowNodeModifications, variableModifications},
+    state: {modifications},
   } = modificationsStore;
 
   const isBreadcrumbVisible =
@@ -163,88 +165,90 @@ const ProcessInstance: React.FC = observer(() => {
         </ResizablePanel>
         {isModificationModeEnabled && (
           <ModificationFooter>
-            <Button
-              appearance="danger"
-              label="Discard All"
-              onCmPress={() => {
-                setIsDiscardModificationsModalVisible(true);
-              }}
-              data-testid="discard-all-button"
-            />
-            <Button
-              appearance="primary"
-              label="Apply Modifications"
-              onCmPress={() => {
-                if (
-                  flowNodeModifications.length === 0 &&
-                  variableModifications.length === 0
-                ) {
-                  setIsNoPlannedModificationsModalVisible(true);
+            <LastModification />
+            <Buttons>
+              <Button
+                appearance="danger"
+                label="Discard All"
+                onCmPress={() => {
+                  setIsDiscardModificationsModalVisible(true);
+                }}
+                data-testid="discard-all-button"
+              />
+              <Button
+                appearance="primary"
+                label="Apply Modifications"
+                onCmPress={() => {
+                  if (modifications.length === 0) {
+                    setIsNoPlannedModificationsModalVisible(true);
+                  }
+                }}
+                data-testid="apply-modifications-button"
+              />
+              <InformationModal
+                isVisible={isNoPlannedModificationsModalVisible}
+                onClose={() => setIsNoPlannedModificationsModalVisible(false)}
+                title="Modification Summary"
+                body={
+                  <>
+                    <p>
+                      No planned modifications for Process Instance{' '}
+                      <strong>{`${processInstanceDetailsStore.state.processInstance?.processName} - ${processInstanceId}`}</strong>
+                      .
+                    </p>
+                    <p>Click "OK" to return to the modification mode.</p>
+                  </>
                 }
-              }}
-              data-testid="apply-modifications-button"
-            />
-            <InformationModal
-              isVisible={isNoPlannedModificationsModalVisible}
-              onClose={() => setIsNoPlannedModificationsModalVisible(false)}
-              title="Modification Summary"
-              body={
-                <>
-                  <p>
-                    No planned modifications for Process Instance{' '}
-                    <strong>{`${processInstanceDetailsStore.state.processInstance?.processName} - ${processInstanceId}`}</strong>
-                    .
-                  </p>
-                  <p>Click "OK" to return to the modification mode.</p>
-                </>
-              }
-              footer={
-                <>
-                  <CmButton
-                    appearance="primary"
-                    label="OK"
-                    onCmPress={() =>
-                      setIsNoPlannedModificationsModalVisible(false)
-                    }
-                    data-testid="ok-button"
-                  />
-                </>
-              }
-            ></InformationModal>
-            <InformationModal
-              isVisible={isDiscardModificationsModalVisible}
-              onClose={() => setIsDiscardModificationsModalVisible(false)}
-              title="Discard Modifications"
-              body={
-                <>
-                  <p>
-                    About to discard all added modifications for instance{' '}
-                    {processInstanceId}.
-                  </p>
-                  <p>Click "Discard" to proceed.</p>
-                </>
-              }
-              footer={
-                <>
-                  <Modal.SecondaryButton
-                    title="Cancel"
-                    onClick={() => setIsDiscardModificationsModalVisible(false)}
-                    data-testid="cancel-button"
-                  >
-                    Cancel
-                  </Modal.SecondaryButton>
-                  <CmButton
-                    appearance="danger"
-                    label="Discard"
-                    onCmPress={() => {
-                      modificationsStore.reset();
-                      setIsDiscardModificationsModalVisible(false);
-                    }}
-                    data-testid="discard-button"
-                  />
-                </>
-              }
-            />
+                footer={
+                  <>
+                    <CmButton
+                      appearance="primary"
+                      label="OK"
+                      onCmPress={() =>
+                        setIsNoPlannedModificationsModalVisible(false)
+                      }
+                      data-testid="ok-button"
+                    />
+                  </>
+                }
+              ></InformationModal>
+              <InformationModal
+                isVisible={isDiscardModificationsModalVisible}
+                onClose={() => setIsDiscardModificationsModalVisible(false)}
+                title="Discard Modifications"
+                body={
+                  <>
+                    <p>
+                      About to discard all added modifications for instance{' '}
+                      {processInstanceId}.
+                    </p>
+                    <p>Click "Discard" to proceed.</p>
+                  </>
+                }
+                footer={
+                  <>
+                    <Modal.SecondaryButton
+                      title="Cancel"
+                      onClick={() =>
+                        setIsDiscardModificationsModalVisible(false)
+                      }
+                      data-testid="cancel-button"
+                    >
+                      Cancel
+                    </Modal.SecondaryButton>
+                    <CmButton
+                      appearance="danger"
+                      label="Discard"
+                      onCmPress={() => {
+                        modificationsStore.reset();
+                        setIsDiscardModificationsModalVisible(false);
+                      }}
+                      data-testid="discard-button"
+                    />
+                  </>
+                }
+              />
+            </Buttons>
           </ModificationFooter>
         )}
       </PanelContainer>

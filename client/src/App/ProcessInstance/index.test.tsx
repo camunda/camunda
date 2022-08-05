@@ -321,7 +321,8 @@ describe('Instance', () => {
     }
   );
 
-  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
+  // TODO: unskip when mocks are removed from modifications
+  (IS_MODIFICATION_MODE_ENABLED ? it.skip : it.skip)(
     'should display no planned modifications modal when apply modifications is clicked during the modification mode',
     async () => {
       mockServer.use(
