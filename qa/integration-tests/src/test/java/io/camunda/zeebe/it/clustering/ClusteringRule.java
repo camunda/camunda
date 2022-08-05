@@ -413,9 +413,9 @@ public final class ClusteringRule extends ExternalResource {
             atomixCluster.getMembershipService(),
             atomixCluster.getEventService(),
             actorScheduler);
+    closeables.manage(actorScheduler::stop);
     closeables.manage(gateway::stop);
     closeables.manage(atomixCluster::stop);
-    closeables.manage(actorScheduler::stop);
     return gateway;
   }
 
