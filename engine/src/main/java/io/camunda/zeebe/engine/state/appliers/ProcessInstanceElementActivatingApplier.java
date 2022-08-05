@@ -196,9 +196,6 @@ final class ProcessInstanceElementActivatingApplier
       final ProcessInstanceRecord value, final ElementInstance flowScopeInstance) {
     // Currently the inclusive gateway can only have one incoming sequence flow.
 
-    final var executableFlowNode =
-        processState.getFlowElement(
-            value.getProcessDefinitionKey(), value.getElementIdBuffer(), ExecutableFlowNode.class);
     flowScopeInstance.decrementActiveSequenceFlows();
     elementInstanceState.updateInstance(flowScopeInstance);
   }

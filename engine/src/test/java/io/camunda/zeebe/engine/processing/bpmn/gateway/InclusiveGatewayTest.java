@@ -51,27 +51,6 @@ public final class InclusiveGatewayTest {
           .serviceTask("task3", b -> b.zeebeJobType("type3"))
           .endEvent("end3")
           .done();
-  private static final BpmnModelInstance INCLUSIVE_JOIN_PROCESS =
-      Bpmn.createExecutableProcess(PROCESS_ID)
-          .startEvent("start")
-          .inclusiveGateway("fork")
-          .defaultFlow()
-          .sequenceFlowId("flow1")
-          .conditionExpression("= contains(str,\"a\")")
-          .serviceTask("task1", b -> b.zeebeJobType("type1"))
-          .inclusiveGateway("join")
-          .endEvent("end")
-          .moveToNode("fork")
-          .sequenceFlowId("flow2")
-          .conditionExpression("= contains(str,\"b\")")
-          .serviceTask("task2", b -> b.zeebeJobType("type2"))
-          .connectTo("join")
-          .moveToNode("fork")
-          .sequenceFlowId("flow3")
-          .conditionExpression("= contains(str,\"c\")")
-          .serviceTask("task3", b -> b.zeebeJobType("type3"))
-          .connectTo("join")
-          .done();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

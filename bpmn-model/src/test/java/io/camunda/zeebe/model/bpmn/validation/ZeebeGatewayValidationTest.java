@@ -69,6 +69,26 @@ public class ZeebeGatewayValidationTest extends AbstractZeebeValidationTest {
       },
       {
         Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .inclusiveGateway("fork")
+            .defaultFlow()
+            .sequenceFlowId("flow1")
+            .conditionExpression("= contains(str,\"a\")")
+            .serviceTask("task1", b -> b.zeebeJobType("type1"))
+            .inclusiveGateway("join")
+            .endEvent("end")
+            .moveToNode("fork")
+            .sequenceFlowId("flow2")
+            .conditionExpression("= contains(str,\"b\")")
+            .serviceTask("task2", b -> b.zeebeJobType("type2"))
+            .connectTo("join")
+            .done(),
+        singletonList(
+            expect(
+                "join", "Currently the inclusive gateway can only have one incoming sequence flow"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .exclusiveGateway("gateway")
             .sequenceFlowId("flow")
