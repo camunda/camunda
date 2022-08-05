@@ -5,8 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {useRef} from 'react';
+import {MouseEventHandler, useRef, useState} from 'react';
 import {Field} from 'react-final-form';
+import {DateRangePopover} from './DateRangePopover';
 import {TextField} from './styled';
 
 type Props = {
@@ -15,34 +16,59 @@ type Props = {
 };
 
 const DateRangeField: React.FC<Props> = ({label, filterKeys}) => {
-  const cmTextFieldRef = useRef<HTMLCmTextfieldElement | null>(null);
+  const cmTextFieldRef = useRef<HTMLCmTextfieldElement>(null);
+  const textFieldRef = useRef<HTMLDivElement>(null);
 
-  const handleClick = () => {
+  const [isDateRangePopoverVisible, setIsDateRangePopoverVisible] =
+    useState<boolean>(false);
+  const [inputValue, setInputValue] = useState('');
+
+  const handleClick: MouseEventHandler = (event) => {
+    if (!isDateRangePopoverVisible) {
+      event?.stopPropagation();
+      showPopover();
+    }
+  };
+
+  const showPopover = () => {
+    setInputValue('Custom');
     cmTextFieldRef.current?.forceFocus();
+    setIsDateRangePopoverVisible(true);
   };
 
   return (
     <>
-      <TextField
-        label={label}
-        type="text"
-        fieldSuffix={{
-          type: 'icon',
-          icon: 'calendar',
-          press: handleClick,
-        }}
-        ref={cmTextFieldRef}
-        onClick={handleClick}
-        readonly
-      />
-      {filterKeys.map((filterKey) => (
-        <Field
-          name={filterKey}
-          key={filterKey}
-          component="input"
-          type="hidden"
+      <div ref={textFieldRef}>
+        <TextField
+          label={label}
+          type="text"
+          fieldSuffix={{
+            type: 'icon',
+            icon: 'calendar',
+            press: showPopover,
+          }}
+          value={inputValue}
+          ref={cmTextFieldRef}
+          onClick={handleClick}
+          readonly
         />
-      ))}
+        {filterKeys.map((filterKey) => (
+          <Field
+            name={filterKey}
+            key={filterKey}
+            component="input"
+            type="hidden"
+          />
+        ))}
+      </div>
+
+      {isDateRangePopoverVisible && textFieldRef.current !== null && (
+        <DateRangePopover
+          referenceElement={textFieldRef.current}
+          onCancel={() => setIsDateRangePopoverVisible(false)}
+          onApply={() => setIsDateRangePopoverVisible(false)}
+        />
+      )}
     </>
   );
 };

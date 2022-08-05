@@ -6,11 +6,17 @@
  */
 
 import {render, screen} from 'modules/testing-library';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Form} from 'react-final-form';
 import {DateRangeField} from '.';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  return <Form onSubmit={() => {}}>{() => children}</Form>;
+  return (
+    <ThemeProvider>
+      <Form onSubmit={() => {}}>{() => children}</Form>
+      <div>Outside element</div>
+    </ThemeProvider>
+  );
 };
 
 describe('Date Range', () => {
@@ -18,7 +24,7 @@ describe('Date Range', () => {
     render(
       <DateRangeField
         label={'Start Date Range'}
-        filterKeys={['startDateBefore', 'startDateAfter']}
+        filterKeys={['startDateAfter', 'startDateBefore']}
       />,
       {wrapper: Wrapper}
     );
@@ -26,5 +32,58 @@ describe('Date Range', () => {
     expect(screen.getByLabelText('Start Date Range')).toHaveAttribute(
       'readonly'
     );
+  });
+
+  it('should close popover on cancel click', async () => {
+    const {user} = render(
+      <DateRangeField
+        label={'Start Date Range'}
+        filterKeys={['startDateBefore', 'startDateAfter']}
+      />,
+      {wrapper: Wrapper}
+    );
+
+    expect(screen.queryByTestId('popover')).not.toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('Start Date Range'));
+    expect(screen.getByTestId('popover')).toBeInTheDocument();
+
+    // getByRole does not work here because the date range popover portal is rendered to document.body
+    await user.click(screen.getByText('Cancel'));
+    expect(screen.queryByTestId('popover')).not.toBeInTheDocument();
+  });
+
+  it('should close popover on outside click', async () => {
+    const {user} = render(
+      <DateRangeField
+        label={'Start Date Range'}
+        filterKeys={['startDateBefore', 'startDateAfter']}
+      />,
+      {wrapper: Wrapper}
+    );
+
+    expect(screen.queryByTestId('popover')).not.toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('Start Date Range'));
+    expect(screen.getByTestId('popover')).toBeInTheDocument();
+
+    await user.click(screen.getByText('Outside element'));
+    expect(screen.queryByTestId('popover')).not.toBeInTheDocument();
+  });
+
+  it('should not close popover on inside click', async () => {
+    const {user} = render(
+      <DateRangeField
+        label={'Start Date Range'}
+        filterKeys={['startDateBefore', 'startDateAfter']}
+      />,
+      {wrapper: Wrapper}
+    );
+
+    expect(screen.queryByTestId('popover')).not.toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('Start Date Range'));
+    await user.click(screen.getByTestId('popover'));
+    expect(screen.getByTestId('popover')).toBeInTheDocument();
   });
 });

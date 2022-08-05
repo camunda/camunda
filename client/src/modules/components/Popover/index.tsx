@@ -7,33 +7,57 @@
 
 import {usePopper} from 'react-popper';
 import {createPortal} from 'react-dom';
-import {useRef, useState} from 'react';
+import {useLayoutEffect, useRef, useState} from 'react';
 import {Container, Arrow} from './styled';
 import offsetModifier from '@popperjs/core/lib/modifiers/offset';
 import flipModifier from '@popperjs/core/lib/modifiers/flip';
+import {Placement} from '@popperjs/core';
 
 type Props = {
-  selectedFlowNodeRef?: SVGGraphicsElement | null;
+  referenceElement?: Element | null;
   children: React.ReactNode;
-  flipOptions: typeof flipModifier['options'];
-  offsetOptions: typeof offsetModifier['options'];
+  placement?: Placement;
+  flipOptions?: typeof flipModifier['options'];
+  offsetOptions?: typeof offsetModifier['options'];
   className?: string;
+  onOutsideClick?: () => void;
 };
 
 const Popover: React.FC<Props> = ({
-  selectedFlowNodeRef,
+  referenceElement,
   children,
-  flipOptions,
-  offsetOptions,
+  placement = 'bottom',
+  flipOptions = {},
+  offsetOptions = {},
   className,
+  onOutsideClick,
 }) => {
   const popoverElementRef = useRef<HTMLDivElement | null>(null);
   const [arrow, setArrow] = useState<HTMLElement | null>(null);
 
+  useLayoutEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target;
+
+      if (
+        target instanceof Element &&
+        !popoverElementRef.current?.contains(target)
+      ) {
+        onOutsideClick?.();
+      }
+    };
+
+    document.body?.addEventListener('click', handleClick);
+    return () => {
+      document.body?.removeEventListener('click', handleClick);
+    };
+  }, [onOutsideClick]);
+
   const {styles, attributes} = usePopper(
-    selectedFlowNodeRef,
+    referenceElement,
     popoverElementRef.current,
     {
+      placement,
       modifiers: [
         {
           name: 'offset',
@@ -53,7 +77,7 @@ const Popover: React.FC<Props> = ({
     }
   );
 
-  return selectedFlowNodeRef !== null
+  return referenceElement !== null
     ? createPortal(
         <Container
           ref={popoverElementRef}

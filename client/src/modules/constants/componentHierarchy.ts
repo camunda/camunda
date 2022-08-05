@@ -9,10 +9,11 @@
 const zLayoutTopBase = 10000;
 
 const above = 1;
-// const below = -1; // uncomment and use when migrating other z-indexes --> #2788
+const below = -1;
 
 const zNotification = above + zLayoutTopBase;
 const zModificationFrame = above + zLayoutTopBase;
 const zModal = above + zModificationFrame;
+const zDateRangePopover = below + zNotification;
 
-export {zNotification, zModificationFrame, zModal};
+export {zNotification, zModal, zModificationFrame, zDateRangePopover};

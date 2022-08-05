@@ -32,7 +32,7 @@ const ModificationDropdown: React.FC<Props> = observer(
 
     return (
       <Popover
-        selectedFlowNodeRef={selectedFlowNodeRef}
+        referenceElement={selectedFlowNodeRef}
         offsetOptions={{
           offset: [50, 10],
         }}

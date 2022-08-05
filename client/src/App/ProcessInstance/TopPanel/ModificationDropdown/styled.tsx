@@ -11,7 +11,7 @@ import {ReactComponent as Move} from 'modules/components/Icon/move.svg';
 import {ReactComponent as Stop} from 'modules/components/Icon/stop.svg';
 import {ReactComponent as Plus} from 'modules/components/Icon/plus.svg';
 import {styles} from '@carbon/elements';
-import {Popover as DefaultPopover} from 'modules/components/Diagram/Popover';
+import {Popover as DefaultPopover} from 'modules/components/Popover';
 
 const iconStyle = css`
   margin-right: 8px;

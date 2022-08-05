@@ -7,7 +7,7 @@
 
 import styled, {css} from 'styled-components';
 import {styles} from '@carbon/elements';
-import {Popover as BasePopover} from 'modules/components/Diagram/Popover';
+import {Popover as BasePopover} from 'modules/components/Popover';
 
 const Popover = styled(BasePopover)`
   z-index: 5;

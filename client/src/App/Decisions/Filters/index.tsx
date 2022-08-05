@@ -101,7 +101,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     validate: mergeValidators(validateDateCharacters, validateDateComplete),
   },
   evaluationDateRange: {
-    keys: ['evaluationDateBefore', 'evaluationDateAfter'],
+    keys: ['evaluationDateAfter', 'evaluationDateBefore'],
     label: 'Evaluation Date Range',
   },
 };

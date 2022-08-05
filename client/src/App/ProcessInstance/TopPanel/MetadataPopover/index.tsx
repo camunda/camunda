@@ -65,7 +65,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
 
   return (
     <Popover
-      selectedFlowNodeRef={selectedFlowNodeRef}
+      referenceElement={selectedFlowNodeRef}
       offsetOptions={{
         offset: [0, 10],
       }}
