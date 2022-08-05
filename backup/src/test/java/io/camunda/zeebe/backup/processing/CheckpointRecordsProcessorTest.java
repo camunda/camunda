@@ -24,12 +24,12 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.engine.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.streamprocessor.RecordProcessorContextImpl;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
@@ -55,7 +55,7 @@ final class CheckpointRecordsProcessorTest {
         new ZeebeRocksDbFactory<>(
                 new RocksDbConfiguration(), new ConsistencyChecksSettings(true, true))
             .createDb(database.toFile());
-    final RecordProcessorContext context = createContext(executor, zeebedb);
+    final RecordProcessorContextImpl context = createContext(executor, zeebedb);
 
     resultBuilder = new MockProcessingResultBuilder();
     processor = new CheckpointRecordsProcessor(backupManager);
@@ -64,9 +64,9 @@ final class CheckpointRecordsProcessorTest {
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
   }
 
-  private RecordProcessorContext createContext(
+  private RecordProcessorContextImpl createContext(
       final ProcessingScheduleService executor, final ZeebeDb zeebeDb) {
-    return new RecordProcessorContext(
+    return new RecordProcessorContextImpl(
         1, executor, zeebeDb, zeebeDb.createContext(), null, null, null);
   }
 
@@ -235,7 +235,7 @@ final class CheckpointRecordsProcessorTest {
   @Test
   void shouldNotifyListenerOnInit() {
     // given
-    final RecordProcessorContext context = createContext(null, zeebedb);
+    final RecordProcessorContextImpl context = createContext(null, zeebedb);
     processor = new CheckpointRecordsProcessor(backupManager);
     final long checkpointId = 3;
     final long checkpointPosition = 30;

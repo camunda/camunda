@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.api;
 
-import io.camunda.zeebe.engine.RecordProcessorContext;
-
 /**
  * Interface for record processors. A record processor is responsible for handling a single record.
  * (The class {@code StreamProcessor} in turn is responsible for handling a stream of records.

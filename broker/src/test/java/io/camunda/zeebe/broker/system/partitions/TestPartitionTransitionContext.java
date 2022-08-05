@@ -278,7 +278,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     this.concurrencyControl = concurrencyControl;
   }
 
-  public void setTypedRecordProcessorFactory(final TypedRecordProcessorFactory typedRecordProcessorFactory) {
+  public void setTypedRecordProcessorFactory(
+      final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     this.typedRecordProcessorFactory = typedRecordProcessorFactory;
   }
 

@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.api.EmptyProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.RecordProcessor;
+import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -86,7 +87,7 @@ public class Engine implements RecordProcessor {
     recordProcessorContext.setStreamProcessorListener(
         typedProcessorContext.getStreamProcessorListener());
 
-    recordProcessorContext.setLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
+    recordProcessorContext.addLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
   }
 

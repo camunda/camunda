@@ -5,22 +5,23 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine;
+package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
+import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-public final class RecordProcessorContext {
+public final class RecordProcessorContextImpl implements RecordProcessorContext {
 
   private final int partitionId;
   private final ProcessingScheduleService scheduleService;
@@ -29,10 +30,10 @@ public final class RecordProcessorContext {
   private final LegacyTypedStreamWriter streamWriter;
   private final LegacyTypedResponseWriter responseWriter;
   private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
-  private List<StreamProcessorLifecycleAware> lifecycleListeners = Collections.EMPTY_LIST;
+  private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private StreamProcessorListener streamProcessorListener;
 
-  public RecordProcessorContext(
+  public RecordProcessorContextImpl(
       final int partitionId,
       final ProcessingScheduleService scheduleService,
       final ZeebeDb zeebeDb,
@@ -49,47 +50,58 @@ public final class RecordProcessorContext {
     this.eventApplierFactory = eventApplierFactory;
   }
 
+  @Override
   public int getPartitionId() {
     return partitionId;
   }
 
+  @Override
   public ProcessingScheduleService getScheduleService() {
     return scheduleService;
   }
 
+  @Override
   public ZeebeDb getZeebeDb() {
     return zeebeDb;
   }
 
+  @Override
   public TransactionContext getTransactionContext() {
     return transactionContext;
   }
 
+  @Override
   public LegacyTypedStreamWriter getStreamWriterProxy() {
     return streamWriter;
   }
 
+  @Override
   public LegacyTypedResponseWriter getTypedResponseWriter() {
     return responseWriter;
   }
 
+  @Override
   public Function<MutableZeebeState, EventApplier> getEventApplierFactory() {
     return eventApplierFactory;
   }
 
+  @Override
   public List<StreamProcessorLifecycleAware> getLifecycleListeners() {
     return lifecycleListeners;
   }
 
-  public void setLifecycleListeners(final List<StreamProcessorLifecycleAware> lifecycleListeners) {
-    this.lifecycleListeners = lifecycleListeners;
-  }
-
+  @Override
   public StreamProcessorListener getStreamProcessorListener() {
     return streamProcessorListener;
   }
 
+  @Override
   public void setStreamProcessorListener(final StreamProcessorListener streamProcessorListener) {
     this.streamProcessorListener = streamProcessorListener;
+  }
+
+  @Override
+  public void addLifecycleListeners(final List<StreamProcessorLifecycleAware> lifecycleListeners) {
+    this.lifecycleListeners.addAll(lifecycleListeners);
   }
 }

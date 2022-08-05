@@ -9,7 +9,6 @@ package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
@@ -326,7 +325,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   private void initEngine() {
     final var engineContext =
-        new RecordProcessorContext(
+        new RecordProcessorContextImpl(
             partitionId,
             streamProcessorContext.getScheduleService(),
             zeebeDb,
