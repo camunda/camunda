@@ -128,7 +128,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .logStream(context.getLogStream())
         .actorSchedulingService(context.getActorSchedulingService())
         .zeebeDb(context.getZeebeDb())
-        .recordProcessor(new Engine(context.getStreamProcessorFactory()))
+        .recordProcessor(new Engine(context.getTypedRecordProcessorFactory()))
         .eventApplierFactory(EventAppliers::new)
         .nodeId(context.getNodeId())
         .commandResponseWriter(context.getCommandResponseWriter())

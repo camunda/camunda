@@ -409,7 +409,7 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public TypedRecordProcessorFactory getStreamProcessorFactory() {
+  public TypedRecordProcessorFactory getTypedRecordProcessorFactory() {
     return typedRecordProcessorsFactory::createTypedStreamProcessor;
   }
 

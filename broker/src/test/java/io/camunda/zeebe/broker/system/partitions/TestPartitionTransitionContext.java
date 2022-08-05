@@ -44,7 +44,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private Role currentRole;
   private long currentTerm;
   private HealthMonitor healthMonitor;
-  private TypedRecordProcessorFactory streamProcessorFactory;
+  private TypedRecordProcessorFactory typedRecordProcessorFactory;
   private ExporterDirector exporterDirector;
   private LogStream logStream;
   private StreamProcessor streamProcessor;
@@ -264,12 +264,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public TypedRecordProcessorFactory getStreamProcessorFactory() {
-    return streamProcessorFactory;
-  }
-
-  public void setStreamProcessorFactory(final TypedRecordProcessorFactory streamProcessorFactory) {
-    this.streamProcessorFactory = streamProcessorFactory;
+  public TypedRecordProcessorFactory getTypedRecordProcessorFactory() {
+    return typedRecordProcessorFactory;
   }
 
   @Override
@@ -280,6 +276,10 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
     this.concurrencyControl = concurrencyControl;
+  }
+
+  public void setTypedRecordProcessorFactory(final TypedRecordProcessorFactory typedRecordProcessorFactory) {
+    this.typedRecordProcessorFactory = typedRecordProcessorFactory;
   }
 
   public void setRaftPartition(final RaftPartition raftPartition) {
