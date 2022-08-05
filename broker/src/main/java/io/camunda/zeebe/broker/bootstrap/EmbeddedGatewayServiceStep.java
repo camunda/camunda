@@ -27,10 +27,11 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
 
     final var clusterServices = brokerStartupContext.getClusterServices();
 
+    @SuppressWarnings("resource")
     final var embeddedGatewayService =
         new EmbeddedGatewayService(
             brokerStartupContext.getBrokerConfiguration(),
-            brokerStartupContext.getActorScheduler(),
+            brokerStartupContext.getActorSchedulingService(),
             clusterServices.getMessagingService(),
             clusterServices.getMembershipService(),
             clusterServices.getEventService());

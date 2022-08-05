@@ -24,7 +24,6 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.grpc.StatusRuntimeException;
 import io.netty.util.NetUtil;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -75,7 +74,7 @@ final class InterceptorIT {
   }
 
   @Test
-  void shouldAbortDeploymentCalls() throws IOException {
+  void shouldAbortDeploymentCalls() {
     // given
     final var interceptorCfg = new InterceptorCfg();
     interceptorCfg.setId("test");
@@ -102,7 +101,7 @@ final class InterceptorIT {
   }
 
   @Test
-  void shouldInjectQueryApiViaContext() throws IOException {
+  void shouldInjectQueryApiViaContext() {
     // given
     final var interceptorCfg = new InterceptorCfg();
     interceptorCfg.setId("test");
@@ -129,8 +128,7 @@ final class InterceptorIT {
         cluster.getMessagingService(),
         cluster.getMembershipService(),
         cluster.getEventService(),
-        scheduler,
-        false);
+        scheduler);
   }
 
   private ZeebeClient createZeebeClient() {

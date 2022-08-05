@@ -17,7 +17,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceR
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.time.Duration;
 import java.util.Collections;
@@ -27,16 +28,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 public final class GatewayIntegrationTest {
-
   @Rule
   public EmbeddedBrokerRule broker =
       new EmbeddedBrokerRule(brokerCfg -> brokerCfg.getGateway().setEnable(false));
 
-  @Rule public final ExpectedException exception = ExpectedException.none();
-
+  private final ActorScheduler actorScheduler = new ActorSchedulerBuilder().build();
   private BrokerClientImpl client;
 
   @Before
@@ -52,20 +50,21 @@ public final class GatewayIntegrationTest {
         .setRequestTimeout(Duration.ofSeconds(10));
     configuration.init();
 
-    final ControlledActorClock clock = new ControlledActorClock();
     final ClusterServices clusterServices = broker.getClusterServices();
+    actorScheduler.start();
     client =
         new BrokerClientImpl(
             configuration,
             clusterServices.getMessagingService(),
             clusterServices.getMembershipService(),
             clusterServices.getEventService(),
-            clock);
+            actorScheduler);
   }
 
   @After
-  public void tearDown() {
+  public void tearDown() throws Exception {
     client.close();
+    actorScheduler.close();
   }
 
   @Test

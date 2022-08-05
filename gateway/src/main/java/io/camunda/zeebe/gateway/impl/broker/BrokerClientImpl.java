@@ -20,26 +20,17 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
-import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 public final class BrokerClientImpl implements BrokerClient {
   public static final Logger LOG = Loggers.GATEWAY_LOGGER;
-  private static final String ERROR_MSG_STOP_FAILED =
-      "Failed to gracefully shutdown gateway broker client";
 
-  private final ActorScheduler actorScheduler;
   private final BrokerTopologyManagerImpl topologyManager;
-  private final boolean ownsActorScheduler;
   private final BrokerRequestManager requestManager;
   private boolean isClosed;
   private Subscription jobAvailableSubscription;
@@ -49,48 +40,13 @@ public final class BrokerClientImpl implements BrokerClient {
       final GatewayCfg configuration,
       final MessagingService messagingService,
       final ClusterMembershipService membershipService,
-      final ClusterEventService eventService) {
-    this(configuration, messagingService, membershipService, eventService, null);
-  }
-
-  public BrokerClientImpl(
-      final GatewayCfg configuration,
-      final MessagingService messagingService,
-      final ClusterMembershipService membershipService,
       final ClusterEventService eventService,
-      final ActorClock actorClock) {
-    this(
-        configuration,
-        messagingService,
-        membershipService,
-        eventService,
-        ActorScheduler.newActorScheduler()
-            .setCpuBoundActorThreadCount(configuration.getThreads().getManagementThreads())
-            .setIoBoundActorThreadCount(0)
-            .setActorClock(actorClock)
-            .setSchedulerName("gateway-scheduler")
-            .build(),
-        true);
-  }
-
-  public BrokerClientImpl(
-      final GatewayCfg configuration,
-      final MessagingService messagingService,
-      final ClusterMembershipService membershipService,
-      final ClusterEventService eventService,
-      final ActorScheduler actorScheduler,
-      final boolean ownsActorScheduler) {
+      final ActorSchedulingService schedulingService) {
     this.eventService = eventService;
-    this.actorScheduler = actorScheduler;
-    this.ownsActorScheduler = ownsActorScheduler;
-
-    if (ownsActorScheduler) {
-      actorScheduler.start();
-    }
 
     final ClusterCfg clusterCfg = configuration.getCluster();
     topologyManager = new BrokerTopologyManagerImpl(membershipService::getMembers);
-    actorScheduler.submitActor(topologyManager);
+    schedulingService.submitActor(topologyManager);
     membershipService.addListener(topologyManager);
     membershipService
         .getMembers()
@@ -98,14 +54,14 @@ public final class BrokerClientImpl implements BrokerClient {
             member -> topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, member)));
 
     final var atomixTransportAdapter = new AtomixClientTransportAdapter(messagingService);
-    actorScheduler.submitActor(atomixTransportAdapter);
+    schedulingService.submitActor(atomixTransportAdapter);
     requestManager =
         new BrokerRequestManager(
             atomixTransportAdapter,
             topologyManager,
             new RoundRobinDispatchStrategy(topologyManager),
             clusterCfg.getRequestTimeout());
-    actorScheduler.submitActor(requestManager);
+    schedulingService.submitActor(requestManager);
   }
 
   @Override
@@ -123,17 +79,6 @@ public final class BrokerClientImpl implements BrokerClient {
 
     if (jobAvailableSubscription != null) {
       jobAvailableSubscription.close();
-    }
-
-    if (ownsActorScheduler) {
-      try {
-        actorScheduler.stop().get(15, TimeUnit.SECONDS);
-      } catch (final InterruptedException ie) {
-        Thread.currentThread().interrupt();
-        throw new UncheckedExecutionException(ERROR_MSG_STOP_FAILED, ie);
-      } catch (final ExecutionException | TimeoutException e) {
-        throw new UncheckedExecutionException(ERROR_MSG_STOP_FAILED, e);
-      }
     }
 
     LOG.debug("Gateway broker client closed.");

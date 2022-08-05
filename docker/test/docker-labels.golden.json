@@ -1,0 +1,20 @@
+{
+  "io.k8s.description": "Workflow engine for microservice orchestration",
+  "io.openshift.min-cpu": "1",
+  "io.openshift.min-memory": "512Mi",
+  "io.openshift.non-scalable": "false",
+  "io.openshift.tags": "bpmn,orchestration,workflow",
+  "org.opencontainers.image.authors": "zeebe@camunda.com",
+  "org.opencontainers.image.base.digest": "fce37e5146419a158c2199c6089fa39b92445fb2e66dc0331f8591891239ea3b",
+  "org.opencontainers.image.base.name": "docker.io/library/eclipse-temurin:17-jre-focal",
+  "org.opencontainers.image.created": $DATE,
+  "org.opencontainers.image.description": "Workflow engine for microservice orchestration",
+  "org.opencontainers.image.documentation": "https://docs.camunda.io/docs/self-managed/zeebe-deployment/",
+  "org.opencontainers.image.licenses": "(Apache-2.0 AND LicenseRef-Zeebe-Community-1.1)",
+  "org.opencontainers.image.revision": $REVISION,
+  "org.opencontainers.image.source": "https://github.com/camunda/zeebe",
+  "org.opencontainers.image.title": "Zeebe",
+  "org.opencontainers.image.url": "https://zeebe.io",
+  "org.opencontainers.image.vendor": "Camunda Services GmbH",
+  "org.opencontainers.image.version": $VERSION
+}

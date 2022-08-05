@@ -39,11 +39,10 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.camunda.zeebe.test.broker.protocol.brokerapi.ExecuteCommandResponseBuilder;
 import io.camunda.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.netty.util.NetUtil;
 import java.time.Duration;
@@ -56,14 +55,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
 
 public final class BrokerClientTest {
 
+  @Rule public final ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
   @Rule public final StubBrokerRule broker = new StubBrokerRule();
-  @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
-  @Rule public final ExpectedException exception = ExpectedException.none();
+
   @Rule public final TestName testContext = new TestName();
   private BrokerClient client;
   private AtomixCluster atomixCluster;
@@ -79,8 +77,6 @@ public final class BrokerClientTest {
             Collections.singletonList(NetUtil.toSocketAddressString(broker.getSocketAddress())))
         .setRequestTimeout(Duration.ofSeconds(3));
     configuration.init();
-
-    final ControlledActorClock clock = new ControlledActorClock();
 
     final var stubAddress = Address.from(broker.getCurrentStubHost(), broker.getCurrentStubPort());
     final var stubNode = Node.builder().withAddress(stubAddress).build();
@@ -101,7 +97,7 @@ public final class BrokerClientTest {
             atomixCluster.getMessagingService(),
             atomixCluster.getMembershipService(),
             atomixCluster.getEventService(),
-            clock);
+            actorScheduler.get());
 
     final BrokerClusterStateImpl topology = new BrokerClusterStateImpl();
     topology.addPartitionIfAbsent(START_PARTITION_ID);
