@@ -21,9 +21,11 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.KeyGenerator;
@@ -39,7 +41,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -81,6 +82,7 @@ public final class CreateProcessInstanceProcessor
 
   private final KeyGenerator keyGenerator;
   private final TypedCommandWriter commandWriter;
+  private final TypedRejectionWriter rejectionWriter;
   private final StateWriter stateWriter;
   private final ProcessEngineMetrics metrics;
 
@@ -96,6 +98,7 @@ public final class CreateProcessInstanceProcessor
     this.catchEventBehavior = catchEventBehavior;
     this.keyGenerator = keyGenerator;
     commandWriter = writers.command();
+    rejectionWriter = writers.rejection();
     stateWriter = writers.state();
     this.metrics = metrics;
   }
@@ -116,6 +119,17 @@ public final class CreateProcessInstanceProcessor
             rejection -> controller.reject(rejection.type, rejection.reason));
 
     return true;
+  }
+
+  @Override
+  public ProcessingError tryHandleError(
+      final TypedRecord<ProcessInstanceCreationRecord> typedCommand, final Throwable error) {
+    if (error instanceof EventSubscriptionException exception) {
+      rejectionWriter.appendRejection(
+          typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
+    return ProcessingError.UNEXPECTED_ERROR;
   }
 
   private void createProcessInstance(
@@ -484,8 +498,7 @@ public final class CreateProcessInstanceProcessor
                 .formatted(
                     BufferUtil.bufferAsString(element.getId()),
                     subscribedOrFailure.getLeft().getMessage());
-        // todo(#9644): reject command using logical transaction instead of exception throwing
-        throw new UncheckedExecutionException(message);
+        throw new EventSubscriptionException(message);
       }
     }
   }
@@ -509,4 +522,16 @@ public final class CreateProcessInstanceProcessor
   record Rejection(RejectionType type, String reason) {}
 
   record ElementIdAndType(String elementId, BpmnElementType elementType) {}
+
+  /**
+   * Exception that can be thrown during processing of the create process instance command, in case
+   * the engine could not subscribe to an event. This exception can be handled by {@link
+   * #tryHandleError(TypedRecord, Throwable)}.
+   */
+  private static class EventSubscriptionException extends RuntimeException {
+
+    EventSubscriptionException(final String message) {
+      super(message);
+    }
+  }
 }
