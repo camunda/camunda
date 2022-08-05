@@ -23,4 +23,9 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
       final TypedRecord<T> record, final Consumer<SideEffectProducer> sideEffect) {
     processRecord(record);
   }
+
+  enum ProcessingError {
+    EXPECTED_ERROR,
+    UNEXPECTED_ERROR
+  }
 }

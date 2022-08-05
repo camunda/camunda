@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContextImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
@@ -127,29 +128,40 @@ public class Engine implements RecordProcessor<EngineContext> {
       final Throwable processingException,
       final TypedRecord record,
       final ProcessingResultBuilder processingResultBuilder) {
+    try (final var scope = new ProcessingResultBuilderScope(processingResultBuilder)) {
+
+      final var error = ProcessingError.UNEXPECTED_ERROR;
+      // todo: try to handle the error before assuming it's unexpected
+
+      if (error == ProcessingError.UNEXPECTED_ERROR) {
+        handleUnexpectedError(processingException, record);
+      }
+    }
+    return processingResultBuilder.build();
+  }
+
+  private void handleUnexpectedError(
+      final Throwable processingException, final TypedRecord record) {
     final String errorMessage =
         String.format(
             ERROR_MESSAGE_PROCESSING_EXCEPTION_OCCURRED, record, processingException.getMessage());
     LOG.error(errorMessage, processingException);
 
-    try (final var scope = new ProcessingResultBuilderScope(processingResultBuilder)) {
-      writers.rejection().appendRejection(record, RejectionType.PROCESSING_ERROR, errorMessage);
-      writers
-          .response()
-          .writeRejectionOnCommand(record, RejectionType.PROCESSING_ERROR, errorMessage);
-      errorRecord.initErrorRecord(processingException, record.getPosition());
+    writers.rejection().appendRejection(record, RejectionType.PROCESSING_ERROR, errorMessage);
+    writers
+        .response()
+        .writeRejectionOnCommand(record, RejectionType.PROCESSING_ERROR, errorMessage);
+    errorRecord.initErrorRecord(processingException, record.getPosition());
 
-      if (DbBlackListState.shouldBeBlacklisted(record.getIntent())) {
-        if (record.getValue() instanceof ProcessInstanceRelated) {
-          final long processInstanceKey =
-              ((ProcessInstanceRelated) record.getValue()).getProcessInstanceKey();
-          errorRecord.setProcessInstanceKey(processInstanceKey);
-        }
-
-        writers.state().appendFollowUpEvent(record.getKey(), ErrorIntent.CREATED, errorRecord);
+    if (DbBlackListState.shouldBeBlacklisted(record.getIntent())) {
+      if (record.getValue() instanceof ProcessInstanceRelated) {
+        final long processInstanceKey =
+            ((ProcessInstanceRelated) record.getValue()).getProcessInstanceKey();
+        errorRecord.setProcessInstanceKey(processInstanceKey);
       }
+
+      writers.state().appendFollowUpEvent(record.getKey(), ErrorIntent.CREATED, errorRecord);
     }
-    return processingResultBuilder.build();
   }
 
   private static final class ProcessingResultBuilderMutex
