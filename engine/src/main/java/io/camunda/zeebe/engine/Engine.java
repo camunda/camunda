@@ -130,8 +130,22 @@ public class Engine implements RecordProcessor<EngineContext> {
       final ProcessingResultBuilder processingResultBuilder) {
     try (final var scope = new ProcessingResultBuilderScope(processingResultBuilder)) {
 
-      final var error = ProcessingError.UNEXPECTED_ERROR;
-      // todo: try to handle the error before assuming it's unexpected
+      final var typedCommand = (TypedRecord<?>) record;
+      TypedRecordProcessor<?> processor = null;
+      try {
+        processor =
+            recordProcessorMap.get(
+                typedCommand.getRecordType(),
+                typedCommand.getValueType(),
+                typedCommand.getIntent().value());
+      } catch (final Exception e) {
+        LOG.error(ERROR_MESSAGE_PROCESSOR_NOT_FOUND, typedCommand, e);
+      }
+
+      final var error =
+          processor == null
+              ? ProcessingError.UNEXPECTED_ERROR
+              : processor.tryHandleError(record, processingException);
 
       if (error == ProcessingError.UNEXPECTED_ERROR) {
         handleUnexpectedError(processingException, record);

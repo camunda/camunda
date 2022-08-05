@@ -95,6 +95,11 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
   }
 
   @Override
+  public ProcessingError tryHandleError(final TypedRecord<T> command, final Throwable error) {
+    return wrappedProcessor.tryHandleError(command, error);
+  }
+
+  @Override
   public long accept(final Intent newState, final T updatedValue) {
     if (entityKey < 0) {
       entityKey = keyGenerator.nextKey();
