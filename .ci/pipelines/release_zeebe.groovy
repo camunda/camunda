@@ -146,13 +146,15 @@ spec:
         }
 
         stage('Docker Image') {
-            when { expression { return params.PUSH_DOCKER } }
             steps {
                 build job: 'zeebe-docker', parameters: [
                         string(name: 'BRANCH', value: env.RELEASE_BRANCH),
                         string(name: 'VERSION', value: params.RELEASE_VERSION),
+                        string(name: 'REVISION', value: env.GIT_COMMIT),
+                        string(name: 'DATE', value: java.time.Instant.now().toString()),
                         booleanParam(name: 'IS_LATEST', value: params.IS_LATEST),
-                        booleanParam(name: 'PUSH', value: true)
+                        booleanParam(name: 'PUSH', value: params.PUSH_DOCKER),
+                        booleanParam(name: 'VERIFY', value: true)
                 ]
             }
         }
