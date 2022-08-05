@@ -174,7 +174,7 @@ public final class StreamProcessorTest {
 
     // when
     streamProcessorRule.writeCommand(
-            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(any(), any());
@@ -195,9 +195,9 @@ public final class StreamProcessorTest {
 
     // when
     streamProcessorRule.writeCommand(
-            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
     streamProcessorRule.writeCommand(
-            ProcessInstanceIntent.TERMINATE_ELEMENT, PROCESS_INSTANCE_RECORD);
+        ProcessInstanceIntent.TERMINATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(any(), any());
@@ -218,13 +218,12 @@ public final class StreamProcessorTest {
 
     // when
     streamProcessorRule.writeCommand(
-            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
-    streamProcessorRule.writeEvent(
-            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
+    streamProcessorRule.writeEvent(ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
     streamProcessorRule.writeCommandRejection(
-            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
     streamProcessorRule.writeCommand(
-            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
