@@ -14,7 +14,6 @@ import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.shared.ActorClockConfiguration;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
@@ -51,21 +50,20 @@ public class StandaloneGateway
 
   private final GatewayCfg configuration;
   private final SpringGatewayBridge springGatewayBridge;
-  private final ActorClockConfiguration clockConfig;
+  private final ActorScheduler actorScheduler;
   private final AtomixCluster atomixCluster;
 
   private Gateway gateway;
-  private ActorScheduler actorScheduler;
 
   @Autowired
   public StandaloneGateway(
       final GatewayCfg configuration,
       final SpringGatewayBridge springGatewayBridge,
-      final ActorClockConfiguration clockConfig,
+      final ActorScheduler actorScheduler,
       final AtomixCluster atomixCluster) {
     this.configuration = configuration;
     this.springGatewayBridge = springGatewayBridge;
-    this.clockConfig = clockConfig;
+    this.actorScheduler = actorScheduler;
     this.atomixCluster = atomixCluster;
   }
 
@@ -93,7 +91,6 @@ public class StandaloneGateway
       LOG.info("Starting standalone gateway with configuration {}", configuration.toJson());
     }
 
-    actorScheduler = createActorScheduler(configuration);
     gateway = new Gateway(configuration, this::createBrokerClient, actorScheduler);
 
     springGatewayBridge.registerBrokerClientSupplier(gateway::getBrokerClient);
@@ -151,14 +148,5 @@ public class StandaloneGateway
         atomixCluster.getEventService(),
         actorScheduler,
         false);
-  }
-
-  private ActorScheduler createActorScheduler(final GatewayCfg config) {
-    return ActorScheduler.newActorScheduler()
-        .setCpuBoundActorThreadCount(config.getThreads().getManagementThreads())
-        .setIoBoundActorThreadCount(0)
-        .setSchedulerName("gateway-scheduler")
-        .setActorClock(clockConfig.getClock())
-        .build();
   }
 }
