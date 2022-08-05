@@ -22,7 +22,7 @@ import org.agrona.collections.Int2IntHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public final class InterPartitionCommandSenderImpl implements InterPartitionCommandSender {
+final class InterPartitionCommandSenderImpl implements InterPartitionCommandSender {
 
   public static final String TOPIC_PREFIX = "inter-partition-";
 

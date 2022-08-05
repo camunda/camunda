@@ -50,7 +50,7 @@ final class InterPartitionCommandCheckpointTest {
     this.logStreamRecordWriter = logStreamRecordWriter;
 
     sender = new InterPartitionCommandSenderImpl(communicationService);
-    sender.setCurrentLeader(1,2);
+    sender.setCurrentLeader(1, 2);
     receiver = new InterPartitionCommandReceiverImpl(logStreamRecordWriter);
   }
 

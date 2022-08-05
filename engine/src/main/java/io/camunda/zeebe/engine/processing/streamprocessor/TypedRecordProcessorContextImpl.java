@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
 
 public class TypedRecordProcessorContextImpl implements TypedRecordProcessorContext {
 
@@ -18,16 +19,19 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   private final ProcessingScheduleService scheduleService;
   private final ZeebeDbState zeebeState;
   private final Writers writers;
+  private final InterPartitionCommandSender partitionCommandSender;
 
   public TypedRecordProcessorContextImpl(
       final int partitionId,
       final ProcessingScheduleService scheduleService,
       final ZeebeDbState zeebeState,
-      final Writers writers) {
+      final Writers writers,
+      final InterPartitionCommandSender partitionCommandSender) {
     this.partitionId = partitionId;
     this.scheduleService = scheduleService;
     this.zeebeState = zeebeState;
     this.writers = writers;
+    this.partitionCommandSender = partitionCommandSender;
   }
 
   @Override
@@ -48,5 +52,10 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   @Override
   public Writers getWriters() {
     return writers;
+  }
+
+  @Override
+  public InterPartitionCommandSender getPartitionCommandSender() {
+    return partitionCommandSender;
   }
 }

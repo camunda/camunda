@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
@@ -118,6 +119,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public void setDiskSpaceAvailable(final boolean b) {}
+
+  @Override
+  public TopologyManager getTopologyManager() {
+    return null;
+  }
 
   @Override
   public void setExporterDirector(final ExporterDirector exporterDirector) {

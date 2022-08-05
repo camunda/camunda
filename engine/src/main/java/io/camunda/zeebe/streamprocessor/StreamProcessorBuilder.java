@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriterImpl;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -88,6 +89,12 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
+  public StreamProcessorBuilder partitionCommandSender(
+      final InterPartitionCommandSender interPartitionCommandSender) {
+    streamProcessorContext.partitionCommandSender(interPartitionCommandSender);
+    return this;
+  }
+
   public StreamProcessorContext getProcessingContext() {
     return streamProcessorContext;
   }
@@ -127,6 +134,11 @@ public final class StreamProcessorBuilder {
     Objects.requireNonNull(streamProcessorContext.getLogStream(), "No log stream provided.");
     Objects.requireNonNull(zeebeDb, "No database provided.");
     Objects.requireNonNull(eventApplierFactory, "No factory for the event supplier provided.");
+    if (streamProcessorContext.getProcessorMode() == StreamProcessorMode.PROCESSING) {
+      Objects.requireNonNull(
+          streamProcessorContext.getPartitionCommandSender(),
+          "No partition command sender provided");
+    }
   }
 
   public Function<LogStreamBatchWriter, LegacyTypedStreamWriter> getTypedStreamWriterFactory() {

@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStr
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -55,6 +56,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   private LogStreamBatchWriter logStreamBatchWriter;
   private CommandResponseWriter commandResponseWriter;
+  private InterPartitionCommandSender partitionCommandSender;
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -196,5 +198,13 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public CommandResponseWriter getCommandResponseWriter() {
     return commandResponseWriter;
+  }
+
+  public InterPartitionCommandSender getPartitionCommandSender() {
+    return partitionCommandSender;
+  }
+
+  public void partitionCommandSender(final InterPartitionCommandSender partitionCommandSender) {
+    this.partitionCommandSender = partitionCommandSender;
   }
 }

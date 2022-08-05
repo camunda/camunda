@@ -18,7 +18,6 @@ import io.camunda.zeebe.broker.engine.impl.LongPollingJobNotification;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
-import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -46,12 +45,11 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPart
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
-import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -209,14 +207,8 @@ final class PartitionFactory {
       final ClusterEventService eventService,
       final FeatureFlags featureFlags) {
     return (recordProcessorContext) -> {
-      final var scheduleService = recordProcessorContext.getScheduleService();
-
-      final TopologyPartitionListenerImpl partitionListener =
-          new TopologyPartitionListenerImpl(scheduleService);
-      topologyManager.addTopologyPartitionListener(partitionListener);
-
-      final InterPartitionCommandSenderImpl partitionCommandSender =
-          new InterPartitionCommandSenderImpl(communicationService);
+      final InterPartitionCommandSender partitionCommandSender =
+          recordProcessorContext.getPartitionCommandSender();
       final SubscriptionCommandSender subscriptionCommandSender =
           new SubscriptionCommandSender(
               recordProcessorContext.getPartitionId(), partitionCommandSender);
@@ -227,22 +219,13 @@ final class PartitionFactory {
       final LongPollingJobNotification jobsAvailableNotification =
           new LongPollingJobNotification(eventService);
 
-      final var processor =
-          EngineProcessors.createEngineProcessors(
-              recordProcessorContext,
-              localBroker.getPartitionsCount(),
-              subscriptionCommandSender,
-              deploymentDistributionCommandSender,
-              jobsAvailableNotification::onJobsAvailable,
-              featureFlags);
-
-      return processor.withListener(
-          new StreamProcessorLifecycleAware() {
-            @Override
-            public void onClose() {
-              topologyManager.removeTopologyPartitionListener(partitionListener);
-            }
-          });
+      return EngineProcessors.createEngineProcessors(
+          recordProcessorContext,
+          localBroker.getPartitionsCount(),
+          subscriptionCommandSender,
+          deploymentDistributionCommandSender,
+          jobsAvailableNotification::onJobsAvailable,
+          featureFlags);
     };
   }
 }

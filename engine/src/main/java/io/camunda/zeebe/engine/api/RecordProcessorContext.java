@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
 import java.util.List;
 import java.util.function.Function;
 
@@ -29,4 +30,6 @@ public interface RecordProcessorContext {
   List<StreamProcessorLifecycleAware> getLifecycleListeners();
 
   void addLifecycleListeners(final List<StreamProcessorLifecycleAware> lifecycleListeners);
+
+  InterPartitionCommandSender getPartitionCommandSender();
 }
