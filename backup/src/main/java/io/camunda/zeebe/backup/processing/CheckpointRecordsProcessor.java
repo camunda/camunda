@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.RecordProcessor;
+import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -26,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Process and replays records related to Checkpoint. */
-public final class CheckpointRecordsProcessor implements RecordProcessor<Context> {
+public final class CheckpointRecordsProcessor implements RecordProcessor {
 
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointRecordsProcessor.class);
 
@@ -46,11 +47,11 @@ public final class CheckpointRecordsProcessor implements RecordProcessor<Context
   }
 
   @Override
-  public void init(final Context recordProcessorContext) {
-    executor = recordProcessorContext.executor();
+  public void init(final RecordProcessorContext recordProcessorContext) {
+    executor = recordProcessorContext.getScheduleService();
     checkpointState =
         new DbCheckpointState(
-            recordProcessorContext.zeebeDb(), recordProcessorContext.transactionContext());
+            recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
 
     checkpointCreateProcessor =
         new CheckpointCreateProcessor(checkpointState, backupManager, checkpointListeners);

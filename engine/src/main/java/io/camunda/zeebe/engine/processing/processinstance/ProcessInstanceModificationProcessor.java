@@ -17,11 +17,15 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
+import java.util.Collection;
+import java.util.List;
+import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceModificationProcessor
     implements TypedRecordProcessor<ProcessInstanceModificationRecord> {
@@ -56,20 +60,17 @@ public final class ProcessInstanceModificationProcessor
 
     final var processInstance =
         elementInstanceState.getInstance(value.getProcessInstanceKey()).getValue();
-
-    // todo: reject if process instance could not be found
+    // todo: reject if process instance could not be found (no issue yet)
+    final var process = processState.getProcessByKey(processInstance.getProcessDefinitionKey());
 
     value
         .getActivateInstructions()
         .forEach(
             instruction -> {
-              // todo: consider moving this out of the foreach loop
-              final var process =
-                  processState.getProcessByKey(processInstance.getProcessDefinitionKey());
               final var elementToActivate =
                   process.getProcess().getElementById(instruction.getElementId());
 
-              // todo: reject if elementToActivate could not be found
+              // todo: reject if elementToActivate could not be found (#9976)
 
               activateElement(processInstance, instruction, elementToActivate);
             });
@@ -86,15 +87,45 @@ public final class ProcessInstanceModificationProcessor
       final AbstractFlowElement elementToActivate) {
     final var elementInstanceRecord = new ProcessInstanceRecord();
     elementInstanceRecord.wrap(processInstance);
+    // todo: deal with non-existing flow scope (#9643)
+    // todo: deal with multiple flow scopes found without ancestor selection (#10008)
+    final List<Long> flowScopeKey = findFlowScopeKey(processInstance, elementToActivate);
     commandWriter.appendFollowUpCommand(
         keyGenerator.nextKey(),
         ProcessInstanceIntent.ACTIVATE_ELEMENT,
         elementInstanceRecord
-            // todo: allow non-process instance element's as flowscope
-            .setFlowScopeKey(processInstance.getProcessInstanceKey())
+            .setFlowScopeKey(flowScopeKey.get(0))
             .setBpmnElementType(elementToActivate.getElementType())
             .setElementId(instruction.getElementId())
             .setParentProcessInstanceKey(-1)
             .setParentElementInstanceKey(-1));
+  }
+
+  private List<Long> findFlowScopeKey(
+      final ProcessInstanceRecord processInstance, final AbstractFlowElement elementToActivate) {
+    final var flowScope = elementToActivate.getFlowScope();
+    if (flowScope.getId().equals(processInstance.getElementIdBuffer())) {
+      return List.of(processInstance.getProcessInstanceKey());
+    } else {
+      return findFlowScopeKey(processInstance.getProcessInstanceKey(), flowScope.getId());
+    }
+  }
+
+  private List<Long> findFlowScopeKey(final long ancestorKey, final DirectBuffer targetElementId) {
+    final List<ElementInstance> children = elementInstanceState.getChildren(ancestorKey);
+    final List<Long> matches =
+        children.stream()
+            .filter(child -> child.getValue().getElementIdBuffer().equals(targetElementId))
+            .map(ElementInstance::getKey)
+            .toList();
+
+    if (!matches.isEmpty()) {
+      return matches;
+    }
+
+    return children.stream()
+        .map(child -> findFlowScopeKey(child.getKey(), targetElementId))
+        .flatMap(Collection::stream)
+        .toList();
   }
 }

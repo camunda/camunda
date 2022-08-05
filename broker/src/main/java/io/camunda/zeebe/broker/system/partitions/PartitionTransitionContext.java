@@ -66,7 +66,7 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   Consumer<TypedRecord<?>> getOnProcessedListener();
 
-  TypedRecordProcessorFactory getStreamProcessorFactory();
+  TypedRecordProcessorFactory getTypedRecordProcessorFactory();
 
   ConcurrencyControl getConcurrencyControl();
 
