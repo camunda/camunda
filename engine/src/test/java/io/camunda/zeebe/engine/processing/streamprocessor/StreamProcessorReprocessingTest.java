@@ -13,7 +13,6 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
@@ -105,7 +104,7 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.writeCommand(
         ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(0xcafe));
 
-    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(anyLong(), any(), any());
+    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any(), any());
     verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any(), any());
     verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any(), any());
   }
@@ -157,7 +156,7 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.writeCommand(
         ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(0xcafe));
 
-    verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(anyLong(), any(), any());
+    verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(any(), any());
   }
 
   @Test

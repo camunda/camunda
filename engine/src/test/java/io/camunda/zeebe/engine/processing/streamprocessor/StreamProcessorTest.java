@@ -11,11 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -140,7 +138,7 @@ public final class StreamProcessorTest {
             ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1));
 
     // then
-    verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(eq(position), any(), any());
+    verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(any(), any());
 
     verifyNoMoreInteractions(typedRecordProcessor);
 
@@ -165,7 +163,7 @@ public final class StreamProcessorTest {
               return null;
             }))
         .when(typedRecordProcessor)
-        .processRecord(anyLong(), any(), any());
+        .processRecord(any(), any());
 
     streamProcessorRule.startTypedStreamProcessor(
         (processors, state) ->
@@ -175,12 +173,11 @@ public final class StreamProcessorTest {
                 typedRecordProcessor));
 
     // when
-    final long position =
-        streamProcessorRule.writeCommand(
+    streamProcessorRule.writeCommand(
             ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
-    verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(eq(position), any(), any());
+    verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(any(), any());
 
     verifyNoMoreInteractions(typedRecordProcessor);
   }
@@ -197,15 +194,13 @@ public final class StreamProcessorTest {
                 typedRecordProcessor));
 
     // when
-    final long firstPosition =
-        streamProcessorRule.writeCommand(
+    streamProcessorRule.writeCommand(
             ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
-    final long secondPosition =
-        streamProcessorRule.writeCommand(
+    streamProcessorRule.writeCommand(
             ProcessInstanceIntent.TERMINATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
-    verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(eq(firstPosition), any(), any());
+    verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(any(), any());
 
     verifyNoMoreInteractions(typedRecordProcessor);
   }
@@ -222,32 +217,18 @@ public final class StreamProcessorTest {
                 typedRecordProcessor));
 
     // when
-    final long commandPosition =
-        streamProcessorRule.writeCommand(
+    streamProcessorRule.writeCommand(
             ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
-
-    final long eventPosition =
-        streamProcessorRule.writeEvent(
+    streamProcessorRule.writeEvent(
             ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
-
-    final var rejectionPosition =
-        streamProcessorRule.writeCommandRejection(
+    streamProcessorRule.writeCommandRejection(
             ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
-
-    final var nextCommandPosition =
-        streamProcessorRule.writeCommand(
+    streamProcessorRule.writeCommand(
             ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT).processRecord(eq(commandPosition), any(), any());
-    inOrder.verify(typedRecordProcessor, never()).processRecord(eq(eventPosition), any(), any());
-    inOrder
-        .verify(typedRecordProcessor, never())
-        .processRecord(eq(rejectionPosition), any(), any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT)
-        .processRecord(eq(nextCommandPosition), any(), any());
+    inOrder.verify(typedRecordProcessor, TIMEOUT.times(2)).processRecord(any(), any());
     inOrder.verifyNoMoreInteractions();
   }
 

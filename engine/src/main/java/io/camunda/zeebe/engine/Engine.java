@@ -111,9 +111,7 @@ public class Engine implements RecordProcessor<EngineContext> {
 
       final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
       if (isNotOnBlacklist) {
-        final long position = typedCommand.getPosition();
         currentProcessor.processRecord(
-            position,
             record,
             (sep) -> {
               processingResultBuilder.resetPostCommitTasks();
