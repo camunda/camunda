@@ -40,25 +40,13 @@ const Container = styled.div<ContainerProps>`
       border-width: 1px 0px 0px 1px;
       border-style: solid;
 
-      ${$isSelected
-        ? css`
-            border-color: ${theme.colors.borderColor};
-            border-width: 1px 0px 0px 1px;
-            background: ${theme.colors.selectedOdd};
-            color: ${theme.colors.white};
-
-            /* Bottom Border */
-            &:before {
-              content: '';
-              position: absolute;
-              bottom: 0px;
-              left: 0px;
-              width: 100%;
-              height: 1px;
-              z-index: 1;
-            }
-          `
-        : ''};
+      ${$isSelected &&
+      css`
+        border-color: ${theme.colors.borderColor};
+        border-width: 1px 0px 0px 1px;
+        background: ${theme.colors.selectedOdd};
+        color: ${theme.colors.white};
+      `};
 
       ${!$hasTopBorder &&
       css`
