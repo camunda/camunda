@@ -71,7 +71,7 @@
     "@types/styled-components": "5.1.25",
     "eslint-config-prettier": "8.5.0",
     "eslint-plugin-camunda-licensed": "0.4.5",
-    "eslint-plugin-prettier": "4.0.0",
+    "eslint-plugin-prettier": "4.2.1",
     "http-proxy-middleware": "2.0.6",
     "husky": "8.0.1",
     "jest-environment-jsdom-fifteen": "1.0.2",
