@@ -698,8 +698,7 @@
     },
     "addButton": {
       "addReport": "Add a Report",
-      "selectReport": "Select Report",
-      "addExternal": "Add External Source",
+      "optimizeReport": "Optimize Report",
       "addReportLabel": "Add Report",
       "selectReportPlaceholder": "Select a Report",
       "noReports": "No reports have been created",

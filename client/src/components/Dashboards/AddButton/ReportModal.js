@@ -81,7 +81,7 @@ export default withRouter(
           <Modal.Content>
             <Form>
               <Tabs value={external} onChange={this.setExternal}>
-                <Tabs.Tab value={false} title={t('dashboard.addButton.selectReport')}>
+                <Tabs.Tab value={false} title={t('dashboard.addButton.optimizeReport')}>
                   <Form.Group>
                     {!loading && (
                       <Labeled label={t('dashboard.addButton.addReportLabel')}>
@@ -110,7 +110,7 @@ export default withRouter(
                     {loading && <LoadingIndicator />}
                   </Form.Group>
                 </Tabs.Tab>
-                <Tabs.Tab value={true} title={t('dashboard.addButton.addExternal')}>
+                <Tabs.Tab value={true} title={t('dashboard.addButton.externalUrl')}>
                   <Form.Group>
                     <Labeled label={t('dashboard.addButton.externalUrl')}>
                       <Input

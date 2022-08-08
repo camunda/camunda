@@ -698,8 +698,7 @@
     },
     "addButton": {
       "addReport": "Einen Report hinzufügen",
-      "selectReport": "Report auswählen",
-      "addExternal": "Externe Quelle hinzufügen",
+      "optimizeReport": "Optimize Report",
       "addReportLabel": "Report hinzufügen",
       "selectReportPlaceholder": "Einen Report auswählen",
       "noReports": "Es wurden noch keine Berichte erstellt",
