@@ -13,7 +13,7 @@ import io.camunda.zeebe.streamprocessor.StreamProcessor;
 
 /**
  * A listener for the {@link StreamProcessor}. Allows retrieving insides of the processing and
- * replay of records. It can be especially useful for testing purposes. Note that the listener is
+ * skipping of records. It can be especially useful for testing purposes. Note that the listener is
  * invoked inside the context of the stream processor and should not block its execution.
  */
 public interface StreamProcessorListener {
@@ -31,13 +31,4 @@ public interface StreamProcessorListener {
    * @param skippedRecord the record that is skipped
    */
   default void onSkipped(final LoggedEvent skippedRecord) {}
-
-  /**
-   * Is called when one or more events are replayed. Even if the state changes are not applied.
-   *
-   * @param lastReplayedEventPosition the position of the event that is replayed last
-   * @param lastReadRecordPosition the position of the record that is read last
-   */
-  default void onReplayed(
-      final long lastReplayedEventPosition, final long lastReadRecordPosition) {}
 }
