@@ -145,8 +145,7 @@ public final class CatchEventBehavior {
   public Either<Failure, Void> subscribeToEvents(
       final BpmnElementContext context,
       final ExecutableCatchEventSupplier supplier,
-      final SideEffects sideEffects,
-      final TypedCommandWriter commandWriter) {
+      final SideEffects sideEffects) {
     final var evaluationResults =
         supplier.getEvents().stream()
             .filter(event -> event.isTimer() || event.isMessage())
@@ -156,7 +155,7 @@ public final class CatchEventBehavior {
     evaluationResults.ifRight(
         results -> {
           subscribeToMessageEvents(context, sideEffects, results);
-          subscribeToTimerEvents(context, sideEffects, commandWriter, results);
+          subscribeToTimerEvents(context, sideEffects, results);
         });
 
     return evaluationResults.map(r -> null);
@@ -274,7 +273,6 @@ public final class CatchEventBehavior {
   private void subscribeToTimerEvents(
       final BpmnElementContext context,
       final SideEffects sideEffects,
-      final TypedCommandWriter commandWriter,
       final List<EvalResult> results) {
     results.stream()
         .filter(EvalResult::isTimer)
@@ -288,7 +286,6 @@ public final class CatchEventBehavior {
                   context.getProcessDefinitionKey(),
                   event.getId(),
                   timer,
-                  commandWriter,
                   sideEffects);
             });
   }
@@ -299,7 +296,6 @@ public final class CatchEventBehavior {
       final long processDefinitionKey,
       final DirectBuffer handlerNodeId,
       final Timer timer,
-      final TypedCommandWriter commandWriter,
       final SideEffects sideEffects) {
     final long dueDate = timer.getDueDate(ActorClock.currentTimeMillis());
     timerRecord.reset();

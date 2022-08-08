@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.grpc;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.google.protobuf.Any;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
@@ -72,6 +73,9 @@ public final class GrpcErrorMapper {
       builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
       logger.debug(
           "Expected to handle gRPC request, but messagepack property was invalid", rootError);
+    } else if (error instanceof JsonParseException) {
+      builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
+      logger.debug("Expected to handle gRPC request, but JSON property was invalid", rootError);
     } else if (error instanceof PartitionNotFoundException) {
       builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
       logger.debug(

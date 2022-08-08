@@ -17,6 +17,7 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import io.camunda.zeebe.model.bpmn.instance.InclusiveGateway;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -30,17 +31,16 @@ public class FlowNodeValidator implements ModelElementValidator<FlowNode> {
   @Override
   public void validate(
       final FlowNode element, final ValidationResultCollector validationResultCollector) {
-    if (!(element instanceof ExclusiveGateway)) {
-      final boolean hasAnyConditionalFlow =
-          element.getOutgoing().stream()
-              .filter(s -> s.getConditionExpression() != null)
-              .findAny()
-              .isPresent();
+    if (element instanceof ExclusiveGateway || element instanceof InclusiveGateway) {
+      return;
+    }
 
-      if (hasAnyConditionalFlow) {
-        validationResultCollector.addError(
-            0, "Conditional sequence flows are only supported at exclusive gateway");
-      }
+    final boolean hasAnyConditionalFlow =
+        element.getOutgoing().stream().anyMatch(s -> s.getConditionExpression() != null);
+
+    if (hasAnyConditionalFlow) {
+      validationResultCollector.addError(
+          0, "Conditional sequence flows are only supported at exclusive or inclusive gateway");
     }
   }
 }

@@ -64,7 +64,7 @@ public final class BpmnEventSubscriptionBehavior {
    */
   public <T extends ExecutableCatchEventSupplier> Either<Failure, Void> subscribeToEvents(
       final T element, final BpmnElementContext context) {
-    return catchEventBehavior.subscribeToEvents(context, element, sideEffects, commandWriter);
+    return catchEventBehavior.subscribeToEvents(context, element, sideEffects);
   }
 
   public void unsubscribeFromEvents(final BpmnElementContext context) {

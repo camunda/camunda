@@ -24,6 +24,9 @@ import java.util.Deque;
 import java.util.LinkedList;
 import org.camunda.bpm.model.xml.impl.util.ModelUtil;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
+import org.camunda.bpm.model.xml.type.ModelElementType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Walks the elements of a {@link BpmnModelInstance} and invokes the provided {@link
@@ -44,6 +47,8 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
  */
 public class ModelWalker {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ModelWalker.class);
+
   private final BpmnModelInstanceImpl modelInstance;
   private final Deque<BpmnModelElementInstance> elementsToVisit = new LinkedList<>();
 
@@ -62,12 +67,14 @@ public class ModelWalker {
       final Collection<ModelElementInstance> children = getChildElements(currentElement);
       children.forEach(
           c -> {
-            try {
+            if (c instanceof BpmnModelElementInstance) {
               elementsToVisit.addFirst((BpmnModelElementInstance) c);
-            } catch (ClassCastException e) {
-              throw new RuntimeException(
-                  "Unable to process unknown element with name " + c.getDomElement().getLocalName(),
-                  e);
+            } else {
+              final ModelElementType elementType = c.getElementType();
+              LOG.debug(
+                  "Ignoring unknown BPMN element '{}:{}'",
+                  elementType.getTypeNamespace(),
+                  elementType.getTypeName());
             }
           }); // depth-first
     }

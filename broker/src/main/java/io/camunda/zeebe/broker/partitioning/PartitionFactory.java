@@ -34,6 +34,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierI
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupApiRequestHandlerStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.InterPartitionCommandReceiverStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStartupStep;
@@ -57,6 +58,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.util.ArrayList;
 import java.util.List;
@@ -77,7 +79,8 @@ final class PartitionFactory {
           new QueryServicePartitionTransitionStep(),
           new StreamProcessorTransitionStep(),
           new SnapshotDirectorPartitionTransitionStep(),
-          new ExporterDirectorPartitionTransitionStep());
+          new ExporterDirectorPartitionTransitionStep(),
+          new BackupApiRequestHandlerStep());
 
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
@@ -88,6 +91,7 @@ final class PartitionFactory {
   private final ExporterRepository exporterRepository;
   private final BrokerHealthCheckService healthCheckService;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
+  private final AtomixServerTransport gatewayBrokerTransport;
 
   PartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -98,7 +102,8 @@ final class PartitionFactory {
       final ClusterServices clusterServices,
       final ExporterRepository exporterRepository,
       final BrokerHealthCheckService healthCheckService,
-      final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
+      final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
+      final AtomixServerTransport gatewayBrokerTransport) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -108,6 +113,7 @@ final class PartitionFactory {
     this.exporterRepository = exporterRepository;
     this.healthCheckService = healthCheckService;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
+    this.gatewayBrokerTransport = gatewayBrokerTransport;
   }
 
   List<ZeebePartition> constructPartitions(
@@ -159,7 +165,8 @@ final class PartitionFactory {
               typedRecordProcessorsFactory,
               exporterRepository,
               new PartitionProcessingState(owningPartition),
-              diskSpaceUsageMonitor);
+              diskSpaceUsageMonitor,
+              gatewayBrokerTransport);
 
       final PartitionTransition newTransitionBehavior =
           new PartitionTransitionImpl(TRANSITION_STEPS);

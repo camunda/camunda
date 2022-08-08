@@ -55,10 +55,7 @@ final class CommandApiRequestHandler
       final ErrorResponseWriter errorWriter) {
 
     if (!isDiskSpaceAvailable) {
-      errorWriter.resourceExhausted(
-          String.format(
-              "Cannot accept requests for partition %d. Broker is out of disk space", partitionId));
-      return Either.left(errorWriter);
+      return Either.left(errorWriter.outOfDiskSpace(partitionId));
     }
 
     final var command = reader.getMessageDecoder();

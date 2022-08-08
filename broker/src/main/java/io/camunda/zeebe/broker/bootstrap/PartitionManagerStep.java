@@ -33,7 +33,8 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             brokerStartupContext.getDiskSpaceUsageMonitor(),
             brokerStartupContext.getPartitionListeners(),
             brokerStartupContext.getCommandApiService(),
-            brokerStartupContext.getExporterRepository());
+            brokerStartupContext.getExporterRepository(),
+            brokerStartupContext.getGatewayBrokerTransport());
 
     CompletableFuture.runAsync(
         () ->
@@ -52,9 +53,6 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
                                   () ->
                                       forwardExceptions(
                                           () -> {
-                                            final var adminApi =
-                                                brokerStartupContext.getAdminApiService();
-                                            adminApi.injectPartitionManager(partitionManager);
                                             final var adminService =
                                                 brokerStartupContext.getBrokerAdminService();
                                             adminService.injectAdminAccess(

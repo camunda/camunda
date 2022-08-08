@@ -38,6 +38,18 @@
           "justification": "Generated types are now annotated with a marker which is used for reflection; this only adds information but does not change semantics",
           "code": "java.annotation.added",
           "annotationType": "io.camunda.zeebe.protocol.record.ImmutableProtocol.Type"
+        },
+        {
+          "justification": "Ignore the removal of this old BpmnElementType that was used for testing.",
+          "code": "java.field.removed",
+          "classQualifiedName": "io.camunda.zeebe.protocol.record.value.BpmnElementType",
+          "fieldName": "TESTING_ONLY"
+        },
+        {
+          "justification": "Allow removal of AdminRequest and AdminResponse types",
+          "code": "java.class.removed",
+          "regex": true,
+          "classQualifiedName": "io.camunda.zeebe.protocol.record.Admin(Request|Response)\\w*"
         }
       ]
     }

@@ -42,6 +42,54 @@ public class ZeebeGatewayValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
+            .inclusiveGateway("gateway")
+            .sequenceFlowId("flow1")
+            .endEvent()
+            .moveToLastInclusiveGateway()
+            .sequenceFlowId("flow2")
+            .conditionExpression("condition")
+            .endEvent()
+            .done(),
+        singletonList(expect("flow1", "Must have a condition"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .inclusiveGateway("gateway")
+            .defaultFlow()
+            .sequenceFlowId("flow1")
+            .endEvent()
+            .moveToLastInclusiveGateway()
+            .sequenceFlowId("flow2")
+            .conditionExpression("condition")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect("flow1", "Must have a condition even if it's marked as the default flow"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .inclusiveGateway("fork")
+            .defaultFlow()
+            .sequenceFlowId("flow1")
+            .conditionExpression("= contains(str,\"a\")")
+            .serviceTask("task1", b -> b.zeebeJobType("type1"))
+            .inclusiveGateway("join")
+            .endEvent("end")
+            .moveToNode("fork")
+            .sequenceFlowId("flow2")
+            .conditionExpression("= contains(str,\"b\")")
+            .serviceTask("task2", b -> b.zeebeJobType("type2"))
+            .connectTo("join")
+            .done(),
+        singletonList(
+            expect(
+                "join", "Currently the inclusive gateway can only have one incoming sequence flow"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
             .exclusiveGateway("gateway")
             .sequenceFlowId("flow")
             .condition("name", "foo")
@@ -52,6 +100,10 @@ public class ZeebeGatewayValidationTest extends AbstractZeebeValidationTest {
       },
       {"default-flow.bpmn", singletonList(expect("gateway", "Default flow must start at gateway"))},
       {
+        "default-flow-inclusive-gateway.bpmn",
+        singletonList(expect("inclusiveGateway", "Default flow must start at gateway"))
+      },
+      {
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
             .serviceTask("task", b -> b.zeebeJobType("type"))
@@ -59,7 +111,9 @@ public class ZeebeGatewayValidationTest extends AbstractZeebeValidationTest {
             .endEvent()
             .done(),
         singletonList(
-            expect("task", "Conditional sequence flows are only supported at exclusive gateway"))
+            expect(
+                "task",
+                "Conditional sequence flows are only supported at exclusive or inclusive gateway"))
       },
     };
   }

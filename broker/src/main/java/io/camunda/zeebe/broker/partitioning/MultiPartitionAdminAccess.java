@@ -7,24 +7,34 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
-import java.util.List;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 final class MultiPartitionAdminAccess implements PartitionAdminAccess {
   private final ConcurrencyControl concurrencyControl;
-  private final List<? extends PartitionAdminAccess> partitions;
+  private final Map<Integer, ? extends PartitionAdminAccess> partitions;
 
   MultiPartitionAdminAccess(
       final ConcurrencyControl concurrencyControl,
-      final List<? extends PartitionAdminAccess> partitions) {
+      final Map<Integer, ? extends PartitionAdminAccess> partitions) {
     this.concurrencyControl = requireNonNull(concurrencyControl);
-    this.partitions = unmodifiableList(requireNonNull(partitions));
+    this.partitions = Collections.unmodifiableMap(requireNonNull(partitions));
+  }
+
+  /**
+   * @return A scoped-down admin access that that only act's on the given partition, not all
+   *     partitions
+   */
+  @Override
+  public Optional<PartitionAdminAccess> forPartition(final int partitionId) {
+    return Optional.ofNullable(partitions.get(partitionId));
   }
 
   @Override
@@ -56,7 +66,7 @@ final class MultiPartitionAdminAccess implements PartitionAdminAccess {
       final Function<PartitionAdminAccess, ActorFuture<Void>> functionToCall) {
     final ActorFuture<Void> response = concurrencyControl.createFuture();
     final var aggregatedResult =
-        partitions.stream()
+        partitions.values().stream()
             .map(functionToCall)
             .collect(new ActorFutureCollector<>(concurrencyControl));
 

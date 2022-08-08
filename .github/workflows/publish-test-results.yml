@@ -28,12 +28,19 @@ jobs:
             unzip -d "$name" "$name.zip"
           done
 
+        # Mitigate to large test output files by deleting the system-out element using sed
+        # Note: we cannot use XML tools like xmlstarlet as they all suffer the same libxml2 limitation
+        # Related to https://github.com/camunda/zeebe/issues/9959
+      - name: Remove system-out from test xml files
+        run: |
+          find . -iname TEST-*.xml -print0 | xargs -0 sed '/<system-out>/,/<\/system-out>/d' -i
+
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           commit: ${{ github.event.workflow_run.head_sha }}
           event_file: artifacts/Event File/event.json
           event_name: ${{ github.event.workflow_run.event }}
-          files: |
+          junit_files: |
             artifacts/**/surefire-reports/*.xml
             artifacts/**/failsafe-reports/TEST-*.xml

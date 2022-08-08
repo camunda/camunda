@@ -24,7 +24,6 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
@@ -37,7 +36,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final BrokerInfo brokerInfo;
   private final BrokerCfg configuration;
   private final SpringBrokerBridge springBrokerBridge;
-  private final ActorScheduler actorScheduler;
+  private final ActorSchedulingService actorScheduler;
   private final BrokerHealthCheckService healthCheckService;
   private final ExporterRepository exporterRepository;
 
@@ -46,7 +45,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private ClusterServicesImpl clusterServices;
-  private AtomixServerTransport commandApiServerTransport;
+  private AtomixServerTransport gatewayBrokerTransport;
   private ManagedMessagingService commandApiMessagingService;
   private CommandApiServiceImpl commandApiService;
   private AdminApiRequestHandler adminApiService;
@@ -58,7 +57,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final BrokerInfo brokerInfo,
       final BrokerCfg configuration,
       final SpringBrokerBridge springBrokerBridge,
-      final ActorScheduler actorScheduler,
+      final ActorSchedulingService actorScheduler,
       final BrokerHealthCheckService healthCheckService,
       final ExporterRepository exporterRepository,
       final List<PartitionListener> additionalPartitionListeners) {
@@ -89,11 +88,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   @Override
   public ActorSchedulingService getActorSchedulingService() {
-    return actorScheduler;
-  }
-
-  @Override
-  public ActorScheduler getActorScheduler() {
     return actorScheduler;
   }
 
@@ -157,13 +151,13 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public AtomixServerTransport getCommandApiServerTransport() {
-    return commandApiServerTransport;
+  public AtomixServerTransport getGatewayBrokerTransport() {
+    return gatewayBrokerTransport;
   }
 
   @Override
-  public void setCommandApiServerTransport(final AtomixServerTransport commandApiServerTransport) {
-    this.commandApiServerTransport = commandApiServerTransport;
+  public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {
+    this.gatewayBrokerTransport = gatewayBrokerTransport;
   }
 
   @Override

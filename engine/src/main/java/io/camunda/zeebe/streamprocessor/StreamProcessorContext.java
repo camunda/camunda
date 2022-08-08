@@ -10,14 +10,10 @@ package io.camunda.zeebe.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.LegacyTypedStreamWriterProxy;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriterImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopLegacyTypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
@@ -33,15 +29,11 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
 
-  private final LegacyTypedStreamWriterProxy streamWriterProxy = new LegacyTypedStreamWriterProxy();
-  private final NoopLegacyTypedStreamWriter noopTypedStreamWriter =
-      new NoopLegacyTypedStreamWriter();
-
   private ActorControl actor;
   private LogStream logStream;
   private LogStreamReader logStreamReader;
-  private LegacyTypedStreamWriter logStreamWriter = noopTypedStreamWriter;
-  private LegacyTypedResponseWriterImpl typedResponseWriter;
+  private LegacyTypedStreamWriter logStreamWriter;
+  private DirectTypedResponseWriterImpl typedResponseWriter;
 
   private RecordValues recordValues;
   private ZeebeDbState zeebeState;
@@ -51,21 +43,16 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private BooleanSupplier abortCondition;
   private StreamProcessorListener streamProcessorListener = NOOP_LISTENER;
 
-  private int maxFragmentSize;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private ProcessingScheduleService processingScheduleService;
   private MutableLastProcessedPositionState lastProcessedPositionState;
-  private Writers writers;
+
   private LogStreamBatchWriter logStreamBatchWriter;
   private CommandResponseWriter commandResponseWriter;
 
-  public StreamProcessorContext() {
-    streamWriterProxy.wrap(logStreamWriter);
-  }
-
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
-    processingScheduleService = new ProcessingScheduleServiceImpl(actor, streamWriterProxy);
+    processingScheduleService = new ProcessingScheduleServiceImpl(actor);
     return this;
   }
 
@@ -81,12 +68,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   @Override
   public LegacyTypedStreamWriter getLogStreamWriter() {
-    return streamWriterProxy;
-  }
-
-  @Override
-  public Writers getWriters() {
-    return writers;
+    return logStreamWriter;
   }
 
   @Override
@@ -153,17 +135,12 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
       final CommandResponseWriter commandResponseWriter) {
     this.commandResponseWriter = commandResponseWriter;
     typedResponseWriter =
-        new LegacyTypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId());
+        new DirectTypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId());
     return this;
   }
 
-  public LegacyTypedResponseWriterImpl getTypedResponseWriter() {
+  public DirectTypedResponseWriterImpl getTypedResponseWriter() {
     return typedResponseWriter;
-  }
-
-  public StreamProcessorContext maxFragmentSize(final int maxFragmentSize) {
-    this.maxFragmentSize = maxFragmentSize;
-    return this;
   }
 
   public StreamProcessorContext eventApplier(final EventApplier eventApplier) {
@@ -204,20 +181,8 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return streamProcessorListener;
   }
 
-  public void enableLogStreamWriter() {
-    streamWriterProxy.wrap(logStreamWriter);
-  }
-
-  public void disableLogStreamWriter() {
-    streamWriterProxy.wrap(noopTypedStreamWriter);
-  }
-
   public StreamProcessorMode getProcessorMode() {
     return streamProcessorMode;
-  }
-
-  public void writers(final Writers writers) {
-    this.writers = writers;
   }
 
   public void logStreamBatchWriter(final LogStreamBatchWriter batchWriter) {

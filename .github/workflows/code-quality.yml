@@ -37,6 +37,22 @@ jobs:
         run: mvn -B -T1C -DskipTests -DskipChecks install
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
+        with:
+          upload: False
+          output: sarif-results
+      - name: Remove results for generated code
+        uses: advanced-security/filter-sarif@main
+        with:
+          patterns: |
+            +**/*.java
+            -**/generated-sources/**/*.java
+            -**/generated-test-sources/**/*.java
+          input: sarif-results/java.sarif
+          output: sarif-results/java.sarif
+      - name: Upload CodeQL Results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: sarif-results/java.sarif
   go-lint:
     name: Go linting
     runs-on: ubuntu-latest
@@ -63,3 +79,54 @@ jobs:
           java-version: '17'
       - run: mvn -B -D skipTests -D skipChecks install
       - run: mvn -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
+  docker-checks:
+    name: Docker checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: hadolint/hadolint-action@v2.1.0
+        with:
+          config: ./.hadolint.yaml
+          dockerfile: ./Dockerfile
+          format: sarif
+          output-file: ./hadolint.sarif
+          no-color: true
+      - name: Upload Hadolint Results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: ./hadolint.sarif
+      - uses: actions/setup-java@v3.4.1
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - uses: stCarolas/setup-maven@v4.4
+        with:
+          maven-version: 3.8.5
+      - name: Package Zeebe
+        run: mvn -B -DskipTests -DskipChecks package -T1C
+      - name: Set project version
+        run: echo ::set-output name=result::$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+        id: get-version
+      - name: Get build timestamp
+        id: get-date
+        run: echo "::set-output name=result::$(date --iso-8601=seconds)"
+      - name: Build Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          # give it a fake registry to make sure we don't accidentally push it
+          tags: localhost:5000/camunda/zeebe:${{ steps.get-version.outputs.result }}
+          load: true
+          no-cache: true
+          build-args: |
+            DISTBALL=dist/target/camunda-zeebe-${{ steps.get-version.outputs.result }}.tar.gz
+            DATE=${{ steps.get-date.outputs.result }}
+            REVISION=${{ github.sha }}
+            VERSION=${{ steps.get-version.outputs.result }}
+          target: app
+      - name: Verify Docker image
+        env:
+          DATE: ${{ steps.get-date.outputs.result }}
+          REVISION: ${{ github.sha }}
+          VERSION: ${{ steps.get-version.outputs.result }}
+        run: ${PWD}/docker/test/verify.sh 'localhost:5000/camunda/zeebe:${{ steps.get-version.outputs.result }}'

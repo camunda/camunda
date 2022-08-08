@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.bpmn.event.IntermediateThrowEventProce
 import io.camunda.zeebe.engine.processing.bpmn.event.StartEventProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.gateway.EventBasedGatewayProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.gateway.ExclusiveGatewayProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.gateway.InclusiveGatewayProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.gateway.ParallelGatewayProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.BusinessRuleTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.JobWorkerTaskProcessor;
@@ -51,6 +52,7 @@ public final class BpmnElementProcessors {
     processors.put(BpmnElementType.PARALLEL_GATEWAY, new ParallelGatewayProcessor(bpmnBehaviors));
     processors.put(
         BpmnElementType.EVENT_BASED_GATEWAY, new EventBasedGatewayProcessor(bpmnBehaviors));
+    processors.put(BpmnElementType.INCLUSIVE_GATEWAY, new InclusiveGatewayProcessor(bpmnBehaviors));
 
     // containers
     processors.put(BpmnElementType.PROCESS, new ProcessProcessor(bpmnBehaviors));

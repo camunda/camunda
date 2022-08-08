@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import static java.util.List.of;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -15,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +39,8 @@ class MultiPartitionAdminAccessTest {
     mockAdminAccess2 = mock(PartitionAdminAccess.class);
 
     sutMultiPartitionAdminAccess =
-        new MultiPartitionAdminAccess(concurrencyControl, of(mockAdminAccess1, mockAdminAccess2));
+        new MultiPartitionAdminAccess(
+            concurrencyControl, Map.of(1, mockAdminAccess1, 2, mockAdminAccess2));
   }
 
   @Test

@@ -80,10 +80,6 @@
       <type name="patchVersion" primitiveType="int32"/>
     </composite>
 
-    <enum name="AdminRequestType" encodingType="uint8">
-      <validValue name="STEP_DOWN_IF_NOT_PRIMARY">0</validValue>
-      <validValue name="PAUSE_EXPORTING">1</validValue>
-    </enum>
 
   </types>
 
@@ -125,14 +121,6 @@
     <data name="bpmnProcessId" id="1" type="varDataEncoding"/>
   </sbe:message>
 
-  <sbe:message name="AdminRequest" id="40">
-    <field name="partitionId" id="1" type="uint16"/>
-    <field name="type" id="2" type="AdminRequestType"/>
-    <field name="brokerId" id="3" type="uint16" presence="optional" sinceVersion="4"/>
-  </sbe:message>
-
-  <sbe:message name="AdminResponse" id="41">
-  </sbe:message>
 
   <!-- L2 Common Messages 200 - 399 -->
 

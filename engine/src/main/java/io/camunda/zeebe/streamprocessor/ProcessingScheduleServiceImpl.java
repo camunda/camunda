@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.streamprocessor;
 
-import io.camunda.zeebe.engine.api.LegacyTask;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedCommandWriter;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
@@ -18,12 +16,9 @@ import java.util.function.BiConsumer;
 public class ProcessingScheduleServiceImpl implements ProcessingScheduleService {
 
   private final ActorControl actorControl;
-  private final LegacyTypedCommandWriter commandWriter;
 
-  public ProcessingScheduleServiceImpl(
-      final ActorControl actorControl, final LegacyTypedCommandWriter legacyTypedCommandWriter) {
+  public ProcessingScheduleServiceImpl(final ActorControl actorControl) {
     this.actorControl = actorControl;
-    commandWriter = legacyTypedCommandWriter;
   }
 
   @Override
@@ -35,26 +30,6 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
   public <T> void runOnCompletion(
       final ActorFuture<T> precedingTask, final BiConsumer<T, Throwable> followUpTask) {
     scheduleOnActor(() -> actorControl.runOnCompletion(precedingTask, followUpTask));
-  }
-
-  @Override
-  public <T> void runOnCompletion(
-      final ActorFuture<T> precedingTask, final LegacyTask followUpTask) {
-    runOnCompletion(
-        precedingTask,
-        (BiConsumer<T, Throwable>)
-            (ok, err) -> {
-              followUpTask.run(commandWriter, this);
-            });
-  }
-
-  @Override
-  public void runDelayed(final Duration delay, final LegacyTask followUpTask) {
-    runDelayed(
-        delay,
-        () -> {
-          followUpTask.run(commandWriter, this);
-        });
   }
 
   private void scheduleOnActor(final Runnable task) {

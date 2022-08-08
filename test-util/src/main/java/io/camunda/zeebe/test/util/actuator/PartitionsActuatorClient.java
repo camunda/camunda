@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.test.util.actuator;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -25,8 +26,7 @@ public final class PartitionsActuatorClient {
       new TypeReference<>() {};
   private static final ObjectReader READER = new ObjectMapper().readerFor(RESPONSE_TYPE);
   private final HttpClient httpClient;
-  private final URI queryPartitionsUri;
-  private final URI takeSnapshotUri;
+  private final String adminEndpoint;
 
   public PartitionsActuatorClient(final String adminEndpoint) {
     this(adminEndpoint, HttpClient.newBuilder().build());
@@ -34,17 +34,36 @@ public final class PartitionsActuatorClient {
 
   public PartitionsActuatorClient(final String adminEndpoint, final HttpClient httpClient) {
     this.httpClient = httpClient;
+    this.adminEndpoint = adminEndpoint;
+  }
 
-    queryPartitionsUri = URI.create(String.format("http://%s/actuator/partitions", adminEndpoint));
-    takeSnapshotUri =
-        URI.create(String.format("http://%s/actuator/partitions/takeSnapshot", adminEndpoint));
+  public Either<Throwable, Map<String, PartitionStatus>> pauseExporting() {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .POST(BodyPublishers.noBody())
+            .uri(getEndpoint("pauseExporting"))
+            .timeout(Duration.ofSeconds(5))
+            .build();
+
+    return sendPartitionsRequest(request);
+  }
+
+  public Either<Throwable, Map<String, PartitionStatus>> resumeExporting() {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .POST(BodyPublishers.noBody())
+            .uri(getEndpoint("resumeExporting"))
+            .timeout(Duration.ofSeconds(5))
+            .build();
+
+    return sendPartitionsRequest(request);
   }
 
   public Either<Throwable, Map<String, PartitionStatus>> takeSnapshot() {
     final HttpRequest request =
         HttpRequest.newBuilder()
             .POST(BodyPublishers.noBody())
-            .uri(takeSnapshotUri)
+            .uri(getEndpoint("takeSnapshot"))
             .timeout(Duration.ofSeconds(5))
             .build();
 
@@ -53,11 +72,7 @@ public final class PartitionsActuatorClient {
 
   public Either<Throwable, Map<String, PartitionStatus>> queryPartitions() {
     final HttpRequest request =
-        HttpRequest.newBuilder()
-            .GET()
-            .uri(queryPartitionsUri)
-            .timeout(Duration.ofSeconds(5))
-            .build();
+        HttpRequest.newBuilder().GET().uri(getEndpoint("")).timeout(Duration.ofSeconds(5)).build();
 
     return sendPartitionsRequest(request);
   }
@@ -76,39 +91,17 @@ public final class PartitionsActuatorClient {
     }
   }
 
-  /** Suppress unused and visibility warnings as this is a plain DTO */
-  @SuppressWarnings({"unused", "java:S1104"})
-  public static final class PartitionStatus {
-    public String role;
-    public String snapshotId;
-    public Long processedPosition;
-    public Long processedPositionInSnapshot;
-    public String streamProcessorPhase;
-    public Long exportedPosition;
-    public String exporterPhase;
-
-    @Override
-    public String toString() {
-      return "PartitionStatus{"
-          + "role='"
-          + role
-          + '\''
-          + ", snapshotId='"
-          + snapshotId
-          + '\''
-          + ", processedPosition="
-          + processedPosition
-          + ", processedPositionInSnapshot="
-          + processedPositionInSnapshot
-          + ", streamProcessorPhase='"
-          + streamProcessorPhase
-          + '\''
-          + ", exportedPosition="
-          + exportedPosition
-          + ", exporterPhase='"
-          + exporterPhase
-          + '\''
-          + '}';
-    }
+  private URI getEndpoint(final String path) {
+    return URI.create(String.format("http://%s/actuator/partitions/%s", adminEndpoint, path));
   }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record PartitionStatus(
+      String role,
+      String snapshotId,
+      Long processedPosition,
+      Long processedPositionInSnapshot,
+      String streamProcessorPhase,
+      Long exportedPosition,
+      String exporterPhase) {}
 }

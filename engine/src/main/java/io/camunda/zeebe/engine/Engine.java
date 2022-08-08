@@ -11,13 +11,13 @@ import io.camunda.zeebe.engine.api.EmptyProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.RecordProcessor;
+import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContextImpl;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
@@ -31,7 +31,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 
-public class Engine implements RecordProcessor<EngineContext> {
+public class Engine implements RecordProcessor {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
@@ -41,8 +41,6 @@ public class Engine implements RecordProcessor<EngineContext> {
   private EventApplier eventApplier;
   private RecordProcessorMap recordProcessorMap;
   private ZeebeDbState zeebeState;
-  private LegacyTypedStreamWriter streamWriter;
-  private LegacyTypedResponseWriter responseWriter;
 
   private final ErrorRecord errorRecord = new ErrorRecord();
 
@@ -50,39 +48,40 @@ public class Engine implements RecordProcessor<EngineContext> {
       new ProcessingResultBuilderMutex();
 
   private Writers writers;
+  private TypedRecordProcessorFactory typedRecordProcessorFactory;
 
   public Engine() {}
 
-  @Override
-  public void init(final EngineContext engineContext) {
-    streamWriter = engineContext.getStreamWriterProxy();
-    responseWriter = engineContext.getTypedResponseWriter();
+  public Engine(final TypedRecordProcessorFactory typedRecordProcessorFactory) {
+    this.typedRecordProcessorFactory = typedRecordProcessorFactory;
+  }
 
+  @Override
+  public void init(final RecordProcessorContext recordProcessorContext) {
     zeebeState =
         new ZeebeDbState(
-            engineContext.getPartitionId(),
-            engineContext.getZeebeDb(),
-            engineContext.getTransactionContext());
-    eventApplier = engineContext.getEventApplierFactory().apply(zeebeState);
+            recordProcessorContext.getPartitionId(),
+            recordProcessorContext.getZeebeDb(),
+            recordProcessorContext.getTransactionContext());
+    eventApplier = recordProcessorContext.getEventApplierFactory().apply(zeebeState);
 
     writers = new Writers(resultBuilderMutex, eventApplier);
 
     final var typedProcessorContext =
         new TypedRecordProcessorContextImpl(
-            engineContext.getPartitionId(),
-            engineContext.getScheduleService(),
+            recordProcessorContext.getPartitionId(),
+            recordProcessorContext.getScheduleService(),
             zeebeState,
             writers);
 
     final TypedRecordProcessors typedRecordProcessors =
-        engineContext.getTypedRecordProcessorFactory().createProcessors(typedProcessorContext);
+        typedRecordProcessorFactory.createProcessors(typedProcessorContext);
 
-    engineContext.setStreamProcessorListener(typedProcessorContext.getStreamProcessorListener());
+    recordProcessorContext.setStreamProcessorListener(
+        typedProcessorContext.getStreamProcessorListener());
 
-    engineContext.setLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
+    recordProcessorContext.addLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
-
-    engineContext.setWriters(writers);
   }
 
   @Override
@@ -113,12 +112,8 @@ public class Engine implements RecordProcessor<EngineContext> {
 
       final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
       if (isNotOnBlacklist) {
-        final long position = typedCommand.getPosition();
         currentProcessor.processRecord(
-            position,
             record,
-            responseWriter,
-            streamWriter,
             (sep) -> {
               processingResultBuilder.resetPostCommitTasks();
               processingResultBuilder.appendPostCommitTask(sep::flush);

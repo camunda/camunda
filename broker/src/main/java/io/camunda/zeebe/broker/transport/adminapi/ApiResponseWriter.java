@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.broker.transport.adminapi;
 
-import io.camunda.zeebe.broker.transport.ApiRequestHandler.ResponseWriter;
-import io.camunda.zeebe.protocol.record.AdminResponseEncoder;
+import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
+import io.camunda.zeebe.protocol.management.AdminResponseEncoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.ServerResponseImpl;

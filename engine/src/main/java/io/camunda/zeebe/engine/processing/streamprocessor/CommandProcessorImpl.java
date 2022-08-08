@@ -11,11 +11,10 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -54,6 +53,7 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
 
   private RejectionType rejectionType;
   private String rejectionReason;
+  private final TypedResponseWriter responseWriter;
 
   public CommandProcessorImpl(
       final CommandProcessor<T> commandProcessor,
@@ -64,14 +64,12 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
     stateWriter = writers.state();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
   }
 
   @Override
   public void processRecord(
-      final TypedRecord<T> command,
-      final LegacyTypedResponseWriter responseWriter,
-      final LegacyTypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<T> command, final Consumer<SideEffectProducer> sideEffect) {
 
     entityKey = command.getKey();
 

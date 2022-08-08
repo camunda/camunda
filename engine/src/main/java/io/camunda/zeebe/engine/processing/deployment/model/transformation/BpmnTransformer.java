@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformer.EventBase
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExclusiveGatewayTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.FlowElementInstantiationTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.FlowNodeTransformer;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.InclusiveGatewayTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.IntermediateCatchEventTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.IntermediateThrowEventTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.JobWorkerElementTransformer;
@@ -92,6 +93,7 @@ public final class BpmnTransformer {
     step3Visitor.registerHandler(new ContextProcessTransformer());
     step3Visitor.registerHandler(new EventBasedGatewayTransformer());
     step3Visitor.registerHandler(new ExclusiveGatewayTransformer());
+    step3Visitor.registerHandler(new InclusiveGatewayTransformer());
     step3Visitor.registerHandler(new IntermediateCatchEventTransformer());
     step3Visitor.registerHandler(new SubProcessTransformer());
 

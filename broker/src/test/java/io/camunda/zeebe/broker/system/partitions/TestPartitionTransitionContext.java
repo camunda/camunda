@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.TypedRecord;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.Collection;
 import java.util.List;
@@ -42,7 +44,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private Role currentRole;
   private long currentTerm;
   private HealthMonitor healthMonitor;
-  private TypedRecordProcessorFactory streamProcessorFactory;
+  private TypedRecordProcessorFactory typedRecordProcessorFactory;
   private ExporterDirector exporterDirector;
   private LogStream logStream;
   private StreamProcessor streamProcessor;
@@ -57,6 +59,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private ConcurrencyControl concurrencyControl;
   private InterPartitionCommandReceiverActor interPartitionCommandReceiver;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
+  private AtomixServerTransport gatewayBrokerTransport;
+  private BackupApiRequestHandler backupApiRequestHandler;
 
   @Override
   public int getPartitionId() {
@@ -184,6 +188,25 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     return diskSpaceUsageMonitor;
   }
 
+  @Override
+  public AtomixServerTransport getGatewayBrokerTransport() {
+    return gatewayBrokerTransport;
+  }
+
+  @Override
+  public BackupApiRequestHandler getBackupApiRequestHandler() {
+    return backupApiRequestHandler;
+  }
+
+  @Override
+  public void setBackupApiRequestHandler(final BackupApiRequestHandler backupApiRequestHandler) {
+    this.backupApiRequestHandler = backupApiRequestHandler;
+  }
+
+  public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {
+    this.gatewayBrokerTransport = gatewayBrokerTransport;
+  }
+
   public void setDiskSpaceUsageMonitor(final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
   }
@@ -241,12 +264,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public TypedRecordProcessorFactory getStreamProcessorFactory() {
-    return streamProcessorFactory;
-  }
-
-  public void setStreamProcessorFactory(final TypedRecordProcessorFactory streamProcessorFactory) {
-    this.streamProcessorFactory = streamProcessorFactory;
+  public TypedRecordProcessorFactory getTypedRecordProcessorFactory() {
+    return typedRecordProcessorFactory;
   }
 
   @Override
@@ -257,6 +276,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
     this.concurrencyControl = concurrencyControl;
+  }
+
+  public void setTypedRecordProcessorFactory(
+      final TypedRecordProcessorFactory typedRecordProcessorFactory) {
+    this.typedRecordProcessorFactory = typedRecordProcessorFactory;
   }
 
   public void setRaftPartition(final RaftPartition raftPartition) {

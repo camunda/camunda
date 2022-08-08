@@ -57,5 +57,13 @@ final class ProcessInstanceSequenceFlowTakenApplier
       elementInstanceState.incrementNumberOfTakenSequenceFlows(
           value.getFlowScopeKey(), target.getId(), sequenceFlow.getId());
     }
+
+    if (target.getElementType() == BpmnElementType.INCLUSIVE_GATEWAY) {
+      // stores which sequence flows of the inclusive gateway are taken
+      // - the gateway is only activated if the fulfilled incoming sequence flows are taken at
+      // least once
+      elementInstanceState.incrementNumberOfTakenSequenceFlows(
+          value.getFlowScopeKey(), target.getId(), sequenceFlow.getId());
+    }
   }
 }

@@ -21,7 +21,6 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
@@ -41,9 +40,6 @@ public interface BrokerStartupContext {
   SpringBrokerBridge getSpringBrokerBridge();
 
   ActorSchedulingService getActorSchedulingService();
-
-  @Deprecated // use getActorSchedulingService instead
-  ActorScheduler getActorScheduler();
 
   ConcurrencyControl getConcurrencyControl();
 
@@ -67,9 +63,9 @@ public interface BrokerStartupContext {
 
   void setAdminApiService(AdminApiRequestHandler adminApiService);
 
-  AtomixServerTransport getCommandApiServerTransport();
+  AtomixServerTransport getGatewayBrokerTransport();
 
-  void setCommandApiServerTransport(AtomixServerTransport commandApiServerTransport);
+  void setGatewayBrokerTransport(AtomixServerTransport gatewayBrokerTransport);
 
   ManagedMessagingService getApiMessagingService();
 
