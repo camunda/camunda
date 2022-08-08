@@ -8,7 +8,7 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 
-import {Button, EntityList, Icon, Tooltip} from 'components';
+import {Button, DocsLink, EntityList, Icon, Tooltip} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {addNotification, showError} from 'notifications';
@@ -76,7 +76,14 @@ export function Processes({mightFail}) {
       )}
       <EntityList
         name={t('processes.title')}
-        headerText={t('processes.kpiInfo')}
+        headerText={
+          <>
+            {t('processes.kpiInfo')}{' '}
+            <DocsLink location="components/optimize/userguide/processes/#set-time-and-quality-kpis">
+              {t('events.sources.learnMore')}
+            </DocsLink>
+          </>
+        }
         empty={t('processes.empty')}
         isLoading={!processes}
         columns={columns}
