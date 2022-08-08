@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
@@ -214,5 +216,62 @@ public final class AsyncSnapshottingTest {
     // then
     assertThat(snapshot.join()).isNotNull();
     assertThat(persistedSnapshotStore.getLatestSnapshot()).hasValue(snapshot.join());
+  }
+
+  @Test
+  public void shouldAbortSnapshotConcurrentToABackup() {
+    // given
+    when(mockStreamProcessor.getLastProcessedPositionAsync())
+        .thenReturn(CompletableActorFuture.completed(10L));
+    doAnswer(
+            mock -> {
+              asyncSnapshotDirector.onNewCheckpointCreated(1, 15);
+              return CompletableActorFuture.completed(20L);
+            })
+        .when(mockStreamProcessor)
+        .getLastWrittenPositionAsync();
+    createAsyncSnapshotDirectorOfProcessingMode();
+    final var snapshot = asyncSnapshotDirector.forceSnapshot();
+
+    // when
+    asyncSnapshotDirector.onNewCheckpointCreated(1, 15);
+    setCommitPosition(21L);
+
+    // then
+    assertThat(snapshot).failsWithin(Duration.ofSeconds(1));
+  }
+
+  @Test
+  public void shouldTakeNewSnapshotAfterOneIsAborted() {
+    // given
+    when(mockStreamProcessor.getLastProcessedPositionAsync())
+        .thenReturn(CompletableActorFuture.completed(10L))
+        .thenReturn(CompletableActorFuture.completed(20L));
+
+    doAnswer(
+            mock -> {
+              asyncSnapshotDirector.onNewCheckpointCreated(1, 15);
+              return CompletableActorFuture.completed(20L);
+            })
+        .when(mockStreamProcessor)
+        .getLastWrittenPositionAsync();
+    createAsyncSnapshotDirectorOfProcessingMode();
+    final var abortedSnapshot = asyncSnapshotDirector.forceSnapshot();
+    assertThat(abortedSnapshot).failsWithin(Duration.ofSeconds(1));
+
+    // when
+    when(mockStreamProcessor.getLastWrittenPositionAsync())
+        .thenReturn(CompletableActorFuture.completed(30L));
+    final var secondSnapshot = asyncSnapshotDirector.forceSnapshot();
+    setCommitPosition(31L);
+
+    // then
+    assertThat(secondSnapshot)
+        .succeedsWithin(Duration.ofSeconds(1))
+        .hasNoNullFieldsOrProperties()
+        .extracting(snapshot -> FileBasedSnapshotMetadata.ofFileName(snapshot.getId()))
+        .extracting(Optional::get)
+        .extracting(FileBasedSnapshotMetadata::getProcessedPosition)
+        .isEqualTo(20L);
   }
 }
