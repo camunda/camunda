@@ -30,6 +30,8 @@ const currentUserWithUnknownRole: User = {
   displayName: 'Demo User',
   // @ts-ignore
   permissions: ['unknown'],
+  salesPlanType: null,
+  roles: [],
   __typename: 'User',
 };
 
@@ -38,6 +40,8 @@ const currentUserWithOutRole: User = {
   displayName: 'Demo User',
   // @ts-ignore
   permissions: [],
+  salesPlanType: null,
+  roles: [],
   __typename: 'User',
 };
 
