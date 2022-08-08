@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
@@ -60,7 +59,6 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 final class PartitionFactory {
 
@@ -129,11 +127,9 @@ final class PartitionFactory {
     final List<RaftPartition> owningPartitions =
         partitionGroup.getPartitionsWithMember(nodeId).stream()
             .map(RaftPartition.class::cast)
-            .collect(Collectors.toList());
+            .toList();
 
-    final var typedRecordProcessorsFactory =
-        createFactory(
-            topologyManager, localBroker, communicationService, eventService, featureFlags);
+    final var typedRecordProcessorsFactory = createFactory(localBroker, eventService, featureFlags);
 
     for (final RaftPartition owningPartition : owningPartitions) {
       final var partitionId = owningPartition.id().id();
@@ -201,12 +197,10 @@ final class PartitionFactory {
   }
 
   private TypedRecordProcessorsFactory createFactory(
-      final TopologyManager topologyManager,
       final BrokerInfo localBroker,
-      final ClusterCommunicationService communicationService,
       final ClusterEventService eventService,
       final FeatureFlags featureFlags) {
-    return (recordProcessorContext) -> {
+    return recordProcessorContext -> {
       final InterPartitionCommandSender partitionCommandSender =
           recordProcessorContext.getPartitionCommandSender();
       final SubscriptionCommandSender subscriptionCommandSender =
