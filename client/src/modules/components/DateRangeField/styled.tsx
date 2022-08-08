@@ -9,7 +9,7 @@ import styled from 'styled-components';
 import {CmTextfield} from '@camunda-cloud/common-ui-react';
 
 const TextField = styled(CmTextfield)`
-  padding-bottom: 21px;
+  margin-bottom: 21px;
 `;
 
 export {TextField};

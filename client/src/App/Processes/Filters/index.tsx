@@ -299,11 +299,19 @@ const Filters: React.FC = observer(() => {
                         case 'variable':
                           return <Variable />;
                         case 'startDateRange':
+                          return (
+                            <DateRangeField
+                              label={OPTIONAL_FILTER_FIELDS[filter].label}
+                              fromDateKey="startDateAfter"
+                              toDateKey="startDateBefore"
+                            />
+                          );
                         case 'endDateRange':
                           return (
                             <DateRangeField
-                              filterKeys={OPTIONAL_FILTER_FIELDS[filter].keys}
                               label={OPTIONAL_FILTER_FIELDS[filter].label}
+                              fromDateKey="endDateAfter"
+                              toDateKey="endDateBefore"
                             />
                           );
                         default:

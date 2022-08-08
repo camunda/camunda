@@ -20,7 +20,7 @@ type Props = {
   flipOptions?: typeof flipModifier['options'];
   offsetOptions?: typeof offsetModifier['options'];
   className?: string;
-  onOutsideClick?: () => void;
+  onOutsideClick?: (event: MouseEvent) => void;
 };
 
 const Popover: React.FC<Props> = ({
@@ -43,13 +43,13 @@ const Popover: React.FC<Props> = ({
         target instanceof Element &&
         !popoverElementRef.current?.contains(target)
       ) {
-        onOutsideClick?.();
+        onOutsideClick?.(event);
       }
     };
 
-    document.body?.addEventListener('click', handleClick);
+    document.body?.addEventListener('click', handleClick, true);
     return () => {
-      document.body?.removeEventListener('click', handleClick);
+      document.body?.removeEventListener('click', handleClick, true);
     };
   }, [onOutsideClick]);
 

@@ -5,13 +5,19 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useImperativeHandle, useState} from 'react';
+import React, {
+  MouseEventHandler,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import {CmTextfield} from '@camunda-cloud/common-ui-react';
 
 type Props = {
   validation: React.ComponentProps<typeof CmTextfield>['validation'];
   validationStyle: React.ComponentProps<typeof CmTextfield>['validationStyle'];
   onCmInput: React.ChangeEventHandler<HTMLInputElement>;
+  onCmClick?: MouseEventHandler;
   fieldSuffix: React.ComponentProps<typeof CmTextfield>['fieldSuffix'];
   shouldDebounceError: boolean;
   label?: string;
@@ -30,6 +36,7 @@ const Textfield = React.forwardRef<
       fieldSuffix,
       validationStyle,
       onCmInput,
+      onCmClick,
       shouldDebounceError,
       label,
       readonly = false,
@@ -40,6 +47,8 @@ const Textfield = React.forwardRef<
     const [errorMessage, setErrorMessage] = useState<string | undefined>(
       undefined
     );
+
+    const inputRef = useRef<HTMLInputElement>(null);
 
     const renderValidity = async () => {
       if (validation?.type === 'custom') {
@@ -53,13 +62,25 @@ const Textfield = React.forwardRef<
     useImperativeHandle(ref, () => ({
       renderValidity,
       forceFocus: () => {},
+      contains: (element: Element) => {
+        return inputRef.current?.contains(element);
+      },
     }));
 
     return (
       <>
         <label>
           {label}
-          <input {...props} onChange={onCmInput} readOnly={readonly} />
+          <input
+            {...props}
+            ref={inputRef}
+            onChange={onCmInput}
+            onClick={(event) => {
+              event.preventDefault();
+              onCmClick?.(event);
+            }}
+            readOnly={readonly}
+          />
         </label>
         <div>{errorMessage}</div>
         {fieldSuffix?.type === 'icon' && (

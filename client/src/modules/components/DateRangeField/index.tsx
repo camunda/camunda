@@ -5,34 +5,32 @@
  * except in compliance with the proprietary license.
  */
 
-import {MouseEventHandler, useRef, useState} from 'react';
-import {Field} from 'react-final-form';
+import {useRef, useState} from 'react';
+import {Field, useForm} from 'react-final-form';
 import {DateRangePopover} from './DateRangePopover';
 import {TextField} from './styled';
 
 type Props = {
   label: string;
-  filterKeys: string[];
+  fromDateKey: string;
+  toDateKey: string;
 };
 
-const DateRangeField: React.FC<Props> = ({label, filterKeys}) => {
+const DateRangeField: React.FC<Props> = ({label, fromDateKey, toDateKey}) => {
   const cmTextFieldRef = useRef<HTMLCmTextfieldElement>(null);
   const textFieldRef = useRef<HTMLDivElement>(null);
-
+  const form = useForm();
   const [isDateRangePopoverVisible, setIsDateRangePopoverVisible] =
     useState<boolean>(false);
   const [inputValue, setInputValue] = useState('');
 
-  const handleClick: MouseEventHandler = (event) => {
-    if (!isDateRangePopoverVisible) {
-      event?.stopPropagation();
-      showPopover();
-    }
-  };
-
   const showPopover = () => {
-    setInputValue('Custom');
-    cmTextFieldRef.current?.forceFocus();
+    if (
+      form.getFieldState(fromDateKey)?.value === undefined &&
+      form.getFieldState(toDateKey)?.value === undefined
+    ) {
+      setInputValue('Custom');
+    }
     setIsDateRangePopoverVisible(true);
   };
 
@@ -41,18 +39,24 @@ const DateRangeField: React.FC<Props> = ({label, filterKeys}) => {
       <div ref={textFieldRef}>
         <TextField
           label={label}
-          type="text"
+          type="button"
           fieldSuffix={{
             type: 'icon',
             icon: 'calendar',
-            press: showPopover,
+            press: () => {},
           }}
           value={inputValue}
           ref={cmTextFieldRef}
-          onClick={handleClick}
           readonly
+          title={inputValue}
+          onCmClick={() => {
+            if (!isDateRangePopoverVisible) {
+              showPopover();
+            }
+          }}
         />
-        {filterKeys.map((filterKey) => (
+
+        {[fromDateKey, toDateKey].map((filterKey) => (
           <Field
             name={filterKey}
             key={filterKey}
@@ -65,8 +69,27 @@ const DateRangeField: React.FC<Props> = ({label, filterKeys}) => {
       {isDateRangePopoverVisible && textFieldRef.current !== null && (
         <DateRangePopover
           referenceElement={textFieldRef.current}
+          initialValues={{
+            fromDate: form.getFieldState(fromDateKey)?.value ?? '',
+            toDate: form.getFieldState(toDateKey)?.value ?? '',
+          }}
           onCancel={() => setIsDateRangePopoverVisible(false)}
-          onApply={() => setIsDateRangePopoverVisible(false)}
+          onApply={({fromDate, toDate}) => {
+            setIsDateRangePopoverVisible(false);
+            setInputValue(`${fromDate} - ${toDate}`);
+            form.change(fromDateKey, fromDate);
+            form.change(toDateKey, toDate);
+          }}
+          onOutsideClick={(event) => {
+            if (
+              event.target instanceof Element &&
+              cmTextFieldRef.current?.contains(event.target)
+            ) {
+              event.stopPropagation();
+              event.preventDefault();
+            }
+            setIsDateRangePopoverVisible(false);
+          }}
         />
       )}
     </>

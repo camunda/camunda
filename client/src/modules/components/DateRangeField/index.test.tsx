@@ -24,7 +24,8 @@ describe('Date Range', () => {
     render(
       <DateRangeField
         label={'Start Date Range'}
-        filterKeys={['startDateAfter', 'startDateBefore']}
+        fromDateKey="startDateAfter"
+        toDateKey="startDateBefore"
       />,
       {wrapper: Wrapper}
     );
@@ -38,7 +39,8 @@ describe('Date Range', () => {
     const {user} = render(
       <DateRangeField
         label={'Start Date Range'}
-        filterKeys={['startDateBefore', 'startDateAfter']}
+        fromDateKey="startDateAfter"
+        toDateKey="startDateBefore"
       />,
       {wrapper: Wrapper}
     );
@@ -57,7 +59,8 @@ describe('Date Range', () => {
     const {user} = render(
       <DateRangeField
         label={'Start Date Range'}
-        filterKeys={['startDateBefore', 'startDateAfter']}
+        fromDateKey="startDateAfter"
+        toDateKey="startDateBefore"
       />,
       {wrapper: Wrapper}
     );
@@ -75,7 +78,8 @@ describe('Date Range', () => {
     const {user} = render(
       <DateRangeField
         label={'Start Date Range'}
-        filterKeys={['startDateBefore', 'startDateAfter']}
+        fromDateKey="startDateAfter"
+        toDateKey="startDateBefore"
       />,
       {wrapper: Wrapper}
     );
@@ -85,5 +89,24 @@ describe('Date Range', () => {
     await user.click(screen.getByLabelText('Start Date Range'));
     await user.click(screen.getByTestId('popover'));
     expect(screen.getByTestId('popover')).toBeInTheDocument();
+  });
+
+  it('should apply from and to dates', async () => {
+    const {user} = render(
+      <DateRangeField
+        label={'Start Date Range'}
+        fromDateKey="startDateAfter"
+        toDateKey="startDateBefore"
+      />,
+      {wrapper: Wrapper}
+    );
+
+    await user.click(screen.getByLabelText('Start Date Range'));
+    await user.type(screen.getByLabelText('From'), '2022-01-01 12:30');
+    await user.type(screen.getByLabelText('To'), '2022-12-01 17:15');
+    await user.click(screen.getByText('Apply'));
+    expect(screen.getByLabelText('Start Date Range')).toHaveValue(
+      '2022-01-01 12:30 - 2022-12-01 17:15'
+    );
   });
 });
