@@ -1,3 +1,4 @@
+---
 apiVersion: v2
 name: preview-environments
 appVersion: dev
@@ -7,9 +8,11 @@ type: application
 # Chart version; expected to follow Semantic Versioning (https://semver.org/)
 version: 0.1.1
 
-
 dependencies:
 - name: camunda-platform
-  # @camunda-cloud references https://helm.camunda.io repository configured as camunda-cloud in Argo CD
+  # @helm-camunda-io references https://helm.camunda.io repository configured as helm-camunda-io in Argo CD
   repository: "@helm-camunda-io"
   version: 8.0.8
+- name: infra-preview-environments-ingress
+  repository: oci://registry.camunda.cloud/library
+  version: 1.1.0
