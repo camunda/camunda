@@ -154,6 +154,17 @@ public class DigestService implements ConfigurationReloadable {
         overviewDto.getProcessDefinitionKey(),
         ZoneId.systemDefault()
       );
+
+    try {
+      composeAndSendDigestEmail(overviewDto, currentKpiReportResults);
+    } catch (Exception e) {
+      log.error("Failed to send digest email", e);
+    } finally {
+      updateLastKpiReportResults(overviewDto.getProcessDefinitionKey(), currentKpiReportResults);
+    }
+  }
+
+  private void composeAndSendDigestEmail(final ProcessOverviewDto overviewDto, final Map<String, KpiResultDto> currentKpiReportResults) {
     final Optional<UserDto> processOwner = identityService.getUserById(overviewDto.getOwner());
     final String definitionName = definitionService.getDefinition(
       DefinitionType.PROCESS,
@@ -177,7 +188,6 @@ public class DigestService implements ConfigurationReloadable {
         definitionName
       )
     );
-    updateLastKpiReportResults(overviewDto.getProcessDefinitionKey(), currentKpiReportResults);
   }
 
   private String composeDigestEmailText(final String ownerName, final String processDefinitionKey,
@@ -199,7 +209,9 @@ public class DigestService implements ConfigurationReloadable {
     return currentKpiReportResults.entrySet().stream()
       .sorted(Comparator.comparing(entry -> entry.getValue().getReportName()))
       .map(entry -> {
-        final String previousKpiResult = Optional.ofNullable(previousKpiReportResults.get(entry.getKey()))
+        final String previousKpiResult = previousKpiReportResults == null
+          ? "-"
+          : Optional.ofNullable(previousKpiReportResults.get(entry.getKey()))
           .map(Object::toString)
           .orElse("-");
         return String.format(
