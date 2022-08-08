@@ -85,7 +85,7 @@
     "monaco-editor": "0.34.0",
     "msw": "0.42.1",
     "node-fetch": "2.6.7",
-    "prettier": "2.6.2",
+    "prettier": "2.7.1",
     "react-scripts": "4.0.3",
     "react-test-renderer": "17.0.2",
     "source-map-explorer": "2.5.2",
