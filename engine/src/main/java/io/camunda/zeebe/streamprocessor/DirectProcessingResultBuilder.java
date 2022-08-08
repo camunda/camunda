@@ -10,7 +10,6 @@ package io.camunda.zeebe.streamprocessor;
 import io.camunda.zeebe.engine.api.PostCommitTask;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -33,7 +32,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   private final StreamProcessorContext context;
   private final LegacyTypedStreamWriter streamWriter;
-  private final LegacyTypedResponseWriter responseWriter;
+  private final DirectTypedResponseWriter responseWriter;
 
   private boolean hasResponse =
       true; // TODO figure out why this still needs to be true for tests to pass

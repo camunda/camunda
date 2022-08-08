@@ -5,10 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.streamprocessor.writers;
+package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -18,8 +19,8 @@ import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class LegacyTypedResponseWriterImpl
-    implements LegacyTypedResponseWriter, SideEffectProducer {
+public final class DirectTypedResponseWriterImpl
+    implements DirectTypedResponseWriter, SideEffectProducer {
 
   private final CommandResponseWriter writer;
   private final int partitionId;
@@ -28,7 +29,7 @@ public final class LegacyTypedResponseWriterImpl
   private int requestStreamId;
   private boolean isResponseStaged;
 
-  public LegacyTypedResponseWriterImpl(final CommandResponseWriter writer, final int partitionId) {
+  public DirectTypedResponseWriterImpl(final CommandResponseWriter writer, final int partitionId) {
     this.writer = writer;
     this.partitionId = partitionId;
   }

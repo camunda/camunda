@@ -5,42 +5,39 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.streamprocessor.writers;
+package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
-public final class NoopResponseWriterLegacy implements LegacyTypedResponseWriter {
+public interface DirectTypedResponseWriter extends SideEffectProducer, TypedResponseWriter {
 
   @Override
-  public void writeRejectionOnCommand(
-      final TypedRecord<?> command, final RejectionType type, final String reason) {}
+  void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason);
 
   @Override
-  public void writeEvent(final TypedRecord<?> event) {}
+  void writeEvent(TypedRecord<?> event);
 
   @Override
-  public void writeEventOnCommand(
-      final long eventKey,
-      final Intent eventState,
-      final UnpackedObject eventValue,
-      final TypedRecord<?> command) {}
+  void writeEventOnCommand(
+      long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command);
 
   @Override
-  public void writeResponse(
-      final long eventKey,
-      final Intent eventState,
-      final UnpackedObject eventValue,
-      final ValueType valueType,
-      final long requestId,
-      final int requestStreamId) {}
+  void writeResponse(
+      long eventKey,
+      Intent eventState,
+      UnpackedObject eventValue,
+      ValueType valueType,
+      long requestId,
+      int requestStreamId);
 
-  @Override
-  public void writeResponse(
+  void writeResponse(
       final RecordType recordType,
       final long key,
       final Intent intent,
@@ -49,13 +46,15 @@ public final class NoopResponseWriterLegacy implements LegacyTypedResponseWriter
       final RejectionType rejectionType,
       final String rejectionReason,
       final long requestId,
-      final int requestStreamId) {}
+      final int requestStreamId);
 
+  /**
+   * Submits the response to transport.
+   *
+   * @return false in case of backpressure, else true
+   */
   @Override
-  public boolean flush() {
-    return false;
-  }
+  boolean flush();
 
-  @Override
-  public void reset() {}
+  void reset();
 }

@@ -10,7 +10,6 @@ package io.camunda.zeebe.streamprocessor;
 import io.camunda.zeebe.engine.api.PostCommitTask;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import java.util.ArrayList;
@@ -27,7 +26,7 @@ final class DirectProcessingResult implements ProcessingResult {
   private final List<PostCommitTask> postCommitTasks;
 
   private final LegacyTypedStreamWriter streamWriter;
-  private final LegacyTypedResponseWriter responseWriter;
+  private final DirectTypedResponseWriter responseWriter;
   private boolean hasResponse;
 
   DirectProcessingResult(

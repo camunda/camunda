@@ -13,8 +13,8 @@ import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriterImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
+import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -33,11 +33,12 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private LogStream logStream;
   private LogStreamReader logStreamReader;
   private LegacyTypedStreamWriter logStreamWriter;
-  private LegacyTypedResponseWriterImpl typedResponseWriter;
+  private DirectTypedResponseWriterImpl typedResponseWriter;
 
   private RecordValues recordValues;
   private ZeebeDbState zeebeState;
   private TransactionContext transactionContext;
+  private EventApplier eventApplier;
 
   private BooleanSupplier abortCondition;
   private StreamProcessorListener streamProcessorListener = NOOP_LISTENER;
@@ -134,12 +135,17 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
       final CommandResponseWriter commandResponseWriter) {
     this.commandResponseWriter = commandResponseWriter;
     typedResponseWriter =
-        new LegacyTypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId());
+        new DirectTypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId());
     return this;
   }
 
-  public LegacyTypedResponseWriterImpl getTypedResponseWriter() {
+  public DirectTypedResponseWriterImpl getTypedResponseWriter() {
     return typedResponseWriter;
+  }
+
+  public StreamProcessorContext eventApplier(final EventApplier eventApplier) {
+    this.eventApplier = eventApplier;
+    return this;
   }
 
   public StreamProcessorContext processorMode(final StreamProcessorMode streamProcessorMode) {
