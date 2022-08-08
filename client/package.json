@@ -62,7 +62,7 @@
     "@testing-library/testcafe": "4.4.1",
     "@testing-library/user-event": "13.5.0",
     "@types/carbon-components-react": "7.55.2",
-    "@types/jest": "27.5.2",
+    "@types/jest": "28.1.6",
     "@types/jsoneditor": "9.5.1",
     "@types/mixpanel-browser": "2.38.0",
     "@types/node": "16.11.47",
