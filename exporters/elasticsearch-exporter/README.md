@@ -195,7 +195,7 @@ exporters:
         process: true
         processInstance: true
         processInstanceCreation: false
-        processInstanceModification: false
+        processInstanceModification: true
         processMessageSubscription: true
         variable: true
         variableDocument: true
