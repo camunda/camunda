@@ -13,7 +13,6 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
-import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.util.Either;
@@ -91,10 +90,6 @@ public class ApiRequestHandlerTest {
     TestApiRequestHandler(
         final RequestReader<?> requestReader, final ResponseWriter responseWriter) {
       super(requestReader, responseWriter);
-    }
-
-    public ActorControl actor() {
-      return actor;
     }
 
     @Override

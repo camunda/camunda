@@ -29,7 +29,7 @@ public class AdminApiRequestHandler
 
   public AdminApiRequestHandler(
       final AtomixServerTransport transport, final PartitionManagerImpl partitionManager) {
-    super(new ApiRequestReader(), new ApiResponseWriter());
+    super(ApiRequestReader::new, ApiResponseWriter::new);
     this.transport = transport;
     this.partitionManager = partitionManager;
     adminAccess = partitionManager.createAdminAccess(this);

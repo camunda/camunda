@@ -17,6 +17,7 @@ import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.sbe.MessageDecoderFlyweight;
 import org.slf4j.Logger;
@@ -33,13 +34,23 @@ public abstract class AsyncApiRequestHandler<R extends RequestReader<?>, W exten
     extends Actor implements RequestHandler {
 
   public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
-  private final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter();
-  private final R requestReader;
-  private final W responseWriter;
+  private final Supplier<R> requestReaderSupplier;
+  private final Supplier<W> responseWriterSupplier;
 
-  protected AsyncApiRequestHandler(final R requestReader, final W responseWriter) {
-    this.requestReader = requestReader;
-    this.responseWriter = responseWriter;
+  private final Supplier<ErrorResponseWriter> errorResponseWriterSupplier;
+
+  protected AsyncApiRequestHandler(
+      final Supplier<R> requestReaderSupplier, final Supplier<W> responseWriterSupplier) {
+    this(requestReaderSupplier, responseWriterSupplier, ErrorResponseWriter::new);
+  }
+
+  protected AsyncApiRequestHandler(
+      final Supplier<R> requestReaderSupplier,
+      final Supplier<W> responseWriterSupplier,
+      final Supplier<ErrorResponseWriter> errorResponseWriterSupplier) {
+    this.requestReaderSupplier = requestReaderSupplier;
+    this.responseWriterSupplier = responseWriterSupplier;
+    this.errorResponseWriterSupplier = errorResponseWriterSupplier;
   }
 
   /**
@@ -79,6 +90,10 @@ public abstract class AsyncApiRequestHandler<R extends RequestReader<?>, W exten
       final DirectBuffer buffer,
       final int offset,
       final int length) {
+    final var requestReader = requestReaderSupplier.get();
+    final var responseWriter = responseWriterSupplier.get();
+    final var errorResponseWriter = errorResponseWriterSupplier.get();
+
     requestReader.reset();
     responseWriter.reset();
     errorResponseWriter.reset();
