@@ -30,5 +30,5 @@ public interface StreamProcessorListener {
    *
    * @param skippedRecord the record that is skipped
    */
-  default void onSkipped(final LoggedEvent skippedRecord) {}
+  void onSkipped(final LoggedEvent skippedRecord);
 }
