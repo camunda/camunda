@@ -1,3 +1,4 @@
+---
 # Default values for c7-optimize.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
@@ -16,8 +17,6 @@ env: stage
 ingress:
   # Defines the domain under which to expose the ingress
   domain: optimize.camunda.cloud
-  # Defines the Vouch IDP URL to use for authenticating against Okta
-  vouchUrl: https://vouch.camunda.cloud
 
 # Tags is usually overridden to a specific tag produced by CI
 optimize:
