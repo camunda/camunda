@@ -11,17 +11,33 @@ import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.transport.RequestHandler;
 import io.camunda.zeebe.util.Either;
+import java.util.function.Supplier;
 
 /**
- * @param <R>
- * @param <W>
+ * A {@link RequestHandler} that automatically decodes requests and encodes successful and error
+ * responses. Handling requests is synchronous, use {@link AsyncApiRequestHandler} if handling
+ * should be asynchronous.
+ *
+ * @param <R> a {@link RequestReader} that reads the request. Reset on every request.
+ * @param <W> a {@link ResponseWriter} that writes the response. Reset on every request.
  */
 public abstract class ApiRequestHandler<R extends RequestReader<?>, W extends ResponseWriter>
     extends AsyncApiRequestHandler<R, W> {
 
   protected ApiRequestHandler(final R requestReader, final W responseWriter) {
-    super(requestReader, responseWriter);
+    super(
+        () -> requestReader,
+        () -> responseWriter,
+        new Supplier<>() {
+          private final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter();
+
+          @Override
+          public ErrorResponseWriter get() {
+            return errorResponseWriter;
+          }
+        });
   }
 
   protected abstract Either<ErrorResponseWriter, W> handle(
