@@ -32,7 +32,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   private final StreamProcessorContext context;
   private final LegacyTypedStreamWriter streamWriter;
-  private final LegacyTypedResponseWriter responseWriter;
+  private final DirectTypedResponseWriter responseWriter;
 
   private boolean hasResponse =
       true; // TODO figure out why this still needs to be true for tests to pass

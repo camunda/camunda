@@ -19,8 +19,8 @@ import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class LegacyTypedResponseWriterImpl
-    implements LegacyTypedResponseWriter, SideEffectProducer {
+public final class DirectTypedResponseWriterImpl
+    implements DirectTypedResponseWriter, SideEffectProducer {
 
   private final CommandResponseWriter writer;
   private final int partitionId;
@@ -29,7 +29,7 @@ public final class LegacyTypedResponseWriterImpl
   private int requestStreamId;
   private boolean isResponseStaged;
 
-  public LegacyTypedResponseWriterImpl(final CommandResponseWriter writer, final int partitionId) {
+  public DirectTypedResponseWriterImpl(final CommandResponseWriter writer, final int partitionId) {
     this.writer = writer;
     this.partitionId = partitionId;
   }

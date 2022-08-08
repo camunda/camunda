@@ -26,7 +26,7 @@ final class DirectProcessingResult implements ProcessingResult {
   private final List<PostCommitTask> postCommitTasks;
 
   private final LegacyTypedStreamWriter streamWriter;
-  private final LegacyTypedResponseWriter responseWriter;
+  private final DirectTypedResponseWriter responseWriter;
   private boolean hasResponse;
 
   DirectProcessingResult(
