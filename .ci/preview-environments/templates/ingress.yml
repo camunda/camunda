@@ -4,20 +4,7 @@ kind: Ingress
 metadata:
   name: tasklist
   labels: {{ include "commonLabels" $ | nindent 4 }}
-  annotations: {{ include "commonAnnotations" $ | nindent 4 }}
-    nginx.ingress.kubernetes.io/auth-response-headers: X-Vouch-User,X-Vouch-IdP-Claims-preferred_username
-    nginx.ingress.kubernetes.io/auth-signin: |-
-      {{ .Values.ingress.vouchUrl }}/login?url=$scheme://$http_host$request_uri&vouch-failcount=$auth_resp_failcount&X-Vouch-Token=$auth_resp_jwt&error=$auth_resp_err
-    nginx.ingress.kubernetes.io/auth-snippet: |-
-      auth_request_set $auth_resp_jwt $upstream_http_x_vouch_jwt;
-      auth_request_set $auth_resp_err $upstream_http_x_vouch_err;
-      auth_request_set $auth_resp_failcount $upstream_http_x_vouch_failcount;
-    nginx.ingress.kubernetes.io/auth-url: "{{ .Values.ingress.vouchUrl }}/validate"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/server-snippet: |-
-      location @error400 { return 302 {{ .Values.ingress.vouchUrl }}/v1/logout; }
-    nginx.ingress.kubernetes.io/session-cookie-change-on-failure: "true"
-    nginx.ingress.kubernetes.io/session-cookie-conditional-samesite-none: "true"
+  annotations: {{ include "commonAnnotations" $ | nindent 4 }}{{ include "infrapreviewenvironmentsingress.annotations" $ | nindent 4 }}
 spec:
   ingressClassName: nginx
   tls:
