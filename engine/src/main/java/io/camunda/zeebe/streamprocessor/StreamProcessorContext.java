@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListene
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedResponseWriterImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
-import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -39,7 +38,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private RecordValues recordValues;
   private ZeebeDbState zeebeState;
   private TransactionContext transactionContext;
-  private EventApplier eventApplier;
 
   private BooleanSupplier abortCondition;
   private StreamProcessorListener streamProcessorListener = NOOP_LISTENER;
@@ -142,11 +140,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public LegacyTypedResponseWriterImpl getTypedResponseWriter() {
     return typedResponseWriter;
-  }
-
-  public StreamProcessorContext eventApplier(final EventApplier eventApplier) {
-    this.eventApplier = eventApplier;
-    return this;
   }
 
   public StreamProcessorContext processorMode(final StreamProcessorMode streamProcessorMode) {

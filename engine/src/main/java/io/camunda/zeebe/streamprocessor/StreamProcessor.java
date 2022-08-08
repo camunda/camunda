@@ -14,9 +14,7 @@ import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
-import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -87,7 +85,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final ActorSchedulingService actorSchedulingService;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
   private final List<StreamProcessorLifecycleAware> lifecycleAwareListeners;
-  private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private final StreamProcessorMetrics metrics;
 
@@ -120,8 +117,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     lifecycleAwareListeners = processorBuilder.getLifecycleListeners();
     typedStreamWriterFactory = processorBuilder.getTypedStreamWriterFactory();
     zeebeDb = processorBuilder.getZeebeDb();
-
-    eventApplierFactory = processorBuilder.getEventApplierFactory();
 
     streamProcessorContext =
         processorBuilder
@@ -322,8 +317,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             partitionId,
             streamProcessorContext.getScheduleService(),
             zeebeDb,
-            streamProcessorContext.getTransactionContext(),
-            eventApplierFactory);
+            streamProcessorContext.getTransactionContext());
     recordProcessor.init(engineContext);
 
     lifecycleAwareListeners.addAll(engineContext.getLifecycleListeners());
@@ -366,7 +360,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void recoverZeebeDbState(final TransactionContext transactionContext) {
     final ZeebeDbState zeebeState = new ZeebeDbState(partitionId, zeebeDb, transactionContext);
     streamProcessorContext.zeebeState(zeebeState);
-    streamProcessorContext.eventApplier(eventApplierFactory.apply(zeebeState));
   }
 
   private void onRecovered(final LastProcessingPositions lastProcessingPositions) {

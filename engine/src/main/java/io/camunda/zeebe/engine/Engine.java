@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
+import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.processing.DbBlackListState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -63,7 +64,7 @@ public class Engine implements RecordProcessor {
             recordProcessorContext.getPartitionId(),
             recordProcessorContext.getZeebeDb(),
             recordProcessorContext.getTransactionContext());
-    eventApplier = recordProcessorContext.getEventApplierFactory().apply(zeebeState);
+    eventApplier = new EventAppliers(zeebeState);
 
     writers = new Writers(resultBuilderMutex, eventApplier);
 

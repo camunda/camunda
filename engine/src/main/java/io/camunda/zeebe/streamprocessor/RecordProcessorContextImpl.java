@@ -13,11 +13,8 @@ import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 public final class RecordProcessorContextImpl implements RecordProcessorContext {
 
@@ -25,7 +22,6 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   private final ProcessingScheduleService scheduleService;
   private final ZeebeDb zeebeDb;
   private final TransactionContext transactionContext;
-  private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private StreamProcessorListener streamProcessorListener;
 
@@ -33,13 +29,11 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
       final int partitionId,
       final ProcessingScheduleService scheduleService,
       final ZeebeDb zeebeDb,
-      final TransactionContext transactionContext,
-      final Function<MutableZeebeState, EventApplier> eventApplierFactory) {
+      final TransactionContext transactionContext) {
     this.partitionId = partitionId;
     this.scheduleService = scheduleService;
     this.zeebeDb = zeebeDb;
     this.transactionContext = transactionContext;
-    this.eventApplierFactory = eventApplierFactory;
   }
 
   @Override
@@ -60,11 +54,6 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   @Override
   public TransactionContext getTransactionContext() {
     return transactionContext;
-  }
-
-  @Override
-  public Function<MutableZeebeState, EventApplier> getEventApplierFactory() {
-    return eventApplierFactory;
   }
 
   @Override
