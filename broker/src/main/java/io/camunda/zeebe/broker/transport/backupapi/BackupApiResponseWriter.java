@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.backupapi;
 
-import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
+import io.camunda.zeebe.broker.transport.ApiRequestHandler.ResponseWriter;
 import io.camunda.zeebe.protocol.management.BackupResponseEncoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderEncoder;
 import io.camunda.zeebe.transport.ServerOutput;

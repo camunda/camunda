@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.queryapi;
 
-import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
+import io.camunda.zeebe.broker.transport.ApiRequestHandler.ResponseWriter;
 import io.camunda.zeebe.protocol.record.ExecuteQueryResponseEncoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.transport.ServerOutput;

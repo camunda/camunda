@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
-import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
+import io.camunda.zeebe.broker.transport.ApiRequestHandler.ResponseWriter;
 import io.camunda.zeebe.transport.ServerOutput;
 import org.agrona.MutableDirectBuffer;
 

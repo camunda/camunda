@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.queryapi;
 
-import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
+import io.camunda.zeebe.broker.transport.ApiRequestHandler.RequestReader;
 import io.camunda.zeebe.protocol.record.ExecuteQueryRequestDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import org.agrona.DirectBuffer;

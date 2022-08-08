@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.adminapi;
 
-import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
+import io.camunda.zeebe.broker.transport.ApiRequestHandler.RequestReader;
 import io.camunda.zeebe.protocol.management.AdminRequestDecoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderDecoder;
 import org.agrona.DirectBuffer;

@@ -53,6 +53,9 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
                                   () ->
                                       forwardExceptions(
                                           () -> {
+                                            final var adminApi =
+                                                brokerStartupContext.getAdminApiService();
+                                            adminApi.injectPartitionManager(partitionManager);
                                             final var adminService =
                                                 brokerStartupContext.getBrokerAdminService();
                                             adminService.injectAdminAccess(

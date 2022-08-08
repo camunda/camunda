@@ -10,17 +10,11 @@ package io.camunda.zeebe.broker.partitioning;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import java.util.Optional;
 import org.slf4j.Logger;
 
 public final class NoOpPartitionAdminAccess implements PartitionAdminAccess {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-
-  @Override
-  public Optional<PartitionAdminAccess> forPartition(final int partitionId) {
-    return Optional.empty();
-  }
 
   @Override
   public ActorFuture<Void> takeSnapshot() {

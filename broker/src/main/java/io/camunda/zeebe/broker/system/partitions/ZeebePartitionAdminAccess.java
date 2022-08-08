@@ -14,7 +14,6 @@ import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.io.IOException;
-import java.util.Optional;
 import org.slf4j.Logger;
 
 class ZeebePartitionAdminAccess implements PartitionAdminAccess {
@@ -22,25 +21,12 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private final ConcurrencyControl concurrencyControl;
-  private final int partitionId;
   private final PartitionAdminControl adminControl;
 
   ZeebePartitionAdminAccess(
-      final ConcurrencyControl concurrencyControl,
-      final int partitionId,
-      final PartitionAdminControl adminControl) {
+      final ConcurrencyControl concurrencyControl, final PartitionAdminControl adminControl) {
     this.concurrencyControl = requireNonNull(concurrencyControl);
-    this.partitionId = partitionId;
     this.adminControl = requireNonNull(adminControl);
-  }
-
-  @Override
-  public Optional<PartitionAdminAccess> forPartition(final int partitionId) {
-    if (this.partitionId == partitionId) {
-      return Optional.of(this);
-    } else {
-      return Optional.empty();
-    }
   }
 
   @Override
