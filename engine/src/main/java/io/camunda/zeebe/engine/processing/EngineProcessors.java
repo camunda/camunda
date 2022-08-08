@@ -128,12 +128,7 @@ public final class EngineProcessors {
         jobMetrics,
         eventTriggerBehavior);
 
-    addIncidentProcessors(
-        zeebeState,
-        bpmnStreamProcessor,
-        typedRecordProcessors,
-        writers,
-        zeebeState.getKeyGenerator());
+    addIncidentProcessors(zeebeState, bpmnStreamProcessor, typedRecordProcessors, writers);
 
     return typedRecordProcessors;
   }
@@ -213,10 +208,9 @@ public final class EngineProcessors {
       final ZeebeState zeebeState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final TypedRecordProcessors typedRecordProcessors,
-      final Writers writers,
-      final KeyGenerator keyGenerator) {
+      final Writers writers) {
     IncidentEventProcessors.addProcessors(
-        typedRecordProcessors, zeebeState, bpmnStreamProcessor, writers, keyGenerator);
+        typedRecordProcessors, zeebeState, bpmnStreamProcessor, writers);
   }
 
   private static void addMessageProcessors(
