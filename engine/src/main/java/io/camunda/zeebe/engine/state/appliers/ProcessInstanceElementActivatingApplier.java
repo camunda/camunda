@@ -145,7 +145,7 @@ final class ProcessInstanceElementActivatingApplier
         decrementParallelGatewaySequenceFlow(value, flowScopeInstance);
         break;
       case INCLUSIVE_GATEWAY:
-        decrementInclusiveGatewayGatewaySequenceFlow(value, flowScopeInstance);
+        decrementInclusiveGatewayGatewaySequenceFlow(flowScopeInstance);
         break;
       case EVENT_SUB_PROCESS:
         decrementEventSubProcessSequenceFlow(value, flowScopeInstance);
@@ -193,7 +193,7 @@ final class ProcessInstanceElementActivatingApplier
   }
 
   private void decrementInclusiveGatewayGatewaySequenceFlow(
-      final ProcessInstanceRecord value, final ElementInstance flowScopeInstance) {
+      final ElementInstance flowScopeInstance) {
     // Currently the inclusive gateway can only have one incoming sequence flow.
 
     flowScopeInstance.decrementActiveSequenceFlows();
