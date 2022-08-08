@@ -2419,10 +2419,19 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react@*", "@types/react@18.0.16":
+"@types/react@*":
   version "18.0.16"
   resolved "https://registry.yarnpkg.com/@types/react/-/react-18.0.16.tgz#8de9bf7feebfa520777e8d30815070b39cb663c0"
   integrity sha512-3vX1dzVucqc2nhXtzyaParTIIRZeNbisRqLE7QdeLomVybEyeiuAouzZXgz71P+2kbJOqj3dy0fzoATg2I06GQ==
+  dependencies:
+    "@types/prop-types" "*"
+    "@types/scheduler" "*"
+    csstype "^3.0.2"
+
+"@types/react@18.0.17":
+  version "18.0.17"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-18.0.17.tgz#4583d9c322d67efe4b39a935d223edcc7050ccf4"
+  integrity sha512-38ETy4tL+rn4uQQi7mB81G7V1g0u2ryquNmsVIOKUAEIDK+3CUjZ6rSRpdvS99dNBnkLFL83qfmtLacGOTIhwQ==
   dependencies:
     "@types/prop-types" "*"
     "@types/scheduler" "*"
@@ -13542,7 +13551,37 @@ testcafe-browser-tools@2.0.23:
     read-file-relative "^1.2.0"
     which-promise "^1.0.0"
 
-testcafe-hammerhead@24.5.24, testcafe-hammerhead@>=19.4.0:
+testcafe-hammerhead@24.7.2:
+  version "24.7.2"
+  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-24.7.2.tgz#e3665ead7b1df63593fc278f9345f8fbec815147"
+  integrity sha512-f9f/CuOtaeIq+avD8hFO6aMGCdc446R1+7h3TR+4vuqkOQaqow5SuwEI/QdCF05z8nENDcXGUORXx0hOPrGhlw==
+  dependencies:
+    acorn-hammerhead "0.6.1"
+    asar "^2.0.1"
+    bowser "1.6.0"
+    crypto-md5 "^1.0.0"
+    css "2.2.3"
+    debug "4.3.1"
+    esotope-hammerhead "0.6.2"
+    http-cache-semantics "^4.1.0"
+    iconv-lite "0.5.1"
+    lodash "^4.17.20"
+    lru-cache "2.6.3"
+    match-url-wildcard "0.0.4"
+    merge-stream "^1.0.1"
+    mime "~1.4.1"
+    mustache "^2.1.1"
+    nanoid "^3.1.12"
+    os-family "^1.0.0"
+    parse5 "2.2.3"
+    pinkie "2.0.4"
+    read-file-relative "^1.2.0"
+    semver "5.5.0"
+    tough-cookie "4.0.0"
+    tunnel-agent "0.6.0"
+    webauth "^1.1.0"
+
+testcafe-hammerhead@>=19.4.0:
   version "24.5.24"
   resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-24.5.24.tgz#7b62e7e50ec9778e4301d96ceba635369dd5ee9e"
   integrity sha512-RuO5JRnVvAzEpBsdWRnmhYxBgG+VVCj667TTamvyKiFNSd8lEIJqYxAd2pdn2/nhX5Pxyxhl/jld9NAIoG+i1g==
@@ -13638,10 +13677,10 @@ testcafe-safe-storage@^1.1.1:
   resolved "https://registry.yarnpkg.com/testcafe-safe-storage/-/testcafe-safe-storage-1.1.2.tgz#dacfda9a51c77f61f11b13506d4004dd7f27eb73"
   integrity sha512-6km7D26+KCQGeFlSQ9fVEU7tD8qdioSpqzxU8CCZkd2KzBS0jTFkqaJ54rPaLdd5+wdhgO3+as3LMm4F0EDeYA==
 
-testcafe@1.20.0:
-  version "1.20.0"
-  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.20.0.tgz#7ac64d2155b3127a42ec381f633ba4f1c1c06f7c"
-  integrity sha512-A/ou8bBfUKmFvQr/+wffPyCMgZVAc0aB9ZZK9CeNwkjCbJ2GENpXq1kk9nlBmUvA8p/hgl/hTY2J78l3bn+ZDg==
+testcafe@1.20.1:
+  version "1.20.1"
+  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.20.1.tgz#872265fb0dc943bd15da7f4cfaa2162df61e36e3"
+  integrity sha512-D5UQsR10zsqPSqN4uWxS8CjmpaRUSduo3hjQscIzww8/uZ3AmOYJOrIk+punpieCmcwclfGz6ic2pdRv21rNnA==
   dependencies:
     "@babel/core" "^7.12.1"
     "@babel/plugin-proposal-async-generator-functions" "^7.12.1"
@@ -13722,7 +13761,7 @@ testcafe@1.20.0:
     source-map-support "^0.5.16"
     strip-bom "^2.0.0"
     testcafe-browser-tools "2.0.23"
-    testcafe-hammerhead "24.5.24"
+    testcafe-hammerhead "24.7.2"
     testcafe-legacy-api "5.1.4"
     testcafe-reporter-dashboard "1.0.0-rc.3"
     testcafe-reporter-json "^2.1.0"
