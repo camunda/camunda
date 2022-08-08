@@ -15,32 +15,36 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
-import io.camunda.zeebe.model.bpmn.instance.ExclusiveGateway;
-import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.InclusiveGateway;
+import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
-public class FlowNodeValidator implements ModelElementValidator<FlowNode> {
+public class InclusiveGatewayValidator implements ModelElementValidator<InclusiveGateway> {
 
   @Override
-  public Class<FlowNode> getElementType() {
-    return FlowNode.class;
+  public Class<InclusiveGateway> getElementType() {
+    return InclusiveGateway.class;
   }
 
   @Override
   public void validate(
-      final FlowNode element, final ValidationResultCollector validationResultCollector) {
-    if (element instanceof ExclusiveGateway || element instanceof InclusiveGateway) {
-      return;
+      final InclusiveGateway element, final ValidationResultCollector validationResultCollector) {
+
+    final SequenceFlow defaultFlow = element.getDefault();
+    final int size = element.getIncoming().size();
+    if (defaultFlow != null) {
+      if (defaultFlow.getConditionExpression() == null && size > 1) {
+        validationResultCollector.addError(
+            0, "Must have a condition even if it's marked as the default flow");
+      }
+      if (defaultFlow.getSource() != element) {
+        validationResultCollector.addError(0, "Default flow must start at gateway");
+      }
     }
-
-    final boolean hasAnyConditionalFlow =
-        element.getOutgoing().stream().anyMatch(s -> s.getConditionExpression() != null);
-
-    if (hasAnyConditionalFlow) {
+    if (size > 1) {
       validationResultCollector.addError(
-          0, "Conditional sequence flows are only supported at exclusive or inclusive gateway");
+          0, "Currently the inclusive gateway can only have one incoming sequence flow");
     }
   }
 }

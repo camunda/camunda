@@ -52,6 +52,7 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new EventBasedGatewayValidator());
     validators.add(new ErrorEventDefinitionValidator());
     validators.add(new ExclusiveGatewayValidator());
+    validators.add(new InclusiveGatewayValidator());
     validators.add(new FlowElementValidator());
     validators.add(new FlowNodeValidator());
     validators.add(new IntermediateCatchEventValidator());
