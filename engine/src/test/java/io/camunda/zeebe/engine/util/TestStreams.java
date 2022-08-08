@@ -18,6 +18,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.Engine;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry;
@@ -27,7 +28,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStr
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;

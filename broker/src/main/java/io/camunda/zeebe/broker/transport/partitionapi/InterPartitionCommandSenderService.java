@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.transport.partitionapi;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListener;
-import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
+import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
