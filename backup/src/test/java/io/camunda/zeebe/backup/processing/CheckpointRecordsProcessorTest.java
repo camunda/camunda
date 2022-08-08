@@ -66,8 +66,7 @@ final class CheckpointRecordsProcessorTest {
 
   private RecordProcessorContextImpl createContext(
       final ProcessingScheduleService executor, final ZeebeDb zeebeDb) {
-    return new RecordProcessorContextImpl(
-        1, executor, zeebeDb, zeebeDb.createContext(), null, null, null);
+    return new RecordProcessorContextImpl(1, executor, zeebeDb, zeebeDb.createContext(), null);
   }
 
   @AfterEach

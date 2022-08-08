@@ -176,8 +176,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       replayStateMachine =
           new ReplayStateMachine(recordProcessor, streamProcessorContext, this::shouldProcessNext);
-      // disable writing to the log stream
-      streamProcessorContext.disableLogStreamWriter();
 
       openFuture.complete(null);
       replayCompletedFuture = replayStateMachine.startRecover(snapshotPosition);
@@ -281,9 +279,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       phase = Phase.PROCESSING;
 
-      // enable writing records to the stream
-      streamProcessorContext.enableLogStreamWriter();
-
       processingStateMachine =
           new ProcessingStateMachine(
               streamProcessorContext, this::shouldProcessNext, recordProcessor);
@@ -328,8 +323,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             streamProcessorContext.getScheduleService(),
             zeebeDb,
             streamProcessorContext.getTransactionContext(),
-            streamProcessorContext.getLogStreamWriter(),
-            streamProcessorContext.getTypedResponseWriter(),
             eventApplierFactory);
     recordProcessor.init(engineContext);
 
