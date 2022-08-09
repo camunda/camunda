@@ -37,6 +37,7 @@ import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -145,7 +146,13 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
-    return streamProcessingComposite.startTypedStreamProcessor(factory);
+    return startTypedStreamProcessor(factory, Optional.empty());
+  }
+
+  public StreamProcessor startTypedStreamProcessor(
+      final StreamProcessorTestFactory factory,
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
+    return streamProcessingComposite.startTypedStreamProcessor(factory, streamProcessorListenerOpt);
   }
 
   public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
@@ -167,8 +174,11 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessor startTypedStreamProcessor(
-      final int partitionId, final TypedRecordProcessorFactory factory) {
-    return streamProcessingComposite.startTypedStreamProcessor(partitionId, factory);
+      final int partitionId,
+      final TypedRecordProcessorFactory factory,
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
+    return streamProcessingComposite.startTypedStreamProcessor(
+        partitionId, factory, streamProcessorListenerOpt);
   }
 
   public void pauseProcessing(final int partitionId) {

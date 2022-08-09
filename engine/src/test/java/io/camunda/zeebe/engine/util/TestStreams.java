@@ -53,6 +53,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -227,27 +228,41 @@ public final class TestStreams {
   public StreamProcessor startStreamProcessor(
       final String log,
       final ZeebeDbFactory zeebeDbFactory,
-      final TypedRecordProcessorFactory typedRecordProcessorFactory) {
+      final TypedRecordProcessorFactory typedRecordProcessorFactory,
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
     final SynchronousLogStream stream = getLogStream(log);
-    return buildStreamProcessor(stream, zeebeDbFactory, typedRecordProcessorFactory, null, true);
-  }
-
-  public StreamProcessor startStreamProcessorNotAwaitOpening(
-      final String log,
-      final ZeebeDbFactory zeebeDbFactory,
-      final TypedRecordProcessorFactory typedRecordProcessorFactory) {
-    return startStreamProcessorNotAwaitOpening(
-        log, zeebeDbFactory, typedRecordProcessorFactory, null);
+    return buildStreamProcessor(
+        stream,
+        zeebeDbFactory,
+        typedRecordProcessorFactory,
+        null,
+        true,
+        streamProcessorListenerOpt);
   }
 
   public StreamProcessor startStreamProcessorNotAwaitOpening(
       final String log,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory,
-      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory) {
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
+    return startStreamProcessorNotAwaitOpening(
+        log, zeebeDbFactory, typedRecordProcessorFactory, null, streamProcessorListenerOpt);
+  }
+
+  public StreamProcessor startStreamProcessorNotAwaitOpening(
+      final String log,
+      final ZeebeDbFactory zeebeDbFactory,
+      final TypedRecordProcessorFactory typedRecordProcessorFactory,
+      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory,
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
     final SynchronousLogStream stream = getLogStream(log);
     return buildStreamProcessor(
-        stream, zeebeDbFactory, typedRecordProcessorFactory, streamWriterFactory, false);
+        stream,
+        zeebeDbFactory,
+        typedRecordProcessorFactory,
+        streamWriterFactory,
+        false,
+        streamProcessorListenerOpt);
   }
 
   public StreamProcessor buildStreamProcessor(
@@ -255,7 +270,8 @@ public final class TestStreams {
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory factory,
       final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory,
-      final boolean awaitOpening) {
+      final boolean awaitOpening,
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
 
@@ -278,13 +294,17 @@ public final class TestStreams {
     }
     final String logName = stream.getLogName();
 
+    final var streamProcessorListeners = new ArrayList<StreamProcessorListener>();
+    streamProcessorListeners.add(mockStreamProcessorListener);
+    streamProcessorListenerOpt.ifPresent(streamProcessorListeners::add);
+
     final var builder =
         StreamProcessor.builder()
             .logStream(stream.getAsyncLogStream())
             .zeebeDb(zeebeDb)
             .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
-            .listener(mockStreamProcessorListener)
+            .listener(new StreamProcessorListenerRelay(streamProcessorListeners))
             .recordProcessor(new Engine(wrappedFactory))
             .eventApplierFactory(eventApplierFactory)
             .streamProcessorMode(streamProcessorMode);

@@ -56,6 +56,7 @@ import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -120,7 +121,8 @@ public final class SkipFailingEventsTest {
                   ValueType.PROCESS_INSTANCE,
                   ProcessInstanceIntent.ACTIVATE_ELEMENT,
                   errorProneProcessor);
-        });
+        },
+        Optional.empty());
 
     final long failingEventPosition =
         streams
@@ -165,7 +167,8 @@ public final class SkipFailingEventsTest {
                       throw new NullPointerException();
                     }
                   });
-        });
+        },
+        Optional.empty());
 
     final long failingEventPosition =
         streams
@@ -209,7 +212,8 @@ public final class SkipFailingEventsTest {
                   ValueType.PROCESS_INSTANCE,
                   ProcessInstanceIntent.COMPLETE_ELEMENT,
                   dumpProcessorRef.get());
-        });
+        },
+        Optional.empty());
 
     streams
         .newRecord(STREAM_NAME)
@@ -295,7 +299,8 @@ public final class SkipFailingEventsTest {
                   ValueType.PROCESS_INSTANCE,
                   ProcessInstanceIntent.ACTIVATE_ELEMENT,
                   new DumpProcessor(processingContext.getWriters()));
-        });
+        },
+        Optional.empty());
 
     // when
     latch.await(2000, TimeUnit.MILLISECONDS);
@@ -351,7 +356,8 @@ public final class SkipFailingEventsTest {
                   zeebeState.getKeyGenerator(), processingContext.getWriters())
               .onCommand(ValueType.JOB, JobIntent.COMPLETE, errorProneProcessor)
               .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, dumpProcessorRef.get());
-        });
+        },
+        Optional.empty());
 
     streams
         .newRecord(STREAM_NAME)
@@ -439,7 +445,8 @@ public final class SkipFailingEventsTest {
                               Records.timer(TimerInstance.NO_ELEMENT_INSTANCE));
                     }
                   });
-        });
+        },
+        Optional.empty());
 
     streams
         .newRecord(STREAM_NAME)
