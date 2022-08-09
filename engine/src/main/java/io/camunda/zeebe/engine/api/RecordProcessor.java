@@ -39,15 +39,14 @@ public interface RecordProcessor<CONTEXT> {
   void replay(TypedRecord record);
 
   /**
-   * Called by platform to process a single record
+   * Called by platform to process a single record.
    *
-   * <p><em>Contract</em> * *
+   * <p><em>Contract</em>
    *
    * <ul>
-   *   *
    *   <li>Record will be a command
    *   <li>Will be called after replay is called
-   *   <li>Implementors can write to the database. Transaction is provided by platform, which also *
+   *   <li>Implementors can write to the database. Transaction is provided by platform, which also
    *       takes care of lifecycle of the transaction
    *   <li>Implementors must ensure that if they generate follow up events, these are applied to the
    *       database while this method is called
