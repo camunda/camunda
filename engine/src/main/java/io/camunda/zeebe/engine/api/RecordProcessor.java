@@ -63,7 +63,23 @@ public interface RecordProcessor<CONTEXT> {
   ProcessingResult process(TypedRecord record, ProcessingResultBuilder processingResultBuilder);
 
   /**
-   * Called by platform when a processing error occurred
+   * Called by platform when a processing error occurred.
+   *
+   * <p><em>Contract</em>
+   *
+   * <ul>
+   *   <li>Record will be a command
+   *   <li>Will be called if an uncaught exception is thrown in {@link #process(TypedRecord,
+   *       ProcessingResultBuilder)}, or when an uncaught exception is thrown by the
+   *       ProcessingStateMachine while committing the transaction
+   *   <li>Implementors can write to the database. Transaction is provided by platform, which also
+   *       takes care of lifecycle of the transaction
+   *   <li>Implementors must ensure that if they generate follow up events, these are applied to the
+   *       database while this method is called
+   *   <li>Implementors can produce follow up commands, events and rejections, client responses and
+   *       on commit tasks via {@code processingResultBuilder}
+   *   <li>Implementors are responsible for error logging when needed
+   * </ul>
    *
    * @return the result of the processing; must be generated via {@code ProcessingResultBuilder
    *     processingResultBuilder }
