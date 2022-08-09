@@ -3,9 +3,6 @@
 # Go, build zbctl, then build the Zeebe distribution.
 #
 # If no version is given, the version is set to the Maven project version.
-#
-# This action does NOT work on self-hosted runners unless they have buildx already set up. See
-# https://github.com/docker/setup-buildx-action for more
 
 ---
 name: Build Docker Image
