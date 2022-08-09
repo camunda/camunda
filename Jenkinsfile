@@ -63,7 +63,7 @@ pipeline {
           configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
             sh '''
             JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU))" \
-            mvn clean deploy -s $MAVEN_SETTINGS_XML -P -docker -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
+            mvn clean deploy -s $MAVEN_SETTINGS_XML -P -docker -DskipTests=true -B -T$LIMITS_CPU \
                 -DaltStagingDirectory=$(pwd)/staging -DskipRemoteStaging=true -Dmaven.deploy.skip=true
           '''
           }
@@ -84,7 +84,7 @@ pipeline {
                 // MaxRAMFraction = LIMITS_CPU+1 because there are LIMITS_CPU surefire threads + one maven thread
                 sh '''
                   JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
-                  mvn verify -s $MAVEN_SETTINGS_XML -P -docker,skipFrontendBuild -B -T$LIMITS_CPU --fail-at-end
+                  mvn verify -s $MAVEN_SETTINGS_XML -P -docker,skipFrontendBuild -B -T$LIMITS_CPU
                   '''
               }
             }
