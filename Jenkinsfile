@@ -119,6 +119,9 @@ pipeline {
                 DOCKER_BUILDKIT = "1"
                 IMAGE = "camunda/zeebe"
                 TAG = 'current-test'
+                VERSION = readMavenPom(file: 'bom/pom.xml').getVersion()
+                REVISION = "${env.GIT_COMMIT}"
+                DATE = java.time.Instant.now().toString()
             }
 
             steps {

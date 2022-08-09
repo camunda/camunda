@@ -66,6 +66,9 @@ spec:
         PUSH = "${params.PUSH}"
         IMAGE = "camunda/zeebe"
         TAG = docker_tag("${params.VERSION}")
+        REVISION = "${params.REVISION}"
+        DATE = "${param.DATE}"
+        VERIFY = "${param.VERIFY}"
     }
 
     stages {
@@ -79,6 +82,12 @@ spec:
                 container('maven') {
                     sh '.ci/scripts/docker/prepare.sh'
                 }
+
+                // extract to a script if we need to do more here; these are necessary for the
+                // verify script
+                container('docker') {
+                    sh 'apk add -q bash jq'
+                }
             }
         }
 
@@ -86,6 +95,15 @@ spec:
             steps {
                 container('docker') {
                     sh '.ci/scripts/docker/build.sh'
+                }
+            }
+        }
+
+        stage('Verify') {
+            when { environment name: 'VERIFY', value: 'true' }
+            steps {
+                container('docker') {
+                    sh "./docker/test/verify.sh '${env.IMAGE}:${env.TAG}'"
                 }
             }
         }
