@@ -42,6 +42,19 @@ outputs:
 runs:
   using: composite
   steps:
+    # Creating a context is required when installing buildx on self-hosted runners
+    - name: Create context
+      shell: bash
+      run: |
+        docker context create zeebe-context
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+      with:
+        # to be able to push to local registry, which we use in our tests, we need to use host network
+        driver-opts: network=host
+        endpoint: zeebe-context
+        install: true
+    # We need maven and Java (indirectly) to get properties from the project
     - uses: actions/setup-java@v3.4.1
       with:
         distribution: 'temurin'
@@ -81,7 +94,7 @@ runs:
       with:
         context: .
         tags: ${{ steps.get-image.outputs.result }}
-        load: true
+        load: ${{ inputs.push != 'true' }}
         push: ${{ inputs.push }}
         no-cache: true
         build-args: |

@@ -35,9 +35,12 @@ jobs:
         with:
           maven-version: 3.8.5
       - uses: ./.github/actions/use-ci-nexus-cache
-      - run: mvn -B -DskipChecks -DskipTests install
-      - run: docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz --build-arg APP_ENV=dev -t "${ZEEBE_TEST_DOCKER_IMAGE}" .
-      - run: docker push "${ZEEBE_TEST_DOCKER_IMAGE}"
+      - uses: ./.github/actions/build-docker
+        with:
+          repository: localhost:5000/camunda/zeebe
+          version: current-test
+          push: true
+          package: true
       - name: Prepare Testcontainers Cloud agent
         if: env.TC_CLOUD_TOKEN != ''
         run: |
