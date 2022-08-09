@@ -9,13 +9,15 @@ package io.camunda.zeebe.broker.transport.queryapi;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
-import io.camunda.zeebe.broker.transport.ApiRequestHandler;
+import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.engine.state.QueryService.ClosedServiceException;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.ExecuteQueryRequestDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.EnumSet;
 import java.util.Map;
@@ -32,7 +34,7 @@ import org.agrona.collections.Int2ObjectHashMap;
 @SuppressWarnings("removal")
 @Deprecated(forRemoval = true, since = "1.2.0")
 public final class QueryApiRequestHandler
-    extends ApiRequestHandler<QueryRequestReader, QueryResponseWriter> {
+    extends AsyncApiRequestHandler<QueryRequestReader, QueryResponseWriter> {
   private static final Set<ValueType> ACCEPTED_VALUE_TYPES =
       EnumSet.of(ValueType.PROCESS, ValueType.PROCESS_INSTANCE, ValueType.JOB);
 
@@ -65,9 +67,18 @@ public final class QueryApiRequestHandler
   }
 
   @Override
-  protected Either<ErrorResponseWriter, QueryResponseWriter> handle(
+  protected ActorFuture<Either<ErrorResponseWriter, QueryResponseWriter>> handleAsync(
       final int partitionId,
       final long requestId,
+      final QueryRequestReader requestReader,
+      final QueryResponseWriter responseWriter,
+      final ErrorResponseWriter errorWriter) {
+    return CompletableActorFuture.completed(
+        handle(partitionId, requestReader, responseWriter, errorWriter));
+  }
+
+  private Either<ErrorResponseWriter, QueryResponseWriter> handle(
+      final int partitionId,
       final QueryRequestReader requestReader,
       final QueryResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {

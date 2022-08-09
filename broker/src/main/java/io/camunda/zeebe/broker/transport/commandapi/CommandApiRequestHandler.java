@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.transport.commandapi;
 
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.transport.ApiRequestHandler;
+import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.broker.transport.backpressure.BackpressureMetrics;
 import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
@@ -18,12 +18,14 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
 final class CommandApiRequestHandler
-    extends ApiRequestHandler<CommandApiRequestReader, CommandApiResponseWriter> {
+    extends AsyncApiRequestHandler<CommandApiRequestReader, CommandApiResponseWriter> {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
   private final Int2ObjectHashMap<LogStreamRecordWriter> leadingStreams = new Int2ObjectHashMap<>();
@@ -37,7 +39,17 @@ final class CommandApiRequestHandler
   }
 
   @Override
-  protected Either<ErrorResponseWriter, CommandApiResponseWriter> handle(
+  protected ActorFuture<Either<ErrorResponseWriter, CommandApiResponseWriter>> handleAsync(
+      final int partitionId,
+      final long requestId,
+      final CommandApiRequestReader requestReader,
+      final CommandApiResponseWriter responseWriter,
+      final ErrorResponseWriter errorWriter) {
+    return CompletableActorFuture.completed(
+        handle(partitionId, requestId, requestReader, responseWriter, errorWriter));
+  }
+
+  private Either<ErrorResponseWriter, CommandApiResponseWriter> handle(
       final int partitionId,
       final long requestId,
       final CommandApiRequestReader requestReader,

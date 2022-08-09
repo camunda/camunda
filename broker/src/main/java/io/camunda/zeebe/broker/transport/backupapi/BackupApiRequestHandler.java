@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.transport.backupapi;
 
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
-import io.camunda.zeebe.broker.transport.ApiRequestHandler;
+import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -18,6 +18,8 @@ import io.camunda.zeebe.protocol.management.BackupRequestType;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
@@ -26,7 +28,7 @@ import io.camunda.zeebe.util.Either;
  * Request handler to handle commands and queries related to the backup ({@link RequestType#BACKUP})
  */
 public final class BackupApiRequestHandler
-    extends ApiRequestHandler<BackupApiRequestReader, BackupApiResponseWriter>
+    extends AsyncApiRequestHandler<BackupApiRequestReader, BackupApiResponseWriter>
     implements DiskSpaceUsageListener {
   private boolean isDiskSpaceAvailable = true;
   private final LogStreamRecordWriter logStreamRecordWriter;
@@ -54,9 +56,18 @@ public final class BackupApiRequestHandler
   }
 
   @Override
-  protected Either<ErrorResponseWriter, BackupApiResponseWriter> handle(
+  protected ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleAsync(
       final int partitionId,
       final long requestId,
+      final BackupApiRequestReader requestReader,
+      final BackupApiResponseWriter responseWriter,
+      final ErrorResponseWriter errorWriter) {
+    return CompletableActorFuture.completed(
+        handle(partitionId, requestReader, responseWriter, errorWriter));
+  }
+
+  private Either<ErrorResponseWriter, BackupApiResponseWriter> handle(
+      final int partitionId,
       final BackupApiRequestReader requestReader,
       final BackupApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {

@@ -24,8 +24,7 @@ import org.slf4j.Logger;
 
 /**
  * A {@link RequestHandler} that automatically decodes requests and encodes successful and error
- * responses. Handling requests is asynchronous, use {@link ApiRequestHandler} if handling can be
- * synchronous.
+ * responses. Handling requests is asynchronous.
  *
  * @param <R> a {@link RequestReader} that reads the request
  * @param <W> a {@link ResponseWriter} that writes the response

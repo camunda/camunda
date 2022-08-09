@@ -13,6 +13,8 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.util.Either;
@@ -89,7 +91,7 @@ final class ApiRequestHandlerTest {
   }
 
   private static class TestApiRequestHandler
-      extends ApiRequestHandler<RequestReader<?>, ResponseWriter> {
+      extends AsyncApiRequestHandler<RequestReader<?>, ResponseWriter> {
     TestApiRequestHandler(
         final Supplier<RequestReader<?>> requestReaderSupplier,
         final Supplier<ResponseWriter> responseWriterSupplier) {
@@ -97,13 +99,13 @@ final class ApiRequestHandlerTest {
     }
 
     @Override
-    protected Either<ErrorResponseWriter, ResponseWriter> handle(
+    protected ActorFuture<Either<ErrorResponseWriter, ResponseWriter>> handleAsync(
         final int partitionId,
         final long requestId,
         final RequestReader<?> requestReader,
         final ResponseWriter responseWriter,
         final ErrorResponseWriter errorWriter) {
-      return Either.right(responseWriter);
+      return CompletableActorFuture.completed(Either.right(responseWriter));
     }
   }
 }
