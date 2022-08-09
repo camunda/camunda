@@ -81,11 +81,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             writers);
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
-            catchEventBehavior,
-            eventTriggerBehavior,
-            sideEffects,
-            zeebeState,
-            zeebeState.getKeyGenerator());
+            catchEventBehavior, eventTriggerBehavior, sideEffects, zeebeState);
     incidentBehavior =
         new BpmnIncidentBehavior(zeebeState, zeebeState.getKeyGenerator(), stateWriter);
     eventPublicationBehavior =

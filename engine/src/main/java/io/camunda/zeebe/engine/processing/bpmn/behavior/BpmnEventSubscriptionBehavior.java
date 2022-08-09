@@ -14,29 +14,21 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
-import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 
 public final class BpmnEventSubscriptionBehavior {
 
-  private static final String NO_PROCESS_FOUND_MESSAGE =
-      "Expected to create an instance of process with key '%d', but no such process was found";
-
-  private final ProcessInstanceRecord eventRecord = new ProcessInstanceRecord();
-
   private final EventScopeInstanceState eventScopeInstanceState;
   private final CatchEventBehavior catchEventBehavior;
 
   private final SideEffects sideEffects;
 
-  private final KeyGenerator keyGenerator;
   private final ProcessState processState;
   private final EventTriggerBehavior eventTriggerBehavior;
 
@@ -44,15 +36,13 @@ public final class BpmnEventSubscriptionBehavior {
       final CatchEventBehavior catchEventBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final SideEffects sideEffects,
-      final ZeebeState zeebeState,
-      final KeyGenerator keyGenerator) {
+      final ZeebeState zeebeState) {
     this.catchEventBehavior = catchEventBehavior;
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.sideEffects = sideEffects;
 
     processState = zeebeState.getProcessState();
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
-    this.keyGenerator = keyGenerator;
   }
 
   /**
