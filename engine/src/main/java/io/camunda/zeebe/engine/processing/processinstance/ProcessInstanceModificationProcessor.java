@@ -91,6 +91,10 @@ public final class ProcessInstanceModificationProcessor
               activateElement(processInstanceRecord, instruction, elementToActivate);
             });
 
+    value
+        .getTerminateInstructions()
+        .forEach(instruction -> terminateElement(instruction.getElementInstanceKey()));
+
     stateWriter.appendFollowUpEvent(eventKey, ProcessInstanceModificationIntent.MODIFIED, value);
 
     responseWriter.writeEventOnCommand(
@@ -143,5 +147,16 @@ public final class ProcessInstanceModificationProcessor
         .map(child -> findFlowScopeKey(child.getKey(), targetElementId))
         .flatMap(Collection::stream)
         .toList();
+  }
+
+  private void terminateElement(final long elementInstanceKey) {
+    // todo: deal with non-existing element instance (#9983)
+    // todo: delete event subscriptions, cancel jobs and resolve incidents where applicable
+    final var elementInstanceRecord =
+        elementInstanceState.getInstance(elementInstanceKey).getValue();
+    stateWriter.appendFollowUpEvent(
+        elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
+    stateWriter.appendFollowUpEvent(
+        elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATED, elementInstanceRecord);
   }
 }
