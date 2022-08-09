@@ -12,11 +12,11 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.Engine;
 import io.camunda.zeebe.engine.api.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import java.util.function.BiFunction;
 
