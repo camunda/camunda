@@ -5,10 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import {deploy, createInstances, createSingleInstance} from '../setup-utils';
+import {
+  deployProcess,
+  createInstances,
+  createSingleInstance,
+} from '../setup-utils';
 
 const setup = async () => {
-  await deploy([
+  await deployProcess([
     'withoutInstancesProcess_v_1.bpmn',
     'withoutIncidentsProcess_v_1.bpmn',
     'onlyIncidentsProcess_v_1.bpmn',
@@ -16,7 +20,7 @@ const setup = async () => {
     'processWithAnIncident.bpmn',
   ]);
 
-  await deploy([
+  await deployProcess([
     'withoutInstancesProcess_v_2.bpmn',
     'withoutIncidentsProcess_v_2.bpmn',
     'onlyIncidentsProcess_v_2.bpmn',

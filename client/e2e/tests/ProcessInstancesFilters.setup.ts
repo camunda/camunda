@@ -5,19 +5,23 @@
  * except in compliance with the proprietary license.
  */
 
-import {deploy, createInstances, createSingleInstance} from '../setup-utils';
+import {
+  deployProcess,
+  createInstances,
+  createSingleInstance,
+} from '../setup-utils';
 
 const setup = async () => {
-  await deploy(['Filters/processWithMultipleVersions_v_1.bpmn']);
-  await deploy(['Filters/processWithMultipleVersions_v_2.bpmn']);
-  await deploy(['Filters/processWithAnError.bpmn']);
+  await deployProcess(['Filters/processWithMultipleVersions_v_1.bpmn']);
+  await deployProcess(['Filters/processWithMultipleVersions_v_2.bpmn']);
+  await deployProcess(['Filters/processWithAnError.bpmn']);
 
   await createInstances('processWithMultipleVersions', 1, 1);
   await createInstances('processWithMultipleVersions', 2, 1);
 
   await createInstances('processWithAnError', 1, 1);
 
-  await deploy(['orderProcess_v_1.bpmn']);
+  await deployProcess(['orderProcess_v_1.bpmn']);
 
   const instanceToCancel = await createSingleInstance('orderProcess', 1);
   await createSingleInstance('orderProcess', 1, {
@@ -29,7 +33,7 @@ const setup = async () => {
     1
   );
 
-  await deploy(['callActivityProcess.bpmn', 'calledProcess.bpmn']);
+  await deployProcess(['callActivityProcess.bpmn', 'calledProcess.bpmn']);
 
   const callActivityProcessInstance = await createSingleInstance(
     'CallActivityProcess',

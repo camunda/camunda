@@ -5,12 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import {deploy, createInstances, createSingleInstance} from '../setup-utils';
+import {
+  deployProcess,
+  createInstances,
+  createSingleInstance,
+} from '../setup-utils';
 import {createOperation} from './api';
 import {wait} from './utils/wait';
 
 async function setup() {
-  await deploy(['operationsProcessA.bpmn', 'operationsProcessB.bpmn']);
+  await deployProcess(['operationsProcessA.bpmn', 'operationsProcessB.bpmn']);
 
   const [singleOperationInstance, batchOperationInstances] = await Promise.all([
     createSingleInstance('operationsProcessA', 1),

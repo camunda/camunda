@@ -5,10 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import {deploy, createSingleInstance, completeTask} from '../setup-utils';
+import {
+  deployProcess,
+  createSingleInstance,
+  completeTask,
+} from '../setup-utils';
 
 export async function setup() {
-  await deploy(['multiInstanceProcess.bpmn']);
+  await deployProcess(['multiInstanceProcess.bpmn']);
 
   completeTask('multiInstanceProcessTaskA', false, {}, (job) => {
     return job.complete({...job.variables, i: job.variables.i + 1});

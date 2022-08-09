@@ -5,10 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {deploy, createSingleInstance} from '../setup-utils';
+import {deployProcess, createSingleInstance} from '../setup-utils';
 
 const setup = async () => {
-  await deploy(['onlyIncidentsProcess_v_1.bpmn']);
+  await deployProcess(['onlyIncidentsProcess_v_1.bpmn']);
   const instance = await createSingleInstance('onlyIncidentsProcess', 1, {
     testData: 'something',
   });

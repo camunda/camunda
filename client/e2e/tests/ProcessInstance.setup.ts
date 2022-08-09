@@ -6,7 +6,7 @@
  */
 
 import {
-  deploy,
+  deployProcess,
   createInstances,
   createSingleInstance,
   completeTask,
@@ -14,7 +14,7 @@ import {
 import {wait} from './utils/wait';
 
 export async function setup() {
-  await deploy([
+  await deployProcess([
     'processWithAnIncident.bpmn',
     'processWithMultiIncidents.bpmn',
     'withoutIncidentsProcess_v_1.bpmn',

@@ -5,19 +5,23 @@
  * except in compliance with the proprietary license.
  */
 
-import {deploy, createInstances, createSingleInstance} from '../setup-utils';
+import {
+  deployProcess,
+  createInstances,
+  createSingleInstance,
+} from '../setup-utils';
 import {wait} from './utils/wait';
 
 // time difference between start dates in ms for sorting test
 const startDateDifference = 1000;
 
 async function setup() {
-  await deploy([
+  await deployProcess([
     'instancesTableProcessA.bpmn',
     'instancesTableProcessB_v_1.bpmn',
     'instancesTableProcessForInfiniteScroll.bpmn',
   ]);
-  await deploy(['instancesTableProcessB_v_2.bpmn']);
+  await deployProcess(['instancesTableProcessB_v_2.bpmn']);
 
   const processA = await createInstances('instancesTableProcessA', 1, 30);
 

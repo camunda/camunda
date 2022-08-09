@@ -5,10 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {deploy, createSingleInstance} from '../setup-utils';
+import {deployProcess, createSingleInstance} from '../setup-utils';
 
 export async function setup() {
-  await deploy(['callActivityProcess.bpmn', 'calledProcess.bpmn']);
+  await deployProcess(['callActivityProcess.bpmn', 'calledProcess.bpmn']);
 
   return {
     callActivityProcessInstance: await createSingleInstance(

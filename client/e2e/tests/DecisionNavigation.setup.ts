@@ -5,10 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
-import {deploy, createSingleInstance} from '../setup-utils';
+import {
+  deployProcess,
+  createSingleInstance,
+  deployDecision,
+} from '../setup-utils';
 
 const setup = async () => {
-  await deploy(['invoice.bpmn']);
+  await deployDecision(['invoiceBusinessDecisions.dmn']);
+  await deployProcess(['invoice.bpmn']);
 
   const processInstanceWithFailedDecision = await createSingleInstance(
     'invoice',

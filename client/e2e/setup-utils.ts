@@ -7,7 +7,6 @@
 
 import {ZBClient, IProcessVariables, ZBWorkerTaskHandler} from 'zeebe-node';
 import * as path from 'path';
-import {deployDecisions} from './tests/utils/deployDecisions';
 import {config} from './config';
 
 const zbc = new ZBClient({
@@ -15,13 +14,20 @@ const zbc = new ZBClient({
   onConnectionError: () => console.log('zeebe-node disconnected!'),
 }); // localhost:26500 || ZEEBE_GATEWAY_ADDRESS
 
-deployDecisions();
+function getFullFilePath(filename: string) {
+  return path.join(config.e2eBasePath, 'tests', 'resources', filename);
+}
 
-function deploy(processNames: string[]) {
-  const paths = processNames.map((processName) =>
-    path.join(config.e2eBasePath, 'tests', 'resources', processName)
+function deployDecision(filenames: string[]) {
+  return Promise.all(
+    filenames
+      .map(getFullFilePath)
+      .map((decisionFilename) => zbc.deployResource({decisionFilename}))
   );
-  return zbc.deployProcess(paths);
+}
+
+function deployProcess(filenames: string[]) {
+  return zbc.deployProcess(filenames.map(getFullFilePath));
 }
 
 function createInstances<Variables = IProcessVariables>(
@@ -73,4 +79,10 @@ function completeTask(
   });
 }
 
-export {deploy, createInstances, completeTask, createSingleInstance};
+export {
+  deployProcess,
+  createInstances,
+  completeTask,
+  createSingleInstance,
+  deployDecision,
+};

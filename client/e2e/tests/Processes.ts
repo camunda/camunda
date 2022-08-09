@@ -7,7 +7,7 @@
 
 import {config} from '../config';
 import {setup} from './Processes.setup';
-import {deploy} from '../setup-utils';
+import {deployProcess} from '../setup-utils';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {getPathname} from './utils/getPathname';
@@ -195,7 +195,7 @@ test('Wait for process creation', async (t) => {
     .expect(ProcessesPage.Filters.processName.field.getAttribute('disabled'))
     .eql('true');
 
-  await deploy(['newProcess.bpmn']);
+  await deployProcess(['newProcess.bpmn']);
 
   await t.expect(screen.queryByTestId('diagram').exists).ok();
   await t.expect(screen.queryByTestId('diagram-spinner').exists).notOk();
