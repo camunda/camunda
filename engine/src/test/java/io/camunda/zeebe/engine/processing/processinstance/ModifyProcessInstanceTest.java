@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
@@ -564,6 +565,74 @@ public class ModifyProcessInstanceTest {
     assertThatJobIsCancelled(processInstanceKey, "B");
   }
 
+  @Test
+  public void shouldTerminateElementWithIncidentOnJob() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("A", a -> a.zeebeJobType("A")) // invalid expression
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    ENGINE.job().withType("A").ofInstance(processInstanceKey).fail();
+    final var incidentRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(incidentRecord.getValue().getElementInstanceKey())
+        .modify();
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "A");
+    assertThatJobIsCancelled(processInstanceKey, "A");
+    assertThatIncidentIsResolved(processInstanceKey, "A");
+  }
+
+  @Test
+  public void shouldTerminateElementWithIncidentInRootScope() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("A", a -> a.zeebeJobTypeExpression("A")) // invalid expression
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var incidentRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(incidentRecord.getValue().getElementInstanceKey())
+        .modify();
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "A");
+    assertThatIncidentIsResolved(processInstanceKey, "A");
+  }
+
   private void assertThatElementIsTerminated(
       final long processInstanceKey, final String elementId) {
     Assertions.assertThat(
@@ -581,6 +650,15 @@ public class ModifyProcessInstanceTest {
   private void assertThatJobIsCancelled(final long processInstanceKey, final String elementId) {
     Assertions.assertThat(
             RecordingExporter.jobRecords(JobIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(elementId)
+                .exists())
+        .isTrue();
+  }
+
+  private void assertThatIncidentIsResolved(final long processInstanceKey, final String elementId) {
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId(elementId)
                 .exists())
