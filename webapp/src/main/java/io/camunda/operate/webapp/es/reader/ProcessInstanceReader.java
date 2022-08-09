@@ -44,6 +44,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
@@ -160,10 +161,10 @@ public class ProcessInstanceReader extends AbstractReader {
       .query(constantScoreQuery(query)));
 
     final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
-    if (response.getHits().getTotalHits().value == 1) {
-       final ProcessInstanceForListViewEntity processInstance = ElasticsearchUtil
-          .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, ProcessInstanceForListViewEntity.class);
-        return processInstance;
+    final SearchHits searchHits = response.getHits();
+    if (searchHits.getTotalHits().value == 1 && searchHits.getHits().length == 1) {
+        return ElasticsearchUtil.fromSearchHit(searchHits.getAt(0).getSourceAsString(), objectMapper,
+                ProcessInstanceForListViewEntity.class);
     } else if (response.getHits().getTotalHits().value > 1) {
         throw new NotFoundException(String.format("Could not find unique process instance with id '%s'.", processInstanceKey));
     } else {
