@@ -53,15 +53,10 @@ jobs:
           -P parallel-tests,extract-flaky-tests
           -pl !:zeebe-elasticsearch-exporter
           verify
-      - name: Archive Test Results
-        uses: actions/upload-artifact@v3
-        if: always()
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
         with:
-          name: Integration test results
-          path: |
-            **/target/failsafe-reports/
-            **/hs_err_*.log
-          retention-days: 7
+          name: Integration Tests
   exporter-tests:
     name: Exporter tests
     runs-on: "n1-standard-8-netssd-preempt"
@@ -83,15 +78,10 @@ jobs:
           -D skipUTs -D skipChecks -D failsafe.rerunFailingTestsCount=3
           -pl :zeebe-elasticsearch-exporter
           verify
-      - name: Archive Test Results
-        uses: actions/upload-artifact@v3
-        if: always()
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
         with:
-          name: Exporter test results
-          path: |
-            **/target/failsafe-reports/
-            **/hs_err_*.log
-          retention-days: 7
+          name: Exporter Tests
   project-list:
     # Builds a list of projects where unit tests can be run on hosted runners
     name: List projects
@@ -133,16 +123,10 @@ jobs:
           verify
       - name: Normalize artifact name
         run: echo "ARTIFACT_NAME=$(echo ${{ matrix.project }} | sed 's/\//-/g')" >> $GITHUB_ENV
-      - name: Archive Test Results
-        uses: actions/upload-artifact@v3
-        if: always()
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
         with:
-          name: Unit test results for ${{ env.ARTIFACT_NAME }}
-          path: |
-            **/target/surefire-reports/
-            **/hs_err_*.log
-          retention-days: 7
-          if-no-files-found: ignore
+          name: ${{ env.ARTIFACT_NAME }}
   slow-unit-tests:
     name: Slow unit tests
     runs-on: "n1-standard-8-netssd-preempt"
@@ -167,15 +151,10 @@ jobs:
           -D skipITs -D skipChecks
           -pl :zeebe-workflow-engine
           verify
-      - name: Archive Test Results
-        uses: actions/upload-artifact@v3
-        if: always()
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
         with:
-          name: Slow unit test results
-          path: |
-            **/target/surefire-reports/
-            **/hs_err_*.log
-          retention-days: 7
+          name: Slow Unit Tests
   smoke-tests:
     # This name is hard-referenced from bors.toml
     # Remember to update that if this name, or the matrix.os changes
@@ -208,15 +187,10 @@ jobs:
           -pl qa/integration-tests
           -P smoke-test
           verify
-      - name: Archive Test Results
-        uses: actions/upload-artifact@v3
-        if: always()
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
         with:
-          name: Smoke test results for ${{ matrix.os }}
-          path: |
-            **/target/failsafe-reports/
-            **/hs_err_*.log
-          retention-days: 7
+          name: Smoke Tests ${{ matrix.os }}
   java-randomized-tests:
     name: Java randomized tests
     runs-on: ubuntu-latest
@@ -229,15 +203,10 @@ jobs:
           java-version: '17'
       - run: mvn -B -D skipChecks -D skipTests install
       - run: mvn -T1C -B -D skipChecks -P parallel-tests,include-random-tests test
-      - name: Archive Test Results
-        uses: actions/upload-artifact@v3
-        if: always()
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
         with:
-          name: Java randomized test results
-          path: |
-            **/target/surefire-reports/
-            **/hs_err_*.log
-          retention-days: 7
+          name: Java Randomized Tests
   go-client:
     name: Go client tests
     runs-on: ubuntu-latest
@@ -294,15 +263,10 @@ jobs:
           -D surefire.rerunFailingTestsCount=3
           -pl clients/java
           verify
-      - name: Archive Test Results
-        uses: actions/upload-artifact@v3
-        if: always()
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
         with:
-          name: Java 8 client test results
-          path: |
-            **/target/surefire-reports/
-            **/hs_err_*.log
-          retention-days: 7
+          name: Java 8 Client
 
   # Used by bors to check all tests, including the unit test matrix.
   # New test jobs must be added to the `needs` lists!
