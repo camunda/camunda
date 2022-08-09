@@ -520,6 +520,7 @@ public class ModifyProcessInstanceTest {
 
     // then
     assertThatElementIsTerminated(processInstanceKey, "A");
+    assertThatJobIsCancelled(processInstanceKey, "A");
   }
 
   @Test
@@ -559,6 +560,8 @@ public class ModifyProcessInstanceTest {
     // then
     assertThatElementIsTerminated(processInstanceKey, "A");
     assertThatElementIsTerminated(processInstanceKey, "B");
+    assertThatJobIsCancelled(processInstanceKey, "A");
+    assertThatJobIsCancelled(processInstanceKey, "B");
   }
 
   private void assertThatElementIsTerminated(
@@ -573,5 +576,14 @@ public class ModifyProcessInstanceTest {
         .extracting(Record::getIntent)
         .containsSequence(
             ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED);
+  }
+
+  private void assertThatJobIsCancelled(final long processInstanceKey, final String elementId) {
+    Assertions.assertThat(
+            RecordingExporter.jobRecords(JobIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(elementId)
+                .exists())
+        .isTrue();
   }
 }
