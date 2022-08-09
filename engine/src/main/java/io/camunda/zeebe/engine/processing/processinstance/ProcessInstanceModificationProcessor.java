@@ -164,11 +164,12 @@ public final class ProcessInstanceModificationProcessor
     final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
     final var elementInstanceRecord = elementInstance.getValue();
 
+    stateWriter.appendFollowUpEvent(
+        elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
+
     jobBehavior.cancelJob(elementInstance);
     incidentBehavior.resolveIncidents(elementInstanceKey);
 
-    stateWriter.appendFollowUpEvent(
-        elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATED, elementInstanceRecord);
   }
