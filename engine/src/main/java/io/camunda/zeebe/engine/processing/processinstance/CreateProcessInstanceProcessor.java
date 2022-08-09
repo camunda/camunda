@@ -125,6 +125,7 @@ public final class CreateProcessInstanceProcessor
   public ProcessingError tryHandleError(
       final TypedRecord<ProcessInstanceCreationRecord> typedCommand, final Throwable error) {
     if (error instanceof EventSubscriptionException exception) {
+      // This exception is only thrown for ProcessInstanceCreationRecord with start instructions
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
