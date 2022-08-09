@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -41,13 +43,17 @@ public final class ProcessInstanceModificationProcessor
   private final KeyGenerator keyGenerator;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final BpmnJobBehavior jobBehavior;
+  private final BpmnIncidentBehavior incidentBehavior;
   private final TypedRejectionWriter rejectionWriter;
 
   public ProcessInstanceModificationProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ElementInstanceState elementInstanceState,
-      final ProcessState processState) {
+      final ProcessState processState,
+      final BpmnJobBehavior jobBehavior,
+      final BpmnIncidentBehavior incidentBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     commandWriter = writers.command();
@@ -55,6 +61,8 @@ public final class ProcessInstanceModificationProcessor
     this.keyGenerator = keyGenerator;
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
+    this.jobBehavior = jobBehavior;
+    this.incidentBehavior = incidentBehavior;
   }
 
   @Override
@@ -151,9 +159,14 @@ public final class ProcessInstanceModificationProcessor
 
   private void terminateElement(final long elementInstanceKey) {
     // todo: deal with non-existing element instance (#9983)
-    // todo: delete event subscriptions, cancel jobs and resolve incidents where applicable
-    final var elementInstanceRecord =
-        elementInstanceState.getInstance(elementInstanceKey).getValue();
+    // todo: delete event subscriptions
+
+    final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
+    final var elementInstanceRecord = elementInstance.getValue();
+
+    jobBehavior.cancelJob(elementInstance);
+    incidentBehavior.resolveIncidents(elementInstanceKey);
+
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
     stateWriter.appendFollowUpEvent(
