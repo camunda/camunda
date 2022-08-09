@@ -25,5 +25,6 @@
       "extends": "packages:apollographql",
       "groupName": "Apollo GraphQL packages"
     }
-  ]
+  ],
+  "branchPrefix": "fe-renovate/"
 }
