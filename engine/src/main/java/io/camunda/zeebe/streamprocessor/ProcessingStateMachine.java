@@ -285,7 +285,6 @@ public final class ProcessingStateMachine {
     } catch (final UnrecoverableException unrecoverableException) {
       throw unrecoverableException;
     } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, command, metadata, e);
       onError(e, this::writeRecords);
     }
   }
