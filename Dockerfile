@@ -1,4 +1,4 @@
-FROM alpine:3.16.1 as builder
+FROM alpine:3.16.2 as builder
 
 ARG VERSION=2.0.0
 ARG DISTRO=production
@@ -18,7 +18,7 @@ RUN rm ${BUILD_DIR}/config/environment-config.yaml
 
 ##### FINAL IMAGE #####
 
-FROM alpine:3.16.1
+FROM alpine:3.16.2
 
 ENV WAIT_FOR=
 ENV WAIT_FOR_TIMEOUT=30
