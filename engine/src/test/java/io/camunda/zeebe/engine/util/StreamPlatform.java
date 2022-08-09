@@ -170,8 +170,7 @@ public final class StreamPlatform {
   }
 
   public Path createRuntimeFolder(final SynchronousLogStream stream) {
-    final Path rootDirectory =
-        dataDirectory.resolve(stream.getLogName()).resolve("state");
+    final Path rootDirectory = dataDirectory.resolve(stream.getLogName()).resolve("state");
 
     try {
       Files.createDirectories(rootDirectory);
@@ -221,7 +220,8 @@ public final class StreamPlatform {
     final String logName = stream.getLogName();
     recordProcessor = mock(RecordProcessor.class);
     when(recordProcessor.process(any(), any())).thenReturn(EmptyProcessingResult.INSTANCE);
-    when(recordProcessor.onProcessingError(any(), any(), any())).thenReturn(EmptyProcessingResult.INSTANCE);
+    when(recordProcessor.onProcessingError(any(), any(), any()))
+        .thenReturn(EmptyProcessingResult.INSTANCE);
 
     final var builder =
         StreamProcessor.builder()
@@ -284,7 +284,9 @@ public final class StreamPlatform {
   }
 
   public Phase getCurrentProcessorPhase() {
-    return getStreamProcessor(getLogName(DEFAULT_PARTITION)).getCurrentPhase().join(10, TimeUnit.SECONDS);
+    return getStreamProcessor(getLogName(DEFAULT_PARTITION))
+        .getCurrentPhase()
+        .join(10, TimeUnit.SECONDS);
   }
 
   public StreamProcessor getStreamProcessor() {

@@ -46,12 +46,12 @@ public final class NewStreamProcessorReplayModeTest {
         event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
 
     // when
-    streamPlatform
-        .startStreamProcessorNotWaitForOpening();
+    streamPlatform.startStreamProcessorNotWaitForOpening();
 
     Awaitility.await()
         .untilAsserted(
-            () -> assertThat(streamPlatform.getCurrentProcessorPhase()).isEqualTo(Phase.PROCESSING));
+            () ->
+                assertThat(streamPlatform.getCurrentProcessorPhase()).isEqualTo(Phase.PROCESSING));
 
     streamPlatform.writeBatch(
         command().processInstance(ACTIVATE_ELEMENT, RECORD),

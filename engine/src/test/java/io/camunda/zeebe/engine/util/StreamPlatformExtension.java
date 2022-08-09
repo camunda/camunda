@@ -48,7 +48,10 @@ public class StreamPlatformExtension implements BeforeEachCallback {
     return (StreamProcessorTestContext)
         store.getOrComputeIfAbsent(FIELD_STATE, (key) -> new StreamProcessorTestContext());
   }
-  private void injectFields(final ExtensionContext extensionContext, final Object testInstance,
+
+  private void injectFields(
+      final ExtensionContext extensionContext,
+      final Object testInstance,
       final Class<?> testClass) {
 
     ReflectionUtils.findFields(
@@ -58,7 +61,8 @@ public class StreamPlatformExtension implements BeforeEachCallback {
         .forEach(
             field -> {
               try {
-                makeAccessible(field).set(testInstance, lookupOrCreate(extensionContext).streamPlatform);
+                makeAccessible(field)
+                    .set(testInstance, lookupOrCreate(extensionContext).streamPlatform);
               } catch (final Throwable t) {
                 ExceptionUtils.throwAsUncheckedException(t);
               }
@@ -73,10 +77,12 @@ public class StreamPlatformExtension implements BeforeEachCallback {
     public StreamProcessorTestContext() {
       closables = new ArrayList<AutoCloseable>();
       // actor scheduler
-      final var builder = ActorScheduler.newActorScheduler()
-          .setCpuBoundActorThreadCount(Math.max(1, Runtime.getRuntime().availableProcessors() - 2))
-          .setIoBoundActorThreadCount(2)
-          .setActorClock(clock);
+      final var builder =
+          ActorScheduler.newActorScheduler()
+              .setCpuBoundActorThreadCount(
+                  Math.max(1, Runtime.getRuntime().availableProcessors() - 2))
+              .setIoBoundActorThreadCount(2)
+              .setActorClock(clock);
 
       final ActorScheduler actorScheduler = builder.build();
       actorScheduler.start();
