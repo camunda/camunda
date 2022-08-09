@@ -92,7 +92,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return lastProcessedPositionState;
   }
 
-  public StreamProcessorContext listener(final StreamProcessorListener streamProcessorListener) {
+  StreamProcessorContext listener(final StreamProcessorListener streamProcessorListener) {
     this.streamProcessorListener = streamProcessorListener;
     return this;
   }

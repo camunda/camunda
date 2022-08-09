@@ -78,9 +78,6 @@ public class Engine implements RecordProcessor {
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);
 
-    recordProcessorContext.setStreamProcessorListener(
-        typedProcessorContext.getStreamProcessorListener());
-
     recordProcessorContext.addLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
   }

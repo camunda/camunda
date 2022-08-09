@@ -16,7 +16,6 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
 
   private final int partitionId;
   private final ProcessingScheduleService scheduleService;
-  private StreamProcessorListener streamProcessorListener;
   private final ZeebeDbState zeebeState;
   private final Writers writers;
 
@@ -49,16 +48,5 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   @Override
   public Writers getWriters() {
     return writers;
-  }
-
-  @Override
-  public TypedRecordProcessorContext listener(
-      final StreamProcessorListener streamProcessorListener) {
-    this.streamProcessorListener = streamProcessorListener;
-    return this;
-  }
-
-  public StreamProcessorListener getStreamProcessorListener() {
-    return streamProcessorListener;
   }
 }
