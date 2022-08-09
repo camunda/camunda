@@ -1,6 +1,6 @@
 {
   "extends": ["config:base", ":rebaseStalePrs"],
-  "includePaths": ["client/**/**"],
+  "includePaths": ["client/**", ".github/**", ".ci/**"],
   "ignorePaths": ["client/pom.xml"],
   "packageRules": [
     {
