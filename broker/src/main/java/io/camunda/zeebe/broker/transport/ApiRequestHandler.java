@@ -26,18 +26,9 @@ import java.util.function.Supplier;
 public abstract class ApiRequestHandler<R extends RequestReader<?>, W extends ResponseWriter>
     extends AsyncApiRequestHandler<R, W> {
 
-  protected ApiRequestHandler(final R requestReader, final W responseWriter) {
-    super(
-        () -> requestReader,
-        () -> responseWriter,
-        new Supplier<>() {
-          private final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter();
-
-          @Override
-          public ErrorResponseWriter get() {
-            return errorResponseWriter;
-          }
-        });
+  protected ApiRequestHandler(
+      final Supplier<R> requestReaderSupplier, final Supplier<W> responseWriterSupplier) {
+    super(requestReaderSupplier, responseWriterSupplier);
   }
 
   protected abstract Either<ErrorResponseWriter, W> handle(

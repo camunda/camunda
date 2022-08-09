@@ -33,7 +33,7 @@ final class CommandApiRequestHandler
   private boolean isDiskSpaceAvailable = true;
 
   CommandApiRequestHandler() {
-    super(new CommandApiRequestReader(), new CommandApiResponseWriter());
+    super(CommandApiRequestReader::new, CommandApiResponseWriter::new);
   }
 
   @Override

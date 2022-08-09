@@ -37,7 +37,7 @@ public final class BackupApiRequestHandler
       final AtomixServerTransport transport,
       final LogStreamRecordWriter logStreamRecordWriter,
       final int partitionId) {
-    super(new BackupApiRequestReader(), new BackupApiResponseWriter());
+    super(BackupApiRequestReader::new, BackupApiResponseWriter::new);
     this.logStreamRecordWriter = logStreamRecordWriter;
     this.transport = transport;
     this.partitionId = partitionId;

@@ -41,7 +41,7 @@ public final class QueryApiRequestHandler
   private final String actorName;
 
   public QueryApiRequestHandler(final QueryApiCfg config, final int nodeId) {
-    super(new QueryRequestReader(), new QueryResponseWriter());
+    super(QueryRequestReader::new, QueryResponseWriter::new);
     this.config = config;
     actorName = buildActorName(nodeId, "QueryApi");
   }

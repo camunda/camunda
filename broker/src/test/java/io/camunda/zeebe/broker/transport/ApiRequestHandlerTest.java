@@ -13,54 +13,52 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
-import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
+import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.util.Either;
+import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-public class ApiRequestHandlerTest {
-
-  @Rule
-  public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
-
-  private RequestReader<?> reader;
-  private ResponseWriter writer;
-  private TestApiRequestHandler handler;
-
-  @Before
-  public void setUp() {
-    reader = mock(RequestReader.class);
-    writer = mock(ResponseWriter.class);
-    handler = new TestApiRequestHandler(reader, writer);
-    schedulerRule.submitActor(handler);
-  }
+final class ApiRequestHandlerTest {
+  @RegisterExtension
+  public final ControlledActorSchedulerExtension actorScheduler =
+      new ControlledActorSchedulerExtension();
 
   @Test
-  public void shouldReadRequestBuffer() {
+  void shouldReadRequestBuffer() {
     // given
+    final var reader = mock(RequestReader.class);
+    final var writer = mock(ResponseWriter.class);
+    final var handler = new TestApiRequestHandler(() -> reader, () -> writer);
+    actorScheduler.submitActor(handler);
+
     final var buffer = mock(DirectBuffer.class);
     final var output = mock(ServerOutput.class);
 
     // when
     handler.onRequest(output, 0, 0, buffer, 0, 1);
-    schedulerRule.workUntilDone();
+    actorScheduler.workUntilDone();
 
     // then
     verify(reader).wrap(buffer, 0, 1);
   }
 
   @Test
-  public void shouldResetReaderAndWriter() {
+  void shouldResetReaderAndWriter() {
     // given
+    final var reader = mock(RequestReader.class);
+    final var writer = mock(ResponseWriter.class);
+    final var handler = new TestApiRequestHandler(() -> reader, () -> writer);
+    actorScheduler.submitActor(handler);
+
     final var buffer = mock(DirectBuffer.class);
     final var output = mock(ServerOutput.class);
 
     // when
     handler.onRequest(output, 0, 0, buffer, 0, 1);
-    schedulerRule.workUntilDone();
+    actorScheduler.workUntilDone();
 
     // then
 
@@ -69,8 +67,13 @@ public class ApiRequestHandlerTest {
   }
 
   @Test
-  public void shouldWriteResponse() {
+  void shouldWriteResponse() {
     // given
+    final var reader = mock(RequestReader.class);
+    final var writer = mock(ResponseWriter.class);
+    final var handler = new TestApiRequestHandler(() -> reader, () -> writer);
+    actorScheduler.submitActor(handler);
+
     final var buffer = mock(DirectBuffer.class);
     final var output = mock(ServerOutput.class);
     final var partitionId = 12;
@@ -79,7 +82,7 @@ public class ApiRequestHandlerTest {
 
     // when
     handler.onRequest(output, partitionId, requestId, buffer, 0, 1);
-    schedulerRule.workUntilDone();
+    actorScheduler.workUntilDone();
 
     // then
     verify(writer).tryWriteResponse(output, partitionId, requestId);
@@ -88,8 +91,9 @@ public class ApiRequestHandlerTest {
   private static class TestApiRequestHandler
       extends ApiRequestHandler<RequestReader<?>, ResponseWriter> {
     TestApiRequestHandler(
-        final RequestReader<?> requestReader, final ResponseWriter responseWriter) {
-      super(requestReader, responseWriter);
+        final Supplier<RequestReader<?>> requestReaderSupplier,
+        final Supplier<ResponseWriter> responseWriterSupplier) {
+      super(requestReaderSupplier, responseWriterSupplier);
     }
 
     @Override
