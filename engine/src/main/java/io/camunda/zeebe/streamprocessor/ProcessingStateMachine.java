@@ -325,6 +325,7 @@ public final class ProcessingStateMachine {
           final long position = typedCommand.getPosition();
           final ProcessingResultBuilder processingResultBuilder =
               new DirectProcessingResultBuilder(context, position);
+          // todo(#10047): replace this reset method by using Buffered Writers
           processingResultBuilder.reset();
 
           logStreamWriter.configureSourceContext(position);
