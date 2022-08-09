@@ -82,7 +82,9 @@ type Variable {
 }
 # Change or add a variable with name and value.
 input VariableInput {
+    # Name of the variable.
     name: String!
+    # Value of the variable. Complex values, e.g. a list of objects, must be serialized as JSON.
     value: String!
 }
 # Describes the user.
