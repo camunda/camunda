@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMes
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
@@ -83,14 +82,12 @@ public final class CatchEventBehavior {
    * Unsubscribe from all events in the scope of the context.
    *
    * @param context the context to subscript from
-   * @param commandWriter the writer for unsubscribe commands
    * @param sideEffects the side effects for unsubscribe actions
    */
   public void unsubscribeFromEvents(
       final BpmnElementContext context,
-      final TypedCommandWriter commandWriter,
       final SideEffects sideEffects) {
-    unsubscribeFromEvents(context, commandWriter, sideEffects, elementId -> true);
+    unsubscribeFromEvents(context, sideEffects, elementId -> true);
   }
 
   /**
@@ -98,15 +95,13 @@ public final class CatchEventBehavior {
    * subscriptions in the scope.
    *
    * @param context the context to subscript from
-   * @param commandWriter the writer for unsubscribe commands
    * @param sideEffects the side effects for unsubscribe actions
    */
   public void unsubscribeEventSubprocesses(
       final BpmnElementContext context,
-      final TypedCommandWriter commandWriter,
       final SideEffects sideEffects) {
     unsubscribeFromEvents(
-        context, commandWriter, sideEffects, elementId -> isEventSubprocess(context, elementId));
+        context, sideEffects, elementId -> isEventSubprocess(context, elementId));
   }
 
   private boolean isEventSubprocess(
@@ -125,17 +120,15 @@ public final class CatchEventBehavior {
    * other event subscriptions that don't match the filter.
    *
    * @param context the context to subscript from
-   * @param commandWriter the writer for unsubscribe commands
    * @param sideEffects the side effects for unsubscribe actions
    * @param elementIdFilter the filter for events to unsubscribe
    */
   private void unsubscribeFromEvents(
       final BpmnElementContext context,
-      final TypedCommandWriter commandWriter,
       final SideEffects sideEffects,
       final Predicate<DirectBuffer> elementIdFilter) {
 
-    unsubscribeFromTimerEvents(context, commandWriter, elementIdFilter);
+    unsubscribeFromTimerEvents(context, elementIdFilter);
     unsubscribeFromMessageEvents(context, sideEffects, elementIdFilter);
   }
 
@@ -320,19 +313,17 @@ public final class CatchEventBehavior {
 
   private void unsubscribeFromTimerEvents(
       final BpmnElementContext context,
-      final TypedCommandWriter commandWriter,
       final Predicate<DirectBuffer> elementIdFilter) {
     timerInstanceState.forEachTimerForElementInstance(
         context.getElementInstanceKey(),
         timer -> {
           if (elementIdFilter.test(timer.getHandlerNodeId())) {
-            unsubscribeFromTimerEvent(timer, commandWriter);
+            unsubscribeFromTimerEvent(timer);
           }
         });
   }
 
-  public void unsubscribeFromTimerEvent(
-      final TimerInstance timer, final TypedCommandWriter commandWriter) {
+  public void unsubscribeFromTimerEvent(final TimerInstance timer) {
     timerRecord.reset();
     timerRecord
         .setElementInstanceKey(timer.getElementInstanceKey())
@@ -342,7 +333,7 @@ public final class CatchEventBehavior {
         .setTargetElementId(timer.getHandlerNodeId())
         .setProcessDefinitionKey(timer.getProcessDefinitionKey());
 
-    commandWriter.appendFollowUpCommand(timer.getKey(), TimerIntent.CANCEL, timerRecord);
+    stateWriter.appendFollowUpEvent(timer.getKey(), TimerIntent.CANCELED, timerRecord);
   }
 
   private void unsubscribeFromMessageEvents(

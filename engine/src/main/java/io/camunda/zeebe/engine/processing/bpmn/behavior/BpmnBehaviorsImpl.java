@@ -83,7 +83,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new BpmnEventSubscriptionBehavior(
             catchEventBehavior,
             eventTriggerBehavior,
-            commandWriter,
             sideEffects,
             zeebeState,
             zeebeState.getKeyGenerator());

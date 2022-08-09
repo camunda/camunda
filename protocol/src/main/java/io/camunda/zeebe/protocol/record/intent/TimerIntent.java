@@ -21,6 +21,11 @@ public enum TimerIntent implements ProcessInstanceRelatedIntent {
   TRIGGER((short) 1),
   TRIGGERED((short) 2),
 
+  /**
+   * @deprecated for removal since 8.1.0, removal can only happen if we break backwards
+   *     compatibility with older versions because Cancel command can still exist on log streams
+   */
+  @Deprecated
   CANCEL((short) 3),
   CANCELED((short) 4);
 
