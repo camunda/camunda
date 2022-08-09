@@ -285,7 +285,6 @@ public final class ProcessingStateMachine {
     } catch (final UnrecoverableException unrecoverableException) {
       throw unrecoverableException;
     } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, command, metadata, e);
       onError(e, this::writeRecords);
     }
   }
@@ -326,6 +325,8 @@ public final class ProcessingStateMachine {
           final long position = typedCommand.getPosition();
           final ProcessingResultBuilder processingResultBuilder =
               new DirectProcessingResultBuilder(context, position);
+          // todo(#10047): replace this reset method by using Buffered Writers
+          processingResultBuilder.reset();
 
           logStreamWriter.configureSourceContext(position);
 

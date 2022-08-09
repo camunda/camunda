@@ -8,13 +8,19 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import org.assertj.core.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -182,6 +188,21 @@ public class CreateProcessInstanceRejectionTest {
                 .onlyCommandRejections()
                 .getFirst())
         .hasIntent(ProcessInstanceCreationIntent.CREATE)
-        .hasRejectionType(RejectionType.PROCESSING_ERROR);
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "expected to subscribe to catch event(s) of 'subprocess' but failed to evaluate "
+                + "expression 'unknown_var': no variable found for name 'unknown_var'");
+
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .limit(
+                    r ->
+                        r.getRecordType() == RecordType.COMMAND_REJECTION
+                            && r.getIntent() == ProcessInstanceCreationIntent.CREATE))
+        .extracting(Record::getValueType, Record::getIntent)
+        .describedAs("Expect that no process instance is activated")
+        .doesNotContain(
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 }

@@ -23,4 +23,20 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
       final TypedRecord<T> record, final Consumer<SideEffectProducer> sideEffect) {
     processRecord(record);
   }
+
+  /**
+   * Try to handle an error that occurred during processing.
+   *
+   * @param command The command that was being processed when the error occurred
+   * @param error The error that occurred, and the processor should attempt to handle
+   * @return The type of the processing error. Default: {@link ProcessingError#UNEXPECTED_ERROR}.
+   */
+  default ProcessingError tryHandleError(final TypedRecord<T> command, final Throwable error) {
+    return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  enum ProcessingError {
+    EXPECTED_ERROR,
+    UNEXPECTED_ERROR
+  }
 }

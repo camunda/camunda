@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -41,6 +42,17 @@ public interface CommandProcessor<T extends UnifiedRecordValue> {
       final long key,
       final Intent intent,
       final T value) {}
+
+  /**
+   * Try to handle an error that occurred during processing.
+   *
+   * @param command The command that was being processed when the error occurred
+   * @param error The error that occurred, and the processor should attempt to handle
+   * @return The type of the processing error. Default: {@link ProcessingError#UNEXPECTED_ERROR}.
+   */
+  default ProcessingError tryHandleError(final TypedRecord<T> command, final Throwable error) {
+    return ProcessingError.UNEXPECTED_ERROR;
+  }
 
   interface CommandControl<T> {
 
