@@ -31,6 +31,8 @@ import javax.servlet.http.HttpServletResponse;
 public class ForwardErrorController implements ErrorController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ForwardErrorController.class);
+  public static final String INTERNAL_API = "/api/";
+  public static final String PUBLIC_API = "/v1/";
   @Autowired
   private OperateProfileService operateProfileService;
 
@@ -43,7 +45,7 @@ public class ForwardErrorController implements ErrorController {
     if (operateProfileService.isLoginDelegated()  && !requestedURI.contains(LOGIN_RESOURCE) && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request, requestedURI);
     } else {
-      if (requestedURI.contains("/api/")) {
+      if (apiWasRequested(requestedURI)) {
         ModelAndView modelAndView = new ModelAndView();
         Integer statusCode = (Integer) request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
         Exception exception = (Exception) request.getAttribute(
@@ -54,6 +56,10 @@ public class ForwardErrorController implements ErrorController {
       }
       return forwardToRootPage();
     }
+  }
+
+  private boolean apiWasRequested(final String uri) {
+    return uri.contains(INTERNAL_API) || uri.contains(PUBLIC_API);
   }
 
   private ModelAndView forwardToRootPage() {
