@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
@@ -486,5 +487,91 @@ public class ModifyProcessInstanceTest {
                 .findAny())
         .describedAs("Expect the process instance to have been completed")
         .isPresent();
+  }
+
+  @Test
+  public void shouldTerminateElementInRootScope() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("A", a -> a.zeebeJobType("A"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst()
+            .getKey();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(elementInstanceKey)
+        .modify();
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "A");
+  }
+
+  @Test
+  public void shouldTerminateMultipleElementsInRootScope() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .parallelGateway()
+                .serviceTask("A", a -> a.zeebeJobType("A"))
+                .endEvent()
+                .moveToLastGateway()
+                .serviceTask("B", b -> b.zeebeJobType("B"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementsInstanceKeys =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .limit(2)
+            .collect(Collectors.toMap(r -> r.getValue().getElementId(), Record::getKey));
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(elementsInstanceKeys.get("A"))
+        .terminateElement(elementsInstanceKeys.get("B"))
+        .modify();
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "A");
+    assertThatElementIsTerminated(processInstanceKey, "B");
+  }
+
+  private void assertThatElementIsTerminated(
+      final long processInstanceKey, final String elementId) {
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .onlyEvents()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(elementId)
+                .limit(elementId, ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .toList())
+        .extracting(Record::getIntent)
+        .containsSequence(
+            ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED);
   }
 }
