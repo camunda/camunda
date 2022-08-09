@@ -40,6 +40,9 @@ public final class StubbedBrokerClient implements BrokerClient {
   public StubbedBrokerClient() {}
 
   @Override
+  public void start() {}
+
+  @Override
   public void close() {}
 
   @Override

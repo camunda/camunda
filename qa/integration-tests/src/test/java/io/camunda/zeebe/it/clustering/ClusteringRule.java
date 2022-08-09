@@ -45,6 +45,7 @@ import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.Gateway;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
@@ -406,16 +407,19 @@ public final class ClusteringRule extends ExternalResource {
 
     actorScheduler.start();
 
-    final Gateway gateway =
-        new Gateway(
+    final var brokerClient =
+        new BrokerClientImpl(
             gatewayCfg,
             atomixCluster.getMessagingService(),
             atomixCluster.getMembershipService(),
             atomixCluster.getEventService(),
             actorScheduler);
+    brokerClient.start();
+    final Gateway gateway = new Gateway(gatewayCfg, brokerClient, actorScheduler);
     closeables.manage(actorScheduler::stop);
     closeables.manage(gateway::stop);
     closeables.manage(atomixCluster::stop);
+    closeables.manage(brokerClient);
     return gateway;
   }
 
