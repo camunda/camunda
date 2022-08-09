@@ -133,7 +133,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean process = true;
     public boolean processInstance = true;
     public boolean processInstanceCreation = false;
-    public boolean processInstanceModification = false;
+    public boolean processInstanceModification = true;
     public boolean processMessageSubscription = true;
     public boolean variable = true;
     public boolean variableDocument = true;
