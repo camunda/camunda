@@ -27,20 +27,16 @@ jobs:
           - 5000:5000
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.4.1
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-      - uses: stCarolas/setup-maven@v4.4
-        with:
-          maven-version: 3.8.5
+      - uses: ./.github/actions/setup-zeebe
       - uses: ./.github/actions/use-ci-nexus-cache
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
       - uses: ./.github/actions/build-docker
         with:
           repository: localhost:5000/camunda/zeebe
           version: current-test
           push: true
-          package: true
+          distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Prepare Testcontainers Cloud agent
         if: env.TC_CLOUD_TOKEN != ''
         run: |
@@ -66,15 +62,13 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.4.1
+      - uses: ./.github/actions/setup-zeebe
         with:
-          distribution: 'temurin'
-          java-version: '17'
-      - uses: stCarolas/setup-maven@v4.4
-        with:
-          maven-version: 3.8.5
+          go: false
       - uses: ./.github/actions/use-ci-nexus-cache
-      - run: mvn -B -DskipChecks -DskipTests install
+      - uses: ./.github/actions/build-zeebe
+        with:
+          go: false
       - run: >
           mvn -B --no-snapshot-updates
           -D skipUTs -D skipChecks -D failsafe.rerunFailingTestsCount=3
@@ -109,15 +103,13 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.4.1
+      - uses: ./.github/actions/setup-zeebe
         with:
-          distribution: 'temurin'
-          java-version: '17'
-      - run: >
-          mvn -B
-          -D skipTests -D skipChecks
-          -am -pl ${{ matrix.project }}
-          install
+          go: false
+      - uses: ./.github/actions/build-zeebe
+        with:
+          go: false
+          maven-extra-args: -am -pl ${{ matrix.project }}
       - run: >
           mvn -B --no-snapshot-updates
           -D skipITs -D skipChecks
@@ -135,19 +127,14 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.4.1
+      - uses: ./.github/actions/setup-zeebe
         with:
-          distribution: 'temurin'
-          java-version: '17'
-      - uses: stCarolas/setup-maven@v4.4
-        with:
-          maven-version: 3.8.5
+          go: false
       - uses: ./.github/actions/use-ci-nexus-cache
-      - run: >
-          mvn -B
-          -D skipTests -D skipChecks
-          -am -pl :zeebe-workflow-engine
-          install
+      - uses: ./.github/actions/build-zeebe
+        with:
+          go: false
+          maven-extra-args: -am -pl engine/
       - run: >
           mvn -B --no-snapshot-updates
           -D skipITs -D skipChecks
@@ -171,17 +158,13 @@ jobs:
       JAVA_TOOL_OPTIONS: -XX:+TieredCompilation -XX:TieredStopAtLevel=1
     steps:
       - uses: actions/checkout@v3
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3.4.1
+      - uses: ./.github/actions/setup-zeebe
         with:
-          java-version: '17'
-          distribution: 'temurin'
-      - name: Build relevant modules
-        run: >
-          mvn -B
-          -D skipTests -D skipChecks "-D maven.javadoc.skip=true"
-          -am -pl qa/integration-tests
-          install
+          go: false
+      - uses: ./.github/actions/build-zeebe
+        with:
+          go: false
+          maven-extra-args: -am -pl qa/integration-tests
       - name: Run smoke test
         run: >
           mvn -B --no-snapshot-updates
@@ -199,11 +182,12 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3.4.1
+      - uses: ./.github/actions/setup-zeebe
         with:
-          distribution: 'temurin'
-          java-version: '17'
-      - run: mvn -B -D skipChecks -D skipTests install
+          go: false
+      - uses: ./.github/actions/build-zeebe
+        with:
+          go: false
       - run: mvn -T1C -B -D skipChecks -P parallel-tests,include-random-tests test
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
@@ -215,44 +199,46 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version-file: 'clients/go/go.mod'
-          cache: true
-          cache-dependency-path: 'clients/go/go.sum'
-      - name: Check gocompat
+      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+      # Once we're on Go 1.18, use the official gorelease to do this
+      - name: Check backwards compatibility
+        working-directory: clients/go/
         run: |
-          curl -sL https://github.com/smola/gocompat/releases/download/v0.3.0/gocompat_linux_amd64.tar.gz | tar xzvf - gocompat_linux_amd64
+          go install github.com/smola/gocompat/...@v0.3.0
           PREFIX=github.com/camunda/zeebe/clients/go/v8
           EXCLUDE=""
           for file in {internal,cmd/zbctl/internal}/*; do
             EXCLUDE="$EXCLUDE --exclude-package $PREFIX/$file"
           done
-          ./gocompat_linux_amd64 compare --go1compat ${EXCLUDE} ./...
-        working-directory: clients/go/
+          gocompat compare --go1compat ${EXCLUDE} ./...
       - uses: ./.github/actions/build-docker
         id: build-docker
         with:
           repository: camunda/zeebe
           version: current-test
-          package: true
-      - run: go test -mod=vendor -v ./...
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+      - name: Run Go tests
         working-directory: clients/go
+        run: go test -mod=vendor -v ./...
   java-client:
     name: Java client tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v3
-      # First, install dependencies with JDK 17
-      - uses: actions/setup-java@v3.4.1
+      # First package the complete application
+      - uses: ./.github/actions/setup-zeebe
         with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
-      - run: mvn -B -D skipChecks -D skipTests -am -pl clients/java install
+          go: false
+      - uses: ./.github/actions/build-zeebe
+        with:
+          go: false
+          maven-extra-args: -am -pl clients/java
+      # This is a workaround for java 8, which does not support the --add-exports options
+      - run: rm .mvn/jvm.config
       # Then run client tests with JDK 8
-      - run: rm .mvn/jvm.config # This is a workaround for java 8, which does not support the --add-exports options
       - uses: actions/setup-java@v3.4.1
         with:
           java-version: '8'

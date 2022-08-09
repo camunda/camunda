@@ -1,0 +1,45 @@
+# This action sets up the environment with the required tech stack in order to build, install, and
+# run Zeebe.
+
+---
+name: Setup Zeebe
+description: Sets up the required stack to build, install, and run Zeebe
+
+inputs:
+  go:
+    description: If true, will set up Golang; defaults to true
+    required: false
+    default: "true"
+  java:
+    description: If true, will set up Java; defaults to true
+    required: false
+    default: "true"
+  java-version:
+    description: The JDK version to setup
+    default: "17"
+    required: false
+  maven-version:
+    description: The Maven version to setup
+    default: "3.8.5"
+    required: false
+
+outputs: {}
+
+runs:
+  using: composite
+  steps:
+    - if: ${{ inputs.java == 'true' }}
+      uses: actions/setup-java@v3.4.1
+      with:
+        distribution: 'temurin'
+        java-version: ${{ inputs.java-version }}
+    - if: ${{ inputs.java == 'true' }}
+      uses: stCarolas/setup-maven@v4.4
+      with:
+        maven-version: ${{ inputs.maven-version }}
+    - if: ${{ inputs.go == 'true' }}
+      uses: actions/setup-go@v3
+      with:
+        go-version-file: 'clients/go/go.mod'
+        cache: true
+        cache-dependency-path: 'clients/go/go.sum'
