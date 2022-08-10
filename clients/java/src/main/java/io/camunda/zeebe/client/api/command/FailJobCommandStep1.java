@@ -56,5 +56,15 @@ public interface FailJobCommandStep1 {
      *     it to the broker.
      */
     FailJobCommandStep2 errorMessage(String errorMsg);
+
+    /**
+     * Sets the tenant ID associated with this command. If the associated job does not belong to
+     * this tenant, the command will fail.
+     *
+     * @param tenantId the tenant ID for this command
+     * @return the builder for this command. Call #send() to complete the command and send it to the
+     *     broker.
+     */
+    FailJobCommandStep2 tenantId(final String tenantId);
   }
 }
