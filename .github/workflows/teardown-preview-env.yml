@@ -25,7 +25,7 @@ jobs:
       # Setup: checkout code. This is required because we are using
       # composite actions and deployment manifests.
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       #########################################################################
       # Tear down preview environment
       - name: Tear down ${{ steps.params.outputs.deployment_id }} Preview Environment
