@@ -278,6 +278,11 @@ const theme = {
         instanceHeader: {
           backgroundColor: DARK_COLORS.ui03,
         },
+        moveTokenBanner: {
+          backgroundColor: DARK_COLORS.ui05,
+          separatorColor: DARK_COLORS.ui06,
+          color: SEMANTIC_COLORS.white,
+        },
       },
       emptyMessage: {
         color: SEMANTIC_COLORS.grey,
@@ -933,6 +938,9 @@ const theme = {
         footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
         lastModification: `0 3px 4px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
       },
+      topPanel: {
+        moveTokenBanner: `0 3px 4px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
+      },
       modules: {
         button: {
           default: `0 2px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.35)}`,
@@ -1152,6 +1160,11 @@ const theme = {
         backgroundColor: LIGHT_COLORS.ui04,
         instanceHeader: {
           backgroundColor: LIGHT_COLORS.ui02,
+        },
+        moveTokenBanner: {
+          backgroundColor: LIGHT_COLORS.ui05,
+          separatorColor: LIGHT_COLORS.ui03,
+          color: DARK_COLORS.ui04,
         },
       },
       emptyMessage: {
@@ -1799,6 +1812,9 @@ const theme = {
       modificationMode: {
         footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
         lastModification: `0 3px 4px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
+      },
+      topPanel: {
+        moveTokenBanner: `0 3px 4px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
       },
       modules: {
         button: {

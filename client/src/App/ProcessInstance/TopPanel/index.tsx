@@ -28,6 +28,7 @@ import {tracking} from 'modules/tracking';
 import {MetadataPopover} from './MetadataPopover';
 import {modificationsStore} from 'modules/stores/modifications';
 import {ModificationDropdown} from './ModificationDropdown';
+import {MoveTokenBanner} from './MoveTokenBanner';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 
@@ -155,7 +156,9 @@ const TopPanel: React.FC<Props> = observer(() => {
             {processInstance?.state === 'INCIDENT' && (
               <IncidentsWrapper setIsInTransition={setIsInTransition} />
             )}
-
+            {modificationsStore.state.status === 'moving-token' && (
+              <MoveTokenBanner />
+            )}
             {xml !== null && (
               <Diagram
                 xml={xml}

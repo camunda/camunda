@@ -262,4 +262,53 @@ describe('TopPanel', () => {
       )
     ).toBeInTheDocument();
   });
+
+  it('should display move token banner in moving mode', async () => {
+    processInstanceDetailsDiagramStore.init();
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockCallActivityProcessXML))
+      ),
+      rest.post(
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
+        (_, res, ctx) => res.once(ctx.json(calledInstanceMetadata))
+      )
+    );
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      })
+    );
+
+    const {user} = render(<TopPanel />, {
+      wrapper: Wrapper,
+    });
+
+    modificationsStore.enableModificationMode();
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'taskD',
+    });
+
+    expect(
+      await screen.findByText(/Flow Node Modifications/)
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByText(/select the target flow node in the diagram/i)
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /move/i}));
+
+    expect(
+      screen.getByText(/select the target flow node in the diagram/i)
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Discard'}));
+
+    expect(
+      screen.queryByText(/select the target flow node in the diagram/i)
+    ).not.toBeInTheDocument();
+  });
 });
