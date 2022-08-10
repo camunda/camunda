@@ -26,6 +26,9 @@ message ActivateJobsRequest {
   // if the requestTimeout = 0, a default timeout is used.
   // if the requestTimeout < 0, long polling is disabled and the request is completed immediately, even when no job is activated.
   int64 requestTimeout = 6;
+  // the tenant id of the jobs to activate
+  // if a tenant id is not defined, the default value is DEFAULT_TENANT
+  string tenantId = 7;
 }
 
 message ActivateJobsResponse {
@@ -69,6 +72,9 @@ message CancelProcessInstanceRequest {
   // the process instance key (as, for example, obtained from
   // CreateProcessInstanceResponse)
   int64 processInstanceKey = 1;
+  // the tenant id of the process instance to cancel
+  // if a tenant id is not defined, the default value is DEFAULT_TENANT
+  string tenantId = 2;
 }
 
 message CancelProcessInstanceResponse {
@@ -79,6 +85,9 @@ message CompleteJobRequest {
   int64 jobKey = 1;
   // a JSON document representing the variables in the current task scope
   string variables = 2;
+  // the tenant id of the job that is completed
+  // if a tenant id is not defined, the default value is DEFAULT_TENANT
+  string tenantId = 3;
 }
 
 message CompleteJobResponse {
@@ -102,6 +111,9 @@ message CreateProcessInstanceRequest {
   // will start at the start event. If non-empty the process instance will apply start
   // instructions after it has been created
   repeated ProcessInstanceCreationStartInstruction startInstructions = 5;
+  // the tenant id of the process instance to be created
+  // if a tenant id is not defined, the default value is DEFAULT_TENANT
+  string tenantId = 6;
 }
 
 message ProcessInstanceCreationStartInstruction {
@@ -139,6 +151,9 @@ message CreateProcessInstanceWithResultRequest {
   // list of names of variables to be included in `CreateProcessInstanceWithResultResponse.variables`
   // if empty, all visible variables in the root scope will be returned.
   repeated string fetchVariables = 3;
+  // the tenant id of the process instance to be created
+  // if a tenant id is not defined, the default value is DEFAULT_TENANT
+  string tenantId = 4;
 }
 
 message CreateProcessInstanceWithResultResponse {
@@ -163,6 +178,9 @@ message DeployProcessRequest {
   option deprecated = true;
   // List of process resources to deploy
   repeated ProcessRequestObject processes = 1;
+  // the tenant id of the process to be deployed
+  // if a tenant id is not defined, the default value is DEFAULT_TENANT
+  string tenantId = 2;
 }
 
 message ProcessRequestObject {
@@ -186,6 +204,9 @@ message DeployProcessResponse {
 message DeployResourceRequest {
   // list of resources to deploy
   repeated Resource resources = 1;
+  // the tenant id of the process to deploy
+  // if a tenant id is not defined, the default value is DEFAULT_TENANT
+  string tenantId = 2;
 }
 
 message Resource {
@@ -273,6 +294,9 @@ message FailJobRequest {
   string errorMessage = 3;
   // the backoff timeout for the next retry
   int64 retryBackOff = 4;
+  // the tenant id of the job that failed
+  // if a tenant id is not defined, the default value is DEFAULT_TENANT
+  string tenantId = 5;
 }
 
 message FailJobResponse {
@@ -285,6 +309,9 @@ message ThrowErrorRequest {
   string errorCode = 2;
   // an optional error message that provides additional context
   string errorMessage = 3;
+  // the tenant id of the error event
+  // if a tenant id is not defined, the default value is DEFAULT_TENANT
+  string tenantId = 4;
 }
 
 message ThrowErrorResponse {
@@ -303,6 +330,9 @@ message PublishMessageRequest {
   // the message variables as a JSON document; to be valid, the root of the document must be an
   // object, e.g. { "a": "foo" }. [ "foo" ] would not be valid.
   string variables = 5;
+  // the tenant id of the message to publish
+  // if a tenant id is not defined, the default value is DEFAULT_TENANT
+  string tenantId = 6;
 }
 
 message PublishMessageResponse {
@@ -313,6 +343,9 @@ message PublishMessageResponse {
 message ResolveIncidentRequest {
   // the unique ID of the incident to resolve
   int64 incidentKey = 1;
+  // the tenant id of the incident to resolve
+  // if a tenant id is not defined, the default value is DEFAULT_TENANT
+  string tenantId = 2;
 }
 
 message ResolveIncidentResponse {
@@ -375,6 +408,9 @@ message UpdateJobRetriesRequest {
   int64 jobKey = 1;
   // the new amount of retries for the job; must be positive
   int32 retries = 2;
+  // the tenant id of the job whose retries are updated
+  // if a tenant id is not defined, the default value is DEFAULT_TENANT
+  string tenantId = 3;
 }
 
 message UpdateJobRetriesResponse {
@@ -396,6 +432,9 @@ message SetVariablesRequest {
   // be unchanged, and scope 2 will now be `{ "bar" : 1, "foo" 5 }`. if local was false, however,
   // then scope 1 would be `{ "foo": 5 }`, and scope 2 would be `{ "bar" : 1 }`.
   bool local = 3;
+  // the tenant id of the process variables
+  // if a tenant id is not defined, the default value is DEFAULT_TENANT
+  string tenantId = 4;
 }
 
 message SetVariablesResponse {
@@ -411,6 +450,9 @@ message ModifyProcessInstanceRequest {
   repeated ActivateInstruction activateInstructions = 2;
   // instructions describing which elements should be terminated
   repeated TerminateInstruction terminateInstructions = 3;
+  // the tenant id of the process instance to modify
+  // if a tenant id is not defined, the default value is DEFAULT_TENANT
+  string tenantId = 4;
 
   message ActivateInstruction {
     // the id of the element that should be activated
