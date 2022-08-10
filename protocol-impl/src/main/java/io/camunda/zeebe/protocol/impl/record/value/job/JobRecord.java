@@ -295,6 +295,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
+  public JobRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProp.getValue();
   }
