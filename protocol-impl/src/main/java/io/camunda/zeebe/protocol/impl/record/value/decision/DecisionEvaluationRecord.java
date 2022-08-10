@@ -263,6 +263,11 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
     return bufferAsString(tenantIdProp.getValue());
   }
 
+  public DecisionEvaluationRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
   @JsonIgnore
   public DirectBuffer getEvaluationFailureMessageBuffer() {
     return evaluationFailureMessageProp.getValue();
