@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import org.agrona.DirectBuffer;
 
 public final class DeploymentDistributionCommandSender {
   private final InterPartitionCommandSender sender;
@@ -36,9 +37,9 @@ public final class DeploymentDistributionCommandSender {
         deploymentRecord);
   }
 
-  public void completeOnPartition(final long deploymentKey) {
+  public void completeOnPartition(final long deploymentKey, final DirectBuffer tenantId) {
     final var distributionRecord = new DeploymentDistributionRecord();
-    distributionRecord.setPartition(partitionId);
+    distributionRecord.setPartition(partitionId).setTenantId(tenantId);
     sender.sendCommand(
         DEPLOYMENT_PARTITION,
         ValueType.DEPLOYMENT_DISTRIBUTION,

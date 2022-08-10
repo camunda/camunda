@@ -50,7 +50,9 @@ public final class DeploymentDistributionBehavior {
 
     otherPartitions.forEach(
         partitionId -> {
-          deploymentDistributionRecord.setPartition(partitionId);
+          deploymentDistributionRecord
+              .setPartition(partitionId)
+              .setTenantId(deploymentEvent.getTenantIdBuffer());
           stateWriter.appendFollowUpEvent(
               key, DeploymentDistributionIntent.DISTRIBUTING, deploymentDistributionRecord);
 

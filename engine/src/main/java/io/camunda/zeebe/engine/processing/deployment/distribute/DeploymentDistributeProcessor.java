@@ -44,7 +44,8 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
     final var deploymentKey = event.getKey();
 
     stateWriter.appendFollowUpEvent(deploymentKey, DeploymentIntent.DISTRIBUTED, deploymentEvent);
-    deploymentDistributionCommandSender.completeOnPartition(deploymentKey);
+    deploymentDistributionCommandSender.completeOnPartition(
+        deploymentKey, event.getValue().getTenantIdBuffer());
 
     messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
         deploymentEvent, stateWriter);

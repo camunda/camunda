@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 
 public class DeploymentDistributionRecord extends UnifiedRecordValue
     implements DeploymentDistributionRecordValue {
@@ -35,7 +36,13 @@ public class DeploymentDistributionRecord extends UnifiedRecordValue
     return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
-  public void setPartition(final int partitionId) {
+  public DeploymentDistributionRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  public DeploymentDistributionRecord setPartition(final int partitionId) {
     partitionIdProperty.setValue(partitionId);
+    return this;
   }
 }
