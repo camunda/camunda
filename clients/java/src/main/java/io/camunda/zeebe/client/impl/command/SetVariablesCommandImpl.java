@@ -93,6 +93,12 @@ public final class SetVariablesCommandImpl
   }
 
   @Override
+  public SetVariablesCommandStep2 tenantId(final String tenantId) {
+    builder.setTenantId(tenantId);
+    return this;
+  }
+
+  @Override
   public SetVariablesCommandStep2 variables(final InputStream variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
     return setVariables(jsonMapper.validateJson("variables", variables));

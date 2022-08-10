@@ -83,5 +83,15 @@ public interface SetVariablesCommandStep1 {
      *     it to the broker.
      */
     SetVariablesCommandStep2 local(boolean local);
+
+    /**
+     * Sets the tenant ID associated with this command. If the associated element does not belong to
+     * the tenant, then this command will fail.
+     *
+     * @param tenantId the tenant ID of the job
+     * @return the builder for this command. Call #send() to complete the command and send it to the
+     *     broker.
+     */
+    SetVariablesCommandStep2 tenantId(final String tenantId);
   }
 }
