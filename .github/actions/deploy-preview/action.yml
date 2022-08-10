@@ -63,7 +63,7 @@ runs:
       echo "Chart revision:           ${{ inputs.revision }}"
       echo "Lifecycle step:           ${{ inputs.step }}"
   - name: Restore cache
-    uses: actions/cache@v2
+    uses: actions/cache@v3
     id: tool-cache-argocd
     with:
       path: /usr/local/bin/argocd
