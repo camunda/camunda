@@ -19,6 +19,9 @@
         "value": {
           "dynamic": "strict",
           "properties": {
+            "tenantId": {
+              "type": "keyword"
+            },
             "type": {
               "type": "keyword"
             },

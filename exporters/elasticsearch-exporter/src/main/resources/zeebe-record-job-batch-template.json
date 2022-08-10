@@ -19,6 +19,9 @@
         "value": {
           "dynamic": "strict",
           "properties": {
+            "tenantId": {
+              "type": "keyword"
+            },
             "type": {
               "type": "keyword"
             },
@@ -38,6 +41,9 @@
               "type": "nested",
               "dynamic": "strict",
               "properties": {
+                "tenantId": {
+                  "enabled": false
+                },
                 "type": {
                   "type": "keyword"
                 },

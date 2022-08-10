@@ -21,8 +21,14 @@
         "value": {
           "dynamic": "strict",
           "properties": {
+            "tenantId": {
+              "type": "keyword"
+            },
             "processesMetadata": {
               "properties": {
+                "tenantId": {
+                  "enabled": false
+                },
                 "bpmnProcessId": {
                   "type": "keyword"
                 },
@@ -55,6 +61,9 @@
             },
             "decisionRequirementsMetadata": {
               "properties": {
+                "tenantId": {
+                  "enabled": false
+                },
                 "decisionRequirementsId": {
                   "type": "keyword"
                 },
@@ -83,6 +92,9 @@
             },
             "decisionsMetadata": {
               "properties": {
+                "tenantId": {
+                  "enabled": false
+                },
                 "decisionId": {
                   "type": "keyword"
                 },

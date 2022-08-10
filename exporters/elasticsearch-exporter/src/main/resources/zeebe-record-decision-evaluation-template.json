@@ -21,6 +21,9 @@
         "value": {
           "dynamic": "strict",
           "properties": {
+            "tenantId": {
+              "type": "keyword"
+            },
             "decisionId": {
               "type": "keyword"
             },
