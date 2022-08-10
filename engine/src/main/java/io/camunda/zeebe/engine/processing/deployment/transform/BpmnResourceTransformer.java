@@ -150,7 +150,9 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
           stateWriter.appendFollowUpEvent(
               key,
               ProcessIntent.CREATED,
-              new ProcessRecord().wrap(processMetadata, deploymentResource.getResource()));
+              new ProcessRecord()
+                  .wrap(processMetadata, deploymentResource.getResource())
+                  .setTenantId(deploymentEvent.getTenantIdBuffer()));
         }
       }
     }

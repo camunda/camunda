@@ -112,7 +112,9 @@ public final class DbProcessState implements MutableProcessState {
       for (final DeploymentResource resource : deploymentRecord.getResources()) {
         if (resource.getResourceName().equals(metadata.getResourceName())) {
           processRecordForDeployments.reset();
-          processRecordForDeployments.wrap(metadata, resource.getResource());
+          processRecordForDeployments
+              .wrap(metadata, resource.getResource())
+              .setTenantId(deploymentRecord.getTenantIdBuffer());
           putProcess(metadata.getKey(), processRecordForDeployments);
         }
       }

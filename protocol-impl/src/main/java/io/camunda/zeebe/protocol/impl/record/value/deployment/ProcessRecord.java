@@ -131,6 +131,11 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
     return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
+  public ProcessRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
   @JsonIgnore
   public long getKey() {
     return keyProp.getValue();
