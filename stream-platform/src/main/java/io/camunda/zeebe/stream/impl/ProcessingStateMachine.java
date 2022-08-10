@@ -253,7 +253,7 @@ public final class ProcessingStateMachine {
       // In all other cases we should prefer to use the Prometheus Timer API.
       final var processingStartTime = ActorClock.currentTimeMillis();
       metrics.processingLatency(loggedEvent.getTimestamp(), processingStartTime);
-      processingTimer = metrics.startProcessingDurationTimer(metadata.getRecordType());
+      processingTimer = metrics.startProcessingDurationTimer(metadata.getRecordType(), metadata.getValueType(), metadata.getIntent());
 
       final var value = recordValues.readRecordValue(loggedEvent, metadata.getValueType());
       typedCommand.wrap(loggedEvent, metadata, value);
