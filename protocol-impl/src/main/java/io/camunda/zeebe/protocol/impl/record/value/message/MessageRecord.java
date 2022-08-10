@@ -146,6 +146,7 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
     return this;
   }
 
+  @JsonIgnore
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProp.getValue();
   }

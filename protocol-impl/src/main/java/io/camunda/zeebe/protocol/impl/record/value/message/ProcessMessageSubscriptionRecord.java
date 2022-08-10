@@ -194,6 +194,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
+  @JsonIgnore
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProp.getValue();
   }

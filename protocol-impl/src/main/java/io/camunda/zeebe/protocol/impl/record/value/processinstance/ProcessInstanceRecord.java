@@ -205,13 +205,14 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
-  public DirectBuffer getTenantIdBuffer() {
-    return tenantIdProp.getValue();
-  }
-
-  public ProcessInstanceRecord setTenantId(String tenantId) {
+  public ProcessInstanceRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getTenantIdBuffer() {
+    return tenantIdProp.getValue();
   }
 
   public ProcessInstanceRecord setElementId(

@@ -118,6 +118,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
     return this;
   }
 
+  @JsonIgnore
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProp.getValue();
   }

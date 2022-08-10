@@ -151,6 +151,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
+  @JsonIgnore
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProp.getValue();
   }

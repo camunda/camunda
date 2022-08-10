@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
@@ -126,11 +127,12 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
     return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
-  public DeploymentRecord setTenantId(String tenantId) {
+  public DeploymentRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
   }
 
+  @JsonIgnore
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProp.getValue();
   }

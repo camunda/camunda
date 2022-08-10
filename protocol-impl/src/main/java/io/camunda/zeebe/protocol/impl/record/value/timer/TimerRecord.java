@@ -113,6 +113,7 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
     return this;
   }
 
+  @JsonIgnore
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProp.getValue();
   }

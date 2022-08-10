@@ -101,6 +101,7 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
     return this;
   }
 
+  @JsonIgnore
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProperty.getValue();
   }

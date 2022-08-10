@@ -147,6 +147,7 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
     return this;
   }
 
+  @JsonIgnore
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProp.getValue();
   }
