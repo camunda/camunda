@@ -179,4 +179,9 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   public DirectBuffer getWorkerBuffer() {
     return workerProp.getValue();
   }
+
+  public JobBatchRecord setTenantId(final String tenantId) {
+    workerProp.setValue(tenantId);
+    return this;
+  }
 }

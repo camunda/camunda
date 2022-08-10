@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -21,8 +22,13 @@ public final class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBat
   private final JobBatchRecord requestDto = new JobBatchRecord();
 
   public BrokerActivateJobsRequest(final String jobType) {
+    this(jobType, RecordValueWithTenant.DEFAULT_TENANT_ID);
+  }
+
+  public BrokerActivateJobsRequest(final String jobType, final String tenantId) {
     super(ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE);
     requestDto.setType(jobType);
+    requestDto.setTenantId(tenantId);
   }
 
   public BrokerActivateJobsRequest setWorker(final String worker) {

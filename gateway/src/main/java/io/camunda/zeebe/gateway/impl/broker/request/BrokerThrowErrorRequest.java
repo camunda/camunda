@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import org.agrona.DirectBuffer;
@@ -19,9 +20,13 @@ public final class BrokerThrowErrorRequest extends BrokerExecuteCommand<JobRecor
   private final JobRecord requestDto = new JobRecord();
 
   public BrokerThrowErrorRequest(final long key, final String errorCode) {
+    this(key, errorCode, RecordValueWithTenant.DEFAULT_TENANT_ID);
+  }
+  public BrokerThrowErrorRequest(final long key, final String errorCode, final String tenantId) {
     super(ValueType.JOB, JobIntent.THROW_ERROR);
     request.setKey(key);
     requestDto.setErrorCode(wrapString(errorCode));
+    requestDto.setTenantId(tenantId);
   }
 
   public BrokerThrowErrorRequest setErrorMessage(final String errorMessage) {

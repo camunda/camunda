@@ -83,7 +83,9 @@ public final class RequestMapper {
 
   public static BrokerUpdateJobRetriesRequest toUpdateJobRetriesRequest(
       final UpdateJobRetriesRequest grpcRequest) {
-    return new BrokerUpdateJobRetriesRequest(grpcRequest.getJobKey(), grpcRequest.getRetries());
+    return new BrokerUpdateJobRetriesRequest(grpcRequest.getJobKey(),
+        grpcRequest.getRetries(),
+        grpcRequest.getTenantId());
   }
 
   public static BrokerFailJobRequest toFailJobRequest(final FailJobRequest grpcRequest) {
@@ -93,7 +95,7 @@ public final class RequestMapper {
   }
 
   public static BrokerThrowErrorRequest toThrowErrorRequest(final ThrowErrorRequest grpcRequest) {
-    return new BrokerThrowErrorRequest(grpcRequest.getJobKey(), grpcRequest.getErrorCode())
+    return new BrokerThrowErrorRequest(grpcRequest.getJobKey(), grpcRequest.getErrorCode(), grpcRequest.getTenantId())
         .setErrorMessage(grpcRequest.getErrorMessage());
   }
 
@@ -161,7 +163,7 @@ public final class RequestMapper {
 
   public static BrokerActivateJobsRequest toActivateJobsRequest(
       final ActivateJobsRequest grpcRequest) {
-    return new BrokerActivateJobsRequest(grpcRequest.getType())
+    return new BrokerActivateJobsRequest(grpcRequest.getType(), grpcRequest.getTenantId())
         .setTimeout(grpcRequest.getTimeout())
         .setWorker(grpcRequest.getWorker())
         .setMaxJobsToActivate(grpcRequest.getMaxJobsToActivate())
