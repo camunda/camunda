@@ -27,4 +27,7 @@ public interface DeploymentDistributionRecordValue extends RecordValue {
    * @return the partition where the deployment should be distributed
    */
   int getPartitionId();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

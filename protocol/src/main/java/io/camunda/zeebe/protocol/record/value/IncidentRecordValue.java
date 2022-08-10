@@ -83,4 +83,7 @@ public interface IncidentRecordValue extends RecordValue, ProcessInstanceRelated
    *     -1</code> if the incident record is part of a {@link IncidentIntent#RESOLVE} command.
    */
   long getVariableScopeKey();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

@@ -76,4 +76,7 @@ public interface ProcessInstanceRecordValue extends RecordValue, ProcessInstance
    *     by another process instance.
    */
   long getParentElementInstanceKey();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

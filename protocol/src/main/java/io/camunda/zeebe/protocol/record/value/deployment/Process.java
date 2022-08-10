@@ -26,4 +26,7 @@ public interface Process extends ProcessMetadataValue {
    * @return returns the corresponding binary resource
    */
   byte[] getResource();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

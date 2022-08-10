@@ -57,4 +57,7 @@ public interface MessageRecordValue extends RecordValueWithVariables {
    *     set, it returns -1 instead.
    */
   long getDeadline();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

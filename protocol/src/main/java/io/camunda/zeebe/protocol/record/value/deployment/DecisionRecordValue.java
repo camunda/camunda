@@ -63,4 +63,7 @@ public interface DecisionRecordValue extends RecordValue {
    *     otherwise {@code false}
    */
   boolean isDuplicate();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

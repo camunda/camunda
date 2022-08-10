@@ -66,4 +66,7 @@ public interface MessageStartEventSubscriptionRecordValue extends RecordValueWit
    *     subscription. Otherwise, it returns -1.
    */
   long getMessageKey();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

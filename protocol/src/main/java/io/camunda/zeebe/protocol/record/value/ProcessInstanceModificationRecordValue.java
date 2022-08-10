@@ -32,6 +32,9 @@ public interface ProcessInstanceModificationRecordValue
   /** Returns a list of activate instructions (if available), or an empty list. */
   List<ProcessInstanceModificationActivateInstructionValue> getActivateInstructions();
 
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
+
   @Value.Immutable
   @ImmutableProtocol(
       builder = ImmutableProcessInstanceModificationTerminateInstructionValue.Builder.class)

@@ -44,4 +44,7 @@ public interface ErrorRecordValue extends RecordValue {
    *     process instance related, then this will return -1
    */
   long getProcessInstanceKey();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

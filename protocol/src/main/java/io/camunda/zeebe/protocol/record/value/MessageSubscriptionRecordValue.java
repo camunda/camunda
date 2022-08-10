@@ -66,4 +66,7 @@ public interface MessageSubscriptionRecordValue
    *     returns {@code false} if the event is non-interrupting.
    */
   boolean isInterrupting();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

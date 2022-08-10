@@ -33,4 +33,7 @@ public interface VariableDocumentRecordValue extends RecordValueWithVariables {
    *     VariableDocumentUpdateSemantic}
    */
   VariableDocumentUpdateSemantic getUpdateSemantics();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

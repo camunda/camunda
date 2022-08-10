@@ -65,4 +65,7 @@ public interface JobBatchRecordValue extends RecordValue {
    * @return the broker has more JobRecords that couldn't fit in this batch
    */
   boolean isTruncated();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

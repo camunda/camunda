@@ -54,4 +54,7 @@ public interface ProcessEventRecordValue extends RecordValueWithVariables, Proce
    * @return the key of the deployed process this instance belongs to.
    */
   long getProcessDefinitionKey();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

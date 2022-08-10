@@ -49,4 +49,7 @@ public interface ProcessInstanceResultRecordValue
    */
   @Override
   long getProcessInstanceKey();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

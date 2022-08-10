@@ -113,4 +113,7 @@ public interface DecisionEvaluationRecordValue extends RecordValue {
    *     the evaluation was successful
    */
   String getFailedDecisionId();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

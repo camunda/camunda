@@ -106,4 +106,7 @@ public interface JobRecordValue extends RecordValueWithVariables, ProcessInstanc
    * @return the process key of the corresponding process definition
    */
   long getProcessDefinitionKey();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

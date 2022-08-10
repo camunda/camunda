@@ -59,4 +59,7 @@ public interface VariableRecordValue extends RecordValue, ProcessInstanceRelated
    * @return the BPMN process id this process instance belongs to.
    */
   String getBpmnProcessId();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

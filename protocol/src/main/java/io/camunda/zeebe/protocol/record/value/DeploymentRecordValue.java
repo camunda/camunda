@@ -52,4 +52,7 @@ public interface DeploymentRecordValue extends RecordValue {
    * @return the deployed decision requirements (DRGs)
    */
   List<DecisionRequirementsMetadataValue> getDecisionRequirementsMetadata();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

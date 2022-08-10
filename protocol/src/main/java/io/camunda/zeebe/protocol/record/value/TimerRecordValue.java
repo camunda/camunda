@@ -64,4 +64,7 @@ public interface TimerRecordValue extends RecordValue, ProcessInstanceRelated {
    * @return the number of times this timer should trigger
    */
   int getRepetitions();
+
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
 }

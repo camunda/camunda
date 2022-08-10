@@ -42,6 +42,9 @@ public interface ProcessInstanceCreationRecordValue
   /** Returns a list of start instructions (if available), or an empty list. */
   List<ProcessInstanceCreationStartInstructionValue> getStartInstructions();
 
+  /** Returns: the tenant ID associated with this value. */
+  String getTenantId();
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableProcessInstanceCreationStartInstructionValue.Builder.class)
   interface ProcessInstanceCreationStartInstructionValue {
