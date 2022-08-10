@@ -162,5 +162,15 @@ public interface ModifyProcessInstanceCommandStep1 {
      * @return the builder for this command
      */
     ModifyProcessInstanceCommandStep3 withVariables(final Object variables, final String scopeId);
+
+    /**
+     * Sets the tenant ID associated with this command. If the associated process instance does not
+     * belong to this tenant, the command will fail.
+     *
+     * @param tenantId the tenant ID of the job
+     * @return the builder for this command. Call #send() to complete the command and send it to the
+     *     broker.
+     */
+    ModifyProcessInstanceCommandStep3 tenantId(final String tenantId);
   }
 }

@@ -150,6 +150,12 @@ public final class ModifyProcessInstanceCommandImpl
     return this;
   }
 
+  @Override
+  public ModifyProcessInstanceCommandStep3 tenantId(final String tenantId) {
+    requestBuilder.setTenantId(tenantId);
+    return this;
+  }
+
   private VariableInstruction createVariableInstruction(
       final InputStream variables, final String scopeId) {
     ArgumentUtil.ensureNotNull("variables", variables);
