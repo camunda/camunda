@@ -11,7 +11,6 @@ import static io.camunda.zeebe.engine.util.RecordToWrite.command;
 import static io.camunda.zeebe.engine.util.RecordToWrite.event;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.timeout;
@@ -20,8 +19,6 @@ import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamPlatform;
 import io.camunda.zeebe.engine.util.StreamPlatformExtension;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
@@ -46,12 +43,7 @@ public final class NewStreamProcessorReplayModeTest {
         event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
 
     // when
-    streamPlatform.startStreamProcessorNotWaitForOpening();
-
-    Awaitility.await()
-        .untilAsserted(
-            () ->
-                assertThat(streamPlatform.getCurrentProcessorPhase()).isEqualTo(Phase.PROCESSING));
+    streamPlatform.startStreamProcessor();
 
     streamPlatform.writeBatch(
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
