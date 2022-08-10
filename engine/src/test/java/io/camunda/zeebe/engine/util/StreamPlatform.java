@@ -21,7 +21,6 @@ import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
@@ -31,7 +30,6 @@ import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SyncLogStream;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -61,14 +59,9 @@ import org.slf4j.Logger;
 public final class StreamPlatform {
 
   private static final String SNAPSHOT_FOLDER = "snapshot";
-  private static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
   private static final int DEFAULT_PARTITION = 1;
   private static final String STREAM_NAME = "stream-";
-
-  static {
-    TypedEventRegistry.EVENT_REGISTRY.forEach((v, c) -> VALUE_TYPES.put(c, v));
-  }
 
   private final Path dataDirectory;
   private final List<AutoCloseable> closeables;
