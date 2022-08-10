@@ -21,7 +21,8 @@ public final class BrokerUpdateJobRetriesRequest extends BrokerExecuteCommand<Jo
     this(jobKey, retries, RecordValueWithTenant.DEFAULT_TENANT_ID);
   }
 
-  public BrokerUpdateJobRetriesRequest(final long jobKey, final int retries, final String tenantId) {
+  public BrokerUpdateJobRetriesRequest(
+      final long jobKey, final int retries, final String tenantId) {
     super(ValueType.JOB, JobIntent.UPDATE_RETRIES);
     request.setKey(jobKey);
     requestDto.setRetries(retries);

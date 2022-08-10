@@ -21,7 +21,6 @@ import io.camunda.zeebe.gateway.impl.broker.PartitionIdIterator;
 import io.camunda.zeebe.gateway.impl.broker.RequestDispatchStrategy;
 import io.camunda.zeebe.gateway.impl.broker.RoundRobinDispatchStrategy;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -193,13 +192,15 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
     return errorMessage;
   }
 
-  private void reactivateJobs(final List<ActivatedJob> activateJobs, final String message, final String tenantId) {
+  private void reactivateJobs(
+      final List<ActivatedJob> activateJobs, final String message, final String tenantId) {
     if (activateJobs != null) {
       activateJobs.forEach(j -> tryToReactivateJob(j, message, tenantId));
     }
   }
 
-  private void tryToReactivateJob(final ActivatedJob job, final String message, final String tenantId) {
+  private void tryToReactivateJob(
+      final ActivatedJob job, final String message, final String tenantId) {
     final var request = toFailJobRequest(job, message, tenantId);
     brokerClient
         .sendRequestWithRetry(request)
@@ -212,7 +213,8 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
             });
   }
 
-  private BrokerFailJobRequest toFailJobRequest(final ActivatedJob job, final String errorMessage, final String tenantId) {
+  private BrokerFailJobRequest toFailJobRequest(
+      final ActivatedJob job, final String errorMessage, final String tenantId) {
     return new BrokerFailJobRequest(job.getKey(), job.getRetries(), 0, tenantId)
         .setErrorMessage(errorMessage);
   }

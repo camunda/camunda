@@ -22,6 +22,7 @@ public final class BrokerThrowErrorRequest extends BrokerExecuteCommand<JobRecor
   public BrokerThrowErrorRequest(final long key, final String errorCode) {
     this(key, errorCode, RecordValueWithTenant.DEFAULT_TENANT_ID);
   }
+
   public BrokerThrowErrorRequest(final long key, final String errorCode, final String tenantId) {
     super(ValueType.JOB, JobIntent.THROW_ERROR);
     request.setKey(key);

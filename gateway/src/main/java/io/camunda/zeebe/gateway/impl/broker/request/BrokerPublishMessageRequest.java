@@ -21,7 +21,8 @@ public final class BrokerPublishMessageRequest extends BrokerExecuteCommand<Void
     this(messageName, correlationKey, RecordValueWithTenant.DEFAULT_TENANT_ID);
   }
 
-  public BrokerPublishMessageRequest(final String messageName, final String correlationKey, final String tenantId) {
+  public BrokerPublishMessageRequest(
+      final String messageName, final String correlationKey, final String tenantId) {
     super(ValueType.MESSAGE, MessageIntent.PUBLISH);
     requestDto.setName(messageName).setCorrelationKey(correlationKey);
     requestDto.setTenantId(tenantId);
