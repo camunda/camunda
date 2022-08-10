@@ -95,16 +95,14 @@ public final class EventHandle {
       final ExecutableFlowElement catchEvent,
       final long eventScopeKey,
       final ProcessInstanceRecord elementRecord) {
-    activateElement(
-        catchEvent, eventScopeKey, elementRecord, NO_VARIABLES, elementRecord.getTenantIdBuffer());
+    activateElement(catchEvent, eventScopeKey, elementRecord, NO_VARIABLES);
   }
 
   public void activateElement(
       final ExecutableFlowElement catchEvent,
       final long eventScopeKey,
       final ProcessInstanceRecord elementRecord,
-      final DirectBuffer variables,
-      final DirectBuffer tenantId) {
+      final DirectBuffer variables) {
 
     final var processEventKey =
         triggeringProcessEvent(
