@@ -176,6 +176,11 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
+  public IncidentRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProp.getValue();
   }

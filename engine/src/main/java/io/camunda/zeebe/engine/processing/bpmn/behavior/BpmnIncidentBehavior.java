@@ -61,7 +61,8 @@ public final class BpmnIncidentBehavior {
         .setElementId(context.getElementId())
         .setVariableScopeKey(variableScopeKey)
         .setErrorType(failure.getErrorType())
-        .setErrorMessage(failure.getMessage());
+        .setErrorMessage(failure.getMessage())
+        .setTenantId(context.getTenantId());
 
     final var key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, IncidentIntent.CREATED, incidentRecord);

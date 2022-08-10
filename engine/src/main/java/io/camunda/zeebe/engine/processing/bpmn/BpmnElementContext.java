@@ -35,6 +35,8 @@ public interface BpmnElementContext {
 
   BpmnElementType getBpmnElementType();
 
+  DirectBuffer getTenantId();
+
   // TODO (saig0): use an immutable interface for the record value (#6800)
   /**
    * Caution! Don't modify the value to avoid unexpected side-effects.

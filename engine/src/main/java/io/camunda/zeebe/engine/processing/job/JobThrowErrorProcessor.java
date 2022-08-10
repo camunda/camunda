@@ -153,7 +153,8 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
         .setElementId(job.getElementIdBuffer())
         .setElementInstanceKey(job.getElementInstanceKey())
         .setJobKey(key)
-        .setVariableScopeKey(job.getElementInstanceKey());
+        .setVariableScopeKey(job.getElementInstanceKey())
+        .setTenantId(job.getTenantIdBuffer());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
   }

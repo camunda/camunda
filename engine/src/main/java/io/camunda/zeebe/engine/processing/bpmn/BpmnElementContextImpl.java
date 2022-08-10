@@ -71,6 +71,11 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
   }
 
   @Override
+  public DirectBuffer getTenantId() {
+    return recordValue.getTenantIdBuffer();
+  }
+
+  @Override
   public ProcessInstanceRecord getRecordValue() {
     return recordValue;
   }

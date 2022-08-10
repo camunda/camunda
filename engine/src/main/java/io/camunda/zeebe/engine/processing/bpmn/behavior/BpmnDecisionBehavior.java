@@ -225,7 +225,7 @@ public final class BpmnDecisionBehavior {
             .setProcessInstanceKey(context.getProcessInstanceKey())
             .setElementInstanceKey(context.getElementInstanceKey())
             .setElementId(context.getElementId())
-            .setTenantId(context.getRecordValue().getTenantIdBuffer());
+            .setTenantId(context.getTenantId());
 
     final var decisionKeysByDecisionId =
         decisionState

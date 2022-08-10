@@ -83,7 +83,8 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
           .setElementId(value.getElementIdBuffer())
           .setElementInstanceKey(value.getElementInstanceKey())
           .setJobKey(key)
-          .setVariableScopeKey(value.getElementInstanceKey());
+          .setVariableScopeKey(value.getElementInstanceKey())
+          .setTenantId(value.getTenantIdBuffer());
 
       stateWriter.appendFollowUpEvent(
           keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
