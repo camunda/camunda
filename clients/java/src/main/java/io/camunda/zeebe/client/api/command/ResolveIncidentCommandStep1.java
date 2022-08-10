@@ -19,4 +19,13 @@ import io.camunda.zeebe.client.api.response.ResolveIncidentResponse;
 
 public interface ResolveIncidentCommandStep1 extends FinalCommandStep<ResolveIncidentResponse> {
   // the place for new optional parameters
+  /**
+   * Sets the tenant ID associated with this command. If the associated incident does not belong to
+   * the tenant, then this command will fail.
+   *
+   * @param tenantId the tenant ID of the job
+   * @return the builder for this command. Call #send() to complete the command and send it to the
+   *     broker.
+   */
+  ResolveIncidentCommandStep1 tenantId(final String tenantId);
 }

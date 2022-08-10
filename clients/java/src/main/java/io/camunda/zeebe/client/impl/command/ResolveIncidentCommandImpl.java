@@ -49,6 +49,12 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
   }
 
   @Override
+  public ResolveIncidentCommandStep1 tenantId(final String tenantId) {
+    builder.setTenantId(tenantId);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<ResolveIncidentResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
