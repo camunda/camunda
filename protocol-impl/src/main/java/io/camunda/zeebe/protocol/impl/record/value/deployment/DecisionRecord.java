@@ -116,6 +116,16 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
     return bufferAsString(tenantIdProp.getValue());
   }
 
+  public DecisionRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  public DecisionRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
   public DecisionRecord markAsDuplicate() {
     isDuplicateProp.setValue(true);
     return this;
@@ -134,5 +144,9 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
   @JsonIgnore
   public DirectBuffer getDecisionRequirementsIdBuffer() {
     return decisionRequirementsIdProp.getValue();
+  }
+
+  public DirectBuffer getTenantIdBuffer() {
+    return tenantIdProp.getValue();
   }
 }

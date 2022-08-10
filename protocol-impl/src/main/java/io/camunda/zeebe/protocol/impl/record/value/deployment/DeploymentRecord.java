@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
+import org.agrona.DirectBuffer;
 
 public final class DeploymentRecord extends UnifiedRecordValue implements DeploymentRecordValue {
 
@@ -123,5 +124,9 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   @Override
   public String getTenantId() {
     return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public DirectBuffer getTenantIdBuffer() {
+    return tenantIdProp.getValue();
   }
 }
