@@ -52,7 +52,7 @@ jobs:
         working-directory: ./client
         run: yarn build
       - name: Setup Java
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: "adopt"
           java-version: "11"
