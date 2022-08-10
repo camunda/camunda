@@ -56,4 +56,10 @@ public interface CompleteJobCommandStep1 extends FinalCommandStep<CompleteJobRes
    *     to the broker.
    */
   CompleteJobCommandStep1 variables(Object variables);
+
+  /**
+   * @param tenantId the tenant id of the job to complete
+   * @return the builder for this command
+   */
+  CompleteJobCommandStep1 tenantId(String tenantId);
 }

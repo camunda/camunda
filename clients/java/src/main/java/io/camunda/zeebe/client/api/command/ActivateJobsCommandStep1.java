@@ -98,5 +98,11 @@ public interface ActivateJobsCommandStep1 {
      *     it to the broker.
      */
     ActivateJobsCommandStep3 fetchVariables(String... fetchVariables);
+
+    /**
+     * @param tenantId the tenant id of the jobs to activate
+     * @return the builder for this command
+     */
+    ActivateJobsCommandStep3 tenantId(String tenantId);
   }
 }

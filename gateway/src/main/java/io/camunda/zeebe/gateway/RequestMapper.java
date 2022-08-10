@@ -48,8 +48,7 @@ public final class RequestMapper {
 
   public static BrokerDeployResourceRequest toDeployProcessRequest(
       final DeployProcessRequest grpcRequest) {
-    final BrokerDeployResourceRequest brokerRequest =
-        new BrokerDeployResourceRequest();
+    final BrokerDeployResourceRequest brokerRequest = new BrokerDeployResourceRequest();
 
     brokerRequest.setTenantId(grpcRequest.getTenantId());
 
@@ -62,8 +61,7 @@ public final class RequestMapper {
 
   public static BrokerDeployResourceRequest toDeployResourceRequest(
       final DeployResourceRequest grpcRequest) {
-    final BrokerDeployResourceRequest brokerRequest =
-        new BrokerDeployResourceRequest();
+    final BrokerDeployResourceRequest brokerRequest = new BrokerDeployResourceRequest();
 
     brokerRequest.setTenantId(grpcRequest.getTenantId());
 
@@ -77,8 +75,7 @@ public final class RequestMapper {
   public static BrokerPublishMessageRequest toPublishMessageRequest(
       final PublishMessageRequest grpcRequest) {
     final BrokerPublishMessageRequest brokerRequest =
-        new BrokerPublishMessageRequest(
-            grpcRequest.getName(), grpcRequest.getCorrelationKey());
+        new BrokerPublishMessageRequest(grpcRequest.getName(), grpcRequest.getCorrelationKey());
 
     brokerRequest
         .setMessageId(grpcRequest.getMessageId())
@@ -97,9 +94,7 @@ public final class RequestMapper {
 
   public static BrokerFailJobRequest toFailJobRequest(final FailJobRequest grpcRequest) {
     return new BrokerFailJobRequest(
-            grpcRequest.getJobKey(),
-            grpcRequest.getRetries(),
-            grpcRequest.getRetryBackOff())
+            grpcRequest.getJobKey(), grpcRequest.getRetries(), grpcRequest.getRetryBackOff())
         .setErrorMessage(grpcRequest.getErrorMessage())
         .setTenantId(grpcRequest.getTenantId());
   }
@@ -167,8 +162,7 @@ public final class RequestMapper {
 
   public static BrokerSetVariablesRequest toSetVariablesRequest(
       final SetVariablesRequest grpcRequest) {
-    final BrokerSetVariablesRequest brokerRequest =
-        new BrokerSetVariablesRequest();
+    final BrokerSetVariablesRequest brokerRequest = new BrokerSetVariablesRequest();
 
     brokerRequest.setElementInstanceKey(grpcRequest.getElementInstanceKey());
     brokerRequest.setVariables(ensureJsonSet(grpcRequest.getVariables()));

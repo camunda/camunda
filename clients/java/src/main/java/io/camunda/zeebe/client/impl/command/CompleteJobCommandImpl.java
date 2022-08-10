@@ -87,4 +87,10 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     builder.setVariables(variables);
     return this;
   }
+
+  @Override
+  public CompleteJobCommandStep1 tenantId(final String tenantId) {
+    builder.setTenantId(tenantId);
+    return this;
+  }
 }

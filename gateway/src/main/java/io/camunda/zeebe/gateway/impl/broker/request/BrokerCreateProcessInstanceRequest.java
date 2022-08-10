@@ -57,7 +57,7 @@ public class BrokerCreateProcessInstanceRequest
   }
 
   public BrokerCreateProcessInstanceRequest setTenantId(final String tenantId) {
-    if(!tenantId.isEmpty()) {
+    if (!tenantId.isEmpty()) {
       requestDto.setTenantId(tenantId);
     }
     return this;

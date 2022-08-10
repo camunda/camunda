@@ -79,4 +79,10 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .cancelProcessInstance(request, future);
   }
+
+  @Override
+  public CancelProcessInstanceCommandStep1 tenantId(final String tenantId) {
+    builder.setTenantId(tenantId);
+    return this;
+  }
 }

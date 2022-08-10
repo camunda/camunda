@@ -66,7 +66,7 @@ public final class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBat
   }
 
   public BrokerActivateJobsRequest setTenantId(final String tenantId) {
-    if(!tenantId.isEmpty()) {
+    if (!tenantId.isEmpty()) {
       requestDto.setTenantId(tenantId);
     }
     return this;

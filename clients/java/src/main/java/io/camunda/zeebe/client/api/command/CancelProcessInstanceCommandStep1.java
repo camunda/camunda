@@ -21,4 +21,9 @@ public interface CancelProcessInstanceCommandStep1
     extends FinalCommandStep<CancelProcessInstanceResponse> {
   // the place for new optional parameters
 
+  /**
+   * @param tenantId the tenant id of the process instance to cancel
+   * @return the builder for this command
+   */
+  CancelProcessInstanceCommandStep1 tenantId(String tenantId);
 }

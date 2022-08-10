@@ -16,8 +16,7 @@ public final class BrokerFailJobRequest extends BrokerExecuteCommand<JobRecord> 
 
   private final JobRecord requestDto = new JobRecord();
 
-  public BrokerFailJobRequest(
-      final long key, final int retries, final long retryBackOff) {
+  public BrokerFailJobRequest(final long key, final int retries, final long retryBackOff) {
     super(ValueType.JOB, JobIntent.FAIL);
     request.setKey(key);
     requestDto.setRetries(retries);

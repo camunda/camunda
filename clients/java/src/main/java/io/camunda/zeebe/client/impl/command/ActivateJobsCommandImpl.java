@@ -96,6 +96,12 @@ public final class ActivateJobsCommandImpl
   }
 
   @Override
+  public ActivateJobsCommandStep3 tenantId(final String tenantId) {
+    builder.setTenantId(tenantId);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<ActivateJobsResponse> requestTimeout(final Duration requestTimeout) {
     builder.setRequestTimeout(requestTimeout.toMillis());
     this.requestTimeout = requestTimeout;
