@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.api.EmptyProcessingResult;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
@@ -35,7 +34,6 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -68,7 +66,6 @@ public final class StreamPlatform {
   private final List<AutoCloseable> closeables;
   private final ActorScheduler actorScheduler;
   private final CommandResponseWriter mockCommandResponseWriter;
-  private final StreamProcessorListener mockStreamProcessorListener;
   private final Map<String, LogContext> logContextMap = new HashMap<>();
   private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
   private boolean snapshotWasTaken = false;
@@ -99,16 +96,7 @@ public final class StreamPlatform {
     when(mockCommandResponseWriter.valueWriter(any())).thenReturn(mockCommandResponseWriter);
 
     when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
-    mockStreamProcessorListener = mock(StreamProcessorListener.class);
     actorScheduler.submitActor(writeActor);
-  }
-
-  public CommandResponseWriter getMockedResponseWriter() {
-    return mockCommandResponseWriter;
-  }
-
-  public StreamProcessorListener getMockStreamProcessorListener() {
-    return mockStreamProcessorListener;
   }
 
   public SynchronousLogStream createLogStream(final String name, final int partitionId) {
@@ -135,15 +123,11 @@ public final class StreamPlatform {
 
     logStreamConsumer.accept(logStream);
 
-    final LogContext logContext = LogContext.createLogContext(logStream, logStorage);
+    final LogContext logContext = LogContext.createLogContext(logStream);
     logContextMap.put(name, logContext);
     closeables.add(logContext);
     closeables.add(() -> logContextMap.remove(name));
     return logStream;
-  }
-
-  public long getLastWrittenPosition(final String name) {
-    return getLogStream(name).getLastWrittenPosition();
   }
 
   public SynchronousLogStream getLogStream(final String name) {
@@ -181,12 +165,6 @@ public final class StreamPlatform {
     final var logName = getLogName(DEFAULT_PARTITION);
     final SynchronousLogStream stream = getLogStream(logName);
     return buildStreamProcessor(stream, null, true);
-  }
-
-  public StreamProcessor startStreamProcessorNotWaitForOpening() {
-    final var logName = getLogName(DEFAULT_PARTITION);
-    final SynchronousLogStream stream = getLogStream(logName);
-    return buildStreamProcessor(stream, null, false);
   }
 
   public StreamProcessor buildStreamProcessor(
@@ -244,9 +222,8 @@ public final class StreamPlatform {
     }
     openFuture.join(15, TimeUnit.SECONDS);
 
-    final LogContext context = logContextMap.get(logName);
     final ProcessorContext processorContext =
-        ProcessorContext.createStreamContext(context, streamProcessor, zeebeDb, storage, snapshot);
+        ProcessorContext.createStreamContext(streamProcessor, zeebeDb, storage, snapshot);
     streamContextMap.put(logName, processorContext);
     closeables.add(processorContext);
 
@@ -276,12 +253,6 @@ public final class StreamPlatform {
 
   public RecordProcessor getRecordProcessor() {
     return recordProcessor;
-  }
-
-  public Phase getCurrentProcessorPhase() {
-    return getStreamProcessor(getLogName(DEFAULT_PARTITION))
-        .getCurrentPhase()
-        .join(10, TimeUnit.SECONDS);
   }
 
   public StreamProcessor getStreamProcessor() {
@@ -330,13 +301,12 @@ public final class StreamPlatform {
   private static final class LogContext implements AutoCloseable {
     private final SynchronousLogStream logStream;
 
-    private LogContext(final SynchronousLogStream logStream, final LogStorage logStorage) {
+    private LogContext(final SynchronousLogStream logStream) {
       this.logStream = logStream;
     }
 
-    public static LogContext createLogContext(
-        final SyncLogStream logStream, final LogStorage logStorage) {
-      return new LogContext(logStream, logStorage);
+    public static LogContext createLogContext(final SyncLogStream logStream) {
+      return new LogContext(logStream);
     }
 
     @Override
@@ -368,7 +338,6 @@ public final class StreamPlatform {
     }
 
     public static ProcessorContext createStreamContext(
-        final LogContext logContext,
         final StreamProcessor streamProcessor,
         final ZeebeDb zeebeDb,
         final Path runtimePath,
