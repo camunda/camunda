@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import org.agrona.DirectBuffer;
@@ -17,10 +18,15 @@ public final class BrokerFailJobRequest extends BrokerExecuteCommand<JobRecord> 
   private final JobRecord requestDto = new JobRecord();
 
   public BrokerFailJobRequest(final long key, final int retries, final long retryBackOff) {
+    this(key, retries, retryBackOff, RecordValueWithTenant.DEFAULT_TENANT_ID);
+  }
+
+  public BrokerFailJobRequest(final long key, final int retries, final long retryBackOff, final String tenantId) {
     super(ValueType.JOB, JobIntent.FAIL);
     request.setKey(key);
     requestDto.setRetries(retries);
     requestDto.setRetryBackoff(retryBackOff);
+    requestDto.setTenantId(tenantId);
   }
 
   public BrokerFailJobRequest setErrorMessage(final String errorMessage) {

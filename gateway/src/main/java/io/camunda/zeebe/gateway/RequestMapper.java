@@ -71,7 +71,7 @@ public final class RequestMapper {
   public static BrokerPublishMessageRequest toPublishMessageRequest(
       final PublishMessageRequest grpcRequest) {
     final BrokerPublishMessageRequest brokerRequest =
-        new BrokerPublishMessageRequest(grpcRequest.getName(), grpcRequest.getCorrelationKey());
+        new BrokerPublishMessageRequest(grpcRequest.getName(), grpcRequest.getCorrelationKey(), grpcRequest.getTenantId());
 
     brokerRequest
         .setMessageId(grpcRequest.getMessageId())
@@ -90,7 +90,7 @@ public final class RequestMapper {
 
   public static BrokerFailJobRequest toFailJobRequest(final FailJobRequest grpcRequest) {
     return new BrokerFailJobRequest(
-            grpcRequest.getJobKey(), grpcRequest.getRetries(), grpcRequest.getRetryBackOff())
+            grpcRequest.getJobKey(), grpcRequest.getRetries(), grpcRequest.getRetryBackOff(), grpcRequest.getTenantId())
         .setErrorMessage(grpcRequest.getErrorMessage());
   }
 
@@ -172,7 +172,7 @@ public final class RequestMapper {
 
   public static BrokerResolveIncidentRequest toResolveIncidentRequest(
       final ResolveIncidentRequest grpcRequest) {
-    return new BrokerResolveIncidentRequest(grpcRequest.getIncidentKey());
+    return new BrokerResolveIncidentRequest(grpcRequest.getIncidentKey(), grpcRequest.getTenantId());
   }
 
   public static BrokerModifyProcessInstanceRequest toModifyProcessInstanceRequest(

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import org.agrona.DirectBuffer;
@@ -17,8 +18,13 @@ public final class BrokerPublishMessageRequest extends BrokerExecuteCommand<Void
   private final MessageRecord requestDto = new MessageRecord();
 
   public BrokerPublishMessageRequest(final String messageName, final String correlationKey) {
+    this(messageName, correlationKey, RecordValueWithTenant.DEFAULT_TENANT_ID);
+  }
+
+  public BrokerPublishMessageRequest(final String messageName, final String correlationKey, final String tenantId) {
     super(ValueType.MESSAGE, MessageIntent.PUBLISH);
     requestDto.setName(messageName).setCorrelationKey(correlationKey);
+    requestDto.setTenantId(tenantId);
   }
 
   public DirectBuffer getCorrelationKey() {

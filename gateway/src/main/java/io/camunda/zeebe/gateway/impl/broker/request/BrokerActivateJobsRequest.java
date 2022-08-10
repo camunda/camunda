@@ -60,6 +60,10 @@ public final class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBat
     return requestDto;
   }
 
+  public String getTenantId() {
+    return requestDto.getTenantId();
+  }
+
   @Override
   protected JobBatchRecord toResponseDto(final DirectBuffer buffer) {
     final JobBatchRecord responseDto = new JobBatchRecord();

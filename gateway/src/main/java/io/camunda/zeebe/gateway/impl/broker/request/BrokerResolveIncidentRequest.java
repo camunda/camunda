@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import org.agrona.DirectBuffer;
@@ -17,8 +18,13 @@ public final class BrokerResolveIncidentRequest extends BrokerExecuteCommand<Inc
   private final IncidentRecord requestDto = new IncidentRecord();
 
   public BrokerResolveIncidentRequest(final long incidentKey) {
+    this(incidentKey, RecordValueWithTenant.DEFAULT_TENANT_ID);
+  }
+
+  public BrokerResolveIncidentRequest(final long incidentKey, final String tenantId) {
     super(ValueType.INCIDENT, IncidentIntent.RESOLVE);
     request.setKey(incidentKey);
+    requestDto.setTenantId(tenantId);
   }
 
   @Override
