@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
-import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -22,13 +21,8 @@ public final class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBat
   private final JobBatchRecord requestDto = new JobBatchRecord();
 
   public BrokerActivateJobsRequest(final String jobType) {
-    this(jobType, RecordValueWithTenant.DEFAULT_TENANT_ID);
-  }
-
-  public BrokerActivateJobsRequest(final String jobType, final String tenantId) {
     super(ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE);
     requestDto.setType(jobType);
-    requestDto.setTenantId(tenantId);
   }
 
   public BrokerActivateJobsRequest setWorker(final String worker) {
@@ -60,15 +54,22 @@ public final class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBat
     return requestDto;
   }
 
-  public String getTenantId() {
-    return requestDto.getTenantId();
-  }
-
   @Override
   protected JobBatchRecord toResponseDto(final DirectBuffer buffer) {
     final JobBatchRecord responseDto = new JobBatchRecord();
     responseDto.wrap(buffer);
     return responseDto;
+  }
+
+  public String getTenantId() {
+    return requestDto.getTenantId();
+  }
+
+  public BrokerActivateJobsRequest setTenantId(final String tenantId) {
+    if(!tenantId.isEmpty()) {
+      requestDto.setTenantId(tenantId);
+    }
+    return this;
   }
 
   @Override

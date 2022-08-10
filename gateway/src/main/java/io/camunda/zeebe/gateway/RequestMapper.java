@@ -49,7 +49,9 @@ public final class RequestMapper {
   public static BrokerDeployResourceRequest toDeployProcessRequest(
       final DeployProcessRequest grpcRequest) {
     final BrokerDeployResourceRequest brokerRequest =
-        new BrokerDeployResourceRequest(grpcRequest.getTenantId());
+        new BrokerDeployResourceRequest();
+
+    brokerRequest.setTenantId(grpcRequest.getTenantId());
 
     for (final ProcessRequestObject process : grpcRequest.getProcessesList()) {
       brokerRequest.addResource(process.getDefinition().toByteArray(), process.getName());
@@ -61,7 +63,9 @@ public final class RequestMapper {
   public static BrokerDeployResourceRequest toDeployResourceRequest(
       final DeployResourceRequest grpcRequest) {
     final BrokerDeployResourceRequest brokerRequest =
-        new BrokerDeployResourceRequest(grpcRequest.getTenantId());
+        new BrokerDeployResourceRequest();
+
+    brokerRequest.setTenantId(grpcRequest.getTenantId());
 
     for (final Resource resource : grpcRequest.getResourcesList()) {
       brokerRequest.addResource(resource.getContent().toByteArray(), resource.getName());
@@ -74,12 +78,13 @@ public final class RequestMapper {
       final PublishMessageRequest grpcRequest) {
     final BrokerPublishMessageRequest brokerRequest =
         new BrokerPublishMessageRequest(
-            grpcRequest.getName(), grpcRequest.getCorrelationKey(), grpcRequest.getTenantId());
+            grpcRequest.getName(), grpcRequest.getCorrelationKey());
 
     brokerRequest
         .setMessageId(grpcRequest.getMessageId())
         .setTimeToLive(grpcRequest.getTimeToLive())
-        .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+        .setVariables(ensureJsonSet(grpcRequest.getVariables()))
+        .setTenantId(grpcRequest.getTenantId());
 
     return brokerRequest;
   }
@@ -94,9 +99,9 @@ public final class RequestMapper {
     return new BrokerFailJobRequest(
             grpcRequest.getJobKey(),
             grpcRequest.getRetries(),
-            grpcRequest.getRetryBackOff(),
-            grpcRequest.getTenantId())
-        .setErrorMessage(grpcRequest.getErrorMessage());
+            grpcRequest.getRetryBackOff())
+        .setErrorMessage(grpcRequest.getErrorMessage())
+        .setTenantId(grpcRequest.getTenantId());
   }
 
   public static BrokerThrowErrorRequest toThrowErrorRequest(final ThrowErrorRequest grpcRequest) {
@@ -116,14 +121,15 @@ public final class RequestMapper {
   public static BrokerCreateProcessInstanceRequest toCreateProcessInstanceRequest(
       final CreateProcessInstanceRequest grpcRequest) {
     final BrokerCreateProcessInstanceRequest brokerRequest =
-        new BrokerCreateProcessInstanceRequest(grpcRequest.getTenantId());
+        new BrokerCreateProcessInstanceRequest();
 
     brokerRequest
         .setBpmnProcessId(grpcRequest.getBpmnProcessId())
         .setKey(grpcRequest.getProcessDefinitionKey())
         .setVersion(grpcRequest.getVersion())
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
-        .setStartInstructions(grpcRequest.getStartInstructionsList());
+        .setStartInstructions(grpcRequest.getStartInstructionsList())
+        .setTenantId(grpcRequest.getTenantId());
 
     return brokerRequest;
   }
@@ -132,7 +138,7 @@ public final class RequestMapper {
       toCreateProcessInstanceWithResultRequest(
           final CreateProcessInstanceWithResultRequest grpcRequest) {
     final BrokerCreateProcessInstanceWithResultRequest brokerRequest =
-        new BrokerCreateProcessInstanceWithResultRequest(grpcRequest.getTenantId());
+        new BrokerCreateProcessInstanceWithResultRequest();
 
     final CreateProcessInstanceRequest request = grpcRequest.getRequest();
     brokerRequest
@@ -141,7 +147,8 @@ public final class RequestMapper {
         .setVersion(request.getVersion())
         .setVariables(ensureJsonSet(request.getVariables()))
         .setStartInstructions(request.getStartInstructionsList())
-        .setFetchVariables(grpcRequest.getFetchVariablesList());
+        .setFetchVariables(grpcRequest.getFetchVariablesList())
+        .setTenantId(grpcRequest.getTenantId());
 
     return brokerRequest;
   }
@@ -149,9 +156,11 @@ public final class RequestMapper {
   public static BrokerCancelProcessInstanceRequest toCancelProcessInstanceRequest(
       final CancelProcessInstanceRequest grpcRequest) {
     final BrokerCancelProcessInstanceRequest brokerRequest =
-        new BrokerCancelProcessInstanceRequest(grpcRequest.getTenantId());
+        new BrokerCancelProcessInstanceRequest();
 
-    brokerRequest.setProcessInstanceKey(grpcRequest.getProcessInstanceKey());
+    brokerRequest
+        .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
+        .setTenantId(grpcRequest.getTenantId());
 
     return brokerRequest;
   }
@@ -159,22 +168,24 @@ public final class RequestMapper {
   public static BrokerSetVariablesRequest toSetVariablesRequest(
       final SetVariablesRequest grpcRequest) {
     final BrokerSetVariablesRequest brokerRequest =
-        new BrokerSetVariablesRequest(grpcRequest.getTenantId());
+        new BrokerSetVariablesRequest();
 
     brokerRequest.setElementInstanceKey(grpcRequest.getElementInstanceKey());
     brokerRequest.setVariables(ensureJsonSet(grpcRequest.getVariables()));
     brokerRequest.setLocal(grpcRequest.getLocal());
+    brokerRequest.setTenantId(grpcRequest.getTenantId());
 
     return brokerRequest;
   }
 
   public static BrokerActivateJobsRequest toActivateJobsRequest(
       final ActivateJobsRequest grpcRequest) {
-    return new BrokerActivateJobsRequest(grpcRequest.getType(), grpcRequest.getTenantId())
+    return new BrokerActivateJobsRequest(grpcRequest.getType())
         .setTimeout(grpcRequest.getTimeout())
         .setWorker(grpcRequest.getWorker())
         .setMaxJobsToActivate(grpcRequest.getMaxJobsToActivate())
-        .setVariables(grpcRequest.getFetchVariableList());
+        .setVariables(grpcRequest.getFetchVariableList())
+        .setTenantId(grpcRequest.getTenantId());
   }
 
   public static BrokerResolveIncidentRequest toResolveIncidentRequest(
@@ -185,8 +196,9 @@ public final class RequestMapper {
 
   public static BrokerModifyProcessInstanceRequest toModifyProcessInstanceRequest(
       final ModifyProcessInstanceRequest grpcRequest) {
-    return new BrokerModifyProcessInstanceRequest(grpcRequest.getTenantId())
+    return new BrokerModifyProcessInstanceRequest()
         .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
+        .setTenantId(grpcRequest.getTenantId())
         .addActivateInstructions(grpcRequest.getActivateInstructionsList())
         .addTerminateInstructions(grpcRequest.getTerminateInstructionsList());
   }

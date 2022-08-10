@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
@@ -20,12 +19,7 @@ public final class BrokerSetVariablesRequest extends BrokerExecuteCommand<Variab
   private final VariableDocumentRecord requestDto = new VariableDocumentRecord();
 
   public BrokerSetVariablesRequest() {
-    this(RecordValueWithTenant.DEFAULT_TENANT_ID);
-  }
-
-  public BrokerSetVariablesRequest(final String tenantId) {
     super(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATE);
-    requestDto.setTenantId(tenantId);
   }
 
   public BrokerSetVariablesRequest setElementInstanceKey(final long elementInstanceKey) {
@@ -57,5 +51,12 @@ public final class BrokerSetVariablesRequest extends BrokerExecuteCommand<Variab
     final VariableDocumentRecord responseDto = new VariableDocumentRecord();
     responseDto.wrap(buffer);
     return responseDto;
+  }
+
+  public BrokerSetVariablesRequest setTenantId(final String tenantId) {
+    if (!tenantId.isEmpty()) {
+      requestDto.setTenantId(tenantId);
+    }
+    return this;
   }
 }

@@ -15,7 +15,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
-import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -29,12 +28,7 @@ public final class BrokerModifyProcessInstanceRequest
       new ProcessInstanceModificationRecord();
 
   public BrokerModifyProcessInstanceRequest() {
-    this(RecordValueWithTenant.DEFAULT_TENANT_ID);
-  }
-
-  public BrokerModifyProcessInstanceRequest(final String tenantId) {
     super(ValueType.PROCESS_INSTANCE_MODIFICATION, ProcessInstanceModificationIntent.MODIFY);
-    requestDto.setTenantId(tenantId);
   }
 
   public BrokerModifyProcessInstanceRequest setProcessInstanceKey(final long processInstanceKey) {
@@ -77,6 +71,13 @@ public final class BrokerModifyProcessInstanceRequest
                 new ProcessInstanceModificationTerminateInstruction()
                     .setElementInstanceKey(terminateInstruction.getElementInstanceKey()))
         .forEach(requestDto::addTerminateInstruction);
+    return this;
+  }
+
+  public BrokerModifyProcessInstanceRequest setTenantId(final String tenantId) {
+    if (!tenantId.isEmpty()) {
+      requestDto.setTenantId(tenantId);
+    }
     return this;
   }
 

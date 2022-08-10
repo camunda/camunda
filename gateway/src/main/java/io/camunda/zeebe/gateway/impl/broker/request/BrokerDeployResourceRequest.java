@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import org.agrona.DirectBuffer;
@@ -19,18 +18,20 @@ public final class BrokerDeployResourceRequest extends BrokerExecuteCommand<Depl
   private final DeploymentRecord requestDto = new DeploymentRecord();
 
   public BrokerDeployResourceRequest() {
-    this(RecordValueWithTenant.DEFAULT_TENANT_ID);
-  }
-
-  public BrokerDeployResourceRequest(final String tenantId) {
     super(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
-    requestDto.setTenantId(tenantId);
   }
 
   public BrokerDeployResourceRequest addResource(final byte[] resource, final String resourceName) {
     requestDto.resources().add().setResource(resource).setResourceName(resourceName);
 
+    return this;
+  }
+
+  public BrokerDeployResourceRequest setTenantId(final String tenantId) {
+    if (!tenantId.isEmpty()) {
+      requestDto.setTenantId(tenantId);
+    }
     return this;
   }
 

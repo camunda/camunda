@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import org.agrona.DirectBuffer;
@@ -19,16 +18,18 @@ public class BrokerCancelProcessInstanceRequest
   private final ProcessInstanceRecord requestDto = new ProcessInstanceRecord();
 
   public BrokerCancelProcessInstanceRequest() {
-    this(RecordValueWithTenant.DEFAULT_TENANT_ID);
-  }
-
-  public BrokerCancelProcessInstanceRequest(final String tenantId) {
     super(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL);
-    requestDto.setTenantId(tenantId);
   }
 
   public BrokerCancelProcessInstanceRequest setProcessInstanceKey(final long processInstanceKey) {
     request.setKey(processInstanceKey);
+    return this;
+  }
+
+  public BrokerCancelProcessInstanceRequest setTenantId(final String tenantId) {
+    if (!tenantId.isEmpty()) {
+      requestDto.setTenantId(tenantId);
+    }
     return this;
   }
 

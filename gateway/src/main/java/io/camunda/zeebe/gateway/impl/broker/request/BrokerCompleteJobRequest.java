@@ -26,7 +26,9 @@ public final class BrokerCompleteJobRequest extends BrokerExecuteCommand<JobReco
     super(ValueType.JOB, JobIntent.COMPLETE);
     request.setKey(key);
     requestDto.setVariables(variables);
-    requestDto.setTenantId(tenantId);
+    if (!tenantId.isEmpty()) {
+      requestDto.setTenantId(tenantId);
+    }
   }
 
   @Override

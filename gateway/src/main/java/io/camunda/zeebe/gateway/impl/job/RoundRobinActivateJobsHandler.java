@@ -60,7 +60,7 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
   }
 
   @Override
-  public void accept(ActorControl actor) {
+  public void accept(final ActorControl actor) {
     this.actor = actor;
   }
 
@@ -215,7 +215,8 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
 
   private BrokerFailJobRequest toFailJobRequest(
       final ActivatedJob job, final String errorMessage, final String tenantId) {
-    return new BrokerFailJobRequest(job.getKey(), job.getRetries(), 0, tenantId)
+    return new BrokerFailJobRequest(job.getKey(), job.getRetries(), 0)
+        .setTenantId(tenantId)
         .setErrorMessage(errorMessage);
   }
 

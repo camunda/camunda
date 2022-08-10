@@ -47,6 +47,13 @@ public final class BrokerPublishMessageRequest extends BrokerExecuteCommand<Void
     return this;
   }
 
+  public BrokerPublishMessageRequest setTenantId(final String tenantId) {
+    if (!tenantId.isEmpty()) {
+      requestDto.setTenantId(tenantId);
+    }
+    return this;
+  }
+
   @Override
   public MessageRecord getRequestWriter() {
     return requestDto;

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import org.agrona.DirectBuffer;
@@ -17,16 +16,14 @@ public final class BrokerUpdateJobRetriesRequest extends BrokerExecuteCommand<Jo
 
   private final JobRecord requestDto = new JobRecord();
 
-  public BrokerUpdateJobRetriesRequest(final long jobKey, final int retries) {
-    this(jobKey, retries, RecordValueWithTenant.DEFAULT_TENANT_ID);
-  }
-
   public BrokerUpdateJobRetriesRequest(
       final long jobKey, final int retries, final String tenantId) {
     super(ValueType.JOB, JobIntent.UPDATE_RETRIES);
     request.setKey(jobKey);
     requestDto.setRetries(retries);
-    requestDto.setTenantId(tenantId);
+    if (!tenantId.isEmpty()) {
+      requestDto.setTenantId(tenantId);
+    }
   }
 
   @Override

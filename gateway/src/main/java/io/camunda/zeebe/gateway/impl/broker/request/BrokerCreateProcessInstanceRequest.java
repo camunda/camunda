@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
-import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import java.util.List;
@@ -21,12 +20,7 @@ public class BrokerCreateProcessInstanceRequest
   private final ProcessInstanceCreationRecord requestDto = new ProcessInstanceCreationRecord();
 
   public BrokerCreateProcessInstanceRequest() {
-    this(RecordValueWithTenant.DEFAULT_TENANT_ID);
-  }
-
-  public BrokerCreateProcessInstanceRequest(final String tenantId) {
     super(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE);
-    requestDto.setTenantId(tenantId);
   }
 
   public BrokerCreateProcessInstanceRequest setBpmnProcessId(final String bpmnProcessId) {
@@ -59,6 +53,13 @@ public class BrokerCreateProcessInstanceRequest
                     .setElementId(startInstructionReq.getElementId()))
         .forEach(requestDto::addStartInstruction);
 
+    return this;
+  }
+
+  public BrokerCreateProcessInstanceRequest setTenantId(final String tenantId) {
+    if(!tenantId.isEmpty()) {
+      requestDto.setTenantId(tenantId);
+    }
     return this;
   }
 
