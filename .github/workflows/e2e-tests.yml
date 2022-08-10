@@ -40,7 +40,7 @@ jobs:
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
       - name: Setup yarn cache
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: "16"
           cache: "yarn"
