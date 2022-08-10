@@ -120,6 +120,12 @@ public interface CreateProcessInstanceCommandStep1 {
      *     it to the broker
      */
     CreateProcessInstanceWithResultCommandStep1 withResult();
+
+    /**
+     * @param tenantId the tenant id of the process instance to create
+     * @return the builder for this command
+     */
+    CreateProcessInstanceCommandStep3 tenantId(String tenantId);
   }
 
   interface CreateProcessInstanceWithResultCommandStep1
@@ -142,5 +148,11 @@ public interface CreateProcessInstanceCommandStep1 {
      *     it to the broker
      */
     CreateProcessInstanceWithResultCommandStep1 fetchVariables(String... fetchVariables);
+
+    /**
+     * @param tenantId the tenant id of the process instance to create
+     * @return the builder for this command
+     */
+    CreateProcessInstanceWithResultCommandStep1 tenantId(String tenantId);
   }
 }

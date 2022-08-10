@@ -97,6 +97,12 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   @Override
+  public CreateProcessInstanceCommandStep3 tenantId(final String tenantId) {
+    builder.setTenantId(tenantId);
+    return this;
+  }
+
+  @Override
   public CreateProcessInstanceCommandStep2 bpmnProcessId(final String id) {
     builder.setBpmnProcessId(id);
     return this;
