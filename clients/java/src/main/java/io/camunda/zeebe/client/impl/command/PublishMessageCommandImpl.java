@@ -73,6 +73,12 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
   }
 
   @Override
+  public PublishMessageCommandStep3 tenantId(final String tenantId) {
+    builder.setTenantId(tenantId);
+    return this;
+  }
+
+  @Override
   public PublishMessageCommandStep3 correlationKey(final String correlationKey) {
     builder.setCorrelationKey(correlationKey);
     return this;
