@@ -18,6 +18,7 @@
       <validValue name="INVALID_DEPLOYMENT_PARTITION">6</validValue>
       <validValue name="PROCESS_NOT_FOUND">7</validValue>
       <validValue name="RESOURCE_EXHAUSTED">8</validValue>
+      <validValue name="INVALID_TENANT_ID">9</validValue>
     </enum>
 
     <enum name="ValueType" encodingType="uint8" description="The type of a record value">

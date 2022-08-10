@@ -17,16 +17,19 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
+import java.util.regex.Pattern;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
 final class CommandApiRequestHandler
     extends AsyncApiRequestHandler<CommandApiRequestReader, CommandApiResponseWriter> {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+  private static final Pattern TENANT_ID_MASK = Pattern.compile("^[\\w\\.-]{1,63}$");
 
   private final Int2ObjectHashMap<LogStreamRecordWriter> leadingStreams = new Int2ObjectHashMap<>();
   private final Int2ObjectHashMap<RequestLimiter<Intent>> partitionLimiters =
@@ -94,6 +97,20 @@ final class CommandApiRequestHandler
       errorWriter.unsupportedMessage(
           eventType.name(), CommandApiRequestReader.RECORDS_BY_TYPE.keySet().toArray());
       return Either.left(errorWriter);
+    }
+
+    if (event instanceof RecordValueWithTenant eventWithTenant) {
+      final var tenantId = eventWithTenant.getTenantId();
+      if (tenantId == null || tenantId.isBlank()) {
+        errorWriter.invalidTenantId("Expected to receive a command with a tenant ID, but there is none");
+        return Either.left(errorWriter);
+      }
+
+      if (!tenantId.equals(RecordValueWithTenant.DEFAULT_TENANT_ID) || !TENANT_ID_MASK.matcher(tenantId).matches()) {
+        errorWriter.invalidTenantId("Expected the tenant ID to be a string of 1 to 63 "
+            + "alphanumerical characters (including '.', '-', or '_'), but it was %s", tenantId);
+        return Either.left(errorWriter);
+      }
     }
 
     metrics.receivedRequest(partitionId);

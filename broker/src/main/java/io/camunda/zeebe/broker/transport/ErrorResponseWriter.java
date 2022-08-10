@@ -111,6 +111,10 @@ public final class ErrorResponseWriter implements BufferWriter {
             INVALID_MESSAGE_TEMPLATE_FORMAT, Arrays.toString(expectedTemplates), actualTemplateId);
   }
 
+  public ErrorResponseWriter invalidTenantId(final String message, final Object... args) {
+    return errorCode(ErrorCode.INVALID_TENANT_ID).errorMessage(String.format(message, args));
+  }
+
   public ErrorResponseWriter invalidDeploymentPartition(
       final int expectedPartitionId, final int actualPartitionId) {
     return errorCode(ErrorCode.INVALID_DEPLOYMENT_PARTITION)

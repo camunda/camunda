@@ -11,8 +11,8 @@ import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder.TEMP
 
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.RequestReaderException;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -30,7 +30,7 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequestDecoder> {
-  static final Map<ValueType, UnpackedObject> RECORDS_BY_TYPE = new EnumMap<>(ValueType.class);
+  static final Map<ValueType, UnifiedRecordValue> RECORDS_BY_TYPE = new EnumMap<>(ValueType.class);
 
   static {
     RECORDS_BY_TYPE.put(ValueType.DEPLOYMENT, new DeploymentRecord());
@@ -45,7 +45,7 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
         ValueType.PROCESS_INSTANCE_MODIFICATION, new ProcessInstanceModificationRecord());
   }
 
-  private UnpackedObject event;
+  private UnifiedRecordValue event;
   private final RecordMetadata eventMetadata = new RecordMetadata();
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ExecuteCommandRequestDecoder commandRequestDecoder =
@@ -90,7 +90,7 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
     }
   }
 
-  public UnpackedObject event() {
+  public UnifiedRecordValue event() {
     return event;
   }
 
