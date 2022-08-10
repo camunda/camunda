@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import org.immutables.value.Value;
@@ -27,7 +28,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableMessageRecordValue.Builder.class)
-public interface MessageRecordValue extends RecordValueWithVariables {
+public interface MessageRecordValue extends RecordValueWithVariables, RecordValueWithTenant {
   /**
    * @return the name of the message
    */
@@ -57,7 +58,4 @@ public interface MessageRecordValue extends RecordValueWithVariables {
    *     set, it returns -1 instead.
    */
   long getDeadline();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 }

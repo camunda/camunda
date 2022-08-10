@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value.deployment;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import org.immutables.value.Value;
 
 /**
@@ -26,7 +27,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableDecisionRecordValue.Builder.class)
-public interface DecisionRecordValue extends RecordValue {
+public interface DecisionRecordValue extends RecordValue, RecordValueWithTenant {
 
   /**
    * @return the ID of the decision in the DMN
@@ -63,7 +64,4 @@ public interface DecisionRecordValue extends RecordValue {
    *     otherwise {@code false}
    */
   boolean isDuplicate();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 }

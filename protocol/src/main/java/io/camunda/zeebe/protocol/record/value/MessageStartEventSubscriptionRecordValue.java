@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import org.immutables.value.Value;
@@ -27,7 +28,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableMessageStartEventSubscriptionRecordValue.Builder.class)
-public interface MessageStartEventSubscriptionRecordValue extends RecordValueWithVariables {
+public interface MessageStartEventSubscriptionRecordValue
+    extends RecordValueWithVariables, RecordValueWithTenant {
 
   /**
    * @return the process key tied to the subscription
@@ -66,7 +68,4 @@ public interface MessageStartEventSubscriptionRecordValue extends RecordValueWit
    *     subscription. Otherwise, it returns -1.
    */
   long getMessageKey();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 }

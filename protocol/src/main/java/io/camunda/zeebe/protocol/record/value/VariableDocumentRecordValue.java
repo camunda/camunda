@@ -16,12 +16,14 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableVariableDocumentRecordValue.Builder.class)
-public interface VariableDocumentRecordValue extends RecordValueWithVariables {
+public interface VariableDocumentRecordValue
+    extends RecordValueWithVariables, RecordValueWithTenant {
 
   /**
    * @return the scope key associated with the variable document
@@ -33,7 +35,4 @@ public interface VariableDocumentRecordValue extends RecordValueWithVariables {
    *     VariableDocumentUpdateSemantic}
    */
   VariableDocumentUpdateSemantic getUpdateSemantics();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 }

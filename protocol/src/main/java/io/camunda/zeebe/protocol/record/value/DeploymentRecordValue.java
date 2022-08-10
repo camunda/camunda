@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
@@ -32,7 +33,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableDeploymentRecordValue.Builder.class)
-public interface DeploymentRecordValue extends RecordValue {
+public interface DeploymentRecordValue extends RecordValue, RecordValueWithTenant {
   /**
    * @return the resources to deploy
    */
@@ -52,7 +53,4 @@ public interface DeploymentRecordValue extends RecordValue {
    * @return the deployed decision requirements (DRGs)
    */
   List<DecisionRequirementsMetadataValue> getDecisionRequirementsMetadata();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 }

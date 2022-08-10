@@ -17,12 +17,13 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import org.immutables.value.Value;
 
 /** Error records are written on unexpected errors during the processing phase. */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableErrorRecordValue.Builder.class)
-public interface ErrorRecordValue extends RecordValue {
+public interface ErrorRecordValue extends RecordValue, RecordValueWithTenant {
 
   /**
    * @return the exception message, which causes this error record.
@@ -44,7 +45,4 @@ public interface ErrorRecordValue extends RecordValue {
    *     process instance related, then this will return -1
    */
   long getProcessInstanceKey();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 }

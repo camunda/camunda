@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import org.immutables.value.Value;
 
@@ -38,7 +39,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessEventRecordValue.Builder.class)
-public interface ProcessEventRecordValue extends RecordValueWithVariables, ProcessInstanceRelated {
+public interface ProcessEventRecordValue
+    extends RecordValueWithVariables, ProcessInstanceRelated, RecordValueWithTenant {
 
   /**
    * @return the key identifying the event's scope
@@ -54,7 +56,4 @@ public interface ProcessEventRecordValue extends RecordValueWithVariables, Proce
    * @return the key of the deployed process this instance belongs to.
    */
   long getProcessDefinitionKey();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 }

@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import org.immutables.value.Value;
 
@@ -27,7 +28,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableTimerRecordValue.Builder.class)
-public interface TimerRecordValue extends RecordValue, ProcessInstanceRelated {
+public interface TimerRecordValue
+    extends RecordValue, ProcessInstanceRelated, RecordValueWithTenant {
 
   /**
    * @return the key of the process in which this timer was created
@@ -64,7 +66,4 @@ public interface TimerRecordValue extends RecordValue, ProcessInstanceRelated {
    * @return the number of times this timer should trigger
    */
   int getRepetitions();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 }

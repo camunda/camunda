@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
 import org.immutables.value.Value;
@@ -28,7 +29,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessInstanceResultRecordValue.Builder.class)
 public interface ProcessInstanceResultRecordValue
-    extends RecordValueWithVariables, ProcessInstanceRelated {
+    extends RecordValueWithVariables, ProcessInstanceRelated, RecordValueWithTenant {
   /**
    * @return the BPMN process id this process instance belongs to.
    */
@@ -49,7 +50,4 @@ public interface ProcessInstanceResultRecordValue
    */
   @Override
   long getProcessInstanceKey();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 }

@@ -17,17 +17,15 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableDeploymentDistributionRecordValue.Builder.class)
-public interface DeploymentDistributionRecordValue extends RecordValue {
+public interface DeploymentDistributionRecordValue extends RecordValue, RecordValueWithTenant {
 
   /**
    * @return the partition where the deployment should be distributed
    */
   int getPartitionId();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 }

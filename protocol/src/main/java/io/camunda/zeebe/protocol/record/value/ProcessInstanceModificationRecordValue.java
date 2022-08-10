@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -24,16 +25,13 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessInstanceModificationRecordValue.Builder.class)
 public interface ProcessInstanceModificationRecordValue
-    extends RecordValue, ProcessInstanceRelated {
+    extends RecordValue, ProcessInstanceRelated, RecordValueWithTenant {
 
   /** Returns a list of terminate instructions (if available), or an empty list. */
   List<ProcessInstanceModificationTerminateInstructionValue> getTerminateInstructions();
 
   /** Returns a list of activate instructions (if available), or an empty list. */
   List<ProcessInstanceModificationActivateInstructionValue> getActivateInstructions();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 
   @Value.Immutable
   @ImmutableProtocol(

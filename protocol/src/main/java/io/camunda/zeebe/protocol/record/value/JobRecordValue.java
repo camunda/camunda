@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import java.util.Map;
@@ -28,7 +29,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableJobRecordValue.Builder.class)
-public interface JobRecordValue extends RecordValueWithVariables, ProcessInstanceRelated {
+public interface JobRecordValue
+    extends RecordValueWithVariables, ProcessInstanceRelated, RecordValueWithTenant {
 
   /**
    * @return the type of the job
@@ -106,7 +108,4 @@ public interface JobRecordValue extends RecordValueWithVariables, ProcessInstanc
    * @return the process key of the corresponding process definition
    */
   long getProcessDefinitionKey();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 }

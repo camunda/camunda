@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import java.util.List;
 import org.immutables.value.Value;
@@ -28,7 +29,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableJobBatchRecordValue.Builder.class)
-public interface JobBatchRecordValue extends RecordValue {
+public interface JobBatchRecordValue extends RecordValue, RecordValueWithTenant {
   /**
    * @return the type of the job
    */
@@ -65,7 +66,4 @@ public interface JobBatchRecordValue extends RecordValue {
    * @return the broker has more JobRecords that couldn't fit in this batch
    */
   boolean isTruncated();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 }

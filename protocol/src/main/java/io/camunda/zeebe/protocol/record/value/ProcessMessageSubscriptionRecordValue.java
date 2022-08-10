@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import org.immutables.value.Value;
@@ -28,7 +29,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessMessageSubscriptionRecordValue.Builder.class)
 public interface ProcessMessageSubscriptionRecordValue
-    extends RecordValueWithVariables, ProcessInstanceRelated {
+    extends RecordValueWithVariables, ProcessInstanceRelated, RecordValueWithTenant {
   /**
    * @return the process instance key
    */
@@ -70,7 +71,4 @@ public interface ProcessMessageSubscriptionRecordValue
    *     returns {@code false} if the event is non-interrupting.
    */
   boolean isInterrupting();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 }

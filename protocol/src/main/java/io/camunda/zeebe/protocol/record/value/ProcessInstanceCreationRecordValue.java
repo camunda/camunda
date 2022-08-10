@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import java.util.List;
 import org.immutables.value.Value;
@@ -23,7 +24,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessInstanceCreationRecordValue.Builder.class)
 public interface ProcessInstanceCreationRecordValue
-    extends RecordValueWithVariables, ProcessInstanceRelated {
+    extends RecordValueWithVariables, ProcessInstanceRelated, RecordValueWithTenant {
   /**
    * @return the BPMN process id to create a process from
    */
@@ -41,9 +42,6 @@ public interface ProcessInstanceCreationRecordValue
 
   /** Returns a list of start instructions (if available), or an empty list. */
   List<ProcessInstanceCreationStartInstructionValue> getStartInstructions();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableProcessInstanceCreationStartInstructionValue.Builder.class)

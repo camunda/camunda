@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import org.immutables.value.Value;
 
@@ -27,7 +28,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableIncidentRecordValue.Builder.class)
-public interface IncidentRecordValue extends RecordValue, ProcessInstanceRelated {
+public interface IncidentRecordValue
+    extends RecordValue, ProcessInstanceRelated, RecordValueWithTenant {
   /**
    * @return the type of error this incident is caused by. Can be <code>UNKNOWN</code> if the
    *     incident record is part of a {@link IncidentIntent#RESOLVE} command.
@@ -83,7 +85,4 @@ public interface IncidentRecordValue extends RecordValue, ProcessInstanceRelated
    *     -1</code> if the incident record is part of a {@link IncidentIntent#RESOLVE} command.
    */
   long getVariableScopeKey();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 }
