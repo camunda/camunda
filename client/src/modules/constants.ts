@@ -54,6 +54,13 @@ const ACTIVE_OPERATION_STATES = [
   OPERATION_STATE.SENT,
 ];
 
+const NON_APPENDABLE_FLOW_NODES = [
+  'bpmn:StartEvent',
+  'bpmn:BoundaryEvent',
+  'bpmn:IntermediateThrowEvent',
+  'bpmn:IntermediateCatchEvent',
+];
+
 const FLOWNODE_TYPE_HANDLE = {
   'bpmn:StartEvent': TYPE.EVENT_START,
   'bpmn:EndEvent': TYPE.EVENT_END,
@@ -123,4 +130,5 @@ export {
   INCIDENTS_BAR_HEIGHT,
   INSTANCE_SELECTION_MODE,
   HEADER_HEIGHT,
+  NON_APPENDABLE_FLOW_NODES,
 };

@@ -32,6 +32,7 @@ import {isInstanceRunning} from './utils/isInstanceRunning';
 import {logger} from 'modules/logger';
 import {flowNodeMetaDataStore} from './flowNodeMetaData';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {modificationsStore} from './modifications';
 
 type FetchType = 'initial' | 'prev' | 'next';
 type State = {
@@ -650,6 +651,9 @@ class Variables extends NetworkReconnectionHandler {
     }
     if (flowNodeMetaDataStore.hasMultipleInstances) {
       return 'multi-instances';
+    }
+    if (modificationsStore.isModificationModeEnabled && this.scopeId === null) {
+      return 'no-variables';
     }
     if (status === 'fetching' || this.scopeId === null) {
       return 'spinner';

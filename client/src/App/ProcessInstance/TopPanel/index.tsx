@@ -29,7 +29,7 @@ import {MetadataPopover} from './MetadataPopover';
 import {modificationsStore} from 'modules/stores/modifications';
 import {ModificationDropdown} from './ModificationDropdown';
 
-const OVERLAY_TYPE = 'flowNodeState';
+const OVERLAY_TYPE_STATE = 'flowNodeState';
 
 type Props = {
   incidents?: unknown;
@@ -78,7 +78,7 @@ const TopPanel: React.FC<Props> = observer(() => {
           ...flowNodeStates,
           {
             flowNodeId,
-            type: OVERLAY_TYPE,
+            type: OVERLAY_TYPE_STATE,
             position: {bottom: 17, left: -7},
             payload: {state},
           },
@@ -90,10 +90,12 @@ const TopPanel: React.FC<Props> = observer(() => {
   const {items: processedSequenceFlows} = sequenceFlowsStore.state;
   const {processInstance} = processInstanceDetailsStore.state;
   const stateOverlays = diagramOverlaysStore.state.overlays.filter(
-    ({type}) => type === OVERLAY_TYPE
+    ({type}) => type === OVERLAY_TYPE_STATE
   );
+
   const {
     state: {status, xml},
+    modifiableFlowNodes,
   } = processInstanceDetailsDiagramStore;
 
   const {
@@ -157,13 +159,22 @@ const TopPanel: React.FC<Props> = observer(() => {
             {xml !== null && (
               <Diagram
                 xml={xml}
-                selectableFlowNodes={selectableFlowNodes}
+                selectableFlowNodes={
+                  isModificationModeEnabled
+                    ? modifiableFlowNodes
+                    : selectableFlowNodes
+                }
                 selectedFlowNodeId={flowNodeSelection?.flowNodeId}
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
-                  flowNodeSelectionStore.selectFlowNode({
-                    flowNodeId,
-                    isMultiInstance,
-                  });
+                  if (modificationsStore.state.status === 'moving-token') {
+                    flowNodeSelectionStore.clearSelection();
+                    modificationsStore.finishMovingToken();
+                  } else {
+                    flowNodeSelectionStore.selectFlowNode({
+                      flowNodeId,
+                      isMultiInstance,
+                    });
+                  }
                 }}
                 overlaysData={flowNodeStateOverlays.get()}
                 selectedFlowNodeOverlay={

@@ -9,6 +9,7 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {processInstanceDetailsStore} from './processInstanceDetails';
 import {flowNodeSelectionStore} from './flowNodeSelection';
+import {modificationsStore} from './modifications';
 
 const PROCESS_INSTANCE_ID = '2251799813689404';
 
@@ -38,6 +39,7 @@ describe('stores/flowNodeSelection', () => {
 
   afterEach(() => {
     flowNodeSelectionStore.reset();
+    modificationsStore.reset();
   });
 
   it('should initially select process instance', () => {
@@ -152,5 +154,28 @@ describe('stores/flowNodeSelection', () => {
       flowNodeInstanceId: PROCESS_INSTANCE_ID,
       isMultiInstance: false,
     });
+  });
+
+  it('should clear selection when modification mode is enabled/disabled', async () => {
+    const rootNode = {
+      flowNodeInstanceId: PROCESS_INSTANCE_ID,
+      isMultiInstance: false,
+    };
+    const selection = {
+      flowNodeId: 'startEvent',
+      flowNodeInstanceId: '2251799813689409',
+    };
+
+    flowNodeSelectionStore.selectFlowNode(selection);
+    expect(flowNodeSelectionStore.state.selection).toEqual(selection);
+
+    modificationsStore.enableModificationMode();
+    expect(flowNodeSelectionStore.state.selection).toEqual(rootNode);
+
+    flowNodeSelectionStore.selectFlowNode(selection);
+    expect(flowNodeSelectionStore.state.selection).toEqual(selection);
+
+    modificationsStore.disableModificationMode();
+    expect(flowNodeSelectionStore.state.selection).toEqual(rootNode);
   });
 });

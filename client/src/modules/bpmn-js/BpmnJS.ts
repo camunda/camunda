@@ -22,10 +22,11 @@ import {tracking} from 'modules/tracking';
 import {OutlineModule} from './modules/Outline';
 
 type OverlayData = {
-  payload: unknown;
+  payload?: unknown;
   type: string;
   flowNodeId: string;
   position: OverlayPosition;
+  isZoomFixed?: boolean;
 };
 
 type OnFlowNodeSelection = (
@@ -167,23 +168,26 @@ class BpmnJS {
       diagramOverlaysStore.reset();
       this.#removeOverlays();
 
-      overlaysData.forEach(({payload, flowNodeId, position, type}) => {
-        const container = document.createElement('div');
+      overlaysData.forEach(
+        ({payload, flowNodeId, position, type, isZoomFixed}) => {
+          const container = document.createElement('div');
 
-        this.#attachOverlay({
-          elementId: flowNodeId,
-          children: container,
-          position,
-          type,
-        });
+          this.#attachOverlay({
+            elementId: flowNodeId,
+            children: container,
+            position,
+            type,
+            isZoomFixed,
+          });
 
-        diagramOverlaysStore.addOverlay({
-          container,
-          payload,
-          flowNodeId,
-          type,
-        });
-      });
+          diagramOverlaysStore.addOverlay({
+            container,
+            payload,
+            flowNodeId,
+            type,
+          });
+        }
+      );
     }
 
     // handle processed sequence flows
@@ -235,15 +239,18 @@ class BpmnJS {
     children,
     position,
     type,
+    isZoomFixed = false,
   }: {
     elementId: string;
     children: HTMLElement;
     position: OverlayPosition;
     type: string;
+    isZoomFixed?: boolean;
   }): string => {
     return this.#navigatedViewer?.get('overlays')?.add(elementId, type, {
       html: children,
       position: position,
+      ...(isZoomFixed ? {scale: {min: 1, max: 1}} : {}),
     });
   };
 

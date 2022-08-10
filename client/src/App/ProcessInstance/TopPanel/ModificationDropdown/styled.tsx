@@ -54,7 +54,7 @@ const Option = styled.button`
       color: ${colors.modificationsDropdown.color};
       width: 100%;
       height: 100%;
-      padding: 9px 15px;
+      padding: 9px 16px 9px 15px;
       ${styles.label02}
       font-weight: 500;
 
@@ -69,4 +69,19 @@ const Option = styled.button`
   }}
 `;
 
-export {Popover, Title, Options, Option, MoveIcon, AddIcon, CancelIcon};
+const Unsupported = styled.div`
+  padding: 9px 16px 9px 15px;
+  ${styles.label02}
+  font-style:italic;
+`;
+
+export {
+  Popover,
+  Title,
+  Options,
+  Option,
+  MoveIcon,
+  AddIcon,
+  CancelIcon,
+  Unsupported,
+};

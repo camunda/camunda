@@ -7,20 +7,19 @@
 
 import {rest} from 'msw';
 import {createRef} from 'react';
-import {render, screen} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {ModificationDropdown} from './';
-import {createInstance, mockProcessXML} from 'modules/testUtils';
+import {createInstance} from 'modules/testUtils';
+import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 import {MemoryRouter} from 'react-router-dom';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {
-  CALL_ACTIVITY_FLOW_NODE_ID,
-  PROCESS_INSTANCE_ID,
-} from 'modules/mocks/metadata';
+import {PROCESS_INSTANCE_ID} from 'modules/mocks/metadata';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockServer} from 'modules/mock-server/node';
+import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
@@ -49,16 +48,35 @@ describe('Modification Dropdown', () => {
   beforeEach(() => {
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
+        res.once(ctx.text(mockProcessForModifications))
+      )
+    );
+    mockServer.use(
+      rest.get(
+        '/api/process-instances/:processId/flow-node-states',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              StartEvent_1: 'COMPLETED',
+              'service-task-1': 'COMPLETED',
+              'multi-instance-subprocess': 'INCIDENT',
+              'subprocess-start-1': 'COMPLETED',
+              'subprocess-service-task': 'INCIDENT',
+              'service-task-7': 'ACTIVE',
+              'message-boundary': 'ACTIVE',
+            })
+          )
       )
     );
 
     flowNodeSelectionStore.init();
+    flowNodeStatesStore.init('processId');
     processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
+        processId: 'processId',
       })
     );
   });
@@ -67,10 +85,17 @@ describe('Modification Dropdown', () => {
     flowNodeSelectionStore.reset();
     processInstanceDetailsStore.reset();
     modificationsStore.reset();
+    flowNodeStatesStore.reset();
   });
 
   it('should not render dropdown when no flow node is selected', async () => {
     renderPopover();
+
+    await waitFor(() =>
+      expect(
+        processInstanceDetailsDiagramStore.state.diagramModel
+      ).not.toBeNull()
+    );
 
     modificationsStore.enableModificationMode();
 
@@ -92,7 +117,7 @@ describe('Modification Dropdown', () => {
     ).not.toBeInTheDocument();
 
     flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
+      flowNodeId: 'service-task-7',
     });
 
     expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
@@ -109,5 +134,89 @@ describe('Modification Dropdown', () => {
         /Move all running instances in this flow node to another target/
       )
     ).toHaveTextContent(/Move/);
+  });
+
+  it('should not render dropdown when moving token', async () => {
+    const {user} = renderPopover();
+
+    await waitFor(() =>
+      expect(
+        processInstanceDetailsDiagramStore.state.diagramModel
+      ).not.toBeNull()
+    );
+    modificationsStore.enableModificationMode();
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'service-task-7',
+    });
+
+    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
+    await user.click(await screen.findByText(/Move/));
+    expect(
+      screen.queryByText(/Flow Node Modifications/)
+    ).not.toBeInTheDocument();
+  });
+
+  it('should only render add option for completed flow nodes', async () => {
+    renderPopover();
+
+    await waitFor(() =>
+      expect(
+        processInstanceDetailsDiagramStore.state.diagramModel
+      ).not.toBeNull()
+    );
+    modificationsStore.enableModificationMode();
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'service-task-1',
+    });
+
+    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
+    expect(await screen.findByText(/Add/)).toBeInTheDocument();
+    expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
+  });
+
+  it('should only render move and cancel options for boundary events', async () => {
+    renderPopover();
+
+    await waitFor(() =>
+      expect(
+        processInstanceDetailsDiagramStore.state.diagramModel
+      ).not.toBeNull()
+    );
+    modificationsStore.enableModificationMode();
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'message-boundary',
+    });
+
+    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
+    expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
+    expect(screen.getByText(/Move/)).toBeInTheDocument();
+    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
+  });
+
+  it('should render unsupported flow node type for non modifiable flow nodes', async () => {
+    renderPopover();
+
+    await waitFor(() =>
+      expect(
+        processInstanceDetailsDiagramStore.state.diagramModel
+      ).not.toBeNull()
+    );
+    modificationsStore.enableModificationMode();
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'boundary-event',
+    });
+
+    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Unsupported flow node type/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
   });
 });

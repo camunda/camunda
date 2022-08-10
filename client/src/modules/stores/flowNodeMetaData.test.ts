@@ -11,6 +11,8 @@ import {processInstanceDetailsStore} from './processInstanceDetails';
 import {flowNodeSelectionStore} from './flowNodeSelection';
 import {flowNodeMetaDataStore, MetaDataEntity} from './flowNodeMetaData';
 import {waitFor} from 'modules/testing-library';
+import {flowNodeStatesStore} from './flowNodeStates';
+import {modificationsStore} from './modifications';
 
 const PROCESS_INSTANCE_ID = '2251799813689404';
 
@@ -46,18 +48,14 @@ describe('stores/flowNodeMetaData', () => {
   });
 
   beforeEach(() => {
-    mockServer.use(
-      rest.post(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
-        (_, res, ctx) => res.once(ctx.json(metaData))
-      )
-    );
     flowNodeSelectionStore.init();
   });
 
   afterEach(() => {
     flowNodeSelectionStore.reset();
     flowNodeMetaDataStore.reset();
+    flowNodeStatesStore.reset();
+    modificationsStore.reset();
   });
 
   it('should initially set meta data to null', () => {
@@ -66,6 +64,13 @@ describe('stores/flowNodeMetaData', () => {
   });
 
   it('should fetch and set meta data', async () => {
+    mockServer.use(
+      rest.post(
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
+        (_, res, ctx) => res.once(ctx.json(metaData))
+      )
+    );
+
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'ServiceTask_1',
@@ -84,6 +89,13 @@ describe('stores/flowNodeMetaData', () => {
   });
 
   it('should retry fetch on network reconnection', async () => {
+    mockServer.use(
+      rest.post(
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
+        (_, res, ctx) => res.once(ctx.json(metaData))
+      )
+    );
+
     const eventListeners: any = {};
     const originalEventListener = window.addEventListener;
     window.addEventListener = jest.fn((event: string, cb: any) => {
@@ -118,5 +130,30 @@ describe('stores/flowNodeMetaData', () => {
     });
 
     window.addEventListener = originalEventListener;
+  });
+
+  it('should not fetch metadata in modification mode if flow node does not have any running/finished instances', async () => {
+    mockServer.use(
+      rest.get(
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-states`,
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              ServiceTask_1: 'ACTIVE',
+            })
+          )
+      )
+    );
+
+    modificationsStore.enableModificationMode();
+    await flowNodeStatesStore.fetchFlowNodeStates(PROCESS_INSTANCE_ID);
+
+    flowNodeMetaDataStore.init();
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'ServiceTask_2',
+      flowNodeInstanceId: '2251799813689409',
+    });
+
+    expect(flowNodeMetaDataStore.state.metaData).toEqual(null);
   });
 });

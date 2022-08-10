@@ -10,10 +10,17 @@ declare module 'bpmn-js/lib/util/ModelUtil' {
 }
 
 declare module 'bpmn-js/lib/NavigatedViewer' {
+  export type BusinessObject = {
+    id: string;
+    $type: string;
+    $parent: BusinessObject;
+    loopCharacteristics?: {$type: string};
+  };
+
   export type BpmnElement = {
     id: string;
     type: string;
-    businessObject: {loopCharacteristics?: {$type: string}};
+    businessObject: BusinessObject;
     di: {set: Function};
     width: number;
     height: number;
@@ -74,6 +81,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
         overlay: {
           html: HTMLElement;
           position: OverlayPosition;
+          scale?: {min: number; max: number};
         }
       );
       clear(): void;

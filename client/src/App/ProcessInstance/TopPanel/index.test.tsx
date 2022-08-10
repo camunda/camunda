@@ -23,10 +23,10 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
   calledInstanceMetadata,
-  CALL_ACTIVITY_FLOW_NODE_ID,
   PROCESS_INSTANCE_ID,
 } from 'modules/mocks/metadata';
 import {createInstance, mockCallActivityProcessXML} from 'modules/testUtils';
+import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -95,7 +95,7 @@ describe('TopPanel', () => {
       ),
       rest.get(
         '/api/process-instances/:instanceId/flow-node-states',
-        (_, res, ctx) => res.once(ctx.json({}))
+        (_, res, ctx) => res.once(ctx.json({taskD: 'INCIDENT'}))
       )
     );
   });
@@ -103,6 +103,7 @@ describe('TopPanel', () => {
   afterEach(() => {
     processInstanceDetailsDiagramStore.reset();
     processInstanceDetailsStore.reset();
+    flowNodeStatesStore.reset();
   });
 
   it('should render spinner while loading', async () => {
@@ -196,19 +197,23 @@ describe('TopPanel', () => {
         (_, res, ctx) => res.once(ctx.json(calledInstanceMetadata))
       )
     );
+
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
       })
     );
-
     render(<TopPanel />, {
       wrapper: Wrapper,
     });
 
+    await waitFor(() =>
+      expect(flowNodeStatesStore.state.status).toBe('fetched')
+    );
+
     flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
+      flowNodeId: 'taskD',
     });
 
     expect(
@@ -229,7 +234,20 @@ describe('TopPanel', () => {
     expect(screen.queryByText(/Start Date/)).not.toBeInTheDocument();
     expect(screen.queryByText(/End Date/)).not.toBeInTheDocument();
 
-    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
+    mockServer.use(
+      rest.post(
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
+        (_, res, ctx) => res.once(ctx.json(calledInstanceMetadata))
+      )
+    );
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'taskD',
+    });
+
+    expect(
+      await screen.findByText(/Flow Node Modifications/)
+    ).toBeInTheDocument();
     expect(
       screen.getByTitle(/Add single flow node instance/)
     ).toBeInTheDocument();

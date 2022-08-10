@@ -24,6 +24,11 @@ import {
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {getFlowNodes} from 'modules/utils/flowNodes';
+import {NON_APPENDABLE_FLOW_NODES} from 'modules/constants';
+import {modificationsStore} from './modifications';
+import {flowNodeStatesStore} from './flowNodeStates';
+import {BpmnElement, BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
 type FlowNodeMetaData = {
   name: string;
@@ -35,7 +40,7 @@ type FlowNodeMetaData = {
 };
 
 type State = {
-  diagramModel: unknown;
+  diagramModel: {bpmnElements: BpmnElement[]} | null;
   xml: string | null;
   status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
   nodeMetaDataMap?: NodeMetaDataMap;
@@ -46,6 +51,13 @@ const DEFAULT_STATE: State = {
   xml: null,
   status: 'initial',
   nodeMetaDataMap: undefined,
+};
+
+const isWithinMultiInstance = (node: BusinessObject) => {
+  return (
+    node.$parent?.loopCharacteristics?.$type ===
+    'bpmn:MultiInstanceLoopCharacteristics'
+  );
 };
 
 class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
@@ -62,6 +74,11 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
       handleFetchSuccess: action,
       areDiagramDefinitionsAvailable: computed,
       hasCalledProcessInstances: computed,
+      flowNodes: computed,
+      cancellableFlowNodes: computed,
+      appendableFlowNodes: computed,
+      modifiableFlowNodes: computed,
+      nonModifiableFlowNodes: computed,
       handleFetchFailure: action,
       reset: override,
     });
@@ -126,6 +143,56 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
   getFlowNodeName = (flowNodeId: string) => {
     return this.getMetaData(flowNodeId)?.name || flowNodeId;
   };
+
+  get flowNodes() {
+    const allFlowNodes: BusinessObject[] = getFlowNodes(
+      this.state.diagramModel?.bpmnElements
+    );
+
+    return allFlowNodes.map((flowNode) => {
+      const flowNodeState = flowNodeStatesStore.state.flowNodes[flowNode.id];
+      return {
+        id: flowNode.id,
+        isCancellable:
+          flowNodeState !== undefined &&
+          ['ACTIVE', 'INCIDENT'].includes(flowNodeState),
+        isAppendable: !NON_APPENDABLE_FLOW_NODES.includes(flowNode.$type),
+        hasMultiInstanceParent: isWithinMultiInstance(flowNode),
+      };
+    });
+  }
+
+  get appendableFlowNodes() {
+    return this.flowNodes
+      .filter(
+        (flowNode) => !flowNode.hasMultiInstanceParent && flowNode.isAppendable
+      )
+      .map(({id}) => id);
+  }
+
+  get cancellableFlowNodes() {
+    return this.flowNodes
+      .filter(
+        (flowNode) => !flowNode.hasMultiInstanceParent && flowNode.isCancellable
+      )
+      .map(({id}) => id);
+  }
+
+  get modifiableFlowNodes() {
+    if (modificationsStore.state.status === 'moving-token') {
+      return this.appendableFlowNodes;
+    } else {
+      return Array.from(
+        new Set([...this.appendableFlowNodes, ...this.cancellableFlowNodes])
+      );
+    }
+  }
+
+  get nonModifiableFlowNodes() {
+    return this.flowNodes
+      .filter((flowNode) => !this.modifiableFlowNodes.includes(flowNode.id))
+      .map(({id}) => id);
+  }
 
   get areDiagramDefinitionsAvailable() {
     const {status, diagramModel} = this.state;

@@ -101,6 +101,15 @@ class Modifications {
     makeAutoObservable(this);
   }
 
+  startMovingToken = () => {
+    this.state.status = 'moving-token';
+  };
+
+  finishMovingToken = () => {
+    // TODO: #2948: Add flow node modification
+    this.state.status = 'enabled';
+  };
+
   enableModificationMode = () => {
     this.state.status = 'enabled';
   };

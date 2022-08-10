@@ -5,9 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {IReactionDisposer, makeAutoObservable, when} from 'mobx';
+import {IReactionDisposer, makeAutoObservable, when, reaction} from 'mobx';
 import {FlowNodeInstance} from './flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {modificationsStore} from './modifications';
 
 type Selection = {
   flowNodeId?: string;
@@ -27,6 +28,7 @@ const DEFAULT_STATE: State = {
 class FlowNodeSelection {
   state: State = {...DEFAULT_STATE};
   rootNodeSelectionDisposer: null | IReactionDisposer = null;
+  modificationModeChangeDisposer: null | IReactionDisposer = null;
 
   constructor() {
     makeAutoObservable(this, {init: false, selectFlowNode: false});
@@ -36,6 +38,11 @@ class FlowNodeSelection {
     this.rootNodeSelectionDisposer = when(
       () => processInstanceDetailsStore.state.processInstance?.id !== undefined,
       () => this.clearSelection()
+    );
+
+    this.modificationModeChangeDisposer = reaction(
+      () => modificationsStore.isModificationModeEnabled,
+      this.clearSelection
     );
   };
 
@@ -110,6 +117,7 @@ class FlowNodeSelection {
   reset = () => {
     this.state = {...DEFAULT_STATE};
     this.rootNodeSelectionDisposer?.();
+    this.modificationModeChangeDisposer?.();
   };
 }
 

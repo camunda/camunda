@@ -15,6 +15,9 @@ import {
   mockCallActivityProcessXML,
 } from 'modules/testUtils';
 import {waitFor} from 'modules/testing-library';
+import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
+import {flowNodeStatesStore} from './flowNodeStates';
+import {modificationsStore} from './modifications';
 
 describe('stores/processInstanceDiagram', () => {
   beforeEach(() => {
@@ -234,5 +237,104 @@ describe('stores/processInstanceDiagram', () => {
         false
       );
     });
+  });
+
+  it('should get modifiable-nonmodifiable flow nodes', async () => {
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessForModifications))
+      ),
+      rest.get(
+        '/api/process-instances/:processId/flow-node-states',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              StartEvent_1: 'COMPLETED',
+              'service-task-1': 'COMPLETED',
+              'multi-instance-subprocess': 'INCIDENT',
+              'subprocess-start-1': 'COMPLETED',
+              'subprocess-service-task': 'INCIDENT',
+              'service-task-7': 'ACTIVE',
+              'message-boundary': 'ACTIVE',
+            })
+          )
+      )
+    );
+    await processInstanceDetailsDiagramStore.fetchProcessXml(
+      'processInstanceId'
+    );
+    await flowNodeStatesStore.fetchFlowNodeStates('processInstanceId');
+
+    expect(processInstanceDetailsDiagramStore.appendableFlowNodes).toEqual([
+      'service-task-1',
+      'multi-instance-subprocess',
+      'gateway-1',
+      'gateway-2',
+      'service-task-7',
+      'user-task-1',
+      'end-event',
+      'service-task-2',
+      'service-task-3',
+      'service-task-4',
+      'service-task-5',
+      'service-task-6',
+    ]);
+
+    expect(processInstanceDetailsDiagramStore.cancellableFlowNodes).toEqual([
+      'multi-instance-subprocess',
+      'message-boundary',
+      'service-task-7',
+    ]);
+
+    expect(processInstanceDetailsDiagramStore.modifiableFlowNodes).toEqual([
+      'service-task-1',
+      'multi-instance-subprocess',
+      'gateway-1',
+      'gateway-2',
+      'service-task-7',
+      'user-task-1',
+      'end-event',
+      'service-task-2',
+      'service-task-3',
+      'service-task-4',
+      'service-task-5',
+      'service-task-6',
+      'message-boundary',
+    ]);
+
+    expect(processInstanceDetailsDiagramStore.nonModifiableFlowNodes).toEqual([
+      'StartEvent_1',
+      'subprocess-start-1',
+      'subprocess-end-task',
+      'subprocess-service-task',
+      'error-boundary',
+      'non-interrupt-timer-boundary',
+      'non-interrupt-message-boundary',
+      'timer-boundary',
+      'Event_1o1ply5',
+      'message-intermediate',
+      'timer-intermediate',
+      'boundary-event',
+      'intermediate-throw',
+    ]);
+
+    modificationsStore.startMovingToken();
+
+    expect(processInstanceDetailsDiagramStore.nonModifiableFlowNodes).toEqual([
+      'StartEvent_1',
+      'subprocess-start-1',
+      'subprocess-end-task',
+      'subprocess-service-task',
+      'message-boundary',
+      'error-boundary',
+      'non-interrupt-timer-boundary',
+      'non-interrupt-message-boundary',
+      'timer-boundary',
+      'Event_1o1ply5',
+      'message-intermediate',
+      'timer-intermediate',
+      'boundary-event',
+      'intermediate-throw',
+    ]);
   });
 });

@@ -21,6 +21,8 @@ import {flowNodeSelectionStore, Selection} from './flowNodeSelection';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {formatDate} from 'modules/utils/date';
+import {flowNodeStatesStore} from './flowNodeStates';
+import {modificationsStore} from './modifications';
 
 type InstanceMetaData = {
   startDate: string;
@@ -144,7 +146,12 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
       const processInstanceId =
         processInstanceDetailsStore.state.processInstance?.id;
 
-      if (processInstanceId === undefined || flowNodeId === undefined) {
+      if (
+        processInstanceId === undefined ||
+        flowNodeId === undefined ||
+        (modificationsStore.isModificationModeEnabled &&
+          flowNodeStatesStore.state.flowNodes[flowNodeId] === undefined)
+      ) {
         return;
       }
 

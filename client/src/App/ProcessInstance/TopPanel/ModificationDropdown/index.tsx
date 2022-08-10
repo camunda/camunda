@@ -13,9 +13,12 @@ import {
   MoveIcon,
   AddIcon,
   CancelIcon,
+  Unsupported,
 } from './styled';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
+import {modificationsStore} from 'modules/stores/modifications';
+import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -26,7 +29,10 @@ const ModificationDropdown: React.FC<Props> = observer(
   ({selectedFlowNodeRef, diagramCanvasRef}) => {
     const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
 
-    if (flowNodeId === undefined) {
+    if (
+      flowNodeId === undefined ||
+      modificationsStore.state.status === 'moving-token'
+    ) {
       return null;
     }
 
@@ -34,7 +40,7 @@ const ModificationDropdown: React.FC<Props> = observer(
       <Popover
         referenceElement={selectedFlowNodeRef}
         offsetOptions={{
-          offset: [50, 10],
+          offset: [0, 10],
         }}
         flipOptions={{
           fallbackPlacements: ['top', 'left', 'right'],
@@ -43,18 +49,36 @@ const ModificationDropdown: React.FC<Props> = observer(
       >
         <Title>Flow Node Modifications</Title>
         <Options>
-          <Option title="Add single flow node instance">
-            <AddIcon />
-            Add
-          </Option>
-          <Option title="Cancel all running flow node instances in this flow node">
-            <CancelIcon />
-            Cancel
-          </Option>
-          <Option title="Move all running instances in this flow node to another target">
-            <MoveIcon />
-            Move
-          </Option>
+          {processInstanceDetailsDiagramStore.appendableFlowNodes.includes(
+            flowNodeId
+          ) && (
+            <Option title="Add single flow node instance">
+              <AddIcon />
+              Add
+            </Option>
+          )}
+          {processInstanceDetailsDiagramStore.cancellableFlowNodes.includes(
+            flowNodeId
+          ) && (
+            <>
+              <Option title="Cancel all running flow node instances in this flow node">
+                <CancelIcon />
+                Cancel
+              </Option>
+              <Option
+                title="Move all running instances in this flow node to another target"
+                onClick={() => {
+                  modificationsStore.startMovingToken();
+                }}
+              >
+                <MoveIcon />
+                Move
+              </Option>
+            </>
+          )}
+          {processInstanceDetailsDiagramStore.nonModifiableFlowNodes.includes(
+            flowNodeId
+          ) && <Unsupported>Unsupported flow node type</Unsupported>}
         </Options>
       </Popover>
     );
