@@ -39,6 +39,7 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private final ArrayProperty<StringValue> variablesProp =
       new ArrayProperty<>("variables", new StringValue());
   private final BooleanProperty truncatedProp = new BooleanProperty("truncated", false);
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public JobBatchRecord() {
     declareProperty(typeProp)
@@ -48,7 +49,8 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
         .declareProperty(jobKeysProp)
         .declareProperty(jobsProp)
         .declareProperty(variablesProp)
-        .declareProperty(truncatedProp);
+        .declareProperty(truncatedProp)
+        .declareProperty(tenantIdProp);
   }
 
   public JobBatchRecord setType(final DirectBuffer buf, final int offset, final int length) {
@@ -92,6 +94,7 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
     return timeoutProp.getValue();
   }
 
+  @Override
   public int getMaxJobsToActivate() {
     return maxJobsToActivateProp.getValue();
   }
@@ -128,6 +131,11 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   public JobBatchRecord setTruncated(final boolean truncated) {
     truncatedProp.setValue(truncated);
     return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
   public JobBatchRecord setMaxJobsToActivate(final int maxJobsToActivate) {

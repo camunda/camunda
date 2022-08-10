@@ -17,6 +17,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -32,6 +33,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private final BooleanProperty interruptingProp = new BooleanProperty("interrupting", true);
 
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public MessageSubscriptionRecord() {
     declareProperty(processInstanceKeyProp)
@@ -41,7 +43,8 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(correlationKeyProp)
         .declareProperty(interruptingProp)
         .declareProperty(bpmnProcessIdProp)
-        .declareProperty(variablesProp);
+        .declareProperty(variablesProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrap(final MessageSubscriptionRecord record) {
@@ -53,15 +56,22 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     setInterrupting(record.isInterrupting());
     setBpmnProcessId(record.getBpmnProcessIdBuffer());
     setVariables(record.getVariablesBuffer());
-  }
-
-  public boolean isInterrupting() {
-    return interruptingProp.getValue();
+    setTenantId(record.getTenantIdBuffer());
   }
 
   @JsonIgnore
   public DirectBuffer getCorrelationKeyBuffer() {
     return correlationKeyProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getMessageNameBuffer() {
+    return messageNameProp.getValue();
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
   @Override
@@ -99,6 +109,26 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     return messageKeyProp.getValue();
   }
 
+  @Override
+  public boolean isInterrupting() {
+    return interruptingProp.getValue();
+  }
+
+  public MessageSubscriptionRecord setInterrupting(final boolean interrupting) {
+    interruptingProp.setValue(interrupting);
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public MessageSubscriptionRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
   public MessageSubscriptionRecord setMessageKey(final long messageKey) {
     messageKeyProp.setValue(messageKey);
     return this;
@@ -114,24 +144,13 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  @JsonIgnore
-  public DirectBuffer getMessageNameBuffer() {
-    return messageNameProp.getValue();
-  }
-
-  @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
-  }
-
   public MessageSubscriptionRecord setProcessInstanceKey(final long key) {
     processInstanceKeyProp.setValue(key);
     return this;
   }
 
-  public MessageSubscriptionRecord setInterrupting(final boolean interrupting) {
-    interruptingProp.setValue(interrupting);
-    return this;
+  public DirectBuffer getTenantIdBuffer() {
+    return tenantIdProp.getValue();
   }
 
   @JsonIgnore

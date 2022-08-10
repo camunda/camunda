@@ -8,20 +8,29 @@
 package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class DeploymentDistributionRecord extends UnifiedRecordValue
     implements DeploymentDistributionRecordValue {
 
   private final IntegerProperty partitionIdProperty = new IntegerProperty("partitionId");
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public DeploymentDistributionRecord() {
-    declareProperty(partitionIdProperty);
+    declareProperty(partitionIdProperty).declareProperty(tenantIdProp);
   }
 
+  @Override
   public int getPartitionId() {
     return partitionIdProperty.getValue();
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
   public void setPartition(final int partitionId) {

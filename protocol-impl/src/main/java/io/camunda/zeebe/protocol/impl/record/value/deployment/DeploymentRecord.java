@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -34,12 +35,14 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
 
   private final ArrayProperty<DecisionRequirementsMetadataRecord> decisionRequirementsMetadataProp =
       new ArrayProperty<>("decisionRequirementsMetadata", new DecisionRequirementsMetadataRecord());
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public DeploymentRecord() {
     declareProperty(resourcesProp)
         .declareProperty(processesMetadataProp)
         .declareProperty(decisionRequirementsMetadataProp)
-        .declareProperty(decisionMetadataProp);
+        .declareProperty(decisionMetadataProp)
+        .declareProperty(tenantIdProp);
   }
 
   public ValueArray<ProcessMetadata> processesMetadata() {
@@ -113,5 +116,10 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
     }
 
     return metadataList;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 }

@@ -10,9 +10,11 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 
 public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
@@ -27,11 +29,13 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       activateInstructionsProperty =
           new ArrayProperty<>(
               "activateInstructions", new ProcessInstanceModificationActivateInstruction());
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public ProcessInstanceModificationRecord() {
     declareProperty(processInstanceKeyProperty)
         .declareProperty(terminateInstructionsProperty)
-        .declareProperty(activateInstructionsProperty);
+        .declareProperty(activateInstructionsProperty)
+        .declareProperty(tenantIdProp);
   }
 
   /**
@@ -72,6 +76,11 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
               return (ProcessInstanceModificationActivateInstructionValue) elementCopy;
             })
         .toList();
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
   /** Returns true if this record has terminate instructions, otherwise false. */

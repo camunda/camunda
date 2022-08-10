@@ -27,12 +27,14 @@ public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecord
   private final LongProperty errorEventPositionProp = new LongProperty("errorEventPosition");
 
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public ErrorRecord() {
     declareProperty(exceptionMessageProp)
         .declareProperty(stacktraceProp)
         .declareProperty(errorEventPositionProp)
-        .declareProperty(processInstanceKeyProp);
+        .declareProperty(processInstanceKeyProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void initErrorRecord(final Throwable throwable, final long position) {
@@ -69,10 +71,12 @@ public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecord
     return BufferUtil.bufferAsString(stacktraceProp.getValue());
   }
 
+  @Override
   public long getErrorEventPosition() {
     return errorEventPositionProp.getValue();
   }
 
+  @Override
   public long getProcessInstanceKey() {
     return processInstanceKeyProp.getValue();
   }
@@ -80,5 +84,10 @@ public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecord
   public ErrorRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProp.setValue(processInstanceKey);
     return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 }

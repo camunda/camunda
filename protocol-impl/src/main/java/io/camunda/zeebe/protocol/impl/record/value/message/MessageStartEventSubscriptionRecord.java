@@ -16,6 +16,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -32,6 +33,7 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public MessageStartEventSubscriptionRecord() {
     declareProperty(processDefinitionKeyProp)
@@ -41,7 +43,8 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
         .declareProperty(processInstanceKeyProp)
         .declareProperty(messageKeyProp)
         .declareProperty(correlationKeyProp)
-        .declareProperty(variablesProp);
+        .declareProperty(variablesProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrap(final MessageStartEventSubscriptionRecord record) {
@@ -49,6 +52,7 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
     bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
     messageNameProp.setValue(record.getMessageNameBuffer());
     startEventIdProp.setValue(record.getStartEventIdBuffer());
+    tenantIdProp.setValue(record.getTenantIdBuffer());
   }
 
   @JsonIgnore
@@ -91,19 +95,9 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
     return this;
   }
 
-  public MessageStartEventSubscriptionRecord setStartEventId(final DirectBuffer startEventId) {
-    startEventIdProp.setValue(startEventId);
-    return this;
-  }
-
-  public MessageStartEventSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
-    return this;
-  }
-
-  @JsonIgnore
-  public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
   @Override
@@ -126,19 +120,38 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
     return this;
   }
 
-  @JsonIgnore
-  public DirectBuffer getCorrelationKeyBuffer() {
-    return correlationKeyProp.getValue();
-  }
-
   @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
   public MessageStartEventSubscriptionRecord setProcessInstanceKey(final long key) {
     processInstanceKeyProp.setValue(key);
     return this;
+  }
+
+  public MessageStartEventSubscriptionRecord setStartEventId(final DirectBuffer startEventId) {
+    startEventIdProp.setValue(startEventId);
+    return this;
+  }
+
+  public MessageStartEventSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
+  public DirectBuffer getTenantIdBuffer() {
+    return tenantIdProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBpmnProcessIdBuffer() {
+    return bpmnProcessIdProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getCorrelationKeyBuffer() {
+    return correlationKeyProp.getValue();
   }
 
   @Override

@@ -18,6 +18,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -36,6 +37,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private final BooleanProperty interruptingProp = new BooleanProperty("interrupting", true);
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public ProcessMessageSubscriptionRecord() {
     declareProperty(subscriptionPartitionIdProp)
@@ -47,7 +49,8 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(interruptingProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(correlationKeyProp)
-        .declareProperty(elementIdProp);
+        .declareProperty(elementIdProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrap(final ProcessMessageSubscriptionRecord record) {
@@ -61,6 +64,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     setBpmnProcessId(record.getBpmnProcessIdBuffer());
     setCorrelationKey(record.getCorrelationKeyBuffer());
     setElementId(record.getElementIdBuffer());
+    setTenantId(record.getTenantIdBuffer());
   }
 
   @JsonIgnore
@@ -158,6 +162,16 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public ProcessMessageSubscriptionRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
   public ProcessMessageSubscriptionRecord setElementId(final DirectBuffer elementId) {
     elementIdProp.setValue(elementId);
     return this;
@@ -176,6 +190,10 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   public ProcessMessageSubscriptionRecord setProcessInstanceKey(final long key) {
     processInstanceKeyProp.setValue(key);
     return this;
+  }
+
+  public DirectBuffer getTenantIdBuffer() {
+    return tenantIdProp.getValue();
   }
 
   @JsonIgnore

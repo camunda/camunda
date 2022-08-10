@@ -29,15 +29,18 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
   private final LongProperty processInstanceKeyProperty =
       new LongProperty("processInstanceKey", -1);
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public ProcessInstanceResultRecord() {
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(versionProperty)
-        .declareProperty(variablesProperty);
+        .declareProperty(variablesProperty)
+        .declareProperty(tenantIdProp);
   }
 
+  @Override
   public String getBpmnProcessId() {
     return BufferUtil.bufferAsString(bpmnProcessIdProperty.getValue());
   }
@@ -52,6 +55,7 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
   public int getVersion() {
     return versionProperty.getValue();
   }
@@ -61,6 +65,7 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKeyProperty.getValue();
   }
@@ -78,6 +83,11 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
   public ProcessInstanceResultRecord setProcessInstanceKey(final long instanceKey) {
     processInstanceKeyProperty.setValue(instanceKey);
     return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
   @JsonIgnore

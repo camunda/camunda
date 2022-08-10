@@ -12,7 +12,6 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -31,6 +30,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
   private final LongProperty variableScopeKeyProp = new LongProperty("variableScopeKey", -1L);
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public IncidentRecord() {
     declareProperty(errorTypeProp)
@@ -41,7 +41,8 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(jobKeyProp)
-        .declareProperty(variableScopeKeyProp);
+        .declareProperty(variableScopeKeyProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrap(final IncidentRecord record) {
@@ -54,19 +55,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     jobKeyProp.setValue(record.getJobKey());
     variableScopeKeyProp.setValue(record.getVariableScopeKey());
-  }
-
-  public IncidentRecord initFromProcessInstanceFailure(
-      final long key, final ProcessInstanceRecord processInstanceEvent) {
-
-    setElementInstanceKey(key);
-    setBpmnProcessId(processInstanceEvent.getBpmnProcessIdBuffer());
-    setProcessDefinitionKey(processInstanceEvent.getProcessDefinitionKey());
-    setProcessInstanceKey(processInstanceEvent.getProcessInstanceKey());
-    setElementId(processInstanceEvent.getElementIdBuffer());
-    setVariableScopeKey(key);
-
-    return this;
+    tenantIdProp.setValue(record.getTenantIdBuffer());
   }
 
   @JsonIgnore
@@ -104,6 +93,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
+  @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKeyProp.getValue();
   }
@@ -111,6 +101,11 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   public IncidentRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
     return this;
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
   @Override
@@ -123,6 +118,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
+  @Override
   public long getElementInstanceKey() {
     return elementInstanceKeyProp.getValue();
   }
@@ -132,10 +128,12 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
+  @Override
   public long getJobKey() {
     return jobKeyProp.getValue();
   }
 
+  @Override
   public long getVariableScopeKey() {
     return variableScopeKeyProp.getValue();
   }
@@ -145,8 +143,18 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
   public IncidentRecord setJobKey(final long jobKey) {
     jobKeyProp.setValue(jobKey);
+    return this;
+  }
+
+  public IncidentRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
     return this;
   }
 
@@ -165,12 +173,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
-  }
-
-  public IncidentRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
-    return this;
+  public DirectBuffer getTenantIdBuffer() {
+    return tenantIdProp.getValue();
   }
 }

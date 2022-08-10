@@ -24,6 +24,7 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
   private final StringProperty targetElementId = new StringProperty("targetElementId");
   private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions");
   private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey");
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public TimerRecord() {
     declareProperty(elementInstanceKeyProp)
@@ -31,21 +32,13 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
         .declareProperty(dueDateProp)
         .declareProperty(targetElementId)
         .declareProperty(repetitionsProp)
-        .declareProperty(processDefinitionKeyProp);
+        .declareProperty(processDefinitionKeyProp)
+        .declareProperty(tenantIdProp);
   }
 
   @JsonIgnore
   public DirectBuffer getTargetElementIdBuffer() {
     return targetElementId.getValue();
-  }
-
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
-  }
-
-  public TimerRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
-    return this;
   }
 
   @Override
@@ -56,6 +49,16 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
   @Override
   public long getElementInstanceKey() {
     return elementInstanceKeyProp.getValue();
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
+  }
+
+  public TimerRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
+    return this;
   }
 
   @Override
@@ -76,6 +79,11 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
   public TimerRecord setRepetitions(final int repetitions) {
     repetitionsProp.setValue(repetitions);
     return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
   public TimerRecord setTargetElementId(final DirectBuffer targetElementId) {

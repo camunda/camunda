@@ -28,13 +28,15 @@ public final class ProcessEventRecord extends UnifiedRecordValue
       new LongProperty("processDefinitionKey", -1);
   private final LongProperty processInstanceKeyProperty =
       new LongProperty("processInstanceKey", -1);
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public ProcessEventRecord() {
     declareProperty(scopeKeyProperty)
         .declareProperty(targetElementIdProperty)
         .declareProperty(variablesProperty)
         .declareProperty(processDefinitionKeyProperty)
-        .declareProperty(processInstanceKeyProperty);
+        .declareProperty(processInstanceKeyProperty)
+        .declareProperty(tenantIdProp);
   }
 
   public ProcessEventRecord wrap(final ProcessEventRecord record) {
@@ -95,6 +97,20 @@ public final class ProcessEventRecord extends UnifiedRecordValue
   public ProcessEventRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProperty.setValue(processDefinitionKey);
     return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public ProcessEventRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  public DirectBuffer getTenantIdBuffer() {
+    return tenantIdProp.getValue();
   }
 
   @Override

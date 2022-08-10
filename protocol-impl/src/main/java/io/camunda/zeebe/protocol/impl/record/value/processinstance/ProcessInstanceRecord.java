@@ -17,6 +17,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceRecord extends UnifiedRecordValue
@@ -49,6 +50,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
       new LongProperty("parentProcessInstanceKey", -1L);
   private final LongProperty parentElementInstanceKeyProp =
       new LongProperty("parentElementInstanceKey", -1L);
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public ProcessInstanceRecord() {
     declareProperty(bpmnProcessIdProp)
@@ -59,7 +61,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(flowScopeKeyProp)
         .declareProperty(bpmnElementTypeProp)
         .declareProperty(parentProcessInstanceKeyProp)
-        .declareProperty(parentElementInstanceKeyProp);
+        .declareProperty(parentElementInstanceKeyProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -72,6 +75,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     bpmnElementTypeProp.setValue(record.getBpmnElementType());
     parentProcessInstanceKeyProp.setValue(record.getParentProcessInstanceKey());
     parentElementInstanceKeyProp.setValue(record.getParentElementInstanceKey());
+    tenantIdProp.setValue(record.getTenantIdBuffer());
   }
 
   @JsonIgnore
@@ -82,16 +86,6 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
     return elementIdProp.getValue();
-  }
-
-  @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
-  }
-
-  public ProcessInstanceRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
-    return this;
   }
 
   public ProcessInstanceRecord setBpmnProcessId(
@@ -113,6 +107,16 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKeyProp.getValue();
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
+  }
+
+  public ProcessInstanceRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
+    return this;
   }
 
   @Override
@@ -142,6 +146,16 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setParentElementInstanceKey(final long parentElementInstanceKey) {
     parentElementInstanceKeyProp.setValue(parentElementInstanceKey);
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public ProcessInstanceRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
     return this;
   }
 
@@ -187,6 +201,10 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public ProcessInstanceRecord setBpmnProcessId(final DirectBuffer directBuffer) {
     bpmnProcessIdProp.setValue(directBuffer);
     return this;
+  }
+
+  public DirectBuffer getTenantIdBuffer() {
+    return tenantIdProp.getValue();
   }
 
   public ProcessInstanceRecord setElementId(

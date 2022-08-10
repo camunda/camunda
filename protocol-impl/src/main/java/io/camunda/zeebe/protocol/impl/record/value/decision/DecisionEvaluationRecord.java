@@ -54,6 +54,7 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
   private final StringProperty evaluationFailureMessageProp =
       new StringProperty("evaluationFailureMessage", "");
   private final StringProperty failedDecisionIdProp = new StringProperty("failedDecisionId", "");
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "*");
 
   public DecisionEvaluationRecord() {
     declareProperty(decisionKeyProp)
@@ -70,7 +71,8 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(evaluatedDecisionsProp)
         .declareProperty(evaluationFailureMessageProp)
-        .declareProperty(failedDecisionIdProp);
+        .declareProperty(failedDecisionIdProp)
+        .declareProperty(tenantIdProp);
   }
 
   @Override
@@ -246,6 +248,11 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
   public DecisionEvaluationRecord setFailedDecisionId(final String failedDecisionId) {
     failedDecisionIdProp.setValue(failedDecisionId);
     return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return bufferAsString(tenantIdProp.getValue());
   }
 
   public DecisionEvaluationRecord setEvaluationFailureMessage(

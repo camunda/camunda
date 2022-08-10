@@ -28,6 +28,7 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
 
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
   private final StringProperty messageIdProp = new StringProperty("messageId", "");
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public MessageRecord() {
     declareProperty(nameProp)
@@ -35,7 +36,8 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
         .declareProperty(timeToLiveProp)
         .declareProperty(variablesProp)
         .declareProperty(messageIdProp)
-        .declareProperty(deadlineProp);
+        .declareProperty(deadlineProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrap(final MessageRecord record) {
@@ -45,6 +47,7 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
     setDeadline(record.getDeadline());
     setVariables(record.getVariablesBuffer());
     setMessageId(record.getMessageIdBuffer());
+    tenantIdProp.setValue(record.getTenantIdBuffer());
   }
 
   public boolean hasMessageId() {
@@ -86,6 +89,21 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
     return this;
   }
 
+  @Override
+  public long getDeadline() {
+    return deadlineProp.getValue();
+  }
+
+  public MessageRecord setDeadline(final long deadline) {
+    deadlineProp.setValue(deadline);
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
   public MessageRecord setMessageId(final String messageId) {
     messageIdProp.setValue(messageId);
     return this;
@@ -116,6 +134,10 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
     return this;
   }
 
+  public DirectBuffer getTenantIdBuffer() {
+    return tenantIdProp.getValue();
+  }
+
   @JsonIgnore
   public DirectBuffer getNameBuffer() {
     return nameProp.getValue();
@@ -134,15 +156,5 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
     return variablesProp.getValue();
-  }
-
-  @Override
-  public long getDeadline() {
-    return deadlineProp.getValue();
-  }
-
-  public MessageRecord setDeadline(final long deadline) {
-    deadlineProp.setValue(deadline);
-    return this;
   }
 }
