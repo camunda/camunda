@@ -85,6 +85,11 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
     return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
+  public ProcessInstanceModificationRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
   /** Returns true if this record has terminate instructions, otherwise false. */
   @JsonIgnore
   public boolean hasTerminateInstructions() {

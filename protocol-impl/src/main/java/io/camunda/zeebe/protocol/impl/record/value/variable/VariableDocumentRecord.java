@@ -96,6 +96,11 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
     return this;
   }
 
+  public VariableDocumentRecord setTenantId(final String tenantId) {
+    tenantIdProperty.setValue(tenantId);
+    return this;
+  }
+
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProperty.getValue();
   }

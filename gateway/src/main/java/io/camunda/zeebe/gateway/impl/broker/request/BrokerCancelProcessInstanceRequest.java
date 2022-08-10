@@ -21,7 +21,7 @@ public class BrokerCancelProcessInstanceRequest
   public BrokerCancelProcessInstanceRequest() {
     this(RecordValueWithTenant.DEFAULT_TENANT_ID);
   }
-  public BrokerCancelProcessInstanceRequest(String tenantId) {
+  public BrokerCancelProcessInstanceRequest(final String tenantId) {
     super(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL);
     requestDto.setTenantId(tenantId);
   }

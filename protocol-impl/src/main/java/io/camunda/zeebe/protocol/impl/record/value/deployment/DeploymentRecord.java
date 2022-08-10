@@ -126,6 +126,11 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
     return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
+  public DeploymentRecord setTenantId(String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProp.getValue();
   }

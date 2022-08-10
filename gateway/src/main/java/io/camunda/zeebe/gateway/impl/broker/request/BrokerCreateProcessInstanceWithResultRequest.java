@@ -24,7 +24,7 @@ public final class BrokerCreateProcessInstanceWithResultRequest
     this(RecordValueWithTenant.DEFAULT_TENANT_ID);
   }
 
-  public BrokerCreateProcessInstanceWithResultRequest(String tenantId) {
+  public BrokerCreateProcessInstanceWithResultRequest(final String tenantId) {
     super(
         ValueType.PROCESS_INSTANCE_CREATION,
         ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT);

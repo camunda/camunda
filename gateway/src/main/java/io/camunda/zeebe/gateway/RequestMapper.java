@@ -48,7 +48,7 @@ public final class RequestMapper {
 
   public static BrokerDeployResourceRequest toDeployProcessRequest(
       final DeployProcessRequest grpcRequest) {
-    final BrokerDeployResourceRequest brokerRequest = new BrokerDeployResourceRequest();
+    final BrokerDeployResourceRequest brokerRequest = new BrokerDeployResourceRequest(grpcRequest.getTenantId());
 
     for (final ProcessRequestObject process : grpcRequest.getProcessesList()) {
       brokerRequest.addResource(process.getDefinition().toByteArray(), process.getName());
@@ -59,7 +59,7 @@ public final class RequestMapper {
 
   public static BrokerDeployResourceRequest toDeployResourceRequest(
       final DeployResourceRequest grpcRequest) {
-    final BrokerDeployResourceRequest brokerRequest = new BrokerDeployResourceRequest();
+    final BrokerDeployResourceRequest brokerRequest = new BrokerDeployResourceRequest(grpcRequest.getTenantId());
 
     for (final Resource resource : grpcRequest.getResourcesList()) {
       brokerRequest.addResource(resource.getContent().toByteArray(), resource.getName());
@@ -152,7 +152,7 @@ public final class RequestMapper {
 
   public static BrokerSetVariablesRequest toSetVariablesRequest(
       final SetVariablesRequest grpcRequest) {
-    final BrokerSetVariablesRequest brokerRequest = new BrokerSetVariablesRequest();
+    final BrokerSetVariablesRequest brokerRequest = new BrokerSetVariablesRequest(grpcRequest.getTenantId());
 
     brokerRequest.setElementInstanceKey(grpcRequest.getElementInstanceKey());
     brokerRequest.setVariables(ensureJsonSet(grpcRequest.getVariables()));
@@ -177,7 +177,7 @@ public final class RequestMapper {
 
   public static BrokerModifyProcessInstanceRequest toModifyProcessInstanceRequest(
       final ModifyProcessInstanceRequest grpcRequest) {
-    return new BrokerModifyProcessInstanceRequest()
+    return new BrokerModifyProcessInstanceRequest(grpcRequest.getTenantId())
         .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
         .addActivateInstructions(grpcRequest.getActivateInstructionsList())
         .addTerminateInstructions(grpcRequest.getTerminateInstructionsList());
