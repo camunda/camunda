@@ -110,7 +110,7 @@ public interface PublishMessageCommandStep1 {
      * be correlated ONLY to process instances belonging to the same tenant, and will ONLY start
      * process instances for process definitions which belong to the same tenant.
      *
-     * @param tenantId the tenant ID of the job
+     * @param tenantId the tenant ID of the message
      * @return the builder for this command. Call #send() to complete the command and send it to the
      *     broker.
      */

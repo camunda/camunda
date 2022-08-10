@@ -167,7 +167,7 @@ public interface ModifyProcessInstanceCommandStep1 {
      * Sets the tenant ID associated with this command. If the associated process instance does not
      * belong to this tenant, the command will fail.
      *
-     * @param tenantId the tenant ID of the job
+     * @param tenantId the tenant ID of the process instance
      * @return the builder for this command. Call #send() to complete the command and send it to the
      *     broker.
      */
