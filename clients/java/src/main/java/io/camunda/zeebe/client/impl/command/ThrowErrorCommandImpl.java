@@ -37,10 +37,10 @@ public final class ThrowErrorCommandImpl implements ThrowErrorCommandStep1, Thro
   private Duration requestTimeout;
 
   public ThrowErrorCommandImpl(
-      GatewayStub asyncStub,
-      long key,
-      Duration requestTimeout,
-      Predicate<Throwable> retryPredicate) {
+      final GatewayStub asyncStub,
+      final long key,
+      final Duration requestTimeout,
+      final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
@@ -49,19 +49,25 @@ public final class ThrowErrorCommandImpl implements ThrowErrorCommandStep1, Thro
   }
 
   @Override
-  public ThrowErrorCommandStep2 errorCode(String errorCode) {
+  public ThrowErrorCommandStep2 errorCode(final String errorCode) {
     builder.setErrorCode(errorCode);
     return this;
   }
 
   @Override
-  public ThrowErrorCommandStep2 errorMessage(String errorMsg) {
+  public ThrowErrorCommandStep2 errorMessage(final String errorMsg) {
     builder.setErrorMessage(errorMsg);
     return this;
   }
 
   @Override
-  public FinalCommandStep<Void> requestTimeout(Duration requestTimeout) {
+  public ThrowErrorCommandStep2 tenantId(final String tenantId) {
+    builder.setTenantId(tenantId);
+    return this;
+  }
+
+  @Override
+  public FinalCommandStep<Void> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
@@ -78,7 +84,8 @@ public final class ThrowErrorCommandImpl implements ThrowErrorCommandStep1, Thro
     return future;
   }
 
-  private void send(ThrowErrorRequest request, StreamObserver<ThrowErrorResponse> streamObserver) {
+  private void send(
+      final ThrowErrorRequest request, final StreamObserver<ThrowErrorResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .throwError(request, streamObserver);
