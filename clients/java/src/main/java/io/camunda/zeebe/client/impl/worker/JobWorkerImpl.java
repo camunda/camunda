@@ -66,6 +66,8 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private final long initialPollInterval;
   private final BackoffSupplier backoffSupplier;
 
+  private final String tenantId;
+
   // state synchronization
   private final AtomicBoolean acquiringJobs = new AtomicBoolean(true);
   private final AtomicReference<JobPoller> claimableJobPoller;

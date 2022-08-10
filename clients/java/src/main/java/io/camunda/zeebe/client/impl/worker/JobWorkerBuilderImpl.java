@@ -60,6 +60,8 @@ public final class JobWorkerBuilderImpl
   private List<String> fetchVariables;
   private BackoffSupplier backoffSupplier;
 
+  private String tenantId;
+
   public JobWorkerBuilderImpl(
       final ZeebeClientConfiguration configuration,
       final GatewayStub gatewayStub,
@@ -148,6 +150,12 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
+  public JobWorkerBuilderStep3 tenantId(final String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
+  @Override
   public JobWorker open() {
     ensureNotNullNorEmpty("jobType", jobType);
     ensureNotNull("jobHandler", handler);
@@ -161,7 +169,8 @@ public final class JobWorkerBuilderImpl
             .setTimeout(timeout)
             .setWorker(workerName)
             .setMaxJobsToActivate(maxJobsActive)
-            .setRequestTimeout(requestTimeout.toMillis());
+            .setRequestTimeout(requestTimeout.toMillis())
+            .setTenantId(tenantId);
 
     if (fetchVariables != null) {
       requestBuilder.addAllFetchVariable(fetchVariables);

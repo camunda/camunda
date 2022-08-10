@@ -192,6 +192,16 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 backoffSupplier(BackoffSupplier backoffSupplier);
 
     /**
+     * Sets the tenant ID for this job worker. The tenant ID will be used as the default value for
+     * all commands used by the worker, e.g. when activating jobs, completing jobs, failing jobs,
+     * etc.
+     *
+     * @param tenantId the tenant ID of the worker
+     * @return the builder for this worker
+     */
+    JobWorkerBuilderStep3 tenantId(final String tenantId);
+
+    /**
      * Open the worker and start to work on available tasks.
      *
      * @return the worker
