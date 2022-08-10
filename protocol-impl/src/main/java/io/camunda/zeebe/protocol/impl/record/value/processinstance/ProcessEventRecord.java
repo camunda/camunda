@@ -47,6 +47,7 @@ public final class ProcessEventRecord extends UnifiedRecordValue
     variablesProperty.setValue(record.getVariablesBuffer());
     processDefinitionKeyProperty.setValue(record.getProcessDefinitionKey());
     processInstanceKeyProperty.setValue(record.getProcessInstanceKey());
+    tenantIdProp.setValue(record.getTenantIdBuffer());
 
     return this;
   }
