@@ -14,7 +14,6 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
@@ -30,16 +29,13 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
   private final LongProperty processInstanceKeyProperty =
       new LongProperty("processInstanceKey", -1);
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public ProcessInstanceResultRecord() {
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(versionProperty)
-        .declareProperty(variablesProperty)
-        .declareProperty(tenantIdProp);
+        .declareProperty(variablesProperty);
   }
 
   @Override
@@ -85,11 +81,6 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
   public ProcessInstanceResultRecord setProcessInstanceKey(final long instanceKey) {
     processInstanceKeyProperty.setValue(instanceKey);
     return this;
-  }
-
-  @Override
-  public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
   @JsonIgnore
