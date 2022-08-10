@@ -102,13 +102,17 @@ final class CommandApiRequestHandler
     if (event instanceof RecordValueWithTenant eventWithTenant) {
       final var tenantId = eventWithTenant.getTenantId();
       if (tenantId == null || tenantId.isBlank()) {
-        errorWriter.invalidTenantId("Expected to receive a command with a tenant ID, but there is none");
+        errorWriter.invalidTenantId(
+            "Expected to receive a command with a tenant ID, but there is none");
         return Either.left(errorWriter);
       }
 
-      if (!tenantId.equals(RecordValueWithTenant.DEFAULT_TENANT_ID) || !TENANT_ID_MASK.matcher(tenantId).matches()) {
-        errorWriter.invalidTenantId("Expected the tenant ID to be a string of 1 to 63 "
-            + "alphanumerical characters (including '.', '-', or '_'), but it was %s", tenantId);
+      if (!tenantId.equals(RecordValueWithTenant.DEFAULT_TENANT_ID)
+          || !TENANT_ID_MASK.matcher(tenantId).matches()) {
+        errorWriter.invalidTenantId(
+            "Expected the tenant ID to be a string of 1 to 63 "
+                + "alphanumerical characters (including '.', '-', or '_'), but it was %s",
+            tenantId);
         return Either.left(errorWriter);
       }
     }
