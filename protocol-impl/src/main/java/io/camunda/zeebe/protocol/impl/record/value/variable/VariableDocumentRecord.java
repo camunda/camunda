@@ -11,10 +11,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
@@ -28,21 +30,25 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
           VariableDocumentUpdateSemantic.class,
           VariableDocumentUpdateSemantic.PROPAGATE);
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
+  private final StringProperty tenantIdProperty = new StringProperty("tenantId");
 
   public VariableDocumentRecord() {
     declareProperty(scopeKeyProperty)
         .declareProperty(updateSemanticsProperty)
-        .declareProperty(variablesProperty);
+        .declareProperty(variablesProperty)
+        .declareProperty(tenantIdProperty);
   }
 
   public VariableDocumentRecord wrap(final VariableDocumentRecord other) {
     setScopeKey(other.getScopeKey())
         .setVariables(other.getVariablesBuffer())
-        .setUpdateSemantics(other.getUpdateSemantics());
+        .setUpdateSemantics(other.getUpdateSemantics())
+        .setTenantId(other.getTenantIdBuffer());
 
     return this;
   }
 
+  @Override
   public long getScopeKey() {
     return scopeKeyProperty.getValue();
   }
@@ -52,6 +58,7 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
   public VariableDocumentUpdateSemantic getUpdateSemantics() {
     return updateSemanticsProperty.getValue();
   }
@@ -78,8 +85,23 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
   }
 
   @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProperty.getValue());
+  }
+
+  public VariableDocumentRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProperty.setValue(tenantId);
+    return this;
+  }
+
+  public DirectBuffer getTenantIdBuffer() {
+    return tenantIdProperty.getValue();
+  }
+
+  @Override
   public int hashCode() {
-    return Objects.hash(scopeKeyProperty, updateSemanticsProperty, variablesProperty);
+    return Objects.hash(
+        scopeKeyProperty, updateSemanticsProperty, variablesProperty, tenantIdProperty);
   }
 
   @Override
@@ -95,6 +117,7 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
     final VariableDocumentRecord that = (VariableDocumentRecord) o;
     return Objects.equals(scopeKeyProperty, that.scopeKeyProperty)
         && Objects.equals(updateSemanticsProperty, that.updateSemanticsProperty)
-        && Objects.equals(variablesProperty, that.variablesProperty);
+        && Objects.equals(variablesProperty, that.variablesProperty)
+        && Objects.equals(tenantIdProperty, that.tenantIdProperty);
   }
 }
