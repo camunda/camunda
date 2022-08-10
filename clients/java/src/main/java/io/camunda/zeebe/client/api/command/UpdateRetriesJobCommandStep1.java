@@ -32,5 +32,15 @@ public interface UpdateRetriesJobCommandStep1 {
 
   interface UpdateRetriesJobCommandStep2 extends FinalCommandStep<UpdateRetriesJobResponse> {
     // the place for new optional parameters
+
+    /**
+     * Sets the tenant ID associated with this command. If the job does not belong to the tenant,
+     * then this command will fail.
+     *
+     * @param tenantId the tenant ID of the job
+     * @return the builder for this command. Call #send() to complete the command and send it to the
+     *     broker.
+     */
+    UpdateRetriesJobCommandStep2 tenantId(final String tenantId);
   }
 }

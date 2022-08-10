@@ -58,6 +58,12 @@ public final class JobUpdateRetriesCommandImpl
   }
 
   @Override
+  public UpdateRetriesJobCommandStep2 tenantId(final String tenantId) {
+    builder.setTenantId(tenantId);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<UpdateRetriesJobResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
