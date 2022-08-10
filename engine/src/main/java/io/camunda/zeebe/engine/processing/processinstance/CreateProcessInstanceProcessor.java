@@ -142,7 +142,8 @@ public final class CreateProcessInstanceProcessor
     setVariablesFromDocument(
         record, process.getKey(), processInstanceKey, process.getBpmnProcessId());
 
-    final var processInstance = initProcessInstanceRecord(process, processInstanceKey, record.getTenantIdBuffer());
+    final var processInstance =
+        initProcessInstanceRecord(process, processInstanceKey, record.getTenantIdBuffer());
     if (record.startInstructions().isEmpty()) {
       commandWriter.appendFollowUpCommand(
           processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, processInstance);
@@ -406,11 +407,21 @@ public final class CreateProcessInstanceProcessor
         instruction -> {
           final DirectBuffer elementId = wrapString(instruction.getElementId());
           final long flowScopeKey =
-              activateFlowScopes(process, processInstanceKey, elementId, activatedFlowScopeIds, processInstance.getTenantIdBuffer());
+              activateFlowScopes(
+                  process,
+                  processInstanceKey,
+                  elementId,
+                  activatedFlowScopeIds,
+                  processInstance.getTenantIdBuffer());
 
           final long elementInstanceKey = keyGenerator.nextKey();
           final ProcessInstanceRecord elementRecord =
-              createProcessInstanceRecord(process, processInstanceKey, elementId, flowScopeKey, processInstance.getTenantIdBuffer());
+              createProcessInstanceRecord(
+                  process,
+                  processInstanceKey,
+                  elementId,
+                  flowScopeKey,
+                  processInstance.getTenantIdBuffer());
           commandWriter.appendFollowUpCommand(
               elementInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, elementRecord);
         });
@@ -453,9 +464,11 @@ public final class CreateProcessInstanceProcessor
       return activatedFlowScopeIds.get(flowScope.getId());
     } else {
       final long flowScopeKey =
-          activateFlowScopes(process, processInstanceKey, flowScope.getId(), activatedFlowScopeIds, tenantId);
+          activateFlowScopes(
+              process, processInstanceKey, flowScope.getId(), activatedFlowScopeIds, tenantId);
       final ProcessInstanceRecord flowScopeRecord =
-          createProcessInstanceRecord(process, processInstanceKey, flowScope.getId(), flowScopeKey, tenantId);
+          createProcessInstanceRecord(
+              process, processInstanceKey, flowScope.getId(), flowScopeKey, tenantId);
 
       final long elementInstanceKey = keyGenerator.nextKey();
       activatedFlowScopeIds.put(flowScope.getId(), elementInstanceKey);
