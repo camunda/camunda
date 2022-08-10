@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.importing.LastKpiEvaluationResultsDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.KpiResultDto;
 import org.camunda.optimize.service.es.writer.ProcessOverviewWriter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,8 @@ import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
@@ -32,6 +35,7 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
 
   private final ProcessOverviewWriter processOverviewWriter;
   private final DefinitionService definitionService;
+  private final ConfigurationService configurationService;
   private final KpiService kpiService;
 
   @PostConstruct
@@ -79,6 +83,7 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
 
   @Override
   protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(1000000L);
+    return new PeriodicTrigger(configurationService.getEntityConfiguration().getKpiRefreshInterval(), TimeUnit.SECONDS);
   }
+
 }

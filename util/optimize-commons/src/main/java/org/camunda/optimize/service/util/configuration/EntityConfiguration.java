@@ -15,4 +15,6 @@ public class EntityConfiguration {
   @JsonProperty("authorizedEditors")
   private AuthorizedUserType authorizedUserType;
 
+  private Long kpiRefreshInterval;
+
 }

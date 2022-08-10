@@ -482,6 +482,9 @@ entity:
   # which users are authorized to create/edit/delete Optimize entities outside of a collection.
   # Available options: 'all', 'superuser', 'none'
   authorizedEditors: 'all'
+  # Specifies the frequency with which we want to refresh the KPI values on ES
+  # The given number is the interval in seconds
+  kpiRefreshInterval: 600
 
 export:
   csv:
