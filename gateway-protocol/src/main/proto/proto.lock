@@ -71,6 +71,11 @@
                 "id": 6,
                 "name": "requestTimeout",
                 "type": "int64"
+              },
+              {
+                "id": 7,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -162,6 +167,11 @@
                 "id": 1,
                 "name": "processInstanceKey",
                 "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -179,6 +189,11 @@
               {
                 "id": 2,
                 "name": "variables",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "tenantId",
                 "type": "string"
               }
             ]
@@ -214,6 +229,11 @@
                 "name": "startInstructions",
                 "type": "ProcessInstanceCreationStartInstruction",
                 "is_repeated": true
+              },
+              {
+                "id": 6,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -270,6 +290,11 @@
                 "name": "fetchVariables",
                 "type": "string",
                 "is_repeated": true
+              },
+              {
+                "id": 4,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -311,6 +336,11 @@
                 "name": "processes",
                 "type": "ProcessRequestObject",
                 "is_repeated": true
+              },
+              {
+                "id": 2,
+                "name": "tenantId",
+                "type": "string"
               }
             ],
             "options": [
@@ -371,6 +401,11 @@
                 "name": "resources",
                 "type": "Resource",
                 "is_repeated": true
+              },
+              {
+                "id": 2,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -537,6 +572,11 @@
                 "id": 4,
                 "name": "retryBackOff",
                 "type": "int64"
+              },
+              {
+                "id": 5,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -559,6 +599,11 @@
               {
                 "id": 3,
                 "name": "errorMessage",
+                "type": "string"
+              },
+              {
+                "id": 4,
+                "name": "tenantId",
                 "type": "string"
               }
             ]
@@ -593,6 +638,11 @@
                 "id": 5,
                 "name": "variables",
                 "type": "string"
+              },
+              {
+                "id": 6,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -613,6 +663,11 @@
                 "id": 1,
                 "name": "incidentKey",
                 "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -716,6 +771,11 @@
                 "id": 2,
                 "name": "retries",
                 "type": "int32"
+              },
+              {
+                "id": 3,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -739,6 +799,11 @@
                 "id": 3,
                 "name": "local",
                 "type": "bool"
+              },
+              {
+                "id": 4,
+                "name": "tenantId",
+                "type": "string"
               }
             ]
           },
@@ -771,6 +836,11 @@
                 "name": "terminateInstructions",
                 "type": "TerminateInstruction",
                 "is_repeated": true
+              },
+              {
+                "id": 4,
+                "name": "tenantId",
+                "type": "string"
               }
             ],
             "messages": [
