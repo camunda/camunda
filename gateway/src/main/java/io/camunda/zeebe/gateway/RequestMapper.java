@@ -100,7 +100,7 @@ public final class RequestMapper {
   public static BrokerCompleteJobRequest toCompleteJobRequest(
       final CompleteJobRequest grpcRequest) {
     return new BrokerCompleteJobRequest(
-        grpcRequest.getJobKey(), ensureJsonSet(grpcRequest.getVariables()));
+        grpcRequest.getJobKey(), ensureJsonSet(grpcRequest.getVariables()), grpcRequest.getTenantId());
   }
 
   public static BrokerCreateProcessInstanceRequest toCreateProcessInstanceRequest(
