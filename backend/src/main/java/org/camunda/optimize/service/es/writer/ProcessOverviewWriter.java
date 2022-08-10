@@ -135,7 +135,9 @@ public class ProcessOverviewWriter {
       Map<String, String> reportIdToValue = entry.getValue().getReportIdToValue();
       ProcessOverviewDto processOverviewDto = new ProcessOverviewDto();
       processOverviewDto.setProcessDefinitionKey(entry.getKey());
-      processOverviewDto.setDigest(new ProcessDigestDto(false, new HashMap<>()));
+      processOverviewDto.setDigest(new ProcessDigestDto(
+        false,
+        Collections.emptyMap()));
       processOverviewDto.setLastKpiEvaluationResults(reportIdToValue);
       UpdateRequest updateRequest = new UpdateRequest()
         .index(PROCESS_OVERVIEW_INDEX_NAME)

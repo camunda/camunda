@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.processoverview.KpiResultDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.KpiType;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
@@ -39,7 +40,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Runn
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.report.ReportService;
@@ -73,31 +74,36 @@ public class KpiService {
       .collect(toList());
   }
 
-  public List<SingleProcessReportDefinitionRequestDto> getKpiReportsForProcessDefinition(final String processDefinitionKey) {
-    return reportService.getAllReportsForProcessDefinitionKeyOmitXml(processDefinitionKey).stream()
-      .filter(SingleProcessReportDefinitionRequestDto.class::isInstance)
-      .map(SingleProcessReportDefinitionRequestDto.class::cast)
-      .filter(processReport -> processReport.getData().getConfiguration().getTargetValue() != null
-        && processReport.getData().getConfiguration().getTargetValue().getIsKpi() == Boolean.TRUE)
-      .collect(toList());
-  }
-
-  public List<KpiResultDto> getKpiResultsForProcessDefinition(final String processDefinitionKey,
-                                                              final ZoneId timezone) {
-    final List<SingleProcessReportDefinitionRequestDto> kpiReports = getKpiReportsForProcessDefinition(
-      processDefinitionKey);
+  public List<KpiResultDto> evaluateKpiReports(final String processDefinitionKey) {
+    final List<SingleProcessReportDefinitionRequestDto> kpiReports = getKpiReportsForProcessDefinition(processDefinitionKey);
     final List<KpiResultDto> kpiResponseDtos = new ArrayList<>();
     for (SingleProcessReportDefinitionRequestDto report : kpiReports) {
-      if (!report.getData().getGroupBy().equals(new NoneGroupByDto())) {
-        continue;
-      } else {
-        @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final SingleReportEvaluationResult<Double> evaluationResult
-          = (SingleReportEvaluationResult<Double>) reportEvaluationHandler
-          .evaluateReport(ReportEvaluationInfo.builder(report).timezone(timezone).build()).getEvaluationResult();
-        if (evaluationResult.getFirstCommandResult().getFirstMeasureData() instanceof Double
-          || evaluationResult.getFirstCommandResult().getFirstMeasureData() == null) {
-          final Double evaluationValue = evaluationResult.getFirstCommandResult().getFirstMeasureData();
-          KpiResultDto kpiResponseDto = new KpiResultDto();
+      final SingleReportEvaluationResult<?> evaluationResult
+        = (SingleReportEvaluationResult<?>) reportEvaluationHandler
+        .evaluateReport(ReportEvaluationInfo.builder(report).timezone(ZoneId.systemDefault()).build())
+        .getEvaluationResult();
+      if (evaluationResult.getFirstCommandResult().getFirstMeasureData() instanceof Double || evaluationResult.getFirstCommandResult().getFirstMeasureData() == null) {
+        final Double evaluationValue = (Double) evaluationResult.getFirstCommandResult().getFirstMeasureData();
+        KpiResultDto kpiResponseDto = new KpiResultDto();
+        kpiResponseDto.setReportId(report.getId());
+        if (evaluationValue != null) {
+          kpiResponseDto.setValue(evaluationValue.toString());
+        }
+        kpiResponseDtos.add(kpiResponseDto);
+      }
+    }
+    return kpiResponseDtos;
+  }
+
+  public List<KpiResultDto> extractKpiResultsForProcessDefinition(final ProcessOverviewDto processOverviewDto) {
+    final List<KpiResultDto> kpiResponseDtos = new ArrayList<>();
+      final List<SingleProcessReportDefinitionRequestDto> kpiReports = getKpiReportsForProcessDefinition(
+        processOverviewDto.getProcessDefinitionKey());
+      final Map<String, String> lastKpiEvaluationResults = processOverviewDto.getLastKpiEvaluationResults();
+      for (SingleProcessReportDefinitionRequestDto report : kpiReports) {
+        KpiResultDto kpiResponseDto = new KpiResultDto();
+        if (lastKpiEvaluationResults.containsKey(report.getId())) {
+          kpiResponseDto.setValue(lastKpiEvaluationResults.get(report.getId()));
           getTargetAndUnit(report)
             .ifPresent(targetAndUnit -> {
               kpiResponseDto.setTarget(targetAndUnit.getTarget());
@@ -105,22 +111,17 @@ public class KpiService {
             });
           kpiResponseDto.setReportId(report.getId());
           kpiResponseDto.setReportName(report.getName());
-          if (evaluationValue != null) {
-            kpiResponseDto.setValue(evaluationValue.toString());
-          }
           kpiResponseDto.setBelow(getIsBelow(report));
           kpiResponseDto.setType(getKpiType(report));
           kpiResponseDto.setMeasure(getViewProperty(report).orElse(null));
           kpiResponseDtos.add(kpiResponseDto);
         }
-      }
     }
     return kpiResponseDtos;
   }
 
-  public Map<String, KpiResultDto> getKpiResultsForProcessDefinitionByReportId(final String processDefinitionKey,
-                                                                               final ZoneId timezone) {
-    return getKpiResultsForProcessDefinition(processDefinitionKey, timezone)
+  public Map<String, KpiResultDto> getKpiResultsByProcessDefinition(final ProcessOverviewDto processOverviewDto) {
+    return extractKpiResultsForProcessDefinition(processOverviewDto)
       .stream()
       .collect(toMap(KpiResultDto::getReportId, Function.identity()));
   }
@@ -202,6 +203,15 @@ public class KpiService {
           return Optional.of(new TargetAndUnit(targetValue.getCountProgress().getTarget(), null));
         }
       }).orElse(Optional.empty());
+  }
+
+  private List<SingleProcessReportDefinitionRequestDto> getKpiReportsForProcessDefinition(final String processDefinitionKey) {
+    return reportService.getAllReportsForProcessDefinitionKeyOmitXml(processDefinitionKey).stream()
+      .filter(SingleProcessReportDefinitionRequestDto.class::isInstance)
+      .map(SingleProcessReportDefinitionRequestDto.class::cast)
+      .filter(processReport -> processReport.getData().getConfiguration().getTargetValue() != null
+        && processReport.getData().getConfiguration().getTargetValue().getIsKpi() == Boolean.TRUE)
+      .collect(toList());
   }
 
   @Data

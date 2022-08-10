@@ -33,7 +33,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -88,8 +87,7 @@ public class DigestService implements ConfigurationReloadable {
     final ProcessOverviewDto overviewDto = processOverviewReader.getProcessOverviewByKey(processDefinitionKey)
       .orElseThrow(() -> {
         unscheduleDigest(processDefinitionKey);
-        return new OptimizeRuntimeException("Overview for process [" + processDefinitionKey + "] no longer exists. Unscheduling" +
-                                              " respective digest.");
+        return new OptimizeRuntimeException("Overview for process [" + processDefinitionKey + "] no longer exists. Unscheduling respective digest.");
       });
 
     if (overviewDto.getDigest().isEnabled()) {
@@ -150,10 +148,7 @@ public class DigestService implements ConfigurationReloadable {
 
   private void sendDigestAndUpdateLatestKpiResults(final ProcessOverviewDto overviewDto) {
     final Map<String, KpiResultDto> currentKpiReportResults =
-      kpiService.getKpiResultsForProcessDefinitionByReportId(
-        overviewDto.getProcessDefinitionKey(),
-        ZoneId.systemDefault()
-      );
+      kpiService.getKpiResultsByProcessDefinition(overviewDto);
 
     try {
       composeAndSendDigestEmail(overviewDto, currentKpiReportResults);
@@ -172,7 +167,6 @@ public class DigestService implements ConfigurationReloadable {
       List.of(ALL_VERSIONS),
       tenantService.getTenants().stream().map(TenantDto::getId).collect(toList())
     ).map(DefinitionOptimizeResponseDto::getName).orElse(overviewDto.getProcessDefinitionKey());
-
 
     emailSendingService.sendEmailWithErrorHandling(
       processOwner.map(UserDto::getEmail).orElse(null),

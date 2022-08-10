@@ -71,7 +71,7 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
     Map<String, LastKpiEvaluationResultsDto> definitionKeyToKpis = new HashMap<>();
     for (String processDefinitionKey : processDefinitionKeys) {
       Map<String, String> reportIdToKpiValue = new HashMap<>();
-      List<KpiResultDto> kpiResultDtos = kpiService.getKpiResultsForProcessDefinition(processDefinitionKey, ZoneId.systemDefault());
+      List<KpiResultDto> kpiResultDtos = kpiService.evaluateKpiReports(processDefinitionKey);
       for (KpiResultDto kpi : kpiResultDtos) {
         reportIdToKpiValue.put(kpi.getReportId(), kpi.getValue());
       }

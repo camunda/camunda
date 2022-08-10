@@ -266,8 +266,8 @@ public class KpiEvaluationSchedulerServiceIT extends AbstractIT {
     // when
     final ProcessReportDataDto updatedReportData = createProcessReportDataDto(
       PROCESS_DEFINITION_KEY,
-      false,
-      ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE_BY_PROCESS
+      true,
+      ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE
     );
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto =
       new SingleProcessReportDefinitionRequestDto();

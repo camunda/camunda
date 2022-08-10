@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
-import java.time.ZoneId;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +56,7 @@ public class ProcessOverviewService {
   private final CollectionService collectionService;
   private final DigestService digestService;
 
-  public List<ProcessOverviewResponseDto> getAllProcessOverviews(final String userId, final ZoneId timezone) {
+  public List<ProcessOverviewResponseDto> getAllProcessOverviews(final String userId) {
     final Map<String, String> procDefKeysAndName = definitionService.getAllDefinitionsWithTenants(PROCESS)
       .stream()
       .filter(def -> !def.getIsEventProcess())
@@ -92,7 +92,7 @@ public class ProcessOverviewService {
           ).orElse(new ProcessOwnerResponseDto()),
           overviewForKey.map(ProcessOverviewDto::getDigest)
             .orElse(new ProcessDigestDto(false, new HashMap<>())),
-          kpiService.getKpiResultsForProcessDefinition(procDefKey, timezone),
+          overviewForKey.map(kpiService::extractKpiResultsForProcessDefinition).orElse(Collections.emptyList()),
           magicLinkToDashboard
         );
       }).collect(Collectors.toList());

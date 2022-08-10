@@ -179,9 +179,9 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     createKpiReport("KPI Report 1");
     createKpiReport("KPI Report 2");
     importAllEngineEntitiesFromScratch();
+    runKpiSchedulerAndRefreshIndices();
     processOverviewClient.updateProcess(
       DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(greenMail.waitForIncomingEmail(100, 1)).isTrue();
@@ -223,7 +223,7 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto());
     final String reportId = createKpiReport("KPI Report 2");
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    runKpiSchedulerAndRefreshIndices();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
@@ -286,6 +286,11 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     singleProcessReportDefinitionDto.setName(reportName);
     singleProcessReportDefinitionDto.setData(reportDataDto);
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
+  }
+
+  private void runKpiSchedulerAndRefreshIndices() {
+    embeddedOptimizeExtension.getKpiSchedulerService().runKpiImportTask();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
 }
