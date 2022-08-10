@@ -172,4 +172,10 @@ public final class DeployProcessCommandImpl
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .deployProcess(request, streamObserver);
   }
+
+  @Override
+  public DeployProcessCommandBuilderStep2 tenantId(final String tenantId) {
+    requestBuilder.setTenantId(tenantId);
+    return this;
+  }
 }

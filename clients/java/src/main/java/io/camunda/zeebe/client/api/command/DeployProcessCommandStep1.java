@@ -108,5 +108,11 @@ public interface DeployProcessCommandStep1 {
   interface DeployProcessCommandBuilderStep2
       extends DeployProcessCommandStep1, FinalCommandStep<DeploymentEvent> {
     // the place for new optional parameters
+
+    /**
+     * @param tenantId the tenant id of the process to deploy
+     * @return the builder for this command
+     */
+    DeployProcessCommandBuilderStep2 tenantId(String tenantId);
   }
 }
