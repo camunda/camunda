@@ -108,6 +108,11 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
     return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
+  public TimerRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProp.getValue();
   }

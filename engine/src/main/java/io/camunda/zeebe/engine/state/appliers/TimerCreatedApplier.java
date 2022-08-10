@@ -31,6 +31,7 @@ final class TimerCreatedApplier implements TypedEventApplier<TimerIntent, TimerR
     timerInstance.setRepetitions(value.getRepetitions());
     timerInstance.setProcessDefinitionKey(value.getProcessDefinitionKey());
     timerInstance.setProcessInstanceKey(value.getProcessInstanceKey());
+    timerInstance.setTenantId(value.getTenantIdBuffer());
 
     timerInstanceState.store(timerInstance);
   }

@@ -139,7 +139,8 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
             processState.getProcessByKey(processMetadata.getKey()).getProcess().getStartEvents();
 
         unsubscribeFromPreviousTimers(processMetadata);
-        subscribeToTimerStartEventIfExists(sideEffects, processMetadata, startEvents);
+        subscribeToTimerStartEventIfExists(
+            sideEffects, processMetadata, startEvents, record.getValue().getTenantIdBuffer());
       }
     }
   }
@@ -147,7 +148,8 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   private void subscribeToTimerStartEventIfExists(
       final SideEffects sideEffects,
       final ProcessMetadata processMetadata,
-      final List<ExecutableStartEvent> startEvents) {
+      final List<ExecutableStartEvent> startEvents,
+      final DirectBuffer tenantId) {
     for (final ExecutableCatchEventElement startEvent : startEvents) {
       if (startEvent.isTimer()) {
         // There are no variables when there is no process instance yet,
@@ -166,6 +168,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
             processMetadata.getKey(),
             startEvent.getId(),
             timerOrError.get(),
+            tenantId,
             sideEffects);
       }
     }

@@ -161,6 +161,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
         record.getProcessDefinitionKey(),
         event.getId(),
         refreshedTimer,
+        record.getTenantIdBuffer(),
         sideEffects::accept);
   }
 

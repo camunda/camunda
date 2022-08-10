@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -27,6 +28,8 @@ public final class TimerInstance extends UnpackedObject implements DbValue {
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", 0L);
   private final LongProperty dueDateProp = new LongProperty("dueDate", 0L);
   private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions", 0);
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public TimerInstance() {
     declareProperty(handlerNodeIdProp)
@@ -35,7 +38,8 @@ public final class TimerInstance extends UnpackedObject implements DbValue {
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(dueDateProp)
-        .declareProperty(repetitionsProp);
+        .declareProperty(repetitionsProp)
+        .declareProperty(tenantIdProp);
   }
 
   public long getElementInstanceKey() {
@@ -94,8 +98,16 @@ public final class TimerInstance extends UnpackedObject implements DbValue {
     processInstanceKeyProp.setValue(processInstanceKey);
   }
 
+  public DirectBuffer getTenantId() {
+    return tenantIdProp.getValue();
+  }
+
+  public void setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
+  }
+
   @Override
-  public void wrap(final DirectBuffer buffer, int offset, final int length) {
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     final byte[] bytes = new byte[length];
     final UnsafeBuffer mutableBuffer = new UnsafeBuffer(bytes);
     buffer.getBytes(offset, bytes, 0, length);
