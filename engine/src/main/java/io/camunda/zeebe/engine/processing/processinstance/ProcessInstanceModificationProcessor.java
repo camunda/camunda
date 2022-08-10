@@ -98,7 +98,8 @@ public final class ProcessInstanceModificationProcessor
             .setBpmnElementType(elementToActivate.getElementType())
             .setElementId(instruction.getElementId())
             .setParentProcessInstanceKey(-1)
-            .setParentElementInstanceKey(-1));
+            .setParentElementInstanceKey(-1)
+            .setTenantId(processInstance.getTenantIdBuffer()));
   }
 
   private List<Long> findFlowScopeKey(

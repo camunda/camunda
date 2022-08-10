@@ -218,7 +218,8 @@ public final class EventHandle {
         .setVersion(process.getVersion())
         .setProcessInstanceKey(processInstanceKey)
         .setElementId(process.getProcess().getId())
-        .setBpmnElementType(process.getProcess().getElementType());
+        .setBpmnElementType(process.getProcess().getElementType())
+        .setTenantId(tenantId);
 
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, recordForPICreation);
