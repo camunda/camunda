@@ -172,4 +172,10 @@ public final class DeployResourceCommandImpl
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .deployResource(request, streamObserver);
   }
+
+  @Override
+  public DeployResourceCommandStep2 tenantId(final String tenantId) {
+    requestBuilder.setTenantId(tenantId);
+    return this;
+  }
 }

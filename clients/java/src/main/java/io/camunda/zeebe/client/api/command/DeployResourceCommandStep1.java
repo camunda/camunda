@@ -98,5 +98,11 @@ public interface DeployResourceCommandStep1 {
   interface DeployResourceCommandStep2
       extends DeployResourceCommandStep1, FinalCommandStep<DeploymentEvent> {
     // the place for new optional parameters
+
+    /**
+     * @param tenantId the tenant id of the resource to deploy
+     * @return the builder for this command
+     */
+    DeployResourceCommandStep2 tenantId(String tenantId);
   }
 }
