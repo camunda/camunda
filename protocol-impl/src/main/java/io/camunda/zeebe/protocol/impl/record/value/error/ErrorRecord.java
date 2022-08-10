@@ -92,4 +92,9 @@ public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecord
   public String getTenantId() {
     return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
+
+  public ErrorRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
 }

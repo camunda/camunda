@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.processing.DbBlackListState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
@@ -173,6 +174,10 @@ public class Engine implements RecordProcessor {
         final long processInstanceKey =
             ((ProcessInstanceRelated) record.getValue()).getProcessInstanceKey();
         errorRecord.setProcessInstanceKey(processInstanceKey);
+      }
+
+      if (record.getValue() instanceof RecordValueWithTenant recordWithTenant) {
+        errorRecord.setTenantId(recordWithTenant.getTenantId());
       }
 
       writers.state().appendFollowUpEvent(record.getKey(), ErrorIntent.CREATED, errorRecord);
