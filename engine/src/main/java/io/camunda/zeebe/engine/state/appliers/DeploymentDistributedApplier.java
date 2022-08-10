@@ -49,7 +49,7 @@ public class DeploymentDistributedApplier
             drg -> {
               final var resource = getResourceByName(value, drg.getResourceName());
               final var decisionRequirementsRecord =
-                  createDecisionRequirementsRecord(drg, resource);
+                  createDecisionRequirementsRecord(drg, resource, value.getTenantId());
               decisionState.storeDecisionRequirements(decisionRequirementsRecord);
             });
 
@@ -69,7 +69,9 @@ public class DeploymentDistributedApplier
   }
 
   private DecisionRequirementsRecord createDecisionRequirementsRecord(
-      final DecisionRequirementsMetadataValue drg, final DirectBuffer resource) {
+      final DecisionRequirementsMetadataValue drg,
+      final DirectBuffer resource,
+      final String tenantId) {
     return new DecisionRequirementsRecord()
         .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
         .setDecisionRequirementsId(drg.getDecisionRequirementsId())
@@ -78,7 +80,8 @@ public class DeploymentDistributedApplier
         .setNamespace(drg.getNamespace())
         .setResourceName(drg.getResourceName())
         .setChecksum(wrapArray(drg.getChecksum()))
-        .setResource(resource);
+        .setResource(resource)
+        .setTenantId(tenantId);
   }
 
   private static final class NoSuchResourceException extends IllegalStateException {
