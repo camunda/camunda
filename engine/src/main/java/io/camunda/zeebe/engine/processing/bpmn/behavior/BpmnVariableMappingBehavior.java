@@ -64,7 +64,12 @@ public final class BpmnVariableMappingBehavior {
           .map(
               result -> {
                 variableBehavior.mergeLocalDocument(
-                    scopeKey, processDefinitionKey, processInstanceKey, bpmnProcessId, result);
+                    scopeKey,
+                    processDefinitionKey,
+                    processInstanceKey,
+                    bpmnProcessId,
+                    context.getTenantId(),
+                    result);
                 return null;
               });
     }
@@ -101,7 +106,12 @@ public final class BpmnVariableMappingBehavior {
       // set as local variables
       if (hasVariables) {
         variableBehavior.mergeLocalDocument(
-            elementInstanceKey, processDefinitionKey, processInstanceKey, bpmnProcessId, variables);
+            elementInstanceKey,
+            processDefinitionKey,
+            processInstanceKey,
+            bpmnProcessId,
+            context.getTenantId(),
+            variables);
       }
 
       // apply the output mappings
@@ -110,21 +120,36 @@ public final class BpmnVariableMappingBehavior {
           .map(
               result -> {
                 variableBehavior.mergeDocument(
-                    scopeKey, processDefinitionKey, processInstanceKey, bpmnProcessId, result);
+                    scopeKey,
+                    processDefinitionKey,
+                    processInstanceKey,
+                    bpmnProcessId,
+                    context.getTenantId(),
+                    result);
                 return null;
               });
 
     } else if (hasVariables) {
       // merge/propagate the event variables by default
       variableBehavior.mergeDocument(
-          elementInstanceKey, processDefinitionKey, processInstanceKey, bpmnProcessId, variables);
+          elementInstanceKey,
+          processDefinitionKey,
+          processInstanceKey,
+          bpmnProcessId,
+          context.getTenantId(),
+          variables);
     } else if (isConnectedToEventBasedGateway(element)
         || element.getElementType() == BpmnElementType.BOUNDARY_EVENT
         || element.getElementType() == BpmnElementType.START_EVENT) {
       // event variables are set local variables instead of temporary variables
       final var localVariables = variablesState.getVariablesLocalAsDocument(elementInstanceKey);
       variableBehavior.mergeDocument(
-          scopeKey, processDefinitionKey, processInstanceKey, bpmnProcessId, localVariables);
+          scopeKey,
+          processDefinitionKey,
+          processInstanceKey,
+          bpmnProcessId,
+          context.getTenantId(),
+          localVariables);
     }
 
     return Either.right(null);

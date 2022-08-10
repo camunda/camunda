@@ -157,6 +157,7 @@ public final class BpmnStateBehavior {
         context.getProcessDefinitionKey(),
         context.getProcessInstanceKey(),
         context.getBpmnProcessId(),
+        context.getTenantId(),
         variableName,
         variableValue,
         valueOffset,
@@ -176,19 +177,22 @@ public final class BpmnStateBehavior {
         context.getProcessDefinitionKey(),
         context.getProcessInstanceKey(),
         context.getBpmnProcessId(),
+        context.getTenantId(),
         variablesAsDocument);
   }
 
   public void copyVariablesToProcessInstance(
       final long sourceScopeKey,
       final long targetProcessInstanceKey,
-      final DeployedProcess targetProcess) {
+      final DeployedProcess targetProcess,
+      final DirectBuffer tenantId) {
     final var variables = variablesState.getVariablesAsDocument(sourceScopeKey);
     variableBehavior.mergeDocument(
         targetProcessInstanceKey,
         targetProcess.getKey(),
         targetProcessInstanceKey,
         targetProcess.getBpmnProcessId(),
+        tenantId,
         variables);
   }
 

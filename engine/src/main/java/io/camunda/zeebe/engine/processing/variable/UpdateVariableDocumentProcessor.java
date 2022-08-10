@@ -57,6 +57,7 @@ public final class UpdateVariableDocumentProcessor
     final long processDefinitionKey = scope.getValue().getProcessDefinitionKey();
     final long processInstanceKey = scope.getValue().getProcessInstanceKey();
     final DirectBuffer bpmnProcessId = scope.getValue().getBpmnProcessIdBuffer();
+    final DirectBuffer tenantId = scope.getValue().getTenantIdBuffer();
     try {
       if (value.getUpdateSemantics() == VariableDocumentUpdateSemantic.LOCAL) {
         variableBehavior.mergeLocalDocument(
@@ -64,6 +65,7 @@ public final class UpdateVariableDocumentProcessor
             processDefinitionKey,
             processInstanceKey,
             bpmnProcessId,
+            tenantId,
             value.getVariablesBuffer());
       } else {
         variableBehavior.mergeDocument(
@@ -71,6 +73,7 @@ public final class UpdateVariableDocumentProcessor
             processDefinitionKey,
             processInstanceKey,
             bpmnProcessId,
+            tenantId,
             value.getVariablesBuffer());
       }
     } catch (final MsgpackReaderException e) {

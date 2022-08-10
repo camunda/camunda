@@ -72,7 +72,7 @@ public final class CallActivityProcessor
 
               final var callActivityInstanceKey = activated.getElementInstanceKey();
               stateBehavior.copyVariablesToProcessInstance(
-                  callActivityInstanceKey, childProcessInstanceKey, process);
+                  callActivityInstanceKey, childProcessInstanceKey, process, context.getTenantId());
             },
             failure -> incidentBehavior.createIncident(failure, context));
   }

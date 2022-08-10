@@ -57,6 +57,7 @@ final class VariableBehaviorTest {
     final long childScopeKey = 2;
     final long childFooKey = 3;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final DirectBuffer tenantId = BufferUtil.wrapString("tenant");
     final Map<String, Object> document = Map.of("foo", "bar", "baz", "buz");
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
     state.createScope(childScopeKey, parentScopeKey);
@@ -68,6 +69,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         parentScopeKey,
         bpmnProcessId,
+        tenantId,
         MsgPackUtil.asMsgPack(document));
 
     // then
@@ -82,6 +84,7 @@ final class VariableBehaviorTest {
                   .hasScopeKey(childScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
                   .hasProcessInstanceKey(parentScopeKey)
+                  .hasTenantId("tenant")
                   .hasBpmnProcessId("process");
             },
             event -> {
@@ -103,12 +106,18 @@ final class VariableBehaviorTest {
     final long processDefinitionKey = 1;
     final long scopeKey = 1;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final DirectBuffer tenantId = BufferUtil.wrapString("tenant");
     final Map<String, Object> document = Map.of();
     setVariable(2, scopeKey, processDefinitionKey, "foo", "qux");
 
     // when
     behavior.mergeLocalDocument(
-        scopeKey, processDefinitionKey, scopeKey, bpmnProcessId, MsgPackUtil.asMsgPack(document));
+        scopeKey,
+        processDefinitionKey,
+        scopeKey,
+        bpmnProcessId,
+        tenantId,
+        MsgPackUtil.asMsgPack(document));
 
     // then
     assertThat(getFollowUpEvents()).isEmpty();
@@ -123,6 +132,7 @@ final class VariableBehaviorTest {
     final long childScopeKey = 3;
     final long parentFooKey = 4;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final DirectBuffer tenantId = BufferUtil.wrapString("tenant");
     final Map<String, Object> document = Map.of("foo", "bar");
     state.createScope(rootScopeKey, VariableState.NO_PARENT);
     state.createScope(parentScopeKey, rootScopeKey);
@@ -136,6 +146,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         rootScopeKey,
         bpmnProcessId,
+        tenantId,
         MsgPackUtil.asMsgPack(document));
 
     // then
@@ -151,6 +162,7 @@ final class VariableBehaviorTest {
                   .hasScopeKey(parentScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
                   .hasProcessInstanceKey(rootScopeKey)
+                  .hasTenantId("tenant")
                   .hasBpmnProcessId("process");
             });
   }
@@ -163,6 +175,7 @@ final class VariableBehaviorTest {
     final long parentScopeKey = 2;
     final long childScopeKey = 3;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final DirectBuffer tenantId = BufferUtil.wrapString("tenant");
     final Map<String, Object> document = Map.of("foo", "bar", "buz", "baz");
     state.createScope(rootScopeKey, VariableState.NO_PARENT);
     state.createScope(parentScopeKey, rootScopeKey);
@@ -174,6 +187,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         rootScopeKey,
         bpmnProcessId,
+        tenantId,
         MsgPackUtil.asMsgPack(document));
 
     // then
@@ -188,6 +202,7 @@ final class VariableBehaviorTest {
                   .hasScopeKey(rootScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
                   .hasProcessInstanceKey(rootScopeKey)
+                  .hasTenantId("tenant")
                   .hasBpmnProcessId("process");
             },
             event -> {
@@ -198,6 +213,7 @@ final class VariableBehaviorTest {
                   .hasScopeKey(rootScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
                   .hasProcessInstanceKey(rootScopeKey)
+                  .hasTenantId("tenant")
                   .hasBpmnProcessId("process");
             });
   }
@@ -210,6 +226,7 @@ final class VariableBehaviorTest {
     final long parentScopeKey = 2;
     final long childScopeKey = 3;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final DirectBuffer tenantId = BufferUtil.wrapString("tenant");
     final Map<String, Object> document = Map.of("foo", "bar", "buz", "baz");
     state.createScope(rootScopeKey, VariableState.NO_PARENT);
     state.createScope(parentScopeKey, rootScopeKey);
@@ -222,6 +239,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         rootScopeKey,
         bpmnProcessId,
+        tenantId,
         MsgPackUtil.asMsgPack(document));
 
     // then
@@ -236,7 +254,8 @@ final class VariableBehaviorTest {
                   .hasScopeKey(rootScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
                   .hasProcessInstanceKey(rootScopeKey)
-                  .hasBpmnProcessId("process");
+                  .hasBpmnProcessId("process")
+                  .hasTenantId("tenant");
             });
   }
 
@@ -248,6 +267,7 @@ final class VariableBehaviorTest {
     final long childScopeKey = 2;
     final long childFooKey = 3;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final DirectBuffer tenantId = BufferUtil.wrapString("tenant");
     final Map<String, Object> document = Map.of("foo", "bar");
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
     state.createScope(childScopeKey, parentScopeKey);
@@ -260,6 +280,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         parentScopeKey,
         bpmnProcessId,
+        tenantId,
         MsgPackUtil.asMsgPack(document));
 
     // then
@@ -275,7 +296,8 @@ final class VariableBehaviorTest {
                   .hasScopeKey(childScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
                   .hasProcessInstanceKey(parentScopeKey)
-                  .hasBpmnProcessId("process");
+                  .hasBpmnProcessId("process")
+                  .hasTenantId("tenant");
             });
   }
 
@@ -286,6 +308,7 @@ final class VariableBehaviorTest {
     final int parentScopeKey = 1;
     final int childScopeKey = 2;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final DirectBuffer tenantId = BufferUtil.wrapString("tenant");
     final Map<String, Object> document = Map.of();
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
     state.createScope(childScopeKey, parentScopeKey);
@@ -298,6 +321,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         parentScopeKey,
         bpmnProcessId,
+        tenantId,
         MsgPackUtil.asMsgPack(document));
 
     // then
@@ -312,6 +336,7 @@ final class VariableBehaviorTest {
     final int parentScopeKey = 1;
     final int childScopeKey = 2;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final DirectBuffer tenantId = BufferUtil.wrapString("tenant");
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
     final DirectBuffer variableValue = packString("bar");
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
@@ -323,6 +348,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         parentScopeKey,
         bpmnProcessId,
+        tenantId,
         variableName,
         variableValue,
         0,
@@ -340,7 +366,8 @@ final class VariableBehaviorTest {
                   .hasScopeKey(childScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
                   .hasProcessInstanceKey(parentScopeKey)
-                  .hasBpmnProcessId("process");
+                  .hasBpmnProcessId("process")
+                  .hasTenantId("tenant");
             });
   }
 
@@ -352,6 +379,7 @@ final class VariableBehaviorTest {
     final long childScopeKey = 2;
     final long parentFooKey = 3;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final DirectBuffer tenantId = BufferUtil.wrapString("tenant");
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
     final DirectBuffer variableValue = packString("bar");
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
@@ -364,6 +392,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         parentScopeKey,
         bpmnProcessId,
+        tenantId,
         variableName,
         variableValue,
         0,
@@ -382,7 +411,8 @@ final class VariableBehaviorTest {
                   .hasScopeKey(parentScopeKey)
                   .hasProcessDefinitionKey(processDefinitionKey)
                   .hasProcessInstanceKey(parentScopeKey)
-                  .hasBpmnProcessId("process");
+                  .hasBpmnProcessId("process")
+                  .hasTenantId("tenant");
             });
   }
 
@@ -394,6 +424,7 @@ final class VariableBehaviorTest {
     final long childScopeKey = 2;
     final long parentFooKey = 3;
     final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final DirectBuffer tenantId = BufferUtil.wrapString("tenant");
     final DirectBuffer variableName = BufferUtil.wrapString("foo");
     final DirectBuffer variableValue = packString("bar");
     state.createScope(parentScopeKey, VariableState.NO_PARENT);
@@ -406,6 +437,7 @@ final class VariableBehaviorTest {
         processDefinitionKey,
         parentScopeKey,
         bpmnProcessId,
+        tenantId,
         variableName,
         variableValue,
         0,

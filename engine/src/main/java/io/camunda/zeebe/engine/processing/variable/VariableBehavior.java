@@ -56,13 +56,15 @@ public final class VariableBehavior {
    * @param processDefinitionKey the process key to be associated with each variable
    * @param processInstanceKey the process instance key to be associated with each variable
    * @param document the document to merge
+   * @param tenantId the same tenant ID as that of the scope
    */
   public void mergeLocalDocument(
       final long scopeKey,
       final long processDefinitionKey,
       final long processInstanceKey,
       final DirectBuffer bpmnProcessId,
-      final DirectBuffer document) {
+      final DirectBuffer document,
+      final DirectBuffer tenantId) {
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
       return;
@@ -72,7 +74,8 @@ public final class VariableBehavior {
         .setScopeKey(scopeKey)
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
-        .setBpmnProcessId(bpmnProcessId);
+        .setBpmnProcessId(bpmnProcessId)
+        .setTenantId(tenantId);
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
       setLocalVariable(variableRecord);
@@ -98,6 +101,7 @@ public final class VariableBehavior {
    * @param scopeKey the scope key for each variable
    * @param processDefinitionKey the process key to be associated with each variable
    * @param processInstanceKey the process instance key to be associated with each variable
+   * @param tenantId the same tenant ID as that of the scope
    * @param document the document to merge
    */
   public void mergeDocument(
@@ -105,6 +109,7 @@ public final class VariableBehavior {
       final long processDefinitionKey,
       final long processInstanceKey,
       final DirectBuffer bpmnProcessId,
+      final DirectBuffer tenantId,
       final DirectBuffer document) {
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
@@ -156,6 +161,8 @@ public final class VariableBehavior {
    * @param scopeKey the key of the scope on which to set the variable
    * @param processDefinitionKey the associated process key
    * @param processInstanceKey the associated process instance key
+   * @param bpmnProcessId the BPMN process ID of the associated process definition
+   * @param tenantId the tenant ID of the associated tenant (same as the scope)
    * @param name a buffer containing only the name of the variable
    * @param value a buffer containing the value of the variable as MessagePack
    * @param valueOffset the offset of the value in the {@code value} buffer
@@ -166,6 +173,7 @@ public final class VariableBehavior {
       final long processDefinitionKey,
       final long processInstanceKey,
       final DirectBuffer bpmnProcessId,
+      final DirectBuffer tenantId,
       final DirectBuffer name,
       final DirectBuffer value,
       final int valueOffset,
@@ -177,7 +185,8 @@ public final class VariableBehavior {
         .setProcessInstanceKey(processInstanceKey)
         .setBpmnProcessId(bpmnProcessId)
         .setName(name)
-        .setValue(value, valueOffset, valueLength);
+        .setValue(value, valueOffset, valueLength)
+        .setTenantId(tenantId);
 
     setLocalVariable(variableRecord);
   }

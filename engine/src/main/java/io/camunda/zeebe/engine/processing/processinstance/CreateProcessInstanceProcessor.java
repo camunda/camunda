@@ -315,6 +315,7 @@ public final class CreateProcessInstanceProcessor
         processDefinitionKey,
         processInstanceKey,
         bpmnProcessId,
+        record.getTenantIdBuffer(),
         record.getVariablesBuffer());
   }
 

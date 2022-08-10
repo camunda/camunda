@@ -256,6 +256,7 @@ public class EventTriggerBehavior {
           elementRecord.getProcessDefinitionKey(),
           elementRecord.getProcessInstanceKey(),
           elementRecord.getBpmnProcessIdBuffer(),
+          elementRecord.getTenantIdBuffer(),
           variables);
     }
 
