@@ -63,8 +63,8 @@ public final class VariableBehavior {
       final long processDefinitionKey,
       final long processInstanceKey,
       final DirectBuffer bpmnProcessId,
-      final DirectBuffer document,
-      final DirectBuffer tenantId) {
+      final DirectBuffer tenantId,
+      final DirectBuffer document) {
     indexedDocument.index(document);
     if (indexedDocument.isEmpty()) {
       return;
@@ -122,7 +122,8 @@ public final class VariableBehavior {
     variableRecord
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessInstanceKey(processInstanceKey)
-        .setBpmnProcessId(bpmnProcessId);
+        .setBpmnProcessId(bpmnProcessId)
+        .setTenantId(tenantId);
     while ((parentScope = variableState.getParentScopeKey(currentScope)) > 0) {
       final Iterator<DocumentEntry> entryIterator = indexedDocument.iterator();
 
