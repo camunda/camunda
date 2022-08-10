@@ -180,12 +180,12 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
-  @JsonIgnore
   public IncidentRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
   }
 
+  @JsonIgnore
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProp.getValue();
   }

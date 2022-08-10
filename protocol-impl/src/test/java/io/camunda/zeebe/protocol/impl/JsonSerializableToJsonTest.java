@@ -159,7 +159,7 @@ final class JsonSerializableToJsonTest {
               return new CopiedRecord<>(
                   record, recordMetadata, key, 0, position, sourcePosition, timestamp);
             },
-        "{'valueType':'DEPLOYMENT','key':1234,'position':4321,'timestamp':2191,'recordType':'COMMAND','intent':'CREATE','partitionId':0,'rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','brokerVersion':'1.2.3','sourceRecordPosition':231,'value':{'processesMetadata':[{'version':12,'bpmnProcessId':'testProcess','resourceName':'resource','checksum':'Y2hlY2tzdW0=','processDefinitionKey':123, 'duplicate':false}],'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}],'decisionsMetadata':[],'decisionRequirementsMetadata':[]}}"
+        "{'valueType':'DEPLOYMENT','key':1234,'position':4321,'timestamp':2191,'recordType':'COMMAND','intent':'CREATE','partitionId':0,'rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','brokerVersion':'1.2.3','sourceRecordPosition':231,'value':{'processesMetadata':[{'version':12,'bpmnProcessId':'testProcess','resourceName':'resource','checksum':'Y2hlY2tzdW0=','processDefinitionKey':123, 'duplicate':false}],'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}],'decisionsMetadata':[],'decisionRequirementsMetadata':[],'tenantId':'[default]'}}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// DeploymentRecord ///////////////////////////////////////
@@ -212,7 +212,7 @@ final class JsonSerializableToJsonTest {
                   .markAsDuplicate();
               return record;
             },
-        "{'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}],'processesMetadata':[{'checksum':'Y2hlY2tzdW0=','bpmnProcessId':'testProcess','version':12,'processDefinitionKey':123,'resourceName':'resource', 'duplicate':true}],'decisionsMetadata':[{'version':1,'decisionRequirementsId':'drg-id','decisionRequirementsKey':1,'decisionId':'decision-id','decisionName':'decision-name','decisionKey':2,'duplicate':true}],'decisionRequirementsMetadata':[{'decisionRequirementsId':'drg-id','decisionRequirementsName':'drg-name','decisionRequirementsVersion':1,'decisionRequirementsKey':1,'namespace':'namespace','resourceName':'resource-name','checksum':'Y2hlY2tzdW0=','duplicate':true}]}"
+        "{'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}],'processesMetadata':[{'checksum':'Y2hlY2tzdW0=','bpmnProcessId':'testProcess','version':12,'processDefinitionKey':123,'resourceName':'resource', 'duplicate':true}],'decisionsMetadata':[{'version':1,'decisionRequirementsId':'drg-id','decisionRequirementsKey':1,'decisionId':'decision-id','decisionName':'decision-name','decisionKey':2,'duplicate':true,'tenantId':'[default]'}],'decisionRequirementsMetadata':[{'decisionRequirementsId':'drg-id','decisionRequirementsName':'drg-name','decisionRequirementsVersion':1,'decisionRequirementsKey':1,'namespace':'namespace','resourceName':'resource-name','checksum':'Y2hlY2tzdW0=','duplicate':true}],'tenantId':'[default]'}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ////////////////////////////// DeploymentDistributionRecord /////////////////////////////////
@@ -225,7 +225,7 @@ final class JsonSerializableToJsonTest {
               record.setPartition(2);
               return record;
             },
-        "{'partitionId':2}"
+        "{'partitionId':2,'tenantId':'[default]'}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// Empty DeploymentRecord /////////////////////////////////
@@ -233,7 +233,7 @@ final class JsonSerializableToJsonTest {
       new Object[] {
         "Empty DeploymentRecord",
         (Supplier<UnifiedRecordValue>) DeploymentRecord::new,
-        "{'resources':[],'processesMetadata':[],'decisionsMetadata':[],'decisionRequirementsMetadata':[]}"
+        "{'resources':[],'processesMetadata':[],'decisionsMetadata':[],'decisionRequirementsMetadata':[],'tenantId':'[default]'}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// ProcessRecord ///////////////////////////////////////
@@ -262,7 +262,7 @@ final class JsonSerializableToJsonTest {
 
               return record;
             },
-        "{'resourceName':'resource','resource':'Y29udGVudHM=', 'checksum':'Y2hlY2tzdW0=','bpmnProcessId':'testProcess','version':12,'processDefinitionKey':123,'resourceName':'resource', 'duplicate':false}"
+        "{'resourceName':'resource','resource':'Y29udGVudHM=', 'checksum':'Y2hlY2tzdW0=','bpmnProcessId':'testProcess','version':12,'processDefinitionKey':123,'resourceName':'resource', 'duplicate':false,'tenantId':'[default]'}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////// ErrorRecord ///////////////////////////////////////////
@@ -318,7 +318,7 @@ final class JsonSerializableToJsonTest {
                   .setJobKey(jobKey)
                   .setVariableScopeKey(elementInstanceKey);
             },
-        "{'errorType':'IO_MAPPING_ERROR','errorMessage':'error','bpmnProcessId':'process','processDefinitionKey':134,'processInstanceKey':10,'elementId':'activity','elementInstanceKey':34,'jobKey':123,'variableScopeKey':34}"
+        "{'errorType':'IO_MAPPING_ERROR','errorMessage':'error','bpmnProcessId':'process','processDefinitionKey':134,'processInstanceKey':10,'elementId':'activity','elementInstanceKey':34,'jobKey':123,'variableScopeKey':34,'tenantId':'[default]'}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// Empty IncidentRecord ///////////////////////////////////
@@ -326,7 +326,7 @@ final class JsonSerializableToJsonTest {
       new Object[] {
         "Empty IncidentRecord",
         (Supplier<UnifiedRecordValue>) IncidentRecord::new,
-        "{'errorType':'UNKNOWN','errorMessage':'','bpmnProcessId':'','processDefinitionKey':-1,'processInstanceKey':-1,'elementId':'','elementInstanceKey':-1,'jobKey':-1,'variableScopeKey':-1}"
+        "{'errorType':'UNKNOWN','errorMessage':'','bpmnProcessId':'','processDefinitionKey':-1,'processInstanceKey':-1,'elementId':'','elementInstanceKey':-1,'jobKey':-1,'variableScopeKey':-1,'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -378,7 +378,7 @@ final class JsonSerializableToJsonTest {
 
               return record;
             },
-        "{'maxJobsToActivate':1,'type':'type','worker':'worker','truncated':true,'jobKeys':[3],'jobs':[{'bpmnProcessId':'test-process','processDefinitionKey':13,'processDefinitionVersion':12,'processInstanceKey':1234,'elementId':'activity','elementInstanceKey':123,'type':'type','worker':'worker','variables':{'foo':'bar'},'retries':3,'retryBackoff':1002,'recurringTime':1001,'errorMessage':'failed message','errorCode':'error','customHeaders':{},'deadline':1000}],'timeout':2}"
+        "{'maxJobsToActivate':1,'type':'type','worker':'worker','truncated':true,'jobKeys':[3],'jobs':[{'bpmnProcessId':'test-process','processDefinitionKey':13,'processDefinitionVersion':12,'processInstanceKey':1234,'elementId':'activity','elementInstanceKey':123,'type':'type','worker':'worker','variables':{'foo':'bar'},'retries':3,'retryBackoff':1002,'recurringTime':1001,'errorMessage':'failed message','errorCode':'error','customHeaders':{},'deadline':1000,'tenantId':'[default]'}],'timeout':2,'tenantId':'[default]'}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// Empty JobBatchRecord //////////////////////////////////////
@@ -390,7 +390,7 @@ final class JsonSerializableToJsonTest {
               final String type = "type";
               return new JobBatchRecord().setType(type);
             },
-        "{'worker':'','type':'type','maxJobsToActivate':-1,'truncated':false,'jobKeys':[],'jobs':[],'timeout':-1}"
+        "{'worker':'','type':'type','maxJobsToActivate':-1,'truncated':false,'jobKeys':[],'jobs':[],'timeout':-1,'tenantId':'[default]'}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////// JobRecord /////////////////////////////////////////////
@@ -435,7 +435,7 @@ final class JsonSerializableToJsonTest {
               record.setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
               return record;
             },
-        "{'bpmnProcessId':'test-process','processDefinitionKey':13,'processDefinitionVersion':12,'processInstanceKey':1234,'elementId':'activity','elementInstanceKey':123,'worker':'myWorker','type':'myType','variables':{'foo':'bar'},'retries':12,'retryBackoff':1003,'recurringTime':1004,'errorMessage':'failed message','errorCode':'error','customHeaders':{'workerVersion':'42'},'deadline':13}"
+        "{'bpmnProcessId':'test-process','processDefinitionKey':13,'processDefinitionVersion':12,'processInstanceKey':1234,'elementId':'activity','elementInstanceKey':123,'worker':'myWorker','type':'myType','variables':{'foo':'bar'},'retries':12,'retryBackoff':1003,'recurringTime':1004,'errorMessage':'failed message','errorCode':'error','customHeaders':{'workerVersion':'42'},'deadline':13,'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -444,7 +444,7 @@ final class JsonSerializableToJsonTest {
       {
         "Empty JobRecord",
         (Supplier<UnifiedRecordValue>) JobRecord::new,
-        "{'type':'','processDefinitionVersion':-1,'elementId':'','bpmnProcessId':'','processDefinitionKey':-1,'processInstanceKey':-1,'elementInstanceKey':-1,'variables':{},'worker':'','retries':-1,'retryBackoff':0,'recurringTime':-1,'errorMessage':'','errorCode':'','customHeaders':{},'deadline':-1}"
+        "{'type':'','processDefinitionVersion':-1,'elementId':'','bpmnProcessId':'','processDefinitionKey':-1,'processInstanceKey':-1,'elementInstanceKey':-1,'variables':{},'worker':'','retries':-1,'retryBackoff':0,'recurringTime':-1,'errorMessage':'','errorCode':'','customHeaders':{},'deadline':-1,'tenantId':'[default]'}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////// JobRecord with nullable variable //////////////////////
@@ -456,7 +456,7 @@ final class JsonSerializableToJsonTest {
                 new JobRecord()
                     .setVariables(
                         new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{'foo':null}"))),
-        "{'type':'','errorMessage':'','bpmnProcessId':'','processDefinitionKey':-1,'processInstanceKey':-1,'elementId':'','elementInstanceKey':-1,'variables':{'foo':null},'deadline':-1,'worker':'','retries':-1,'retryBackoff':0,'recurringTime':-1,'errorCode':'','processDefinitionVersion':-1,'customHeaders':{}}"
+        "{'type':'','errorMessage':'','bpmnProcessId':'','processDefinitionKey':-1,'processInstanceKey':-1,'elementId':'','elementInstanceKey':-1,'variables':{'foo':null},'deadline':-1,'worker':'','retries':-1,'retryBackoff':0,'recurringTime':-1,'errorCode':'','processDefinitionVersion':-1,'customHeaders':{},'tenantId':'[default]'}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// MessageRecord /////////////////////////////////////////////
@@ -478,7 +478,7 @@ final class JsonSerializableToJsonTest {
                   .setDeadline(22L)
                   .setMessageId(wrapString(messageId));
             },
-        "{'timeToLive':12,'correlationKey':'test-key','variables':{'foo':'bar'},'messageId':'test-id','name':'test-message','deadline':22}"
+        "{'timeToLive':12,'correlationKey':'test-key','variables':{'foo':'bar'},'messageId':'test-id','name':'test-message','deadline':22,'tenantId':'[default]'}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// Empty MessageRecord ///////////////////////////////////////
@@ -496,7 +496,7 @@ final class JsonSerializableToJsonTest {
                   .setCorrelationKey(correlationKey)
                   .setName(messageName);
             },
-        "{'timeToLive':12,'correlationKey':'test-key','variables':{},'messageId':'','name':'test-message','deadline':-1}"
+        "{'timeToLive':12,'correlationKey':'test-key','variables':{},'messageId':'','name':'test-message','deadline':-1,'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -521,7 +521,7 @@ final class JsonSerializableToJsonTest {
                   .setCorrelationKey(wrapString("test-key"))
                   .setVariables(VARIABLES_MSGPACK);
             },
-        "{'processDefinitionKey':22334,'messageName':'name','startEventId':'startEvent','bpmnProcessId':'process','processInstanceKey':2,'messageKey':3,'correlationKey':'test-key','variables':{'foo':'bar'}}"
+        "{'processDefinitionKey':22334,'messageName':'name','startEventId':'startEvent','bpmnProcessId':'process','processInstanceKey':2,'messageKey':3,'correlationKey':'test-key','variables':{'foo':'bar'},'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -536,7 +536,7 @@ final class JsonSerializableToJsonTest {
               return new MessageStartEventSubscriptionRecord()
                   .setProcessDefinitionKey(processDefinitionKey);
             },
-        "{'processDefinitionKey':22334,'messageName':'','startEventId':'','bpmnProcessId':'','processInstanceKey':-1,'messageKey':-1,'correlationKey':'','variables':{}}"
+        "{'processDefinitionKey':22334,'messageName':'','startEventId':'','bpmnProcessId':'','processInstanceKey':-1,'messageKey':-1,'correlationKey':'','variables':{},'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -562,7 +562,7 @@ final class JsonSerializableToJsonTest {
                   .setCorrelationKey(wrapString(correlationKey))
                   .setVariables(VARIABLES_MSGPACK);
             },
-        "{'processInstanceKey':2,'elementInstanceKey':1,'messageName':'name','correlationKey':'key','bpmnProcessId':'process','messageKey':3,'variables':{'foo':'bar'},'interrupting':true}"
+        "{'processInstanceKey':2,'elementInstanceKey':1,'messageName':'name','correlationKey':'key','bpmnProcessId':'process','messageKey':3,'variables':{'foo':'bar'},'interrupting':true,'tenantId':'[default]'}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// Empty MessageSubscriptionRecord
@@ -579,7 +579,7 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(processInstanceKey)
                   .setElementInstanceKey(elementInstanceKey);
             },
-        "{'processInstanceKey':1,'elementInstanceKey':13,'messageName':'','correlationKey':'','bpmnProcessId':'','messageKey':-1,'variables':{},'interrupting':true}"
+        "{'processInstanceKey':1,'elementInstanceKey':13,'messageName':'','correlationKey':'','bpmnProcessId':'','messageKey':-1,'variables':{},'interrupting':true,'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -608,7 +608,7 @@ final class JsonSerializableToJsonTest {
                   .setCorrelationKey(wrapString(correlationKey))
                   .setElementId(wrapString("A"));
             },
-        "{'elementInstanceKey':123,'messageName':'test-message','processInstanceKey':1345,'variables':{'foo':'bar'},'bpmnProcessId':'process','messageKey':3,'correlationKey':'key','elementId':'A','interrupting':true}"
+        "{'elementInstanceKey':123,'messageName':'test-message','processInstanceKey':1345,'variables':{'foo':'bar'},'bpmnProcessId':'process','messageKey':3,'correlationKey':'key','elementId':'A','interrupting':true,'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -625,7 +625,7 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(processInstanceKey)
                   .setElementInstanceKey(elementInstanceKey);
             },
-        "{'elementInstanceKey':123,'messageName':'','processInstanceKey':1345,'variables':{},'bpmnProcessId':'','messageKey':-1,'correlationKey':'','elementId':'','interrupting':true}"
+        "{'elementInstanceKey':123,'messageName':'','processInstanceKey':1345,'variables':{},'bpmnProcessId':'','messageKey':-1,'correlationKey':'','elementId':'','interrupting':true,'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -650,7 +650,7 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(processInstanceKey)
                   .setProcessDefinitionKey(processDefinitionKey);
             },
-        "{'elementInstanceKey':567,'processInstanceKey':1234,'dueDate':1234,'targetElementId':'node1','repetitions':3,'processDefinitionKey':13}"
+        "{'elementInstanceKey':567,'processInstanceKey':1234,'dueDate':1234,'targetElementId':'node1','repetitions':3,'processDefinitionKey':13,'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -675,7 +675,7 @@ final class JsonSerializableToJsonTest {
                   .setProcessDefinitionKey(processDefinitionKey)
                   .setBpmnProcessId(wrapString(bpmnProcessId));
             },
-        "{'scopeKey':3,'processInstanceKey':2,'processDefinitionKey':4,'bpmnProcessId':'process','name':'x','value':'1'}"
+        "{'scopeKey':3,'processInstanceKey':2,'processDefinitionKey':4,'bpmnProcessId':'process','name':'x','value':'1','tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -693,7 +693,7 @@ final class JsonSerializableToJsonTest {
                   .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)))
                   .setScopeKey(scopeKey);
             },
-        "{'updateSemantics':'LOCAL','variables':{'foo':1},'scopeKey':3}"
+        "{'updateSemantics':'LOCAL','variables':{'foo':1},'scopeKey':3,'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -707,7 +707,7 @@ final class JsonSerializableToJsonTest {
 
               return new VariableDocumentRecord().setScopeKey(scopeKey);
             },
-        "{'updateSemantics':'PROPAGATE','variables':{},'scopeKey':3}"
+        "{'updateSemantics':'PROPAGATE','variables':{},'scopeKey':3,'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -733,7 +733,7 @@ final class JsonSerializableToJsonTest {
                       new ProcessInstanceCreationStartInstruction().setElementId("element"))
                   .setProcessInstanceKey(instanceKey);
             },
-        "{'variables':{'foo':'bar','baz':'boz'},'bpmnProcessId':'process','processDefinitionKey':1,'version':1,'processInstanceKey':2,'startInstructions':[{'elementId':'element'}]}"
+        "{'variables':{'foo':'bar','baz':'boz'},'bpmnProcessId':'process','processDefinitionKey':1,'version':1,'processInstanceKey':2,'startInstructions':[{'elementId':'element'}],'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -742,7 +742,7 @@ final class JsonSerializableToJsonTest {
       {
         "Empty ProcessInstanceCreationRecord",
         (Supplier<UnifiedRecordValue>) ProcessInstanceCreationRecord::new,
-        "{'variables':{},'bpmnProcessId':'','processDefinitionKey':-1,'version':-1,'processInstanceKey':-1, 'startInstructions':[]}"
+        "{'variables':{},'bpmnProcessId':'','processDefinitionKey':-1,'version':-1,'processInstanceKey':-1, 'startInstructions':[],'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -787,7 +787,8 @@ final class JsonSerializableToJsonTest {
               }
             }],
             "elementId": "activity"
-          }]
+          }],
+          'tenantId':'[default]'
         }
         """
       },
@@ -803,7 +804,8 @@ final class JsonSerializableToJsonTest {
         {
           "processInstanceKey": 1,
           "terminateInstructions": [],
-          "activateInstructions": []
+          "activateInstructions": [],
+          'tenantId':'[default]'
         }
         """
       },
@@ -834,7 +836,7 @@ final class JsonSerializableToJsonTest {
                   .setParentProcessInstanceKey(11)
                   .setParentElementInstanceKey(22);
             },
-        "{'bpmnProcessId':'test-process','version':12,'processDefinitionKey':13,'processInstanceKey':1234,'elementId':'activity','flowScopeKey':123,'bpmnElementType':'SERVICE_TASK','parentProcessInstanceKey':11,'parentElementInstanceKey':22}"
+        "{'bpmnProcessId':'test-process','version':12,'processDefinitionKey':13,'processInstanceKey':1234,'elementId':'activity','flowScopeKey':123,'bpmnElementType':'SERVICE_TASK','parentProcessInstanceKey':11,'parentElementInstanceKey':22,'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -843,7 +845,7 @@ final class JsonSerializableToJsonTest {
       {
         "Empty ProcessInstanceRecord",
         (Supplier<UnifiedRecordValue>) ProcessInstanceRecord::new,
-        "{'bpmnProcessId':'','version':-1,'processDefinitionKey':-1,'processInstanceKey':-1,'elementId':'','flowScopeKey':-1,'bpmnElementType':'UNSPECIFIED','parentProcessInstanceKey':-1,'parentElementInstanceKey':-1}"
+        "{'bpmnProcessId':'','version':-1,'processDefinitionKey':-1,'processInstanceKey':-1,'elementId':'','flowScopeKey':-1,'bpmnElementType':'UNSPECIFIED','parentProcessInstanceKey':-1,'parentElementInstanceKey':-1,'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -860,7 +862,7 @@ final class JsonSerializableToJsonTest {
                     .setDecisionKey(2L)
                     .setDecisionRequirementsKey(3L)
                     .setDecisionRequirementsId("decision-requirements-id"),
-        "{'decisionId': 'decision-id', 'decisionName': 'decision-name', 'version': 1, 'decisionKey': 2, 'decisionRequirementsKey': 3, 'decisionRequirementsId': 'decision-requirements-id', 'duplicate': false}"
+        "{'decisionId': 'decision-id', 'decisionName': 'decision-name', 'version': 1, 'decisionKey': 2, 'decisionRequirementsKey': 3, 'decisionRequirementsId': 'decision-requirements-id', 'duplicate': false,'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -879,7 +881,7 @@ final class JsonSerializableToJsonTest {
                     .setResourceName("resource-name")
                     .setResource(wrapString("resource"))
                     .setChecksum(wrapString("checksum")),
-        "{'decisionRequirementsId': 'decision-requirements-id', 'decisionRequirementsName': 'decision-requirements-name', 'decisionRequirementsVersion': 1, 'decisionRequirementsKey': 2, 'namespace': 'namespace', 'resourceName': 'resource-name', 'resource': 'cmVzb3VyY2U=', 'checksum': 'Y2hlY2tzdW0=', 'duplicate': false}"
+        "{'decisionRequirementsId': 'decision-requirements-id', 'decisionRequirementsName': 'decision-requirements-name', 'decisionRequirementsVersion': 1, 'decisionRequirementsKey': 2, 'namespace': 'namespace', 'resourceName': 'resource-name', 'resource': 'cmVzb3VyY2U=', 'checksum': 'Y2hlY2tzdW0=', 'duplicate': false,'tenantId':'[default]'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -980,7 +982,8 @@ final class JsonSerializableToJsonTest {
                   }
               ],
               "evaluationFailureMessage":"evaluation-failure-message",
-              "failedDecisionId":"failed-decision-id"
+              "failedDecisionId":"failed-decision-id",
+              'tenantId':'[default]'
           }
           """
       },
@@ -1021,7 +1024,8 @@ final class JsonSerializableToJsonTest {
               "elementId":"element-id",
               "evaluatedDecisions":[],
               "evaluationFailureMessage":"",
-              "failedDecisionId":""
+              "failedDecisionId":"",
+              'tenantId':'[default]'
           }
           """
       },
@@ -1048,6 +1052,7 @@ final class JsonSerializableToJsonTest {
     params.put("processInstanceKey", processInstanceKey);
     params.put("errorEventPosition", 123);
     params.put("stacktrace", STACK_TRACE);
+    params.put("tenantId", "[default]");
 
     try {
       return new ObjectMapper().writeValueAsString(params);
