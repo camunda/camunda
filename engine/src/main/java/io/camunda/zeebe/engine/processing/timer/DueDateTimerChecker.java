@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.timer;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
@@ -66,7 +66,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
   }
 
   protected static final class TriggerTimersSideEffect
-      implements Function<LegacyTypedCommandWriter, Long> {
+      implements Function<LegacyTypedStreamWriter, Long> {
 
     private final ActorClock actorClock;
 
@@ -83,7 +83,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
     }
 
     @Override
-    public Long apply(final LegacyTypedCommandWriter legacyTypedCommandWriter) {
+    public Long apply(final LegacyTypedStreamWriter legacyTypedCommandWriter) {
       final var now = actorClock.getTimeMillis();
 
       final var yieldAfter = now + Math.round(TIMER_RESOLUTION * GIVE_YIELD_FACTOR);
@@ -107,10 +107,9 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
 
     private final TimerRecord timerRecord = new TimerRecord();
 
-    private final LegacyTypedCommandWriter legacyTypedCommandWriter;
+    private final LegacyTypedStreamWriter legacyTypedCommandWriter;
 
-    public WriteTriggerTimerCommandVisitor(
-        final LegacyTypedCommandWriter legacyTypedCommandWriter) {
+    public WriteTriggerTimerCommandVisitor(final LegacyTypedStreamWriter legacyTypedCommandWriter) {
       this.legacyTypedCommandWriter = legacyTypedCommandWriter;
     }
 
