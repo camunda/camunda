@@ -377,7 +377,11 @@ public final class CatchEventBehavior {
     sideEffects.add(
         () ->
             sendCloseMessageSubscriptionCommand(
-                subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName, tenantId));
+                subscriptionPartitionId,
+                processInstanceKey,
+                elementInstanceKey,
+                messageName,
+                tenantId));
   }
 
   private boolean sendCloseMessageSubscriptionCommand(

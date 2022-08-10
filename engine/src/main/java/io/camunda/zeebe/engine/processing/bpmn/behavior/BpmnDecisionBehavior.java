@@ -193,7 +193,8 @@ public final class BpmnDecisionBehavior {
         context.getProcessInstanceKey(),
         context.getElementInstanceKey(),
         context.getElementId(),
-        resultVariable);
+        resultVariable,
+        context.getTenantId());
   }
 
   private static DirectBuffer serializeToNamedVariable(

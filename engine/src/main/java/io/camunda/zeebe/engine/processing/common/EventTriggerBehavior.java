@@ -159,7 +159,8 @@ public class EventTriggerBehavior {
       final long processInstanceKey,
       final long eventScopeKey,
       final DirectBuffer catchEventId,
-      final DirectBuffer variables) {
+      final DirectBuffer variables,
+      final DirectBuffer tenantId) {
     final var eventKey = keyGenerator.nextKey();
     processEventRecord.reset();
     processEventRecord
@@ -167,7 +168,8 @@ public class EventTriggerBehavior {
         .setTargetElementIdBuffer(catchEventId)
         .setVariablesBuffer(variables)
         .setProcessDefinitionKey(processDefinitionKey)
-        .setProcessInstanceKey(processInstanceKey);
+        .setProcessInstanceKey(processInstanceKey)
+        .setTenantId(tenantId);
     stateWriter.appendFollowUpEvent(eventKey, ProcessEventIntent.TRIGGERING, processEventRecord);
     return eventKey;
   }
@@ -186,13 +188,15 @@ public class EventTriggerBehavior {
       final long processDefinitionKey,
       final long processInstanceKey,
       final long eventScopeKey,
-      final DirectBuffer catchEventId) {
+      final DirectBuffer catchEventId,
+      final DirectBuffer tenantId) {
     processEventRecord.reset();
     processEventRecord
         .setScopeKey(eventScopeKey)
         .setTargetElementIdBuffer(catchEventId)
         .setProcessDefinitionKey(processDefinitionKey)
-        .setProcessInstanceKey(processInstanceKey);
+        .setProcessInstanceKey(processInstanceKey)
+        .setTenantId(tenantId);
     stateWriter.appendFollowUpEvent(
         eventTriggerKey, ProcessEventIntent.TRIGGERED, processEventRecord);
   }
@@ -230,7 +234,8 @@ public class EventTriggerBehavior {
         elementRecord.getProcessDefinitionKey(),
         elementRecord.getProcessInstanceKey(),
         eventScopeKey,
-        triggeredEvent.getId());
+        triggeredEvent.getId(),
+        elementRecord.getTenantIdBuffer());
 
     eventRecord
         .setBpmnElementType(triggeredEvent.getElementType())

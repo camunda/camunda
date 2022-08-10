@@ -85,23 +85,26 @@ public final class EventHandle {
       final long processInstanceKey,
       final long eventScopeKey,
       final DirectBuffer catchEventId,
-      final DirectBuffer variables) {
+      final DirectBuffer variables,
+      final DirectBuffer tenantId) {
     return eventTriggerBehavior.triggeringProcessEvent(
-        processDefinitionKey, processInstanceKey, eventScopeKey, catchEventId, variables);
+        processDefinitionKey, processInstanceKey, eventScopeKey, catchEventId, variables, tenantId);
   }
 
   public void activateElement(
       final ExecutableFlowElement catchEvent,
       final long eventScopeKey,
       final ProcessInstanceRecord elementRecord) {
-    activateElement(catchEvent, eventScopeKey, elementRecord, NO_VARIABLES);
+    activateElement(
+        catchEvent, eventScopeKey, elementRecord, NO_VARIABLES, elementRecord.getTenantIdBuffer());
   }
 
   public void activateElement(
       final ExecutableFlowElement catchEvent,
       final long eventScopeKey,
       final ProcessInstanceRecord elementRecord,
-      final DirectBuffer variables) {
+      final DirectBuffer variables,
+      final DirectBuffer tenantId) {
 
     final var processEventKey =
         triggeringProcessEvent(
@@ -109,7 +112,8 @@ public final class EventHandle {
             elementRecord.getProcessInstanceKey(),
             eventScopeKey,
             catchEvent.getId(),
-            variables);
+            variables,
+            elementRecord.getTenantIdBuffer());
 
     if (isElementActivated(catchEvent)) {
       commandWriter.appendFollowUpCommand(
@@ -141,7 +145,8 @@ public final class EventHandle {
         jobRecord.getProcessInstanceKey(),
         jobRecord.getElementInstanceKey(),
         jobRecord.getElementIdBuffer(),
-        jobRecord.getVariablesBuffer());
+        jobRecord.getVariablesBuffer(),
+        jobRecord.getTenantIdBuffer());
   }
 
   private boolean isElementActivated(final ExecutableFlowElement catchEvent) {
@@ -186,21 +191,24 @@ public final class EventHandle {
         subscription.getProcessDefinitionKey(),
         newProcessInstanceKey,
         startEventSubscriptionRecord.getStartEventIdBuffer(),
-        message.getVariablesBuffer());
+        message.getVariablesBuffer(),
+        message.getTenantIdBuffer());
   }
 
   public void activateProcessInstanceForStartEvent(
       final long processDefinitionKey,
       final long processInstanceKey,
       final DirectBuffer targetElementId,
-      final DirectBuffer variablesBuffer) {
+      final DirectBuffer variablesBuffer,
+      final DirectBuffer tenantId) {
 
     triggeringProcessEvent(
         processDefinitionKey,
         processInstanceKey,
         processDefinitionKey /* The eventScope for the start event is the process definition key */,
         targetElementId,
-        variablesBuffer);
+        variablesBuffer,
+        tenantId);
 
     final var process = processState.getProcessByKey(processDefinitionKey);
 

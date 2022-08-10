@@ -113,7 +113,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
             catchEvent,
             elementInstanceKey,
             elementInstance.getValue(),
-            record.getVariablesBuffer());
+            record.getVariablesBuffer(),
+            record.getTenantIdBuffer());
 
         sendAcknowledgeCommand(record);
       }

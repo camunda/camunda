@@ -103,7 +103,11 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       timer.setProcessInstanceKey(processInstanceKey);
       stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
       eventHandle.activateProcessInstanceForStartEvent(
-          processDefinitionKey, processInstanceKey, timer.getTargetElementIdBuffer(), NO_VARIABLES);
+          processDefinitionKey,
+          processInstanceKey,
+          timer.getTargetElementIdBuffer(),
+          NO_VARIABLES,
+          timer.getTenantIdBuffer());
     } else {
       final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
       if (!eventHandle.canTriggerElement(elementInstance, timer.getTargetElementIdBuffer())) {
