@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -30,7 +31,8 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
   private final LongProperty variableScopeKeyProp = new LongProperty("variableScopeKey", -1L);
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public IncidentRecord() {
     declareProperty(errorTypeProp)
@@ -143,11 +145,6 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
-  @Override
-  public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
-  }
-
   public IncidentRecord setJobKey(final long jobKey) {
     jobKeyProp.setValue(jobKey);
     return this;
@@ -171,6 +168,11 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   public IncidentRecord setErrorType(final ErrorType errorType) {
     errorTypeProp.setValue(errorType);
     return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
   public DirectBuffer getTenantIdBuffer() {

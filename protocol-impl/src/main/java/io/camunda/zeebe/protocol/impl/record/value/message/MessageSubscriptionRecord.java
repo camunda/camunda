@@ -16,6 +16,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
@@ -33,7 +34,8 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private final BooleanProperty interruptingProp = new BooleanProperty("interrupting", true);
 
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public MessageSubscriptionRecord() {
     declareProperty(processInstanceKeyProp)
@@ -119,16 +121,6 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  @Override
-  public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
-  }
-
-  public MessageSubscriptionRecord setTenantId(final DirectBuffer tenantId) {
-    tenantIdProp.setValue(tenantId);
-    return this;
-  }
-
   public MessageSubscriptionRecord setMessageKey(final long messageKey) {
     messageKeyProp.setValue(messageKey);
     return this;
@@ -146,6 +138,16 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
 
   public MessageSubscriptionRecord setProcessInstanceKey(final long key) {
     processInstanceKeyProp.setValue(key);
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public MessageSubscriptionRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
     return this;
   }
 

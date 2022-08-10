@@ -16,6 +16,7 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import org.agrona.DirectBuffer;
 
@@ -35,7 +36,8 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum");
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public DecisionRequirementsRecord() {
     declareProperty(decisionRequirementsIdProp)

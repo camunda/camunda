@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
@@ -24,7 +25,8 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
   private final StringProperty targetElementId = new StringProperty("targetElementId");
   private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions");
   private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey");
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public TimerRecord() {
     declareProperty(elementInstanceKeyProp)
@@ -81,11 +83,6 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
     return this;
   }
 
-  @Override
-  public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
-  }
-
   public TimerRecord setTargetElementId(final DirectBuffer targetElementId) {
     this.targetElementId.setValue(targetElementId);
     return this;
@@ -104,5 +101,10 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
   public TimerRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
     return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 }

@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
@@ -33,7 +34,8 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public MessageStartEventSubscriptionRecord() {
     declareProperty(processDefinitionKeyProp)
@@ -120,11 +122,6 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
     return this;
   }
 
-  @Override
-  public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
-  }
-
   public MessageStartEventSubscriptionRecord setProcessInstanceKey(final long key) {
     processInstanceKeyProp.setValue(key);
     return this;
@@ -138,6 +135,11 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   public MessageStartEventSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
   public DirectBuffer getTenantIdBuffer() {

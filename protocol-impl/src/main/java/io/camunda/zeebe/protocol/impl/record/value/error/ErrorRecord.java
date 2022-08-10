@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.PrintWriter;
@@ -27,7 +28,8 @@ public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecord
   private final LongProperty errorEventPositionProp = new LongProperty("errorEventPosition");
 
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public ErrorRecord() {
     declareProperty(exceptionMessageProp)

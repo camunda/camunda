@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
@@ -28,7 +29,8 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
 
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
   private final StringProperty messageIdProp = new StringProperty("messageId", "");
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public MessageRecord() {
     declareProperty(nameProp)
@@ -99,11 +101,6 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
     return this;
   }
 
-  @Override
-  public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
-  }
-
   public MessageRecord setMessageId(final String messageId) {
     messageIdProp.setValue(messageId);
     return this;
@@ -132,6 +129,11 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
   public MessageRecord setName(final DirectBuffer name) {
     nameProp.setValue(name);
     return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
   public DirectBuffer getTenantIdBuffer() {

@@ -20,6 +20,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
@@ -60,7 +61,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new LongProperty("processDefinitionKey", -1L);
   private final StringProperty elementIdProp = new StringProperty("elementId", EMPTY_STRING);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public JobRecord() {
     declareProperty(deadlineProp)
@@ -197,11 +199,6 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
-  @Override
-  public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
-  }
-
   public JobRecord setProcessDefinitionVersion(final int version) {
     processDefinitionVersionProp.setValue(version);
     return this;
@@ -288,6 +285,16 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return setType(buf, 0, buf.capacity());
   }
 
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public JobRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProp.getValue();
   }
@@ -354,11 +361,6 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setWorker(final DirectBuffer worker, final int offset, final int length) {
     workerProp.setValue(worker, offset, length);
-    return this;
-  }
-
-  public JobRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
     return this;
   }
 }

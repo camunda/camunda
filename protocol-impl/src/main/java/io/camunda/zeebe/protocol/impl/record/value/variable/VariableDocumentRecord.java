@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -30,7 +31,8 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
           VariableDocumentUpdateSemantic.class,
           VariableDocumentUpdateSemantic.PROPAGATE);
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
-  private final StringProperty tenantIdProperty = new StringProperty("tenantId");
+  private final StringProperty tenantIdProperty =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public VariableDocumentRecord() {
     declareProperty(scopeKeyProperty)

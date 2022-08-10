@@ -17,6 +17,7 @@ import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -39,7 +40,8 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private final ArrayProperty<StringValue> variablesProp =
       new ArrayProperty<>("variables", new StringValue());
   private final BooleanProperty truncatedProp = new BooleanProperty("truncated", false);
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public JobBatchRecord() {
     declareProperty(typeProp)
@@ -133,11 +135,6 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
     return this;
   }
 
-  @Override
-  public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
-  }
-
   public JobBatchRecord setMaxJobsToActivate(final int maxJobsToActivate) {
     maxJobsToActivateProp.setValue(maxJobsToActivate);
     return this;
@@ -166,6 +163,11 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   public JobBatchRecord setType(final String type) {
     typeProp.setValue(type);
     return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
   @JsonIgnore

@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import org.agrona.DirectBuffer;
 
@@ -31,7 +32,8 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
       new LongProperty("decisionRequirementsKey");
 
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public DecisionRecord() {
     declareProperty(decisionIdProp)
@@ -79,11 +81,6 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
     return isDuplicateProp.getValue();
   }
 
-  @Override
-  public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
-  }
-
   public DecisionRecord setDecisionRequirementsKey(final long decisionRequirementsKey) {
     decisionRequirementsKeyProp.setValue(decisionRequirementsKey);
     return this;
@@ -112,6 +109,11 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
   public DecisionRecord setDecisionId(final String decisionId) {
     decisionIdProp.setValue(decisionId);
     return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return bufferAsString(tenantIdProp.getValue());
   }
 
   public DecisionRecord markAsDuplicate() {

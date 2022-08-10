@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
@@ -25,7 +26,8 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey");
   private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey");
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public VariableRecord() {
     declareProperty(nameProp)
@@ -82,11 +84,6 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
     return this;
   }
 
-  @Override
-  public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
-  }
-
   public VariableRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProp.setValue(processInstanceKey);
     return this;
@@ -100,6 +97,11 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   public VariableRecord setName(final DirectBuffer name) {
     nameProp.setValue(name);
     return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
   public VariableRecord setValue(final DirectBuffer value, final int offset, final int length) {

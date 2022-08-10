@@ -17,6 +17,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
@@ -37,7 +38,8 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private final BooleanProperty interruptingProp = new BooleanProperty("interrupting", true);
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public ProcessMessageSubscriptionRecord() {
     declareProperty(subscriptionPartitionIdProp)
@@ -162,16 +164,6 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  @Override
-  public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
-  }
-
-  public ProcessMessageSubscriptionRecord setTenantId(final DirectBuffer tenantId) {
-    tenantIdProp.setValue(tenantId);
-    return this;
-  }
-
   public ProcessMessageSubscriptionRecord setElementId(final DirectBuffer elementId) {
     elementIdProp.setValue(elementId);
     return this;
@@ -189,6 +181,16 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
 
   public ProcessMessageSubscriptionRecord setProcessInstanceKey(final long key) {
     processInstanceKeyProp.setValue(key);
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public ProcessMessageSubscriptionRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
     return this;
   }
 

@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -50,7 +51,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
       new LongProperty("parentProcessInstanceKey", -1L);
   private final LongProperty parentElementInstanceKeyProp =
       new LongProperty("parentElementInstanceKey", -1L);
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public ProcessInstanceRecord() {
     declareProperty(bpmnProcessIdProp)
@@ -149,16 +151,6 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
-  @Override
-  public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
-  }
-
-  public ProcessInstanceRecord setTenantId(final DirectBuffer tenantId) {
-    tenantIdProp.setValue(tenantId);
-    return this;
-  }
-
   public ProcessInstanceRecord setParentProcessInstanceKey(final long parentProcessInstanceKey) {
     parentProcessInstanceKeyProp.setValue(parentProcessInstanceKey);
     return this;
@@ -200,6 +192,16 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setBpmnProcessId(final DirectBuffer directBuffer) {
     bpmnProcessIdProp.setValue(directBuffer);
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public ProcessInstanceRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
     return this;
   }
 

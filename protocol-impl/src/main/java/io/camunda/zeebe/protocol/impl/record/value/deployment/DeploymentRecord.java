@@ -11,6 +11,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
@@ -35,7 +36,8 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
 
   private final ArrayProperty<DecisionRequirementsMetadataRecord> decisionRequirementsMetadataProp =
       new ArrayProperty<>("decisionRequirementsMetadata", new DecisionRequirementsMetadataRecord());
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public DeploymentRecord() {
     declareProperty(resourcesProp)

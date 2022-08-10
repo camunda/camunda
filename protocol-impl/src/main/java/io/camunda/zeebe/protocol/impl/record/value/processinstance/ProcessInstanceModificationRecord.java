@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -29,7 +30,8 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       activateInstructionsProperty =
           new ArrayProperty<>(
               "activateInstructions", new ProcessInstanceModificationActivateInstruction());
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public ProcessInstanceModificationRecord() {
     declareProperty(processInstanceKeyProperty)

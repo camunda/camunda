@@ -19,6 +19,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -54,7 +55,8 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
   private final StringProperty evaluationFailureMessageProp =
       new StringProperty("evaluationFailureMessage", "");
   private final StringProperty failedDecisionIdProp = new StringProperty("failedDecisionId", "");
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "*");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public DecisionEvaluationRecord() {
     declareProperty(decisionKeyProp)
@@ -250,15 +252,15 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
     return this;
   }
 
-  @Override
-  public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
-  }
-
   public DecisionEvaluationRecord setEvaluationFailureMessage(
       final String evaluationFailureMessage) {
     evaluationFailureMessageProp.setValue(evaluationFailureMessage);
     return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return bufferAsString(tenantIdProp.getValue());
   }
 
   @JsonIgnore
