@@ -113,6 +113,11 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
     return this;
   }
 
+  public ProcessInstanceCreationRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProp.getValue();
   }

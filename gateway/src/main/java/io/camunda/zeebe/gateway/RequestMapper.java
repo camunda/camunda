@@ -110,7 +110,7 @@ public final class RequestMapper {
   public static BrokerCreateProcessInstanceRequest toCreateProcessInstanceRequest(
       final CreateProcessInstanceRequest grpcRequest) {
     final BrokerCreateProcessInstanceRequest brokerRequest =
-        new BrokerCreateProcessInstanceRequest();
+        new BrokerCreateProcessInstanceRequest(grpcRequest.getTenantId());
 
     brokerRequest
         .setBpmnProcessId(grpcRequest.getBpmnProcessId())
@@ -126,7 +126,7 @@ public final class RequestMapper {
       toCreateProcessInstanceWithResultRequest(
           final CreateProcessInstanceWithResultRequest grpcRequest) {
     final BrokerCreateProcessInstanceWithResultRequest brokerRequest =
-        new BrokerCreateProcessInstanceWithResultRequest();
+        new BrokerCreateProcessInstanceWithResultRequest(grpcRequest.getTenantId());
 
     final CreateProcessInstanceRequest request = grpcRequest.getRequest();
     brokerRequest
@@ -143,7 +143,7 @@ public final class RequestMapper {
   public static BrokerCancelProcessInstanceRequest toCancelProcessInstanceRequest(
       final CancelProcessInstanceRequest grpcRequest) {
     final BrokerCancelProcessInstanceRequest brokerRequest =
-        new BrokerCancelProcessInstanceRequest();
+        new BrokerCancelProcessInstanceRequest(grpcRequest.getTenantId());
 
     brokerRequest.setProcessInstanceKey(grpcRequest.getProcessInstanceKey());
 
