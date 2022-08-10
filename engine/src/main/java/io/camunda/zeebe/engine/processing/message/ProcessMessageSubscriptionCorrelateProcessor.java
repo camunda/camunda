@@ -149,7 +149,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         subscription.getProcessInstanceKey(),
         subscription.getElementInstanceKey(),
         subscription.getBpmnProcessIdBuffer(),
-        subscription.getMessageNameBuffer());
+        subscription.getMessageNameBuffer(),
+        subscription.getTenantIdBuffer());
   }
 
   private void sendRejectionCommand(final ProcessMessageSubscriptionRecord subscription) {
@@ -158,6 +159,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         subscription.getBpmnProcessIdBuffer(),
         subscription.getMessageKey(),
         subscription.getMessageNameBuffer(),
-        subscription.getCorrelationKeyBuffer());
+        subscription.getCorrelationKeyBuffer(),
+        subscription.getTenantIdBuffer());
   }
 }

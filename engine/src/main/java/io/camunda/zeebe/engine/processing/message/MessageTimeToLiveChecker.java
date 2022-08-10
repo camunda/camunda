@@ -41,7 +41,8 @@ public final class MessageTimeToLiveChecker implements Runnable {
         .setName(message.getName())
         .setCorrelationKey(message.getCorrelationKey())
         .setTimeToLive(message.getTimeToLive())
-        .setVariables(message.getVariablesBuffer());
+        .setVariables(message.getVariablesBuffer())
+        .setTenantId(message.getTenantIdBuffer());
 
     if (message.hasMessageId()) {
       deleteMessageCommand.setMessageId(message.getMessageIdBuffer());

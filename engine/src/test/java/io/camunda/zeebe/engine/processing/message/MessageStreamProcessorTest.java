@@ -48,15 +48,15 @@ public final class MessageStreamProcessorTest {
     MockitoAnnotations.initMocks(this);
 
     when(mockSubscriptionCommandSender.openProcessMessageSubscription(
-            anyLong(), anyLong(), any(), anyBoolean()))
+            anyLong(), anyLong(), any(), any(), anyBoolean()))
         .thenReturn(true);
 
     when(mockSubscriptionCommandSender.correlateProcessMessageSubscription(
-            anyLong(), anyLong(), any(), any(), anyLong(), any(), any()))
+            anyLong(), anyLong(), any(), any(), anyLong(), any(), any(), any()))
         .thenReturn(true);
 
     when(mockSubscriptionCommandSender.closeProcessMessageSubscription(
-            anyLong(), anyLong(), any(DirectBuffer.class)))
+            anyLong(), anyLong(), any(DirectBuffer.class), any(DirectBuffer.class)))
         .thenReturn(true);
 
     rule.startTypedStreamProcessor(
@@ -93,6 +93,7 @@ public final class MessageStreamProcessorTest {
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
             any(),
+            any(),
             anyBoolean());
   }
 
@@ -123,7 +124,8 @@ public final class MessageStreamProcessorTest {
             subscription.getMessageNameBuffer(),
             messageKey,
             message.getVariablesBuffer(),
-            subscription.getCorrelationKeyBuffer());
+            subscription.getCorrelationKeyBuffer(),
+            subscription.getTenantIdBuffer());
   }
 
   @Test
@@ -159,7 +161,8 @@ public final class MessageStreamProcessorTest {
             subscription.getMessageNameBuffer(),
             messageKey,
             message.getVariablesBuffer(),
-            subscription.getCorrelationKeyBuffer());
+            subscription.getCorrelationKeyBuffer(),
+            subscription.getTenantIdBuffer());
   }
 
   @Test
@@ -217,6 +220,7 @@ public final class MessageStreamProcessorTest {
         .closeProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
+            any(DirectBuffer.class),
             any(DirectBuffer.class));
   }
 
@@ -244,6 +248,7 @@ public final class MessageStreamProcessorTest {
             any(),
             any(),
             eq(messageKey),
+            any(),
             any(),
             any());
   }
@@ -284,6 +289,7 @@ public final class MessageStreamProcessorTest {
             any(),
             eq(firstMessageKey),
             any(),
+            any(),
             any());
 
     verify(mockSubscriptionCommandSender, timeout(5_000))
@@ -293,6 +299,7 @@ public final class MessageStreamProcessorTest {
             eq(subscription.getBpmnProcessIdBuffer()),
             any(),
             eq(lastMessageKey),
+            any(),
             any(),
             any());
   }
@@ -384,7 +391,8 @@ public final class MessageStreamProcessorTest {
             any(DirectBuffer.class),
             eq(messageKey),
             any(DirectBuffer.class),
-            eq(firstSubscription.getCorrelationKeyBuffer()));
+            eq(firstSubscription.getCorrelationKeyBuffer()),
+            eq(firstSubscription.getTenantIdBuffer()));
 
     verify(mockSubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
@@ -394,7 +402,8 @@ public final class MessageStreamProcessorTest {
             any(DirectBuffer.class),
             eq(messageKey),
             any(DirectBuffer.class),
-            eq(secondSubscription.getCorrelationKeyBuffer()));
+            eq(secondSubscription.getCorrelationKeyBuffer()),
+            eq(secondSubscription.getTenantIdBuffer()));
   }
 
   private void assertAllMessagesReceived(final MessageSubscriptionRecord subscription) {
@@ -420,7 +429,8 @@ public final class MessageStreamProcessorTest {
             eq(subscription.getMessageNameBuffer()),
             eq(firstMessageKey),
             any(),
-            eq(subscription.getCorrelationKeyBuffer()));
+            eq(subscription.getCorrelationKeyBuffer()),
+            eq(subscription.getTenantIdBuffer()));
 
     verify(mockSubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
@@ -430,7 +440,8 @@ public final class MessageStreamProcessorTest {
             eq(subscription.getMessageNameBuffer()),
             eq(lastMessageKey),
             any(),
-            eq(subscription.getCorrelationKeyBuffer()));
+            eq(subscription.getCorrelationKeyBuffer()),
+            eq(subscription.getTenantIdBuffer()));
   }
 
   private MessageSubscriptionRecord messageSubscription() {

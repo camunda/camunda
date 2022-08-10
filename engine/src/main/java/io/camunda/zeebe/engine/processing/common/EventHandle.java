@@ -174,7 +174,8 @@ public final class EventHandle {
         .setCorrelationKey(message.getCorrelationKeyBuffer())
         .setMessageKey(messageKey)
         .setMessageName(message.getNameBuffer())
-        .setVariables(message.getVariablesBuffer());
+        .setVariables(message.getVariablesBuffer())
+        .setTenantId(message.getTenantIdBuffer());
 
     stateWriter.appendFollowUpEvent(
         subscriptionKey,

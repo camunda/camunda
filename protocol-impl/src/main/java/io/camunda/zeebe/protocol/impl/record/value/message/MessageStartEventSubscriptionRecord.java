@@ -142,6 +142,11 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
     return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
+  public MessageStartEventSubscriptionRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
   public DirectBuffer getTenantIdBuffer() {
     return tenantIdProp.getValue();
   }
