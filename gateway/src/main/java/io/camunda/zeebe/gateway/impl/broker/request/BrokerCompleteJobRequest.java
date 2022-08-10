@@ -20,7 +20,9 @@ public final class BrokerCompleteJobRequest extends BrokerExecuteCommand<JobReco
   public BrokerCompleteJobRequest(final long key, final DirectBuffer variables) {
     this(key, variables, RecordValueWithTenant.DEFAULT_TENANT_ID);
   }
-  public BrokerCompleteJobRequest(final long key, final DirectBuffer variables, final String tenantId) {
+
+  public BrokerCompleteJobRequest(
+      final long key, final DirectBuffer variables, final String tenantId) {
     super(ValueType.JOB, JobIntent.COMPLETE);
     request.setKey(key);
     requestDto.setVariables(variables);
