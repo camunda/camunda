@@ -13,7 +13,7 @@ import {t} from 'translation';
 import {showError} from 'notifications';
 import {BPMNDiagram, HeatmapOverlay, Button} from 'components';
 import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
-import {withErrorHandling} from 'HOC';
+import {withErrorHandling, withUser} from 'HOC';
 
 import OutlierControlPanel from './OutlierControlPanel';
 import OutlierDetailsModal from './OutlierDetailsModal';
@@ -127,13 +127,15 @@ export class OutlierAnalysis extends React.Component {
           })}
         </p>
         <Button onClick={() => this.loadChartData(id, nodeData)}>{t('common.viewDetails')}</Button>
-        <InstancesButton
-          id={id}
-          name={flowNodeNames[id]}
-          value={boundValue}
-          config={config}
-          totalCount={totalCount}
-        />
+        {this.props.user?.authorizations.includes('csv_export') && (
+          <InstancesButton
+            id={id}
+            name={flowNodeNames[id]}
+            value={boundValue}
+            config={config}
+            totalCount={totalCount}
+          />
+        )}
       </div>
     );
   };
@@ -192,4 +194,4 @@ export class OutlierAnalysis extends React.Component {
   }
 }
 
-export default withErrorHandling(OutlierAnalysis);
+export default withErrorHandling(withUser(OutlierAnalysis));

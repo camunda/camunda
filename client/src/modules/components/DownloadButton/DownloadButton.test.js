@@ -21,6 +21,7 @@ jest.mock('config', () => ({
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  user: {authorizations: ['csv_export']},
 };
 
 beforeAll(() => {
@@ -57,4 +58,14 @@ it('should display a modal if total download count is more than csv limit', asyn
   node.find(Button).first().simulate('click');
 
   expect(node.find('Modal').prop('open')).toBe(true);
+});
+
+it('should not display the button if the user is not authorized to export csv data', async () => {
+  const node = shallow(
+    <DownloadButton fileName="testName" {...props} user={{authorizations: []}} />
+  );
+
+  await runAllEffects();
+
+  expect(node.find(Button)).not.toExist();
 });

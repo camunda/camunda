@@ -25,21 +25,5 @@ exports[`should display correct tooltip details 1`] = `
   >
     View Details
   </ForwardRef(Button)>
-  <InstancesButton
-    config={
-      Object {
-        "processDefinitionKey": "someKey",
-        "processDefinitionVersions": Array [
-          "someVersion",
-        ],
-        "tenantIds": Array [
-          "a",
-          "b",
-        ],
-      }
-    }
-    id="nodeKey"
-    name="nodeName"
-  />
 </div>
 `;

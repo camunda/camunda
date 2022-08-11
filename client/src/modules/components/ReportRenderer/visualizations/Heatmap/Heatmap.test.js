@@ -71,18 +71,23 @@ const report = {
   },
 };
 
+const props = {
+  report,
+  user: {authorizations: ['csv_export']},
+};
+
 beforeEach(() => {
   processResult.mockClear();
 });
 
 it('should load the process definition xml', () => {
-  const node = shallow(<Heatmap report={report} />);
+  const node = shallow(<Heatmap {...props} />);
 
   expect(node.find({xml: 'some diagram XML'})).toExist();
 });
 
 it('should load an updated process definition xml', () => {
-  const node = shallow(<Heatmap report={report} />);
+  const node = shallow(<Heatmap {...props} />);
 
   node.setProps({report: {...report, data: {...report.data, configuration: {xml: 'another xml'}}}});
 
@@ -91,7 +96,7 @@ it('should load an updated process definition xml', () => {
 
 it('should display a loading indication while loading', () => {
   const node = shallow(
-    <Heatmap report={{...report, data: {...report.data, configuration: {xml: null}}}} />
+    <Heatmap {...props} report={{...report, data: {...report.data, configuration: {xml: null}}}} />
   );
 
   expect(node.find('LoadingIndicator')).toExist();
@@ -100,6 +105,7 @@ it('should display a loading indication while loading', () => {
 it('should display an error message if visualization is incompatible with data', () => {
   const node = shallow(
     <Heatmap
+      {...props}
       report={{
         ...report,
         result: {
@@ -119,13 +125,13 @@ it('should display an error message if visualization is incompatible with data',
 });
 
 it('should display a diagram', () => {
-  const node = shallow(<Heatmap report={report} />);
+  const node = shallow(<Heatmap {...props} />);
 
   expect(node).toIncludeText('Diagram');
 });
 
 it('should display a heatmap overlay', () => {
-  const node = shallow(<Heatmap report={report} />);
+  const node = shallow(<Heatmap {...props} />);
 
   expect(node.find('HeatmapOverlay')).toExist();
 });
@@ -138,6 +144,7 @@ it('should convert the data to target value heat when target value mode is activ
 
   shallow(
     <Heatmap
+      {...props}
       report={update(report, {
         data: {
           view: {properties: {$set: ['duration']}},
@@ -168,6 +175,7 @@ it('should show a tooltip with information about actual and target value', () =>
 
   const node = shallow(
     <Heatmap
+      {...props}
       report={update(report, {
         data: {
           view: {properties: {$set: ['duration']}},
@@ -197,6 +205,7 @@ it('should inform if the actual value is less than 1% of the target value', () =
 
   const node = shallow(
     <Heatmap
+      {...props}
       report={update(report, {
         data: {
           view: {properties: {$set: ['duration']}},
@@ -227,6 +236,7 @@ it('should show a tooltip with information if no actual value is available', () 
 
   const node = shallow(
     <Heatmap
+      {...props}
       report={{
         ...report,
         result: {
@@ -266,6 +276,7 @@ it('should invoke report evaluation when clicking the download instances button'
   formatters.duration.mockReturnValueOnce('1ms').mockReturnValueOnce('2ms');
   const node = shallow(
     <Heatmap
+      {...props}
       report={update(report, {
         data: {
           view: {properties: {$set: ['duration']}},
@@ -281,6 +292,34 @@ it('should invoke report evaluation when clicking the download instances button'
   await tooltip.find(DownloadButton).prop('retriever');
 
   expect(loadRawData).toHaveBeenCalledWith('config');
+});
+
+it('should hide to the download csv button if the user does not have authorization', async () => {
+  const heatmapTargetValue = {
+    active: true,
+    values: {
+      b: {value: 1, unit: 'millis'},
+    },
+  };
+
+  formatters.duration.mockReturnValueOnce('1ms').mockReturnValueOnce('2ms');
+  const user = {authorizations: []};
+  const node = shallow(
+    <Heatmap
+      {...props}
+      user={user}
+      report={update(report, {
+        data: {
+          view: {properties: {$set: ['duration']}},
+          configuration: {heatmapTargetValue: {$set: heatmapTargetValue}},
+        },
+        result: {measures: {0: {aggregationType: {$set: {type: 'avg', value: null}}}}},
+      })}
+    />
+  );
+
+  const tooltip = node.find('HeatmapOverlay').renderProp('formatter')('', 'b');
+  expect(tooltip.find(DownloadButton)).not.toExist();
 });
 
 describe('multi-measure reports', () => {
@@ -302,7 +341,7 @@ describe('multi-measure reports', () => {
   });
 
   it('should show a tooltip with information about multi-measure reports', () => {
-    const node = shallow(<Heatmap report={multiMeasureReport} />);
+    const node = shallow(<Heatmap {...props} report={multiMeasureReport} />);
 
     getTooltipText.mockReturnValueOnce('12');
     getTooltipText.mockReturnValueOnce('2d 15s');
@@ -313,7 +352,7 @@ describe('multi-measure reports', () => {
   });
 
   it('should allow switching between heat visualizations for multi-measure reports', () => {
-    const node = shallow(<Heatmap report={multiMeasureReport} />);
+    const node = shallow(<Heatmap {...props} report={multiMeasureReport} />);
 
     expect(processResult).toHaveBeenCalledWith(
       update(multiMeasureReport, {result: {$set: multiMeasureReport.result.measures[0]}})

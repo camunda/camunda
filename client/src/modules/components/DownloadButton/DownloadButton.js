@@ -8,7 +8,7 @@
 import React, {useState, useEffect} from 'react';
 
 import {Button, Modal} from 'components';
-import {withErrorHandling, withDocs} from 'HOC';
+import {withErrorHandling, withDocs, withUser} from 'HOC';
 import {get} from 'request';
 import {showError} from 'notifications';
 import {getExportCsvLimit} from 'config';
@@ -25,6 +25,9 @@ export function DownloadButton({
   retriever,
   totalCount,
   docsLink,
+  user,
+  getUser,
+  refreshUser,
   ...props
 }) {
   const [exportLimit, setExportLimit] = useState(1000);
@@ -56,6 +59,10 @@ export function DownloadButton({
   };
 
   const displayModal = totalCount > exportLimit;
+
+  if (!user?.authorizations.includes('csv_export')) {
+    return null;
+  }
 
   return (
     <>
@@ -98,4 +105,4 @@ async function getData(url) {
   return await response.blob();
 }
 
-export default withErrorHandling(withDocs(DownloadButton));
+export default withErrorHandling(withDocs(withUser(DownloadButton)));

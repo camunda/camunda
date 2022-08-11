@@ -8,11 +8,11 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {loadNodesOutliers, loadDurationData} from './service';
-
-import {OutlierAnalysis} from './OutlierAnalysis';
-
 import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
+
+import {loadNodesOutliers, loadDurationData} from './service';
+import {OutlierAnalysis} from './OutlierAnalysis';
+import InstancesButton from './InstancesButton';
 
 jest.mock('./service', () => {
   return {
@@ -152,4 +152,22 @@ it('should display an empty state if no outliers found', async () => {
   });
 
   expect(node.find('.noOutliers')).toExist();
+});
+
+it('should display download instances button if the user is authorized to export csv files', async () => {
+  loadNodesOutliers.mockClear();
+  getFlowNodeNames.mockClear();
+  loadProcessDefinitionXml.mockReturnValue('xml');
+  const user = {authorizations: ['csv_export']};
+
+  const node = shallow(<OutlierAnalysis {...props} user={user} />);
+
+  await node.instance().updateConfig({
+    processDefinitionKey: 'someKey',
+    processDefinitionVersions: ['someVersion'],
+    tenantIds: ['a', 'b'],
+  });
+
+  const tooltipNode = node.find('HeatmapOverlay').renderProp('formatter')({}, 'nodeKey');
+  expect(tooltipNode.find(InstancesButton)).toExist();
 });

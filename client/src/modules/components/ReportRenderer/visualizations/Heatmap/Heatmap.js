@@ -16,6 +16,7 @@ import {
   Select,
   DownloadButton,
 } from 'components';
+import {withUser} from 'HOC';
 import {loadRawData, formatters, getTooltipText, processResult} from 'services';
 import {t} from 'translation';
 
@@ -23,7 +24,7 @@ import {getConfig, calculateTargetValueHeat} from './service';
 
 import './Heatmap.scss';
 
-export function Heatmap({report, context}) {
+export function Heatmap({report, context, user}) {
   const [selectedMeasure, setSelectedMeasure] = useState(0);
 
   const {
@@ -87,7 +88,7 @@ export function Heatmap({report, context}) {
           return (
             <div>
               <span className="text" dangerouslySetInnerHTML={{__html: tooltipHTML}} />
-              {context !== 'shared' && (
+              {context !== 'shared' && user?.authorizations.includes('csv_export') && (
                 <DownloadButton
                   retriever={loadRawData(getConfig(report.data, id))}
                   fileName={
@@ -170,7 +171,7 @@ export function Heatmap({report, context}) {
   );
 }
 
-export default Heatmap;
+export default withUser(Heatmap);
 
 function getMeasureString(measure) {
   let property = measure.property;
