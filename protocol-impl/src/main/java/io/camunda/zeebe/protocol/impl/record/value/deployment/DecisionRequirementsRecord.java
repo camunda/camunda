@@ -143,7 +143,7 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
     return bufferAsString(tenantIdProp.getValue());
   }
 
-  public DecisionRequirementsRecord setTenantId(final String tenantId) {
+  public DecisionRequirementsRecord setTenantId(final DirectBuffer tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
   }

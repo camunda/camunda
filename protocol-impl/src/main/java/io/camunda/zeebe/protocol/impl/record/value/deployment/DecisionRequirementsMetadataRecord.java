@@ -17,7 +17,9 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
@@ -37,6 +39,8 @@ public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
   private final BinaryProperty checksumProp = new BinaryProperty("checksum");
 
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public DecisionRequirementsMetadataRecord() {
     declareProperty(decisionRequirementsIdProp)
@@ -46,7 +50,8 @@ public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
         .declareProperty(namespaceProp)
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
-        .declareProperty(isDuplicateProp);
+        .declareProperty(isDuplicateProp)
+        .declareProperty(tenantIdProp);
   }
 
   @Override
@@ -89,42 +94,42 @@ public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
     return isDuplicateProp.getValue();
   }
 
-  public DecisionRequirementsMetadataRecord setDecisionRequirementsId(
-      String decisionRequirementsId) {
-    decisionRequirementsIdProp.setValue(decisionRequirementsId);
+  public DecisionRequirementsMetadataRecord setChecksum(final DirectBuffer checksum) {
+    checksumProp.setValue(checksum);
     return this;
   }
 
-  public DecisionRequirementsMetadataRecord setDecisionRequirementsName(
-      String decisionRequirementsName) {
-    decisionRequirementsNameProp.setValue(decisionRequirementsName);
-    return this;
-  }
-
-  public DecisionRequirementsMetadataRecord setDecisionRequirementsVersion(
-      int decisionRequirementsVersion) {
-    decisionRequirementsVersionProp.setValue(decisionRequirementsVersion);
-    return this;
-  }
-
-  public DecisionRequirementsMetadataRecord setDecisionRequirementsKey(
-      long decisionRequirementsKey) {
-    decisionRequirementsKeyProp.setValue(decisionRequirementsKey);
-    return this;
-  }
-
-  public DecisionRequirementsMetadataRecord setNamespace(String namespace) {
-    namespaceProp.setValue(namespace);
-    return this;
-  }
-
-  public DecisionRequirementsMetadataRecord setResourceName(String resourceName) {
+  public DecisionRequirementsMetadataRecord setResourceName(final String resourceName) {
     resourceNameProp.setValue(resourceName);
     return this;
   }
 
-  public DecisionRequirementsMetadataRecord setChecksum(DirectBuffer checksum) {
-    checksumProp.setValue(checksum);
+  public DecisionRequirementsMetadataRecord setNamespace(final String namespace) {
+    namespaceProp.setValue(namespace);
+    return this;
+  }
+
+  public DecisionRequirementsMetadataRecord setDecisionRequirementsKey(
+      final long decisionRequirementsKey) {
+    decisionRequirementsKeyProp.setValue(decisionRequirementsKey);
+    return this;
+  }
+
+  public DecisionRequirementsMetadataRecord setDecisionRequirementsVersion(
+      final int decisionRequirementsVersion) {
+    decisionRequirementsVersionProp.setValue(decisionRequirementsVersion);
+    return this;
+  }
+
+  public DecisionRequirementsMetadataRecord setDecisionRequirementsName(
+      final String decisionRequirementsName) {
+    decisionRequirementsNameProp.setValue(decisionRequirementsName);
+    return this;
+  }
+
+  public DecisionRequirementsMetadataRecord setDecisionRequirementsId(
+      final String decisionRequirementsId) {
+    decisionRequirementsIdProp.setValue(decisionRequirementsId);
     return this;
   }
 
@@ -156,5 +161,20 @@ public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
   @JsonIgnore
   public DirectBuffer getChecksumBuffer() {
     return checksumProp.getValue();
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public DecisionRequirementsMetadataRecord setTenantId(final DirectBuffer tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getTenantIdBuffer() {
+    return tenantIdProp.getValue();
   }
 }
