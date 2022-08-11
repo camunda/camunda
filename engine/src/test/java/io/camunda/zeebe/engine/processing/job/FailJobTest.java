@@ -77,6 +77,62 @@ public final class FailJobTest {
   }
 
   @Test
+  public void shouldFailWithTenant() {
+    // given
+    final String tenantId = "foo";
+    ENGINE.createJob(jobType, PROCESS_ID, tenantId);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final int retries = 23;
+
+    // when
+    final Record<JobRecordValue> failRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withTenantId(tenantId)
+            .ofInstance(job.getProcessInstanceKey())
+            .withRetries(retries)
+            .fail();
+
+    // then
+    Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
+    Assertions.assertThat(failRecord.getValue())
+        .hasWorker(job.getWorker())
+        .hasType(job.getType())
+        .hasTenantId(tenantId)
+        .hasRetries(retries)
+        .hasDeadline(job.getDeadline());
+  }
+
+  @Test
+  public void shouldRejectFailForWrongTenant() {
+    // given
+    final String tenantIdA = "foo";
+    final String tenantIdB = "bar";
+    ENGINE.createJob(jobType, PROCESS_ID, tenantIdA);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withTenantId(tenantIdA).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withTenantId(tenantIdB)
+            .withRetries(0)
+            .expectRejection()
+            .fail();
+
+    // then
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
+    assertThat(jobRecord.getRejectionReason()).contains("no such job was found");
+  }
+
+  @Test
   public void shouldFailWithMessage() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
