@@ -27,6 +27,10 @@ public final class JobRecordStream
     return valueFilter(v -> type.equals(v.getType()));
   }
 
+  public JobRecordStream withTenantId(final String tenantId) {
+    return valueFilter(v -> tenantId.equals(v.getTenantId()));
+  }
+
   public JobRecordStream withRetries(final int retries) {
     return valueFilter(v -> v.getRetries() == retries);
   }

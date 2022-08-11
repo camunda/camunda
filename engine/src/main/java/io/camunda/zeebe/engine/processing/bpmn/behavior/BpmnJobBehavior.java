@@ -173,13 +173,13 @@ public final class BpmnJobBehavior {
     final var elementInstance = stateBehavior.getElementInstance(context);
     final long jobKey = elementInstance.getJobKey();
     if (jobKey > 0) {
-      writeJobCanceled(jobKey);
+      writeJobCanceled(context.getTenantId(), jobKey);
       incidentBehavior.resolveJobIncident(jobKey);
     }
   }
 
-  private void writeJobCanceled(final long jobKey) {
-    final State state = jobState.getState(jobKey);
+  private void writeJobCanceled(final DirectBuffer tenantId, final long jobKey) {
+    final State state = jobState.getState(tenantId, jobKey);
 
     if (CANCELABLE_STATES.contains(state)) {
       final JobRecord job = jobState.getJob(jobKey);

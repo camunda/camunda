@@ -63,6 +63,11 @@ public final class JobActivationClient {
     return this;
   }
 
+  public JobActivationClient withTenantId(final String tenantId) {
+    jobBatchRecord.setTenantId(tenantId);
+    return this;
+  }
+
   public JobActivationClient withTimeout(final long timeout) {
     jobBatchRecord.setTimeout(timeout);
     return this;

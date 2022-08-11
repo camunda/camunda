@@ -69,6 +69,57 @@ public final class CompleteJobTest {
   }
 
   @Test
+  public void shouldCompleteJobWithTenant() {
+    // given
+    final String tenantId = "foo";
+    ENGINE.createJob(jobType, PROCESS_ID, tenantId);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+
+    // when
+    final Record<JobRecordValue> jobCompletedRecord =
+        ENGINE
+            .job()
+            .withKey(batchRecord.getValue().getJobKeys().get(0))
+            .withTenantId(tenantId)
+            .complete();
+
+    // then
+    final JobRecordValue recordValue = jobCompletedRecord.getValue();
+
+    Assertions.assertThat(jobCompletedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.COMPLETED);
+
+    Assertions.assertThat(recordValue)
+        .hasWorker(batchRecord.getValue().getWorker())
+        .hasType(job.getType())
+        .hasTenantId(tenantId)
+        .hasRetries(job.getRetries())
+        .hasDeadline(job.getDeadline());
+  }
+
+  @Test
+  public void shouldRejectCompletionIfDifferentTenant() {
+    // given
+    final String tenantIdA = "foo";
+    final String tenantIdB = "bar";
+    ENGINE.createJob(jobType, PROCESS_ID, tenantIdA);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withTenantId(tenantIdA).activate();
+
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE.job().withKey(jobKey).withTenantId(tenantIdB).complete();
+
+    // then
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(jobRecord.getValue()).hasTenantId(tenantIdB);
+  }
+
+  @Test
   public void shouldRejectCompletionIfJobNotFound() {
     // given
     final int key = 123;

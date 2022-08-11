@@ -39,13 +39,18 @@ public final class DbJobState implements JobState, MutableJobState {
   private final JobRecordValue jobRecordToRead = new JobRecordValue();
   private final JobRecordValue jobRecordToWrite = new JobRecordValue();
 
+  private final DbString tenantId;
+
   private final DbLong jobKey;
   private final DbForeignKey<DbLong> fkJob;
   private final ColumnFamily<DbLong, JobRecordValue> jobsColumnFamily;
 
+  private final DbCompositeKey<DbString, DbForeignKey<DbLong>> tenantIdJobKey;
+
   // key => job state
   private final JobStateValue jobState = new JobStateValue();
-  private final ColumnFamily<DbForeignKey<DbLong>, JobStateValue> statesJobColumnFamily;
+  private final ColumnFamily<DbCompositeKey<DbString, DbForeignKey<DbLong>>, JobStateValue>
+      statesJobColumnFamily;
 
   // type => [key]
   private final DbString jobTypeKey;
@@ -79,9 +84,12 @@ public final class DbJobState implements JobState, MutableJobState {
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.JOBS, transactionContext, jobKey, jobRecordToRead);
 
+    tenantId = new DbString();
+    tenantIdJobKey = new DbCompositeKey<>(tenantId, fkJob);
+
     statesJobColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.JOB_STATES, transactionContext, fkJob, jobState);
+            ZbColumnFamilies.JOB_STATES, transactionContext, tenantIdJobKey, jobState);
 
     jobTypeKey = new DbString();
     typeJobKey = new DbCompositeKey<>(jobTypeKey, fkJob);
@@ -175,10 +183,11 @@ public final class DbJobState implements JobState, MutableJobState {
     final DirectBuffer type = record.getTypeBuffer();
     final long deadline = record.getDeadline();
 
+    tenantId.wrapBuffer(record.getTenantIdBuffer());
     jobKey.wrapLong(key);
     jobsColumnFamily.deleteExisting(jobKey);
 
-    statesJobColumnFamily.deleteExisting(fkJob);
+    statesJobColumnFamily.deleteExisting(tenantIdJobKey);
 
     makeJobNotActivatable(type);
 
@@ -268,10 +277,10 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public State getState(final long key) {
+  public State getState(final DirectBuffer tenantIdBuffer, final long key) {
     jobKey.wrapLong(key);
-
-    final JobStateValue storedState = statesJobColumnFamily.get(fkJob);
+    tenantId.wrapBuffer(tenantIdBuffer);
+    final JobStateValue storedState = statesJobColumnFamily.get(tenantIdJobKey);
 
     if (storedState == null) {
       return State.NOT_FOUND;
@@ -281,8 +290,8 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public boolean isInState(final long key, final State state) {
-    return getState(key) == state;
+  public boolean isInState(final DirectBuffer tenantIdBuffer, final long key, final State state) {
+    return getState(tenantIdBuffer, key) == state;
   }
 
   @Override
@@ -351,6 +360,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
   private void createJobRecord(final long key, final JobRecord record) {
     jobKey.wrapLong(key);
+    tenantId.wrapBuffer(record.getTenantIdBuffer());
     // do not persist variables in job state
     jobRecordToWrite.setRecordWithoutVariables(record);
     jobsColumnFamily.insert(jobKey, jobRecordToWrite);
@@ -359,6 +369,7 @@ public final class DbJobState implements JobState, MutableJobState {
   /** Updates the job record without updating variables */
   private void updateJobRecord(final long key, final JobRecord updatedValue) {
     jobKey.wrapLong(key);
+    tenantId.wrapBuffer(updatedValue.getTenantIdBuffer());
     // do not persist variables in job state
     jobRecordToWrite.setRecordWithoutVariables(updatedValue);
     jobsColumnFamily.update(jobKey, jobRecordToWrite);
@@ -366,12 +377,12 @@ public final class DbJobState implements JobState, MutableJobState {
 
   private void initializeJobState() {
     jobState.setState(State.ACTIVATABLE);
-    statesJobColumnFamily.insert(fkJob, jobState);
+    statesJobColumnFamily.insert(tenantIdJobKey, jobState);
   }
 
   private void updateJobState(final State newState) {
     jobState.setState(newState);
-    statesJobColumnFamily.update(fkJob, jobState);
+    statesJobColumnFamily.update(tenantIdJobKey, jobState);
   }
 
   private void makeJobActivatable(final DirectBuffer type, final long key) {

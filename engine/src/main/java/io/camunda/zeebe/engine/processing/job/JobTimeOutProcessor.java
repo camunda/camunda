@@ -32,7 +32,7 @@ public final class JobTimeOutProcessor implements CommandProcessor<JobRecord> {
   public boolean onCommand(
       final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     final long jobKey = command.getKey();
-    final JobState.State state = jobState.getState(jobKey);
+    final JobState.State state = jobState.getState(command.getValue().getTenantIdBuffer(), jobKey);
 
     if (state == State.ACTIVATED) {
       commandControl.accept(JobIntent.TIMED_OUT, command.getValue());

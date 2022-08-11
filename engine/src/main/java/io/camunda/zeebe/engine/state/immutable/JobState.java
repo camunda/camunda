@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
@@ -19,9 +21,13 @@ public interface JobState {
 
   boolean exists(long jobKey);
 
-  State getState(long key);
+  State getState(DirectBuffer tenantId, long key);
 
-  boolean isInState(long key, State state);
+  default boolean isInState(final long key, final State state) {
+    return isInState(BufferUtil.wrapString(RecordValueWithTenant.DEFAULT_TENANT_ID), key, state);
+  }
+
+  boolean isInState(DirectBuffer tenantId, long key, State state);
 
   void forEachActivatableJobs(DirectBuffer type, BiFunction<Long, JobRecord, Boolean> callback);
 

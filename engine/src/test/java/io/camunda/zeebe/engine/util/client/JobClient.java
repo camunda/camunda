@@ -63,6 +63,11 @@ public final class JobClient {
     return this;
   }
 
+  public JobClient withTenantId(final String tenantId) {
+    jobRecord.setTenantId(tenantId);
+    return this;
+  }
+
   public JobClient withVariables(final String variables) {
     jobRecord.setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
     return this;
@@ -113,6 +118,7 @@ public final class JobClient {
       final Record<JobRecordValue> createdJob =
           RecordingExporter.jobRecords()
               .withType(jobRecord.getType())
+              .withTenantId(jobRecord.getTenantId())
               .withIntent(JobIntent.CREATED)
               .withProcessInstanceKey(processInstanceKey)
               .getFirst();

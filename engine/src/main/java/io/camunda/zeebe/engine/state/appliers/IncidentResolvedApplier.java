@@ -42,7 +42,7 @@ final class IncidentResolvedApplier implements TypedEventApplier<IncidentIntent,
     final var jobKey = value.getJobKey();
     if (jobKey > 0) {
       // incident belonged to job
-      final var stateOfJob = jobState.getState(jobKey);
+      final var stateOfJob = jobState.getState(value.getTenantIdBuffer(), jobKey);
       if (RESOLVABLE_JOB_STATES.contains(stateOfJob)) {
         final var job = jobState.getJob(jobKey);
         resetElementId(job);

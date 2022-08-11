@@ -48,7 +48,7 @@ final class DefaultJobCommandPreconditionGuard {
       final CommandControl<JobRecord> commandControl,
       final Consumer<SideEffectProducer> sideEffect) {
     final long jobKey = command.getKey();
-    final State jobState = state.getState(jobKey);
+    final State jobState = state.getState(command.getValue().getTenantIdBuffer(), jobKey);
 
     if (jobState == State.ACTIVATABLE || jobState == State.ACTIVATED) {
       acceptCommand.accept(command, commandControl, sideEffect);
