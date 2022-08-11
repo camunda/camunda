@@ -43,6 +43,10 @@ public final class DeployedProcess {
     return persistedProcess.getBpmnProcessId();
   }
 
+  public DirectBuffer getTenantId() {
+    return persistedProcess.getTenantId();
+  }
+
   @Override
   public String toString() {
     return "DeployedProcess{"

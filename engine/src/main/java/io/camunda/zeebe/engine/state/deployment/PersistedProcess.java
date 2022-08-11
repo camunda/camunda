@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import org.agrona.DirectBuffer;
 
 public final class PersistedProcess extends UnpackedObject implements DbValue {
@@ -22,13 +23,16 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
+  private final StringProperty tenantIdProp =
+      new StringProperty("tenantId", RecordValueWithTenant.DEFAULT_TENANT_ID);
 
   public PersistedProcess() {
     declareProperty(versionProp)
         .declareProperty(keyProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(resourceNameProp)
-        .declareProperty(resourceProp);
+        .declareProperty(resourceProp)
+        .declareProperty(tenantIdProp);
   }
 
   public void wrap(final ProcessRecord processRecord, final long processDefinitionKey) {
@@ -38,6 +42,7 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
 
     versionProp.setValue(processRecord.getVersion());
     keyProp.setValue(processDefinitionKey);
+    tenantIdProp.setValue(processRecord.getTenantId());
   }
 
   public int getVersion() {
@@ -58,5 +63,9 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
 
   public DirectBuffer getResource() {
     return resourceProp.getValue();
+  }
+
+  public DirectBuffer getTenantId() {
+    return tenantIdProp.getValue();
   }
 }
