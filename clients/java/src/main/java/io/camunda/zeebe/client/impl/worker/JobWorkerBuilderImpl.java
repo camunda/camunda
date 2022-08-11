@@ -59,7 +59,6 @@ public final class JobWorkerBuilderImpl
   private Duration requestTimeout;
   private List<String> fetchVariables;
   private BackoffSupplier backoffSupplier;
-
   private String tenantId;
 
   public JobWorkerBuilderImpl(
@@ -189,7 +188,8 @@ public final class JobWorkerBuilderImpl
             pollInterval,
             jobRunnableFactory,
             jobPoller,
-            backoffSupplier);
+            backoffSupplier,
+            tenantId);
     closeables.add(jobWorker);
     return jobWorker;
   }

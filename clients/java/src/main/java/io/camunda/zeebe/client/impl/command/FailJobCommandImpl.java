@@ -69,6 +69,12 @@ public final class FailJobCommandImpl implements FailJobCommandStep1, FailJobCom
   }
 
   @Override
+  public FailJobCommandStep2 tenantId(final String tenantId) {
+    builder.setTenantId(tenantId);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<FailJobResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;

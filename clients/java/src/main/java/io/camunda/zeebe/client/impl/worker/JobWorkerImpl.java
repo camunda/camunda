@@ -81,7 +81,8 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       final Duration pollInterval,
       final JobRunnableFactory jobHandlerFactory,
       final JobPoller jobPoller,
-      final BackoffSupplier backoffSupplier) {
+      final BackoffSupplier backoffSupplier,
+      final String tenantId) {
     this.maxJobsActive = maxJobsActive;
     activationThreshold = Math.round(maxJobsActive * 0.3f);
     remainingJobs = new AtomicInteger(0);
@@ -93,6 +94,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
     claimableJobPoller = new AtomicReference<>(jobPoller);
     this.pollInterval = initialPollInterval;
+    this.tenantId = tenantId;
 
     schedulePoll();
   }
