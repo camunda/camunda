@@ -45,12 +45,11 @@ public class DashboardDefinitionRestDto extends BaseDashboardDefinitionDto imple
   }
 
   @Override
-  public EntityResponseDto toEntityDto() {
+  public EntityResponseDto toEntityDto(final RoleType roleType) {
     return new EntityResponseDto(
       getId(), getName(), getLastModified(), getCreated(), getOwner(), getLastModifier(), EntityType.DASHBOARD,
       new EntityData(ImmutableMap.of(EntityType.REPORT, (long) getReports().size())),
-      // defaults to EDITOR, any authorization specific values have to be applied in responsible service layer
-      RoleType.EDITOR
+      roleType
     );
   }
 }

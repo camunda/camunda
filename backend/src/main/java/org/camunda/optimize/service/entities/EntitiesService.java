@@ -46,7 +46,7 @@ public class EntitiesService {
   private final ReportService reportService;
   private final DashboardService dashboardService;
   private final AuthorizedCollectionService authorizedCollectionService;
-  private OnboardingDashboardCreationService onboardingService;
+  private final OnboardingDashboardCreationService onboardingService;
 
   public List<EntityResponseDto> getAllEntities(final String userId) {
     final List<AuthorizedCollectionDefinitionDto> collectionDefinitions =
@@ -59,11 +59,11 @@ public class EntitiesService {
     final List<EntityResponseDto> privateEntities = authorizedEntitiesService.getAuthorizedPrivateEntities(userId);
 
     return Stream.concat(
-      collectionDefinitions.stream()
-        .map(AuthorizedCollectionDefinitionDto::toEntityDto)
-        .peek(entityDto -> entityDto.getData().setSubEntityCounts(collectionEntityCounts.get(entityDto.getId()))),
-      privateEntities.stream()
-    )
+        collectionDefinitions.stream()
+          .map(AuthorizedCollectionDefinitionDto::toEntityDto)
+          .peek(entityDto -> entityDto.getData().setSubEntityCounts(collectionEntityCounts.get(entityDto.getId()))),
+        privateEntities.stream()
+      )
       .sorted(
         Comparator.comparing(EntityResponseDto::getEntityType)
           .thenComparing(EntityResponseDto::getLastModified, Comparator.reverseOrder())
@@ -75,7 +75,7 @@ public class EntitiesService {
     Optional<EntityNameResponseDto> entityNames = entitiesReader.getEntityNames(requestDto);
     // If it's a click for a magic link
     if (requestDto.getCollectionId() != null && requestDto.getDashboardId() != null &&
-        requestDto.getDashboardId().equals(requestDto.getCollectionId())) {
+      requestDto.getDashboardId().equals(requestDto.getCollectionId())) {
       if (entityNames.isEmpty()) {
         onboardingService.createNewDashboardForProcess(userId, requestDto.getDashboardId());
         entityNames = entitiesReader.getEntityNames(requestDto);

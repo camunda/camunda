@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDef
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
+import org.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -47,9 +48,9 @@ import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
+import static org.camunda.optimize.service.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
-import static org.camunda.optimize.service.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
@@ -279,6 +280,41 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
         Tuple.tuple("B Dashboard", EntityType.DASHBOARD),
         Tuple.tuple("C Report", EntityType.REPORT),
         Tuple.tuple("D Report", EntityType.REPORT)
+      );
+  }
+
+  @Test
+  public void getEntities_viewerRoleTypeIsAppliedIfUserHasNoEditorAuthorization() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService()
+      .getEntityConfiguration()
+      .setAuthorizedUserType(AuthorizedUserType.NONE);
+    embeddedOptimizeExtension.reloadConfiguration();
+    addCollection("B Collection");
+    addCollection("A Collection");
+    addSingleReportToOptimize("D Report", ReportType.PROCESS);
+    addSingleReportToOptimize("C Report", ReportType.DECISION);
+    addDashboardToOptimize("B Dashboard");
+    addDashboardToOptimize("A Dashboard");
+
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final List<EntityResponseDto> entities = entitiesClient.getAllEntities();
+
+    // then
+    assertThat(entities)
+      .hasSize(6)
+      .extracting(EntityResponseDto::getEntityType, EntityResponseDto::getCurrentUserRole)
+      .containsExactlyInAnyOrder(
+        // For collections, the user is the creator and therefore still has manager role
+        Tuple.tuple(EntityType.COLLECTION, RoleType.MANAGER),
+        Tuple.tuple(EntityType.COLLECTION, RoleType.MANAGER),
+        // Otherwise, the user has viewer role as they have no entity editor authorization
+        Tuple.tuple(EntityType.DASHBOARD, RoleType.VIEWER),
+        Tuple.tuple(EntityType.DASHBOARD, RoleType.VIEWER),
+        Tuple.tuple(EntityType.REPORT, RoleType.VIEWER),
+        Tuple.tuple(EntityType.REPORT, RoleType.VIEWER)
       );
   }
 
