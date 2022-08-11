@@ -56,6 +56,53 @@ public final class JobThrowErrorTest {
   }
 
   @Test
+  public void shouldThrowErrorWithTenant() {
+    // given
+    final String tenantId = "foo";
+    final var job = ENGINE.createJob(jobType, PROCESS_ID, tenantId);
+
+    // when
+    final Record<JobRecordValue> result =
+        ENGINE
+            .job()
+            .withKey(job.getKey())
+            .withTenantId(tenantId)
+            .withErrorCode("error")
+            .withErrorMessage("error-message")
+            .throwError();
+
+    // then
+    Assertions.assertThat(result).hasRecordType(RecordType.EVENT).hasIntent(ERROR_THROWN);
+    Assertions.assertThat(result.getValue())
+        .hasErrorCode("error")
+        .hasErrorMessage("error-message")
+        .hasTenantId(tenantId);
+  }
+
+  @Test
+  public void shouldRejectIfWrongTenant() {
+    // given
+    final String tenantA = "foo";
+    final String tenantB = "bar";
+    final var job = ENGINE.createJob(jobType, PROCESS_ID, tenantA);
+
+    ENGINE.jobs().withType(jobType).withTenantId(tenantA).activate();
+
+    // when
+    final Record<JobRecordValue> result =
+        ENGINE
+            .job()
+            .withKey(job.getKey())
+            .withTenantId(tenantB)
+            .withErrorCode("error")
+            .throwError();
+
+    // then
+    Assertions.assertThat(result).hasRejectionType(RejectionType.NOT_FOUND);
+    assertThat(result.getRejectionReason()).contains("no such job was found");
+  }
+
+  @Test
   public void shouldRejectIfJobNotFound() {
     // given
     final int key = 123;
