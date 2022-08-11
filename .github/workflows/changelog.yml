@@ -46,7 +46,7 @@ jobs:
 
       - name: Append to CHANGELOG.md
         run: |
-          printf '# v%s\n%s\n%s\n' "${{ github.event.inputs.version }}" "${{ steps.changelog.outputs.body }}" "$(cat ./CHANGELOG.md)" > ./CHANGELOG.md
+          printf '# v%s\n%s\n%s\n' '${{ github.event.inputs.version }}' '${{ steps.changelog.outputs.body }}' '$(cat ./CHANGELOG.md)' > ./CHANGELOG.md
 
       - name: Commit CHANGELOG.md
         uses: stefanzweifel/git-auto-commit-action@v4
