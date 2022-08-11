@@ -16,6 +16,7 @@ import static org.apache.commons.lang3.StringUtils.rightPad;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -221,6 +222,7 @@ public class CompactRecordLogger {
     message.append(summarizePartition(record));
     message.append(summarizeIntent(record));
     message.append(summarizePositionFields(record));
+    message.append(summarizeTenant(record));
     message.append(summarizeValue(record));
 
     if (record.getRecordType() == RecordType.COMMAND_REJECTION) {
@@ -229,6 +231,17 @@ public class CompactRecordLogger {
     }
 
     return message;
+  }
+
+  private String summarizeTenant(final Record<?> record) {
+    final String tenantId;
+    if (record.getValue() instanceof RecordValueWithTenant recordValueWithTenant) {
+      tenantId = recordValueWithTenant.getTenantId();
+    } else {
+      tenantId = "";
+    }
+
+    return rightPad(formatId(tenantId), 16) + BLOCK_SEPARATOR;
   }
 
   private String summarizePartition(final Record<?> record) {
