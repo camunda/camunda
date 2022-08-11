@@ -65,6 +65,65 @@ public final class JobUpdateRetriesTest {
   }
 
   @Test
+  public void shouldUpdateRetriesWithTenant() {
+    // given
+    final String tenantId = "foo";
+    ENGINE.createJob(jobType, PROCESS_ID, tenantId);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final Record<JobRecordValue> updatedRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withTenantId(tenantId)
+            .withRetries(NEW_RETRIES)
+            .updateRetries();
+
+    // then
+    Assertions.assertThat(updatedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.RETRIES_UPDATED);
+    assertThat(updatedRecord.getKey()).isEqualTo(jobKey);
+
+    Assertions.assertThat(updatedRecord.getValue())
+        .hasWorker(job.getWorker())
+        .hasTenantId(tenantId)
+        .hasType(job.getType())
+        .hasRetries(NEW_RETRIES)
+        .hasDeadline(job.getDeadline());
+  }
+
+  @Test
+  public void shouldRejectUpdateRetriesIfWrongTenant() {
+    // given
+    final String tenantA = "foo";
+    final String tenantB = "bar";
+    ENGINE.createJob(jobType, PROCESS_ID, tenantA);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withTenantId(tenantA).activate();
+
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withTenantId(tenantB)
+            .withRetries(NEW_RETRIES)
+            .expectRejection()
+            .updateRetries();
+
+    // then
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
+    assertThat(jobRecord.getRejectionReason()).contains("no such job was found");
+  }
+
+  @Test
   public void shouldRejectUpdateRetriesIfJobNotFound() {
     // when
     final Record<JobRecordValue> jobRecord =

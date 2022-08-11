@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import org.agrona.DirectBuffer;
 
 public final class JobUpdateRetriesProcessor implements CommandProcessor<JobRecord> {
 
@@ -37,8 +38,9 @@ public final class JobUpdateRetriesProcessor implements CommandProcessor<JobReco
 
     if (retries > 0) {
       final JobRecord job = jobState.getJob(key);
+      final DirectBuffer tenantId = command.getValue().getTenantIdBuffer();
 
-      if (job != null) {
+      if (job != null && job.getTenantIdBuffer().equals(tenantId)) {
         // update retries for response sent to client
         job.setRetries(retries);
 
