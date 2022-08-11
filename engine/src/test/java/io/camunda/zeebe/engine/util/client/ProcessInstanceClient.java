@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
@@ -202,6 +203,7 @@ public final class ProcessInstanceClient {
     private final long processInstanceKey;
 
     private int partition = DEFAULT_PARTITION;
+    private String tenantId = RecordValueWithTenant.DEFAULT_TENANT_ID;
     private Function<Long, Record<ProcessInstanceRecordValue>> expectation = SUCCESS_EXPECTATION;
 
     public ExistingInstanceClient(
@@ -212,6 +214,11 @@ public final class ProcessInstanceClient {
 
     public ExistingInstanceClient onPartition(final int partition) {
       this.partition = partition;
+      return this;
+    }
+
+    public ExistingInstanceClient withTenantId(final String tenantId) {
+      this.tenantId = tenantId;
       return this;
     }
 
@@ -233,7 +240,9 @@ public final class ProcessInstanceClient {
           partition,
           processInstanceKey,
           ProcessInstanceIntent.CANCEL,
-          new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey));
+          new ProcessInstanceRecord()
+              .setProcessInstanceKey(processInstanceKey)
+              .setTenantId(tenantId));
 
       return expectation.apply(processInstanceKey);
     }
