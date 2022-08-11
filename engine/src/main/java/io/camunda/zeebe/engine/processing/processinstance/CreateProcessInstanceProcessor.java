@@ -340,21 +340,21 @@ public final class CreateProcessInstanceProcessor
 
     if (bpmnProcessId.capacity() > 0) {
       if (record.getVersion() >= 0) {
-        return getProcess(bpmnProcessId, record.getVersion());
+        return getProcess(record.getTenantIdBuffer(), bpmnProcessId, record.getVersion());
       } else {
-        return getProcess(bpmnProcessId);
+        return getProcess(record.getTenantIdBuffer(), bpmnProcessId);
       }
     } else if (record.getProcessDefinitionKey() >= 0) {
-      return getProcess(record.getProcessDefinitionKey());
+      return getProcess(record.getTenantIdBuffer(), record.getProcessDefinitionKey());
     } else {
       return Either.left(
           new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
   }
 
-  private Either<Rejection, DeployedProcess> getProcess(final DirectBuffer bpmnProcessId) {
+  private Either<Rejection, DeployedProcess> getProcess(final DirectBuffer tenantId, final DirectBuffer bpmnProcessId) {
     final DeployedProcess process = processState.getLatestProcessVersionByProcessId(bpmnProcessId);
-    if (process != null) {
+    if (process != null && tenantId.equals(process.getTenantId())) {
       return Either.right(process);
     } else {
       return Either.left(
@@ -365,10 +365,10 @@ public final class CreateProcessInstanceProcessor
   }
 
   private Either<Rejection, DeployedProcess> getProcess(
-      final DirectBuffer bpmnProcessId, final int version) {
+      final DirectBuffer tenantId, final DirectBuffer bpmnProcessId, final int version) {
     final DeployedProcess process =
         processState.getProcessByProcessIdAndVersion(bpmnProcessId, version);
-    if (process != null) {
+    if (process != null && tenantId.equals(process.getTenantId())) {
       return Either.right(process);
     } else {
       return Either.left(
@@ -381,9 +381,9 @@ public final class CreateProcessInstanceProcessor
     }
   }
 
-  private Either<Rejection, DeployedProcess> getProcess(final long key) {
+  private Either<Rejection, DeployedProcess> getProcess(final DirectBuffer tenantId, final long key) {
     final DeployedProcess process = processState.getProcessByKey(key);
-    if (process != null) {
+    if (process != null && tenantId.equals(process.getTenantId())) {
       return Either.right(process);
     } else {
       return Either.left(
