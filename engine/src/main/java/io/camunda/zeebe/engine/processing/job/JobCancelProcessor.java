@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import org.agrona.DirectBuffer;
 
 public final class JobCancelProcessor implements CommandProcessor<JobRecord> {
 
@@ -32,8 +33,9 @@ public final class JobCancelProcessor implements CommandProcessor<JobRecord> {
   public boolean onCommand(
       final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     final long jobKey = command.getKey();
+    final DirectBuffer tenantId = command.getValue().getTenantIdBuffer();
     final JobRecord job = jobState.getJob(jobKey);
-    if (job != null) {
+    if (job != null && job.getTenantIdBuffer().equals(tenantId)) {
       // Note that this logic is duplicated in BpmnJobBehavior, if you change this please change
       // it there as well.
       commandControl.accept(JobIntent.CANCELED, job);
