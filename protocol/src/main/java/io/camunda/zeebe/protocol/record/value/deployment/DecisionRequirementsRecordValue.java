@@ -32,7 +32,4 @@ public interface DecisionRequirementsRecordValue
    * @return the binary DMN resource
    */
   byte[] getResource();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 }

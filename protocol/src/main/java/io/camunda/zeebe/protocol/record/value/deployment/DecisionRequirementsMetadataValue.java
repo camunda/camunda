@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol.record.value.deployment;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import org.immutables.value.Value;
 
 /**
@@ -25,7 +26,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableDecisionRequirementsMetadataValue.Builder.class)
-public interface DecisionRequirementsMetadataValue {
+public interface DecisionRequirementsMetadataValue extends RecordValueWithTenant {
 
   /**
    * @return the ID of the DRG in the DMN

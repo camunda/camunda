@@ -17,12 +17,13 @@ package io.camunda.zeebe.protocol.record.value.deployment;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import org.immutables.value.Value;
 
 /** Represents deployed process meta data, so all important properties of an deployed process. */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessMetadataValue.Builder.class)
-public interface ProcessMetadataValue extends RecordValue {
+public interface ProcessMetadataValue extends RecordValue, RecordValueWithTenant {
   /**
    * @return the bpmn process ID of this process
    */

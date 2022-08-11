@@ -16,17 +16,15 @@
 package io.camunda.zeebe.protocol.record.value.deployment;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import org.immutables.value.Value;
 
 /** Represents a deployed process, which extends the meta data with the acutal resources */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcess.Builder.class)
-public interface Process extends ProcessMetadataValue {
+public interface Process extends ProcessMetadataValue, RecordValueWithTenant {
   /**
    * @return returns the corresponding binary resource
    */
   byte[] getResource();
-
-  /** Returns: the tenant ID associated with this value. */
-  String getTenantId();
 }
