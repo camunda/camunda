@@ -168,7 +168,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
         .setDecisionRequirementsName(parsedDrg.getName())
         .setNamespace(parsedDrg.getNamespace())
         .setResourceName(resource.getResourceName())
-        .setChecksum(checksum);
+        .setChecksum(checksum)
+        .setTenantId(deploymentEvent.getTenantIdBuffer());
 
     decisionState
         .findLatestDecisionRequirementsById(wrapString(parsedDrg.getId()))
@@ -285,7 +286,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                         .setResourceName(drg.getResourceName())
                         .setChecksum(drg.getChecksumBuffer())
                         .setResource(resource.getResourceBuffer())
-                        .setTenantId(deployment.getTenantId())));
+                        .setTenantId(drg.getTenantIdBuffer())));
 
     deployment.decisionsMetadata().stream()
         .filter(decision -> decision.getDecisionRequirementsKey() == decisionRequirementsKey)

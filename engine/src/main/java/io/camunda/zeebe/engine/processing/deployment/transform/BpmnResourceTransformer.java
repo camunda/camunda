@@ -123,10 +123,12 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       if (process.isExecutable()) {
         final String bpmnProcessId = process.getId();
         final DeployedProcess lastProcess =
-            processState.getLatestProcessVersionByProcessId(BufferUtil.wrapString(bpmnProcessId));
+            processState.getLatestProcessVersionByProcessId(
+                deploymentEvent.getTenantIdBuffer(), BufferUtil.wrapString(bpmnProcessId));
 
         final DirectBuffer lastDigest =
-            processState.getLatestVersionDigest(wrapString(bpmnProcessId));
+            processState.getLatestVersionDigest(
+                deploymentEvent.getTenantIdBuffer(), wrapString(bpmnProcessId));
         final DirectBuffer resourceDigest = checksumGenerator.apply(deploymentResource);
 
         // adds process record to deployment record
@@ -134,10 +136,16 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
         processMetadata
             .setBpmnProcessId(BufferUtil.wrapString(process.getId()))
             .setChecksum(resourceDigest)
-            .setResourceName(deploymentResource.getResourceNameBuffer());
+            .setResourceName(deploymentResource.getResourceNameBuffer())
+            .setTenantId(deploymentEvent.getTenantIdBuffer());
 
         final var isDuplicate =
-            isDuplicateOfLatest(deploymentResource, resourceDigest, lastProcess, lastDigest);
+            isDuplicateOfLatest(
+                deploymentResource,
+                resourceDigest,
+                lastProcess,
+                lastDigest,
+                deploymentEvent.getTenantIdBuffer());
         if (isDuplicate) {
           processMetadata
               .setVersion(lastProcess.getVersion())
@@ -145,14 +153,15 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
               .markAsDuplicate();
         } else {
           final var key = keyGenerator.nextKey();
-          processMetadata.setKey(key).setVersion(processState.getProcessVersion(bpmnProcessId) + 1);
+          processMetadata
+              .setKey(key)
+              .setVersion(
+                  processState.getProcessVersion(deploymentEvent.getTenantId(), bpmnProcessId) + 1);
 
           stateWriter.appendFollowUpEvent(
               key,
               ProcessIntent.CREATED,
-              new ProcessRecord()
-                  .wrap(processMetadata, deploymentResource.getResource())
-                  .setTenantId(deploymentEvent.getTenantIdBuffer()));
+              new ProcessRecord().wrap(processMetadata, deploymentResource.getResource()));
         }
       }
     }
@@ -162,10 +171,12 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final DeploymentResource deploymentResource,
       final DirectBuffer resourceDigest,
       final DeployedProcess lastProcess,
-      final DirectBuffer lastVersionDigest) {
+      final DirectBuffer lastVersionDigest,
+      final DirectBuffer tenantId) {
     return lastVersionDigest != null
         && lastProcess != null
         && lastVersionDigest.equals(resourceDigest)
-        && lastProcess.getResourceName().equals(deploymentResource.getResourceNameBuffer());
+        && lastProcess.getResourceName().equals(deploymentResource.getResourceNameBuffer())
+        && lastProcess.getTenantId().equals(tenantId);
   }
 }

@@ -18,7 +18,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequiremen
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
-import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
@@ -49,7 +48,7 @@ public class DeploymentDistributedApplier
             drg -> {
               final var resource = getResourceByName(value, drg.getResourceName());
               final var decisionRequirementsRecord =
-                  createDecisionRequirementsRecord(drg, resource, value.getTenantId());
+                  createDecisionRequirementsRecord(drg, resource);
               decisionState.storeDecisionRequirements(decisionRequirementsRecord);
             });
 
@@ -69,9 +68,7 @@ public class DeploymentDistributedApplier
   }
 
   private DecisionRequirementsRecord createDecisionRequirementsRecord(
-      final DecisionRequirementsMetadataValue drg,
-      final DirectBuffer resource,
-      final String tenantId) {
+      final DecisionRequirementsMetadataRecord drg, final DirectBuffer resource) {
     return new DecisionRequirementsRecord()
         .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
         .setDecisionRequirementsId(drg.getDecisionRequirementsId())
@@ -81,7 +78,7 @@ public class DeploymentDistributedApplier
         .setResourceName(drg.getResourceName())
         .setChecksum(wrapArray(drg.getChecksum()))
         .setResource(resource)
-        .setTenantId(tenantId);
+        .setTenantId(drg.getTenantIdBuffer());
   }
 
   private static final class NoSuchResourceException extends IllegalStateException {

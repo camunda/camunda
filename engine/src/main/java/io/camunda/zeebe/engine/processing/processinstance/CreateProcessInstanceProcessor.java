@@ -354,8 +354,8 @@ public final class CreateProcessInstanceProcessor
 
   private Either<Rejection, DeployedProcess> getProcess(
       final DirectBuffer tenantId, final DirectBuffer bpmnProcessId) {
-    final DeployedProcess process = processState.getLatestProcessVersionByProcessId(bpmnProcessId);
-    if (process != null && tenantId.equals(process.getTenantId())) {
+    final DeployedProcess process = processState.getLatestProcessVersionByProcessId(tenantId, bpmnProcessId);
+    if (process != null) {
       return Either.right(process);
     } else {
       return Either.left(
@@ -368,8 +368,8 @@ public final class CreateProcessInstanceProcessor
   private Either<Rejection, DeployedProcess> getProcess(
       final DirectBuffer tenantId, final DirectBuffer bpmnProcessId, final int version) {
     final DeployedProcess process =
-        processState.getProcessByProcessIdAndVersion(bpmnProcessId, version);
-    if (process != null && tenantId.equals(process.getTenantId())) {
+        processState.getProcessByProcessIdAndVersion(tenantId, bpmnProcessId, version);
+    if (process != null) {
       return Either.right(process);
     } else {
       return Either.left(

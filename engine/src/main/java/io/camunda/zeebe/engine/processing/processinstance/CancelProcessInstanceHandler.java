@@ -51,10 +51,12 @@ public final class CancelProcessInstanceHandler implements ProcessInstanceComman
       final ProcessInstanceCommandContext commandContext,
       final TypedRecord<ProcessInstanceRecord> command,
       final ElementInstance elementInstance) {
+    final var tenantId = command.getValue().getTenantIdBuffer();
 
     if (elementInstance == null
         || !elementInstance.canTerminate()
-        || elementInstance.getParentKey() > 0) {
+        || elementInstance.getParentKey() > 0
+        || !tenantId.equals(elementInstance.getValue().getTenantIdBuffer())) {
 
       commandContext.reject(
           RejectionType.NOT_FOUND, String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));

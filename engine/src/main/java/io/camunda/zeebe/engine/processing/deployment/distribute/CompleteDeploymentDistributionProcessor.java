@@ -55,8 +55,11 @@ public class CompleteDeploymentDistributionProcessor
     if (!deploymentState.hasPendingDeploymentDistribution(deploymentKey)) {
       // to be consistent we write here as well an empty deployment record
       // https://github.com/zeebe-io/zeebe/issues/6314
+      emptyDeploymentRecord.reset();
       stateWriter.appendFollowUpEvent(
-          deploymentKey, DeploymentIntent.FULLY_DISTRIBUTED, emptyDeploymentRecord);
+          deploymentKey,
+          DeploymentIntent.FULLY_DISTRIBUTED,
+          emptyDeploymentRecord.setTenantId(record.getValue().getTenantId()));
     }
   }
 }

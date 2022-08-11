@@ -478,4 +478,85 @@ public final class CancelProcessInstanceTest {
         .describedAs("Expect that the job is cancelled")
         .isPresent();
   }
+
+  @Test
+  public void shouldCancelProcessInstanceWithTenant() {
+    // given
+    ENGINE.deployment().withXmlResource(PROCESS).withTenantId("foo").deploy();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("PROCESS").withTenantId("foo").create();
+    RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("task")
+        .withIntent(ELEMENT_ACTIVATED)
+        .withTenantId("foo")
+        .getFirst();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).withTenantId("foo").cancel();
+
+    // then
+    final Record<ProcessInstanceRecordValue> processInstanceCanceledEvent =
+        RecordingExporter.processInstanceRecords()
+            .withRecordKey(processInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ELEMENT_TERMINATED)
+            .withTenantId("foo")
+            .getFirst();
+
+    Assertions.assertThat(processInstanceCanceledEvent.getValue())
+        .hasBpmnProcessId("PROCESS")
+        .hasVersion(1)
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasElementId("PROCESS")
+        .hasTenantId("foo");
+
+    final List<Record<ProcessInstanceRecordValue>> processEvents =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withTenantId("foo")
+            .skipUntil(r -> r.getIntent() == CANCEL)
+            .limit(r -> r.getKey() == processInstanceKey && r.getIntent() == ELEMENT_TERMINATED)
+            .asList();
+
+    assertThat(processEvents)
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("", CANCEL),
+            tuple("PROCESS", ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple("task", ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple("task", ELEMENT_TERMINATED),
+            tuple("PROCESS", ELEMENT_TERMINATED));
+  }
+
+  @Test
+  public void shouldNotCancelOnMismatchedTenant() {
+    // given
+    ENGINE.deployment().withXmlResource(PROCESS).withTenantId("foo").deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("PROCESS").create();
+    final Record<ProcessInstanceRecordValue> task =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .withIntent(ELEMENT_ACTIVATED)
+            .getFirst();
+
+    // when
+    final Record<ProcessInstanceRecordValue> rejectedCancel =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(task.getKey())
+            .onPartition(1)
+            .withTenantId("bar")
+            .expectRejection()
+            .cancel();
+
+    // then
+    assertThat(rejectedCancel.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejectedCancel.getRejectionReason())
+        .isEqualTo(
+            "Expected to cancel a process instance with key '"
+                + task.getKey()
+                + "', but no such process was found");
+  }
 }

@@ -9,24 +9,55 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
 
 public interface ProcessState {
 
-  DeployedProcess getLatestProcessVersionByProcessId(DirectBuffer processId);
+  default DeployedProcess getLatestProcessVersionByProcessId(final DirectBuffer processId) {
+    return getLatestProcessVersionByProcessId(
+        BufferUtil.wrapString(RecordValueWithTenant.DEFAULT_TENANT_ID), processId);
+  }
 
-  DeployedProcess getProcessByProcessIdAndVersion(DirectBuffer processId, int version);
+  DeployedProcess getLatestProcessVersionByProcessId(
+      final DirectBuffer tenantId, DirectBuffer processId);
+
+  default DeployedProcess getProcessByProcessIdAndVersion(
+      final DirectBuffer processId, final int version) {
+    return getProcessByProcessIdAndVersion(
+        BufferUtil.wrapString(RecordValueWithTenant.DEFAULT_TENANT_ID), processId, version);
+  }
+
+  DeployedProcess getProcessByProcessIdAndVersion(
+      final DirectBuffer tenantId, DirectBuffer processId, int version);
 
   DeployedProcess getProcessByKey(long key);
 
   Collection<DeployedProcess> getProcesses();
 
-  Collection<DeployedProcess> getProcessesByBpmnProcessId(DirectBuffer bpmnProcessId);
+  default Collection<DeployedProcess> getProcessesByBpmnProcessId(
+      final DirectBuffer bpmnProcessId) {
+    return getProcessesByBpmnProcessId(
+        BufferUtil.wrapString(RecordValueWithTenant.DEFAULT_TENANT_ID), bpmnProcessId);
+  }
 
-  DirectBuffer getLatestVersionDigest(DirectBuffer processId);
+  Collection<DeployedProcess> getProcessesByBpmnProcessId(
+      final DirectBuffer tenantId, DirectBuffer bpmnProcessId);
 
-  int getProcessVersion(String bpmnProcessId);
+  default DirectBuffer getLatestVersionDigest(final DirectBuffer processId) {
+    return getLatestVersionDigest(
+        BufferUtil.wrapString(RecordValueWithTenant.DEFAULT_TENANT_ID), processId);
+  }
+
+  DirectBuffer getLatestVersionDigest(final DirectBuffer tenantId, DirectBuffer processId);
+
+  default int getProcessVersion(final String bpmnProcessId) {
+    return getProcessVersion(RecordValueWithTenant.DEFAULT_TENANT_ID, bpmnProcessId);
+  }
+
+  int getProcessVersion(final String tenantId, String bpmnProcessId);
 
   <T extends ExecutableFlowElement> T getFlowElement(
       long processDefinitionKey, DirectBuffer elementId, Class<T> elementType);

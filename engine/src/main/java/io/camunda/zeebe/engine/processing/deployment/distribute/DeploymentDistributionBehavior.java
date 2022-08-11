@@ -64,8 +64,11 @@ public final class DeploymentDistributionBehavior {
       // we easily reach the record limit if we always write the deployment record
       // since no one consumes currently the FULLY_DISTRIBUTED (only the key) we write an empty
       // record
+      emptyDeploymentRecord.reset();
       stateWriter.appendFollowUpEvent(
-          key, DeploymentIntent.FULLY_DISTRIBUTED, emptyDeploymentRecord);
+          key,
+          DeploymentIntent.FULLY_DISTRIBUTED,
+          emptyDeploymentRecord.setTenantId(deploymentEvent.getTenantIdBuffer()));
     }
   }
 

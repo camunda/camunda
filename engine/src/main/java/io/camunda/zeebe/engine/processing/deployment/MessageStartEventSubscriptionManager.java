@@ -54,7 +54,8 @@ public class MessageStartEventSubscriptionManager {
 
   private boolean isLatestProcess(final ProcessMetadata processRecord) {
     return processState
-            .getLatestProcessVersionByProcessId(processRecord.getBpmnProcessIdBuffer())
+            .getLatestProcessVersionByProcessId(
+                processRecord.getTenantIdBuffer(), processRecord.getBpmnProcessIdBuffer())
             .getVersion()
         == processRecord.getVersion();
   }
@@ -79,7 +80,7 @@ public class MessageStartEventSubscriptionManager {
     for (int version = processRecord.getVersion() - 1; version > 0; --version) {
       final DeployedProcess lastMsgProcess =
           processState.getProcessByProcessIdAndVersion(
-              processRecord.getBpmnProcessIdBuffer(), version);
+              processRecord.getTenantIdBuffer(), processRecord.getBpmnProcessIdBuffer(), version);
       if (lastMsgProcess != null
           && lastMsgProcess.getProcess().getStartEvents().stream()
               .anyMatch(ExecutableCatchEventElement::isMessage)) {
