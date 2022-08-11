@@ -104,6 +104,11 @@ public final class ProcessInstanceClient {
           environmentRule, processInstanceCreationRecord);
     }
 
+    public ProcessInstanceCreationClient withTenantId(final String tenantId) {
+      processInstanceCreationRecord.setTenantId(tenantId);
+      return this;
+    }
+
     public long create() {
       final long position =
           environmentRule.writeCommand(

@@ -87,6 +87,11 @@ public final class DeploymentClient {
     deploymentRecord = new DeploymentRecord();
   }
 
+  public DeploymentClient withTenantId(final String tenantId) {
+    deploymentRecord.setTenantId(tenantId);
+    return this;
+  }
+
   public DeploymentClient withXmlResource(final BpmnModelInstance modelInstance) {
     return withXmlResource("process.xml", modelInstance);
   }

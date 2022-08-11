@@ -198,4 +198,43 @@ public final class CreateProcessInstanceTest {
         .hasBpmnProcessId("process")
         .hasProcessInstanceKey(processInstanceKey);
   }
+
+  @Test
+  public void shouldCreateProcessInstanceForTenant() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess("process").startEvent().endEvent().done())
+        .withTenantId("foo")
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process").withTenantId("foo").create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.PROCESS))
+        .extracting(Record::getIntent)
+        .containsSequence(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    final Record<ProcessInstanceRecordValue> process =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+
+    Assertions.assertThat(process.getValue())
+        .hasElementId("process")
+        .hasBpmnElementType(BpmnElementType.PROCESS)
+        .hasFlowScopeKey(-1)
+        .hasBpmnProcessId("process")
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasTenantId("foo");
+  }
 }

@@ -205,4 +205,46 @@ public class CreateProcessInstanceRejectionTest {
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
+
+  @Test
+  public void shouldRejectCommandIfTenantIsMismatched() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
+        .withTenantId("foo")
+        .deploy();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withTenantId("bar")
+        .expectRejection()
+        .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withBpmnProcessId(PROCESS_ID)
+                .withTenantId("bar")
+                .onlyCommandRejections()
+                .getFirst())
+        .hasIntent(ProcessInstanceCreationIntent.CREATE)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to find process definition with process ID 'process-id', but none found");
+
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .limit(
+                    r ->
+                        r.getRecordType() == RecordType.COMMAND_REJECTION
+                            && r.getIntent() == ProcessInstanceCreationIntent.CREATE))
+        .extracting(Record::getValueType, Record::getIntent)
+        .describedAs("Expect that no process instance is activated")
+        .doesNotContain(
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
 }

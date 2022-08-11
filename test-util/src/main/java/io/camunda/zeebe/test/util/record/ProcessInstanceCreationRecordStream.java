@@ -35,6 +35,10 @@ public final class ProcessInstanceCreationRecordStream
     return valueFilter(v -> v.getBpmnProcessId().equals(bpmnProcessId));
   }
 
+  public ProcessInstanceCreationRecordStream withTenantId(final String tenantId) {
+    return valueFilter(v -> tenantId.equals(v.getTenantId()));
+  }
+
   public ProcessInstanceCreationRecordStream withVersion(final int version) {
     return valueFilter(v -> v.getVersion() == version);
   }
