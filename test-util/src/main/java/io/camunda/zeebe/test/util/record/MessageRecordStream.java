@@ -31,6 +31,10 @@ public final class MessageRecordStream
     return valueFilter(v -> correlationKey.equals(v.getCorrelationKey()));
   }
 
+  public MessageRecordStream withTenantId(final String tenantId) {
+    return valueFilter(v -> tenantId.equals(v.getTenantId()));
+  }
+
   public MessageRecordStream withMessageId(final String messageId) {
     return valueFilter(v -> messageId.equals(v.getMessageId()));
   }

@@ -34,6 +34,7 @@ public final class PublishMessageClient {
                   .withPartitionId(message.partitionId)
                   .withCorrelationKey(message.correlationKey)
                   .withSourceRecordPosition(message.position)
+                  .withTenantId(message.tenantId)
                   .getFirst();
 
   private static final Function<Message, Record<MessageRecordValue>>
@@ -43,6 +44,7 @@ public final class PublishMessageClient {
                   .onlyCommandRejections()
                   .withPartitionId(message.partitionId)
                   .withCorrelationKey(message.correlationKey)
+                  .withTenantId(message.tenantId)
                   .getFirst();
 
   private final MessageRecord messageRecord;
@@ -120,19 +122,15 @@ public final class PublishMessageClient {
     final long position =
         enviromentRule.writeCommandOnPartition(partitionId, MessageIntent.PUBLISH, messageRecord);
 
-    return expectation.apply(new Message(partitionId, messageRecord.getCorrelationKey(), position));
+    return expectation.apply(
+        new Message(
+            partitionId, messageRecord.getCorrelationKey(), position, messageRecord.getTenantId()));
   }
 
-  private class Message {
-
-    final int partitionId;
-    final String correlationKey;
-    final long position;
-
-    Message(final int partitionId, final String correlationKey, final long position) {
-      this.partitionId = partitionId;
-      this.correlationKey = correlationKey;
-      this.position = position;
-    }
+  public PublishMessageClient withTenantId(final String tenantId) {
+    messageRecord.setTenantId(tenantId);
+    return this;
   }
+
+  private record Message(int partitionId, String correlationKey, long position, String tenantId) {}
 }

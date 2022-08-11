@@ -51,7 +51,9 @@ public final class MessageSubscriptionRejectProcessor
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
 
     if (!messageState.existMessageCorrelation(
-        subscriptionRecord.getMessageKey(), subscriptionRecord.getBpmnProcessIdBuffer())) {
+        subscriptionRecord.getMessageKey(),
+        subscriptionRecord.getBpmnProcessIdBuffer(),
+        subscriptionRecord.getTenantIdBuffer())) {
 
       rejectCommand(record);
       return;

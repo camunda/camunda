@@ -26,14 +26,16 @@ public final class MessageStartEventSubscriptionCorrelatedApplier
   @Override
   public void applyState(final long key, final MessageStartEventSubscriptionRecord value) {
     // avoid correlating this message to one instance of this process again
-    messageState.putMessageCorrelation(value.getMessageKey(), value.getBpmnProcessIdBuffer());
+    messageState.putMessageCorrelation(
+        value.getMessageKey(), value.getBpmnProcessIdBuffer(), value.getTenantIdBuffer());
 
     final DirectBuffer correlationKey = value.getCorrelationKeyBuffer();
     if (correlationKey.capacity() > 0) {
       // lock the process for this correlation key
       // - other messages with same correlation key are not correlated to this process
       // until the created instance is ended
-      messageState.putActiveProcessInstance(value.getBpmnProcessIdBuffer(), correlationKey);
+      messageState.putActiveProcessInstance(
+          value.getBpmnProcessIdBuffer(), correlationKey, value.getTenantIdBuffer());
       messageState.putProcessInstanceCorrelationKey(value.getProcessInstanceKey(), correlationKey);
     }
   }

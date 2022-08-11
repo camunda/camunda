@@ -8,23 +8,66 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.message.StoredMessage;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public interface MessageState {
 
-  boolean existMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId);
+  default boolean existMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
+    return existMessageCorrelation(
+        messageKey, bpmnProcessId, BufferUtil.wrapString(RecordValueWithTenant.DEFAULT_TENANT_ID));
+  }
 
-  boolean existActiveProcessInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
+  boolean existMessageCorrelation(
+      long messageKey, DirectBuffer bpmnProcessId, final DirectBuffer tenantId);
+
+  default boolean existActiveProcessInstance(
+      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
+    return existActiveProcessInstance(
+        bpmnProcessId,
+        correlationKey,
+        BufferUtil.wrapString(RecordValueWithTenant.DEFAULT_TENANT_ID));
+  }
+
+  boolean existActiveProcessInstance(
+      DirectBuffer bpmnProcessId, DirectBuffer correlationKey, final DirectBuffer tenantId);
 
   DirectBuffer getProcessInstanceCorrelationKey(long processInstanceKey);
 
-  void visitMessages(DirectBuffer name, DirectBuffer correlationKey, MessageVisitor visitor);
+  void visitMessages(
+      DirectBuffer name,
+      DirectBuffer correlationKey,
+      DirectBuffer tenantId,
+      MessageVisitor visitor);
+
+  default void visitMessages(
+      final DirectBuffer name, final DirectBuffer correlationKey, final MessageVisitor visitor) {
+    visitMessages(
+        name,
+        correlationKey,
+        BufferUtil.wrapString(RecordValueWithTenant.DEFAULT_TENANT_ID),
+        visitor);
+  }
 
   StoredMessage getMessage(long messageKey);
 
   void visitMessagesWithDeadlineBefore(long timestamp, MessageVisitor visitor);
 
-  boolean exist(DirectBuffer name, DirectBuffer correlationKey, DirectBuffer messageId);
+  default boolean exist(
+      final DirectBuffer name, final DirectBuffer correlationKey, final DirectBuffer messageId) {
+    return exist(
+        name,
+        correlationKey,
+        messageId,
+        BufferUtil.wrapString(RecordValueWithTenant.DEFAULT_TENANT_ID));
+  }
+
+  boolean exist(
+      DirectBuffer name,
+      DirectBuffer correlationKey,
+      DirectBuffer messageId,
+      final DirectBuffer tenantId);
 
   @FunctionalInterface
   interface MessageVisitor {

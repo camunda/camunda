@@ -46,6 +46,7 @@ public final class MessageCorrelator {
     messageState.visitMessages(
         subscriptionRecord.getMessageNameBuffer(),
         subscriptionRecord.getCorrelationKeyBuffer(),
+        subscriptionRecord.getTenantIdBuffer(),
         storedMessage -> {
           // correlate the first message which is not correlated to the process instance yet
           final var isCorrelated =
@@ -67,7 +68,9 @@ public final class MessageCorrelator {
     final boolean correlateMessage =
         message.getDeadline() > ActorClock.currentTimeMillis()
             && !messageState.existMessageCorrelation(
-                messageKey, subscriptionRecord.getBpmnProcessIdBuffer());
+                messageKey,
+                subscriptionRecord.getBpmnProcessIdBuffer(),
+                subscriptionRecord.getTenantIdBuffer());
 
     if (correlateMessage) {
       subscriptionRecord.setMessageKey(messageKey).setVariables(message.getVariablesBuffer());

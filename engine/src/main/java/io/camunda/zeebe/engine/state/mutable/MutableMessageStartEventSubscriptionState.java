@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public interface MutableMessageStartEventSubscriptionState
@@ -16,5 +18,12 @@ public interface MutableMessageStartEventSubscriptionState
 
   void put(final long key, MessageStartEventSubscriptionRecord subscription);
 
-  void remove(long processDefinitionKey, DirectBuffer messageName);
+  default void remove(final long processDefinitionKey, final DirectBuffer messageName) {
+    remove(
+        processDefinitionKey,
+        messageName,
+        BufferUtil.wrapString(RecordValueWithTenant.DEFAULT_TENANT_ID));
+  }
+
+  void remove(long processDefinitionKey, DirectBuffer messageName, final DirectBuffer tenantId);
 }

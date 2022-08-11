@@ -68,6 +68,50 @@ public final class PublishMessageTest {
   }
 
   @Test
+  public void shouldPublishMessageWithTenant() {
+    // when
+    final Record<MessageRecordValue> publishedRecord = messageClient.withTenantId("foo").publish();
+
+    // then
+    assertThat(publishedRecord.getKey()).isEqualTo(publishedRecord.getKey());
+    assertThat(publishedRecord.getValue().getVariables()).isEmpty();
+
+    Assertions.assertThat(publishedRecord)
+        .hasIntent(MessageIntent.PUBLISHED)
+        .hasRecordType(RecordType.EVENT)
+        .hasValueType(ValueType.MESSAGE);
+
+    Assertions.assertThat(publishedRecord.getValue())
+        .hasName("order canceled")
+        .hasCorrelationKey("order-123")
+        .hasTimeToLive(1000L)
+        .hasTenantId("foo")
+        .hasMessageId("");
+  }
+
+  @Test
+  public void shouldPublishMessageWithExistingIdForDifferentTenant() {
+    // when
+    final Record<MessageRecordValue> fooRecord =
+        messageClient.withId("unique").withTenantId("foo").publish();
+    final Record<MessageRecordValue> barRecord =
+        messageClient.withId("unique").withTenantId("bar").publish();
+
+    // then
+    Assertions.assertThat(fooRecord)
+        .hasIntent(MessageIntent.PUBLISHED)
+        .hasRecordType(RecordType.EVENT)
+        .hasValueType(ValueType.MESSAGE);
+    Assertions.assertThat(barRecord)
+        .hasIntent(MessageIntent.PUBLISHED)
+        .hasRecordType(RecordType.EVENT)
+        .hasValueType(ValueType.MESSAGE);
+
+    Assertions.assertThat(fooRecord.getValue()).hasTenantId("foo").hasMessageId("unique");
+    Assertions.assertThat(barRecord.getValue()).hasTenantId("bar").hasMessageId("unique");
+  }
+
+  @Test
   public void shouldPublishMessageWithVariables() throws Exception {
     // when
     final Record<MessageRecordValue> publishedRecord =

@@ -99,11 +99,14 @@ public final class BpmnBufferedMessageStartEventBehavior {
           messageState.visitMessages(
               messageName,
               correlationKey,
+              subscriptionRecord.getTenantIdBuffer(),
               storedMessage -> {
                 // correlate the first message with same correlation key that was not correlated yet
                 if (storedMessage.getMessage().getDeadline() > ActorClock.currentTimeMillis()
                     && !messageState.existMessageCorrelation(
-                        storedMessage.getMessageKey(), process.getBpmnProcessId())) {
+                        storedMessage.getMessageKey(),
+                        process.getBpmnProcessId(),
+                        process.getTenantId())) {
 
                   // correlate the first published message across all message start events
                   // - using the message key to decide which message was published before

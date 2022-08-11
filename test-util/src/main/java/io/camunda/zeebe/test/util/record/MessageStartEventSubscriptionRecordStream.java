@@ -30,6 +30,10 @@ public final class MessageStartEventSubscriptionRecordStream
     return valueFilter(v -> v.getProcessDefinitionKey() == processDefinitionKey);
   }
 
+  public MessageStartEventSubscriptionRecordStream withTenantId(final String tenantId) {
+    return valueFilter(v -> tenantId.equals(v.getTenantId()));
+  }
+
   public MessageStartEventSubscriptionRecordStream withStartEventId(final String startEventId) {
     return valueFilter(v -> startEventId.equals(v.getStartEventId()));
   }

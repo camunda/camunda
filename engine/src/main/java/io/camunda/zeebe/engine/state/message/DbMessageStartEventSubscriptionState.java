@@ -22,12 +22,15 @@ import org.agrona.DirectBuffer;
 public final class DbMessageStartEventSubscriptionState
     implements MutableMessageStartEventSubscriptionState {
 
+  private final DbString tenantId;
   private final DbString messageName;
   private final DbLong processDefinitionKey;
 
-  // (messageName, processDefinitionKey => MessageSubscription)
-  private final DbCompositeKey<DbString, DbLong> messageNameAndProcessDefinitionKey;
-  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, MessageStartEventSubscription>
+  // (tenantId, messageName, processDefinitionKey => MessageSubscription)
+  private final DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>
+      tenantAndMessageNameAndProcessDefinitionKey;
+  private final ColumnFamily<
+          DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, MessageStartEventSubscription>
       subscriptionsColumnFamily;
   private final MessageStartEventSubscription messageStartEventSubscription =
       new MessageStartEventSubscription();
@@ -39,14 +42,16 @@ public final class DbMessageStartEventSubscriptionState
 
   public DbMessageStartEventSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+    tenantId = new DbString();
     messageName = new DbString();
     processDefinitionKey = new DbLong();
-    messageNameAndProcessDefinitionKey = new DbCompositeKey<>(messageName, processDefinitionKey);
+    tenantAndMessageNameAndProcessDefinitionKey =
+        new DbCompositeKey<>(new DbCompositeKey<>(tenantId, messageName), processDefinitionKey);
     subscriptionsColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_START_EVENT_SUBSCRIPTION_BY_NAME_AND_KEY,
             transactionContext,
-            messageNameAndProcessDefinitionKey,
+            tenantAndMessageNameAndProcessDefinitionKey,
             messageStartEventSubscription);
 
     processDefinitionKeyAndMessageName = new DbCompositeKey<>(processDefinitionKey, messageName);
@@ -62,36 +67,45 @@ public final class DbMessageStartEventSubscriptionState
   public void put(final long key, final MessageStartEventSubscriptionRecord subscription) {
     messageStartEventSubscription.setKey(key).setRecord(subscription);
 
+    tenantId.wrapBuffer(subscription.getTenantIdBuffer());
     messageName.wrapBuffer(subscription.getMessageNameBuffer());
     processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
     subscriptionsColumnFamily.upsert(
-        messageNameAndProcessDefinitionKey, messageStartEventSubscription);
+        tenantAndMessageNameAndProcessDefinitionKey, messageStartEventSubscription);
     subscriptionsOfProcessDefinitionKeyColumnFamily.upsert(
         processDefinitionKeyAndMessageName, DbNil.INSTANCE);
   }
 
   @Override
-  public void remove(final long processDefinitionKey, final DirectBuffer messageName) {
+  public void remove(
+      final long processDefinitionKey,
+      final DirectBuffer messageName,
+      final DirectBuffer tenantId) {
+    this.tenantId.wrapBuffer(tenantId);
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     this.messageName.wrapBuffer(messageName);
 
-    subscriptionsColumnFamily.deleteExisting(messageNameAndProcessDefinitionKey);
+    subscriptionsColumnFamily.deleteExisting(tenantAndMessageNameAndProcessDefinitionKey);
     subscriptionsOfProcessDefinitionKeyColumnFamily.deleteExisting(
         processDefinitionKeyAndMessageName);
   }
 
   @Override
   public boolean exists(final MessageStartEventSubscriptionRecord subscription) {
+    tenantId.wrapBuffer(subscription.getTenantIdBuffer());
     messageName.wrapBuffer(subscription.getMessageNameBuffer());
     processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
 
-    return subscriptionsColumnFamily.exists(messageNameAndProcessDefinitionKey);
+    return subscriptionsColumnFamily.exists(tenantAndMessageNameAndProcessDefinitionKey);
   }
 
   @Override
   public void visitSubscriptionsByMessageName(
-      final DirectBuffer messageName, final MessageStartEventSubscriptionVisitor visitor) {
+      final DirectBuffer messageName,
+      final DirectBuffer tenantId,
+      final MessageStartEventSubscriptionVisitor visitor) {
 
+    this.tenantId.wrapBuffer(tenantId);
     this.messageName.wrapBuffer(messageName);
     subscriptionsColumnFamily.whileEqualPrefix(
         this.messageName,
@@ -102,14 +116,17 @@ public final class DbMessageStartEventSubscriptionState
 
   @Override
   public void visitSubscriptionsByProcessDefinition(
-      final long processDefinitionKey, final MessageStartEventSubscriptionVisitor visitor) {
+      final long processDefinitionKey,
+      final DirectBuffer tenantId,
+      final MessageStartEventSubscriptionVisitor visitor) {
     this.processDefinitionKey.wrapLong(processDefinitionKey);
+    this.tenantId.wrapBuffer(tenantId);
 
     subscriptionsOfProcessDefinitionKeyColumnFamily.whileEqualPrefix(
         this.processDefinitionKey,
         (key, value) -> {
           final var subscription =
-              subscriptionsColumnFamily.get(messageNameAndProcessDefinitionKey);
+              subscriptionsColumnFamily.get(tenantAndMessageNameAndProcessDefinitionKey);
 
           if (subscription != null) {
             visitor.visit(subscription);

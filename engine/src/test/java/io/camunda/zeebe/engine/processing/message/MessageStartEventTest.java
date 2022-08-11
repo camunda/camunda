@@ -134,6 +134,69 @@ public final class MessageStartEventTest {
   }
 
   @Test
+  public void shouldCorrelateMessageSubscriptionWithTenant() {
+    // given
+    engine.deployment().withXmlResource(SINGLE_START_EVENT_1).withTenantId("foo").deploy();
+
+    // when
+    final var messagePublished =
+        engine
+            .message()
+            .withCorrelationKey(CORRELATION_KEY_1)
+            .withTenantId("foo")
+            .withName(MESSAGE_NAME_1)
+            .publish();
+
+    // then
+    final var startEventActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.START_EVENT)
+            .withTenantId("foo")
+            .getFirst();
+
+    final var subscriptionCorrelated =
+        RecordingExporter.messageStartEventSubscriptionRecords(
+                MessageStartEventSubscriptionIntent.CORRELATED)
+            .withTenantId("foo")
+            .getFirst();
+
+    Assertions.assertThat(subscriptionCorrelated.getValue())
+        .hasProcessDefinitionKey(startEventActivated.getValue().getProcessDefinitionKey())
+        .hasBpmnProcessId(startEventActivated.getValue().getBpmnProcessId())
+        .hasProcessInstanceKey(startEventActivated.getValue().getProcessInstanceKey())
+        .hasStartEventId(startEventActivated.getValue().getElementId())
+        .hasMessageKey(messagePublished.getKey())
+        .hasMessageName(MESSAGE_NAME_1)
+        .hasCorrelationKey(CORRELATION_KEY_1)
+        .hasTenantId("foo");
+  }
+
+  @Test
+  public void shouldNotCorrelateProcessWithDifferentTenantId() {
+    // given
+    engine.deployment().withXmlResource(SINGLE_START_EVENT_1).withTenantId("foo").deploy();
+
+    // when
+    engine
+        .message()
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withTenantId("bar")
+        .withName(MESSAGE_NAME_1)
+        .publish();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementType(BpmnElementType.START_EVENT))
+        .isEmpty();
+
+    assertThat(
+            RecordingExporter.messageStartEventSubscriptionRecords(
+                MessageStartEventSubscriptionIntent.CORRELATED))
+        .isEmpty();
+  }
+
+  @Test
   public void shouldCreateNewInstanceWithNameLiteral() {
     // given
     engine.deployment().withXmlResource(SINGLE_START_EVENT_1).deploy();

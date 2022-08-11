@@ -31,6 +31,7 @@ public final class MessageSubscriptionCorrelatingApplier
     messageSubscriptionState.updateToCorrelatingState(value);
 
     // avoid correlating this message to one instance of this process again
-    messageState.putMessageCorrelation(value.getMessageKey(), value.getBpmnProcessIdBuffer());
+    messageState.putMessageCorrelation(
+        value.getMessageKey(), value.getBpmnProcessIdBuffer(), value.getTenantIdBuffer());
   }
 }

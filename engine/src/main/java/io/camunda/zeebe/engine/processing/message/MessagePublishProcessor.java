@@ -85,7 +85,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
         && messageState.exist(
             messageRecord.getNameBuffer(),
             messageRecord.getCorrelationKeyBuffer(),
-            messageRecord.getMessageIdBuffer())) {
+            messageRecord.getMessageIdBuffer(),
+            messageRecord.getTenantIdBuffer())) {
       final String rejectionReason =
           String.format(
               ALREADY_PUBLISHED_MESSAGE, bufferAsString(messageRecord.getMessageIdBuffer()));
@@ -157,13 +158,14 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
           final var subscriptionRecord = subscription.getRecord();
           final var bpmnProcessIdBuffer = subscriptionRecord.getBpmnProcessIdBuffer();
           final var correlationKeyBuffer = messageRecord.getCorrelationKeyBuffer();
+          final var tenantIdBuffer = messageRecord.getTenantIdBuffer();
 
           // create only one instance of a process per correlation key
           // - allow multiple instance if correlation key is empty
           if (!correlatingSubscriptions.contains(bpmnProcessIdBuffer)
               && (correlationKeyBuffer.capacity() == 0
                   || !messageState.existActiveProcessInstance(
-                      bpmnProcessIdBuffer, correlationKeyBuffer))) {
+                      bpmnProcessIdBuffer, correlationKeyBuffer, tenantIdBuffer))) {
 
             correlatingSubscriptions.add(subscriptionRecord);
 

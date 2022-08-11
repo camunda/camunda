@@ -9,19 +9,51 @@ package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public interface MutableMessageState extends MessageState {
 
   void put(long messageKey, MessageRecord message);
 
-  void putMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId);
+  default void putMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
+    putMessageCorrelation(
+        messageKey, bpmnProcessId, BufferUtil.wrapString(RecordValueWithTenant.DEFAULT_TENANT_ID));
+  }
 
-  void removeMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId);
+  void putMessageCorrelation(
+      long messageKey, DirectBuffer bpmnProcessId, final DirectBuffer tenantId);
 
-  void putActiveProcessInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
+  default void removeMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
+    removeMessageCorrelation(
+        messageKey, bpmnProcessId, BufferUtil.wrapString(RecordValueWithTenant.DEFAULT_TENANT_ID));
+  }
 
-  void removeActiveProcessInstance(DirectBuffer bpmnProcessId, DirectBuffer correlationKey);
+  void removeMessageCorrelation(
+      long messageKey, DirectBuffer bpmnProcessId, final DirectBuffer tenantId);
+
+  default void putActiveProcessInstance(
+      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
+    putActiveProcessInstance(
+        bpmnProcessId,
+        correlationKey,
+        BufferUtil.wrapString(RecordValueWithTenant.DEFAULT_TENANT_ID));
+  }
+
+  void putActiveProcessInstance(
+      DirectBuffer bpmnProcessId, DirectBuffer correlationKey, final DirectBuffer tenantId);
+
+  default void removeActiveProcessInstance(
+      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
+    removeActiveProcessInstance(
+        bpmnProcessId,
+        correlationKey,
+        BufferUtil.wrapString(RecordValueWithTenant.DEFAULT_TENANT_ID));
+  }
+
+  void removeActiveProcessInstance(
+      DirectBuffer bpmnProcessId, DirectBuffer correlationKey, final DirectBuffer tenantId);
 
   void putProcessInstanceCorrelationKey(long processInstanceKey, DirectBuffer correlationKey);
 

@@ -57,7 +57,8 @@ public final class BufferedStartMessageEventStateApplier {
 
     if (correlationKey != null) {
       messageState.removeProcessInstanceCorrelationKey(processInstanceKey);
-      messageState.removeActiveProcessInstance(record.getBpmnProcessIdBuffer(), correlationKey);
+      messageState.removeActiveProcessInstance(
+          record.getBpmnProcessIdBuffer(), correlationKey, record.getTenantIdBuffer());
     }
   }
 }
