@@ -27,7 +27,7 @@
             "processesMetadata": {
               "properties": {
                 "tenantId": {
-                  "enabled": false
+                  "type": "keyword"
                 },
                 "bpmnProcessId": {
                   "type": "keyword"
@@ -62,7 +62,7 @@
             "decisionRequirementsMetadata": {
               "properties": {
                 "tenantId": {
-                  "enabled": false
+                  "type": "keyword"
                 },
                 "decisionRequirementsId": {
                   "type": "keyword"

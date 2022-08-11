@@ -42,7 +42,7 @@
               "dynamic": "strict",
               "properties": {
                 "tenantId": {
-                  "enabled": false
+                  "type": "keyword"
                 },
                 "type": {
                   "type": "keyword"
