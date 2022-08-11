@@ -29,6 +29,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operato
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
@@ -143,13 +144,14 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   public IdResponseDto createNewDashboardAndReturnId(final String userId,
                                                      final DashboardDefinitionRestDto dashboardDefinitionDto) {
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, dashboardDefinitionDto.getCollectionId());
+    validateEntityEditorAuthorization(dashboardDefinitionDto.getCollectionId(), userId);
     validateDashboardFilters(userId, dashboardDefinitionDto);
     return dashboardWriter.createNewDashboard(userId, dashboardDefinitionDto);
   }
 
   public Optional<IdResponseDto> createNewDashboardWithPresetId(final String userId,
-                                                      final DashboardDefinitionRestDto dashboardDefinitionDto,
-                                                      final String presetId) {
+                                                                final DashboardDefinitionRestDto dashboardDefinitionDto,
+                                                                final String presetId) {
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, dashboardDefinitionDto.getCollectionId());
     validateDashboardFilters(userId, dashboardDefinitionDto);
     try {
@@ -161,8 +163,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         // problem, log it and rethrow exception
         log.error("Unexpected error when trying to create dashboard with ID " + presetId, e);
         throw e;
-      }
-      else {
+      } else {
         // If it exists already, there's nothing we need to do, return null to avoid the re-creation of reports
         return Optional.empty();
       }
@@ -194,6 +195,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final DashboardDefinitionRestDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
 
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
+    validateEntityEditorAuthorization(dashboardDefinition.getCollectionId(), userId);
     if (dashboardDefinition.isManagementDashboard()) {
       throw new OptimizeValidationException("Management Dashboards cannot be copied");
     }
@@ -349,9 +351,12 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final String dashboardId = updatedDashboard.getId();
     final AuthorizedDashboardDefinitionResponseDto dashboardWithEditAuthorization =
       getDashboardWithEditAuthorization(dashboardId, userId);
-    if (dashboardWithEditAuthorization.getDefinitionDto() != null &&
-      dashboardWithEditAuthorization.getDefinitionDto().isManagementDashboard()) {
-      throw new OptimizeValidationException("Management Dashboards cannot be edited");
+    if (dashboardWithEditAuthorization.getDefinitionDto() != null) {
+      if (dashboardWithEditAuthorization.getDefinitionDto().isManagementDashboard()) {
+        throw new OptimizeValidationException("Management Dashboards cannot be edited");
+      } else {
+        validateEntityEditorAuthorization(dashboardWithEditAuthorization.getDefinitionDto().getCollectionId(), userId);
+      }
     }
 
     final DashboardDefinitionUpdateDto updateDto = convertToUpdateDtoWithModifier(updatedDashboard, userId);
@@ -383,6 +388,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   public void deleteDashboardAsUser(final String dashboardId, final String userId) {
     final DashboardDefinitionRestDto dashboardDefinitionDto =
       getDashboardWithEditAuthorization(dashboardId, userId).getDefinitionDto();
+    validateEntityEditorAuthorization(dashboardDefinitionDto.getCollectionId(), userId);
     deleteDashboard(dashboardId, dashboardDefinitionDto);
   }
 
@@ -550,6 +556,12 @@ public class DashboardService implements ReportReferencingService, CollectionRef
           );
         }
       });
+  }
+
+  private void validateEntityEditorAuthorization(final String collectionId, final String userId) {
+    if (collectionId == null && !identityService.getUserAuthorizations(userId).contains(AuthorizationType.ENTITY_EDITOR)) {
+      throw new ForbiddenException("User is not an authorized entity editor");
+    }
   }
 
   private void removeReportFromDashboards(final String reportId) {

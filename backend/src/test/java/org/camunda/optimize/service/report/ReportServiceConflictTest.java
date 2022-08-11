@@ -9,11 +9,13 @@ import com.google.common.collect.Sets;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.ReportAuthorizationService;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -49,7 +52,10 @@ public class ReportServiceConflictTest {
   @Mock
   AuthorizedCollectionService collectionService;
 
-  ReportService underTest;
+  @Mock
+  AbstractIdentityService abstractIdentityService;
+
+  private ReportService underTest;
 
   @BeforeEach
   public void setUp() {
@@ -58,8 +64,10 @@ public class ReportServiceConflictTest {
       reportReader,
       authorizationService,
       reportRelationService,
-      collectionService
+      collectionService,
+      abstractIdentityService
     );
+    when(abstractIdentityService.getUserAuthorizations(any())).thenReturn(List.of(AuthorizationType.values()));
   }
 
   @Test
