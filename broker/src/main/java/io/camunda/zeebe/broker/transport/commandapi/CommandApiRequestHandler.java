@@ -108,7 +108,7 @@ final class CommandApiRequestHandler
       }
 
       if (!tenantId.equals(RecordValueWithTenant.DEFAULT_TENANT_ID)
-          || !TENANT_ID_MASK.matcher(tenantId).matches()) {
+          && !TENANT_ID_MASK.matcher(tenantId).matches()) {
         errorWriter.invalidTenantId(
             "Expected the tenant ID to be a string of 1 to 63 "
                 + "alphanumerical characters (including '.', '-', or '_'), but it was %s",
