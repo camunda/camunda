@@ -50,6 +50,7 @@ var activateJobsCmd = &cobra.Command{
 			WorkerName(activateJobsWorkerFlag).
 			Timeout(activateJobsTimeoutFlag).
 			FetchVariables(activateJobsFetchVariablesFlag...).
+			TenantId(tenantIdFlag).
 			Send(ctx)
 		if err != nil {
 			return err
