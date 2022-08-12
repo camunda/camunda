@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.RecordValueWithTenant;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
     implements ProcessInstanceModificationRecordValue {
@@ -122,6 +123,11 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
   public ProcessInstanceModificationRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProperty.setValue(processInstanceKey);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getTenantIdBuffer() {
+    return tenantIdProp.getValue();
   }
 
   /** hashCode relies on implementation provided by {@link ObjectValue#hashCode()} */
