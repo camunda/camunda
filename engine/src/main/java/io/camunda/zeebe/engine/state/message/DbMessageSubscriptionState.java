@@ -36,13 +36,18 @@ public final class DbMessageSubscriptionState
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, MessageSubscription>
       subscriptionColumnFamily;
 
-  // (messageName, correlationKey, elementInstanceKey) => \0
+  // (tenantId, messageName, correlationKey, elementInstanceKey) => \0
+  private final DbString tenantKey;
   private final DbString correlationKey;
   private final DbCompositeKey<DbString, DbString> nameAndCorrelationKey;
-  private final DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>
-      nameCorrelationAndElementInstanceKey;
-  private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, DbNil>
-      messageNameAndCorrelationKeyColumnFamily;
+  private final DbCompositeKey<DbString, DbCompositeKey<DbString, DbString>>
+      tenantAndNameAndCorrelationKey;
+  private final DbCompositeKey<DbCompositeKey<DbString, DbCompositeKey<DbString, DbString>>, DbLong>
+      tenantAndNameCorrelationAndElementInstanceKey;
+  private final ColumnFamily<
+          DbCompositeKey<DbCompositeKey<DbString, DbCompositeKey<DbString, DbString>>, DbLong>,
+          DbNil>
+      tenantAndMessageNameAndCorrelationKeyColumnFamily;
 
   private final PendingMessageSubscriptionState transientState =
       new PendingMessageSubscriptionState(this);
@@ -61,15 +66,17 @@ public final class DbMessageSubscriptionState
             elementKeyAndMessageName,
             messageSubscription);
 
+    tenantKey = new DbString();
     correlationKey = new DbString();
     nameAndCorrelationKey = new DbCompositeKey<>(messageName, correlationKey);
-    nameCorrelationAndElementInstanceKey =
-        new DbCompositeKey<>(nameAndCorrelationKey, elementInstanceKey);
-    messageNameAndCorrelationKeyColumnFamily =
+    tenantAndNameAndCorrelationKey = new DbCompositeKey<>(tenantKey, nameAndCorrelationKey);
+    tenantAndNameCorrelationAndElementInstanceKey =
+        new DbCompositeKey<>(tenantAndNameAndCorrelationKey, elementInstanceKey);
+    tenantAndMessageNameAndCorrelationKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY,
             transactionContext,
-            nameCorrelationAndElementInstanceKey,
+            tenantAndNameCorrelationAndElementInstanceKey,
             DbNil.INSTANCE);
   }
 
@@ -94,13 +101,15 @@ public final class DbMessageSubscriptionState
   public void visitSubscriptions(
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
+      final DirectBuffer tenantId,
       final MessageSubscriptionVisitor visitor) {
 
+    tenantKey.wrapBuffer(tenantId);
     this.messageName.wrapBuffer(messageName);
     this.correlationKey.wrapBuffer(correlationKey);
 
-    messageNameAndCorrelationKeyColumnFamily.whileEqualPrefix(
-        nameAndCorrelationKey,
+    tenantAndMessageNameAndCorrelationKeyColumnFamily.whileEqualPrefix(
+        tenantAndNameAndCorrelationKey,
         (compositeKey, nil) -> {
           return visitMessageSubscription(elementKeyAndMessageName, visitor);
         });
@@ -124,9 +133,10 @@ public final class DbMessageSubscriptionState
 
     subscriptionColumnFamily.insert(elementKeyAndMessageName, messageSubscription);
 
+    tenantKey.wrapBuffer(record.getTenantIdBuffer());
     correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
-    messageNameAndCorrelationKeyColumnFamily.insert(
-        nameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
+    tenantAndMessageNameAndCorrelationKeyColumnFamily.insert(
+        tenantAndNameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
   }
 
   @Override
@@ -180,9 +190,11 @@ public final class DbMessageSubscriptionState
     subscriptionColumnFamily.deleteExisting(elementKeyAndMessageName);
 
     final var record = subscription.getRecord();
+    tenantKey.wrapBuffer(subscription.getRecord().getTenantIdBuffer());
     messageName.wrapBuffer(record.getMessageNameBuffer());
     correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
-    messageNameAndCorrelationKeyColumnFamily.deleteExisting(nameCorrelationAndElementInstanceKey);
+    tenantAndMessageNameAndCorrelationKeyColumnFamily.deleteExisting(
+        tenantAndNameCorrelationAndElementInstanceKey);
 
     transientState.remove(subscription.getRecord());
   }

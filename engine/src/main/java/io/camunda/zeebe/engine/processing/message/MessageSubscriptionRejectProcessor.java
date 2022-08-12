@@ -80,6 +80,7 @@ public final class MessageSubscriptionRejectProcessor
     subscriptionState.visitSubscriptions(
         subscriptionRecord.getMessageNameBuffer(),
         subscriptionRecord.getCorrelationKeyBuffer(),
+        subscriptionRecord.getTenantIdBuffer(),
         subscription -> {
           final var correlatingSubscription = subscription.getRecord();
 

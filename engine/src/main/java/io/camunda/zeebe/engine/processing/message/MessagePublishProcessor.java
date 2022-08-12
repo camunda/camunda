@@ -125,6 +125,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     subscriptionState.visitSubscriptions(
         message.getNameBuffer(),
         message.getCorrelationKeyBuffer(),
+        message.getTenantIdBuffer(),
         subscription -> {
 
           // correlate the message only once per process
