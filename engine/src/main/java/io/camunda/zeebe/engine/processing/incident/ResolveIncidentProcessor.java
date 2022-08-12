@@ -63,7 +63,8 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     final long key = command.getKey();
 
     final var incident = incidentState.getIncidentRecord(key);
-    if (incident == null) {
+    if (incident == null
+        || !incident.getTenantIdBuffer().equals(command.getValue().getTenantIdBuffer())) {
       final var errorMessage = String.format(NO_INCIDENT_FOUND_MSG, key);
       rejectResolveCommand(command, errorMessage, RejectionType.NOT_FOUND);
       return;
