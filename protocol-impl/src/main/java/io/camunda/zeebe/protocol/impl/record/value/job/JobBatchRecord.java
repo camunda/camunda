@@ -170,6 +170,11 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
     return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
+  public JobBatchRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
   @JsonIgnore
   public DirectBuffer getTypeBuffer() {
     return typeProp.getValue();
@@ -180,8 +185,8 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
     return workerProp.getValue();
   }
 
-  public JobBatchRecord setTenantId(final String tenantId) {
-    workerProp.setValue(tenantId);
-    return this;
+  @JsonIgnore
+  public DirectBuffer getTenantIdBuffer() {
+    return tenantIdProp.getValue();
   }
 }

@@ -73,7 +73,8 @@ public final class CompleteJobTest {
     // given
     final String tenantId = "foo";
     ENGINE.createJob(jobType, PROCESS_ID, tenantId);
-    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
 
     // when

@@ -29,7 +29,14 @@ public interface JobState {
 
   boolean isInState(DirectBuffer tenantId, long key, State state);
 
-  void forEachActivatableJobs(DirectBuffer type, BiFunction<Long, JobRecord, Boolean> callback);
+  default void forEachActivatableJobs(
+      final DirectBuffer type, final BiFunction<Long, JobRecord, Boolean> callback) {
+    forEachActivatableJobs(
+        type, BufferUtil.wrapString(RecordValueWithTenant.DEFAULT_TENANT_ID), callback);
+  }
+
+  void forEachActivatableJobs(
+      DirectBuffer type, DirectBuffer tenantId, BiFunction<Long, JobRecord, Boolean> callback);
 
   JobRecord getJob(long key);
 
