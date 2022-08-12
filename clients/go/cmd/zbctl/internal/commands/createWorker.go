@@ -134,7 +134,7 @@ func handle(jobClient worker.JobClient, job entities.Job) {
 
 func completeJob(jobClient worker.JobClient, job entities.Job, variables string) {
 	key := job.Key
-	request, err := jobClient.NewCompleteJobCommand().JobKey(key).VariablesFromString(variables)
+	request, err := jobClient.NewCompleteJobCommand().JobKey(key).TenantId(tenantIdFlag).VariablesFromString(variables)
 	if err != nil {
 		failJob(jobClient, job, fmt.Sprint("Unable to set variables", variables, "to complete job", key, err))
 	} else {
@@ -156,7 +156,7 @@ func failJob(jobClient worker.JobClient, job entities.Job, error string) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 	defer cancel()
 
-	_, err := jobClient.NewFailJobCommand().JobKey(job.Key).Retries(job.Retries - 1).ErrorMessage(error).Send(ctx)
+	_, err := jobClient.NewFailJobCommand().JobKey(job.Key).Retries(job.Retries - 1).ErrorMessage(error).TenantId(tenantIdFlag).Send(ctx)
 	if err != nil {
 		log.Println("Unable to fail job", err)
 	}
