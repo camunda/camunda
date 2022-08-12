@@ -51,7 +51,7 @@ var deployResourceCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
-		response, err := zbCmd.Send(ctx)
+		response, err := zbCmd.TenantId(tenantIdFlag).Send(ctx)
 		if err != nil {
 			return err
 		}

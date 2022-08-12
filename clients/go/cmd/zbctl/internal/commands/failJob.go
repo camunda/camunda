@@ -56,6 +56,7 @@ var failJobCmd = &cobra.Command{
 			Retries(failJobRetriesFlag).
 			RetryBackoff(failJobRetryBackoffFlag).
 			ErrorMessage(failJobErrorMessage).
+			TenantId(tenantIdFlag).
 			Send(ctx)
 		if err != nil {
 			return err

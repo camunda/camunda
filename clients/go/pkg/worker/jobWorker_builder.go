@@ -81,6 +81,8 @@ type JobWorkerBuilderStep3 interface {
 	FetchVariables(...string) JobWorkerBuilderStep3
 	// Set implementation for metrics reporting
 	Metrics(metrics JobWorkerMetrics) JobWorkerBuilderStep3
+	// Sets the tenant ID for the job worker
+	TenantId(string) JobWorkerBuilderStep3
 	// Open the job worker and start polling and handling jobs
 	Open() JobWorker
 }
@@ -150,6 +152,11 @@ func (builder *JobWorkerBuilder) FetchVariables(fetchVariables ...string) JobWor
 
 func (builder *JobWorkerBuilder) Metrics(metrics JobWorkerMetrics) JobWorkerBuilderStep3 {
 	builder.metrics = metrics
+	return builder
+}
+
+func (builder *JobWorkerBuilder) TenantId(tenantId string) JobWorkerBuilderStep3 {
+	builder.request.TenantId = tenantId
 	return builder
 }
 

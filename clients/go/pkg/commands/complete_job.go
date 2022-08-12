@@ -22,8 +22,6 @@ import (
 )
 
 type DispatchCompleteJobCommand interface {
-	TenantId(string) DispatchCompleteJobCommand
-
 	Send(context.Context) (*pb.CompleteJobResponse, error)
 }
 
@@ -33,6 +31,8 @@ type CompleteJobCommandStep1 interface {
 
 type CompleteJobCommandStep2 interface {
 	DispatchCompleteJobCommand
+
+	TenantId(string) CompleteJobCommandStep2
 
 	VariablesFromString(string) (DispatchCompleteJobCommand, error)
 	VariablesFromStringer(fmt.Stringer) (DispatchCompleteJobCommand, error)
@@ -98,7 +98,7 @@ func (cmd *CompleteJobCommand) Send(ctx context.Context) (*pb.CompleteJobRespons
 	return response, err
 }
 
-func (cmd *CompleteJobCommand) TenantId(tenantId string) DispatchCompleteJobCommand {
+func (cmd *CompleteJobCommand) TenantId(tenantId string) CompleteJobCommandStep2 {
 	cmd.request.TenantId = tenantId
 	return cmd
 }

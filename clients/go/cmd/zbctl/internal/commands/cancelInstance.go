@@ -42,7 +42,8 @@ var cancelInstanceCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		zbCmd := client.
 			NewCancelInstanceCommand().
-			ProcessInstanceKey(cancelInstanceKey)
+			ProcessInstanceKey(cancelInstanceKey).
+			TenantId(tenantIdFlag)
 
 		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()

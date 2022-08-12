@@ -46,7 +46,7 @@ var createInstanceCmd = &cobra.Command{
 				ProcessDefinitionKey(int64(processKey))
 		}
 
-		zbCmd, err = zbCmd.VariablesFromString(createInstanceVariablesFlag)
+		zbCmd, err = zbCmd.TenantId(tenantIdFlag).VariablesFromString(createInstanceVariablesFlag)
 
 		if err != nil {
 			return err

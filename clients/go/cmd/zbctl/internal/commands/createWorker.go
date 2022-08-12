@@ -70,6 +70,7 @@ If the handler exits with an none zero exit code the job will be failed, the han
 			Concurrency(createWorkerConcurrencyFlag).
 			PollInterval(createWorkerPollIntervalFlag).
 			PollThreshold(createWorkerPollThresholdFlag).
+			TenantId(tenantIdFlag).
 			Open()
 
 		<-workerDoneChannel
