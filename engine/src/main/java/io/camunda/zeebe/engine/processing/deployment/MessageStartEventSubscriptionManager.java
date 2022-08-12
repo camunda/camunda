@@ -69,6 +69,7 @@ public class MessageStartEventSubscriptionManager {
 
     messageStartEventSubscriptionState.visitSubscriptionsByProcessDefinition(
         lastMsgProcess.getKey(),
+        processRecord.getTenantIdBuffer(),
         subscription ->
             stateWriter.appendFollowUpEvent(
                 subscription.getKey(),
@@ -114,7 +115,7 @@ public class MessageStartEventSubscriptionManager {
                       .setProcessDefinitionKey(processDefinitionKey)
                       .setBpmnProcessId(process.getId())
                       .setStartEventId(startEvent.getId())
-                      .setTenantId(subscriptionRecord.getTenantIdBuffer());
+                      .setTenantId(processDefinition.getTenantId());
 
                   final var subscriptionKey = keyGenerator.nextKey();
                   stateWriter.appendFollowUpEvent(

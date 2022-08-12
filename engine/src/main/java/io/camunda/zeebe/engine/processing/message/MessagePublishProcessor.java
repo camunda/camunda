@@ -154,6 +154,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
     startEventSubscriptionState.visitSubscriptionsByMessageName(
         messageRecord.getNameBuffer(),
+        messageRecord.getTenantIdBuffer(),
         subscription -> {
           final var subscriptionRecord = subscription.getRecord();
           final var bpmnProcessIdBuffer = subscriptionRecord.getBpmnProcessIdBuffer();

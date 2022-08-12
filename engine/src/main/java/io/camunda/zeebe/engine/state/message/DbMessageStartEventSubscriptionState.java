@@ -29,6 +29,7 @@ public final class DbMessageStartEventSubscriptionState
   // (tenantId, messageName, processDefinitionKey => MessageSubscription)
   private final DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>
       tenantAndMessageNameAndProcessDefinitionKey;
+  private final DbCompositeKey<DbString, DbString> tenantAndMessageNameKey;
   private final ColumnFamily<
           DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, MessageStartEventSubscription>
       subscriptionsColumnFamily;
@@ -45,8 +46,9 @@ public final class DbMessageStartEventSubscriptionState
     tenantId = new DbString();
     messageName = new DbString();
     processDefinitionKey = new DbLong();
+    tenantAndMessageNameKey = new DbCompositeKey<>(tenantId, messageName);
     tenantAndMessageNameAndProcessDefinitionKey =
-        new DbCompositeKey<>(new DbCompositeKey<>(tenantId, messageName), processDefinitionKey);
+        new DbCompositeKey<>(tenantAndMessageNameKey, processDefinitionKey);
     subscriptionsColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_START_EVENT_SUBSCRIPTION_BY_NAME_AND_KEY,
@@ -108,7 +110,7 @@ public final class DbMessageStartEventSubscriptionState
     this.tenantId.wrapBuffer(tenantId);
     this.messageName.wrapBuffer(messageName);
     subscriptionsColumnFamily.whileEqualPrefix(
-        this.messageName,
+        tenantAndMessageNameKey,
         (key, value) -> {
           visitor.visit(value);
         });

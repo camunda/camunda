@@ -92,6 +92,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
 
     messageStartEventSubscriptionState.visitSubscriptionsByProcessDefinition(
         process.getKey(),
+        process.getTenantId(),
         subscription -> {
           final var subscriptionRecord = subscription.getRecord();
           final var messageName = subscriptionRecord.getMessageNameBuffer();

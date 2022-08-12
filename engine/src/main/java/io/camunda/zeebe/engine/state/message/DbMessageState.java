@@ -42,6 +42,9 @@ public final class DbMessageState implements MutableMessageState {
    *
    * find message by name and correlation key - the message key ensures the queue ordering
    */
+  private final DbCompositeKey<DbString, DbCompositeKey<DbString, DbString>>
+      tenantIdNameCorrelationKey;
+
   private final DbCompositeKey<
           DbCompositeKey<DbString, DbCompositeKey<DbString, DbString>>, DbForeignKey<DbLong>>
       tenantIdNameCorrelationMessageKey;
@@ -123,9 +126,9 @@ public final class DbMessageState implements MutableMessageState {
     tenantId = new DbString();
     messageName = new DbString();
     correlationKey = new DbString();
-    final var tenantNameCorrelationKey =
+    tenantIdNameCorrelationKey =
         new DbCompositeKey<>(tenantId, new DbCompositeKey<>(messageName, correlationKey));
-    tenantIdNameCorrelationMessageKey = new DbCompositeKey<>(tenantNameCorrelationKey, fkMessage);
+    tenantIdNameCorrelationMessageKey = new DbCompositeKey<>(tenantIdNameCorrelationKey, fkMessage);
     tenantIdNameCorrelationMessageColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGES,
@@ -143,7 +146,7 @@ public final class DbMessageState implements MutableMessageState {
             DbNil.INSTANCE);
 
     messageId = new DbString();
-    tenantNameCorrelationMessageIdKey = new DbCompositeKey<>(tenantNameCorrelationKey, messageId);
+    tenantNameCorrelationMessageIdKey = new DbCompositeKey<>(tenantIdNameCorrelationKey, messageId);
     messageIdColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_IDS,
@@ -364,7 +367,7 @@ public final class DbMessageState implements MutableMessageState {
     this.correlationKey.wrapBuffer(correlationKey);
 
     tenantIdNameCorrelationMessageColumnFamily.whileEqualPrefix(
-        tenantIdNameCorrelationMessageKey,
+        tenantIdNameCorrelationKey,
         (compositeKey, nil) -> {
           final long messageKey = compositeKey.second().inner().getValue();
           final StoredMessage message = getMessage(messageKey);
