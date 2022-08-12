@@ -32,6 +32,7 @@ type CompleteJobCommandStep1 interface {
 type CompleteJobCommandStep2 interface {
 	DispatchCompleteJobCommand
 
+	TenantId(string) DispatchCompleteJobCommand
 	VariablesFromString(string) (DispatchCompleteJobCommand, error)
 	VariablesFromStringer(fmt.Stringer) (DispatchCompleteJobCommand, error)
 	VariablesFromMap(map[string]interface{}) (DispatchCompleteJobCommand, error)
@@ -94,6 +95,11 @@ func (cmd *CompleteJobCommand) Send(ctx context.Context) (*pb.CompleteJobRespons
 	}
 
 	return response, err
+}
+
+func (cmd *CompleteJobCommand) TenantId(tenantId string) DispatchCompleteJobCommand {
+	cmd.request.TenantId = tenantId
+	return cmd
 }
 
 func NewCompleteJobCommand(gateway pb.GatewayClient, pred retryPredicate) CompleteJobCommandStep1 {

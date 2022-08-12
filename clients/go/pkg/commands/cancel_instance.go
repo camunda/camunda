@@ -24,6 +24,7 @@ type CancelInstanceStep1 interface {
 }
 
 type DispatchCancelProcessInstanceCommand interface {
+	TenantId(string) DispatchCancelProcessInstanceCommand
 	Send(context.Context) (*pb.CancelProcessInstanceResponse, error)
 }
 
@@ -43,6 +44,11 @@ func (cmd *CancelProcessInstanceCommand) Send(ctx context.Context) (*pb.CancelPr
 
 func (cmd *CancelProcessInstanceCommand) ProcessInstanceKey(key int64) DispatchCancelProcessInstanceCommand {
 	cmd.request = pb.CancelProcessInstanceRequest{ProcessInstanceKey: key}
+	return cmd
+}
+
+func (cmd *CancelProcessInstanceCommand) TenantId(tenantId string) DispatchCancelProcessInstanceCommand {
+	cmd.request.TenantId = tenantId
 	return cmd
 }
 
