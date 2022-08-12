@@ -59,7 +59,7 @@ public final class JobWorkerBuilderImpl
   private Duration requestTimeout;
   private List<String> fetchVariables;
   private BackoffSupplier backoffSupplier;
-  private String tenantId;
+  private String tenantId = "";
 
   public JobWorkerBuilderImpl(
       final ZeebeClientConfiguration configuration,
