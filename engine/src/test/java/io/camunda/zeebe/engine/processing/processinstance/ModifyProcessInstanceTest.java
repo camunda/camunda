@@ -12,11 +12,14 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -63,6 +66,78 @@ public class ModifyProcessInstanceTest {
         .hasProcessInstanceKey(processInstanceKey)
         .hasNoActivateInstructions()
         .hasNoTerminateInstructions();
+  }
+
+  @Test
+  public void shouldWriteModifiedEventForProcessInstanceWithTenant() {
+    // given
+    final String tenantId = "foo";
+    ENGINE
+        .deployment()
+        .withTenantId(tenantId)
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("A", a -> a.zeebeJobType("A"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
+
+    // when
+    final var event =
+        ENGINE.processInstance()
+            .withInstanceKey(processInstanceKey)
+            .withTenantId(tenantId)
+            .modification()
+            .withTenantId(tenantId)
+            .modify();
+
+    // then
+    assertThat(event)
+        .hasKey(processInstanceKey)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(ProcessInstanceModificationIntent.MODIFIED);
+
+    assertThat(event.getValue())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasTenantId(tenantId)
+        .hasNoActivateInstructions()
+        .hasNoTerminateInstructions();
+  }
+
+
+  @Test
+  public void shouldRejectModifiedEventForProcessInstanceWithWrongTenant() {
+    // given
+    final String tenantA = "foo";
+    final String tenantB = "bar";
+    ENGINE
+        .deployment()
+        .withTenantId(tenantA)
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("A", a -> a.zeebeJobType("A"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantA).create();
+
+    // when
+    final Record<ProcessInstanceModificationRecordValue> event =
+        ENGINE.processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .withTenantId(tenantB)
+            .expectRejection()
+            .modify();
+
+    // then
+    RecordAssert.assertThat(event).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(event.getRejectionReason()).contains("none found");
   }
 
   @Test

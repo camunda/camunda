@@ -264,12 +264,11 @@ public final class ProcessInstanceClient {
 
     private static final Function<Long, Record<ProcessInstanceModificationRecordValue>>
         REJECTION_EXPECTATION =
-            (processInstanceKey) ->
+            (position) ->
                 RecordingExporter.processInstanceModificationRecords()
                     .onlyCommandRejections()
                     .withIntent(ProcessInstanceModificationIntent.MODIFY)
-                    .withRecordKey(processInstanceKey)
-                    .withProcessInstanceKey(processInstanceKey)
+                    .withSourceRecordPosition(position)
                     .getFirst();
 
     private Function<Long, Record<ProcessInstanceModificationRecordValue>> expectation =
@@ -277,6 +276,7 @@ public final class ProcessInstanceClient {
 
     private final StreamProcessorRule environmentRule;
     private final long processInstanceKey;
+    private String tenantId = RecordValueWithTenant.DEFAULT_TENANT_ID;
     private final ProcessInstanceModificationRecord record;
 
     public ProcessInstanceModificationClient(
@@ -297,8 +297,14 @@ public final class ProcessInstanceClient {
       return this;
     }
 
+    public ProcessInstanceModificationClient withTenantId(final String tenantId) {
+      this.tenantId = tenantId;
+      return this;
+    }
+
     public Record<ProcessInstanceModificationRecordValue> modify() {
       record.setProcessInstanceKey(processInstanceKey);
+      record.setTenantId(tenantId);
 
       final var position =
           environmentRule.writeCommand(

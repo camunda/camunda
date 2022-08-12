@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowE
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
@@ -30,8 +32,11 @@ import org.agrona.DirectBuffer;
 public final class ProcessInstanceModificationProcessor
     implements TypedRecordProcessor<ProcessInstanceModificationRecord> {
 
+  private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
+      "Expected to find process instance with key '%d', but none found";
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
+  private final TypedRejectionWriter rejectionWriter;
   private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
   private final ElementInstanceState elementInstanceState;
@@ -44,6 +49,7 @@ public final class ProcessInstanceModificationProcessor
       final ProcessState processState) {
     stateWriter = writers.state();
     responseWriter = writers.response();
+    rejectionWriter = writers.rejection();
     commandWriter = writers.command();
     this.keyGenerator = keyGenerator;
     this.elementInstanceState = elementInstanceState;
@@ -57,11 +63,18 @@ public final class ProcessInstanceModificationProcessor
 
     // if set, the command's key should take precedence over the processInstanceKey
     final long eventKey = commandKey > -1 ? commandKey : value.getProcessInstanceKey();
+    final String tenantId = command.getValue().getTenantId();
 
     final var processInstance =
         elementInstanceState.getInstance(value.getProcessInstanceKey()).getValue();
-    // todo: reject if process instance could not be found (no issue yet)
     final var process = processState.getProcessByKey(processInstance.getProcessDefinitionKey());
+
+    // reject if process instance could not be found
+    if (process == null || !process.getTenantId().equals(value.getTenantIdBuffer())) {
+      final var errorMessage = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
+      rejectResolveCommand(command, errorMessage, RejectionType.NOT_FOUND);
+      return;
+    }
 
     value
         .getActivateInstructions()
@@ -128,5 +141,14 @@ public final class ProcessInstanceModificationProcessor
         .map(child -> findFlowScopeKey(child.getKey(), targetElementId))
         .flatMap(Collection::stream)
         .toList();
+  }
+
+  private void rejectResolveCommand(
+      final TypedRecord<ProcessInstanceModificationRecord> command,
+      final String errorMessage,
+      final RejectionType rejectionType) {
+
+    rejectionWriter.appendRejection(command, rejectionType, errorMessage);
+    responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
   }
 }
