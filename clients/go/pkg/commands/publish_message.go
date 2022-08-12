@@ -36,6 +36,7 @@ type PublishMessageCommandStep3 interface {
 
 	MessageId(string) PublishMessageCommandStep3
 	TimeToLive(duration time.Duration) PublishMessageCommandStep3
+	TenantId(string) PublishMessageCommandStep3
 
 	// Expected to be valid JSON string
 	VariablesFromString(string) (PublishMessageCommandStep3, error)
@@ -114,6 +115,11 @@ func (cmd *PublishMessageCommand) CorrelationKey(key string) PublishMessageComma
 
 func (cmd *PublishMessageCommand) MessageName(name string) PublishMessageCommandStep2 {
 	cmd.request.Name = name
+	return cmd
+}
+
+func (cmd *PublishMessageCommand) TenantId(tenantId string) PublishMessageCommandStep3 {
+	cmd.request.TenantId = tenantId
 	return cmd
 }
 

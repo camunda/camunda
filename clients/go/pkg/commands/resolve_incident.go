@@ -21,6 +21,8 @@ import (
 )
 
 type DispatchResolveIncidentCommand interface {
+	TenantId(string) DispatchResolveIncidentCommand
+
 	Send(context.Context) (*pb.ResolveIncidentResponse, error)
 }
 
@@ -39,6 +41,11 @@ type ResolveIncidentCommand struct {
 
 func (cmd *ResolveIncidentCommand) IncidentKey(incidentKey int64) ResolveIncidentCommandStep2 {
 	cmd.request.IncidentKey = incidentKey
+	return cmd
+}
+
+func (cmd *ResolveIncidentCommand) TenantId(tenantId string) DispatchResolveIncidentCommand {
+	cmd.request.TenantId = tenantId
 	return cmd
 }
 

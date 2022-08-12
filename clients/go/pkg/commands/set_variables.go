@@ -24,6 +24,7 @@ import (
 
 type DispatchSetVariablesCommand interface {
 	Local(bool) DispatchSetVariablesCommand
+	TenantId(string) DispatchSetVariablesCommand
 	Send(context.Context) (*pb.SetVariablesResponse, error)
 }
 
@@ -46,6 +47,11 @@ type SetVariablesCommand struct {
 
 func (cmd *SetVariablesCommand) ElementInstanceKey(elementInstanceKey int64) SetVariablesCommandStep2 {
 	cmd.request.ElementInstanceKey = elementInstanceKey
+	return cmd
+}
+
+func (cmd *SetVariablesCommand) TenantId(tenantId string) DispatchSetVariablesCommand {
+	cmd.request.TenantId = tenantId
 	return cmd
 }
 

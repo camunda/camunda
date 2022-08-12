@@ -37,6 +37,7 @@ type FailJobCommandStep3 interface {
 	DispatchFailJobCommand
 	RetryBackoff(retryBackoff time.Duration) FailJobCommandStep3
 	ErrorMessage(string) FailJobCommandStep3
+	TenantId(string) FailJobCommandStep3
 }
 
 type FailJobCommand struct {
@@ -61,6 +62,11 @@ func (cmd *FailJobCommand) RetryBackoff(retryBackoff time.Duration) FailJobComma
 
 func (cmd *FailJobCommand) ErrorMessage(errorMessage string) FailJobCommandStep3 {
 	cmd.request.ErrorMessage = errorMessage
+	return cmd
+}
+
+func (cmd *FailJobCommand) TenantId(tenantId string) FailJobCommandStep3 {
+	cmd.request.TenantId = tenantId
 	return cmd
 }
 

@@ -57,6 +57,8 @@ type CreateInstanceCommandStep3 interface {
 
 	StartBeforeElement(string) CreateInstanceCommandStep3
 
+	TenantId(string) CreateInstanceCommandStep3
+
 	WithResult() CreateInstanceWithResultCommandStep1
 }
 
@@ -143,6 +145,11 @@ func (cmd *CreateInstanceCommand) ProcessDefinitionKey(key int64) CreateInstance
 //nolint:golint
 func (cmd *CreateInstanceCommand) BPMNProcessId(id string) CreateInstanceCommandStep2 {
 	cmd.request.BpmnProcessId = id
+	return cmd
+}
+
+func (cmd *CreateInstanceCommand) TenantId(tenantId string) CreateInstanceCommandStep3 {
+	cmd.request.TenantId = tenantId
 	return cmd
 }
 

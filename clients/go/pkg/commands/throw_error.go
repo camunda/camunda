@@ -29,6 +29,7 @@ type ThrowErrorCommandStep2 interface {
 }
 
 type DispatchThrowErrorCommand interface {
+	TenantId(string) DispatchThrowErrorCommand
 	ErrorMessage(string) DispatchThrowErrorCommand
 	Send(context.Context) (*pb.ThrowErrorResponse, error)
 }
@@ -50,6 +51,11 @@ func (c *ThrowErrorCommand) ErrorCode(errorCode string) DispatchThrowErrorComman
 
 func (c *ThrowErrorCommand) ErrorMessage(errorMsg string) DispatchThrowErrorCommand {
 	c.request.ErrorMessage = errorMsg
+	return c
+}
+
+func (c *ThrowErrorCommand) TenantId(tenantId string) DispatchThrowErrorCommand {
+	c.request.TenantId = tenantId
 	return c
 }
 

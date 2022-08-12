@@ -40,6 +40,11 @@ func (cmd *DeployCommand) AddResource(definition []byte, name string) *DeployCom
 	return cmd
 }
 
+func (cmd *DeployCommand) TenantId(tenantId string) *DeployCommand {
+	cmd.request.TenantId = tenantId
+	return cmd
+}
+
 func (cmd *DeployCommand) Send(ctx context.Context) (*pb.DeployProcessResponse, error) { //nolint
 	response, err := cmd.gateway.DeployProcess(ctx, &cmd.request) //nolint
 	if cmd.shouldRetry(ctx, err) {

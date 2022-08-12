@@ -22,6 +22,8 @@ import (
 )
 
 type DispatchCompleteJobCommand interface {
+	TenantId(string) DispatchCompleteJobCommand
+
 	Send(context.Context) (*pb.CompleteJobResponse, error)
 }
 
@@ -32,7 +34,6 @@ type CompleteJobCommandStep1 interface {
 type CompleteJobCommandStep2 interface {
 	DispatchCompleteJobCommand
 
-	TenantId(string) DispatchCompleteJobCommand
 	VariablesFromString(string) (DispatchCompleteJobCommand, error)
 	VariablesFromStringer(fmt.Stringer) (DispatchCompleteJobCommand, error)
 	VariablesFromMap(map[string]interface{}) (DispatchCompleteJobCommand, error)

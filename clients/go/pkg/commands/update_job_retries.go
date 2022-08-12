@@ -35,7 +35,8 @@ type UpdateJobRetriesCommandStep1 interface {
 type UpdateJobRetriesCommandStep2 interface {
 	DispatchUpdateJobRetriesCommand
 
-	Retries(int32) DispatchUpdateJobRetriesCommand
+	TenantId(string) UpdateJobRetriesCommandStep2
+	Retries(int32) UpdateJobRetriesCommandStep2
 }
 
 type UpdateJobRetriesCommand struct {
@@ -48,7 +49,12 @@ func (cmd *UpdateJobRetriesCommand) JobKey(jobKey int64) UpdateJobRetriesCommand
 	return cmd
 }
 
-func (cmd *UpdateJobRetriesCommand) Retries(retries int32) DispatchUpdateJobRetriesCommand {
+func (cmd *UpdateJobRetriesCommand) TenantId(tenantId string) UpdateJobRetriesCommandStep2 {
+	cmd.request.TenantId = tenantId
+	return cmd
+}
+
+func (cmd *UpdateJobRetriesCommand) Retries(retries int32) UpdateJobRetriesCommandStep2 {
 	cmd.request.Retries = retries
 	return cmd
 }
