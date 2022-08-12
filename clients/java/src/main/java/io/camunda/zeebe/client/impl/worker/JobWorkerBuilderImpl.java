@@ -168,8 +168,11 @@ public final class JobWorkerBuilderImpl
             .setTimeout(timeout)
             .setWorker(workerName)
             .setMaxJobsToActivate(maxJobsActive)
-            .setRequestTimeout(requestTimeout.toMillis())
-            .setTenantId(tenantId);
+            .setRequestTimeout(requestTimeout.toMillis());
+
+    if (tenantId != null && !tenantId.isEmpty()) {
+      requestBuilder.setTenantId(tenantId);
+    }
 
     if (fetchVariables != null) {
       requestBuilder.addAllFetchVariable(fetchVariables);
