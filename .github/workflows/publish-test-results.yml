@@ -37,3 +37,35 @@ jobs:
           junit_files: |
             artifacts/**/surefire-reports/*.xml
             artifacts/**/failsafe-reports/TEST-*.xml
+
+      - name: Read Event File
+        id: read-event-file
+        run: |
+          cd 'artifacts/Event File/'
+          echo "::set-output name=pr_id::$(jq -r '.pull_request.number' < event.json)"
+          echo "::set-output name=repository::$(jq -r '.pull_request.head.repo.full_name' < event.json)"
+          echo "::set-output name=commit_sha::$(jq -r '.pull_request.head.sha' < event.json)"
+          echo "::set-output name=branch_ref::$(jq -r '.pull_request.head.ref' < event.json)"
+
+      - name: Checkout source code for code coverage upload
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ steps.read-event-file.outputs.repository }}
+          ref: ${{ steps.read-event-file.outputs.commit_sha }}
+          path: src
+
+      - name: Collect Code Coverage Reports
+        id: code-coverage-reports
+        run: |
+          echo "::set-output name=files::$(find . -name jacoco.xml -print0 | tr '\0' , | head -c -1)"
+
+      - name: Upload CodeCoverage
+        if: ${{ steps.code-coverage-reports.outputs.files }}
+        uses: codecov/codecov-action@v3
+        with:
+          files: ${{ steps.code-coverage-reports.outputs.files }}
+          override_branch: ${{ steps.read-event-file.outputs.branch_ref }}
+          override_commit: ${{ steps.read-event-file.outputs.commit_sha }}
+          override_pr: ${{ steps.read-event-file.outputs.pr_id }}
+          fail_ci_if_error: true
+          verbose: true

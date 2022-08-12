@@ -1457,6 +1457,9 @@
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
           <version>${plugin.version.jacoco}</version>
+          <configuration>
+            <formats>XML</formats>
+          </configuration>
           <executions>
             <execution>
               <id>coverage-initialize</id>

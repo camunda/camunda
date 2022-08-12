@@ -40,6 +40,7 @@ runs:
       path: |
         **/target/failsafe-reports/
         **/target/surefire-reports/
+        **/target/site/jacoco/jacoco.xml
         **/hs_err_*.log
       retention-days: 7
       if-no-files-found: ignore
