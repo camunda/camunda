@@ -48,7 +48,7 @@ var updateRetriesCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
-		resp, err := client.NewUpdateJobRetriesCommand().JobKey(updateRetriesKey).Retries(updateRetriesFlag).Send(ctx)
+		resp, err := client.NewUpdateJobRetriesCommand().JobKey(updateRetriesKey).Retries(updateRetriesFlag).TenantId(tenantIdFlag).Send(ctx)
 		if err != nil {
 			return err
 		}

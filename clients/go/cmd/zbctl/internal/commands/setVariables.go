@@ -57,7 +57,7 @@ var setVariablesCmd = &cobra.Command{
 			return err
 		}
 
-		request.Local(setVariablesLocalFlag)
+		request.Local(setVariablesLocalFlag).TenantId(tenantIdFlag)
 		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 

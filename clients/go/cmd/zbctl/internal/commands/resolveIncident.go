@@ -46,7 +46,7 @@ var resolveIncidentCommand = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
-		resp, err := client.NewResolveIncidentCommand().IncidentKey(incidentKey).Send(ctx)
+		resp, err := client.NewResolveIncidentCommand().IncidentKey(incidentKey).TenantId(tenantIdFlag).Send(ctx)
 		if err != nil {
 			return err
 		}

@@ -48,7 +48,7 @@ var throwErrorJobCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
-		resp, err := client.NewThrowErrorCommand().JobKey(jobKey).ErrorCode(errorCode).ErrorMessage(errorMessage).Send(ctx)
+		resp, err := client.NewThrowErrorCommand().JobKey(jobKey).ErrorCode(errorCode).ErrorMessage(errorMessage).TenantId(tenantIdFlag).Send(ctx)
 		if err != nil {
 			return err
 		}

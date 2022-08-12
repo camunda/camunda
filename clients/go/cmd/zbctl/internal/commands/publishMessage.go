@@ -48,6 +48,7 @@ var publishMessageCmd = &cobra.Command{
 			CorrelationKey(publishMessageCorrelationKey).
 			MessageId(publishMessageID).
 			TimeToLive(publishMessageTTL).
+			TenantId(tenantIdFlag).
 			VariablesFromString(parsedMessageVariables)
 
 		if err != nil {
