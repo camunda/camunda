@@ -45,53 +45,7 @@ type State = {
 
 const DEFAULT_STATE: State = {
   status: 'disabled',
-  modifications: [
-    // TODO: unskip LastModification and modifications store tests when removing these mocks
-    {
-      type: 'token',
-      modification: {
-        operation: 'add',
-        flowNode: {id: '1', name: 'flowNode1'},
-        affectedTokenCount: 1,
-      },
-    },
-    {
-      type: 'token',
-      modification: {
-        operation: 'cancel',
-        flowNode: {id: '2', name: 'flowNode2'},
-        affectedTokenCount: 2,
-      },
-    },
-    {
-      type: 'token',
-      modification: {
-        operation: 'move',
-        flowNode: {id: '3', name: 'flowNode3'},
-        targetFlowNode: {id: '4', name: 'flowNode4'},
-        affectedTokenCount: 2,
-      },
-    },
-    {
-      type: 'variable',
-      modification: {
-        operation: 'add',
-        flowNode: {id: '5', name: 'flowNode5'},
-        name: 'variableName1',
-        newValue: 'variableValue1',
-      },
-    },
-    {
-      type: 'variable',
-      modification: {
-        operation: 'edit',
-        flowNode: {id: '5', name: 'flowNode6'},
-        name: 'variableName2',
-        oldValue: 'variableValue2',
-        newValue: 'editedVariableValue2',
-      },
-    },
-  ],
+  modifications: [],
 };
 
 class Modifications {

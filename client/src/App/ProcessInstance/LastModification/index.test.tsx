@@ -23,8 +23,7 @@ const Wrapper = ({children}: Props) => {
   );
 };
 
-// TODO: unskip when mocks are removed from modifications
-describe.skip('LastModification', () => {
+describe('LastModification', () => {
   afterAll(() => {
     modificationsStore.reset();
   });

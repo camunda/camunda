@@ -7,8 +7,7 @@
 
 import {modificationsStore} from './modifications';
 
-// TODO: unskip when mocks are removed from modifications
-describe.skip('stores/modifications', () => {
+describe('stores/modifications', () => {
   afterEach(() => {
     modificationsStore.reset();
   });
