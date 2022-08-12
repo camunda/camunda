@@ -130,6 +130,46 @@ public final class MessageCorrelationTest {
   }
 
   @Test
+  public void shouldCorrelateMessageIfEnteredBeforeWithTenant() {
+    // given
+    final String messageId = UUID.randomUUID().toString();
+    engine.deployment().withXmlResource(SINGLE_MESSAGE_PROCESS).withTenantId("foo").deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", "order-123")
+            .withTenantId("foo")
+            .create();
+
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .exists())
+        .isTrue();
+
+    // when
+    engine
+        .message()
+        .withName("message")
+        .withCorrelationKey("order-123")
+        .withTimeToLive(1000L)
+        .withVariables(asMsgPack("foo", "bar"))
+        .withId(messageId)
+        .withTenantId("foo")
+        .publish();
+
+    // then
+    final Record<ProcessInstanceRecordValue> event =
+        RecordingExporter.processInstanceRecords()
+            .withElementId("receive-message")
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .getFirst();
+    final Map<String, String> variables =
+        ProcessInstances.getCurrentVariables(processInstanceKey, event.getPosition());
+    assertThat(variables).containsOnly(entry("key", "\"order-123\""), entry("foo", "\"bar\""));
+  }
+
+  @Test
   public void shouldCorrelateMessageIfPublishedBefore() {
     // given
     engine.deployment().withXmlResource(SINGLE_MESSAGE_PROCESS).deploy();
@@ -147,6 +187,39 @@ public final class MessageCorrelationTest {
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("key", "order-123")
+            .create();
+
+    // then
+    final Record<ProcessInstanceRecordValue> event =
+        RecordingExporter.processInstanceRecords()
+            .withElementId("receive-message")
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .getFirst();
+    final Map<String, String> variables =
+        ProcessInstances.getCurrentVariables(processInstanceKey, event.getPosition());
+    assertThat(variables).containsOnly(entry("key", "\"order-123\""), entry("foo", "\"bar\""));
+  }
+
+  @Test
+  public void shouldCorrelateMessageWithTenant() {
+    // given
+    engine.deployment().withXmlResource(SINGLE_MESSAGE_PROCESS).withTenantId("foo").deploy();
+
+    engine
+        .message()
+        .withName("message")
+        .withCorrelationKey("order-123")
+        .withVariables(asMsgPack("foo", "bar"))
+        .withTenantId("foo")
+        .publish();
+
+    // when
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", "order-123")
+            .withTenantId("foo")
             .create();
 
     // then
