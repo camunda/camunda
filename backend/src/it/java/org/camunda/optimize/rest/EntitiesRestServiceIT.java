@@ -286,16 +286,16 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   @Test
   public void getEntities_viewerRoleTypeIsAppliedIfUserHasNoEditorAuthorization() {
     // given
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.NONE);
-    embeddedOptimizeExtension.reloadConfiguration();
     addCollection("B Collection");
     addCollection("A Collection");
     addSingleReportToOptimize("D Report", ReportType.PROCESS);
     addSingleReportToOptimize("C Report", ReportType.DECISION);
     addDashboardToOptimize("B Dashboard");
     addDashboardToOptimize("A Dashboard");
+    embeddedOptimizeExtension.getConfigurationService()
+      .getEntityConfiguration()
+      .setAuthorizedUserType(AuthorizedUserType.NONE);
+    embeddedOptimizeExtension.reloadConfiguration();
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
