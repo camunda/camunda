@@ -80,7 +80,7 @@
     "glob": "8.0.3",
     "http-proxy-middleware": "2.0.6",
     "husky": "8.0.1",
-    "jest-styled-components": "7.0.8",
+    "jest-styled-components": "7.1.0",
     "lint-staged": "13.0.3",
     "monaco-editor": "0.34.0",
     "msw": "0.42.1",
