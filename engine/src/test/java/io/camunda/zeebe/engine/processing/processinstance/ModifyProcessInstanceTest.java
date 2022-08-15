@@ -681,6 +681,61 @@ public class ModifyProcessInstanceTest {
     assertThatMessageEventSubscriptionIsDeleted(processInstanceKey, elementInstanceKey);
   }
 
+  @Test
+  public void shouldBeAbleToCompleteProcessInstanceAfterElementIsTerminated() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .parallelGateway("gateway")
+                .serviceTask("A", a -> a.zeebeJobType("A"))
+                .endEvent()
+                .moveToNode("gateway")
+                .serviceTask("B", b -> b.zeebeJobType("B"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst()
+            .getKey();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(elementInstanceKey)
+        .modify();
+
+    assertThatElementIsTerminated(processInstanceKey, "A");
+    assertThatJobIsCancelled(processInstanceKey, "A");
+
+    Assertions.assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(1))
+        .isNotEmpty();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .limitToProcessInstanceCompleted()
+                .findAny())
+        .describedAs("Expect the process instance to have been completed")
+        .isPresent();
+  }
+
   private void assertThatElementIsTerminated(
       final long processInstanceKey, final String elementId) {
     Assertions.assertThat(
