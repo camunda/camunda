@@ -32,6 +32,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
+import java.util.List;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
@@ -83,13 +84,13 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private State currentState = State.AWAIT_RECORD;
   private final BooleanSupplier shouldPause;
   private final ReplayMetrics replayMetrics;
-  private final RecordProcessor engine;
+  private final List<RecordProcessor> recordProcessors;
 
   public ReplayStateMachine(
-      final RecordProcessor engine,
+      final List<RecordProcessor> recordProcessors,
       final StreamProcessorContext context,
       final BooleanSupplier shouldReplayNext) {
-    this.engine = engine;
+    this.recordProcessors = recordProcessors;
     shouldPause = () -> !shouldReplayNext.getAsBoolean();
     actor = context.getActor();
     recordValues = context.getRecordValues();
@@ -221,7 +222,12 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
       readMetadata(currentEvent);
       final var currentTypedEvent = readRecordValue(currentEvent);
 
-      engine.replay(currentTypedEvent);
+      final var processor =
+          recordProcessors.stream()
+              .filter(p -> p.canProcess(currentTypedEvent.getValueType()))
+              .findFirst();
+      processor.ifPresent(recordProcessor -> recordProcessor.replay(currentTypedEvent));
+
       lastReplayedEventPosition = currentTypedEvent.getPosition();
     }
 

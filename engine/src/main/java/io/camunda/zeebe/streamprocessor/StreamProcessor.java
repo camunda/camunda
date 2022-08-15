@@ -33,6 +33,7 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -112,7 +113,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
   private final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> typedStreamWriterFactory;
 
-  private final RecordProcessor recordProcessor;
+  private final List<RecordProcessor> recordProcessors = new ArrayList<>();
   private StreamProcessorDbState streamProcessorDbState;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
@@ -133,7 +134,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     partitionId = logStream.getPartitionId();
     actorName = buildActorName(processorBuilder.getNodeId(), "StreamProcessor", partitionId);
     metrics = new StreamProcessorMetrics(partitionId);
-    recordProcessor = processorBuilder.getRecordProcessor();
+    recordProcessors.add(processorBuilder.getRecordProcessor());
   }
 
   public static StreamProcessorBuilder builder() {
@@ -170,12 +171,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       final var startRecoveryTimer = metrics.startRecoveryTimer();
       final long snapshotPosition = recoverFromSnapshot();
 
-      initEngine();
+      initRecordProcessors();
 
       healthCheckTick();
 
       replayStateMachine =
-          new ReplayStateMachine(recordProcessor, streamProcessorContext, this::shouldProcessNext);
+          new ReplayStateMachine(recordProcessors, streamProcessorContext, this::shouldProcessNext);
 
       openFuture.complete(null);
       replayCompletedFuture = replayStateMachine.startRecover(snapshotPosition);
@@ -281,7 +282,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       processingStateMachine =
           new ProcessingStateMachine(
-              streamProcessorContext, this::shouldProcessNext, recordProcessor);
+              streamProcessorContext, this::shouldProcessNext, recordProcessors);
 
       logStream.registerRecordAvailableListener(this);
 
@@ -316,17 +317,18 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     return openFuture;
   }
 
-  private void initEngine() {
-    final var engineContext =
+  private void initRecordProcessors() {
+    final var processorContext =
         new RecordProcessorContextImpl(
             partitionId,
             streamProcessorContext.getScheduleService(),
             zeebeDb,
             streamProcessorContext.getTransactionContext(),
             eventApplierFactory);
-    recordProcessor.init(engineContext);
 
-    lifecycleAwareListeners.addAll(engineContext.getLifecycleListeners());
+    recordProcessors.forEach(processor -> processor.init(processorContext));
+
+    lifecycleAwareListeners.addAll(processorContext.getLifecycleListeners());
   }
 
   private long recoverFromSnapshot() {
