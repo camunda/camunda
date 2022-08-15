@@ -17,6 +17,7 @@ public interface ReadonlyStreamProcessorContext {
   /**
    * @return the logstream, on which the processor runs
    */
+  @Deprecated //only used in EngineRule; TODO remove this
   LogStream getLogStream();
 
   /**
