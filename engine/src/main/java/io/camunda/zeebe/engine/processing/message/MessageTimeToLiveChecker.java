@@ -7,33 +7,35 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
+import io.camunda.zeebe.engine.api.Task;
+import io.camunda.zeebe.engine.api.TaskResult;
+import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 
-public final class MessageTimeToLiveChecker implements Runnable {
+public final class MessageTimeToLiveChecker implements Task {
 
-  private final LegacyTypedStreamWriter writer;
   private final MessageState messageState;
 
   private final MessageRecord deleteMessageCommand = new MessageRecord();
 
-  public MessageTimeToLiveChecker(
-      final LegacyTypedStreamWriter writer, final MessageState messageState) {
-    this.writer = writer;
+  public MessageTimeToLiveChecker(final MessageState messageState) {
     this.messageState = messageState;
   }
 
   @Override
-  public void run() {
+  public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     messageState.visitMessagesWithDeadlineBefore(
-        ActorClock.currentTimeMillis(), this::writeDeleteMessageCommand);
+        ActorClock.currentTimeMillis(), message -> writeDeleteMessageCommand(message, taskResultBuilder));
+    return taskResultBuilder.build();
   }
 
-  private boolean writeDeleteMessageCommand(final StoredMessage storedMessage) {
+  private boolean writeDeleteMessageCommand(final StoredMessage storedMessage, final TaskResultBuilder taskResultBuilder) {
     final var message = storedMessage.getMessage();
 
     deleteMessageCommand.reset();
@@ -47,11 +49,7 @@ public final class MessageTimeToLiveChecker implements Runnable {
       deleteMessageCommand.setMessageId(message.getMessageIdBuffer());
     }
 
-    writer.reset();
-    writer.appendFollowUpCommand(
-        storedMessage.getMessageKey(), MessageIntent.EXPIRE, deleteMessageCommand);
-
-    final long position = writer.flush();
-    return position > 0;
+    taskResultBuilder.appendRecord(storedMessage.getMessageKey(), RecordType.COMMAND, MessageIntent.EXPIRE, RejectionType.NULL_VAL, "", deleteMessageCommand);
+    return true;
   }
 }
