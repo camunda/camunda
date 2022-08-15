@@ -28,4 +28,6 @@ public interface ProcessingScheduleService {
           }
         });
   }
+
+  void runAtFixedRate(final Duration delay, final Task task);
 }

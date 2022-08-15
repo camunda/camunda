@@ -8,6 +8,7 @@
 package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
+import io.camunda.zeebe.engine.api.Task;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
@@ -16,9 +17,11 @@ import java.util.function.BiConsumer;
 public class ProcessingScheduleServiceImpl implements ProcessingScheduleService {
 
   private final ActorControl actorControl;
+  private final StreamProcessorContext streamProcessorContext;
 
-  public ProcessingScheduleServiceImpl(final ActorControl actorControl) {
-    this.actorControl = actorControl;
+  public ProcessingScheduleServiceImpl(final StreamProcessorContext streamProcessorContext) {
+    actorControl = streamProcessorContext.getActor();
+    this.streamProcessorContext = streamProcessorContext;
   }
 
   @Override
@@ -30,6 +33,25 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
   public <T> void runOnCompletion(
       final ActorFuture<T> precedingTask, final BiConsumer<T, Throwable> followUpTask) {
     scheduleOnActor(() -> actorControl.runOnCompletion(precedingTask, followUpTask));
+  }
+
+  @Override
+  public void runAtFixedRate(final Duration delay, final Task task) {
+    /* TODO preliminary implementation; with the direct access
+     * this only works because this class is scheduled on the same actor as the
+     * stream processor.
+     */
+    runAtFixedRate(
+        delay,
+        () -> {
+          try {
+            final var builder = new DirectTaskResultBuilder(streamProcessorContext);
+            final var result = task.execute(builder);
+            result.writeRecordsToStream(streamProcessorContext.getLogStreamBatchWriter());
+          } finally {
+            runAtFixedRate(delay, task);
+          }
+        });
   }
 
   private void scheduleOnActor(final Runnable task) {
