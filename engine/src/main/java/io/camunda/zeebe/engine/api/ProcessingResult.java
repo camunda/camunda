@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.api;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 
 /**
