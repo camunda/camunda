@@ -297,6 +297,9 @@ public final class ProcessingStateMachine {
     if (onErrorRetries > 1) {
       onErrorHandlingLoop = true;
     }
+    final var timer =
+        metrics.startOnErrorTimer(
+            metadata.getRecordType(), metadata.getValueType(), metadata.getIntent());
     final ActorFuture<Boolean> retryFuture =
         updateStateRetryStrategy.runWithRetry(
             () -> {
@@ -308,6 +311,7 @@ public final class ProcessingStateMachine {
     actor.runOnCompletion(
         retryFuture,
         (bool, throwable) -> {
+          timer.close();
           if (throwable != null) {
             LOG.error(ERROR_MESSAGE_ROLLBACK_ABORTED, currentRecord, metadata, throwable);
           }
@@ -322,6 +326,9 @@ public final class ProcessingStateMachine {
   }
 
   private void errorHandlingInTransaction(final Throwable processingException) throws Exception {
+    final var timer =
+        metrics.startErrorHandlingInTransactionTimer(
+            metadata.getRecordType(), metadata.getValueType(), metadata.getIntent());
     zeebeDbTransaction = transactionContext.getCurrentTransaction();
     zeebeDbTransaction.run(
         () -> {
@@ -331,12 +338,16 @@ public final class ProcessingStateMachine {
           currentProcessingResult =
               currentProcessor.onProcessingError(
                   processingException, typedCommand, processingResultBuilder);
+          timer.close();
         });
   }
 
   private void writeRecords() {
     final var sourceRecordPosition = typedCommand.getPosition();
 
+    final var timer =
+        metrics.startWriteRecordsToLogStreamTimer(
+            metadata.getRecordType(), metadata.getValueType(), metadata.getIntent());
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
@@ -353,6 +364,7 @@ public final class ProcessingStateMachine {
     actor.runOnCompletion(
         retryFuture,
         (bool, t) -> {
+          timer.close();
           if (t != null) {
             LOG.error(ERROR_MESSAGE_WRITE_RECORD_ABORTED, currentRecord, metadata, t);
             onError(t, this::writeRecords);
@@ -368,6 +380,9 @@ public final class ProcessingStateMachine {
   }
 
   private void updateState() {
+    final var timer =
+        metrics.startUpdateStateTimer(
+            metadata.getRecordType(), metadata.getValueType(), metadata.getIntent());
     final ActorFuture<Boolean> retryFuture =
         updateStateRetryStrategy.runWithRetry(
             () -> {
@@ -382,6 +397,7 @@ public final class ProcessingStateMachine {
     actor.runOnCompletion(
         retryFuture,
         (bool, throwable) -> {
+          timer.close();
           if (throwable != null) {
             LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentRecord, metadata, throwable);
             onError(throwable, this::updateState);
@@ -392,6 +408,9 @@ public final class ProcessingStateMachine {
   }
 
   private void executeSideEffects() {
+    final var timer =
+        metrics.startExecuteSideEffectsTimer(
+            metadata.getRecordType(), metadata.getValueType(), metadata.getIntent());
     final ActorFuture<Boolean> retryFuture =
         sideEffectsRetryStrategy.runWithRetry(
             () -> {
@@ -441,6 +460,7 @@ public final class ProcessingStateMachine {
 
           // observe the processing duration
           processingTimer.close();
+          timer.close();
 
           // continue with next record
           inProcessing = false;
