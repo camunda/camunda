@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.state.processing.DbBlackListState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import java.util.Objects;
@@ -80,6 +81,11 @@ public class Engine implements RecordProcessor {
 
     recordProcessorContext.addLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
+  }
+
+  @Override
+  public boolean canProcess(final ValueType valueType) {
+    return recordProcessorMap.hasValueType(valueType);
   }
 
   @Override

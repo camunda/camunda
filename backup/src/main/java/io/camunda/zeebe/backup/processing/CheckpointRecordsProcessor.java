@@ -65,6 +65,11 @@ public final class CheckpointRecordsProcessor implements RecordProcessor {
   }
 
   @Override
+  public boolean canProcess(final ValueType valueType) {
+    return valueType == ValueType.CHECKPOINT;
+  }
+
+  @Override
   public void replay(final TypedRecord record) {
     if (record.getValueType() != ValueType.CHECKPOINT) {
       // Should never reach here. StreamProcessor must choose the right processor always.

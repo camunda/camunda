@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.api;
 
+import io.camunda.zeebe.protocol.record.ValueType;
+
 /**
  * Interface for record processors. A record processor is responsible for handling a single record.
  * (The class {@code StreamProcessor} in turn is responsible for handling a stream of records.
@@ -19,6 +21,21 @@ public interface RecordProcessor {
    * @param recordProcessorContext context object to initialize the processor
    */
   void init(RecordProcessorContext recordProcessorContext);
+
+  /**
+   * Returns true if the processor is responsible for processing a record with the given valueType.
+   * If it returns true, then {@link RecordProcessor#process(TypedRecord, ProcessingResultBuilder)}
+   * and {@link RecordProcessor#replay(TypedRecord)} must successfully process or replay the record
+   * with the given valueType. The processor can also choose to skip the record depending on the
+   * intent of the record.
+   *
+   * <p>If it returns false, {@link RecordProcessor#process(TypedRecord, ProcessingResultBuilder)} *
+   * and {@link RecordProcessor#replay(TypedRecord)} with the given valueType will not be called.
+   *
+   * @param valueType valueType of a record
+   * @return true or false
+   */
+  boolean canProcess(ValueType valueType);
 
   /**
    * Called by platform in order to replay a single record
