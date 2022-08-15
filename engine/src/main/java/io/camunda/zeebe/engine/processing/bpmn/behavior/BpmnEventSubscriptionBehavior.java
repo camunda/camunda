@@ -54,7 +54,7 @@ public final class BpmnEventSubscriptionBehavior {
   }
 
   public void unsubscribeFromEvents(final BpmnElementContext context) {
-    catchEventBehavior.unsubscribeFromEvents(context, sideEffects);
+    catchEventBehavior.unsubscribeFromEvents(context.getElementInstanceKey(), sideEffects);
   }
 
   /**

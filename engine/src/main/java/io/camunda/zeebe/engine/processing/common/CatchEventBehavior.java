@@ -79,29 +79,28 @@ public final class CatchEventBehavior {
   }
 
   /**
-   * Unsubscribe from all events in the scope of the context.
+   * Unsubscribe from all events in the scope of the element instance.
    *
-   * @param context the context to subscript from
+   * @param elementInstanceKey the element instance key to subscript from
    * @param sideEffects the side effects for unsubscribe actions
    */
-  public void unsubscribeFromEvents(
-      final BpmnElementContext context,
-      final SideEffects sideEffects) {
-    unsubscribeFromEvents(context, sideEffects, elementId -> true);
+  public void unsubscribeFromEvents(final long elementInstanceKey, final SideEffects sideEffects) {
+    unsubscribeFromEvents(elementInstanceKey, sideEffects, elementId -> true);
   }
 
   /**
-   * Unsubscribe from all event subprocesses in the scope of the context. Ignores other event
-   * subscriptions in the scope.
+   * Unsubscribe from all event subprocesses in the scope of the element instance. Ignores other
+   * event subscriptions in the scope.
    *
    * @param context the context to subscript from
    * @param sideEffects the side effects for unsubscribe actions
    */
   public void unsubscribeEventSubprocesses(
-      final BpmnElementContext context,
-      final SideEffects sideEffects) {
+      final BpmnElementContext context, final SideEffects sideEffects) {
     unsubscribeFromEvents(
-        context, sideEffects, elementId -> isEventSubprocess(context, elementId));
+        context.getElementInstanceKey(),
+        sideEffects,
+        elementId -> isEventSubprocess(context, elementId));
   }
 
   private boolean isEventSubprocess(
@@ -116,20 +115,20 @@ public final class CatchEventBehavior {
   }
 
   /**
-   * Unsubscribe from all events in the scope of the context that matches the given filter. Ignore
-   * other event subscriptions that don't match the filter.
+   * Unsubscribe from all events in the scope of the element instance that matches the given filter.
+   * Ignore other event subscriptions that don't match the filter.
    *
-   * @param context the context to subscript from
+   * @param elementInstanceKey the element instance key to subscript from
    * @param sideEffects the side effects for unsubscribe actions
    * @param elementIdFilter the filter for events to unsubscribe
    */
   private void unsubscribeFromEvents(
-      final BpmnElementContext context,
+      final long elementInstanceKey,
       final SideEffects sideEffects,
       final Predicate<DirectBuffer> elementIdFilter) {
 
-    unsubscribeFromTimerEvents(context, elementIdFilter);
-    unsubscribeFromMessageEvents(context, sideEffects, elementIdFilter);
+    unsubscribeFromTimerEvents(elementInstanceKey, elementIdFilter);
+    unsubscribeFromMessageEvents(elementInstanceKey, sideEffects, elementIdFilter);
   }
 
   /**
@@ -312,10 +311,9 @@ public final class CatchEventBehavior {
   }
 
   private void unsubscribeFromTimerEvents(
-      final BpmnElementContext context,
-      final Predicate<DirectBuffer> elementIdFilter) {
+      final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
     timerInstanceState.forEachTimerForElementInstance(
-        context.getElementInstanceKey(),
+        elementInstanceKey,
         timer -> {
           if (elementIdFilter.test(timer.getHandlerNodeId())) {
             unsubscribeFromTimerEvent(timer);
@@ -337,11 +335,11 @@ public final class CatchEventBehavior {
   }
 
   private void unsubscribeFromMessageEvents(
-      final BpmnElementContext context,
+      final long elementInstanceKey,
       final SideEffects sideEffects,
       final Predicate<DirectBuffer> elementIdFilter) {
     processMessageSubscriptionState.visitElementSubscriptions(
-        context.getElementInstanceKey(),
+        elementInstanceKey,
         subscription -> {
           final var elementId = subscription.getRecord().getElementIdBuffer();
           if (elementIdFilter.test(elementId)) {

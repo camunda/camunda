@@ -114,7 +114,13 @@ public final class ProcessEventProcessors {
         catchEventBehavior,
         processEngineMetrics);
     addProcessInstanceModificationStreamProcessors(
-        typedRecordProcessors, zeebeState, writers, keyGenerator, jobBehavior, incidentBehavior);
+        typedRecordProcessors,
+        zeebeState,
+        writers,
+        keyGenerator,
+        jobBehavior,
+        incidentBehavior,
+        catchEventBehavior);
 
     return bpmnStreamProcessor;
   }
@@ -246,7 +252,8 @@ public final class ProcessEventProcessors {
       final Writers writers,
       final KeyGenerator keyGenerator,
       final BpmnJobBehavior jobBehavior,
-      final BpmnIncidentBehavior incidentBehavior) {
+      final BpmnIncidentBehavior incidentBehavior,
+      final CatchEventBehavior catchEventBehavior) {
     final ProcessInstanceModificationProcessor modificationProcessor =
         new ProcessInstanceModificationProcessor(
             writers,
@@ -254,7 +261,8 @@ public final class ProcessEventProcessors {
             zeebeState.getElementInstanceState(),
             zeebeState.getProcessState(),
             jobBehavior,
-            incidentBehavior);
+            incidentBehavior,
+            catchEventBehavior);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         ProcessInstanceModificationIntent.MODIFY,
