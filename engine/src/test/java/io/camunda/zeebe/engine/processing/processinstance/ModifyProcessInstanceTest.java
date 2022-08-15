@@ -244,7 +244,7 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
-  public void shouldBeAbleToCompleteModfiedProcessInstance() {
+  public void shouldBeAbleToCompleteModifiedProcessInstance() {
     // given
     ENGINE
         .deployment()
