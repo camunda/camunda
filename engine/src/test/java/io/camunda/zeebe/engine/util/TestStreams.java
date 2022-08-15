@@ -229,10 +229,10 @@ public final class TestStreams {
       final String log,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
-      return startStreamProcessor(log, zeebeDbFactory, typedRecordProcessorFactory, Optional.empty());
-    }
+    return startStreamProcessor(log, zeebeDbFactory, typedRecordProcessorFactory, Optional.empty());
+  }
 
-    public StreamProcessor startStreamProcessor(
+  public StreamProcessor startStreamProcessor(
       final String log,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory,
