@@ -10,7 +10,9 @@ package io.camunda.zeebe.engine.processing.scheduled;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
+import io.camunda.zeebe.engine.api.Task;
+import io.camunda.zeebe.engine.api.TaskResult;
+import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.time.Duration;
 import java.util.function.Function;
@@ -18,20 +20,20 @@ import java.util.function.Function;
 public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
   private ProcessingScheduleService scheduleService;
-  private LegacyTypedStreamWriter streamWriter;
 
   private boolean checkerRunning;
   private boolean shouldRescheduleChecker;
 
   private long nextDueDate = -1L;
   private final long timerResolution;
-  private final Function<LegacyTypedStreamWriter, Long> nextDueDateSupplier;
+  private final Function<TaskResultBuilder, Long> nextDueDateSupplier;
+  private final TriggerEntitiesTask triggerEntitiesTask;
 
   public DueDateChecker(
-      final long timerResolution,
-      final Function<LegacyTypedStreamWriter, Long> nextDueDateFunction) {
+      final long timerResolution, final Function<TaskResultBuilder, Long> nextDueDateFunction) {
     this.timerResolution = timerResolution;
     nextDueDateSupplier = nextDueDateFunction;
+    triggerEntitiesTask = new TriggerEntitiesTask();
   }
 
   public void schedule(final long dueDate) {
@@ -47,28 +49,18 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
 
     if (shouldRescheduleChecker) {
       if (!checkerRunning) {
-        scheduleService.runDelayed(delay, this::triggerEntities);
+        scheduleService.runDelayed(delay, triggerEntitiesTask);
         nextDueDate = dueDate;
       } else if (nextDueDate - dueDate > timerResolution) {
-        scheduleService.runDelayed(delay, this::triggerEntities);
+        scheduleService.runDelayed(delay, triggerEntitiesTask);
         nextDueDate = dueDate;
       }
     }
   }
 
-  private void triggerEntities() {
+  private void scheduleTriggerEntitiesTask() {
     if (shouldRescheduleChecker) {
-      nextDueDate = nextDueDateSupplier.apply(streamWriter);
-
-      // reschedule the runnable if there are timers left
-
-      if (nextDueDate > 0) {
-        final Duration delay = calculateDelayForNextRun(nextDueDate);
-        scheduleService.runDelayed(delay, this::triggerEntities);
-        checkerRunning = true;
-      } else {
-        checkerRunning = false;
-      }
+      scheduleService.runDelayed(Duration.ZERO, triggerEntitiesTask);
     } else {
       checkerRunning = false;
     }
@@ -91,10 +83,9 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
     scheduleService = processingContext.getScheduleService();
-    streamWriter = processingContext.getLogStreamWriter();
     shouldRescheduleChecker = true;
     // check if timers are due after restart
-    triggerEntities();
+    scheduleTriggerEntitiesTask();
   }
 
   @Override
@@ -107,7 +98,30 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   public void onResumed() {
     shouldRescheduleChecker = true;
     if (!checkerRunning) {
-      triggerEntities();
+      scheduleTriggerEntitiesTask();
+    }
+  }
+
+  private final class TriggerEntitiesTask implements Task {
+
+    @Override
+    public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
+      if (shouldRescheduleChecker) {
+        nextDueDate = nextDueDateSupplier.apply(taskResultBuilder);
+
+        // reschedule the runnable if there are timers left
+
+        if (nextDueDate > 0) {
+          final Duration delay = calculateDelayForNextRun(nextDueDate);
+          scheduleService.runDelayed(delay, this);
+          checkerRunning = true;
+        } else {
+          checkerRunning = false;
+        }
+      } else {
+        checkerRunning = false;
+      }
+      return taskResultBuilder.build();
     }
   }
 }

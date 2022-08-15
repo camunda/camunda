@@ -16,12 +16,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
+import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.TriggerTimersSideEffect;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.YieldingDecorator;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.time.Duration;
@@ -45,8 +47,7 @@ class DueDateTimerCheckerTest {
        */
 
       // given
-      final var mockTypedCommandWriter = mock(LegacyTypedStreamWriter.class);
-      when(mockTypedCommandWriter.flush()).thenReturn(1L);
+      final var mockTaskResultBuilder = mock(TaskResultBuilder.class);
 
       final var mockTimer = mock(TimerInstance.class, Mockito.RETURNS_DEEP_STUBS);
       final var timerKey = 42L;
@@ -61,11 +62,17 @@ class DueDateTimerCheckerTest {
       final var sut = new TriggerTimersSideEffect(testTimerInstanceState, testActorClock, true);
 
       // when
-      sut.apply(mockTypedCommandWriter);
+      sut.apply(mockTaskResultBuilder);
 
       // then
-      verify(mockTypedCommandWriter, times(4))
-          .appendFollowUpCommand(eq(timerKey), eq(TimerIntent.TRIGGER), any());
+      verify(mockTaskResultBuilder, times(4))
+          .appendRecord(
+              eq(timerKey),
+              eq(RecordType.COMMAND),
+              eq(TimerIntent.TRIGGER),
+              eq(RejectionType.NULL_VAL),
+              eq(""),
+              any());
       /*
        * Why 4 times? The actor clock is advanced by 10 units before the timer visitor is called, and
        * thus before a trigger event command is written.

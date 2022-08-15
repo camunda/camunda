@@ -11,6 +11,8 @@ import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.time.Duration;
@@ -25,15 +27,19 @@ public final class JobBackoffChecker implements StreamProcessorLifecycleAware {
     backOffDueDateChecker =
         new DueDateChecker(
             BACKOFF_RESOLUTION,
-            typedCommandWriter ->
+            taskResultBuilder ->
                 jobState.findBackedOffJobs(
                     ActorClock.currentTimeMillis(),
                     (key, record) -> {
-                      typedCommandWriter.reset();
-                      typedCommandWriter.appendFollowUpCommand(
-                          key, JobIntent.RECUR_AFTER_BACKOFF, record);
+                      taskResultBuilder.appendRecord(
+                          key,
+                          RecordType.COMMAND,
+                          JobIntent.RECUR_AFTER_BACKOFF,
+                          RejectionType.NULL_VAL,
+                          "",
+                          record);
 
-                      return typedCommandWriter.flush() >= 0;
+                      return true;
                     }));
   }
 
