@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.stream.Collectors;
@@ -53,20 +54,32 @@ public class MultiPartitionDeploymentLifecycleTest {
     final var deploymentPartitionRecords =
         RecordingExporter.records().withPartitionId(1).limit(10).collect(Collectors.toList());
 
-    assertThat(deploymentPartitionRecords)
+    assertThat(deploymentPartitionRecords).hasSize(10);
+
+    assertThat(deploymentPartitionRecords.subList(0, 5))
         .extracting(Record::getIntent, Record::getRecordType)
-        .hasSize(10)
         .containsExactly(
             tuple(DeploymentIntent.CREATE, RecordType.COMMAND),
             tuple(ProcessIntent.CREATED, RecordType.EVENT),
             tuple(DeploymentIntent.CREATED, RecordType.EVENT),
             tuple(DeploymentDistributionIntent.DISTRIBUTING, RecordType.EVENT),
-            tuple(DeploymentDistributionIntent.DISTRIBUTING, RecordType.EVENT),
-            tuple(DeploymentDistributionIntent.COMPLETE, RecordType.COMMAND),
-            tuple(DeploymentDistributionIntent.COMPLETE, RecordType.COMMAND),
-            tuple(DeploymentDistributionIntent.COMPLETED, RecordType.EVENT),
-            tuple(DeploymentDistributionIntent.COMPLETED, RecordType.EVENT),
-            tuple(DeploymentIntent.FULLY_DISTRIBUTED, RecordType.EVENT));
+            tuple(DeploymentDistributionIntent.DISTRIBUTING, RecordType.EVENT));
+
+    assertThat(deploymentPartitionRecords.subList(5, 9))
+        .extracting(
+            Record::getIntent,
+            Record::getRecordType,
+            r -> ((DeploymentDistributionRecordValue) r.getValue()).getPartitionId())
+        .containsSubsequence(
+            tuple(DeploymentDistributionIntent.COMPLETE, RecordType.COMMAND, 2),
+            tuple(DeploymentDistributionIntent.COMPLETED, RecordType.EVENT, 2))
+        .containsSubsequence(
+            tuple(DeploymentDistributionIntent.COMPLETE, RecordType.COMMAND, 3),
+            tuple(DeploymentDistributionIntent.COMPLETED, RecordType.EVENT, 3));
+
+    assertThat(deploymentPartitionRecords.subList(9, deploymentPartitionRecords.size()))
+        .extracting(Record::getIntent, Record::getRecordType)
+        .containsExactly(tuple(DeploymentIntent.FULLY_DISTRIBUTED, RecordType.EVENT));
 
     assertThat(RecordingExporter.records().withPartitionId(2).limit(2).collect(Collectors.toList()))
         .extracting(Record::getIntent)
