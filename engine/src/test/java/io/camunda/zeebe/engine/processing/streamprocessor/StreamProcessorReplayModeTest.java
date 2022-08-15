@@ -13,6 +13,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTI
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static java.util.function.Predicate.isEqual;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -30,7 +31,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
-import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -71,7 +71,7 @@ public final class StreamProcessorReplayModeTest {
     // when
     startStreamProcessor(replayUntilEnd);
 
-    Awaitility.await()
+    await()
         .untilAsserted(
             () -> assertThat(getCurrentPhase(replayUntilEnd)).isEqualTo(Phase.PROCESSING));
 
@@ -163,7 +163,7 @@ public final class StreamProcessorReplayModeTest {
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
         event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
 
-    Awaitility.await("should have replayed first events")
+    await("should have replayed first events")
         .until(replayContinuously::getLastSuccessfulProcessedRecordPosition, (pos) -> pos > 0);
 
     // when
@@ -210,7 +210,7 @@ public final class StreamProcessorReplayModeTest {
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
         event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
 
-    Awaitility.await("should have replayed first events")
+    await("should have replayed first events")
         .until(replayContinuously::getLastSuccessfulProcessedRecordPosition, (pos) -> pos > 0);
     streamProcessor.pauseProcessing().join();
     replayContinuously.writeBatch(
@@ -244,7 +244,7 @@ public final class StreamProcessorReplayModeTest {
     // then
     verify(eventApplier, TIMEOUT).applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
 
-    Awaitility.await()
+    await()
         .untilAsserted(
             () -> {
               final var lastProcessedPosition = getLastProcessedPosition(replayContinuously);
@@ -273,8 +273,7 @@ public final class StreamProcessorReplayModeTest {
 
     verify(eventApplier, TIMEOUT).applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
 
-    Awaitility.await()
-        .until(() -> getLastProcessedPosition(replayContinuously), isEqual(commandPosition));
+    await().until(() -> getLastProcessedPosition(replayContinuously), isEqual(commandPosition));
 
     // then
     assertThat(replayContinuously.getLastSuccessfulProcessedRecordPosition())
@@ -285,7 +284,6 @@ public final class StreamProcessorReplayModeTest {
   @Test
   public void shouldNotSetLastProcessedPositionIfLessThanSnapshotPosition() {
     // given
-    final var commandPositionBeforeSnapshot = 1L;
     final var snapshotPosition = 2L;
 
     startStreamProcessor(replayContinuously);
@@ -298,23 +296,20 @@ public final class StreamProcessorReplayModeTest {
     // when
     startStreamProcessor(replayContinuously);
 
-    Awaitility.await()
+    await()
         .untilAsserted(
             () -> assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.REPLAY));
-
-    final var eventPosition =
-        replayContinuously.writeEvent(
-            ELEMENT_ACTIVATING,
-            RECORD,
-            writer -> writer.sourceRecordPosition(commandPositionBeforeSnapshot));
 
     // then
     final var lastProcessedPositionState = replayContinuously.getLastProcessedPositionState();
 
-    assertThat(lastProcessedPositionState.getLastSuccessfulProcessedRecordPosition())
-        .describedAs(
-            "Expected that the last processed position is not less than the snapshot position")
-        .isEqualTo(snapshotPosition);
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(lastProcessedPositionState.getLastSuccessfulProcessedRecordPosition())
+                    .describedAs(
+                        "Expected that the last processed position is not less than the snapshot position")
+                    .isEqualTo(snapshotPosition));
   }
 
   private StreamProcessor startStreamProcessor(final StreamProcessorRule streamProcessorRule) {
