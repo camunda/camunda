@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.api;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 
@@ -19,11 +18,6 @@ public interface ReadonlyStreamProcessorContext {
    * @return the logstream, on which the processor runs
    */
   LogStream getLogStream();
-
-  /**
-   * @return the actual log stream writer, used to write any record
-   */
-  LegacyTypedStreamWriter getLogStreamWriter();
 
   /**
    * @return the state, where the data is stored during processing

@@ -68,16 +68,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   }
 
   @Override
-  public LogStream getLogStream() {
-    return logStream;
-  }
-
-  @Override
-  public LegacyTypedStreamWriter getLogStreamWriter() {
-    return logStreamWriter;
-  }
-
-  @Override
   public MutableZeebeState getZeebeState() {
     return zeebeState;
   }
@@ -85,6 +75,14 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   @Override
   public int getPartitionId() {
     return getLogStream().getPartitionId();
+  }
+
+  public LogStream getLogStream() {
+    return logStream;
+  }
+
+  public LegacyTypedStreamWriter getLogStreamWriter() {
+    return logStreamWriter;
   }
 
   public MutableLastProcessedPositionState getLastProcessedPositionState() {
