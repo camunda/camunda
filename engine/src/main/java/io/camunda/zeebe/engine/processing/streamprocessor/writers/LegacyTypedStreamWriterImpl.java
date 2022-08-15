@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.EVENT_REGISTRY;
 
-import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.camunda.zeebe.msgpack.UnpackedObject;
@@ -54,6 +53,11 @@ public class LegacyTypedStreamWriterImpl implements LegacyTypedStreamWriter {
   }
 
   @Override
+  public void appendFollowUpCommand(final long key, final Intent intent, final RecordValue value) {
+    appendRecord(key, RecordType.COMMAND, intent, value);
+  }
+
+  @Override
   public void appendRecord(
       final long key,
       final RecordType type,
@@ -91,16 +95,6 @@ public class LegacyTypedStreamWriterImpl implements LegacyTypedStreamWriter {
   }
 
   @Override
-  public void appendNewCommand(final Intent intent, final RecordValue value) {
-    appendRecord(-1, RecordType.COMMAND, intent, value);
-  }
-
-  @Override
-  public void appendFollowUpCommand(final long key, final Intent intent, final RecordValue value) {
-    appendRecord(key, RecordType.COMMAND, intent, value);
-  }
-
-  @Override
   public void reset() {
     sourceRecordPosition = -1;
     metadata.reset();
@@ -110,20 +104,6 @@ public class LegacyTypedStreamWriterImpl implements LegacyTypedStreamWriter {
   @Override
   public long flush() {
     return batchWriter.tryWrite();
-  }
-
-  @Override
-  public void appendRejection(
-      final TypedRecord<? extends RecordValue> command,
-      final RejectionType rejectionType,
-      final String reason) {
-    appendRecord(
-        command.getKey(),
-        RecordType.COMMAND_REJECTION,
-        command.getIntent(),
-        rejectionType,
-        reason,
-        command.getValue());
   }
 
   @Override
