@@ -31,11 +31,13 @@ public final class MessageTimeToLiveChecker implements Task {
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     messageState.visitMessagesWithDeadlineBefore(
-        ActorClock.currentTimeMillis(), message -> writeDeleteMessageCommand(message, taskResultBuilder));
+        ActorClock.currentTimeMillis(),
+        message -> writeDeleteMessageCommand(message, taskResultBuilder));
     return taskResultBuilder.build();
   }
 
-  private boolean writeDeleteMessageCommand(final StoredMessage storedMessage, final TaskResultBuilder taskResultBuilder) {
+  private boolean writeDeleteMessageCommand(
+      final StoredMessage storedMessage, final TaskResultBuilder taskResultBuilder) {
     final var message = storedMessage.getMessage();
 
     deleteMessageCommand.reset();
@@ -49,7 +51,13 @@ public final class MessageTimeToLiveChecker implements Task {
       deleteMessageCommand.setMessageId(message.getMessageIdBuffer());
     }
 
-    taskResultBuilder.appendRecord(storedMessage.getMessageKey(), RecordType.COMMAND, MessageIntent.EXPIRE, RejectionType.NULL_VAL, "", deleteMessageCommand);
+    taskResultBuilder.appendRecord(
+        storedMessage.getMessageKey(),
+        RecordType.COMMAND,
+        MessageIntent.EXPIRE,
+        RejectionType.NULL_VAL,
+        "",
+        deleteMessageCommand);
     return true;
   }
 }
