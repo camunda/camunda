@@ -30,6 +30,11 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
   }
 
   @Override
+  public void runDelayed(final Duration delay, final Task task) {
+    runDelayed(delay, toRunnable(task));
+  }
+
+  @Override
   public <T> void runOnCompletion(
       final ActorFuture<T> precedingTask, final BiConsumer<T, Throwable> followUpTask) {
     scheduleOnActor(() -> actorControl.runOnCompletion(precedingTask, followUpTask));
@@ -41,20 +46,18 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
      * this only works because this class is scheduled on the same actor as the
      * stream processor.
      */
-    runAtFixedRate(
-        delay,
-        () -> {
-          try {
-            final var builder = new DirectTaskResultBuilder(streamProcessorContext);
-            final var result = task.execute(builder);
-            result.writeRecordsToStream(streamProcessorContext.getLogStreamBatchWriter());
-          } finally {
-            runAtFixedRate(delay, task);
-          }
-        });
+    runAtFixedRate(delay, toRunnable(task));
   }
 
   private void scheduleOnActor(final Runnable task) {
     actorControl.submit(task);
+  }
+
+  Runnable toRunnable(final Task task) {
+    return () -> {
+      final var builder = new DirectTaskResultBuilder(streamProcessorContext);
+      final var result = task.execute(builder);
+      result.writeRecordsToStream(streamProcessorContext.getLogStreamBatchWriter());
+    };
   }
 }

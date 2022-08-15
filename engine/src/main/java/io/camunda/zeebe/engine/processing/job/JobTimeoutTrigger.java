@@ -11,8 +11,12 @@ import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
 
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
+import io.camunda.zeebe.engine.api.Task;
+import io.camunda.zeebe.engine.api.TaskResult;
+import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import java.time.Duration;
 
@@ -22,19 +26,20 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
 
   private boolean shouldReschedule = false;
 
-  private LegacyTypedStreamWriter writer;
   private ReadonlyStreamProcessorContext processingContext;
+  private final Task deactivateTimedOutJobs;
 
   public JobTimeoutTrigger(final JobState state) {
     this.state = state;
+    deactivateTimedOutJobs = new DeactivateTimeOutJobs();
   }
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
     this.processingContext = processingContext;
     shouldReschedule = true;
+
     scheduleDeactivateTimedOutJobsTask();
-    writer = processingContext.getLogStreamWriter();
   }
 
   @Override
@@ -62,25 +67,29 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
   private void scheduleDeactivateTimedOutJobsTask() {
     processingContext
         .getScheduleService()
-        .runDelayed(TIME_OUT_POLLING_INTERVAL, this::deactivateTimedOutJobs);
+        .runDelayed(TIME_OUT_POLLING_INTERVAL, deactivateTimedOutJobs);
   }
 
   private void cancelTimer() {
     shouldReschedule = false;
   }
 
-  void deactivateTimedOutJobs() {
-    final long now = currentTimeMillis();
-    state.forEachTimedOutEntry(
-        now,
-        (key, record) -> {
-          writer.reset();
-          writer.appendFollowUpCommand(key, JobIntent.TIME_OUT, record);
+  private final class DeactivateTimeOutJobs implements Task {
 
-          return writer.flush() >= 0;
-        });
-    if (shouldReschedule) {
-      scheduleDeactivateTimedOutJobsTask();
+    @Override
+    public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
+      final long now = currentTimeMillis();
+      state.forEachTimedOutEntry(
+          now,
+          (key, record) -> {
+            taskResultBuilder.appendRecord(
+                key, RecordType.COMMAND, JobIntent.TIME_OUT, RejectionType.NULL_VAL, "", record);
+            return true;
+          });
+      if (shouldReschedule) {
+        scheduleDeactivateTimedOutJobsTask();
+      }
+      return taskResultBuilder.build();
     }
   }
 }
