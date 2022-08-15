@@ -195,10 +195,16 @@ public class StreamProcessorHealthTest {
   private final class WrappedStreamWriterLegacy implements LegacyTypedStreamWriter {
 
     @Override
-    public void appendRejection(
-        final TypedRecord<? extends RecordValue> command,
-        final RejectionType type,
-        final String reason) {}
+    public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {}
+
+    @Override
+    public int getMaxEventLength() {
+      return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public void appendFollowUpCommand(
+        final long key, final Intent intent, final RecordValue value) {}
 
     @Override
     public void appendRecord(
@@ -215,21 +221,6 @@ public class StreamProcessorHealthTest {
 
     @Override
     public void configureSourceContext(final long sourceRecordPosition) {}
-
-    @Override
-    public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {}
-
-    @Override
-    public int getMaxEventLength() {
-      return Integer.MAX_VALUE;
-    }
-
-    @Override
-    public void appendNewCommand(final Intent intent, final RecordValue value) {}
-
-    @Override
-    public void appendFollowUpCommand(
-        final long key, final Intent intent, final RecordValue value) {}
 
     @Override
     public void reset() {}
