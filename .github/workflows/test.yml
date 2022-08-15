@@ -170,7 +170,7 @@ jobs:
           distro: ubuntu_latest
           githubToken: ${{ github.token }}
           setup: |
-            mkdir -p "${PWD}/images
+            mkdir -p "${PWD}/images"
             docker image save -o "${PWD}/images/image.tar" camunda/zeebe:current-test
           dockerRunArgs: |
             --volume "${PWD}/images:/images"
