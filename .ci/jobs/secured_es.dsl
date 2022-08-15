@@ -4,7 +4,7 @@ pipelineJob('secured_es') {
   description 'Verify connection to a secured ES instance'
 
   // By default, this job is disabled in non-prod envs.
-  if (binding.variables.get("ENVIRONMENT") != "prod") {
+  if (ENVIRONMENT != "prod") {
     disabled()
   }
 
@@ -19,11 +19,14 @@ pipelineJob('secured_es') {
     stringParam('BRANCH', binding.variables.get('GIT_LOCAL_BRANCH', 'master'), 'Branch to use for the test.')
   }
 
-  properties {
-    pipelineTriggers {
-      triggers {
-        cron {
-          spec('H 5 * * 1-5')
+  // Disable cron testing envs, in case someone tests the job and forgets to disable it
+  if (ENVIRONMENT == "prod") {
+    properties {
+      pipelineTriggers {
+        triggers {
+          cron {
+            spec('H 5 * * 1-5')
+          }
         }
       }
     }

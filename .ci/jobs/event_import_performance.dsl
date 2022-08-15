@@ -4,7 +4,7 @@ pipelineJob('event-import-performance') {
   description 'Test Optimize Event Based Process Import performance.'
 
   // By default, this job is disabled in non-prod envs.
-  if (binding.variables.get("ENVIRONMENT") != "prod") {
+  if (ENVIRONMENT != "prod") {
     disabled()
   }
 
@@ -24,11 +24,14 @@ pipelineJob('event-import-performance') {
     stringParam('EXTERNAL_EVENT_COUNT', '40000000', 'Number of external events to ingest.')
   }
 
-  properties {
-    pipelineTriggers {
-      triggers {
-        cron {
-          spec('H 20 * * 1-5')
+  // Disable cron testing envs, in case someone tests the job and forgets to disable it
+  if (ENVIRONMENT == "prod") {
+    properties {
+      pipelineTriggers {
+        triggers {
+          cron {
+            spec('H 20 * * 1-5')
+          }
         }
       }
     }

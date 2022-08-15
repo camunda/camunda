@@ -4,7 +4,7 @@ pipelineJob('dependency-check') {
   description 'Inspect optimize for the new dependencies and send email notification on changes'
 
   // By default, this job is disabled in non-prod envs.
-  if (binding.variables.get("ENVIRONMENT") != "prod") {
+  if (ENVIRONMENT != "prod") {
     disabled()
   }
 
@@ -19,11 +19,14 @@ pipelineJob('dependency-check') {
     stringParam('BRANCH', binding.variables.get('GIT_LOCAL_BRANCH', 'master'), 'Branch to use for dependency check')
   }
 
-  properties {
-    pipelineTriggers {
-      triggers {
-        cron {
-          spec('H 4 * * 1-5')
+  // Disable cron testing envs, in case someone tests the job and forgets to disable it
+  if (ENVIRONMENT == "prod") {
+    properties {
+      pipelineTriggers {
+        triggers {
+          cron {
+            spec('H 4 * * 1-5')
+          }
         }
       }
     }

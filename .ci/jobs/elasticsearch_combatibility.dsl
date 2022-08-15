@@ -4,7 +4,7 @@ pipelineJob('elasticsearch_compatibility') {
   description 'Runs IT suite with different supported Elasticsearch versions to check compatibility.'
 
   // By default, this job is disabled in non-prod envs.
-  if (binding.variables.get("ENVIRONMENT") != "prod") {
+  if (ENVIRONMENT != "prod") {
     disabled()
   }
 
@@ -20,11 +20,14 @@ pipelineJob('elasticsearch_compatibility') {
     stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')
   }
 
-  properties {
-    pipelineTriggers {
-      triggers {
-        cron {
-          spec('H 2 * * 1-5')
+  // Disable cron testing envs, in case someone tests the job and forgets to disable it
+  if (ENVIRONMENT == "prod") {
+    properties {
+      pipelineTriggers {
+        triggers {
+          cron {
+            spec('H 2 * * 1-5')
+          }
         }
       }
     }

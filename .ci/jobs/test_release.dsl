@@ -4,7 +4,7 @@ pipelineJob('camunda-optimize-release-test') {
   description 'Run Camunda Optimize release without committing the changes to github or uploading the artifacts.'
 
   // By default, this job is disabled in non-prod envs.
-  if (binding.variables.get("ENVIRONMENT") != "prod") {
+  if (ENVIRONMENT != "prod") {
     disabled()
   }
 
@@ -33,11 +33,14 @@ pipelineJob('camunda-optimize-release-test') {
     booleanParam('RELEASE_EXAMPLE', false, 'Should an example repository be released.')
   }
   
-  properties {
-    pipelineTriggers {
-      triggers {
-        cron {
-          spec('H 23 * * 1-5')
+  // Disable cron testing envs, in case someone tests the job and forgets to disable it
+  if (ENVIRONMENT == "prod") {
+    properties {
+      pipelineTriggers {
+        triggers {
+          cron {
+            spec('H 23 * * 1-5')
+          }
         }
       }
     }

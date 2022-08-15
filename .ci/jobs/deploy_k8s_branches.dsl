@@ -4,7 +4,7 @@ pipelineJob('deploy-optimize-branch-to-k8s') {
   description 'Deploys Optimize branch to Kubernetes.'
 
   // By default, this job is disabled in non-prod envs.
-  if (binding.variables.get("ENVIRONMENT") != "prod") {
+  if (ENVIRONMENT != "prod") {
     disabled()
   }
 
@@ -23,11 +23,14 @@ pipelineJob('deploy-optimize-branch-to-k8s') {
     stringParam('IDENTITY_VERSION', '', 'Zeebe version to use, defaults to reading it from pom.xml.')
   }
 
-  properties {
-    pipelineTriggers {
-      triggers {
-        cron {
-          spec('H 22 * * 1-5')
+  // Disable cron testing envs, in case someone tests the job and forgets to disable it
+  if (ENVIRONMENT == "prod") {
+    properties {
+      pipelineTriggers {
+        triggers {
+          cron {
+            spec('H 22 * * 1-5')
+          }
         }
       }
     }
