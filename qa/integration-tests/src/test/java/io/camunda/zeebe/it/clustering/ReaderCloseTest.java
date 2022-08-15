@@ -68,7 +68,7 @@ public class ReaderCloseTest {
             .getConfig()
             .getCluster()
             .getNodeId();
-    clusteringRule.forceClusterToHaveNewLeader(followerId);
+    clusteringRule.forceClusterToHaveNewLeader(1, followerId);
     // because of https://github.com/camunda/zeebe/issues/8329
     // we need to add another record so we can do a snapshot
     clientRule
