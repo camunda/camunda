@@ -63,6 +63,78 @@ public final class StreamProcessorMetrics {
               LABEL_NAME_INTENT)
           .register();
 
+  private static final Histogram PROCESS_RECORD_IN_PROCESSOR_DURATION =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("stream_processor_process_record_in_processor_duration")
+          .help("Time for processing a record (in seconds) by the processor")
+          .labelNames(
+              LABEL_NAME_RECORD_TYPE,
+              LABEL_NAME_PARTITION,
+              LABEL_NAME_VALUE_TYPE,
+              LABEL_NAME_INTENT)
+          .register();
+
+  private static final Histogram WRITE_RECORDS_TO_LOG_STREAM =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("stream_processor_write_records_to_log_stream")
+          .help("Time for writing records to the log stream (in seconds)")
+          .labelNames(
+              LABEL_NAME_RECORD_TYPE,
+              LABEL_NAME_PARTITION,
+              LABEL_NAME_VALUE_TYPE,
+              LABEL_NAME_INTENT)
+          .register();
+
+  private static final Histogram UPDATE_STATE =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("stream_processor_update_state")
+          .help("Time for updating the state in RocksDB (in seconds)")
+          .labelNames(
+              LABEL_NAME_RECORD_TYPE,
+              LABEL_NAME_PARTITION,
+              LABEL_NAME_VALUE_TYPE,
+              LABEL_NAME_INTENT)
+          .register();
+
+  private static final Histogram EXECUTE_SIDE_EFFECTS =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("stream_processor_execute_side_effects")
+          .help("Time for executing side effects (in seconds)")
+          .labelNames(
+              LABEL_NAME_RECORD_TYPE,
+              LABEL_NAME_PARTITION,
+              LABEL_NAME_VALUE_TYPE,
+              LABEL_NAME_INTENT)
+          .register();
+
+  private static final Histogram ON_ERROR =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("stream_processor_on_error")
+          .help("Time for rolling back changes on error (in seconds)")
+          .labelNames(
+              LABEL_NAME_RECORD_TYPE,
+              LABEL_NAME_PARTITION,
+              LABEL_NAME_VALUE_TYPE,
+              LABEL_NAME_INTENT)
+          .register();
+
+  private static final Histogram ERROR_HANDLING_IN_TRANSACTION =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("stream_processor_error_handling_in_transaction")
+          .help("Time for handling error in transaction (in seconds)")
+          .labelNames(
+              LABEL_NAME_RECORD_TYPE,
+              LABEL_NAME_PARTITION,
+              LABEL_NAME_VALUE_TYPE,
+              LABEL_NAME_INTENT)
+          .register();
+
   private static final Gauge STARTUP_RECOVERY_TIME =
       Gauge.build()
           .namespace(NAMESPACE)
@@ -87,6 +159,48 @@ public final class StreamProcessorMetrics {
   public Histogram.Timer startProcessingDurationTimer(
       final RecordType recordType, final ValueType valueType, final Intent intent) {
     return PROCESSING_DURATION
+        .labels(recordType.name(), partitionIdLabel, valueType.name(), intent.name())
+        .startTimer();
+  }
+
+  public Histogram.Timer startProcessRecordInProcessorTimer(
+      final RecordType recordType, final ValueType valueType, final Intent intent) {
+    return PROCESS_RECORD_IN_PROCESSOR_DURATION
+        .labels(recordType.name(), partitionIdLabel, valueType.name(), intent.name())
+        .startTimer();
+  }
+
+  public Histogram.Timer startWriteRecordsToLogStreamTimer(
+      final RecordType recordType, final ValueType valueType, final Intent intent) {
+    return WRITE_RECORDS_TO_LOG_STREAM
+        .labels(recordType.name(), partitionIdLabel, valueType.name(), intent.name())
+        .startTimer();
+  }
+
+  public Histogram.Timer startUpdateStateTimer(
+      final RecordType recordType, final ValueType valueType, final Intent intent) {
+    return UPDATE_STATE
+        .labels(recordType.name(), partitionIdLabel, valueType.name(), intent.name())
+        .startTimer();
+  }
+
+  public Histogram.Timer startExecuteSideEffectsTimer(
+      final RecordType recordType, final ValueType valueType, final Intent intent) {
+    return EXECUTE_SIDE_EFFECTS
+        .labels(recordType.name(), partitionIdLabel, valueType.name(), intent.name())
+        .startTimer();
+  }
+
+  public Histogram.Timer startOnErrorTimer(
+      final RecordType recordType, final ValueType valueType, final Intent intent) {
+    return ON_ERROR
+        .labels(recordType.name(), partitionIdLabel, valueType.name(), intent.name())
+        .startTimer();
+  }
+
+  public Histogram.Timer startErrorHandlingInTransactionTimer(
+      final RecordType recordType, final ValueType valueType, final Intent intent) {
+    return ERROR_HANDLING_IN_TRANSACTION
         .labels(recordType.name(), partitionIdLabel, valueType.name(), intent.name())
         .startTimer();
   }
