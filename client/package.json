@@ -69,7 +69,7 @@
     "@types/jest": "27.5.2",
     "@types/lodash": "4.14.182",
     "@types/mixpanel-browser": "2.38.0",
-    "@types/node": "16.11.47",
+    "@types/node": "16.11.48",
     "@types/node-fetch": "2.6.2",
     "@types/react": "18.0.17",
     "@types/react-dom": "18.0.6",
