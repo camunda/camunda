@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContextImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -34,9 +35,9 @@ import org.slf4j.Logger;
 public class Engine implements RecordProcessor {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
-  private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
+  private static final String ERROR_MESSAGE_PROCESSOR_NOT_FOUND =
       "Expected to find processor for record '{}', but caught an exception. Skip this record.";
-  private static final String PROCESSING_ERROR_MESSAGE =
+  private static final String ERROR_MESSAGE_PROCESSING_EXCEPTION_OCCURRED =
       "Expected to process record '%s' without errors, but exception occurred with message '%s'.";
   private EventApplier eventApplier;
   private RecordProcessorMap recordProcessorMap;
@@ -77,9 +78,6 @@ public class Engine implements RecordProcessor {
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);
 
-    recordProcessorContext.setStreamProcessorListener(
-        typedProcessorContext.getStreamProcessorListener());
-
     recordProcessorContext.addLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
   }
@@ -103,7 +101,7 @@ public class Engine implements RecordProcessor {
                 typedCommand.getValueType(),
                 typedCommand.getIntent().value());
       } catch (final Exception e) {
-        LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, typedCommand, e);
+        LOG.error(ERROR_MESSAGE_PROCESSOR_NOT_FOUND, typedCommand, e);
       }
 
       if (currentProcessor == null) {
@@ -128,28 +126,54 @@ public class Engine implements RecordProcessor {
       final Throwable processingException,
       final TypedRecord record,
       final ProcessingResultBuilder processingResultBuilder) {
-    final String errorMessage =
-        String.format(PROCESSING_ERROR_MESSAGE, record, processingException.getMessage());
-    LOG.error(errorMessage, processingException);
-
     try (final var scope = new ProcessingResultBuilderScope(processingResultBuilder)) {
-      writers.rejection().appendRejection(record, RejectionType.PROCESSING_ERROR, errorMessage);
-      writers
-          .response()
-          .writeRejectionOnCommand(record, RejectionType.PROCESSING_ERROR, errorMessage);
-      errorRecord.initErrorRecord(processingException, record.getPosition());
 
-      if (DbBlackListState.shouldBeBlacklisted(record.getIntent())) {
-        if (record.getValue() instanceof ProcessInstanceRelated) {
-          final long processInstanceKey =
-              ((ProcessInstanceRelated) record.getValue()).getProcessInstanceKey();
-          errorRecord.setProcessInstanceKey(processInstanceKey);
-        }
+      final var typedCommand = (TypedRecord<?>) record;
+      TypedRecordProcessor<?> processor = null;
+      try {
+        processor =
+            recordProcessorMap.get(
+                typedCommand.getRecordType(),
+                typedCommand.getValueType(),
+                typedCommand.getIntent().value());
+      } catch (final Exception e) {
+        LOG.error(ERROR_MESSAGE_PROCESSOR_NOT_FOUND, typedCommand, e);
+      }
 
-        writers.state().appendFollowUpEvent(record.getKey(), ErrorIntent.CREATED, errorRecord);
+      final var error =
+          processor == null
+              ? ProcessingError.UNEXPECTED_ERROR
+              : processor.tryHandleError(record, processingException);
+
+      if (error == ProcessingError.UNEXPECTED_ERROR) {
+        handleUnexpectedError(processingException, record);
       }
     }
     return processingResultBuilder.build();
+  }
+
+  private void handleUnexpectedError(
+      final Throwable processingException, final TypedRecord record) {
+    final String errorMessage =
+        String.format(
+            ERROR_MESSAGE_PROCESSING_EXCEPTION_OCCURRED, record, processingException.getMessage());
+    LOG.error(errorMessage, processingException);
+
+    writers.rejection().appendRejection(record, RejectionType.PROCESSING_ERROR, errorMessage);
+    writers
+        .response()
+        .writeRejectionOnCommand(record, RejectionType.PROCESSING_ERROR, errorMessage);
+    errorRecord.initErrorRecord(processingException, record.getPosition());
+
+    if (DbBlackListState.shouldBeBlacklisted(record.getIntent())) {
+      if (record.getValue() instanceof ProcessInstanceRelated) {
+        final long processInstanceKey =
+            ((ProcessInstanceRelated) record.getValue()).getProcessInstanceKey();
+        errorRecord.setProcessInstanceKey(processInstanceKey);
+      }
+
+      writers.state().appendFollowUpEvent(record.getKey(), ErrorIntent.CREATED, errorRecord);
+    }
   }
 
   private static final class ProcessingResultBuilderMutex

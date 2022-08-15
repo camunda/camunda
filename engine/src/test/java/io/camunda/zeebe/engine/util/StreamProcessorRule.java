@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.util;
 import static io.camunda.zeebe.engine.util.StreamProcessingComposite.getLogName;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
@@ -30,6 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
@@ -37,6 +37,7 @@ import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -145,7 +146,13 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
-    return streamProcessingComposite.startTypedStreamProcessor(factory);
+    return startTypedStreamProcessor(factory, Optional.empty());
+  }
+
+  public StreamProcessor startTypedStreamProcessor(
+      final StreamProcessorTestFactory factory,
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
+    return streamProcessingComposite.startTypedStreamProcessor(factory, streamProcessorListenerOpt);
   }
 
   public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
@@ -167,8 +174,11 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessor startTypedStreamProcessor(
-      final int partitionId, final TypedRecordProcessorFactory factory) {
-    return streamProcessingComposite.startTypedStreamProcessor(partitionId, factory);
+      final int partitionId,
+      final TypedRecordProcessorFactory factory,
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
+    return streamProcessingComposite.startTypedStreamProcessor(
+        partitionId, factory, streamProcessorListenerOpt);
   }
 
   public void pauseProcessing(final int partitionId) {

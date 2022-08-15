@@ -327,10 +327,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     recordProcessor.init(engineContext);
 
     lifecycleAwareListeners.addAll(engineContext.getLifecycleListeners());
-    final var listener = engineContext.getStreamProcessorListener();
-    if (listener != null) {
-      streamProcessorContext.listener(engineContext.getStreamProcessorListener());
-    }
   }
 
   private long recoverFromSnapshot() {
@@ -340,7 +336,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
     streamProcessorDbState = new StreamProcessorDbState(zeebeDb, transactionContext);
     streamProcessorContext.lastProcessedPositionState(
-        getStreamProcessorDbState().getLastProcessedPositionState());
+        streamProcessorDbState.getLastProcessedPositionState());
 
     final long snapshotPosition =
         streamProcessorDbState
@@ -366,7 +362,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void recoverZeebeDbState(final TransactionContext transactionContext) {
     final ZeebeDbState zeebeState = new ZeebeDbState(partitionId, zeebeDb, transactionContext);
     streamProcessorContext.zeebeState(zeebeState);
-    streamProcessorContext.eventApplier(eventApplierFactory.apply(zeebeState));
   }
 
   private void onRecovered(final LastProcessingPositions lastProcessingPositions) {

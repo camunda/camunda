@@ -28,7 +28,7 @@ final class ControlledActorClockEndpointTest {
       new ActorClockEndpoint(new ControlledActorClockService(new ControlledActorClock()));
 
   @BeforeEach
-  private void resetClock() {
+  public void resetClock() {
     endpoint.resetTime();
   }
 

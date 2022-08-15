@@ -13,8 +13,6 @@ import org.slf4j.LoggerFactory;
 public final class Loggers {
   public static final Logger STREAM_PROCESSING =
       LoggerFactory.getLogger("io.camunda.zeebe.broker.logstreams");
-  public static final Logger PROCESS_REPOSITORY_LOGGER =
-      LoggerFactory.getLogger("io.camunda.zeebe.broker.process.repository");
 
   public static final Logger PROCESS_PROCESSOR_LOGGER =
       LoggerFactory.getLogger("io.camunda.zeebe.broker.process");

@@ -20,7 +20,4 @@ public interface TypedRecordProcessorContext {
   MutableZeebeState getZeebeState();
 
   Writers getWriters();
-
-  @Deprecated // only used in test
-  TypedRecordProcessorContext listener(StreamProcessorListener streamProcessorListener);
 }

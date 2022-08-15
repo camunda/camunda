@@ -1197,10 +1197,18 @@ public final class TimerStartEventTest {
   public void shouldCreateCronTimer() {
     // when
     final long now = engine.getClock().getCurrentTimeInMillis();
+    final long dueDate =
+        ZonedDateTime.ofInstant(Instant.ofEpochMilli(now), ZoneId.systemDefault())
+            .plusHours(1)
+            .withMinute(0)
+            .withSecond(0)
+            .withNano(0)
+            .toInstant()
+            .toEpochMilli();
     final BpmnModelInstance model =
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
-            .timerWithCycle("*/10 * * * * *")
+            .timerWithCycle("0 0 * * * *")
             .endEvent("end")
             .done();
     final var deployedProcess =
@@ -1213,7 +1221,7 @@ public final class TimerStartEventTest {
             .get(0);
 
     // when
-    engine.increaseTime(Duration.ofSeconds(15));
+    engine.increaseTime(Duration.ofHours(1));
 
     // then
     final var timerRecord =
@@ -1222,7 +1230,11 @@ public final class TimerStartEventTest {
             .getFirst()
             .getValue();
 
-    assertThat(timerRecord.getDueDate()).isBetween(now, now + 10_000L);
+    Assertions.assertThat(timerRecord)
+        .hasDueDate(dueDate)
+        .hasTargetElementId("start")
+        .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
+
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementId("end")

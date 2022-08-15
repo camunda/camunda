@@ -24,8 +24,7 @@ import org.slf4j.Logger;
 
 /**
  * A {@link RequestHandler} that automatically decodes requests and encodes successful and error
- * responses. Handling requests is asynchronous, use {@link ApiRequestHandler} if handling can be
- * synchronous.
+ * responses. Handling requests is asynchronous.
  *
  * @param <R> a {@link RequestReader} that reads the request
  * @param <W> a {@link ResponseWriter} that writes the response
@@ -37,20 +36,13 @@ public abstract class AsyncApiRequestHandler<R extends RequestReader<?>, W exten
   private final Supplier<R> requestReaderSupplier;
   private final Supplier<W> responseWriterSupplier;
 
-  private final Supplier<ErrorResponseWriter> errorResponseWriterSupplier;
+  private final Supplier<ErrorResponseWriter> errorResponseWriterSupplier =
+      ErrorResponseWriter::new;
 
   protected AsyncApiRequestHandler(
       final Supplier<R> requestReaderSupplier, final Supplier<W> responseWriterSupplier) {
-    this(requestReaderSupplier, responseWriterSupplier, ErrorResponseWriter::new);
-  }
-
-  protected AsyncApiRequestHandler(
-      final Supplier<R> requestReaderSupplier,
-      final Supplier<W> responseWriterSupplier,
-      final Supplier<ErrorResponseWriter> errorResponseWriterSupplier) {
     this.requestReaderSupplier = requestReaderSupplier;
     this.responseWriterSupplier = responseWriterSupplier;
-    this.errorResponseWriterSupplier = errorResponseWriterSupplier;
   }
 
   /**
