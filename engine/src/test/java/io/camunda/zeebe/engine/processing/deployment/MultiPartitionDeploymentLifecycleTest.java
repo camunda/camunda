@@ -11,17 +11,20 @@ import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.stream.Collectors;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -100,5 +103,59 @@ public class MultiPartitionDeploymentLifecycleTest {
     assertThat(distributedEvent.getDecisionsMetadata())
         .describedAs("Expect that decisions are distributed")
         .isNotEmpty();
+  }
+
+  @Test
+  public void shouldRejectCompleteDeploymentDistributionWhenAlreadyCompleted() {
+    // given
+    engine.pauseProcessing(2);
+    engine.pauseProcessing(3);
+
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("shouldReDistributeAfterRecovery")
+                .startEvent()
+                .endEvent()
+                .done())
+        .expectCreated()
+        .deploy();
+
+    RecordingExporter.records()
+        .withPartitionId(2)
+        .withValueType(ValueType.DEPLOYMENT)
+        .withIntent(DeploymentIntent.DISTRIBUTE)
+        .await();
+
+    // first one is skipped
+    engine.getClock().addTime(DeploymentRedistributor.DEPLOYMENT_REDISTRIBUTION_INTERVAL);
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              // continue to add time to the clock until the deployment is re-distributed
+              engine.getClock().addTime(DeploymentRedistributor.DEPLOYMENT_REDISTRIBUTION_INTERVAL);
+              // todo: could benefit from RecordingExporter without
+              assertThat(
+                      RecordingExporter.records()
+                          .withPartitionId(2)
+                          .withValueType(ValueType.DEPLOYMENT)
+                          .withIntent(DeploymentIntent.DISTRIBUTE)
+                          .limit(2))
+                  .hasSize(2);
+            });
+
+    // when
+    engine.resumeProcessing(2);
+
+    // then
+    assertThat(
+            RecordingExporter.deploymentDistributionRecords()
+                .withIntent(DeploymentDistributionIntent.COMPLETE)
+                .withPartitionId(2)
+                .limit(3))
+        .extracting(Record::getRecordType)
+        .describedAs("Expect second command to be rejected")
+        .containsExactlyInAnyOrder(
+            RecordType.COMMAND, RecordType.COMMAND, RecordType.COMMAND_REJECTION);
   }
 }
