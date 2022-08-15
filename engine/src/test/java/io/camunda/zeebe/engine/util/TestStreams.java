@@ -228,6 +228,13 @@ public final class TestStreams {
   public StreamProcessor startStreamProcessor(
       final String log,
       final ZeebeDbFactory zeebeDbFactory,
+      final TypedRecordProcessorFactory typedRecordProcessorFactory) {
+      return startStreamProcessor(log, zeebeDbFactory, typedRecordProcessorFactory, Optional.empty());
+    }
+
+    public StreamProcessor startStreamProcessor(
+      final String log,
+      final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
     final SynchronousLogStream stream = getLogStream(log);

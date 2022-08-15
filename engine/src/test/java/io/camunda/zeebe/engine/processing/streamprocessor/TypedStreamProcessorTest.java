@@ -34,7 +34,6 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.TestUtil;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Before;
@@ -83,8 +82,7 @@ public final class TypedStreamProcessorTest {
                 .onCommand(
                     ValueType.DEPLOYMENT,
                     DeploymentIntent.CREATE,
-                    new BatchProcessor(processingContext.getWriters())),
-        Optional.empty());
+                    new BatchProcessor(processingContext.getWriters())));
     final long firstEventPosition =
         streams
             .newRecord(STREAM_NAME)
@@ -120,8 +118,7 @@ public final class TypedStreamProcessorTest {
                 .onCommand(
                     ValueType.DEPLOYMENT,
                     DeploymentIntent.CREATE,
-                    new ErrorProneProcessor(processingContext.getWriters())),
-        Optional.empty());
+                    new ErrorProneProcessor(processingContext.getWriters())));
     final AtomicLong requestId = new AtomicLong(0);
     final AtomicInteger requestStreamId = new AtomicInteger(0);
 
