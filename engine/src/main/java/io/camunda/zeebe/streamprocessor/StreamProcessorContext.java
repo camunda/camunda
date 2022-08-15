@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -68,6 +67,11 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   }
 
   @Override
+  public LogStream getLogStream() {
+    return logStream;
+  }
+
+  @Override
   public MutableZeebeState getZeebeState() {
     return zeebeState;
   }
@@ -75,10 +79,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   @Override
   public int getPartitionId() {
     return getLogStream().getPartitionId();
-  }
-
-  public LogStream getLogStream() {
-    return logStream;
   }
 
   public LegacyTypedStreamWriter getLogStreamWriter() {

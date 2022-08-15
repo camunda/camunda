@@ -13,7 +13,6 @@ import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
@@ -26,6 +25,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.streamprocessor.LegacyTypedStreamWriter;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.concurrent.TimeUnit;
