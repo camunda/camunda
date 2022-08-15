@@ -61,8 +61,9 @@ public class CompactRecordLogger {
   private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test");
   private static final String BLOCK_SEPARATOR = " - ";
 
-  private static final Map<String, String> ABBREVIATIONS =
-      ofEntries(
+  // List rather than Map to preserve order
+  private static final List<Entry<String, String>> ABBREVIATIONS =
+      List.of(
           entry("PROCESS", "PROC"),
           entry("INSTANCE", "INST"),
           entry("MESSAGE", "MSG"),
@@ -649,8 +650,8 @@ public class CompactRecordLogger {
   private String abbreviate(final String input) {
     String result = input;
 
-    for (final String longForm : ABBREVIATIONS.keySet()) {
-      result = result.replace(longForm, ABBREVIATIONS.get(longForm));
+    for (final Entry<String, String> entry : ABBREVIATIONS) {
+      result = result.replace(entry.getKey(), entry.getValue());
     }
 
     return result;
