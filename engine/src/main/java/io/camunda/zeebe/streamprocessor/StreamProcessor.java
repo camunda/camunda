@@ -327,10 +327,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     recordProcessor.init(engineContext);
 
     lifecycleAwareListeners.addAll(engineContext.getLifecycleListeners());
-    final var listener = engineContext.getStreamProcessorListener();
-    if (listener != null) {
-      streamProcessorContext.listener(engineContext.getStreamProcessorListener());
-    }
   }
 
   private long recoverFromSnapshot() {

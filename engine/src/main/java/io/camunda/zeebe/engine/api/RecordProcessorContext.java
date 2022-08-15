@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.api;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import java.util.List;
@@ -28,12 +27,6 @@ public interface RecordProcessorContext {
   Function<MutableZeebeState, EventApplier> getEventApplierFactory();
 
   List<StreamProcessorLifecycleAware> getLifecycleListeners();
-
-  StreamProcessorListener getStreamProcessorListener();
-
-  // only used for tests
-  @Deprecated
-  void setStreamProcessorListener(final StreamProcessorListener streamProcessorListener);
 
   void addLifecycleListeners(final List<StreamProcessorLifecycleAware> lifecycleListeners);
 }

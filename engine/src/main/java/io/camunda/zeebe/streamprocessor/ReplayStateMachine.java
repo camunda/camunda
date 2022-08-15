@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.ReplayMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -80,7 +79,6 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private ZeebeDbTransaction zeebeDbTransaction;
   private final StreamProcessorMode streamProcessorMode;
   private final LogStream logStream;
-  private final StreamProcessorListener streamProcessorListener;
 
   private State currentState = State.AWAIT_RECORD;
   private final BooleanSupplier shouldPause;
@@ -100,7 +98,6 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     abortCondition = context.getAbortCondition();
     keyGeneratorControls = context.getKeyGeneratorControls();
     lastProcessedPositionState = context.getLastProcessedPositionState();
-    streamProcessorListener = context.getStreamProcessorListener();
 
     typedEvent = new TypedRecordImpl(context.getLogStream().getPartitionId());
     replayStrategy = new RecoverableRetryStrategy(actor);
@@ -175,8 +172,6 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
                         Math.max(lastSourceEventPosition, batchSourceEventPosition);
                     replayMetrics.setLastSourcePosition(lastSourceEventPosition);
                     actor.submit(this::replayNextEvent);
-
-                    notifyReplayListener();
                   }
                 });
 
@@ -304,17 +299,6 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
         recordValues.readRecordValue(currentEvent, metadata.getValueType());
     typedEvent.wrap(currentEvent, metadata, value);
     return typedEvent;
-  }
-
-  private void notifyReplayListener() {
-    try {
-      streamProcessorListener.onReplayed(lastReplayedEventPosition, lastReadRecordPosition);
-    } catch (final Exception e) {
-      LOG.error(
-          "Expected to invoke replay listener successfully, but an exception was thrown. [last-read-record-position: {}, last-replayed-event-position: {}]",
-          lastReadRecordPosition,
-          lastReplayedEventPosition);
-    }
   }
 
   public long getLastSourceEventPosition() {

@@ -10,8 +10,8 @@ package io.camunda.zeebe.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
@@ -20,13 +20,21 @@ import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import java.util.function.BooleanSupplier;
 
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
 
-  private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
+  private static final StreamProcessorListener NOOP_LISTENER =
+      new StreamProcessorListener() {
+        @Override
+        public void onProcessed(final TypedRecord<?> processedCommand) {}
+
+        @Override
+        public void onSkipped(final LoggedEvent skippedRecord) {}
+      };
 
   private ActorControl actor;
   private LogStream logStream;
@@ -83,7 +91,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return lastProcessedPositionState;
   }
 
-  public StreamProcessorContext listener(final StreamProcessorListener streamProcessorListener) {
+  StreamProcessorContext listener(final StreamProcessorListener streamProcessorListener) {
     this.streamProcessorListener = streamProcessorListener;
     return this;
   }

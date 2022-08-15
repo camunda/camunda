@@ -12,7 +12,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import java.util.ArrayList;
@@ -27,7 +26,6 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   private final TransactionContext transactionContext;
   private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
-  private StreamProcessorListener streamProcessorListener;
 
   public RecordProcessorContextImpl(
       final int partitionId,
@@ -70,16 +68,6 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   @Override
   public List<StreamProcessorLifecycleAware> getLifecycleListeners() {
     return lifecycleListeners;
-  }
-
-  @Override
-  public StreamProcessorListener getStreamProcessorListener() {
-    return streamProcessorListener;
-  }
-
-  @Override
-  public void setStreamProcessorListener(final StreamProcessorListener streamProcessorListener) {
-    this.streamProcessorListener = streamProcessorListener;
   }
 
   @Override

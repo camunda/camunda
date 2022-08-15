@@ -19,7 +19,6 @@ import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
@@ -54,6 +53,7 @@ import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.streamprocessor.TypedRecordImpl;
 import io.camunda.zeebe.test.util.TestUtil;
@@ -68,6 +68,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -187,20 +188,7 @@ public final class EngineRule extends ExternalResource {
               partitionId,
               (recordProcessorContext) ->
                   EngineProcessors.createEngineProcessors(
-                          recordProcessorContext.listener(
-                              new StreamProcessorListener() {
-                                @Override
-                                public void onProcessed(final TypedRecord<?> processedCommand) {
-                                  lastProcessedPosition = processedCommand.getPosition();
-                                  onProcessedCallback.accept(processedCommand);
-                                }
-
-                                @Override
-                                public void onSkipped(final LoggedEvent skippedRecord) {
-                                  lastProcessedPosition = skippedRecord.getPosition();
-                                  onSkippedCallback.accept(skippedRecord);
-                                }
-                              }),
+                          recordProcessorContext,
                           partitionCount,
                           new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
                           new DeploymentDistributionCommandSender(
@@ -208,7 +196,21 @@ public final class EngineRule extends ExternalResource {
                           jobsAvailableCallback,
                           featureFlags)
                       .withListener(new ProcessingExporterTransistor())
-                      .withListener(reprocessingCompletedListener));
+                      .withListener(reprocessingCompletedListener),
+              Optional.of(
+                  new StreamProcessorListener() {
+                    @Override
+                    public void onProcessed(final TypedRecord<?> processedCommand) {
+                      lastProcessedPosition = processedCommand.getPosition();
+                      onProcessedCallback.accept(processedCommand);
+                    }
+
+                    @Override
+                    public void onSkipped(final LoggedEvent skippedRecord) {
+                      lastProcessedPosition = skippedRecord.getPosition();
+                      onSkippedCallback.accept(skippedRecord);
+                    }
+                  }));
         });
     interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
   }
