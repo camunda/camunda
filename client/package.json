@@ -19,7 +19,7 @@
     "final-form-arrays": "3.0.2",
     "lodash": "4.17.21",
     "mixpanel-browser": "2.45.0",
-    "mobx": "6.5.0",
+    "mobx": "6.6.1",
     "mobx-react": "7.4.0",
     "polished": "4.2.2",
     "react": "17.0.2",
