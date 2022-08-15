@@ -15,6 +15,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setCluster
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInitialContactPoints;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.AtomixClusterBuilder;
@@ -602,27 +603,38 @@ public final class ClusteringRule extends ExternalResource {
     }
   }
 
-  public void forceClusterToHaveNewLeader(final int expectedLeader) {
-    final var previousLeader = getCurrentLeaderForPartition(1);
-    if (previousLeader.getNodeId() == expectedLeader) {
+  public void forceClusterToHaveNewLeader(final int partitionId, final int expectedLeaderId) {
+    final var previousLeader = getCurrentLeaderForPartition(partitionId);
+    final var expectedLeader = brokers.get(expectedLeaderId);
+
+    if (previousLeader.getNodeId() == expectedLeaderId) {
       return;
     }
 
-    final var broker = brokers.get(expectedLeader);
-    final var atomix = broker.getBrokerContext().getClusterServices();
-    final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
+    final var serverOfExpectedLeader =
+        ((RaftPartition)
+                expectedLeader
+                    .getBrokerContext()
+                    .getPartitionManager()
+                    .getPartitionGroup()
+                    .getPartition(partitionId))
+            .getServer();
 
-    final var raftPartition =
-        broker.getBrokerContext().getPartitionManager().getPartitionGroup().getPartitions().stream()
-            .filter(partition -> partition.members().contains(nodeId))
-            .filter(partition -> partition.id().id() == START_PARTITION_ID)
-            .map(RaftPartition.class::cast)
-            .findFirst()
-            .orElseThrow();
+    Awaitility.await("Promote request is successful")
+        .pollInterval(Duration.ofMillis(500))
+        .timeout(Duration.ofMinutes(1))
+        .untilAsserted(
+            () ->
+                assertThat(serverOfExpectedLeader.promote())
+                    .succeedsWithin(Duration.ofSeconds(15)));
 
-    raftPartition.getServer().promote().join();
-
-    awaitOtherLeader(START_PARTITION_ID, previousLeader.getNodeId());
+    Awaitility.await("New leader of partition %s is %s".formatted(partitionId, expectedLeaderId))
+        .pollInterval(Duration.ofMillis(500))
+        .atMost(Duration.ofMinutes(1))
+        .ignoreExceptions()
+        .until(
+            () -> getLeaderForPartition(partitionId),
+            (leader) -> leader.getNodeId() == expectedLeaderId);
   }
 
   public void waitForTopology(final Consumer<TopologyAssert> assertions) {

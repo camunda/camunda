@@ -52,7 +52,7 @@ public class InstallRequestHandlingTest {
 
     // then
     clusteringRule.waitForSnapshotAtBroker(followerId);
-    clusteringRule.forceClusterToHaveNewLeader(followerId);
+    clusteringRule.forceClusterToHaveNewLeader(1, followerId);
 
     clientRule.getClient().newCompleteCommand(jobKey).send().join();
     ZeebeAssertHelper.assertProcessInstanceCompleted("process");
@@ -79,7 +79,7 @@ public class InstallRequestHandlingTest {
     clientRule.createProcessInstance(processDefinitionKey);
 
     // then
-    clusteringRule.forceClusterToHaveNewLeader(followerId);
+    clusteringRule.forceClusterToHaveNewLeader(1, followerId);
 
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
