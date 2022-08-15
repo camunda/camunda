@@ -30,6 +30,7 @@ final class DirectTaskResultBuilder implements TaskResultBuilder {
   DirectTaskResultBuilder(final StreamProcessorContext context) {
     this.context = context;
     streamWriter = context.getLogStreamWriter();
+    streamWriter.configureSourceContext(-1);
   }
 
   @Override
