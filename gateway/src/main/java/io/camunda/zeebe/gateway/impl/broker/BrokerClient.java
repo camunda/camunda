@@ -16,6 +16,9 @@ import java.util.function.Consumer;
 
 public interface BrokerClient extends AutoCloseable {
 
+  void start();
+
+  @Override
   void close();
 
   /**

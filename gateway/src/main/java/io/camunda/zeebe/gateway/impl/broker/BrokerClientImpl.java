@@ -35,6 +35,8 @@ public final class BrokerClientImpl implements BrokerClient {
   private boolean isClosed;
   private Subscription jobAvailableSubscription;
   private final ClusterEventService eventService;
+  private final ActorSchedulingService schedulingService;
+  private final AtomixClientTransportAdapter atomixTransportAdapter;
 
   public BrokerClientImpl(
       final GatewayCfg configuration,
@@ -43,24 +45,29 @@ public final class BrokerClientImpl implements BrokerClient {
       final ClusterEventService eventService,
       final ActorSchedulingService schedulingService) {
     this.eventService = eventService;
+    this.schedulingService = schedulingService;
 
     final ClusterCfg clusterCfg = configuration.getCluster();
     topologyManager = new BrokerTopologyManagerImpl(membershipService::getMembers);
-    schedulingService.submitActor(topologyManager);
     membershipService.addListener(topologyManager);
     membershipService
         .getMembers()
         .forEach(
             member -> topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, member)));
 
-    final var atomixTransportAdapter = new AtomixClientTransportAdapter(messagingService);
-    schedulingService.submitActor(atomixTransportAdapter);
+    atomixTransportAdapter = new AtomixClientTransportAdapter(messagingService);
     requestManager =
         new BrokerRequestManager(
             atomixTransportAdapter,
             topologyManager,
             new RoundRobinDispatchStrategy(topologyManager),
             clusterCfg.getRequestTimeout());
+  }
+
+  @Override
+  public void start() {
+    schedulingService.submitActor(topologyManager);
+    schedulingService.submitActor(atomixTransportAdapter);
     schedulingService.submitActor(requestManager);
   }
 

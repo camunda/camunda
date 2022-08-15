@@ -59,6 +59,7 @@ public final class GatewayIntegrationTest {
             clusterServices.getMembershipService(),
             clusterServices.getEventService(),
             actorScheduler);
+    client.start();
   }
 
   @After

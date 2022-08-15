@@ -37,7 +37,9 @@ import org.springframework.core.env.Profiles;
  *
  * <p>See {@link #main(String[])} for more.
  */
-@SpringBootApplication(scanBasePackages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
+@SpringBootApplication(
+    proxyBeanMethods = false,
+    scanBasePackages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
 public class StandaloneBroker
     implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {

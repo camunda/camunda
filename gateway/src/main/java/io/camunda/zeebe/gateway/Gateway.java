@@ -7,14 +7,10 @@
  */
 package io.camunda.zeebe.gateway;
 
-import io.atomix.cluster.ClusterMembershipService;
-import io.atomix.cluster.messaging.ClusterEventService;
-import io.atomix.cluster.messaging.MessagingService;
 import io.camunda.zeebe.gateway.health.GatewayHealthManager;
 import io.camunda.zeebe.gateway.health.Status;
 import io.camunda.zeebe.gateway.health.impl.GatewayHealthManagerImpl;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
@@ -51,50 +47,24 @@ import org.slf4j.Logger;
 
 public final class Gateway {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
-  private static final Function<GatewayCfg, ServerBuilder> DEFAULT_SERVER_BUILDER_FACTORY =
-      cfg -> setNetworkConfig(cfg.getNetwork());
   private static final MonitoringServerInterceptor MONITORING_SERVER_INTERCEPTOR =
       MonitoringServerInterceptor.create(Configuration.allMetrics());
 
-  private final Function<GatewayCfg, ServerBuilder> serverBuilderFactory;
-  private final Function<GatewayCfg, BrokerClient> brokerClientFactory;
+  private final Function<GatewayCfg, ServerBuilder> serverBuilderFactory =
+      cfg -> setNetworkConfig(cfg.getNetwork());
   private final GatewayCfg gatewayCfg;
   private final ActorSchedulingService actorSchedulingService;
   private final GatewayHealthManager healthManager;
 
   private Server server;
-  private BrokerClient brokerClient;
+  private final BrokerClient brokerClient;
 
   public Gateway(
       final GatewayCfg gatewayCfg,
-      final MessagingService messagingService,
-      final ClusterMembershipService membershipService,
-      final ClusterEventService eventService,
-      final ActorSchedulingService actorSchedulingService) {
-    this(
-        gatewayCfg,
-        cfg ->
-            new BrokerClientImpl(
-                cfg, messagingService, membershipService, eventService, actorSchedulingService),
-        DEFAULT_SERVER_BUILDER_FACTORY,
-        actorSchedulingService);
-  }
-
-  public Gateway(
-      final GatewayCfg gatewayCfg,
-      final Function<GatewayCfg, BrokerClient> brokerClientFactory,
-      final ActorSchedulingService actorSchedulingService) {
-    this(gatewayCfg, brokerClientFactory, DEFAULT_SERVER_BUILDER_FACTORY, actorSchedulingService);
-  }
-
-  public Gateway(
-      final GatewayCfg gatewayCfg,
-      final Function<GatewayCfg, BrokerClient> brokerClientFactory,
-      final Function<GatewayCfg, ServerBuilder> serverBuilderFactory,
+      final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService) {
     this.gatewayCfg = gatewayCfg;
-    this.brokerClientFactory = brokerClientFactory;
-    this.serverBuilderFactory = serverBuilderFactory;
+    this.brokerClient = brokerClient;
     this.actorSchedulingService = actorSchedulingService;
 
     healthManager = new GatewayHealthManagerImpl();
@@ -116,7 +86,6 @@ public final class Gateway {
     final var resultFuture = new CompletableActorFuture<Gateway>();
 
     healthManager.setStatus(Status.STARTING);
-    brokerClient = buildBrokerClient();
 
     createAndStartActivateJobsHandler(brokerClient)
         .whenComplete(
@@ -218,10 +187,6 @@ public final class Gateway {
     serverBuilder.useTransportSecurity(certificateChainPath, privateKeyPath);
   }
 
-  private BrokerClient buildBrokerClient() {
-    return brokerClientFactory.apply(gatewayCfg);
-  }
-
   private CompletableFuture<ActivateJobsHandler> createAndStartActivateJobsHandler(
       final BrokerClient brokerClient) {
     final var handler = buildActivateJobsHandler(brokerClient);
@@ -281,11 +246,6 @@ public final class Gateway {
       } finally {
         server = null;
       }
-    }
-
-    if (brokerClient != null) {
-      brokerClient.close();
-      brokerClient = null;
     }
   }
 }
