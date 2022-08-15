@@ -15,8 +15,10 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -633,6 +635,52 @@ public class ModifyProcessInstanceTest {
     assertThatIncidentIsResolved(processInstanceKey, "A");
   }
 
+  @Test
+  public void shouldTerminateElementWithEventSubscriptions() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("A", a -> a.zeebeJobType("A"))
+                .boundaryEvent("timer", t -> t.timerWithDuration("PT1H").endEvent())
+                .moveToActivity("A")
+                .boundaryEvent(
+                    "message",
+                    b ->
+                        b.message(
+                            m ->
+                                m.name("message")
+                                    .zeebeCorrelationKeyExpression("= \"correlationKey\"")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withMessageName("message")
+            .getFirst()
+            .getValue()
+            .getElementInstanceKey();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(elementInstanceKey)
+        .modify();
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "A");
+    assertThatJobIsCancelled(processInstanceKey, "A");
+    assertThatTimerEventSubscriptionIsDeleted(processInstanceKey, elementInstanceKey);
+    assertThatMessageEventSubscriptionIsDeleted(processInstanceKey, elementInstanceKey);
+  }
+
   private void assertThatElementIsTerminated(
       final long processInstanceKey, final String elementId) {
     Assertions.assertThat(
@@ -661,6 +709,26 @@ public class ModifyProcessInstanceTest {
             RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId(elementId)
+                .exists())
+        .isTrue();
+  }
+
+  private void assertThatTimerEventSubscriptionIsDeleted(
+      final long processInstanceKey, final long elementInstanceKey) {
+    Assertions.assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementInstanceKey(elementInstanceKey)
+                .exists())
+        .isTrue();
+  }
+
+  private void assertThatMessageEventSubscriptionIsDeleted(
+      final long processInstanceKey, final long elementInstanceKey) {
+    Assertions.assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementInstanceKey(elementInstanceKey)
                 .exists())
         .isTrue();
   }
