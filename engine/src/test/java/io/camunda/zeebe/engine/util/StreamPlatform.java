@@ -201,7 +201,7 @@ public final class StreamPlatform {
             .zeebeDb(zeebeDb)
             .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
-            .recordProcessor(recordProcessor)
+            .recordProcessors(List.of(recordProcessor))
             .eventApplierFactory(EventAppliers::new) // todo remove this soon
             .streamProcessorMode(streamProcessorMode);
 

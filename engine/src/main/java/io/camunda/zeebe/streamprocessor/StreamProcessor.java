@@ -134,7 +134,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     partitionId = logStream.getPartitionId();
     actorName = buildActorName(processorBuilder.getNodeId(), "StreamProcessor", partitionId);
     metrics = new StreamProcessorMetrics(partitionId);
-    recordProcessors.add(processorBuilder.getRecordProcessor());
+    recordProcessors.addAll(processorBuilder.getRecordProcessors());
   }
 
   public static StreamProcessorBuilder builder() {

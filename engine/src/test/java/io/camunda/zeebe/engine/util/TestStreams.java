@@ -55,6 +55,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -312,7 +313,7 @@ public final class TestStreams {
             .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
             .listener(new StreamProcessorListenerRelay(streamProcessorListeners))
-            .recordProcessor(new Engine(wrappedFactory))
+            .recordProcessors(List.of(new Engine(wrappedFactory)))
             .eventApplierFactory(eventApplierFactory)
             .streamProcessorMode(streamProcessorMode);
 
