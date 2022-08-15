@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
+import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
@@ -97,6 +98,7 @@ public class CompactRecordLogger {
 
   {
     valueLoggers.put(ValueType.DEPLOYMENT, this::summarizeDeployment);
+    valueLoggers.put(ValueType.DEPLOYMENT_DISTRIBUTION, this::summarizeDeploymentDistribution);
     valueLoggers.put(ValueType.PROCESS, this::summarizeProcess);
     valueLoggers.put(ValueType.INCIDENT, this::summarizeIncident);
     valueLoggers.put(ValueType.JOB, this::summarizeJob);
@@ -281,6 +283,11 @@ public class CompactRecordLogger {
             .map(DecisionRequirementsMetadataValue::getResourceName);
 
     return Stream.concat(bpmnResources, dmnResources).collect(Collectors.joining(", "));
+  }
+
+  private String summarizeDeploymentDistribution(final Record<?> record) {
+    final var value = (DeploymentDistributionRecordValue) record.getValue();
+    return "on partition %d".formatted(value.getPartitionId());
   }
 
   private String summarizeProcess(final Record<?> record) {
