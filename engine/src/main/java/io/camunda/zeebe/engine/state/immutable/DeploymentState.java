@@ -14,6 +14,8 @@ public interface DeploymentState {
 
   boolean hasPendingDeploymentDistribution(long deploymentKey);
 
+  boolean hasPendingDeploymentDistribution(long deploymentKey, int partitionId);
+
   DeploymentRecord getStoredDeploymentRecord(long deploymentKey);
 
   void foreachPendingDeploymentDistribution(PendingDeploymentVisitor pendingDeploymentVisitor);

@@ -41,7 +41,8 @@ public class CompleteDeploymentDistributionProcessor
   public void processRecord(final TypedRecord<DeploymentDistributionRecord> record) {
 
     final var deploymentKey = record.getKey();
-    if (!deploymentState.hasPendingDeploymentDistribution(deploymentKey)) {
+    if (!deploymentState.hasPendingDeploymentDistribution(
+        deploymentKey, record.getValue().getPartitionId())) {
       rejectionWriter.appendRejection(
           record,
           RejectionType.NOT_FOUND,
