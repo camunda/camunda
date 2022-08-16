@@ -63,7 +63,7 @@ public final class BrokerLeaderChangeTest {
     final var firstLeaderNodeId = firstLeaderInfo.getNodeId();
 
     // when
-    clusteringRule.forceClusterToHaveNewLeader(1, firstLeaderNodeId);
+    clusteringRule.forceNewLeaderForPartition(firstLeaderNodeId, 1);
 
     // then
     assertThat(clusteringRule.getCurrentLeaderForPartition(1).getNodeId())
