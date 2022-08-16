@@ -289,7 +289,7 @@ public final class ProcessingStateMachine {
 
   private void processInTransaction(final TypedEventImpl typedRecord) throws Exception {
     final var timer =
-        metrics.startProcessingDurationTimer(
+        metrics.startProcessRecordInProcessorTimer(
             metadata.getRecordType(), metadata.getValueType(), metadata.getIntent());
     zeebeDbTransaction = transactionContext.getCurrentTransaction();
     zeebeDbTransaction.run(
