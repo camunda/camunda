@@ -16,7 +16,7 @@ file](../docker/compose/docker-compose.yaml) in combination with the one [here](
 docker-compose --project-directory ./ -f docker-compose.yml -f ../docker/compose/docker-compose.yaml up -d
 ```
 
-This will start the usual 3 brokers cluster, as well as a Grafana instance (on port 3000) and a Prometheus instance on
+This will start the usual 3 brokers cluster, as well as a Grafana [instance](http://localhost:3000/) (on port 3000; login: u `admin`, p `camunda`) and a Prometheus instance on
 port 9090. The Prometheus instance is configured to scrape the brokers every 5 seconds, and pre-assigns them the
 namespace and pod label as `local` and `broker-*`.
 
