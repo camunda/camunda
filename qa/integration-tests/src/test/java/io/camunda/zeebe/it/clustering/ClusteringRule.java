@@ -603,7 +603,7 @@ public final class ClusteringRule extends ExternalResource {
     }
   }
 
-  public void forceClusterToHaveNewLeader(final int partitionId, final int expectedLeaderId) {
+  public void forceNewLeaderForPartition(final int expectedLeaderId, final int partitionId) {
     final var previousLeader = getCurrentLeaderForPartition(partitionId);
     final var expectedLeader = brokers.get(expectedLeaderId);
 
