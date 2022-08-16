@@ -7,7 +7,7 @@
 
 import {InstanceMetaDataEntity} from 'modules/stores/flowNodeMetaData';
 
-export const beautifyMetadata = (
+export const buildMetadata = (
   metadata: InstanceMetaDataEntity | null,
   incident: {errorType: {id: string; name: string}; errorMessage: string} | null
 ) => {
@@ -22,18 +22,12 @@ export const beautifyMetadata = (
     ...metadataSubset
   } = metadata;
 
-  return JSON.stringify(
-    {
-      ...metadataSubset,
-      incidentErrorType: incident?.errorType.name || null,
-      incidentErrorMessage: incident?.errorMessage || null,
-      flowNodeInstanceKey: flowNodeInstanceId,
-      calledProcessInstanceKey: calledProcessInstanceId,
-      calledDecisionInstanceKey: calledDecisionInstanceId,
-    },
-    null,
-    '\t'
-  )
-    .replace(/\\n/g, '\n\t\t')
-    .replace(/\\t/g, '\t');
+  return JSON.stringify({
+    ...metadataSubset,
+    incidentErrorType: incident?.errorType.name || null,
+    incidentErrorMessage: incident?.errorMessage || null,
+    flowNodeInstanceKey: flowNodeInstanceId,
+    calledProcessInstanceKey: calledProcessInstanceId,
+    calledDecisionInstanceKey: calledDecisionInstanceId,
+  });
 };

@@ -70,6 +70,7 @@ const JSONEditor: React.FC<Props> = observer(
           }}
           onMount={(editor) => {
             editor.focus();
+
             onMount({
               showMarkers: () => {
                 editor.trigger('', 'editor.action.marker.next', undefined);

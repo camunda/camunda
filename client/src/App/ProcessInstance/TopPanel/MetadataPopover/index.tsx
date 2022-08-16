@@ -25,7 +25,7 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
-import {beautifyMetadata} from './beautifyMetadata';
+import {buildMetadata} from './buildMetadata';
 import {getModalHeadline} from './getModalHeadline';
 import {Paths} from 'modules/routes';
 import {Link} from 'modules/components/Link';
@@ -232,7 +232,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
             isVisible={isModalVisible}
             onClose={() => setIsModalVisible(false)}
             title={getModalHeadline({flowNodeName, metaData})}
-            value={beautifyMetadata(metaData.instanceMetadata, incident)}
+            value={buildMetadata(metaData.instanceMetadata, incident)}
             readOnly
           />
         </>

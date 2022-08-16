@@ -12,6 +12,16 @@ import {observer} from 'mobx-react';
 import {JSONEditor} from 'modules/components/JSONEditor';
 import {U} from 'ts-toolbelt';
 
+function beautifyJSON(value: string) {
+  try {
+    const parsedValue = JSON.parse(value);
+
+    return JSON.stringify(parsedValue, null, '\t');
+  } catch {
+    return value;
+  }
+}
+
 type EditorFirstParam = Parameters<
   U.NonNullable<React.ComponentProps<typeof JSONEditor>['onMount']>
 >[0];
@@ -32,7 +42,7 @@ const JSONEditorModal: React.FC<Props> = observer(
     const editorRef = useRef<EditorFirstParam | null>(null);
     useEffect(() => {
       if (isVisible) {
-        setEditedValue(value);
+        setEditedValue(beautifyJSON(value));
       } else {
         setEditedValue('');
       }
