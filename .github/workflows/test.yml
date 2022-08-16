@@ -58,6 +58,7 @@ jobs:
           verify
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
+        if: always()
         with:
           name: Integration Tests
   exporter-tests:
@@ -82,6 +83,7 @@ jobs:
           verify
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
+        if: always()
         with:
           name: Exporter Tests
   project-list:
@@ -127,6 +129,7 @@ jobs:
         run: echo "ARTIFACT_NAME=$(echo ${{ matrix.project }} | sed 's/\//-/g')" >> $GITHUB_ENV
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
+        if: always()
         with:
           name: ${{ env.ARTIFACT_NAME }}
   slow-unit-tests:
@@ -155,6 +158,7 @@ jobs:
           verify
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
+        if: always()
         with:
           name: Slow Unit Tests
   smoke-tests:
@@ -191,6 +195,7 @@ jobs:
           verify
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
+        if: always()
         with:
           name: Smoke Tests ${{ matrix.os }}
   java-randomized-tests:
@@ -207,6 +212,7 @@ jobs:
       - run: mvn -T1C -B -D skipChecks -P parallel-tests,include-random-tests test
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
+        if: always()
         with:
           name: Java Randomized Tests
   go-client:
@@ -267,6 +273,7 @@ jobs:
           verify
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
+        if: always()
         with:
           name: Java 8 Client
 
@@ -296,6 +303,7 @@ jobs:
     steps:
       - name: Upload
         uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: Event File
           path: ${{ github.event_path }}
