@@ -194,6 +194,7 @@ public final class StreamPlatform {
     when(recordProcessor.process(any(), any())).thenReturn(EmptyProcessingResult.INSTANCE);
     when(recordProcessor.onProcessingError(any(), any(), any()))
         .thenReturn(EmptyProcessingResult.INSTANCE);
+    when(recordProcessor.canProcess(any())).thenReturn(true);
 
     final var builder =
         StreamProcessor.builder()
