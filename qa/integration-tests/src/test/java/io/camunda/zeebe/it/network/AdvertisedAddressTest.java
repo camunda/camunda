@@ -20,7 +20,6 @@ import io.zeebe.containers.cluster.ZeebeCluster;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -107,9 +106,11 @@ final class AdvertisedAddressTest {
               .map(ZeebeNode::getInternalHost)
               .map(host -> toxiproxy.getProxy(host, ZeebePort.COMMAND.getPort()))
               .map(ContainerProxy::getOriginalProxyPort)
-              .collect(Collectors.toList());
+              .toList();
       TopologyAssert.assertThat(topology)
-          .isComplete(3, 1)
+          .hasClusterSize(3)
+          .hasExpectedReplicasCount(1, 3)
+          .hasLeaderForEachPartition(1)
           .hasBrokerSatisfying(
               b ->
                   assertThat(b.getAddress())
