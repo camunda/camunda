@@ -10,14 +10,11 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import java.util.EnumSet;
 import java.util.Iterator;
 
 @SuppressWarnings({"rawtypes"})
 public final class RecordProcessorMap {
   private final TypedRecordProcessor[] elements;
-
-  private final EnumSet<ValueType> supportedValueTypes;
 
   private final int valueTypeCardinality;
   private final int intentCardinality;
@@ -31,7 +28,6 @@ public final class RecordProcessorMap {
 
     final int cardinality = recordTypeCardinality * valueTypeCardinality * intentCardinality;
     elements = new TypedRecordProcessor[cardinality];
-    supportedValueTypes = EnumSet.noneOf(ValueType.class);
   }
 
   public TypedRecordProcessor get(final RecordType key1, final ValueType key2, final int key3) {
@@ -68,7 +64,6 @@ public final class RecordProcessorMap {
     }
 
     elements[index] = value;
-    supportedValueTypes.add(key2);
   }
 
   private int mapToIndex(final RecordType key1, final ValueType key2, final int key3) {
@@ -79,10 +74,6 @@ public final class RecordProcessorMap {
     return (key1.ordinal() * valueTypeCardinality * intentCardinality)
         + (key2.ordinal() * intentCardinality)
         + key3;
-  }
-
-  public boolean hasValueType(final ValueType valueType) {
-    return supportedValueTypes.contains(valueType);
   }
 
   /** BEWARE: does not detect concurrent modifications and behaves incorrectly in this case */

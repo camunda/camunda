@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -40,6 +41,10 @@ public class Engine implements RecordProcessor {
       "Expected to find processor for record '{}', but caught an exception. Skip this record.";
   private static final String ERROR_MESSAGE_PROCESSING_EXCEPTION_OCCURRED =
       "Expected to process record '%s' without errors, but exception occurred with message '%s'.";
+
+  private static final EnumSet<ValueType> SUPPORTED_VALUETYPES =
+      EnumSet.range(ValueType.JOB, ValueType.PROCESS_INSTANCE_MODIFICATION);
+
   private EventApplier eventApplier;
   private RecordProcessorMap recordProcessorMap;
   private ZeebeDbState zeebeState;
@@ -85,7 +90,7 @@ public class Engine implements RecordProcessor {
 
   @Override
   public boolean canProcess(final ValueType valueType) {
-    return recordProcessorMap.hasValueType(valueType);
+    return SUPPORTED_VALUETYPES.contains(valueType);
   }
 
   @Override
