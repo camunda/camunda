@@ -100,17 +100,16 @@ For example, the `DeploymentRedistributor` resends deployment distribution comma
 
 As we've seen, the sending partition may send a command many times to another partition. So, the engine must be able to deal with these redundant commands (i.e. commands that are sent many times). To be specific, the engine must process commands received from another partition idempotently.
 
-:::info
-By idempotent command processing, we mean that the engine arrives at the same state when it processes the redundant command, as when it processed the original command.
-:::
+> **Note**  
+> By idempotent command processing, we mean that the engine arrives at the same state when it processes the redundant command, as when it processed the original command.
 
 Generally, there are two ways we could idempotently process inter-partition commands:
 1. (_not used by us_) produce the same events that, when applied, produce the same state changes, resulting in the same state.
 2. (**our preferred way**) reject redundant commands, and don't change the state at all.
 
-:::info
-We aim to have a consistent approach and have decided to use option 2, for the following reasons:
-- the rejection is easier to understand when reading the log, compared to seeing the same event twice.
-- the rejection describes a reason to further clarify what happened.
-- idempotency in event appliers can be easily achieved in some cases (e.g. using upsert over insert to change the state), but this could hide actual consistency problems.
-:::
+> **Note**  
+> We aim to have a consistent approach and have decided to use option 2, for the following reasons:
+> - the rejection is easier to understand when reading the log, compared to seeing the same event twice.
+> - the rejection describes a reason to further clarify what happened.
+> - idempotency in event appliers can be easily achieved in some cases (e.g. using upsert over insert to change the state), but this could hide actual consistency problems.
+
