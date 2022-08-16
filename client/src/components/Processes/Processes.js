@@ -10,7 +10,7 @@ import {Link} from 'react-router-dom';
 
 import {Button, DocsLink, EntityList, Icon, Tooltip} from 'components';
 import {t} from 'translation';
-import {withErrorHandling} from 'HOC';
+import {withErrorHandling, withUser} from 'HOC';
 import {addNotification, showError} from 'notifications';
 import {getOptimizeProfile} from 'config';
 
@@ -22,7 +22,7 @@ import {loadProcesses, updateProcess, loadManagementDashboard} from './service';
 
 import './Processes.scss';
 
-export function Processes({mightFail}) {
+export function Processes({mightFail, user}) {
   const [processes, setProcesses] = useState();
   const [sorting, setSorting] = useState();
   const [editProcessConfig, setEditProcessConfig] = useState();
@@ -55,13 +55,17 @@ export function Processes({mightFail}) {
     t('common.name'),
     t('processes.timeKpi'),
     t('processes.qualityKpi'),
-    t('dashboard.label'),
     t('common.configure'),
   ];
 
   if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
     const ownerColumn = t('processes.owner');
     columns.splice(1, 0, ownerColumn);
+  }
+
+  const isEditor = user?.authorizations.includes('entity_editor');
+  if (isEditor) {
+    columns.splice(-1, 0, t('dashboard.label'));
   }
 
   return (
@@ -105,10 +109,15 @@ export function Processes({mightFail}) {
                   <KpiSummary kpis={qualityKpis} />
                 </div>
               </Tooltip>,
-              <Link className="processHoverBtn" to={linkToDashboard} target="_blank">
-                {t('common.view')} <Icon type="jump" />
-              </Link>,
             ];
+
+            if (isEditor) {
+              meta.push(
+                <Link className="processHoverBtn" to={linkToDashboard} target="_blank">
+                  {t('common.view')} <Icon type="jump" />
+                </Link>
+              );
+            }
 
             if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
               meta.unshift(
@@ -163,4 +172,4 @@ export function Processes({mightFail}) {
   );
 }
 
-export default withErrorHandling(Processes);
+export default withUser(withErrorHandling(Processes));
