@@ -70,7 +70,9 @@ public final class StreamPlatform {
   private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
   private boolean snapshotWasTaken = false;
   private final StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
-  private RecordProcessor recordProcessor;
+  private List<RecordProcessor> recordProcessors;
+
+  private final RecordProcessor defaultRecordProcessor;
 
   private final WriteActor writeActor = new WriteActor();
   private final ZeebeDbFactory zeebeDbFactory;
@@ -97,6 +99,13 @@ public final class StreamPlatform {
 
     when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     actorScheduler.submitActor(writeActor);
+
+    defaultRecordProcessor = mock(RecordProcessor.class);
+    when(defaultRecordProcessor.process(any(), any())).thenReturn(EmptyProcessingResult.INSTANCE);
+    when(defaultRecordProcessor.onProcessingError(any(), any(), any()))
+        .thenReturn(EmptyProcessingResult.INSTANCE);
+    when(defaultRecordProcessor.canProcess(any())).thenReturn(true);
+    recordProcessors = List.of(defaultRecordProcessor);
   }
 
   public SynchronousLogStream createLogStream(final String name, final int partitionId) {
@@ -161,6 +170,16 @@ public final class StreamPlatform {
     return rootDirectory.resolve("runtime");
   }
 
+  public StreamPlatform withRecordProcessors(final List<RecordProcessor> recordProcessors) {
+    this.recordProcessors = recordProcessors;
+    return this;
+  }
+
+  public StreamPlatform withDefaultRecordProcessor() {
+    recordProcessors = List.of(defaultRecordProcessor);
+    return this;
+  }
+
   public StreamProcessor startStreamProcessor() {
     final var logName = getLogName(DEFAULT_PARTITION);
     final SynchronousLogStream stream = getLogStream(logName);
@@ -190,11 +209,6 @@ public final class StreamPlatform {
       zeebeDb = zeebeDbFactory.createDb(storage.toFile());
     }
     final String logName = stream.getLogName();
-    recordProcessor = mock(RecordProcessor.class);
-    when(recordProcessor.process(any(), any())).thenReturn(EmptyProcessingResult.INSTANCE);
-    when(recordProcessor.onProcessingError(any(), any(), any()))
-        .thenReturn(EmptyProcessingResult.INSTANCE);
-    when(recordProcessor.canProcess(any())).thenReturn(true);
 
     final var builder =
         StreamProcessor.builder()
@@ -202,7 +216,7 @@ public final class StreamPlatform {
             .zeebeDb(zeebeDb)
             .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
-            .recordProcessors(List.of(recordProcessor))
+            .recordProcessors(recordProcessors)
             .eventApplierFactory(EventAppliers::new) // todo remove this soon
             .streamProcessorMode(streamProcessorMode);
 
@@ -252,8 +266,12 @@ public final class StreamPlatform {
     LOG.info("Closed stream {}", streamName);
   }
 
-  public RecordProcessor getRecordProcessor() {
-    return recordProcessor;
+  public List<RecordProcessor> getRecordProcessors() {
+    return recordProcessors;
+  }
+
+  public RecordProcessor getDefaultRecordProcessor() {
+    return defaultRecordProcessor;
   }
 
   public StreamProcessor getStreamProcessor() {
