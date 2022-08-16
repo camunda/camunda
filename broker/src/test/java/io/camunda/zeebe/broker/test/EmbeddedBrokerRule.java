@@ -249,6 +249,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
               .usePlaintext()
               .build()) {
         Awaitility.await("until we have a complete topology")
+            .ignoreExceptions()
             .untilAsserted(
                 () -> {
                   final var topology = client.newTopologyRequest().send().join();
