@@ -30,7 +30,7 @@ public class CCSaaSAlertRecipientValidator implements AlertRecipientValidator {
     final List<String> userEmails = identityService.getUsersByEmail(emails)
       .stream().map(UserDto::getEmail).collect(Collectors.toList());
     final Collection<String> unknownEmails = CollectionUtils.subtract(emails, userEmails);
-    if (unknownEmails.size() > emails.size()) {
+    if (!unknownEmails.isEmpty()) {
       throw new OptimizeValidationException(
         "Users with the following email addresses are not available for receiving alerts: " + unknownEmails
       );
