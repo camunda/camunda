@@ -69,13 +69,16 @@ jobs:
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
       - uses: ./.github/actions/build-docker
         id: build-docker
         with:
           repository: camunda/zeebe
           version: SNAPSHOT
-          package: true
           push: true
+          distball: ${{ steps.build-zeebe.outputs.distball }}
 
   notify-if-failed:
     name: Send slack notification on build failure
