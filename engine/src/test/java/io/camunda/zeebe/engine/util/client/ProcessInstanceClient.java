@@ -290,7 +290,11 @@ public final class ProcessInstanceClient {
           environmentRule.writeCommand(
               processInstanceKey, ProcessInstanceModificationIntent.MODIFY, record);
 
-      return expectation.apply(position);
+      if (expectation == REJECTION_EXPECTATION) {
+        return expectation.apply(processInstanceKey);
+      } else {
+        return expectation.apply(position);
+      }
     }
   }
 }
