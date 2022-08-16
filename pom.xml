@@ -49,7 +49,7 @@
     <guava.version>31.1-jre</guava.version>
     <spring.boot.version>2.7.2</spring.boot.version>
     <spring.version>5.3.22</spring.version>
-    <mockito.version>4.6.1</mockito.version>
+    <mockito.version>4.7.0</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
     <junit.jupiter.version>5.9.0</junit.jupiter.version>
     <junit.platform.version>1.9.0</junit.platform.version>
