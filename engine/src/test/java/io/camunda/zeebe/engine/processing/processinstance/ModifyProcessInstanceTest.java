@@ -513,6 +513,7 @@ public class ModifyProcessInstanceTest {
         .hasRejectionReason(
             String.format(
                 "Expected to modify process instance but no process instance found with key '%d'",
-                unknownKey));
+                unknownKey))
+        .hasKey(unknownKey);
   }
 }
