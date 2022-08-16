@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: starter
+  labels:
+    app: starter
+spec:
+  selector:
+    matchLabels:
+      app: starter
+  replicas: 6
+  template:
+    metadata:
+      labels:
+        app: starter
+    spec:
+      containers:
+      - name: starter
+        image: gcr.io/zeebe-io/starter:np-swift
+        imagePullPolicy: Always
+        env:
+          - name: JAVA_OPTIONS
+            value: >-
+              -Dapp.brokerUrl=np-swift-zeebe-gateway:26500
+              -Dapp.starter.rate=75
+              -Dapp.starter.durationLimit=0
+              -Dapp.starter.burst=1
+              -Dapp.starter.bpmnXmlPath=ten_tasks.bpmn
+              -Dapp.starter.payloadPath=bpmn/small_payload.json
+              -Dapp.starter.processId=benchmark
+              -Dapp.starter.threads=50
+              -Dzeebe.client.requestTimeout=62000
+              -XX:+HeapDumpOnOutOfMemoryError
+              -cp /:/app.jar:/starter.jar
+          - name: LOG_LEVEL
+            value: "info"
+        command: ["/bin/sh"]
+        args: ["-c", "java $JAVA_OPTIONS io.camunda.zeebe.Starter"]
+        resources:
+          limits:
+            cpu: 250m
+            memory: 256Mi
+          requests:
+            cpu: 250m
+            memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: zeebe
+    app.kubernetes.io/instance: np-swift
+    app.kubernetes.io/name: zeebe-cluster
+  name: starter
+spec:
+  clusterIP: None
+  ports:
+  - name: http
+    port: 9600
+    protocol: TCP
+    targetPort: 9600
+  publishNotReadyAddresses: true
+  selector:
+    app: starter
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
