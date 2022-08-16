@@ -2,7 +2,7 @@
 name: Bug report
 about: Report a problem and help us fix it.
 title: ''
-labels: kind/bug, needs grooming
+labels: kind/bug
 assignees: ''
 
 ---
