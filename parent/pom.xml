@@ -110,7 +110,7 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.15</version.jnr-posix>
-    <version.zpt>8.0.4</version.zpt>
+    <version.zpt>8.0.5</version.zpt>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
