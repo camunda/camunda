@@ -7,12 +7,10 @@
  */
 package io.camunda.zeebe.engine.api;
 
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
-/** Builder to compose the processing result */
+/** Here the interface is just a suggestion. Can be whatever PDT team thinks is best to work with */
 public interface TaskResultBuilder {
 
   /**
@@ -20,13 +18,8 @@ public interface TaskResultBuilder {
    *
    * @return returns itself for method chaining
    */
-  TaskResultBuilder appendRecord(
-      final long key,
-      final RecordType type,
-      final Intent intent,
-      final RejectionType rejectionType,
-      final String rejectionReason,
-      final RecordValue value);
+  TaskResultBuilder appendCommandRecord(
+      final long key, final Intent intent, final RecordValue value);
 
   TaskResult build();
 }

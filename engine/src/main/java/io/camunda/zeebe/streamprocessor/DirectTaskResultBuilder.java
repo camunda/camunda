@@ -33,14 +33,9 @@ final class DirectTaskResultBuilder implements TaskResultBuilder {
   }
 
   @Override
-  public DirectTaskResultBuilder appendRecord(
-      final long key,
-      final RecordType type,
-      final Intent intent,
-      final RejectionType rejectionType,
-      final String rejectionReason,
-      final RecordValue value) {
-    streamWriter.appendRecord(key, type, intent, rejectionType, rejectionReason, value);
+  public DirectTaskResultBuilder appendCommandRecord(
+      final long key, final Intent intent, final RecordValue value) {
+    streamWriter.appendRecord(key, RecordType.COMMAND, intent, RejectionType.NULL_VAL, "", value);
     return this;
   }
 

@@ -22,8 +22,6 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.YieldingDeco
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.time.Duration;
@@ -66,13 +64,7 @@ class DueDateTimerCheckerTest {
 
       // then
       verify(mockTaskResultBuilder, times(4))
-          .appendRecord(
-              eq(timerKey),
-              eq(RecordType.COMMAND),
-              eq(TimerIntent.TRIGGER),
-              eq(RejectionType.NULL_VAL),
-              eq(""),
-              any());
+          .appendCommandRecord(eq(timerKey), eq(TimerIntent.TRIGGER), any());
       /*
        * Why 4 times? The actor clock is advanced by 10 units before the timer visitor is called, and
        * thus before a trigger event command is written.

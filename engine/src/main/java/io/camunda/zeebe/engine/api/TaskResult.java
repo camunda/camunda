@@ -9,9 +9,7 @@ package io.camunda.zeebe.engine.api;
 
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 
-/**
- * Here the interface is just a suggestion. Can be whatever PDT teams thinks is best to work with
- */
+/** Here the interface is just a suggestion. Can be whatever PDT team thinks is best to work with */
 public interface TaskResult {
 
   long writeRecordsToStream(LogStreamBatchWriter logStreamBatchWriter);

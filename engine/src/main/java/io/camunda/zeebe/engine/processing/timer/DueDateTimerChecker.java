@@ -15,8 +15,6 @@ import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.FeatureFlags;
@@ -124,13 +122,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
           .setRepetitions(timer.getRepetitions())
           .setProcessDefinitionKey(timer.getProcessDefinitionKey());
 
-      taskResultBuilder.appendRecord(
-          timer.getKey(),
-          RecordType.COMMAND,
-          TimerIntent.TRIGGER,
-          RejectionType.NULL_VAL,
-          "",
-          timerRecord);
+      taskResultBuilder.appendCommandRecord(timer.getKey(), TimerIntent.TRIGGER, timerRecord);
 
       return true;
     }

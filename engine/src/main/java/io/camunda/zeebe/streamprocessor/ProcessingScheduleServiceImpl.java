@@ -14,6 +14,10 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
 import java.util.function.BiConsumer;
 
+/**
+ * Here the implementation is just a suggestion to amke the engine abstraction work. Can be whatever
+ * PDT team thinks is best to work with
+ */
 public class ProcessingScheduleServiceImpl implements ProcessingScheduleService {
 
   private final ActorControl actorControl;

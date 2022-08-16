@@ -13,8 +13,6 @@ import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 
@@ -51,13 +49,8 @@ public final class MessageTimeToLiveChecker implements Task {
       deleteMessageCommand.setMessageId(message.getMessageIdBuffer());
     }
 
-    taskResultBuilder.appendRecord(
-        storedMessage.getMessageKey(),
-        RecordType.COMMAND,
-        MessageIntent.EXPIRE,
-        RejectionType.NULL_VAL,
-        "",
-        deleteMessageCommand);
+    taskResultBuilder.appendCommandRecord(
+        storedMessage.getMessageKey(), MessageIntent.EXPIRE, deleteMessageCommand);
     return true;
   }
 }

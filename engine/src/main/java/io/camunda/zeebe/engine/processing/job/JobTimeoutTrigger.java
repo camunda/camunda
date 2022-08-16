@@ -15,8 +15,6 @@ import io.camunda.zeebe.engine.api.Task;
 import io.camunda.zeebe.engine.api.TaskResult;
 import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.state.immutable.JobState;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import java.time.Duration;
 
@@ -82,8 +80,7 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
       state.forEachTimedOutEntry(
           now,
           (key, record) -> {
-            taskResultBuilder.appendRecord(
-                key, RecordType.COMMAND, JobIntent.TIME_OUT, RejectionType.NULL_VAL, "", record);
+            taskResultBuilder.appendCommandRecord(key, JobIntent.TIME_OUT, record);
             return true;
           });
       if (shouldReschedule) {

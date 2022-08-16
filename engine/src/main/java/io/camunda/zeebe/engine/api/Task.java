@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.api;
 
+/** Here the interface is just a suggestion. Can be whatever PDT team thinks is best to work with */
 public interface Task {
 
   TaskResult execute(TaskResultBuilder taskResultBuilder);
