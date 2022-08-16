@@ -14,6 +14,7 @@ import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.ProcessOverviewService;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.reader.ProcessInstanceReader;
+import org.camunda.optimize.service.importing.CustomerOnboardingDataImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
@@ -42,6 +43,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
   private final ConfigurationService configurationService;
   private final OnboardingNotificationService onboardingNotificationService;
   private final ProcessOverviewService processOverviewService;
+  private final CustomerOnboardingDataImportService onboardingDataService;
 
   private Set<String> onboardedProcessDefinitions = new HashSet<>();
   private int intervalToCheckForOnboardingDataInSeconds;
@@ -74,6 +76,8 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
   public void checkIfNewOnboardingDataIsPresent() {
     Set<String> processesNotYetOnboarded = getAllProcessDefinitionKeys();
     processesNotYetOnboarded.removeAll(onboardedProcessDefinitions);
+    // Demo onboarding data does not count as new data, therefore remove it
+    processesNotYetOnboarded.removeAll(onboardingDataService.getImportedDemoProcessDefinitionKeys());
     for (String processToBeOnboarded : processesNotYetOnboarded) {
       resolveAnyPendingOwnerAuthorizations(processToBeOnboarded);
       if (processHasCompletedInstance(processToBeOnboarded)) {

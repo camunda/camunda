@@ -12,6 +12,7 @@ import org.awaitility.Awaitility;
 import org.awaitility.Durations;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.service.importing.CustomerOnboardingDataImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.EmailSecurityProtocol;
@@ -26,6 +27,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.importing.CustomerOnboadingDataImportIT.CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME;
+import static org.camunda.optimize.service.importing.CustomerOnboadingDataImportIT.CUSTOMER_ONBOARDING_PROCESS_INSTANCES;
 import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.MAGIC_LINK_TEMPLATE;
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
 
@@ -306,6 +309,27 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     assertThat(GreenMailUtil.getBody(emails[0])).isEqualTo(expectedEmailBody);
   }
 
+  @Test
+  public void demoOnboardingDataDoesNotTriggerNotifications() {
+    // Given
+    final OnboardingSchedulerService onboardingSchedulerService =
+      embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
+    Set<String> processTriggeredOnboarding = new HashSet<>();
+
+
+    // When
+    restartOnboardingSchedulingService(onboardingSchedulerService);
+    importOnboardingData();
+    // It is crucial that the next statement comes after the import of onboarding data, because during that import the
+    // configuration is reloaded and therefore the notification Handler gets reset
+    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
+    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+
+    // Then
+    // No onboarding was triggered
+    assertThat(processTriggeredOnboarding).isEmpty();
+  }
+
   private void setupEmailAlerting(boolean authenticationEnabled, String username, String password,
                                   EmailSecurityProtocol securityProtocol) {
     configurationService.setEmailEnabled(true);
@@ -351,5 +375,19 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     greenMail = new GreenMail(new ServerSetup(4444, null, protocol));
     greenMail.start();
     greenMail.setUser("from@localhost.com", "demo", "demo");
+  }
+
+  private void importOnboardingData() {
+    embeddedOptimizeExtension.getConfigurationService().setCustomerOnboardingImport(true);
+    embeddedOptimizeExtension.reloadConfiguration();
+    addDataToOptimize(CUSTOMER_ONBOARDING_PROCESS_INSTANCES, CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+  }
+
+  private void addDataToOptimize(final String processInstanceFile, final String processDefinitionFile) {
+    CustomerOnboardingDataImportService customerOnboardingDataImportService =
+      embeddedOptimizeExtension.getBean(CustomerOnboardingDataImportService.class);
+    customerOnboardingDataImportService.importData(processInstanceFile, processDefinitionFile, 1);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 }
