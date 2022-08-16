@@ -142,6 +142,7 @@ export class Collection extends React.Component {
     }
 
     const collectionEntity = {...collection, entityType: 'collection'};
+    const hasEditRights = collection && collection.currentUserRole !== 'viewer';
 
     return (
       <div className="Collection">
@@ -194,8 +195,7 @@ export class Collection extends React.Component {
             <EntityList
               name={t('home.collectionTitle')}
               action={(bulkActive) =>
-                collection &&
-                collection.currentUserRole !== 'viewer' && (
+                hasEditRights && (
                   <CreateNewButton
                     primary={!bulkActive}
                     collection={collection.id}
@@ -205,15 +205,27 @@ export class Collection extends React.Component {
                   />
                 )
               }
-              bulkActions={[
-                <BulkDeleter
-                  type="delete"
-                  deleteEntities={async (selected) => await removeEntities(selected, collection)}
-                  checkConflicts={async (selected) => await checkConflicts(selected, collection)}
-                  conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
-                />,
-              ]}
-              empty={t('home.empty')}
+              bulkActions={
+                hasEditRights && [
+                  <BulkDeleter
+                    type="delete"
+                    deleteEntities={async (selected) => await removeEntities(selected, collection)}
+                    checkConflicts={async (selected) => await checkConflicts(selected, collection)}
+                    conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
+                  />,
+                ]
+              }
+              empty={
+                <>
+                  {t('home.empty')}
+                  {!hasEditRights && (
+                    <>
+                      <br />
+                      {t('home.contactManager')}
+                    </>
+                  )}
+                </>
+              }
               isLoading={isLoading}
               sorting={sorting}
               onChange={this.loadEntities}

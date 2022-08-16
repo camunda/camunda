@@ -145,6 +145,7 @@
       "decision": "Decision Table",
       "process": "Process",
       "notCreated": "There are no sources added yet",
+      "contactManager": "Please contact the collection manager to add new sources",
       "add": "Add Source",
       "definitionName": "Definition Name",
       "deleteWarning": "The '{name}' Data Source will be removed from the Collection.",
@@ -159,6 +160,8 @@
       "unauthorizedTenant": "(Unauthorized Tenant)"
     },
     "empty": "There are no items created yet",
+    "contactEditor": "Please contact an Optimize editor to create new items",
+    "contactManager": "Please contact the collection manager to create new items",
     "welcome": "Welcome"
   },
   "processes": {
@@ -781,6 +784,7 @@
     "apply": "Apply Changes",
     "create": "Create Alert",
     "notCreated": "There are no Alerts created yet",
+    "contactManager": "Please contact the collection manager to create new Alerts",
     "inactiveStatus": "Alert inactive",
     "activateInfo": "To active add email or target system",
     "existingAlerts": "Existing alerts",

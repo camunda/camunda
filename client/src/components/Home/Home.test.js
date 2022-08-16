@@ -12,6 +12,7 @@ import {ReportTemplateModal} from 'components';
 
 import {Home} from './Home';
 import {loadEntities} from './service';
+import CreateNewButton from './CreateNewButton';
 
 jest.mock('./service', () => ({
   loadEntities: jest.fn().mockReturnValue([
@@ -33,7 +34,7 @@ jest.mock('./service', () => ({
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  user: {name: 'John Doe', authorizations: []},
+  user: {name: 'John Doe', authorizations: ['entity_editor']},
 };
 
 beforeEach(() => {
@@ -100,4 +101,54 @@ it('should include an option to export reports for superusers', () => {
       .prop('data')[0]
       .actions.find(({text}) => text === 'Export')
   ).not.toBe(undefined);
+});
+
+it('should hide edit options for read only users', () => {
+  loadEntities.mockReturnValue([
+    {
+      id: '1',
+      entityType: 'report',
+      currentUserRole: 'viewer',
+      lastModified: '2019-11-18T12:29:37+0000',
+      name: 'Test Report',
+      data: {subEntityCounts: {}},
+    },
+  ]);
+  const node = shallow(<Home {...props} />);
+
+  expect(node.find('EntityList').prop('data')[0].actions.length).toBe(0);
+});
+
+it('should hide edit options for collection editors', () => {
+  loadEntities.mockReturnValue([
+    {
+      id: '1',
+      entityType: 'collection',
+      currentUserRole: 'editor',
+      lastModified: '2019-11-18T12:29:37+0000',
+      name: 'Test collection',
+      data: {subEntityCounts: {}},
+    },
+  ]);
+  const node = shallow(<Home {...props} />);
+
+  expect(node.find('EntityList').prop('data')[0].actions.length).toBe(0);
+});
+
+it('should hide bulk actions for read only users', () => {
+  const node = shallow(<Home {...props} user={{name: 'John Doe', authorizations: []}} />);
+
+  expect(node.find('EntityList').prop('bulkActions')).toBe(false);
+});
+
+it('should hide entity creation button for read only users', () => {
+  const node = shallow(<Home {...props} />);
+
+  const actionButton = node.find('EntityList').renderProp('action')();
+  expect(actionButton.find(CreateNewButton)).toExist();
+
+  node.setProps({user: {name: 'John Doe', authorizations: []}});
+
+  const updatedActionButton = node.find('EntityList').renderProp('action')();
+  expect(updatedActionButton.find(CreateNewButton)).not.toExist();
 });

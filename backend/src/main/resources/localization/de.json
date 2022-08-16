@@ -145,6 +145,7 @@
       "decision": "Entscheidungstabelle",
       "process": "Prozess",
       "notCreated": "Es wurden noch keine Quellen hinzugefügt",
+      "contactManager": "Bitte wenden Sie sich an den Sammelmanager, um neue Quellen hinzuzufügen",
       "add": "Quelle hinzufügen",
       "definitionName": "Definitionsname",
       "deleteWarning": "Die '{name}' Datenquelle wird von der Sammlung entfernt.",
@@ -159,6 +160,8 @@
       "unauthorizedTenant": "(nicht autorisierter Mandant)"
     },
     "empty": "Es wurde noch nichts erstellt",
+    "contactEditor": "Bitte wenden Sie sich an einen Optimize editor, um neue Artikel zu erstellen",
+    "contactManager": "Bitte wenden Sie sich an den Sammelmanager, um neue Artikel zu erstellen",
     "welcome": "Willkommen"
   },
   "processes": {
@@ -781,6 +784,7 @@
     "apply": "Änderungen übernehmen",
     "create": "Alarm erstellen",
     "notCreated": "Es wurden noch keine Alarme erstellt",
+    "contactManager": "Bitte wenden Sie sich an den Sammelmanager, um neue Alarme zu erstellen",
     "inactiveStatus": "Alarm inaktiv",
     "activateInfo": "Zum Aktivieren fügen Sie eine E-Mail oder ein Zielsystem hinzu",
     "existingAlerts": "Vorhandene Alarme",

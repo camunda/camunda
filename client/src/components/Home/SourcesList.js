@@ -121,23 +121,35 @@ export default withErrorHandling(
                 </Button>
               )
             }
-            bulkActions={[
-              <BulkDeleter
-                type="remove"
-                deleteEntities={async (selectedSources) =>
-                  await removeSources(collection, selectedSources)
-                }
-                checkConflicts={async (selectedSources) =>
-                  await checkSourcesConflicts(collection, selectedSources)
-                }
-                conflictMessage={t('common.deleter.affectedMessage.bulk.process')}
-              />,
-            ]}
+            bulkActions={
+              !readOnly && [
+                <BulkDeleter
+                  type="remove"
+                  deleteEntities={async (selectedSources) =>
+                    await removeSources(collection, selectedSources)
+                  }
+                  checkConflicts={async (selectedSources) =>
+                    await checkSourcesConflicts(collection, selectedSources)
+                  }
+                  conflictMessage={t('common.deleter.affectedMessage.bulk.process')}
+                />,
+              ]
+            }
             onChange={() => {
               this.getSources();
               this.props.onChange();
             }}
-            empty={t('home.sources.notCreated')}
+            empty={
+              <>
+                {t('home.sources.notCreated')}
+                {readOnly && (
+                  <>
+                    <br />
+                    {t('home.sources.contactManager')}
+                  </>
+                )}
+              </>
+            }
             isLoading={!sources}
             columns={[t('home.sources.definitionName'), t('common.tenant.label-plural')]}
             data={

@@ -107,6 +107,7 @@ export class Home extends React.Component {
     } = this.state;
 
     const {user} = this.props;
+    const isEditor = user?.authorizations.includes('entity_editor');
 
     if (redirect) {
       return <Redirect to={redirect} />;
@@ -120,24 +121,38 @@ export class Home extends React.Component {
         <div className="content">
           <EntityList
             name={t('home.title')}
-            action={(bulkActive) => (
-              <CreateNewButton
-                primary={!bulkActive}
-                createCollection={this.startCreatingCollection}
-                createProcessReport={() => this.setState({creatingProcessReport: true})}
-                createDashboard={() => this.setState({creatingDashboard: true})}
-                importEntity={() => this.fileInput.current.click()}
-              />
-            )}
-            bulkActions={[
-              <BulkDeleter
-                type="delete"
-                deleteEntities={removeEntities}
-                checkConflicts={checkConflicts}
-                conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
-              />,
-            ]}
-            empty={t('home.empty')}
+            action={(bulkActive) =>
+              isEditor && (
+                <CreateNewButton
+                  primary={!bulkActive}
+                  createCollection={this.startCreatingCollection}
+                  createProcessReport={() => this.setState({creatingProcessReport: true})}
+                  createDashboard={() => this.setState({creatingDashboard: true})}
+                  importEntity={() => this.fileInput.current.click()}
+                />
+              )
+            }
+            bulkActions={
+              isEditor && [
+                <BulkDeleter
+                  type="delete"
+                  deleteEntities={removeEntities}
+                  checkConflicts={checkConflicts}
+                  conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
+                />,
+              ]
+            }
+            empty={
+              <>
+                {t('home.empty')}
+                {!isEditor && (
+                  <>
+                    <br />
+                    {t('home.contactEditor')}
+                  </>
+                )}
+              </>
+            }
             isLoading={isLoading}
             sorting={sorting}
             onChange={this.loadList}
@@ -164,8 +179,10 @@ export class Home extends React.Component {
                 } = entity;
 
                 const actions = [];
-
-                if (entityType !== 'collection' || currentUserRole === 'manager') {
+                if (
+                  currentUserRole === 'manager' ||
+                  (currentUserRole === 'editor' && entityType !== 'collection')
+                ) {
                   actions.push(
                     {
                       icon: 'edit',
@@ -268,7 +285,7 @@ export class Home extends React.Component {
           <DashboardTemplateModal onClose={() => this.setState({creatingDashboard: false})} />
         )}
         <input
-          className="hidden"
+          className="hiddenFilterInput"
           onChange={this.createUploadedEntity}
           type="file"
           accept=".json"

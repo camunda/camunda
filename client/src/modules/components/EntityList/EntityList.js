@@ -48,6 +48,7 @@ export default function EntityList({
   const hasWarning = entries.some(({warning}) => warning);
   const hasSingleAction = entries.every(({actions}) => !actions || actions.length <= 1);
   const hasSorting = columns?.some((config) => config.key);
+  const hasBulkActions = bulkActions?.length > 0;
 
   useEffect(() => {
     setSelected([]);
@@ -104,7 +105,9 @@ export default function EntityList({
         {columns && hasResults && (
           <div className="columnHeaders">
             <Input
-              className={classnames({hidden: !filteredEntriesWithActions.length})}
+              className={classnames({
+                hidden: !hasBulkActions || !filteredEntriesWithActions.length,
+              })}
               type="checkbox"
               checked={filteredEntriesWithActions.every((entry) =>
                 selected.some(({id}) => entry.id === id)
@@ -182,6 +185,7 @@ export default function EntityList({
                 data={data}
                 hasWarning={hasWarning}
                 singleAction={hasSingleAction}
+                selectable={hasBulkActions}
               />
             ))}
           </ul>
