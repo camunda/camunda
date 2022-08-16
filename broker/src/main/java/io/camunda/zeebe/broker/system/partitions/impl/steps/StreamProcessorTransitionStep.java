@@ -130,7 +130,8 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     final StreamProcessorMode streamProcessorMode =
         targetRole == Role.LEADER ? StreamProcessorMode.PROCESSING : StreamProcessorMode.REPLAY;
     final List<RecordProcessor> recordProcessors =
-        List.of(new Engine(context.getTypedRecordProcessorFactory()));
+        List.of(
+            new Engine(context.getTypedRecordProcessorFactory()), context.getCheckpointProcessor());
 
     return StreamProcessor.builder()
         .logStream(context.getLogStream())
