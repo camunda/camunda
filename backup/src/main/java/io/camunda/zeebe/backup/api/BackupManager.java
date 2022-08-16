@@ -39,4 +39,7 @@ public interface BackupManager {
    * @return future which will be completed after the backup is deleted.
    */
   ActorFuture<Void> deleteBackup(long checkpointId);
+
+  /** Close Backup manager */
+  ActorFuture<Void> closeAsync();
 }

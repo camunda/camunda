@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
@@ -92,6 +93,7 @@ public class PartitionStartupAndTransitionContextImpl
   private InterPartitionCommandSenderService interPartitionCommandSender;
   private final AtomixServerTransport gatewayBrokerTransport;
   private BackupApiRequestHandler backupApiRequestHandler;
+  private BackupManager backupManager;
   private final TopologyManager topologyManager;
 
   public PartitionStartupAndTransitionContextImpl(
@@ -297,6 +299,16 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setBackupApiRequestHandler(final BackupApiRequestHandler backupApiRequestHandler) {
     this.backupApiRequestHandler = backupApiRequestHandler;
+  }
+
+  @Override
+  public BackupManager getBackupManager() {
+    return backupManager;
+  }
+
+  @Override
+  public void setBackupManager(final BackupManager backupManager) {
+    this.backupManager = backupManager;
   }
 
   @Override
