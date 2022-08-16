@@ -1,0 +1,321 @@
+---
+# Source: camunda-platform/charts/zeebe/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: np-swift-zeebe
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: zeebe
+    app.kubernetes.io/instance: np-swift
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: zeebe-8.0.11
+    app.kubernetes.io/version: "8.0.3"
+    app.kubernetes.io/component: zeebe-broker
+---
+# Source: camunda-platform/charts/zeebe/templates/configmap.yaml
+kind: ConfigMap
+metadata:
+  name: np-swift-zeebe
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: zeebe
+    app.kubernetes.io/instance: np-swift
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: zeebe-8.0.11
+    app.kubernetes.io/version: "8.0.3"
+    app.kubernetes.io/component: zeebe-broker
+apiVersion: v1
+data:
+  startup.sh: |
+    #!/usr/bin/env bash
+    set -eux -o pipefail
+
+    export ZEEBE_BROKER_CLUSTER_NODEID=${ZEEBE_BROKER_CLUSTER_NODEID:-${K8S_NAME##*-}}
+
+    if [ "$(ls -A /exporters/)" ]; then
+      mkdir /usr/local/zeebe/exporters/
+      cp -a /exporters/*.jar /usr/local/zeebe/exporters/
+    else
+      echo "No exporters available."
+    fi
+
+    env
+    exec /usr/local/zeebe/bin/broker
+
+  broker-log4j2.xml: |
+---
+# Source: camunda-platform/charts/zeebe-gateway/templates/gateway-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "np-swift-zeebe-gateway"
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: zeebe-gateway
+    app.kubernetes.io/instance: np-swift
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: zeebe-gateway-8.0.11
+    app.kubernetes.io/version: "8.0.3"
+    app.kubernetes.io/component: zeebe-gateway
+  annotations:
+spec:
+  type: ClusterIP
+  selector:
+      app: camunda-platform
+      app.kubernetes.io/name: zeebe
+      app.kubernetes.io/instance: np-swift
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: zeebe-broker
+  ports:
+    - port: 9600
+      protocol: TCP
+      name: http
+    - port: 26500
+      protocol: TCP
+      name: gateway
+---
+# Source: camunda-platform/charts/zeebe/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "np-swift-zeebe"
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: zeebe
+    app.kubernetes.io/instance: np-swift
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: zeebe-8.0.11
+    app.kubernetes.io/version: "8.0.3"
+    app.kubernetes.io/component: zeebe-broker
+  annotations:
+    {}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  type: ClusterIP
+  ports:
+    - port: 9600
+      protocol: TCP
+      name: http
+    - port: 26502
+      protocol: TCP
+      name: internal
+    - port: 26501
+      protocol: TCP
+      name: command
+    - name: gateway
+      port: 26500
+      protocol: TCP
+  selector:
+    app: camunda-platform
+    app.kubernetes.io/name: zeebe
+    app.kubernetes.io/instance: np-swift
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: zeebe-broker
+---
+# Source: camunda-platform/charts/zeebe/templates/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: "np-swift-zeebe"
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: zeebe
+    app.kubernetes.io/instance: np-swift
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: zeebe-8.0.11
+    app.kubernetes.io/version: "8.0.3"
+    app.kubernetes.io/component: zeebe-broker
+  annotations:
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: zeebe
+      app.kubernetes.io/instance: np-swift
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: zeebe-broker
+  serviceName: "np-swift-zeebe"
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: camunda-platform
+        app.kubernetes.io/name: zeebe
+        app.kubernetes.io/instance: np-swift
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        helm.sh/chart: zeebe-8.0.11
+        app.kubernetes.io/version: "8.0.3"
+        app.kubernetes.io/component: zeebe-broker
+      annotations:
+    spec:
+      imagePullSecrets:
+        []
+      initContainers:
+      containers:
+      - name: zeebe
+        image: "camunda/zeebe:8.0.3"
+        imagePullPolicy: Always
+        env:
+        - name: LC_ALL
+          value: C.UTF-8
+        - name: K8S_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: K8S_SERVICE_NAME
+          value: "np-swift-zeebe"
+        - name: K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: ZEEBE_BROKER_NETWORK_ADVERTISEDHOST
+          value: "$(K8S_NAME).$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc"
+        - name: ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS
+          value:
+            $(K8S_SERVICE_NAME)-0.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc:26502,
+            $(K8S_SERVICE_NAME)-1.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc:26502,
+            $(K8S_SERVICE_NAME)-2.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc:26502,
+            $(K8S_SERVICE_NAME)-3.$(K8S_SERVICE_NAME).$(K8S_NAMESPACE).svc:26502,
+        - name: ZEEBE_BROKER_CLUSTER_CLUSTERNAME
+          value: np-swift-zeebe
+        - name: ZEEBE_LOG_LEVEL
+          value: "info"
+        - name: ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT
+          value: "15"
+        - name: ZEEBE_BROKER_CLUSTER_CLUSTERSIZE
+          value: "4"
+        - name: ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR
+          value: "3"
+        - name: ZEEBE_BROKER_THREADS_CPUTHREADCOUNT
+          value: "12"
+        - name: ZEEBE_BROKER_THREADS_IOTHREADCOUNT
+          value: "4"
+        - name: ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT
+          value: "26501"
+        - name: ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT
+          value: "26502"
+        - name: ZEEBE_BROKER_NETWORK_MONITORINGAPI_PORT
+          value: "9600"
+        - name: K8S_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: JAVA_TOOL_OPTIONS
+          value: "-XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/usr/local/zeebe/data -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log -Xlog:gc*:file=/usr/local/zeebe/data/gc.log:time:filecount=7,filesize=8M"
+        - name: ZEEBE_LOG_APPENDER
+          value: Stackdriver
+        - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
+          value: zeebe
+        - name: ZEEBE_LOG_STACKDRIVER_SERVICEVERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED
+          value: "true"
+        - name: ATOMIX_LOG_LEVEL
+          value: DEBUG
+        - name: ZEEBE_LOG_LEVEL
+          value: DEBUG
+        - name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK
+          value: "0.8"
+        - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
+          value: "0.9"
+        - name: ZEEBE_BROKER_GATEWAY_ENABLE
+          value: "true"
+        - name: ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
+          value: 128MB
+        ports:
+        - containerPort: 9600
+          name: http
+        - containerPort: 26501
+          name: command
+        - containerPort: 26502
+          name: internal
+        - containerPort: 26500
+          name: gateway
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 9600
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 12
+            memory: 32Gi
+          requests:
+            cpu: 12
+            memory: 32Gi
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/bin/startup.sh
+          subPath: startup.sh
+        - name: data
+          mountPath: /usr/local/zeebe/data
+        - name: exporters
+          mountPath: /exporters
+      volumes:
+        - name: config
+          configMap:
+            name: np-swift-zeebe
+            defaultMode: 484
+        - name: exporters
+          emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values:
+                - zeebe-broker
+            topologyKey: kubernetes.io/hostname
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ReadWriteOnce]
+      storageClassName: ssd
+      resources:
+        requests:
+          storage: "128Gi"
+---
+# Source: camunda-platform/templates/service-monitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ccms-service-monitor
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: np-swift
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    helm.sh/chart: camunda-platform-8.0.11
+    app.kubernetes.io/version: "8.0.3"
+    release: metrics
+spec:
+  selector:
+    matchLabels:
+      app: camunda-platform
+  endpoints:
+    - honorLabels: true
+      path: /actuator/prometheus
+      port: http
+      interval: 10s
