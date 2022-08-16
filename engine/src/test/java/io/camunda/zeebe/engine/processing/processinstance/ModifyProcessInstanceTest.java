@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
@@ -487,33 +486,5 @@ public class ModifyProcessInstanceTest {
                 .findAny())
         .describedAs("Expect the process instance to have been completed")
         .isPresent();
-  }
-
-  @Test
-  public void shouldRejectCommandWhenProcessInstanceIsUnknown() {
-    // given
-    final long unknownKey = 12345L;
-
-    // when
-    ENGINE
-        .processInstance()
-        .withInstanceKey(unknownKey)
-        .modification()
-        .activateElement("A")
-        .expectRejection()
-        .modify();
-
-    // then
-    final var rejectionRecord =
-        RecordingExporter.processInstanceModificationRecords().onlyCommandRejections().getFirst();
-
-    assertThat(rejectionRecord)
-        .hasIntent(ProcessInstanceModificationIntent.MODIFY)
-        .hasRejectionType(RejectionType.NOT_FOUND)
-        .hasRejectionReason(
-            String.format(
-                "Expected to modify process instance but no process instance found with key '%d'",
-                unknownKey))
-        .hasKey(unknownKey);
   }
 }
