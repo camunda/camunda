@@ -82,3 +82,35 @@ You'll always need to add support for new records in the ES exporter. Even if yo
 5. Document this new filter option in the elasticsearch exporter's [README](../exporters/elasticsearch-exporter/README.md).
 6. Add a mapping for the ValueType to the [TestSupport](../exporters/elasticsearch-exporter/src/test/java/io/camunda/zeebe/exporter/TestSupport.java).
 
+## How to do inter-partition communication?
+
+Generally, each [partition](https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/partitions/) is isolated from the others. The gateway chooses the partition for each user command and sends the command to that partition's leader. This distributes the load over the partitions. When the engine processes commands, the follow-up records are written on the same partition.
+
+In some cases, a partition needs to communicate with other partitions:
+- Deployment distribution: Each partition must know the related process and decision models. The deployment distribution ensures each partition knows the process and decision models.
+- Message subscription and correlation: messages are published on a specific partition and correlated to process instances on other partitions to keep messaging scalable. This requires the engine to open subscriptions on the relevant partitions.
+
+### How to send a command to another partition?
+
+The engine can send a command to another partition using `InterPartitionCommandSender`. Note that this may fail because network communication is not reliable. So for all inter-partition communication, you must use some retry mechanism.
+
+For example, the `DeploymentRedistributor` resends deployment distribution commands to other partitions.
+
+### How to process a command received from another partition?
+
+As we've seen, the sending partition may send a command many times to another partition. So, the engine must be able to deal with these redundant commands (i.e. commands that are sent many times). To be specific, the engine must process commands received from another partition idempotently.
+
+:::info
+By idempotent command processing, we mean that the engine arrives at the same state when it processes the redundant command, as when it processed the original command.
+:::
+
+Generally, there are two ways we could idempotently process inter-partition commands:
+1. (_not used by us_) produce the same events that, when applied, produce the same state changes, resulting in the same state.
+2. (**our preferred way**) reject redundant commands, and don't change the state at all.
+
+:::info
+We aim to have a consistent approach and have decided to use option 2, for the following reasons:
+- the rejection is easier to understand when reading the log, compared to seeing the same event twice.
+- the rejection describes a reason to further clarify what happened.
+- idempotency in event appliers can be easily achieved in some cases (e.g. using upsert over insert to change the state), but this could hide actual consistency problems.
+:::
