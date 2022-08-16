@@ -167,7 +167,7 @@ spec:
       initContainers:
       containers:
       - name: zeebe
-        image: "camunda/zeebe:8.0.3"
+        image: "gcr.io/zeebe-io/zeebe:8.0.6-9862-metrics"
         imagePullPolicy: Always
         env:
         - name: LC_ALL
