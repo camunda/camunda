@@ -272,7 +272,7 @@ public class CompactRecordLogger {
 
   private String summarizeDeploymentDistribution(final Record<?> record) {
     final var value = (DeploymentDistributionRecordValue) record.getValue();
-    return "on partition %d".formatted(value.getPartitionId());
+    return String.format("on partition %d", value.getPartitionId());
   }
 
   private String summarizeProcess(final Record<?> record) {
