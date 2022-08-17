@@ -79,7 +79,8 @@ public class Engine implements RecordProcessor {
             recordProcessorContext.getPartitionId(),
             recordProcessorContext.getScheduleService(),
             zeebeState,
-            writers);
+            writers,
+            recordProcessorContext.getPartitionCommandSender());
 
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);

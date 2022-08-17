@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.test.util.testcontainers;
+package io.camunda.zeebe.qa.util.testcontainers;
 
 import java.util.Map;
 import java.util.function.Supplier;
@@ -32,7 +32,7 @@ public final class ContainerLogsDumper implements AfterTestExecutionCallback {
 
   public ContainerLogsDumper(
       final Supplier<Map<?, ? extends Container<?>>> containers, final Logger logger) {
-    this.containersSupplier = containers;
+    containersSupplier = containers;
     this.logger = logger;
   }
 

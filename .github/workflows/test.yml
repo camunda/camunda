@@ -165,6 +165,8 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+          # setting up maven often times out on macOS
+          maven: ${{ matrix.os != 'macos-latest' }}
       - uses: ./.github/actions/build-zeebe
         with:
           go: false

@@ -15,11 +15,13 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
+import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.TypedRecord;
@@ -119,6 +121,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   public void setDiskSpaceAvailable(final boolean b) {}
 
   @Override
+  public TopologyManager getTopologyManager() {
+    return null;
+  }
+
+  @Override
   public void setExporterDirector(final ExporterDirector exporterDirector) {
     this.exporterDirector = exporterDirector;
   }
@@ -142,6 +149,14 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   public void setPartitionCommandReceiver(final InterPartitionCommandReceiverActor receiver) {
     interPartitionCommandReceiver = receiver;
   }
+
+  @Override
+  public InterPartitionCommandSenderService getPartitionCommandSender() {
+    return null;
+  }
+
+  @Override
+  public void setPartitionCommandSender(final InterPartitionCommandSenderService sender) {}
 
   @Override
   public boolean shouldExport() {

@@ -9,34 +9,31 @@ package io.camunda.zeebe.broker.transport.partitionapi;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.broker.protocol.InterPartitionMessageEncoder;
 import io.camunda.zeebe.broker.protocol.MessageHeaderEncoder;
-import io.camunda.zeebe.engine.transport.InterPartitionCommandSender;
+import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Objects;
+import org.agrona.collections.Int2IntHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public final class InterPartitionCommandSenderImpl
-    implements InterPartitionCommandSender, CheckpointListener {
+final class InterPartitionCommandSenderImpl implements InterPartitionCommandSender {
+
   public static final String TOPIC_PREFIX = "inter-partition-";
+
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private final ClusterCommunicationService communicationService;
 
-  private final TopologyPartitionListenerImpl partitionListener;
+  private final Int2IntHashMap partitionLeaders = new Int2IntHashMap(-1);
   private long checkpointId = CheckpointState.NO_CHECKPOINT;
 
-  public InterPartitionCommandSenderImpl(
-      final ClusterCommunicationService communicationService,
-      final TopologyPartitionListenerImpl partitionListener) {
+  public InterPartitionCommandSenderImpl(final ClusterCommunicationService communicationService) {
     this.communicationService = communicationService;
-    this.partitionListener = partitionListener;
   }
 
   @Override
@@ -55,7 +52,6 @@ public final class InterPartitionCommandSenderImpl
       final Intent intent,
       final Long recordKey,
       final BufferWriter command) {
-    final var partitionLeaders = partitionListener.getPartitionLeaders();
     if (!partitionLeaders.containsKey(receiverPartitionId)) {
       LOG.warn(
           "Not sending command {} {} to {}, no known leader for this partition",
@@ -80,9 +76,12 @@ public final class InterPartitionCommandSenderImpl
         TOPIC_PREFIX + receiverPartitionId, message, MemberId.from("" + partitionLeader));
   }
 
-  @Override
-  public void onNewCheckpointCreated(final long checkpointId) {
+  void setCheckpointId(final long checkpointId) {
     this.checkpointId = checkpointId;
+  }
+
+  void setCurrentLeader(final int partitionId, final int currentLeader) {
+    partitionLeaders.put(partitionId, currentLeader);
   }
 
   private static final class Encoder {

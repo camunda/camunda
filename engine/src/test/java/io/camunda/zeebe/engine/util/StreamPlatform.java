@@ -18,6 +18,7 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.EmptyProcessingResult;
+import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
@@ -213,7 +214,8 @@ public final class StreamPlatform {
             .commandResponseWriter(mockCommandResponseWriter)
             .recordProcessors(recordProcessors)
             .eventApplierFactory(EventAppliers::new) // todo remove this soon
-            .streamProcessorMode(streamProcessorMode);
+            .streamProcessorMode(streamProcessorMode)
+            .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
     builder.getLifecycleListeners().add(recoveredAwaiter);
 

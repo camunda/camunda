@@ -12,9 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.test.util.actuator.PartitionsActuatorClient;
-import io.camunda.zeebe.test.util.asserts.EitherAssert;
-import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
+import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebeVolume;
 import io.zeebe.containers.engine.ContainerEngine;
@@ -86,9 +85,8 @@ final class DiskSpaceRecoveryIT {
     void shouldRecoverAfterOutOfDiskSpaceAfterExporting()
         throws InterruptedException, TimeoutException {
       // given
-      final var partitionsClient =
-          new PartitionsActuatorClient(container.getExternalMonitoringAddress());
-      EitherAssert.assertThat(partitionsClient.pauseExporting()).isRight();
+      final var partitionsClient = PartitionsActuator.of(container);
+      partitionsClient.pauseExporting();
 
       // fill out the disk as fast as possible
       await("until the disk is full")
@@ -101,11 +99,11 @@ final class DiskSpaceRecoveryIT {
                           "RESOURCE_EXHAUSTED: Cannot accept requests for partition 1. Broker is out of disk space"));
 
       // when
-      EitherAssert.assertThat(partitionsClient.resumeExporting()).isRight();
+      partitionsClient.resumeExporting();
       // wait until all records are exported
       engine.waitForIdleState(Duration.ofMinutes(5));
       // trigger a snapshot
-      EitherAssert.assertThat(partitionsClient.takeSnapshot()).isRight();
+      partitionsClient.takeSnapshot();
 
       // then
       await("until the disk is not full anymore")

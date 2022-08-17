@@ -151,6 +151,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
               public void onSkipped(final LoggedEvent skippedRecord) {}
             })
         .streamProcessorMode(streamProcessorMode)
+        .partitionCommandSender(context.getPartitionCommandSender())
         .build();
   }
 }

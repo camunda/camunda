@@ -73,7 +73,7 @@
     <version.protobuf>3.21.5</version.protobuf>
     <version.protobuf-common>2.9.2</version.protobuf-common>
     <version.micrometer>1.9.3</version.micrometer>
-    <version.rocksdbjni>7.3.1</version.rocksdbjni>
+    <version.rocksdbjni>7.4.5</version.rocksdbjni>
     <version.sbe>1.26.0</version.sbe>
     <version.scala>2.13.8</version.scala>
     <version.slf4j>1.7.36</version.slf4j>
@@ -111,6 +111,7 @@
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.15</version.jnr-posix>
     <version.zpt>8.0.5</version.zpt>
+    <version.feign>11.9.1</version.feign>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -244,6 +245,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-test-util</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-qa-util</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -557,6 +564,14 @@
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-bom</artifactId>
         <version>${version.log4j}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.github.openfeign</groupId>
+        <artifactId>feign-bom</artifactId>
+        <version>${version.feign}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>

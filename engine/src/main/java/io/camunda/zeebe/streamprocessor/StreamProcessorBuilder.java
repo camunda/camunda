@@ -9,6 +9,7 @@ package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.CommandResponseWriter;
+import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.EventApplier;
@@ -86,6 +87,12 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
+  public StreamProcessorBuilder partitionCommandSender(
+      final InterPartitionCommandSender interPartitionCommandSender) {
+    streamProcessorContext.partitionCommandSender(interPartitionCommandSender);
+    return this;
+  }
+
   public StreamProcessorContext getProcessingContext() {
     return streamProcessorContext;
   }
@@ -125,6 +132,11 @@ public final class StreamProcessorBuilder {
     Objects.requireNonNull(streamProcessorContext.getLogStream(), "No log stream provided.");
     Objects.requireNonNull(zeebeDb, "No database provided.");
     Objects.requireNonNull(eventApplierFactory, "No factory for the event supplier provided.");
+    if (streamProcessorContext.getProcessorMode() == StreamProcessorMode.PROCESSING) {
+      Objects.requireNonNull(
+          streamProcessorContext.getPartitionCommandSender(),
+          "No partition command sender provided");
+    }
   }
 
   public Function<LogStreamBatchWriter, LegacyTypedStreamWriter> getTypedStreamWriterFactory() {

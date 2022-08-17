@@ -25,18 +25,18 @@ import java.util.Optional;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public final class InterPartitionCommandReceiverImpl {
+final class InterPartitionCommandReceiverImpl {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private final Decoder decoder = new Decoder();
   private final LogStreamRecordWriter logStreamWriter;
   private boolean diskSpaceAvailable = true;
   private long checkpointId = CheckpointState.NO_CHECKPOINT;
 
-  public InterPartitionCommandReceiverImpl(final LogStreamRecordWriter logStreamWriter) {
+  InterPartitionCommandReceiverImpl(final LogStreamRecordWriter logStreamWriter) {
     this.logStreamWriter = logStreamWriter;
   }
 
-  public void handleMessage(final MemberId memberId, final byte[] message) {
+  void handleMessage(final MemberId memberId, final byte[] message) {
     LOG.trace("Received message from {}", memberId);
 
     final var decoded = decoder.decodeMessage(message);
@@ -103,11 +103,11 @@ public final class InterPartitionCommandReceiverImpl {
     return writeResult > 0;
   }
 
-  public void setDiskSpaceAvailable(final boolean available) {
+  void setDiskSpaceAvailable(final boolean available) {
     diskSpaceAvailable = available;
   }
 
-  public void setCheckpointId(final long checkpointId) {
+  void setCheckpointId(final long checkpointId) {
     this.checkpointId = checkpointId;
   }
 

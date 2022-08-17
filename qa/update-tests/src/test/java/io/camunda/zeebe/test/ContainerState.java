@@ -8,9 +8,9 @@
 package io.camunda.zeebe.test;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.test.util.actuator.PartitionsActuatorClient;
-import io.camunda.zeebe.test.util.testcontainers.RemoteDebugger;
-import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
+import io.camunda.zeebe.qa.util.testcontainers.RemoteDebugger;
+import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.util.VersionUtil;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebeGatewayContainer;
@@ -62,7 +62,7 @@ final class ContainerState implements CloseableResource {
   private ZeebeContainer broker;
   private ZeebeGatewayContainer gateway;
   private ZeebeClient client;
-  private PartitionsActuatorClient partitionsActuatorClient;
+  private PartitionsActuator partitionsActuator;
 
   private DockerImageName brokerImage;
   private DockerImageName gatewayImage;
@@ -144,11 +144,11 @@ final class ContainerState implements CloseableResource {
     }
 
     client = ZeebeClient.newClientBuilder().gatewayAddress(contactPoint).usePlaintext().build();
-    partitionsActuatorClient = new PartitionsActuatorClient(broker.getExternalMonitoringAddress());
+    partitionsActuator = PartitionsActuator.of(broker);
   }
 
-  public PartitionsActuatorClient getPartitionsActuatorClient() {
-    return partitionsActuatorClient;
+  public PartitionsActuator getPartitionsActuator() {
+    return partitionsActuator;
   }
 
   @SuppressWarnings("java:S2925") // allow Thread.sleep usage in test if remote debugging is enabled

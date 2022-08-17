@@ -19,6 +19,7 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.Engine;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.api.CommandResponseWriter;
+import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry;
@@ -315,7 +316,8 @@ public final class TestStreams {
             .listener(new StreamProcessorListenerRelay(streamProcessorListeners))
             .recordProcessors(List.of(new Engine(wrappedFactory)))
             .eventApplierFactory(eventApplierFactory)
-            .streamProcessorMode(streamProcessorMode);
+            .streamProcessorMode(streamProcessorMode)
+            .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
     if (streamWriterFactory != null) {
       builder.typedStreamWriterFactory(streamWriterFactory);

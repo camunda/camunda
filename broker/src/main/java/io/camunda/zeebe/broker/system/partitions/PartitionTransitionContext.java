@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
+import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.TypedRecord;
@@ -81,6 +82,10 @@ public interface PartitionTransitionContext extends PartitionContext {
   InterPartitionCommandReceiverActor getPartitionCommandReceiver();
 
   void setPartitionCommandReceiver(InterPartitionCommandReceiverActor receiver);
+
+  InterPartitionCommandSenderService getPartitionCommandSender();
+
+  void setPartitionCommandSender(InterPartitionCommandSenderService sender);
 
   boolean shouldExport();
 

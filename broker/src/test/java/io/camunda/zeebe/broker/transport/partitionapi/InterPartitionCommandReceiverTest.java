@@ -16,12 +16,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -31,7 +29,6 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.ExpandableArrayBuffer;
-import org.agrona.collections.Int2IntHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -219,16 +216,6 @@ final class InterPartitionCommandReceiverTest {
     verify(logStreamWriter, never()).key(anyLong());
   }
 
-  private TopologyPartitionListenerImpl mockTopologyListener(
-      final int partitionId, final int brokerId) {
-    final var topologyListener = mock(TopologyPartitionListenerImpl.class);
-    final var topology = new Int2IntHashMap(-1);
-    topology.put(partitionId, brokerId);
-    when(topologyListener.getPartitionLeaders()).thenReturn(topology);
-
-    return topologyListener;
-  }
-
   private byte[] sendCommand(
       final Integer receiverBrokerId,
       final Integer receiverPartitionId,
@@ -248,8 +235,8 @@ final class InterPartitionCommandReceiverTest {
     final ClusterCommunicationService communicationService =
         mock(ClusterCommunicationService.class);
 
-    final var topologyListener = mockTopologyListener(receiverPartitionId, receiverBrokerId);
-    final var sender = new InterPartitionCommandSenderImpl(communicationService, topologyListener);
+    final var sender = new InterPartitionCommandSenderImpl(communicationService);
+    sender.setCurrentLeader(receiverPartitionId, receiverBrokerId);
 
     final var buffer = new UnsafeBuffer(command);
     final var bufferWriter = new DirectBufferWriter();
