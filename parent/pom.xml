@@ -120,6 +120,7 @@
     <version.archunit>0.23.0</version.archunit>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.15</version.jnr-posix>
+    <version.feign>11.9.1</version.feign>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -595,6 +596,14 @@
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-core</artifactId>
         <version>${version.hamcrest}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.github.openfeign</groupId>
+        <artifactId>feign-bom</artifactId>
+        <version>${version.feign}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
 
       <dependency>
