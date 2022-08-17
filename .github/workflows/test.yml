@@ -20,9 +20,9 @@ jobs:
       fail-fast: false
       matrix:
         project:
-          - :zeebe-elasticsearch-exporter
-          - :zeebe-qa-integration-tests
-          - :zeebe-qa-update-tests
+          - exporters/elasticsearch-exporter
+          - qa/integration-tests
+          - qa/update-tests
     env:
       TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
       TC_CLOUD_CONCURRENCY: 4
@@ -59,11 +59,13 @@ jobs:
           -P parallel-tests,extract-flaky-tests
           -pl ${{ matrix.project }}
           verify
+      - name: Normalize artifact name
+        run: echo "ARTIFACT_NAME=$(echo ${{ matrix.project }} | sed 's/\//-/g')" >> $GITHUB_ENV
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: always()
         with:
-          name: Integration Tests ${{ matrix.project }}
+          name: ${{ env.ARTIFACT_NAME }}
   project-list:
     # Builds a list of projects where unit tests can be run on hosted runners
     name: List projects
