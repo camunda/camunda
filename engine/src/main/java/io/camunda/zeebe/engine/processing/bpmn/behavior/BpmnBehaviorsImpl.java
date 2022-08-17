@@ -55,7 +55,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final ProcessEngineMetrics processEngineMetrics) {
 
     final StateWriter stateWriter = writers.state();
-    final var commandWriter = writers.command();
     this.expressionBehavior = expressionBehavior;
 
     decisionBehavior =
