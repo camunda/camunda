@@ -14,7 +14,7 @@ import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandRecei
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
-public class InterPartitionCommandServiceStep implements PartitionTransitionStep {
+public final class InterPartitionCommandServiceStep implements PartitionTransitionStep {
 
   @Override
   public ActorFuture<Void> prepareTransition(
