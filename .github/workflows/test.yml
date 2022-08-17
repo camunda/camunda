@@ -169,6 +169,8 @@ jobs:
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
       - name: Run basic container smoke test
         run: |
+          docker run --rm -e ZEEBE_BROKER_NETWORK_HOST=0.0.0.0 -p 9600:9600 \
+            --platform linux/arm64 camunda/zeebe:current-test
           DOCKER_CONTAINER=$(docker run -d --rm -e ZEEBE_BROKER_NETWORK_HOST=0.0.0.0 -p 9600:9600 \
             --platform linux/arm64 camunda/zeebe:current-test)
           docker logs -f "${DOCKER_CONTAINER}" >& test.log &
@@ -181,6 +183,7 @@ jobs:
         run: |
           [ -r test.log ] && cat test.log
       - name: Save container output
+        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: Smoke tests on ARM64 output
