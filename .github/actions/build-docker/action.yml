@@ -1,7 +1,4 @@
 # This action expects the code to have been checked out beforehand, e.g. via actions/checkout@v3
-# It will set up Java and maven as dependencies. If requested to package Zeebe, it will also set up
-# Go, build zbctl, then build the Zeebe distribution.
-#
 # If no version is given, the version is set to the Maven project version.
 
 ---
@@ -16,10 +13,9 @@ inputs:
   version:
     description: 'The image version, e.g. SNAPSHOT, 8.1.0'
     required: false
-  package:
-    description: 'If true, will package Zeebe, otherwise uses the tar-ball under dist/target'
-    default: 'false'
-    required: false
+  distball:
+    description: 'The path to the Zeebe distribution TAR ball'
+    required: true
   push:
     description: 'If true, will push the image'
     required: false
@@ -51,29 +47,6 @@ runs:
         driver-opts: network=host
         endpoint: zeebe-context
         install: true
-    # We need maven and Java (indirectly) to get properties from the project
-    - uses: actions/setup-java@v3.4.1
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-    - uses: stCarolas/setup-maven@v4.4
-      with:
-        maven-version: 3.8.5
-    - if: ${{ inputs.package == 'true' }}
-      uses: actions/setup-go@v3
-      with:
-        go-version-file: 'clients/go/go.mod'
-        cache: true
-        cache-dependency-path: 'clients/go/go.sum'
-    - if: ${{ inputs.package == 'true' }}
-      name: Build Go
-      shell: bash
-      run: ./build.sh
-      working-directory: clients/go/cmd/zbctl
-    - if: ${{ inputs.package == 'true' }}
-      name: Package Zeebe
-      shell: bash
-      run: mvn -B -DskipTests -DskipChecks package -T1C
     - name: Set semantic version from Maven project
       id: get-version
       shell: bash
@@ -86,6 +59,10 @@ runs:
       id: get-image
       shell: bash
       run: echo "::set-output name=result::${{ inputs.repository }}:${{ inputs.version || steps.get-version.outputs.result }}"
+    - name: Set DISTBALL path relative to the build context
+      id: get-distball
+      shell: bash
+      run: echo "::set-output name=result::$(realpath --relative-to="${PWD}" ${{ inputs.distball }})"
     - name: Build Docker image
       uses: docker/build-push-action@v3
       with:
@@ -95,7 +72,7 @@ runs:
         push: ${{ inputs.push }}
         no-cache: true
         build-args: |
-          DISTBALL=dist/target/camunda-zeebe-${{ steps.get-version.outputs.result }}.tar.gz
+          DISTBALL=${{ steps.get-distball.outputs.result }}
           DATE=${{ steps.get-date.outputs.result }}
           REVISION=${{ github.sha }}
           VERSION=${{ steps.get-version.outputs.result }}

@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
@@ -168,8 +169,11 @@ public final class BpmnJobBehavior {
   }
 
   public void cancelJob(final BpmnElementContext context) {
-
     final var elementInstance = stateBehavior.getElementInstance(context);
+    cancelJob(elementInstance);
+  }
+
+  public void cancelJob(final ElementInstance elementInstance) {
     final long jobKey = elementInstance.getJobKey();
     if (jobKey > 0) {
       writeJobCanceled(jobKey);

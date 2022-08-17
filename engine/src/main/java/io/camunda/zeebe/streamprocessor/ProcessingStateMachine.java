@@ -34,6 +34,7 @@ import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.prometheus.client.Histogram;
 import java.time.Duration;
+import java.util.List;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
@@ -142,15 +143,16 @@ public final class ProcessingStateMachine {
   private Histogram.Timer processingTimer;
   private boolean reachedEnd = true;
   private final StreamProcessorContext context;
-  private final RecordProcessor engine;
+  private final List<RecordProcessor> recordProcessors;
   private ProcessingResult currentProcessingResult;
+  private RecordProcessor currentProcessor;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
       final BooleanSupplier shouldProcessNext,
-      final RecordProcessor engine) {
+      final List<RecordProcessor> recordProcessors) {
     this.context = context;
-    this.engine = engine;
+    this.recordProcessors = recordProcessors;
     actor = context.getActor();
     recordValues = context.getRecordValues();
     logStreamReader = context.getLogStreamReader();
@@ -175,6 +177,7 @@ public final class ProcessingStateMachine {
 
   private void skipRecord() {
     notifySkippedListener(currentRecord);
+    inProcessing = false;
     actor.submit(this::readNextRecord);
     metrics.eventSkipped();
   }
@@ -253,12 +256,21 @@ public final class ProcessingStateMachine {
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
+      currentProcessor =
+          recordProcessors.stream()
+              .filter(p -> p.accepts(typedCommand.getValueType()))
+              .findFirst()
+              .orElse(null);
+
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
       zeebeDbTransaction.run(
           () -> {
             processingResultBuilder.reset();
 
-            currentProcessingResult = engine.process(typedCommand, processingResultBuilder);
+            if (currentProcessor != null) {
+              currentProcessingResult =
+                  currentProcessor.process(typedCommand, processingResultBuilder);
+            }
 
             lastProcessedPositionState.markAsProcessed(position);
           });
@@ -328,7 +340,8 @@ public final class ProcessingStateMachine {
           logStreamWriter.configureSourceContext(position);
 
           currentProcessingResult =
-              engine.onProcessingError(processingException, typedCommand, processingResultBuilder);
+              currentProcessor.onProcessingError(
+                  processingException, typedCommand, processingResultBuilder);
         });
   }
 

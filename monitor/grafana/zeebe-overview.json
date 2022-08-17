@@ -15,7 +15,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 1,
-  "iteration": 1650543315781,
+  "iteration": 1660048779991,
   "links": [],
   "panels": [
     {
@@ -71,6 +71,14 @@
                     "to": "",
                     "type": 1,
                     "value": "0"
+                  },
+                  {
+                    "from": "",
+                    "id": 3,
+                    "text": "DEAD",
+                    "to": "",
+                    "type": 1,
+                    "value": "-1"
                   }
                 ]
               },
@@ -95,6 +103,10 @@
                     },
                     {
                       "color": "red",
+                      "value": -1
+                    },
+                    {
+                      "color": "orange",
                       "value": 0
                     },
                     {
@@ -1862,5 +1874,5 @@
   "timezone": "",
   "title": "Zeebe Overview",
   "uid": "NzsO1mUnk",
-  "version": 11
+  "version": 12
 }

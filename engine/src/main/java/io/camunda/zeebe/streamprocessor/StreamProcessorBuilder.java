@@ -32,14 +32,14 @@ public final class StreamProcessorBuilder {
   private Function<LogStreamBatchWriter, LegacyTypedStreamWriter> typedStreamWriterFactory =
       LegacyTypedStreamWriterImpl::new;
 
-  private RecordProcessor recordProcessor;
+  private List<RecordProcessor> recordProcessors;
 
   public StreamProcessorBuilder() {
     streamProcessorContext = new StreamProcessorContext();
   }
 
-  public StreamProcessorBuilder recordProcessor(final RecordProcessor recordProcessor) {
-    this.recordProcessor = recordProcessor;
+  public StreamProcessorBuilder recordProcessors(final List<RecordProcessor> recordProcessors) {
+    this.recordProcessors = recordProcessors;
     return this;
   }
 
@@ -106,8 +106,8 @@ public final class StreamProcessorBuilder {
     return nodeId;
   }
 
-  public RecordProcessor getRecordProcessor() {
-    return recordProcessor;
+  public List<RecordProcessor> getRecordProcessors() {
+    return recordProcessors;
   }
 
   public Function<MutableZeebeState, EventApplier> getEventApplierFactory() {

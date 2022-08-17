@@ -306,7 +306,7 @@ public final class BoundaryEventTest {
             tuple(ValueType.TIMER, TimerIntent.CREATED),
             tuple(ValueType.JOB, JobIntent.COMPLETED),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETING),
-            tuple(ValueType.TIMER, TimerIntent.CANCEL),
+            tuple(ValueType.TIMER, TimerIntent.CANCELED),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 

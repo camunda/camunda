@@ -107,7 +107,9 @@ final class AdvertisedAddressTest {
               .map(ContainerProxy::getOriginalProxyPort)
               .toList();
       TopologyAssert.assertThat(topology)
-          .isComplete(3, 1, 3)
+          .hasClusterSize(3)
+          .hasExpectedReplicasCount(1, 3)
+          .hasLeaderForEachPartition(1)
           .hasBrokerSatisfying(
               b ->
                   assertThat(b.getAddress())

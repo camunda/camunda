@@ -55,7 +55,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final ProcessEngineMetrics processEngineMetrics) {
 
     final StateWriter stateWriter = writers.state();
-    final var commandWriter = writers.command();
     this.expressionBehavior = expressionBehavior;
 
     decisionBehavior =
@@ -81,12 +80,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             writers);
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
-            catchEventBehavior,
-            eventTriggerBehavior,
-            commandWriter,
-            sideEffects,
-            zeebeState,
-            zeebeState.getKeyGenerator());
+            catchEventBehavior, eventTriggerBehavior, sideEffects, zeebeState);
     incidentBehavior =
         new BpmnIncidentBehavior(zeebeState, zeebeState.getKeyGenerator(), stateWriter);
     eventPublicationBehavior =

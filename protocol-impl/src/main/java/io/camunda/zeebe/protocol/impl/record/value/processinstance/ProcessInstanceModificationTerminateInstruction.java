@@ -22,6 +22,10 @@ public final class ProcessInstanceModificationTerminateInstruction extends Objec
 
   private final LongProperty elementInstanceKeyProperty = new LongProperty("elementInstanceKey");
 
+  public ProcessInstanceModificationTerminateInstruction() {
+    declareProperty(elementInstanceKeyProperty);
+  }
+
   @Override
   public long getElementInstanceKey() {
     return elementInstanceKeyProperty.getValue();

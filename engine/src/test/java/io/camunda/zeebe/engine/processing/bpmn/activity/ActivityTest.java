@@ -279,6 +279,6 @@ public final class ActivityTest {
     // then
     assertThat(records)
         .extracting(Record::getIntent)
-        .contains(leavingState, TimerIntent.CANCEL, TimerIntent.CANCEL, leftState);
+        .contains(leavingState, TimerIntent.CANCELED, TimerIntent.CANCELED, leftState);
   }
 }

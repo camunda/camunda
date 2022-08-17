@@ -182,7 +182,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
         processState.getProcessByKey(timer.getProcessDefinitionKey()).getBpmnProcessId();
 
     if (timerBpmnId.equals(processMetadata.getBpmnProcessIdBuffer())) {
-      catchEventBehavior.unsubscribeFromTimerEvent(timer, commandWriter);
+      catchEventBehavior.unsubscribeFromTimerEvent(timer);
     }
   }
 }
