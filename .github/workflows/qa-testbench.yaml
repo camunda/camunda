@@ -74,12 +74,12 @@ jobs:
             secret/data/products/zeebe/ci/zeebe ZEEBE_GCR_SERVICEACCOUNT_JSON;
             secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CLIENT_SECRET;
             secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CONTACT_POINT;
-    - name: Login to GCR
-      uses: docker/login-action@v2
-      with:
-        registry: gcr.io
-        username: _json_key
-        password: ${{ steps.secrets.outputs.ZEEBE_GCR_SERVICEACCOUNT_JSON }}
+      - name: Login to GCR
+        uses: docker/login-action@v2
+        with:
+          registry: gcr.io
+          username: _json_key
+          password: ${{ steps.secrets.outputs.ZEEBE_GCR_SERVICEACCOUNT_JSON }}
       - uses: ./.github/actions/setup-zeebe
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
@@ -89,7 +89,7 @@ jobs:
           version: ${{ env.TAG }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
-      # Executes the Testbench QA run and awaits the result
+        # Executes the Testbench QA run and awaits the result
       - name: Run Testbench QA
         run: .ci/scripts/distribution/qa-testbench.sh
         env:
