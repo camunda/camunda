@@ -91,7 +91,8 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
           writeRetryStrategy.runWithRetry(
               () -> {
                 Loggers.PROCESS_PROCESSOR_LOGGER.trace("Write scheduled TaskResult to dispatcher!");
-                return   result.writeRecordsToStream(streamProcessorContext.getLogStreamBatchWriter()) >= 0;
+                return result.writeRecordsToStream(streamProcessorContext.getLogStreamBatchWriter())
+                    >= 0;
               },
               streamProcessorContext.getAbortCondition());
 

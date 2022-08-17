@@ -42,7 +42,6 @@ import org.mockito.verification.VerificationWithTimeout;
 @ExtendWith(StreamPlatformExtension.class)
 public class ProcessingScheduleServiceTest {
 
-
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
 
@@ -50,6 +49,7 @@ public class ProcessingScheduleServiceTest {
 
   @SuppressWarnings("unused") // injected by the extension
   private StreamPlatform streamPlatform;
+
   private DummyProcessor dummyProcessor;
 
   @BeforeEach
@@ -114,7 +114,8 @@ public class ProcessingScheduleServiceTest {
     streamPlatform.withRecordProcessors(List.of(dummyProcessorSpy)).startStreamProcessor();
 
     // when
-    dummyProcessorSpy.scheduleService.runDelayed(Duration.ZERO,
+    dummyProcessorSpy.scheduleService.runDelayed(
+        Duration.ZERO,
         (builder) -> builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD).build());
 
     // then
@@ -143,8 +144,8 @@ public class ProcessingScheduleServiceTest {
     }
 
     @Override
-    public ProcessingResult process(final TypedRecord record,
-        final ProcessingResultBuilder processingResultBuilder) {
+    public ProcessingResult process(
+        final TypedRecord record, final ProcessingResultBuilder processingResultBuilder) {
       if (latch != null) {
         try {
           latch.await();
@@ -156,7 +157,8 @@ public class ProcessingScheduleServiceTest {
     }
 
     @Override
-    public ProcessingResult onProcessingError(final Throwable processingException,
+    public ProcessingResult onProcessingError(
+        final Throwable processingException,
         final TypedRecord record,
         final ProcessingResultBuilder processingResultBuilder) {
       return EmptyProcessingResult.INSTANCE;
@@ -172,5 +174,4 @@ public class ProcessingScheduleServiceTest {
       }
     }
   }
-
 }
