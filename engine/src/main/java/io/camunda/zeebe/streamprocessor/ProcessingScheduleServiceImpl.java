@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.streamprocessor;
 
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.Task;
 import io.camunda.zeebe.scheduler.ActorControl;
@@ -65,11 +66,17 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
       // todo we want so suspend the task execution
 
       if (streamProcessorContext.isInProcessing()) {
+        if (streamProcessorContext.getAbortCondition().getAsBoolean()) {
+          // it might be that we are closing then we should just stop
+          return;
+        }
+
         // we want to execute the tasks only if no processing is happening
         // to make sure that we are not interfering with the processing and that all transaction
         // changes
         // are available during our task execution
-        actorControl.run(toRunnable(task));
+        Loggers.PROCESS_PROCESSOR_LOGGER.trace("Processing is currently ongoing, reschedule task.");
+        actorControl.submit(toRunnable(task));
         return;
       }
 
