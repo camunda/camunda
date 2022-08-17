@@ -53,6 +53,7 @@
     <module>benchmarks/project</module>
     <module>scheduler</module>
     <module>backup</module>
+    <module>backup-stores/s3</module>
   </modules>
 
   <scm>
