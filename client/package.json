@@ -65,7 +65,7 @@
     "@types/jest": "27.5.2",
     "@types/jsoneditor": "9.5.1",
     "@types/mixpanel-browser": "2.38.0",
-    "@types/node": "16.11.48",
+    "@types/node": "16.11.49",
     "@types/react": "18.0.17",
     "@types/react-dom": "18.0.6",
     "@types/styled-components": "5.1.26",
