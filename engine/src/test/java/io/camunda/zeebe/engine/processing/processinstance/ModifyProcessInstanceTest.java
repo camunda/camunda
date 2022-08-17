@@ -162,16 +162,7 @@ public class ModifyProcessInstanceTest {
     ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords()
-                .onlyEvents()
-                .withElementId("B")
-                .withProcessInstanceKey(processInstanceKey)
-                .limit("B", ProcessInstanceIntent.ELEMENT_COMPLETED))
-        .describedAs("Expect the element instance to have been completed")
-        .extracting(Record::getIntent)
-        .containsSequence(
-            ProcessInstanceIntent.ELEMENT_COMPLETING, ProcessInstanceIntent.ELEMENT_COMPLETED);
+    verifyThatElementIsCompleted(processInstanceKey, "B");
   }
 
   @Test
@@ -209,14 +200,7 @@ public class ModifyProcessInstanceTest {
         .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.PROCESS)
-                .limitToProcessInstanceCompleted()
-                .findAny())
-        .describedAs("Expect the process instance to have been completed")
-        .isPresent();
+    verifyThatProcessInstanceIsCompleted(processInstanceKey);
   }
 
   @Test
@@ -347,14 +331,8 @@ public class ModifyProcessInstanceTest {
         .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.PROCESS)
-                .limitToProcessInstanceCompleted()
-                .findAny())
-        .describedAs("Expect the process instance to have been completed")
-        .isPresent();
+    verifyThatElementIsCompleted(processInstanceKey, "B");
+    verifyThatProcessInstanceIsCompleted(processInstanceKey);
   }
 
   private static void verifyThatRootElementIsActivated(
@@ -418,5 +396,32 @@ public class ModifyProcessInstanceTest {
                 flowScopeKey,
                 -1L,
                 -1L));
+  }
+
+  private static void verifyThatElementIsCompleted(
+      final long processInstanceKey, final String elementId) {
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .onlyEvents()
+                .withElementId(elementId)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(elementId, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs("Expect the element instance to have been completed")
+        .extracting(Record::getIntent)
+        .containsSequence(
+            ProcessInstanceIntent.ELEMENT_COMPLETING, ProcessInstanceIntent.ELEMENT_COMPLETED);
+  }
+
+  private static void verifyThatProcessInstanceIsCompleted(final long processInstanceKey) {
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .limitToProcessInstanceCompleted()
+                .findAny())
+        .describedAs("Expect the process instance to have been completed")
+        .isPresent();
   }
 }
