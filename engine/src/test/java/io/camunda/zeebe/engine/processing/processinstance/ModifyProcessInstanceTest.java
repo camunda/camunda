@@ -159,11 +159,7 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // when
-    RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .limit(3)
-        .map(Record::getKey)
-        .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
+    completeJobs(processInstanceKey, 3);
 
     // then
     verifyThatElementIsCompleted(processInstanceKey, "B");
@@ -291,11 +287,8 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // when
-    RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .limit(3) // 3 jobs as A creates another B
-        .map(Record::getKey)
-        .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
+    // 3 jobs as A creates another B
+    completeJobs(processInstanceKey, 3);
 
     // then
     verifyThatElementIsCompleted(processInstanceKey, "B");
@@ -390,5 +383,13 @@ public class ModifyProcessInstanceTest {
                 .findAny())
         .describedAs("Expect the process instance to have been completed")
         .isPresent();
+  }
+
+  private static void completeJobs(final long processInstanceKey, final int numberOfJobs) {
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .limit(numberOfJobs)
+        .map(Record::getKey)
+        .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
   }
 }
