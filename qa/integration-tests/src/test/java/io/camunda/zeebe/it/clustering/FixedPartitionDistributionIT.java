@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.it.clustering;
 
-import io.camunda.zeebe.test.util.actuator.PartitionsActuatorClient;
-import io.camunda.zeebe.test.util.actuator.PartitionsActuatorClient.PartitionStatus;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuatorClient;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuatorClient.PartitionStatus;
+import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
+import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
-import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
-import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.util.Either;
 import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.cluster.ZeebeCluster;

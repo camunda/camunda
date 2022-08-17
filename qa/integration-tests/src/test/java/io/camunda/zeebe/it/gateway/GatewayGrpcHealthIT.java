@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.gateway;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
-import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.grpc.ManagedChannel;
 import io.grpc.health.v1.HealthCheckRequest;
 import io.grpc.health.v1.HealthCheckResponse;

@@ -9,10 +9,10 @@ package io.camunda.zeebe.it.network;
 
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
+import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
-import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.zeebe.containers.ZeebeNode;
 import io.zeebe.containers.cluster.ZeebeCluster;
