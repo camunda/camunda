@@ -8,9 +8,9 @@
 package io.camunda.zeebe.test;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.test.util.actuator.PartitionsActuatorClient;
-import io.camunda.zeebe.test.util.testcontainers.RemoteDebugger;
-import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuatorClient;
+import io.camunda.zeebe.qa.util.testcontainers.RemoteDebugger;
+import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.util.VersionUtil;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebeGatewayContainer;

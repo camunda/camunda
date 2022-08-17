@@ -11,7 +11,7 @@ import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.containsString;
 
-import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
