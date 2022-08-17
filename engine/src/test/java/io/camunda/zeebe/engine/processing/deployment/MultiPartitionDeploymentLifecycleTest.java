@@ -52,41 +52,49 @@ public class MultiPartitionDeploymentLifecycleTest {
     ENGINE.deployment().withXmlResource("process.bpmn", modelInstance).deploy();
 
     // then
-    final var deploymentPartitionRecords =
-        RecordingExporter.records().withPartitionId(1).limit(14).collect(Collectors.toList());
-
-    assertThat(deploymentPartitionRecords).hasSize(10);
-
-    assertThat(deploymentPartitionRecords.subList(0, 5))
-        .extracting(Record::getIntent, Record::getRecordType)
-        .containsExactly(
-            tuple(DeploymentIntent.CREATE, RecordType.COMMAND),
-            tuple(ProcessIntent.CREATED, RecordType.EVENT),
-            tuple(DeploymentIntent.CREATED, RecordType.EVENT),
-            tuple(DeploymentDistributionIntent.DISTRIBUTING, RecordType.EVENT),
-            tuple(DeploymentDistributionIntent.DISTRIBUTING, RecordType.EVENT));
-
-    assertThat(deploymentPartitionRecords.subList(5, 9))
+    assertThat(
+            RecordingExporter.records()
+                .withPartitionId(1)
+                .limit(r -> r.getIntent().equals(DeploymentIntent.FULLY_DISTRIBUTED)))
         .extracting(
             Record::getIntent,
             Record::getRecordType,
-            r -> ((DeploymentDistributionRecordValue) r.getValue()).getPartitionId())
+            r ->
+                // We want to verify the partition id where the deployment was distributing to and
+                // where it was completed. Since only the DeploymentDistribution records have a
+                // value that contains the partition id, we use the partition id the record was
+                // written on for the other records. It should be noted that the
+                // DeploymentDistribution records are also written on partition 1!
+                r.getValue() instanceof DeploymentDistributionRecordValue
+                    ? ((DeploymentDistributionRecordValue) r.getValue()).getPartitionId()
+                    : r.getPartitionId())
+        .startsWith(
+            tuple(DeploymentIntent.CREATE, RecordType.COMMAND, 1),
+            tuple(ProcessIntent.CREATED, RecordType.EVENT, 1),
+            tuple(DeploymentIntent.CREATED, RecordType.EVENT, 1))
         .containsSubsequence(
+            tuple(DeploymentDistributionIntent.DISTRIBUTING, RecordType.EVENT, 2),
             tuple(DeploymentDistributionIntent.COMPLETE, RecordType.COMMAND, 2),
             tuple(DeploymentDistributionIntent.COMPLETED, RecordType.EVENT, 2))
         .containsSubsequence(
+            tuple(DeploymentDistributionIntent.DISTRIBUTING, RecordType.EVENT, 3),
             tuple(DeploymentDistributionIntent.COMPLETE, RecordType.COMMAND, 3),
-            tuple(DeploymentDistributionIntent.COMPLETED, RecordType.EVENT, 3));
+            tuple(DeploymentDistributionIntent.COMPLETED, RecordType.EVENT, 3))
+        .endsWith(tuple(DeploymentIntent.FULLY_DISTRIBUTED, RecordType.EVENT, 1));
 
-    assertThat(deploymentPartitionRecords.subList(9, deploymentPartitionRecords.size()))
-        .extracting(Record::getIntent, Record::getRecordType)
-        .containsExactly(tuple(DeploymentIntent.FULLY_DISTRIBUTED, RecordType.EVENT));
-
-    assertThat(RecordingExporter.records().withPartitionId(2).limit(2).collect(Collectors.toList()))
+    assertThat(
+            RecordingExporter.records()
+                .withPartitionId(2)
+                .limit(r -> r.getIntent().equals(DeploymentIntent.DISTRIBUTED))
+                .collect(Collectors.toList()))
         .extracting(Record::getIntent)
         .containsExactly(DeploymentIntent.DISTRIBUTE, DeploymentIntent.DISTRIBUTED);
 
-    assertThat(RecordingExporter.records().withPartitionId(3).limit(2).collect(Collectors.toList()))
+    assertThat(
+            RecordingExporter.records()
+                .withPartitionId(3)
+                .limit(r -> r.getIntent().equals(DeploymentIntent.DISTRIBUTED))
+                .collect(Collectors.toList()))
         .extracting(Record::getIntent)
         .containsExactly(DeploymentIntent.DISTRIBUTE, DeploymentIntent.DISTRIBUTED);
   }
