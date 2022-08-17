@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebeVolume;
 import java.time.Duration;
