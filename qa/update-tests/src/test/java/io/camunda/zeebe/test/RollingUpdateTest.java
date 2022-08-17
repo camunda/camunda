@@ -46,8 +46,8 @@ import org.testcontainers.utility.DockerImageName;
  * These tests are here to detect when rolling update between one version to the next are not
  * possible. If we decide that they aren't between versions, we can disable or adjust assumptions.
  *
- * <p>The important part is that we should be aware whether or not rolling update is possible
- * between versions.
+ * <p>The important part is that we should be aware whether rolling update is possible between
+ * versions.
  */
 final class RollingUpdateTest {
 
@@ -104,7 +104,7 @@ final class RollingUpdateTest {
       broker.start();
 
       Awaitility.await()
-          .atMost(Duration.ofSeconds(5))
+          .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
           .untilAsserted(() -> assertTopologyContainsUpdatedBroker(client, index));
     }
@@ -121,7 +121,7 @@ final class RollingUpdateTest {
 
       // potentially retry in case we're faster than the deployment distribution
       Awaitility.await("process instance creation")
-          .atMost(Duration.ofSeconds(5))
+          .atMost(Duration.ofSeconds(30))
           .pollInterval(Duration.ofMillis(100))
           .ignoreExceptions()
           .until(() -> createProcessInstance(client), Objects::nonNull)
@@ -134,13 +134,13 @@ final class RollingUpdateTest {
 
     try (final var client = cluster.newClientBuilder().build()) {
       Awaitility.await("broker is removed from topology")
-          .atMost(Duration.ofSeconds(20))
+          .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
           .untilAsserted(() -> assertTopologyDoesNotContainerBroker(client, brokerId));
 
       for (int i = 0; i < 100; i++) {
         Awaitility.await("process instance creation")
-            .atMost(Duration.ofSeconds(5))
+            .atMost(Duration.ofSeconds(30))
             .pollInterval(Duration.ofMillis(100))
             .ignoreExceptions()
             .until(() -> createProcessInstance(client), Objects::nonNull)
@@ -163,7 +163,7 @@ final class RollingUpdateTest {
       updateBroker(broker);
       broker.start();
       Awaitility.await("updated broker is added to topology")
-          .atMost(Duration.ofSeconds(10))
+          .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
           .untilAsserted(() -> assertTopologyContainsUpdatedBroker(client, brokerId));
     }
@@ -185,7 +185,7 @@ final class RollingUpdateTest {
       // potentially retry in case we're faster than the deployment distribution
       firstProcessInstanceKey =
           Awaitility.await("process instance creation")
-              .atMost(Duration.ofSeconds(5))
+              .atMost(Duration.ofSeconds(30))
               .pollInterval(Duration.ofMillis(100))
               .ignoreExceptions()
               .until(() -> createProcessInstance(client), Objects::nonNull)
@@ -199,14 +199,14 @@ final class RollingUpdateTest {
         broker.stop();
 
         Awaitility.await("broker is removed from topology")
-            .atMost(Duration.ofSeconds(10))
+            .atMost(Duration.ofSeconds(120))
             .pollInterval(Duration.ofMillis(100))
             .untilAsserted(() -> assertTopologyDoesNotContainerBroker(client, brokerId));
 
         updateBroker(broker);
         broker.start();
         Awaitility.await("updated broker is added to topology")
-            .atMost(Duration.ofSeconds(10))
+            .atMost(Duration.ofSeconds(120))
             .pollInterval(Duration.ofMillis(100))
             .untilAsserted(() -> assertTopologyContainsUpdatedBroker(client, brokerId));
 
