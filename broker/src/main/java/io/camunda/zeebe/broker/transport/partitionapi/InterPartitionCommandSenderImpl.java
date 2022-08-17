@@ -76,11 +76,11 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
         TOPIC_PREFIX + receiverPartitionId, message, MemberId.from("" + partitionLeader));
   }
 
-  public void setCheckpointId(final long checkpointId) {
+  void setCheckpointId(final long checkpointId) {
     this.checkpointId = checkpointId;
   }
 
-  public void setCurrentLeader(final int partitionId, final int currentLeader) {
+  void setCurrentLeader(final int partitionId, final int currentLeader) {
     partitionLeaders.put(partitionId, currentLeader);
   }
 

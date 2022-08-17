@@ -17,7 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 
-public class InterPartitionCommandSenderService extends Actor
+public final class InterPartitionCommandSenderService extends Actor
     implements InterPartitionCommandSender, CheckpointListener, TopologyPartitionListener {
 
   final InterPartitionCommandSenderImpl commandSender;
