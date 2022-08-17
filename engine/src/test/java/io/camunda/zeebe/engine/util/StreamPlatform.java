@@ -104,7 +104,7 @@ public final class StreamPlatform {
     when(defaultRecordProcessor.process(any(), any())).thenReturn(EmptyProcessingResult.INSTANCE);
     when(defaultRecordProcessor.onProcessingError(any(), any(), any()))
         .thenReturn(EmptyProcessingResult.INSTANCE);
-    when(defaultRecordProcessor.canProcess(any())).thenReturn(true);
+    when(defaultRecordProcessor.accepts(any())).thenReturn(true);
     recordProcessors = List.of(defaultRecordProcessor);
   }
 
@@ -172,11 +172,6 @@ public final class StreamPlatform {
 
   public StreamPlatform withRecordProcessors(final List<RecordProcessor> recordProcessors) {
     this.recordProcessors = recordProcessors;
-    return this;
-  }
-
-  public StreamPlatform withDefaultRecordProcessor() {
-    recordProcessors = List.of(defaultRecordProcessor);
     return this;
   }
 
