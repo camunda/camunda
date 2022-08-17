@@ -132,41 +132,7 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
-  public void shouldBeAbleToCompleteActivatedRootElement() {
-    // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .serviceTask("A", a -> a.zeebeJobType("A"))
-                .serviceTask("B", b -> b.zeebeJobType("B"))
-                .endEvent()
-                .done())
-        .deploy();
-
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementType(BpmnElementType.PROCESS)
-        .await();
-
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .modification()
-        .activateElement("B")
-        .modify();
-
-    // when
-    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
-
-    // then
-    verifyThatElementIsCompleted(processInstanceKey, "B");
-  }
-
-  @Test
-  public void shouldBeAbleToCompleteModifiedProcessInstance() {
+  public void shouldCompleteModifiedProcessInstanceWithActivatedRootElements() {
     // given
     ENGINE
         .deployment()
@@ -200,6 +166,7 @@ public class ModifyProcessInstanceTest {
         .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
 
     // then
+    verifyThatElementIsCompleted(processInstanceKey, "B");
     verifyThatProcessInstanceIsCompleted(processInstanceKey);
   }
 
@@ -291,7 +258,7 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
-  public void shouldCompletedProcessInstanceWhenElementsInsideExistingFlowScopesAreCompleted() {
+  public void shouldCompleteModifiedProcessInstanceWithActivatedElementsInExistingFlowScope() {
     // given
     ENGINE
         .deployment()
