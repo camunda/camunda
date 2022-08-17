@@ -89,9 +89,10 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
       // write later
       final var writeFuture =
           writeRetryStrategy.runWithRetry(
-              () ->
-                  result.writeRecordsToStream(streamProcessorContext.getLogStreamBatchWriter())
-                      >= 0,
+              () -> {
+                Loggers.PROCESS_PROCESSOR_LOGGER.trace("Write scheduled TaskResult to dispatcher!");
+                return   result.writeRecordsToStream(streamProcessorContext.getLogStreamBatchWriter()) >= 0;
+              },
               streamProcessorContext.getAbortCondition());
 
       writeFuture.onComplete(
@@ -101,6 +102,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
               //   can happen if we tried to write a too big batch of records
               //   this should resolve if we use the buffered writer were we detect these errors
               // earlier
+              Loggers.PROCESS_PROCESSOR_LOGGER.warn("Writing of scheduled TaskResult failed!", t);
             }
           });
     };
