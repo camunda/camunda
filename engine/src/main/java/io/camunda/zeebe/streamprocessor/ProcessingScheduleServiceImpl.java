@@ -59,6 +59,17 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
 
   Runnable toRunnable(final Task task) {
     return () -> {
+      // todo we want so suspend the task execution
+
+      if (streamProcessorContext.isInProcessing()) {
+        // we want to execute the tasks only if no processing is happening
+        // to make sure that we are not interfering with the processing and that all transaction
+        // changes
+        // are available during our task execution
+        actorControl.run(toRunnable(task));
+        return;
+      }
+
       final var builder = new DirectTaskResultBuilder(streamProcessorContext);
       final var result = task.execute(builder);
       result.writeRecordsToStream(streamProcessorContext.getLogStreamBatchWriter());

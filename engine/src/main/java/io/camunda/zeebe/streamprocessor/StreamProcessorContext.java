@@ -55,6 +55,10 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private LogStreamBatchWriter logStreamBatchWriter;
   private CommandResponseWriter commandResponseWriter;
 
+  // this is always accessed by the same actor; which means we don't need to use a concurrent/thread
+  // safe structure here
+  private boolean inProcessing;
+
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
     processingScheduleService = new ProcessingScheduleServiceImpl(this);
@@ -102,6 +106,23 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   public StreamProcessorContext logStreamReader(final LogStreamReader logStreamReader) {
     this.logStreamReader = logStreamReader;
     return this;
+  }
+
+  /**
+   * @return allows to determine whether there is a current processing is on going
+   */
+  public boolean isInProcessing() {
+    return inProcessing;
+  }
+
+  /**
+   * Sets the state of the processing. This is useful to show between different actor jobs whether a
+   * processing is going on or not, and to determine whether certain actions can be taken.
+   *
+   * @param inProcessing the state of processing
+   */
+  public void setInProcessing(final boolean inProcessing) {
+    this.inProcessing = inProcessing;
   }
 
   public StreamProcessorContext eventCache(final RecordValues recordValues) {
