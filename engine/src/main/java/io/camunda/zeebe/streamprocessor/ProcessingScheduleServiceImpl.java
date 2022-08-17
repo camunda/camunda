@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.Task;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
 import java.time.Duration;
 import java.util.function.BiConsumer;
 
@@ -22,10 +23,12 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
 
   private final ActorControl actorControl;
   private final StreamProcessorContext streamProcessorContext;
+  private final AbortableRetryStrategy writeRetryStrategy;
 
   public ProcessingScheduleServiceImpl(final StreamProcessorContext streamProcessorContext) {
     actorControl = streamProcessorContext.getActor();
     this.streamProcessorContext = streamProcessorContext;
+    writeRetryStrategy = new AbortableRetryStrategy(actorControl);
   }
 
   @Override
@@ -72,7 +75,27 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
 
       final var builder = new DirectTaskResultBuilder(streamProcessorContext);
       final var result = task.execute(builder);
-      result.writeRecordsToStream(streamProcessorContext.getLogStreamBatchWriter());
+
+      // we need to retry the writing if the dispatcher return zero or negative position (this means
+      // it was full during writing)
+      // it will be freed from the LogStorageAppender concurrently, which means we might be able to
+      // write later
+      final var writeFuture =
+          writeRetryStrategy.runWithRetry(
+              () ->
+                  result.writeRecordsToStream(streamProcessorContext.getLogStreamBatchWriter())
+                      >= 0,
+              streamProcessorContext.getAbortCondition());
+
+      writeFuture.onComplete(
+          (v, t) -> {
+            if (t != null) {
+              // todo handle error;
+              //   can happen if we tried to write a too big batch of records
+              //   this should resolve if we use the buffered writer were we detect these errors
+              // earlier
+            }
+          });
     };
   }
 }
