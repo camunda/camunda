@@ -12,7 +12,6 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
-import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 public class InterPartitionCommandServiceStep implements PartitionTransitionStep {
@@ -104,7 +103,7 @@ public class InterPartitionCommandServiceStep implements PartitionTransitionStep
                       context.getPartitionId(),
                       context.getClusterCommunicationService(),
                       writer);
-              context.getActorSchedulingService().submitActor(receiver, SchedulingHints.IO_BOUND);
+              context.getActorSchedulingService().submitActor(receiver);
               context.setPartitionCommandReceiver(receiver);
               future.complete(null);
             });
