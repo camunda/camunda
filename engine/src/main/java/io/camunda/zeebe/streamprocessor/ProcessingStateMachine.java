@@ -177,7 +177,7 @@ public final class ProcessingStateMachine {
 
   private void skipRecord() {
     notifySkippedListener(currentRecord);
-    inProcessing = false;
+    context.setInProcessing(false);
     actor.submit(this::readNextRecord);
     metrics.eventSkipped();
   }
