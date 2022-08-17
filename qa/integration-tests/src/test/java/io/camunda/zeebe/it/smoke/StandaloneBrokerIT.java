@@ -117,7 +117,7 @@ final class StandaloneBrokerIT {
   }
 
   private void assertTopologyIsComplete(final ZeebeClient client) {
-    TopologyAssert.assertThat(client.newTopologyRequest().send().join()).isComplete(1, 1);
+    TopologyAssert.assertThat(client.newTopologyRequest().send().join()).isComplete(1, 1, 1);
   }
 
   private ZeebeClient createClient() {

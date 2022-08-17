@@ -96,7 +96,10 @@ public final class TopologyFaultToleranceTest {
         .untilAsserted(
             () ->
                 TopologyAssert.assertThat(clusterRule.getTopologyFromClient())
-                    .isComplete(clusterRule.getClusterSize(), clusterRule.getPartitionCount()));
+                    .isComplete(
+                        clusterRule.getClusterSize(),
+                        clusterRule.getPartitionCount(),
+                        clusterRule.getReplicationFactor()));
   }
 
   private void awaitBrokerIsRemovedFromTopology(final int nodeId) {

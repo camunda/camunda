@@ -288,7 +288,10 @@ final class RollingUpdateTest {
     final var topology = zeebeClient.newTopologyRequest().send().join();
     TopologyAssert.assertThat(topology)
         .as("the topology contains all the brokers")
-        .isComplete(cluster.getBrokers().size(), 1)
+        .isComplete(
+            cluster.getBrokers().size(),
+            cluster.getPartitionsCount(),
+            cluster.getReplicationFactor())
         .as("the topology contains the updated broker")
         .hasBrokerSatisfying(
             brokerInfo -> {
@@ -302,7 +305,8 @@ final class RollingUpdateTest {
     TopologyAssert.assertThat(topology)
         .as("the topology does not contain broker %d", brokerId)
         .doesNotContainBroker(brokerId)
-        .isComplete(cluster.getBrokers().size() - 1, 1);
+        .hasLeaderForEachPartition(cluster.getPartitionsCount())
+        .hasExpectedReplicasCount(cluster.getPartitionsCount(), cluster.getBrokers().size() - 1);
   }
 
   private ZeebeClient newZeebeClient(final ZeebeGatewayNode<?> gateway) {
