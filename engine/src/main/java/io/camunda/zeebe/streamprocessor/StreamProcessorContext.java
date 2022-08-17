@@ -8,13 +8,12 @@
 package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -58,9 +57,13 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private CommandResponseWriter commandResponseWriter;
   private InterPartitionCommandSender partitionCommandSender;
 
+  // this is always accessed by the same actor; which means we don't need to use a concurrent/thread
+  // safe structure here
+  private boolean inProcessing;
+
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
-    processingScheduleService = new ProcessingScheduleServiceImpl(actor);
+    processingScheduleService = new ProcessingScheduleServiceImpl(this);
     return this;
   }
 
@@ -75,11 +78,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   }
 
   @Override
-  public LegacyTypedStreamWriter getLogStreamWriter() {
-    return logStreamWriter;
-  }
-
-  @Override
   public MutableZeebeState getZeebeState() {
     return zeebeState;
   }
@@ -87,6 +85,10 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   @Override
   public int getPartitionId() {
     return getLogStream().getPartitionId();
+  }
+
+  public LegacyTypedStreamWriter getLogStreamWriter() {
+    return logStreamWriter;
   }
 
   public MutableLastProcessedPositionState getLastProcessedPositionState() {
@@ -106,6 +108,23 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   public StreamProcessorContext logStreamReader(final LogStreamReader logStreamReader) {
     this.logStreamReader = logStreamReader;
     return this;
+  }
+
+  /**
+   * @return allows to determine whether there is a current processing is on going
+   */
+  boolean isInProcessing() {
+    return inProcessing;
+  }
+
+  /**
+   * Sets the state of the processing. This is useful to show between different actor jobs whether a
+   * processing is going on or not, and to determine whether certain actions can be taken.
+   *
+   * @param inProcessing the state of processing
+   */
+  void setInProcessing(final boolean inProcessing) {
+    this.inProcessing = inProcessing;
   }
 
   public StreamProcessorContext eventCache(final RecordValues recordValues) {

@@ -13,7 +13,9 @@ import java.util.function.BiConsumer;
 
 public interface ProcessingScheduleService {
 
-  void runDelayed(Duration delay, Runnable followUpTask);
+  void runDelayed(Duration delay, Runnable task);
+
+  void runDelayed(Duration delay, Task task);
 
   <T> void runOnCompletion(ActorFuture<T> precedingTask, BiConsumer<T, Throwable> followUpTask);
 
@@ -40,4 +42,6 @@ public interface ProcessingScheduleService {
           }
         });
   }
+
+  void runAtFixedRate(final Duration delay, final Task task);
 }

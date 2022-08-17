@@ -25,15 +25,14 @@ public final class JobBackoffChecker implements StreamProcessorLifecycleAware {
     backOffDueDateChecker =
         new DueDateChecker(
             BACKOFF_RESOLUTION,
-            typedCommandWriter ->
+            taskResultBuilder ->
                 jobState.findBackedOffJobs(
                     ActorClock.currentTimeMillis(),
                     (key, record) -> {
-                      typedCommandWriter.reset();
-                      typedCommandWriter.appendFollowUpCommand(
+                      taskResultBuilder.appendCommandRecord(
                           key, JobIntent.RECUR_AFTER_BACKOFF, record);
 
-                      return typedCommandWriter.flush() >= 0;
+                      return true;
                     }));
   }
 

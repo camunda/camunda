@@ -5,15 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.transport.commandapi;
+package io.camunda.zeebe.engine.api;
 
-import io.camunda.zeebe.engine.api.CommandResponseWriter;
-import io.camunda.zeebe.engine.api.TypedRecord;
-import java.util.function.Consumer;
+/** Here the interface is just a suggestion. Can be whatever PDT team thinks is best to work with */
+public interface Task {
 
-public interface CommandApiService {
-
-  CommandResponseWriter newCommandResponseWriter();
-
-  Consumer<TypedRecord<?>> getOnProcessedListener(int partitionId);
+  TaskResult execute(TaskResultBuilder taskResultBuilder);
 }

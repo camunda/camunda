@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -143,7 +142,6 @@ public final class ProcessingStateMachine {
   // Used for processing duration metrics
   private Histogram.Timer processingTimer;
   private boolean reachedEnd = true;
-  private boolean inProcessing;
   private final StreamProcessorContext context;
   private final List<RecordProcessor> recordProcessors;
   private ProcessingResult currentProcessingResult;
@@ -179,7 +177,7 @@ public final class ProcessingStateMachine {
 
   private void skipRecord() {
     notifySkippedListener(currentRecord);
-    inProcessing = false;
+    context.setInProcessing(false);
     actor.submit(this::readNextRecord);
     metrics.eventSkipped();
   }
@@ -210,7 +208,7 @@ public final class ProcessingStateMachine {
               && lastWrittenPosition <= previousRecord.getPosition();
     }
 
-    if (shouldProcessNext.getAsBoolean() && hasNext && !inProcessing) {
+    if (shouldProcessNext.getAsBoolean() && hasNext && !context.isInProcessing()) {
       currentRecord = logStreamReader.next();
 
       if (eventFilter.applies(currentRecord)) {
@@ -235,7 +233,7 @@ public final class ProcessingStateMachine {
   private void processCommand(final LoggedEvent command) {
     // we have to mark ourself has inProcessing to not interfere with readNext calls, which
     // are triggered from commit listener
-    inProcessing = true;
+    context.setInProcessing(true);
 
     currentProcessingResult = EmptyProcessingResult.INSTANCE;
 
@@ -438,7 +436,7 @@ public final class ProcessingStateMachine {
           processingTimer.close();
 
           // continue with next record
-          inProcessing = false;
+          context.setInProcessing(false);
           actor.submit(this::readNextRecord);
         });
   }
