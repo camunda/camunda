@@ -52,8 +52,9 @@ public final class ElementActivationBehavior {
   }
 
   /**
-   * Activates the flow scopes of a given element. This is used when modifying a process instance or
-   * starting a process instance at a different place than the start event.
+   * Activates the given element. If the element is nested inside a flow scope and there is no
+   * active instance of the flow scope then it creates a new instance. This is used when modifying a
+   * process instance or starting a process instance at a different place than the start event.
    *
    * @param processInstanceRecord the record of the process instance
    * @param elementToActivate The element to activate

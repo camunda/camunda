@@ -123,10 +123,10 @@ public final class ProcessEventProcessors {
         typedRecordProcessors,
         zeebeState,
         writers,
-        keyGenerator,
         jobBehavior,
         incidentBehavior,
-        catchEventBehavior);
+        catchEventBehavior,
+        elementActivationBehavior);
 
     return bpmnStreamProcessor;
   }
@@ -256,19 +256,19 @@ public final class ProcessEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ZeebeState zeebeState,
       final Writers writers,
-      final KeyGenerator keyGenerator,
       final BpmnJobBehavior jobBehavior,
       final BpmnIncidentBehavior incidentBehavior,
-      final CatchEventBehavior catchEventBehavior) {
+      final CatchEventBehavior catchEventBehavior,
+      final ElementActivationBehavior elementActivationBehavior) {
     final ProcessInstanceModificationProcessor modificationProcessor =
         new ProcessInstanceModificationProcessor(
             writers,
-            keyGenerator,
             zeebeState.getElementInstanceState(),
             zeebeState.getProcessState(),
             jobBehavior,
             incidentBehavior,
-            catchEventBehavior);
+            catchEventBehavior,
+            elementActivationBehavior);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         ProcessInstanceModificationIntent.MODIFY,

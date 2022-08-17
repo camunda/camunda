@@ -11,29 +11,22 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
-import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
+import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
-import java.util.Collection;
-import java.util.List;
 import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceModificationProcessor
     implements TypedRecordProcessor<ProcessInstanceModificationRecord> {
@@ -43,33 +36,31 @@ public final class ProcessInstanceModificationProcessor
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
-  private final TypedCommandWriter commandWriter;
-  private final KeyGenerator keyGenerator;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final BpmnJobBehavior jobBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final TypedRejectionWriter rejectionWriter;
-  private final CatchEventBehavior catchEventBehvavior;
+  private final CatchEventBehavior catchEventBehavior;
+  private final ElementActivationBehavior elementActivationBehavior;
 
   public ProcessInstanceModificationProcessor(
       final Writers writers,
-      final KeyGenerator keyGenerator,
       final ElementInstanceState elementInstanceState,
       final ProcessState processState,
       final BpmnJobBehavior jobBehavior,
       final BpmnIncidentBehavior incidentBehavior,
-      final CatchEventBehavior catchEventBehavior) {
+      final CatchEventBehavior catchEventBehavior,
+      final ElementActivationBehavior elementActivationBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
-    commandWriter = writers.command();
     rejectionWriter = writers.rejection();
-    this.keyGenerator = keyGenerator;
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
     this.jobBehavior = jobBehavior;
     this.incidentBehavior = incidentBehavior;
-    catchEventBehvavior = catchEventBehavior;
+    this.catchEventBehavior = catchEventBehavior;
+    this.elementActivationBehavior = elementActivationBehavior;
   }
 
   @Override
@@ -104,8 +95,7 @@ public final class ProcessInstanceModificationProcessor
                   process.getProcess().getElementById(instruction.getElementId());
 
               // todo: reject if elementToActivate could not be found (#9976)
-
-              activateElement(processInstanceRecord, instruction, elementToActivate);
+              elementActivationBehavior.activateElement(processInstanceRecord, elementToActivate);
             });
 
     value
@@ -116,54 +106,6 @@ public final class ProcessInstanceModificationProcessor
 
     responseWriter.writeEventOnCommand(
         eventKey, ProcessInstanceModificationIntent.MODIFIED, value, command);
-  }
-
-  private void activateElement(
-      final ProcessInstanceRecord processInstance,
-      final ProcessInstanceModificationActivateInstructionValue instruction,
-      final AbstractFlowElement elementToActivate) {
-    final var elementInstanceRecord = new ProcessInstanceRecord();
-    elementInstanceRecord.wrap(processInstance);
-    // todo: deal with non-existing flow scope (#9643)
-    // todo: deal with multiple flow scopes found without ancestor selection (#10008)
-    final List<Long> flowScopeKey = findFlowScopeKey(processInstance, elementToActivate);
-    commandWriter.appendFollowUpCommand(
-        keyGenerator.nextKey(),
-        ProcessInstanceIntent.ACTIVATE_ELEMENT,
-        elementInstanceRecord
-            .setFlowScopeKey(flowScopeKey.get(0))
-            .setBpmnElementType(elementToActivate.getElementType())
-            .setElementId(instruction.getElementId())
-            .setParentProcessInstanceKey(-1)
-            .setParentElementInstanceKey(-1));
-  }
-
-  private List<Long> findFlowScopeKey(
-      final ProcessInstanceRecord processInstance, final AbstractFlowElement elementToActivate) {
-    final var flowScope = elementToActivate.getFlowScope();
-    if (flowScope.getId().equals(processInstance.getElementIdBuffer())) {
-      return List.of(processInstance.getProcessInstanceKey());
-    } else {
-      return findFlowScopeKey(processInstance.getProcessInstanceKey(), flowScope.getId());
-    }
-  }
-
-  private List<Long> findFlowScopeKey(final long ancestorKey, final DirectBuffer targetElementId) {
-    final List<ElementInstance> children = elementInstanceState.getChildren(ancestorKey);
-    final List<Long> matches =
-        children.stream()
-            .filter(child -> child.getValue().getElementIdBuffer().equals(targetElementId))
-            .map(ElementInstance::getKey)
-            .toList();
-
-    if (!matches.isEmpty()) {
-      return matches;
-    }
-
-    return children.stream()
-        .map(child -> findFlowScopeKey(child.getKey(), targetElementId))
-        .flatMap(Collection::stream)
-        .toList();
   }
 
   private void terminateElement(
@@ -180,7 +122,7 @@ public final class ProcessInstanceModificationProcessor
     incidentBehavior.resolveIncidents(elementInstanceKey);
 
     final var sideEffectQueue = new SideEffectQueue();
-    catchEventBehvavior.unsubscribeFromEvents(elementInstanceKey, sideEffectQueue);
+    catchEventBehavior.unsubscribeFromEvents(elementInstanceKey, sideEffectQueue);
     sideEffect.accept(sideEffectQueue);
 
     stateWriter.appendFollowUpEvent(
