@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.processing;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -57,7 +59,9 @@ public final class ProcessEventProcessors {
       final DueDateTimerChecker timerChecker,
       final EventTriggerBehavior eventTriggerBehavior,
       final Writers writers,
-      final JobMetrics jobMetrics) {
+      final JobMetrics jobMetrics,
+      final BpmnJobBehavior jobBehavior,
+      final BpmnIncidentBehavior incidentBehavior) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         zeebeState.getProcessMessageSubscriptionState();
     final var keyGenerator = zeebeState.getKeyGenerator();
@@ -110,7 +114,13 @@ public final class ProcessEventProcessors {
         catchEventBehavior,
         processEngineMetrics);
     addProcessInstanceModificationStreamProcessors(
-        typedRecordProcessors, zeebeState, writers, keyGenerator);
+        typedRecordProcessors,
+        zeebeState,
+        writers,
+        keyGenerator,
+        jobBehavior,
+        incidentBehavior,
+        catchEventBehavior);
 
     return bpmnStreamProcessor;
   }
@@ -240,13 +250,19 @@ public final class ProcessEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ZeebeState zeebeState,
       final Writers writers,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final BpmnJobBehavior jobBehavior,
+      final BpmnIncidentBehavior incidentBehavior,
+      final CatchEventBehavior catchEventBehavior) {
     final ProcessInstanceModificationProcessor modificationProcessor =
         new ProcessInstanceModificationProcessor(
             writers,
             keyGenerator,
             zeebeState.getElementInstanceState(),
-            zeebeState.getProcessState());
+            zeebeState.getProcessState(),
+            jobBehavior,
+            incidentBehavior,
+            catchEventBehavior);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         ProcessInstanceModificationIntent.MODIFY,

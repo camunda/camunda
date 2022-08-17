@@ -8,8 +8,13 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -27,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceModificationProcessor
@@ -41,13 +47,19 @@ public final class ProcessInstanceModificationProcessor
   private final KeyGenerator keyGenerator;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final BpmnJobBehavior jobBehavior;
+  private final BpmnIncidentBehavior incidentBehavior;
   private final TypedRejectionWriter rejectionWriter;
+  private final CatchEventBehavior catchEventBehvavior;
 
   public ProcessInstanceModificationProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ElementInstanceState elementInstanceState,
-      final ProcessState processState) {
+      final ProcessState processState,
+      final BpmnJobBehavior jobBehavior,
+      final BpmnIncidentBehavior incidentBehavior,
+      final CatchEventBehavior catchEventBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     commandWriter = writers.command();
@@ -55,10 +67,15 @@ public final class ProcessInstanceModificationProcessor
     this.keyGenerator = keyGenerator;
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
+    this.jobBehavior = jobBehavior;
+    this.incidentBehavior = incidentBehavior;
+    catchEventBehvavior = catchEventBehavior;
   }
 
   @Override
-  public void processRecord(final TypedRecord<ProcessInstanceModificationRecord> command) {
+  public void processRecord(
+      final TypedRecord<ProcessInstanceModificationRecord> command,
+      final Consumer<SideEffectProducer> sideEffect) {
     final long commandKey = command.getKey();
     final var value = command.getValue();
 
@@ -90,6 +107,10 @@ public final class ProcessInstanceModificationProcessor
 
               activateElement(processInstanceRecord, instruction, elementToActivate);
             });
+
+    value
+        .getTerminateInstructions()
+        .forEach(instruction -> terminateElement(instruction.getElementInstanceKey(), sideEffect));
 
     stateWriter.appendFollowUpEvent(eventKey, ProcessInstanceModificationIntent.MODIFIED, value);
 
@@ -143,5 +164,26 @@ public final class ProcessInstanceModificationProcessor
         .map(child -> findFlowScopeKey(child.getKey(), targetElementId))
         .flatMap(Collection::stream)
         .toList();
+  }
+
+  private void terminateElement(
+      final long elementInstanceKey, final Consumer<SideEffectProducer> sideEffect) {
+    // todo: deal with non-existing element instance (#9983)
+
+    final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
+    final var elementInstanceRecord = elementInstance.getValue();
+
+    stateWriter.appendFollowUpEvent(
+        elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
+
+    jobBehavior.cancelJob(elementInstance);
+    incidentBehavior.resolveIncidents(elementInstanceKey);
+
+    final var sideEffectQueue = new SideEffectQueue();
+    catchEventBehvavior.unsubscribeFromEvents(elementInstanceKey, sideEffectQueue);
+    sideEffect.accept(sideEffectQueue);
+
+    stateWriter.appendFollowUpEvent(
+        elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATED, elementInstanceRecord);
   }
 }

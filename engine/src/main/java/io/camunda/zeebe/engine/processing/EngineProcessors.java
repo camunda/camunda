@@ -12,6 +12,9 @@ import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -29,6 +32,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorCo
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
@@ -89,6 +93,26 @@ public final class EngineProcessors {
         new BpmnEventPublicationBehavior(
             zeebeState, zeebeState.getKeyGenerator(), eventTriggerBehavior, writers);
 
+    final VariableBehavior variableBehavior =
+        new VariableBehavior(variablesState, writers.state(), zeebeState.getKeyGenerator());
+
+    final BpmnStateBehavior stateBehavior = new BpmnStateBehavior(zeebeState, variableBehavior);
+
+    final BpmnIncidentBehavior incidentBehavior =
+        new BpmnIncidentBehavior(zeebeState, zeebeState.getKeyGenerator(), writers.state());
+
+    final var jobMetrics = new JobMetrics(partitionId);
+
+    final var jobBehavior =
+        new BpmnJobBehavior(
+            zeebeState.getKeyGenerator(),
+            zeebeState.getJobState(),
+            writers,
+            expressionProcessor,
+            stateBehavior,
+            incidentBehavior,
+            jobMetrics);
+
     addDeploymentRelatedProcessorAndServices(
         catchEventBehavior,
         zeebeState,
@@ -105,8 +129,6 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers);
 
-    final var jobMetrics = new JobMetrics(partitionId);
-
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
             zeebeState,
@@ -117,7 +139,9 @@ public final class EngineProcessors {
             eventTriggerBehavior,
             writers,
             timerChecker,
-            jobMetrics);
+            jobMetrics,
+            jobBehavior,
+            incidentBehavior);
 
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
@@ -142,7 +166,9 @@ public final class EngineProcessors {
       final EventTriggerBehavior eventTriggerBehavior,
       final Writers writers,
       final DueDateTimerChecker timerChecker,
-      final JobMetrics jobMetrics) {
+      final JobMetrics jobMetrics,
+      final BpmnJobBehavior jobBehavior,
+      final BpmnIncidentBehavior incidentBehavior) {
     return ProcessEventProcessors.addProcessProcessors(
         zeebeState,
         expressionProcessor,
@@ -152,7 +178,9 @@ public final class EngineProcessors {
         timerChecker,
         eventTriggerBehavior,
         writers,
-        jobMetrics);
+        jobMetrics,
+        jobBehavior,
+        incidentBehavior);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
