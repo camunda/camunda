@@ -165,10 +165,12 @@ jobs:
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - uses: uraimo/run-on-arch-action@v2
         name: Run ARM64 image and wait until Zeebe is ready
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           arch: aarch64
           distro: ubuntu_latest
-          githubToken: ${{ github.token }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
           setup: |
             mkdir -p "${PWD}/images"
             docker image save -o "${PWD}/images/image.tar" camunda/zeebe:current-test
