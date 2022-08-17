@@ -122,7 +122,7 @@ public class ProcessingScheduleServiceTest {
         .process(Mockito.argThat(record -> record.getKey() == 1), any());
   }
 
-  private final class DummyProcessor implements RecordProcessor {
+  private static final class DummyProcessor implements RecordProcessor {
 
     private ProcessingScheduleService scheduleService;
     private CountDownLatch latch;
