@@ -15,6 +15,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.timeout;
 
+import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamPlatform;
 import io.camunda.zeebe.engine.util.StreamPlatformExtension;
@@ -50,7 +51,7 @@ public final class NewStreamProcessorReplayModeTest {
         event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
 
     // then
-    final var recordProcessor = streamPlatform.getRecordProcessor();
+    final RecordProcessor recordProcessor = streamPlatform.getDefaultRecordProcessor();
     final InOrder inOrder = inOrder(recordProcessor);
     inOrder.verify(recordProcessor, TIMEOUT).replay(any());
     inOrder.verify(recordProcessor, TIMEOUT).process(any(), any());

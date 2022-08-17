@@ -11,6 +11,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.Engine;
+import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
+import java.util.List;
 import java.util.function.BiFunction;
 
 public final class StreamProcessorTransitionStep implements PartitionTransitionStep {
@@ -127,11 +129,14 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
       final PartitionTransitionContext context, final Role targetRole) {
     final StreamProcessorMode streamProcessorMode =
         targetRole == Role.LEADER ? StreamProcessorMode.PROCESSING : StreamProcessorMode.REPLAY;
+    final List<RecordProcessor> recordProcessors =
+        List.of(new Engine(context.getTypedRecordProcessorFactory()));
+
     return StreamProcessor.builder()
         .logStream(context.getLogStream())
         .actorSchedulingService(context.getActorSchedulingService())
         .zeebeDb(context.getZeebeDb())
-        .recordProcessor(new Engine(context.getTypedRecordProcessorFactory()))
+        .recordProcessors(recordProcessors)
         .eventApplierFactory(EventAppliers::new)
         .nodeId(context.getNodeId())
         .commandResponseWriter(context.getCommandResponseWriter())
