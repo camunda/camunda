@@ -35,7 +35,7 @@ public interface RecordProcessor {
    * @param valueType valueType of a record
    * @return true or false
    */
-  boolean canProcess(ValueType valueType);
+  boolean accepts(ValueType valueType);
 
   /**
    * Called by platform in order to replay a single record

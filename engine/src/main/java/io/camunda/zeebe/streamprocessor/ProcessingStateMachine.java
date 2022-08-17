@@ -258,16 +258,17 @@ public final class ProcessingStateMachine {
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
+      currentProcessor =
+          recordProcessors.stream()
+              .filter(p -> p.accepts(typedCommand.getValueType()))
+              .findFirst()
+              .orElse(null);
+
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
       zeebeDbTransaction.run(
           () -> {
             processingResultBuilder.reset();
 
-            currentProcessor =
-                recordProcessors.stream()
-                    .filter(p -> p.canProcess(typedCommand.getValueType()))
-                    .findFirst()
-                    .orElse(null);
             if (currentProcessor != null) {
               currentProcessingResult =
                   currentProcessor.process(typedCommand, processingResultBuilder);

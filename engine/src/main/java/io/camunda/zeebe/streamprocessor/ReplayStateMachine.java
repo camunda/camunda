@@ -222,11 +222,10 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
       readMetadata(currentEvent);
       final var currentTypedEvent = readRecordValue(currentEvent);
 
-      final var processor =
-          recordProcessors.stream()
-              .filter(p -> p.canProcess(currentTypedEvent.getValueType()))
-              .findFirst();
-      processor.ifPresent(recordProcessor -> recordProcessor.replay(currentTypedEvent));
+      recordProcessors.stream()
+          .filter(p -> p.accepts(currentTypedEvent.getValueType()))
+          .findFirst()
+          .ifPresent(recordProcessor -> recordProcessor.replay(currentTypedEvent));
 
       lastReplayedEventPosition = currentTypedEvent.getPosition();
     }

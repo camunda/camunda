@@ -65,7 +65,7 @@ public final class CheckpointRecordsProcessor implements RecordProcessor {
   }
 
   @Override
-  public boolean canProcess(final ValueType valueType) {
+  public boolean accepts(final ValueType valueType) {
     return valueType == ValueType.CHECKPOINT;
   }
 

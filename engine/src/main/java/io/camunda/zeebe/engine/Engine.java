@@ -89,7 +89,7 @@ public class Engine implements RecordProcessor {
   }
 
   @Override
-  public boolean canProcess(final ValueType valueType) {
+  public boolean accepts(final ValueType valueType) {
     return SUPPORTED_VALUETYPES.contains(valueType);
   }
 
