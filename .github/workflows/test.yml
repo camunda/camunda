@@ -152,8 +152,6 @@ jobs:
     name: Smoke tests on ARM64
     timeout-minutes: 20
     runs-on: "n1-standard-8-netssd-preempt"
-    permissions:
-      packages: write
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
@@ -170,7 +168,6 @@ jobs:
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
       - name: Run basic container smoke test
         run: |
-          docker load --input /images/image.tar.gz
           docker run -d --rm -e ZEEBE_BROKER_NETWORK_HOST=0.0.0.0 -p 9600:9600 \
             --platform linux/arm64 camunda/zeebe:current-test
           timeout --foreground -s TERM 30s bash -c \
