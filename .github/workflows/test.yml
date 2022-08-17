@@ -163,6 +163,7 @@ jobs:
           push: false
           platforms: linux/arm64
           distball: ${{ steps.build-zeebe.outputs.distball }}
+          build_sha: '633fe4adca4f3ccef5c900cba8b836625a740c91bc8bc9454cf48be9e7d18fac'
       - name: Setup QEMU emulation for Docker run
         run: |
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
@@ -170,9 +171,9 @@ jobs:
         run: |
           docker run -d --rm -e ZEEBE_BROKER_NETWORK_HOST=0.0.0.0 -p 9600:9600 \
             --platform linux/arm64 camunda/zeebe:current-test
-          timeout --foreground -s TERM 30s bash -c \
+          timeout --foreground -s TERM 120s bash -c \
           'while [[ "$(curl -s -o /dev/null -m 3 -L -w ''%{http_code}'' http://localhost:9600/ready)" != "204" ]];\
-                do echo "Waiting for http://localhost:9600/ready" && sleep 2;\
+                do echo "Waiting for http://localhost:9600/ready" && sleep 5;\
                 done'
   smoke-tests:
     # This name is hard-referenced from bors.toml

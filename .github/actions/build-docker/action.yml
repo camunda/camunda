@@ -25,6 +25,10 @@ inputs:
     description: 'Comma separated-list of platforms to build the image for; defaults to linux/amd64'
     required: false
     default: 'linux/amd64'
+  build_sha:
+    description: 'Platform specific build SHA'
+    required: false
+    default: 'fce37e5146419a158c2199c6089fa39b92445fb2e66dc0331f8591891239ea3b'
 
 outputs:
   image:
@@ -84,4 +88,5 @@ runs:
           DATE=${{ steps.get-date.outputs.result }}
           REVISION=${{ github.sha }}
           VERSION=${{ steps.get-version.outputs.result }}
+          BUILD_SHA=${{ inputs.build_sha }}
         target: app
