@@ -152,6 +152,8 @@ jobs:
     name: Smoke tests on ARM64
     timeout-minutes: 20
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
