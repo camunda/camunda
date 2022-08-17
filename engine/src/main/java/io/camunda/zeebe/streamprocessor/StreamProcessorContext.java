@@ -111,7 +111,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   /**
    * @return allows to determine whether there is a current processing is on going
    */
-  public boolean isInProcessing() {
+  boolean isInProcessing() {
     return inProcessing;
   }
 
@@ -121,7 +121,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
    *
    * @param inProcessing the state of processing
    */
-  public void setInProcessing(final boolean inProcessing) {
+  void setInProcessing(final boolean inProcessing) {
     this.inProcessing = inProcessing;
   }
 
