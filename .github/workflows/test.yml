@@ -169,12 +169,21 @@ jobs:
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
       - name: Run basic container smoke test
         run: |
-          docker run -d --rm -e ZEEBE_BROKER_NETWORK_HOST=0.0.0.0 -p 9600:9600 \
-            --platform linux/arm64 camunda/zeebe:current-test
+          DOCKER_CONTAINER=$(docker run -d --rm -e ZEEBE_BROKER_NETWORK_HOST=0.0.0.0 -p 9600:9600 \
+            --platform linux/arm64 camunda/zeebe:current-test)
+          docker logs -f "${DOCKER_CONTAINER}" >& test.log &
           timeout --foreground -s TERM 120s bash -c \
           'while [[ "$(curl -s -o /dev/null -m 3 -L -w ''%{http_code}'' http://localhost:9600/ready)" != "204" ]];\
                 do echo "Waiting for http://localhost:9600/ready" && sleep 5;\
                 done'
+      - name: Save container output
+        uses: actions/upload-artifact@v3
+        with:
+          name: Smoke tests on ARM64 output
+          path: |
+            test.log
+          retention-days: 7
+          if-no-files-found: ignore
   smoke-tests:
     # This name is hard-referenced from bors.toml
     # Remember to update that if this name, or the matrix.os changes
