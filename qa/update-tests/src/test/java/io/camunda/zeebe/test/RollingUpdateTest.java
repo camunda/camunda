@@ -14,12 +14,9 @@ import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.qa.util.actuator.PartitionsActuatorClient;
-import io.camunda.zeebe.qa.util.actuator.PartitionsActuatorClient.PartitionStatus;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
-import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VersionUtil;
 import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.ZeebeGatewayNode;
@@ -251,13 +248,8 @@ final class RollingUpdateTest {
     }
   }
 
-  private void takeSnapshot(
-      final ZeebeBrokerNode<? extends org.testcontainers.containers.GenericContainer<?>> node) {
-    final PartitionsActuatorClient partitionsActuatorClient =
-        new PartitionsActuatorClient(node.getExternalMonitoringAddress());
-    final Either<Throwable, Map<String, PartitionStatus>> result =
-        partitionsActuatorClient.takeSnapshot();
-    EitherAssert.assertThat(result).as("take snapshot operation was successful").isRight();
+  private void takeSnapshot(final ZeebeBrokerNode<?> node) {
+    PartitionsActuator.of(node).takeSnapshot();
   }
 
   private void updateBroker(final ZeebeBrokerNode<?> broker) {
@@ -319,15 +311,10 @@ final class RollingUpdateTest {
 
   private void assertBrokerHasAtLeastOneSnapshot(final int index) {
     final ZeebeBrokerNode<?> broker = cluster.getBrokers().get(index);
-    final PartitionsActuatorClient partitionsActuatorClient =
-        new PartitionsActuatorClient(broker.getExternalMonitoringAddress());
-
-    final Either<Throwable, Map<String, PartitionStatus>> response =
-        partitionsActuatorClient.queryPartitions();
-    EitherAssert.assertThat(response).isRight();
-    assertThat(response.get())
+    final PartitionsActuator partitionsActuator = PartitionsActuator.of(broker);
+    assertThat(partitionsActuator.query())
         .hasEntrySatisfying(
-            "1",
+            1,
             status ->
                 assertThat(status.snapshotId())
                     .as("partition 1 reports the presence of a snapshot")
