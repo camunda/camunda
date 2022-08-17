@@ -176,6 +176,10 @@ jobs:
           'while [[ "$(curl -s -o /dev/null -m 3 -L -w ''%{http_code}'' http://localhost:9600/ready)" != "204" ]];\
                 do echo "Waiting for http://localhost:9600/ready" && sleep 5;\
                 done'
+      - name: Print out container output on failure
+        if: failure()
+        run: |
+          [ -r test.log ] && cat test.log
       - name: Save container output
         uses: actions/upload-artifact@v3
         with:
