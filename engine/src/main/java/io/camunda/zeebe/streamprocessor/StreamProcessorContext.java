@@ -8,6 +8,7 @@
 package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
@@ -55,6 +56,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   private LogStreamBatchWriter logStreamBatchWriter;
   private CommandResponseWriter commandResponseWriter;
+  private InterPartitionCommandSender partitionCommandSender;
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -196,5 +198,13 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public CommandResponseWriter getCommandResponseWriter() {
     return commandResponseWriter;
+  }
+
+  public InterPartitionCommandSender getPartitionCommandSender() {
+    return partitionCommandSender;
+  }
+
+  public void partitionCommandSender(final InterPartitionCommandSender partitionCommandSender) {
+    this.partitionCommandSender = partitionCommandSender;
   }
 }

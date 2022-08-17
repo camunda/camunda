@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
@@ -49,4 +50,6 @@ public interface PartitionContext {
   @Deprecated // currently the implementation forwards this to other components inside the
   // partition; these components will be directly registered as listeners in the future
   void setDiskSpaceAvailable(boolean b);
+
+  TopologyManager getTopologyManager();
 }

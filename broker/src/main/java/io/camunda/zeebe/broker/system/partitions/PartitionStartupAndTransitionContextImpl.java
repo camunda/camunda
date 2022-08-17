@@ -16,12 +16,14 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.logstreams.LogDeletionService;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
+import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -87,8 +89,10 @@ public class PartitionStartupAndTransitionContextImpl
   private Role currentRole;
   private ConcurrencyControl concurrencyControl;
   private InterPartitionCommandReceiverActor interPartitionCommandReceiver;
+  private InterPartitionCommandSenderService interPartitionCommandSender;
   private final AtomixServerTransport gatewayBrokerTransport;
   private BackupApiRequestHandler backupApiRequestHandler;
+  private final TopologyManager topologyManager;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -106,7 +110,8 @@ public class PartitionStartupAndTransitionContextImpl
       final ExporterRepository exporterRepository,
       final PartitionProcessingState partitionProcessingState,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
-      final AtomixServerTransport gatewayBrokerTransport) {
+      final AtomixServerTransport gatewayBrokerTransport,
+      final TopologyManager topologyManager) {
     this.nodeId = nodeId;
     this.clusterCommunicationService = clusterCommunicationService;
     this.raftPartition = raftPartition;
@@ -125,6 +130,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.partitionProcessingState = partitionProcessingState;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
+    this.topologyManager = topologyManager;
   }
 
   public PartitionAdminControl getPartitionAdminControl() {
@@ -224,6 +230,16 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public InterPartitionCommandSenderService getPartitionCommandSender() {
+    return interPartitionCommandSender;
+  }
+
+  @Override
+  public void setPartitionCommandSender(final InterPartitionCommandSenderService sender) {
+    interPartitionCommandSender = sender;
+  }
+
+  @Override
   public boolean shouldExport() {
     return !partitionProcessingState.isExportingPaused();
   }
@@ -291,6 +307,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setDiskSpaceAvailable(final boolean diskSpaceAvailable) {
     partitionProcessingState.setDiskSpaceAvailable(diskSpaceAvailable);
+  }
+
+  @Override
+  public TopologyManager getTopologyManager() {
+    return topologyManager;
   }
 
   @Override
