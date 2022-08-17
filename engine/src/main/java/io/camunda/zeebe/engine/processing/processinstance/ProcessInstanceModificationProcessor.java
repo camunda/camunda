@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowE
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
@@ -30,12 +32,16 @@ import org.agrona.DirectBuffer;
 public final class ProcessInstanceModificationProcessor
     implements TypedRecordProcessor<ProcessInstanceModificationRecord> {
 
+  private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
+      "Expected to modify process instance but no process instance found with key '%d'";
+
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final TypedRejectionWriter rejectionWriter;
 
   public ProcessInstanceModificationProcessor(
       final Writers writers,
@@ -45,6 +51,7 @@ public final class ProcessInstanceModificationProcessor
     stateWriter = writers.state();
     responseWriter = writers.response();
     commandWriter = writers.command();
+    rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
@@ -58,10 +65,19 @@ public final class ProcessInstanceModificationProcessor
     // if set, the command's key should take precedence over the processInstanceKey
     final long eventKey = commandKey > -1 ? commandKey : value.getProcessInstanceKey();
 
-    final var processInstance =
-        elementInstanceState.getInstance(value.getProcessInstanceKey()).getValue();
-    // todo: reject if process instance could not be found (no issue yet)
-    final var process = processState.getProcessByKey(processInstance.getProcessDefinitionKey());
+    final ElementInstance processInstance =
+        elementInstanceState.getInstance(value.getProcessInstanceKey());
+
+    if (processInstance == null) {
+      final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
+      return;
+    }
+
+    final var processInstanceRecord = processInstance.getValue();
+    final var process =
+        processState.getProcessByKey(processInstanceRecord.getProcessDefinitionKey());
 
     value
         .getActivateInstructions()
@@ -72,7 +88,7 @@ public final class ProcessInstanceModificationProcessor
 
               // todo: reject if elementToActivate could not be found (#9976)
 
-              activateElement(processInstance, instruction, elementToActivate);
+              activateElement(processInstanceRecord, instruction, elementToActivate);
             });
 
     stateWriter.appendFollowUpEvent(eventKey, ProcessInstanceModificationIntent.MODIFIED, value);
