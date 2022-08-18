@@ -90,7 +90,6 @@ jobs:
         with:
           # give it a fake name to ensure we never try pushing it
           repository: localhost:5000/camunda/zeebe
-          package: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Verify Docker image
         env:
