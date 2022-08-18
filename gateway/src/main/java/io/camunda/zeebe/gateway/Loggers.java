@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 public final class Loggers {
 
   public static final Logger GATEWAY_LOGGER = LoggerFactory.getLogger("io.camunda.zeebe.gateway");
+  public static final Logger LONG_POLLING =
+      LoggerFactory.getLogger("io.camunda.zeebe.gateway.longPolling");
   public static final Logger GATEWAY_CFG_LOGGER =
       LoggerFactory.getLogger("io.camunda.zeebe.gateway.impl.configuration");
 }

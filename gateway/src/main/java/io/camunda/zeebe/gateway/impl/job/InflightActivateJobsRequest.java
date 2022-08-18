@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 
 public class InflightActivateJobsRequest {
 
-  private static final Logger LOG = Loggers.GATEWAY_LOGGER;
+  private static final Logger LOG = Loggers.LONG_POLLING;
   private final long requestId;
   private final BrokerActivateJobsRequest request;
   private final ServerStreamObserver<ActivateJobsResponse> responseObserver;
@@ -197,7 +197,7 @@ public class InflightActivateJobsRequest {
   }
 
   @Override
-  public boolean equals(Object obj) {
+  public boolean equals(final Object obj) {
     if (this == obj) {
       return true;
     }
