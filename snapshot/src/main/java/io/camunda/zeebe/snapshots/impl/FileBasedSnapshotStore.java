@@ -47,30 +47,25 @@ public final class FileBasedSnapshotStore extends Actor
     implements ConstructableSnapshotStore, ReceivableSnapshotStore {
 
   static final int VERSION = 1;
+  static final String METADATA_FILE_NAME = "zeebe.metadata";
   // first is the metadata and the second the the received snapshot count
   private static final String RECEIVING_DIR_FORMAT = "%s-%d";
-
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotStore.class);
   private static final String CHECKSUM_SUFFIX = ".checksum";
-
   // the root snapshotsDirectory where all snapshots should be stored
   private final Path snapshotsDirectory;
   // the root snapshotsDirectory when pending snapshots should be stored
   private final Path pendingDirectory;
   // keeps track of all snapshot modification listeners
   private final Set<PersistedSnapshotListener> listeners;
-
   private final SnapshotMetrics snapshotMetrics;
-
   // Use AtomicReference so that getting latest snapshot doesn't have to go through the actor
   private final AtomicReference<FileBasedSnapshot> currentPersistedSnapshotRef =
       new AtomicReference<>();
   // used to write concurrently received snapshots in different pending directories
   private final AtomicLong receivingSnapshotStartCount;
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
-
   private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
-
   private final String actorName;
   private final int partitionId;
 
@@ -219,7 +214,7 @@ public final class FileBasedSnapshotStore extends Actor
 
   private FileBasedSnapshotMetadata collectMetadata(
       final Path path, final FileBasedSnapshotId snapshotId) throws IOException {
-    final var metadataPath = path.resolve("zeebe.metadata");
+    final var metadataPath = path.resolve(METADATA_FILE_NAME);
     if (metadataPath.toFile().exists()) {
       final var encodedMetadata = Files.readAllBytes(metadataPath);
       return FileBasedSnapshotMetadata.decode(encodedMetadata);

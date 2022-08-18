@@ -158,7 +158,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
 
   private void writeMetadataAndUpdateChecksum(final FileBasedSnapshotMetadata metadata)
       throws Exception {
-    final var metadataPath = directory.resolve("zeebe.metadata");
+    final var metadataPath = directory.resolve(FileBasedSnapshotStore.METADATA_FILE_NAME);
     // Write metadata file along with snapshot files
     try (final RandomAccessFile metadataFile = new RandomAccessFile(metadataPath.toFile(), "rwd")) {
       final byte[] data = metadata.encode();
