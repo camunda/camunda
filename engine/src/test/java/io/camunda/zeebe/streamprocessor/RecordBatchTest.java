@@ -8,31 +8,24 @@
 package io.camunda.zeebe.streamprocessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Spliterator;
-import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import io.camunda.zeebe.streamprocessor.records.RecordBatch;
+import io.camunda.zeebe.streamprocessor.records.UnmodifiableRecordBatchEntry;
 import org.junit.jupiter.api.Test;
 
-public class BufferedStreamWriterTest {
-
+public class RecordBatchTest {
 
   @Test
-  public void shouldWriteRecordToBuffer() {
+  public void shouldAppendToRecordBatch() {
     // given
-    final var recordBatch = new RecordBatch();
+    final var recordBatch = new RecordBatch(1024);
     final var processInstanceRecord = Records.processInstance(1);
 
     // when
@@ -49,81 +42,33 @@ public class BufferedStreamWriterTest {
     final var batchSize = recordBatch.getBatchSize();
     assertThat(batchSize).isGreaterThan(processInstanceRecord.getLength());
 
-    assertThat(recordBatch).map(RecordBatchEntry::key).containsOnly(1L);
-    assertThat(recordBatch).map(RecordBatchEntry::sourceIndex).containsOnly(-1);
-    assertThat(recordBatch).map(RecordBatchEntry::recordMetadata).map(RecordMetadata::getIntent).containsOnly(ProcessInstanceIntent.ACTIVATE_ELEMENT);
-    assertThat(recordBatch).map(RecordBatchEntry::recordMetadata).map(RecordMetadata::getRecordType).containsOnly(RecordType.COMMAND);
-    assertThat(recordBatch).map(RecordBatchEntry::recordMetadata).map(RecordMetadata::getRejectionType).containsOnly(RejectionType.ALREADY_EXISTS);
-    assertThat(recordBatch).map(RecordBatchEntry::recordMetadata).map(RecordMetadata::getValueType).containsOnly(ValueType.PROCESS_INSTANCE);
-    assertThat(recordBatch).map(RecordBatchEntry::recordMetadata).map(RecordMetadata::getRejectionReason).containsOnly("broken somehow");
+    assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::key).containsOnly(1L);
+    assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::sourceIndex).containsOnly(-1);
+    assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::recordMetadata).map(RecordMetadata::getIntent).containsOnly(ProcessInstanceIntent.ACTIVATE_ELEMENT);
+    assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::recordMetadata).map(RecordMetadata::getRecordType).containsOnly(RecordType.COMMAND);
+    assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::recordMetadata).map(RecordMetadata::getRejectionType).containsOnly(RejectionType.ALREADY_EXISTS);
+    assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::recordMetadata).map(RecordMetadata::getValueType).containsOnly(ValueType.PROCESS_INSTANCE);
+    assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::recordMetadata).map(RecordMetadata::getRejectionReason).containsOnly("broken somehow");
+    assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::recordValue).containsOnly(processInstanceRecord);
   }
 
-  private static final class RecordBatch implements Iterable<RecordBatchEntry> {
-    final List<RecordBatchEntry> recordBatchEntries = new ArrayList<>();
-    private int batchSize;
+  @Test
+  public void shouldNotAppendToRecordBatchIfMaxSizeIsReached() {
+    // given
+    final var maxBatchSize = 100; // bytes
+    final var recordBatch = new RecordBatch(maxBatchSize);
+    final var processInstanceRecord = Records.processInstance(1);
 
-    void appendRecord(
-        final long key,
-        final int sourceIndex,
-        final RecordType type,
-        final Intent intent,
-        final RejectionType rejectionType,
-        final String rejectionReason,
-        final ValueType valueType,
-        final BufferWriter valueWriter) {
-      final var recordBatchEntry = RecordBatchEntry.createRecordBatchEntry(key, sourceIndex, type,
-          intent, rejectionType, rejectionReason, valueType, valueWriter);
-      recordBatchEntries.add(recordBatchEntry);
-      batchSize += recordBatchEntry.getLength();
-    }
-
-    public int getBatchSize() {
-      return batchSize;
-    }
-
-    @Override
-    public Iterator<RecordBatchEntry> iterator() {
-      return recordBatchEntries.iterator();
-    }
-
-    @Override
-    public void forEach(final Consumer<? super RecordBatchEntry> action) {
-      recordBatchEntries.forEach(action);
-    }
-
-    @Override
-    public Spliterator<RecordBatchEntry> spliterator() {
-      return recordBatchEntries.spliterator();
-    }
+    // expect
+    assertThatThrownBy(() ->
+    recordBatch.appendRecord(1,
+        -1,
+        RecordType.COMMAND,
+        ProcessInstanceIntent.ACTIVATE_ELEMENT,
+        RejectionType.ALREADY_EXISTS,
+        "broken somehow",
+        ValueType.PROCESS_INSTANCE,
+        processInstanceRecord)).hasMessageContaining("Batch would reach his maxBatchSize ");
   }
 
-  private record RecordBatchEntry(long key, int sourceIndex,
-                                  RecordMetadata recordMetadata,
-                                  DirectBuffer recordValueBuffer) {
-    public static RecordBatchEntry createRecordBatchEntry(final long key, final int sourceIndex, final RecordType recordType,
-        final Intent intent,
-        final RejectionType rejectionType, final String rejectionReason, final ValueType valueType,
-        final BufferWriter valueWriter) {
-      final var recordMetadata =
-          new RecordMetadata()
-              .recordType(recordType)
-              .intent(intent)
-              .rejectionType(rejectionType)
-              .rejectionReason(rejectionReason)
-              .valueType(valueType);
-
-      final var bytes = new byte[valueWriter.getLength()];
-      final var recordValueBuffer = new UnsafeBuffer(bytes);
-      valueWriter.write(recordValueBuffer, 0);
-      return new RecordBatchEntry(key, sourceIndex, recordMetadata, recordValueBuffer);
-    }
-
-    public int getLength() {
-      return
-        Long.BYTES + // key
-        Integer.BYTES + // source Index
-        recordMetadata.getLength() +
-        recordValueBuffer.capacity();
-    }
-  }
 }
