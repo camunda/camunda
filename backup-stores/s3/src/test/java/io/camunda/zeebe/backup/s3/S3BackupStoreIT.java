@@ -39,29 +39,25 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 final class S3BackupStoreIT {
 
   @Container
-  LocalStackContainer localStack =
+  private static final LocalStackContainer S3 =
       new LocalStackContainer(DockerImageName.parse("localstack/localstack:0.14.5"))
           .withServices(Service.S3);
 
-  private S3AsyncClient client;
+  private final S3AsyncClient client =
+      S3AsyncClient.builder()
+          .endpointOverride(S3.getEndpointOverride(Service.S3))
+          .region(Region.of(S3.getRegion()))
+          .credentialsProvider(
+              StaticCredentialsProvider.create(
+                  AwsBasicCredentials.create(S3.getAccessKey(), S3.getSecretKey())))
+          .build();
   private S3BackupConfig config;
   private S3BackupStore store;
 
   @BeforeEach
   void setupBucket() {
-    client =
-        S3AsyncClient.builder()
-            .endpointOverride(localStack.getEndpointOverride(Service.S3))
-            .region(Region.of(localStack.getRegion()))
-            .credentialsProvider(
-                StaticCredentialsProvider.create(
-                    AwsBasicCredentials.create(
-                        localStack.getAccessKey(), localStack.getSecretKey())))
-            .build();
-
     config = new S3BackupConfig(RandomStringUtils.randomAlphabetic(10).toLowerCase());
     store = new S3BackupStore(config, client);
-
     client.createBucket(CreateBucketRequest.builder().bucket(config.bucketName()).build()).join();
   }
 
