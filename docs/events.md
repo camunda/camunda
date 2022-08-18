@@ -67,9 +67,8 @@ Event scopes are not entities in Zeebe. Instead, Zeebe only cares about event sc
 
 An **event scope instance** is an instance of an event scope. It directly refers to a specific element instance, because it is stored in the state (in the event scope column family) under the key of that element instance. This means, we can directly access the event scope for an element instance. We'll see later what we use this for.
 
-:::info
-Event scope instances are persisted in the state (as `EventScopeInstance`) but not represented on the log stream. In contrast, event triggers are persisted along with the event scope instance in the state, and are represented on the log stream as `ProcessEvent` records.
-:::
+> **Note**  
+> Event scope instances are persisted in the state (as `EventScopeInstance`) but not represented on the log stream. In contrast, event triggers are persisted along with the event scope instance in the state, and are represented on the log stream as `ProcessEvent` records.
 
 The engine uses event scope instances:
 - ~~to find the relevant catch event when a trigger occurs~~ - It would be reasonable to expect that the engine uses the event scope instance to find the relevant catch event for a trigger, but that is not the case. We'll discuss how this works later.
