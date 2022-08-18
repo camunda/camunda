@@ -120,7 +120,9 @@ public class ProcessingScheduleServiceTest {
     streamPlatform.writeBatch(
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
         event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
-    streamPlatform.withRecordProcessors(List.of(dummyProcessor)).startStreamProcessorNotAwaitOpening();
+    streamPlatform
+        .withRecordProcessors(List.of(dummyProcessor))
+        .startStreamProcessorNotAwaitOpening();
     final var mockedTask = spy(new DummyTask());
 
     // when
@@ -181,6 +183,7 @@ public class ProcessingScheduleServiceTest {
     // then
     verify(mockedTask, TIMEOUT).execute(any());
   }
+
   @Test
   public void shouldWriteRecordAfterTaskWasExecuted() {
     // given

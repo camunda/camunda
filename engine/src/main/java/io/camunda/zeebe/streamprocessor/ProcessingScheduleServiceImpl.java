@@ -83,7 +83,8 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
         //  * we are not running during suspending
         //  * we are not interfering with the current ongoing processing,
         //    such that all transaction changes are available during our task execution
-        Loggers.PROCESS_PROCESSOR_LOGGER.trace("Not able to execute scheduled task right now. [streamProcessorPhase: {}, inProcessing: {}]",
+        Loggers.PROCESS_PROCESSOR_LOGGER.trace(
+            "Not able to execute scheduled task right now. [streamProcessorPhase: {}, inProcessing: {}]",
             currentStreamProcessorPhase,
             streamProcessorContext.isInProcessing());
         actorControl.submit(toRunnable(task));
