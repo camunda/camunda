@@ -52,8 +52,8 @@ jobs:
           ./agent --private-registry-url=http://localhost:5000 '--private-registry-allowed-image-name-globs=*,*/*' &
           ./agent wait
       - run: >
-          mvn -B -T2 --no-snapshot-updates
-          -D junitThreadCount=12
+          mvn -B --no-snapshot-updates
+          -D junitThreadCount=12 -D forkCount=1C
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests
