@@ -36,6 +36,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private boolean isValid = false;
   private PersistedSnapshot snapshot;
   private long checksum;
+  private long lastFollowupEventPosition;
 
   FileBasedTransientSnapshot(
       final FileBasedSnapshotId snapshotId,
@@ -52,6 +53,12 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   public ActorFuture<Void> take(final Consumer<Path> takeSnapshot) {
     actor.run(() -> takeInternal(takeSnapshot));
     return takenFuture;
+  }
+
+  @Override
+  public TransientSnapshot withLastFollowupEventPosition(final long lastFollowupEventPosition) {
+    actor.run(() -> this.lastFollowupEventPosition = lastFollowupEventPosition);
+    return this;
   }
 
   private void takeInternal(final Consumer<Path> takeSnapshot) {

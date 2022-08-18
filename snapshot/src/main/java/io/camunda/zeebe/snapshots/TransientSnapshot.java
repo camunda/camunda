@@ -24,4 +24,6 @@ public interface TransientSnapshot extends PersistableSnapshot {
    * @return true on success, false otherwise
    */
   ActorFuture<Void> take(Consumer<Path> takeSnapshot);
+
+  TransientSnapshot withLastFollowupEventPosition(long followupEventPosition);
 }
