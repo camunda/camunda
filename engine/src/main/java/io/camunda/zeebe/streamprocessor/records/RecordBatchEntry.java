@@ -20,22 +20,36 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public record RecordBatchEntry(long key, int sourceIndex,
-                               RecordMetadata recordMetadata,
-                               DirectBuffer recordValueBuffer) implements UnmodifiableRecordBatchEntry {
+public record RecordBatchEntry(
+    long key, int sourceIndex, RecordMetadata recordMetadata, DirectBuffer recordValueBuffer)
+    implements UnmodifiableRecordBatchEntry {
 
   @Override
   public UnifiedRecordValue recordValue() {
-    final UnifiedRecordValue unifiedRecordValue = ReflectUtil.newInstance(
-        EVENT_REGISTRY.get(recordMetadata.getValueType()));
+    final UnifiedRecordValue unifiedRecordValue =
+        ReflectUtil.newInstance(EVENT_REGISTRY.get(recordMetadata.getValueType()));
     unifiedRecordValue.wrap(recordValueBuffer, 0, recordValueBuffer.capacity());
     return unifiedRecordValue;
   }
 
-  public static RecordBatchEntry createRecordBatchEntry(final long key, final int sourceIndex,
+  @Override
+  public int getLength() {
+    return Long.BYTES
+        + // key
+        Integer.BYTES
+        + // source Index
+        recordMetadata.getLength()
+        + recordValueBuffer.capacity();
+  }
+
+  public static RecordBatchEntry createRecordBatchEntry(
+      final long key,
+      final int sourceIndex,
       final RecordType recordType,
       final Intent intent,
-      final RejectionType rejectionType, final String rejectionReason, final ValueType valueType,
+      final RejectionType rejectionType,
+      final String rejectionReason,
+      final ValueType valueType,
       final BufferWriter valueWriter) {
     final var recordMetadata =
         new RecordMetadata()
@@ -50,13 +64,5 @@ public record RecordBatchEntry(long key, int sourceIndex,
     valueWriter.write(recordValueBuffer, 0);
 
     return new RecordBatchEntry(key, sourceIndex, recordMetadata, recordValueBuffer);
-  }
-
-  public int getLength() {
-    return
-        Long.BYTES + // key
-            Integer.BYTES + // source Index
-            recordMetadata.getLength() +
-            recordValueBuffer.capacity();
   }
 }

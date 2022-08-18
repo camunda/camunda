@@ -21,11 +21,14 @@ public interface ModifiableRecordBatch extends UnmodifiableRecordBatch {
 
   /**
    * Allows to add a new Record to the batch
+   *
    * @param key the key of the record
-   * @param sourceIndex the position/index in the current batch which caused that entry; should be set to -1 if no entry caused it
+   * @param sourceIndex the position/index in the current batch which caused that entry; should be
+   *     set to -1 if no entry caused it
    * @param recordType the type of the record, part of the record metadata, must be set
    * @param intent the intent of the record, part of the record metadata, must be set
-   * @param rejectionType the rejection type, part of the record metadata, can be set to a NULL_VALUE
+   * @param rejectionType the rejection type, part of the record metadata, can be set to a
+   *     NULL_VALUE
    * @param rejectionReason the rejection reason, part of the record metadata, can be empty
    * @param valueType the value type, part of the record metadata, must be set
    * @param valueWriter the actual record value
@@ -39,5 +42,4 @@ public interface ModifiableRecordBatch extends UnmodifiableRecordBatch {
       final String rejectionReason,
       final ValueType valueType,
       final BufferWriter valueWriter);
-
 }

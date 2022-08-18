@@ -29,7 +29,8 @@ public class RecordBatchTest {
     final var processInstanceRecord = Records.processInstance(1);
 
     // when
-    recordBatch.appendRecord(1,
+    recordBatch.appendRecord(
+        1,
         -1,
         RecordType.COMMAND,
         ProcessInstanceIntent.ACTIVATE_ELEMENT,
@@ -44,12 +45,29 @@ public class RecordBatchTest {
 
     assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::key).containsOnly(1L);
     assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::sourceIndex).containsOnly(-1);
-    assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::recordMetadata).map(RecordMetadata::getIntent).containsOnly(ProcessInstanceIntent.ACTIVATE_ELEMENT);
-    assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::recordMetadata).map(RecordMetadata::getRecordType).containsOnly(RecordType.COMMAND);
-    assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::recordMetadata).map(RecordMetadata::getRejectionType).containsOnly(RejectionType.ALREADY_EXISTS);
-    assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::recordMetadata).map(RecordMetadata::getValueType).containsOnly(ValueType.PROCESS_INSTANCE);
-    assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::recordMetadata).map(RecordMetadata::getRejectionReason).containsOnly("broken somehow");
-    assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::recordValue).containsOnly(processInstanceRecord);
+    assertThat(recordBatch)
+        .map(UnmodifiableRecordBatchEntry::recordMetadata)
+        .map(RecordMetadata::getIntent)
+        .containsOnly(ProcessInstanceIntent.ACTIVATE_ELEMENT);
+    assertThat(recordBatch)
+        .map(UnmodifiableRecordBatchEntry::recordMetadata)
+        .map(RecordMetadata::getRecordType)
+        .containsOnly(RecordType.COMMAND);
+    assertThat(recordBatch)
+        .map(UnmodifiableRecordBatchEntry::recordMetadata)
+        .map(RecordMetadata::getRejectionType)
+        .containsOnly(RejectionType.ALREADY_EXISTS);
+    assertThat(recordBatch)
+        .map(UnmodifiableRecordBatchEntry::recordMetadata)
+        .map(RecordMetadata::getValueType)
+        .containsOnly(ValueType.PROCESS_INSTANCE);
+    assertThat(recordBatch)
+        .map(UnmodifiableRecordBatchEntry::recordMetadata)
+        .map(RecordMetadata::getRejectionReason)
+        .containsOnly("broken somehow");
+    assertThat(recordBatch)
+        .map(UnmodifiableRecordBatchEntry::recordValue)
+        .containsOnly(processInstanceRecord);
   }
 
   @Test
@@ -60,15 +78,17 @@ public class RecordBatchTest {
     final var processInstanceRecord = Records.processInstance(1);
 
     // expect
-    assertThatThrownBy(() ->
-    recordBatch.appendRecord(1,
-        -1,
-        RecordType.COMMAND,
-        ProcessInstanceIntent.ACTIVATE_ELEMENT,
-        RejectionType.ALREADY_EXISTS,
-        "broken somehow",
-        ValueType.PROCESS_INSTANCE,
-        processInstanceRecord)).hasMessageContaining("Batch would reach his maxBatchSize ");
+    assertThatThrownBy(
+            () ->
+                recordBatch.appendRecord(
+                    1,
+                    -1,
+                    RecordType.COMMAND,
+                    ProcessInstanceIntent.ACTIVATE_ELEMENT,
+                    RejectionType.ALREADY_EXISTS,
+                    "broken somehow",
+                    ValueType.PROCESS_INSTANCE,
+                    processInstanceRecord))
+        .hasMessageContaining("Batch would reach his maxBatchSize ");
   }
-
 }

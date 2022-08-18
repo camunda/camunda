@@ -11,8 +11,8 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 
 /**
- * Represents an unmodifiable entry of an {@link UnmodifiableRecordBatch}. Contains data about
- * a record which has been created by an RecordProcessor.
+ * Represents an unmodifiable entry of an {@link UnmodifiableRecordBatch}. Contains data about a
+ * record which has been created by an RecordProcessor.
  */
 public interface UnmodifiableRecordBatchEntry {
 
@@ -32,12 +32,14 @@ public interface UnmodifiableRecordBatchEntry {
   RecordMetadata recordMetadata();
 
   /**
-   * @return the actual record value, this method returns a general type but can be casted to the right record value class if necessary
+   * @return the actual record value, this method returns a general type but can be casted to the
+   *     right record value class if necessary
    */
   UnifiedRecordValue recordValue();
 
   /**
-   * @return the length of the record entry, important for the batch to determine whether it reached its maximum size
+   * @return the length of the record entry, important for the batch to determine whether it reached
+   *     its maximum size
    */
   int getLength();
 }

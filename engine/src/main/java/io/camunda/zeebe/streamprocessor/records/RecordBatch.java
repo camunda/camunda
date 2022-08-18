@@ -38,16 +38,26 @@ public final class RecordBatch implements ModifiableRecordBatch {
       final String rejectionReason,
       final ValueType valueType,
       final BufferWriter valueWriter) {
-    final var recordBatchEntry = RecordBatchEntry.createRecordBatchEntry(key, sourceIndex,
-        recordType,
-        intent, rejectionType, rejectionReason, valueType, valueWriter);
+    final var recordBatchEntry =
+        RecordBatchEntry.createRecordBatchEntry(
+            key,
+            sourceIndex,
+            recordType,
+            intent,
+            rejectionType,
+            rejectionReason,
+            valueType,
+            valueWriter);
     final var entryLength = recordBatchEntry.getLength();
 
     if (batchSize + entryLength >= maxBatchSize) {
       // todo decided whether we want to throw or return a bool or a either?!
       throw new IllegalStateException(
-          "Batch would reach his maxBatchSize (" + maxBatchSize + ") if entry with size "
-              + entryLength + " would be added.");
+          "Batch would reach his maxBatchSize ("
+              + maxBatchSize
+              + ") if entry with size "
+              + entryLength
+              + " would be added.");
     }
 
     recordBatchEntries.add(recordBatchEntry);
