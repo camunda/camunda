@@ -81,6 +81,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
+          maven-extra-args: -pl :zeebe-elasticsearch-exporter
       - run: >
           mvn -B --no-snapshot-updates
           -D skipUTs -D skipChecks -D failsafe.rerunFailingTestsCount=3
