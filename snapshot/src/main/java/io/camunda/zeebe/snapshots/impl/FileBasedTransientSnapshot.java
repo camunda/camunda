@@ -16,6 +16,7 @@ import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -35,8 +36,8 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private final ActorFuture<Void> takenFuture = new CompletableActorFuture<>();
   private boolean isValid = false;
   private PersistedSnapshot snapshot;
-  private long checksum;
-  private long lastFollowupEventPosition;
+  private SfvChecksum checksum;
+  private long lastFollowupEventPosition = Long.MAX_VALUE;
 
   FileBasedTransientSnapshot(
       final FileBasedSnapshotId snapshotId,
@@ -77,7 +78,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                       directory)));
 
         } else {
-          checksum = SnapshotChecksum.calculate(directory).getCombinedValue();
+          checksum = SnapshotChecksum.calculate(directory);
 
           snapshot = null;
           isValid = true;
@@ -138,13 +139,33 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     }
 
     try {
-      snapshot = snapshotStore.newSnapshot(snapshotId, directory, checksum);
+      final var metadata =
+          new FileBasedSnapshotMetadata(
+              FileBasedSnapshotStore.VERSION,
+              snapshotId.getProcessedPosition(),
+              snapshotId.getExportedPosition(),
+              lastFollowupEventPosition);
+      writeMetadataAndUpdateChecksum(metadata);
+      snapshot =
+          snapshotStore.newSnapshot(snapshotId, directory, checksum.getCombinedValue(), metadata);
       future.complete(snapshot);
     } catch (final Exception e) {
       future.completeExceptionally(e);
     }
 
     snapshotStore.removePendingSnapshot(this);
+  }
+
+  private void writeMetadataAndUpdateChecksum(final FileBasedSnapshotMetadata metadata)
+      throws Exception {
+    final var metadataPath = directory.resolve("zeebe.metadata");
+    // Write metadata file along with snapshot files
+    try (final RandomAccessFile metadataFile = new RandomAccessFile(metadataPath.toFile(), "rwd")) {
+      final byte[] data = metadata.encode();
+      metadataFile.write(data);
+      metadataFile.setLength(data.length);
+      checksum.updateFromFile(metadataPath);
+    }
   }
 
   private void abortInternal() {

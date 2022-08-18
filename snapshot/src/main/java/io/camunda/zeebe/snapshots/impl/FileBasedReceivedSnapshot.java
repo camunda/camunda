@@ -258,7 +258,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
     try {
       final PersistedSnapshot value =
-          snapshotStore.newSnapshot(snapshotId, directory, expectedSnapshotChecksum);
+          snapshotStore.newSnapshot(snapshotId, directory, expectedSnapshotChecksum, null);
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);

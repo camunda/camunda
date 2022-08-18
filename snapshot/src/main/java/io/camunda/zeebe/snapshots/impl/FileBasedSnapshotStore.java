@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 public final class FileBasedSnapshotStore extends Actor
     implements ConstructableSnapshotStore, ReceivableSnapshotStore {
 
+  static final int VERSION = 1;
   // first is the metadata and the second the the received snapshot count
   private static final String RECEIVING_DIR_FORMAT = "%s-%d";
 
@@ -482,7 +483,10 @@ public final class FileBasedSnapshotStore extends Actor
   // TODO(npepinpe): using Either here would allow easy rollback regardless of when or where an
   // exception is thrown, without having to catch and rollback for every possible case
   FileBasedSnapshot newSnapshot(
-      final FileBasedSnapshotId snapshotId, final Path directory, final long expectedChecksum) {
+      final FileBasedSnapshotId snapshotId,
+      final Path directory,
+      final long expectedChecksum,
+      final FileBasedSnapshotMetadata metadata) {
     final var currentPersistedSnapshot = currentPersistedSnapshotRef.get();
 
     if (isCurrentSnapshotNewer(snapshotId)) {
@@ -526,7 +530,7 @@ public final class FileBasedSnapshotStore extends Actor
             checksumPath,
             actualChecksum.getCombinedValue(),
             snapshotId,
-            null,
+            metadata,
             this::onSnapshotDeleted,
             actor);
     final var failed =
