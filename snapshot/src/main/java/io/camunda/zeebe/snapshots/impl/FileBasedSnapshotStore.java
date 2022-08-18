@@ -165,13 +165,13 @@ public final class FileBasedSnapshotStore extends Actor
   //  can have better error messages, and the return type better expresses what we attempt to do,
   //  i.e. either it failed (with an error) or it succeeded
   private FileBasedSnapshot collectSnapshot(final Path path) throws IOException {
-    final var optionalMeta = FileBasedSnapshotMetadata.ofPath(path);
+    final var optionalMeta = FileBasedSnapshotId.ofPath(path);
     if (optionalMeta.isEmpty()) {
       return null;
     }
 
-    final var metadata = optionalMeta.get();
-    final var checksumPath = buildSnapshotsChecksumPath(metadata);
+    final var snapshotId = optionalMeta.get();
+    final var checksumPath = buildSnapshotsChecksumPath(snapshotId);
 
     if (!Files.exists(checksumPath)) {
       // checksum was not completely/successfully written, we can safely delete it and proceed
@@ -205,7 +205,7 @@ public final class FileBasedSnapshotStore extends Actor
           path,
           checksumPath,
           actualChecksum.getCombinedValue(),
-          metadata,
+          snapshotId,
           this::onSnapshotDeleted,
           actor);
     } catch (final Exception e) {
@@ -341,8 +341,8 @@ public final class FileBasedSnapshotStore extends Actor
 
   @Override
   public FileBasedReceivedSnapshot newReceivedSnapshot(final String snapshotId) {
-    final var optMetadata = FileBasedSnapshotMetadata.ofFileName(snapshotId);
-    final var metadata =
+    final var optMetadata = FileBasedSnapshotId.ofFileName(snapshotId);
+    final var parsedSnapshotId =
         optMetadata.orElseThrow(
             () ->
                 new IllegalArgumentException(
@@ -353,10 +353,11 @@ public final class FileBasedSnapshotStore extends Actor
     // to make the pending dir unique
     final var nextStartCount = receivingSnapshotStartCount.incrementAndGet();
     final var pendingDirectoryName =
-        String.format(RECEIVING_DIR_FORMAT, metadata.getSnapshotIdAsString(), nextStartCount);
+        String.format(
+            RECEIVING_DIR_FORMAT, parsedSnapshotId.getSnapshotIdAsString(), nextStartCount);
     final var pendingSnapshotDir = pendingDirectory.resolve(pendingDirectoryName);
     final var newPendingSnapshot =
-        new FileBasedReceivedSnapshot(metadata, pendingSnapshotDir, this, actor);
+        new FileBasedReceivedSnapshot(parsedSnapshotId, pendingSnapshotDir, this, actor);
     addPendingSnapshot(newPendingSnapshot);
     return newPendingSnapshot;
   }
@@ -369,7 +370,7 @@ public final class FileBasedSnapshotStore extends Actor
       final long exportedPosition) {
 
     final var newSnapshotId =
-        new FileBasedSnapshotMetadata(index, term, processedPosition, exportedPosition);
+        new FileBasedSnapshotId(index, term, processedPosition, exportedPosition);
     final FileBasedSnapshot currentSnapshot = currentPersistedSnapshotRef.get();
     if (currentSnapshot != null && currentSnapshot.getSnapshotId().compareTo(newSnapshotId) == 0) {
       final String error =
@@ -457,7 +458,7 @@ public final class FileBasedSnapshotStore extends Actor
   }
 
   private void purgePendingSnapshot(final SnapshotId cutoffIndex, final Path pendingSnapshot) {
-    final var optionalMetadata = FileBasedSnapshotMetadata.ofPath(pendingSnapshot);
+    final var optionalMetadata = FileBasedSnapshotId.ofPath(pendingSnapshot);
     if (optionalMetadata.isPresent() && optionalMetadata.get().compareTo(cutoffIndex) < 0) {
       try {
         FileUtil.deleteFolder(pendingSnapshot);
@@ -471,36 +472,36 @@ public final class FileBasedSnapshotStore extends Actor
     }
   }
 
-  private boolean isCurrentSnapshotNewer(final FileBasedSnapshotMetadata metadata) {
+  private boolean isCurrentSnapshotNewer(final FileBasedSnapshotId snapshotId) {
     final var persistedSnapshot = currentPersistedSnapshotRef.get();
     return (persistedSnapshot != null
-        && persistedSnapshot.getSnapshotId().compareTo(metadata) >= 0);
+        && persistedSnapshot.getSnapshotId().compareTo(snapshotId) >= 0);
   }
 
   // TODO(npepinpe): using Either here would allow easy rollback regardless of when or where an
   // exception is thrown, without having to catch and rollback for every possible case
   FileBasedSnapshot newSnapshot(
-      final FileBasedSnapshotMetadata metadata, final Path directory, final long expectedChecksum) {
+      final FileBasedSnapshotId snapshotId, final Path directory, final long expectedChecksum) {
     final var currentPersistedSnapshot = currentPersistedSnapshotRef.get();
 
-    if (isCurrentSnapshotNewer(metadata)) {
-      final var currentPersistedSnapshotMetadata = currentPersistedSnapshot.getSnapshotId();
+    if (isCurrentSnapshotNewer(snapshotId)) {
+      final var currentPersistedSnapshotId = currentPersistedSnapshot.getSnapshotId();
 
       LOGGER.debug(
           "Snapshot is older than the latest snapshot {}. Snapshot {} won't be committed.",
-          currentPersistedSnapshotMetadata,
-          metadata);
+          currentPersistedSnapshotId,
+          snapshotId);
 
-      purgePendingSnapshots(currentPersistedSnapshotMetadata);
+      purgePendingSnapshots(currentPersistedSnapshotId);
       return currentPersistedSnapshot;
     }
 
     // it's important to persist the checksum file only after the move is finished, since we use it
     // as a marker file to guarantee the move was complete and not partial
-    final var destination = buildSnapshotDirectory(metadata);
+    final var destination = buildSnapshotDirectory(snapshotId);
     moveToSnapshotDirectory(directory, destination);
 
-    final var checksumPath = buildSnapshotsChecksumPath(metadata);
+    final var checksumPath = buildSnapshotsChecksumPath(snapshotId);
     final SfvChecksum actualChecksum;
     try {
       // computing the checksum on the final destination also lets us detect any failures during the
@@ -523,7 +524,7 @@ public final class FileBasedSnapshotStore extends Actor
             destination,
             checksumPath,
             actualChecksum.getCombinedValue(),
-            metadata,
+            snapshotId,
             this::onSnapshotDeleted,
             actor);
     final var failed =
@@ -622,12 +623,12 @@ public final class FileBasedSnapshotStore extends Actor
     return pendingDirectory.resolve(id.getSnapshotIdAsString());
   }
 
-  private Path buildSnapshotDirectory(final FileBasedSnapshotMetadata metadata) {
-    return snapshotsDirectory.resolve(metadata.getSnapshotIdAsString());
+  private Path buildSnapshotDirectory(final FileBasedSnapshotId snapshotId) {
+    return snapshotsDirectory.resolve(snapshotId.getSnapshotIdAsString());
   }
 
-  private Path buildSnapshotsChecksumPath(final FileBasedSnapshotMetadata metadata) {
-    return snapshotsDirectory.resolve(metadata.getSnapshotIdAsString() + CHECKSUM_SUFFIX);
+  private Path buildSnapshotsChecksumPath(final FileBasedSnapshotId snapshotId) {
+    return snapshotsDirectory.resolve(snapshotId.getSnapshotIdAsString() + CHECKSUM_SUFFIX);
   }
 
   SnapshotMetrics getSnapshotMetrics() {

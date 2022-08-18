@@ -68,7 +68,7 @@ public class FileBasedTransientSnapshotTest {
     final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
 
     // when
-    final var pathId = FileBasedSnapshotMetadata.ofPath(transientSnapshot.getPath()).orElseThrow();
+    final var pathId = FileBasedSnapshotId.ofPath(transientSnapshot.getPath()).orElseThrow();
 
     // then
     assertThat(pathId).isEqualTo(transientSnapshot.snapshotId());

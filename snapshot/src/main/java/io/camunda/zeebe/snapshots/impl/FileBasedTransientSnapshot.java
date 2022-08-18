@@ -31,18 +31,18 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private final Path directory;
   private final ActorControl actor;
   private final FileBasedSnapshotStore snapshotStore;
-  private final FileBasedSnapshotMetadata metadata;
+  private final FileBasedSnapshotId snapshotId;
   private final ActorFuture<Void> takenFuture = new CompletableActorFuture<>();
   private boolean isValid = false;
   private PersistedSnapshot snapshot;
   private long checksum;
 
   FileBasedTransientSnapshot(
-      final FileBasedSnapshotMetadata metadata,
+      final FileBasedSnapshotId snapshotId,
       final Path directory,
       final FileBasedSnapshotStore snapshotStore,
       final ActorControl actor) {
-    this.metadata = metadata;
+    this.snapshotId = snapshotId;
     this.snapshotStore = snapshotStore;
     this.directory = directory;
     this.actor = actor;
@@ -78,7 +78,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
         }
 
       } catch (final Exception exception) {
-        LOGGER.warn("Unexpected exception on taking snapshot ({})", metadata, exception);
+        LOGGER.warn("Unexpected exception on taking snapshot ({})", snapshotId, exception);
         abortInternal();
         takenFuture.completeExceptionally(exception);
       }
@@ -105,7 +105,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
 
   @Override
   public SnapshotId snapshotId() {
-    return metadata;
+    return snapshotId;
   }
 
   @Override
@@ -131,7 +131,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     }
 
     try {
-      snapshot = snapshotStore.newSnapshot(metadata, directory, checksum);
+      snapshot = snapshotStore.newSnapshot(snapshotId, directory, checksum);
       future.complete(snapshot);
     } catch (final Exception e) {
       future.completeExceptionally(e);
@@ -161,7 +161,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
         + ", checksum="
         + checksum
         + ", metadata="
-        + metadata
+        + snapshotId
         + '}';
   }
 }

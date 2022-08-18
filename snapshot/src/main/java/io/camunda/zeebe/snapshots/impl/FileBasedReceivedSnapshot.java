@@ -35,16 +35,16 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private final ActorControl actor;
   private final FileBasedSnapshotStore snapshotStore;
 
-  private final FileBasedSnapshotMetadata metadata;
+  private final FileBasedSnapshotId snapshotId;
   private long expectedSnapshotChecksum;
   private int expectedTotalCount;
 
   FileBasedReceivedSnapshot(
-      final FileBasedSnapshotMetadata metadata,
+      final FileBasedSnapshotId snapshotId,
       final Path directory,
       final FileBasedSnapshotStore snapshotStore,
       final ActorControl actor) {
-    this.metadata = metadata;
+    this.snapshotId = snapshotId;
     this.snapshotStore = snapshotStore;
     this.directory = directory;
     this.actor = actor;
@@ -54,7 +54,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   @Override
   public long index() {
-    return metadata.getIndex();
+    return snapshotId.getIndex();
   }
 
   @Override
@@ -157,18 +157,18 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   private void checkSnapshotIdIsValid(final String snapshotId) throws SnapshotWriteException {
-    final var receivedSnapshotId = FileBasedSnapshotMetadata.ofFileName(snapshotId);
+    final var receivedSnapshotId = FileBasedSnapshotId.ofFileName(snapshotId);
     if (receivedSnapshotId.isEmpty()) {
       throw new SnapshotWriteException(
           String.format("Snapshot file name '%s' has unexpected format", snapshotId));
     }
 
-    final FileBasedSnapshotMetadata chunkMetadata = receivedSnapshotId.get();
-    if (metadata.compareTo(chunkMetadata) != 0) {
+    final FileBasedSnapshotId chunkMetadata = receivedSnapshotId.get();
+    if (this.snapshotId.compareTo(chunkMetadata) != 0) {
       throw new SnapshotWriteException(
           String.format(
               "Expected snapshot chunk metadata to match metadata '%s' but was '%s' instead",
-              metadata, chunkMetadata));
+              this.snapshotId, chunkMetadata));
     }
   }
 
@@ -213,7 +213,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   @Override
   public SnapshotId snapshotId() {
-    return metadata;
+    return snapshotId;
   }
 
   @Override
@@ -233,7 +233,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   private void persistInternal(final CompletableActorFuture<PersistedSnapshot> future) {
-    if (snapshotStore.hasSnapshotId(metadata.getSnapshotIdAsString())) {
+    if (snapshotStore.hasSnapshotId(snapshotId.getSnapshotIdAsString())) {
       abortInternal();
       future.complete(snapshotStore.getLatestSnapshot().orElseThrow());
       return;
@@ -258,7 +258,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
     try {
       final PersistedSnapshot value =
-          snapshotStore.newSnapshot(metadata, directory, expectedSnapshotChecksum);
+          snapshotStore.newSnapshot(snapshotId, directory, expectedSnapshotChecksum);
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);
@@ -275,7 +275,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         + ", snapshotStore="
         + snapshotStore.getName()
         + ", metadata="
-        + metadata
+        + snapshotId
         + '}';
   }
 }

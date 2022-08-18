@@ -58,7 +58,7 @@ import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.SnapshotId;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -813,7 +813,7 @@ public final class ClusteringRule extends ExternalResource {
 
     return Optional.ofNullable(partitionStatus)
         .map(PartitionStatus::getSnapshotId)
-        .flatMap(FileBasedSnapshotMetadata::ofFileName);
+        .flatMap(FileBasedSnapshotId::ofFileName);
   }
 
   public Optional<SnapshotId> getSnapshot(final int brokerId) {

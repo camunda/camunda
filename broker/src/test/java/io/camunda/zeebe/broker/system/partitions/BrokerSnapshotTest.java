@@ -19,7 +19,7 @@ import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.snapshots.SnapshotId;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.netty.util.NetUtil;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -100,6 +100,6 @@ public class BrokerSnapshotTest {
                             .getProcessedPositionInSnapshot())
                     .isNotNull());
     final PartitionStatus partitionStatus = brokerAdminService.getPartitionStatus().get(1);
-    return FileBasedSnapshotMetadata.ofFileName(partitionStatus.getSnapshotId()).get();
+    return FileBasedSnapshotId.ofFileName(partitionStatus.getSnapshotId()).get();
   }
 }

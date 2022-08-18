@@ -14,8 +14,8 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class FileBasedSnapshotMetadata implements SnapshotId {
-  private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotMetadata.class);
+public final class FileBasedSnapshotId implements SnapshotId {
+  private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotId.class);
   private static final int METADATA_PARTS = 4;
 
   private final long index;
@@ -23,7 +23,7 @@ public final class FileBasedSnapshotMetadata implements SnapshotId {
   private final long processedPosition;
   private final long exporterPosition;
 
-  FileBasedSnapshotMetadata(
+  FileBasedSnapshotId(
       final long index,
       final long term,
       final long processedPosition,
@@ -37,13 +37,13 @@ public final class FileBasedSnapshotMetadata implements SnapshotId {
   // TODO(npepinpe): using Either here would improve readability and observability, as validation
   //  can have better error messages, and the return type better expresses what we attempt to do,
   //  i.e. either it failed (with an error) or it succeeded
-  public static Optional<FileBasedSnapshotMetadata> ofPath(final Path path) {
+  public static Optional<FileBasedSnapshotId> ofPath(final Path path) {
     return ofFileName(path.getFileName().toString());
   }
 
-  public static Optional<FileBasedSnapshotMetadata> ofFileName(final String name) {
+  public static Optional<FileBasedSnapshotId> ofFileName(final String name) {
     final var parts = name.split("-");
-    Optional<FileBasedSnapshotMetadata> metadata = Optional.empty();
+    Optional<FileBasedSnapshotId> metadata = Optional.empty();
 
     if (parts.length >= METADATA_PARTS) {
       try {
@@ -53,8 +53,7 @@ public final class FileBasedSnapshotMetadata implements SnapshotId {
         final var exporterPosition = Long.parseLong(parts[3]);
 
         metadata =
-            Optional.of(
-                new FileBasedSnapshotMetadata(index, term, processedPosition, exporterPosition));
+            Optional.of(new FileBasedSnapshotId(index, term, processedPosition, exporterPosition));
       } catch (final NumberFormatException e) {
         LOGGER.warn("Failed to parse part of snapshot metadata", e);
       }
@@ -104,7 +103,7 @@ public final class FileBasedSnapshotMetadata implements SnapshotId {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final FileBasedSnapshotMetadata that = (FileBasedSnapshotMetadata) o;
+    final FileBasedSnapshotId that = (FileBasedSnapshotId) o;
     return index == that.index
         && term == that.term
         && processedPosition == that.processedPosition
