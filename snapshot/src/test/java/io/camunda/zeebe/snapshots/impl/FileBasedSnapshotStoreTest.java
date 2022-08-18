@@ -77,6 +77,23 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
+  public void shouldLoadExistingSnapshotWithMetadata() throws IOException {
+    // given
+    final var persistedSnapshot =
+        takeTransientSnapshot().withLastFollowupEventPosition(100L).persist().join();
+
+    // when
+    snapshotStore.close();
+    snapshotStore = createStore(snapshotsDir, pendingSnapshotsDir);
+
+    // then
+    assertThat(snapshotStore.getCurrentSnapshotIndex()).isEqualTo(1L);
+    assertThat(snapshotStore.getLatestSnapshot()).hasValue(persistedSnapshot);
+    final var latestSnapshot = snapshotStore.getLatestSnapshot().orElseThrow();
+    assertThat(latestSnapshot.getMetadata()).isEqualTo(persistedSnapshot.getMetadata());
+  }
+
+  @Test
   public void shouldLoadLatestSnapshotWhenMoreThanOneExistsAndDeleteOlder() throws IOException {
     // given
     final FileBasedSnapshotStore otherStore = createStore(snapshotsDir, pendingSnapshotsDir);
