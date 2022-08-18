@@ -38,8 +38,10 @@ runs:
       name: Package Zeebe
       shell: bash
       id: build-java
+      # we do not build in parallel to avoid memory and cache corruption issues, notably observed
+      # on macOS and Windows
       run: |
-        mvn -B -DskipTests -DskipChecks -T1C install ${{ inputs.maven-extra-args }}
+        mvn -B -DskipTests -DskipChecks install ${{ inputs.maven-extra-args }}
         export BUILD_DIR=$(mvn -pl dist/ help:evaluate -Dexpression=project.build.directory -q -DforceStdout)
         export ARTIFACT=$(mvn -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
         echo "::set-output name=result::${BUILD_DIR}/${ARTIFACT}.tar.gz"
