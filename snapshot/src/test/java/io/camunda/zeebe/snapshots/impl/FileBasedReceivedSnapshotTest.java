@@ -325,6 +325,24 @@ public class FileBasedReceivedSnapshotTest {
             receivedSnapshot.getPath().resolve(firstChunk.getChunkName()));
   }
 
+  @Test
+  public void shouldPersistsMetadata() {
+    // given
+    final var snapshotToSend = (FileBasedSnapshot) takePersistedSnapshot(1L);
+
+    // when
+    final var receivedSnapshot = receiveSnapshot(snapshotToSend);
+    final var persistedSnapshot = receivedSnapshot.persist().join();
+
+    // then
+    assertThat(persistedSnapshot.getMetadata()).isEqualTo(snapshotToSend.getMetadata());
+    assertThat(persistedSnapshot.getPath())
+        .describedAs("Metadata file is persisted in snapshot path")
+        .isDirectoryContaining(
+            name ->
+                name.getFileName().toString().equals(FileBasedSnapshotStore.METADATA_FILE_NAME));
+  }
+
   private ReceivedSnapshot receiveSnapshot(final PersistedSnapshot persistedSnapshot) {
     final var receivedSnapshot =
         receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
@@ -341,7 +359,7 @@ public class FileBasedReceivedSnapshotTest {
   private PersistedSnapshot takePersistedSnapshot(final long index) {
     final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(index, 0L, 1, 0).get();
     transientSnapshot.take(this::writeSnapshot).join();
-    return transientSnapshot.persist().join();
+    return transientSnapshot.withLastFollowupEventPosition(100L).persist().join();
   }
 
   private boolean writeSnapshot(final Path path) {

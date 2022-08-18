@@ -351,6 +351,7 @@ public class FileBasedTransientSnapshotTest {
 
     // then
     assertThat(persistedSnapshot.getPath())
+        .describedAs("Metadata file is persisted in snapshot path")
         .isDirectoryContaining(
             path ->
                 path.getFileName().toString().equals(FileBasedSnapshotStore.METADATA_FILE_NAME));

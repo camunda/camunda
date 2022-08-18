@@ -38,6 +38,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private final FileBasedSnapshotId snapshotId;
   private long expectedSnapshotChecksum;
   private int expectedTotalCount;
+  private FileBasedSnapshotMetadata metadata;
 
   FileBasedReceivedSnapshot(
       final FileBasedSnapshotId snapshotId,
@@ -113,6 +114,18 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
     LOGGER.trace("Consume snapshot snapshotChunk {} of snapshot {}", chunkName, snapshotId);
     writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
+
+    if (snapshotChunk.getChunkName().equals(FileBasedSnapshotStore.METADATA_FILE_NAME)) {
+      try {
+        collectMetadata(snapshotChunk.getContent());
+      } catch (final IOException e) {
+        throw new SnapshotWriteException("Cannot decode snapshot metadata");
+      }
+    }
+  }
+
+  private void collectMetadata(final byte[] content) throws IOException {
+    metadata = FileBasedSnapshotMetadata.decode(content);
   }
 
   private void checkChunkChecksumIsValid(
@@ -257,8 +270,17 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
 
     try {
+      if (metadata == null) {
+        // backward compatibility
+        metadata =
+            new FileBasedSnapshotMetadata(
+                FileBasedSnapshotStore.VERSION,
+                snapshotId.getProcessedPosition(),
+                snapshotId.getExportedPosition(),
+                Long.MAX_VALUE);
+      }
       final PersistedSnapshot value =
-          snapshotStore.newSnapshot(snapshotId, directory, expectedSnapshotChecksum, null);
+          snapshotStore.newSnapshot(snapshotId, directory, expectedSnapshotChecksum, metadata);
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);
