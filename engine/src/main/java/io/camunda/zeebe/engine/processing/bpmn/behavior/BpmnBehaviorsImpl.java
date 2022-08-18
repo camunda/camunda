@@ -42,6 +42,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final MultiInstanceOutputCollectionBehavior multiInstanceOutputCollectionBehavior;
   private final CatchEventBehavior catchEventBehavior;
   private final EventTriggerBehavior eventTriggerBehavior;
+  private final VariableBehavior variableBehavior;
 
   public BpmnBehaviorsImpl(
       final ExpressionProcessor expressionBehavior,
@@ -106,6 +107,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new MultiInstanceOutputCollectionBehavior(stateBehavior, expressionBehavior());
     this.catchEventBehavior = catchEventBehavior;
     this.eventTriggerBehavior = eventTriggerBehavior;
+    this.variableBehavior =
+        new VariableBehavior(
+            zeebeState.getVariableState(), writers.state(), zeebeState.getKeyGenerator());
   }
 
   @Override
@@ -181,5 +185,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public EventTriggerBehavior eventTriggerBehavior() {
     return eventTriggerBehavior;
+  }
+
+  @Override
+  public VariableBehavior variableBehavior() {
+    return variableBehavior;
   }
 }

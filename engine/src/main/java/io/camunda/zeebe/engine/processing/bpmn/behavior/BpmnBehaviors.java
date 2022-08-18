@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGua
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 
 public interface BpmnBehaviors {
 
@@ -43,4 +44,6 @@ public interface BpmnBehaviors {
   CatchEventBehavior catchEventBehavior();
 
   EventTriggerBehavior eventTriggerBehavior();
+
+  VariableBehavior variableBehavior();
 }

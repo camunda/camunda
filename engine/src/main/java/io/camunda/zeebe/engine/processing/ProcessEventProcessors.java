@@ -27,7 +27,6 @@ import io.camunda.zeebe.engine.processing.timer.CancelTimerProcessor;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.timer.TriggerTimerProcessor;
 import io.camunda.zeebe.engine.processing.variable.UpdateVariableDocumentProcessor;
-import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
@@ -58,10 +57,6 @@ public final class ProcessEventProcessors {
     final var keyGenerator = zeebeState.getKeyGenerator();
 
     // TODO put this inside the bpmnBehaviors
-    final VariableBehavior variableBehavior =
-        new VariableBehavior(zeebeState.getVariableState(), writers.state(), keyGenerator);
-
-    // TODO put this inside the bpmnBehaviors
     final var elementActivationBehavior =
         new ElementActivationBehavior(
             keyGenerator,
@@ -88,7 +83,7 @@ public final class ProcessEventProcessors {
         typedRecordProcessors, timerChecker, zeebeState, bpmnBehaviors, writers);
     addVariableDocumentStreamProcessors(
         typedRecordProcessors,
-        variableBehavior,
+        bpmnBehaviors,
         zeebeState.getElementInstanceState(),
         keyGenerator,
         writers);
@@ -96,7 +91,7 @@ public final class ProcessEventProcessors {
         typedRecordProcessors,
         zeebeState,
         writers,
-       variableBehavior, bpmnBehaviors,
+        bpmnBehaviors,
         elementActivationBehavior,
         processEngineMetrics);
     addProcessInstanceModificationStreamProcessors(
@@ -190,7 +185,7 @@ public final class ProcessEventProcessors {
 
   private static void addVariableDocumentStreamProcessors(
       final TypedRecordProcessors typedRecordProcessors,
-      final VariableBehavior variableBehavior,
+      final BpmnBehaviors bpmnBehaviors,
       final ElementInstanceState elementInstanceState,
       final KeyGenerator keyGenerator,
       final Writers writers) {
@@ -198,14 +193,13 @@ public final class ProcessEventProcessors {
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,
         new UpdateVariableDocumentProcessor(
-            elementInstanceState, keyGenerator, variableBehavior, writers));
+            elementInstanceState, keyGenerator, bpmnBehaviors.variableBehavior(), writers));
   }
 
   private static void addProcessInstanceCreationStreamProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final MutableZeebeState zeebeState,
       final Writers writers,
-      final VariableBehavior variableBehavior,
       final BpmnBehaviors bpmnBehaviors,
       final ElementActivationBehavior elementActivationBehavior,
       final ProcessEngineMetrics metrics) {
