@@ -22,6 +22,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
 import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import java.util.function.BooleanSupplier;
 
@@ -60,6 +61,9 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   // this is always accessed by the same actor; which means we don't need to use a concurrent/thread
   // safe structure here
   private boolean inProcessing;
+
+  // this is accessed outside, which is why we need to make sure that it is thread-safe
+  private volatile StreamProcessor.Phase phase = Phase.INITIAL;
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -225,5 +229,13 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public void partitionCommandSender(final InterPartitionCommandSender partitionCommandSender) {
     this.partitionCommandSender = partitionCommandSender;
+  }
+
+  public Phase getPhase() {
+    return phase;
+  }
+
+  public void phase(final Phase phase) {
+    this.phase = phase;
   }
 }

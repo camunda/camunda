@@ -26,6 +26,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
   private final StreamProcessorContext streamProcessorContext;
   private final AbortableRetryStrategy writeRetryStrategy;
 
+  // todo remove context from CTOR; will be cleaned up after engine abstraction is done
   public ProcessingScheduleServiceImpl(final StreamProcessorContext streamProcessorContext) {
     actorControl = streamProcessorContext.getActor();
     this.streamProcessorContext = streamProcessorContext;
