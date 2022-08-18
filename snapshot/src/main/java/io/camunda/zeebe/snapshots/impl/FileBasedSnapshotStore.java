@@ -202,17 +202,34 @@ public final class FileBasedSnapshotStore extends Actor
         return null;
       }
 
+      final var metadata = collectMetadata(path, snapshotId);
       return new FileBasedSnapshot(
           path,
           checksumPath,
           actualChecksum.getCombinedValue(),
           snapshotId,
-          null,
+          metadata,
           this::onSnapshotDeleted,
           actor);
     } catch (final Exception e) {
       LOGGER.warn("Could not load snapshot in {}", path, e);
       return null;
+    }
+  }
+
+  private FileBasedSnapshotMetadata collectMetadata(
+      final Path path, final FileBasedSnapshotId snapshotId) throws IOException {
+    final var metadataPath = path.resolve("zeebe.metadata");
+    if (metadataPath.toFile().exists()) {
+      final var encodedMetadata = Files.readAllBytes(metadataPath);
+      return FileBasedSnapshotMetadata.decode(encodedMetadata);
+    } else {
+      // backward compatibility mode
+      return new FileBasedSnapshotMetadata(
+          VERSION,
+          snapshotId.getProcessedPosition(),
+          snapshotId.getExportedPosition(),
+          Long.MAX_VALUE);
     }
   }
 
