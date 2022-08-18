@@ -206,6 +206,7 @@ public final class FileBasedSnapshotStore extends Actor
           checksumPath,
           actualChecksum.getCombinedValue(),
           snapshotId,
+          null,
           this::onSnapshotDeleted,
           actor);
     } catch (final Exception e) {
@@ -525,6 +526,7 @@ public final class FileBasedSnapshotStore extends Actor
             checksumPath,
             actualChecksum.getCombinedValue(),
             snapshotId,
+            null,
             this::onSnapshotDeleted,
             actor);
     final var failed =

@@ -13,6 +13,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
+import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.snapshots.SnapshotReservation;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -34,6 +35,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   private final Path checksumFile;
   private final long checksum;
   private final FileBasedSnapshotId snapshotId;
+  private final SnapshotMetadata metdata;
   private final Consumer<FileBasedSnapshot> onSnapshotDeleted;
 
   private final Set<FileBasedSnapshotReservation> reservations = new HashSet<>();
@@ -46,12 +48,14 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
       final Path checksumFile,
       final long checksum,
       final FileBasedSnapshotId snapshotId,
+      final SnapshotMetadata metdata,
       final Consumer<FileBasedSnapshot> onSnapshotDeleted,
       final ActorControl actor) {
     this.directory = directory;
     this.checksumFile = checksumFile;
     this.checksum = checksum;
     this.snapshotId = snapshotId;
+    this.metdata = metdata;
     this.onSnapshotDeleted = onSnapshotDeleted;
     this.actor = actor;
   }
@@ -110,6 +114,11 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   @Override
   public long getChecksum() {
     return checksum;
+  }
+
+  @Override
+  public SnapshotMetadata getMetadata() {
+    return metdata;
   }
 
   @Override

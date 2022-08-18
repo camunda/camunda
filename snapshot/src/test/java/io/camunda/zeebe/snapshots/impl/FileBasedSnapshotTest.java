@@ -122,7 +122,7 @@ public final class FileBasedSnapshotTest {
     SnapshotChecksum.persist(checksumPath, SnapshotChecksum.calculate(snapshotPath));
 
     return new FileBasedSnapshot(
-        snapshotPath, checksumPath, 1L, metadata, s -> {}, actor.getActorControl());
+        snapshotPath, checksumPath, 1L, metadata, null, s -> {}, actor.getActorControl());
   }
 
   static class TestActor extends Actor {
