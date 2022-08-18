@@ -99,6 +99,13 @@ public final class DbDeploymentState implements MutableDeploymentState {
   }
 
   @Override
+  public boolean hasPendingDeploymentDistribution(final long deploymentKey, final int partitionId) {
+    this.deploymentKey.wrapLong(deploymentKey);
+    partitionKey.wrapInt(partitionId);
+    return pendingDeploymentColumnFamily.exists(deploymentPartitionKey);
+  }
+
+  @Override
   public DeploymentRecord getStoredDeploymentRecord(final long key) {
     deploymentKey.wrapLong(key);
 
