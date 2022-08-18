@@ -18,6 +18,7 @@
   <modules>
     <module>integration-tests</module>
     <module>update-tests</module>
+    <module>util</module>
   </modules>
 
   <build>

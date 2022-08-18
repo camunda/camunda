@@ -16,7 +16,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.clock.ZeebeClock;
 import java.io.IOException;
