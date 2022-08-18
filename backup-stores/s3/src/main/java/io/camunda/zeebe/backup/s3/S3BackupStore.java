@@ -40,6 +40,8 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
  */
 public final class S3BackupStore implements BackupStore {
 
+  public static final String SNAPSHOT_PREFIX = "snapshot/";
+
   static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final S3BackupConfig config;
@@ -93,7 +95,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<Void> saveSnapshotFiles(Backup backup) {
-    final var prefix = objectPrefix(backup.id()) + "snapshot/";
+    final var prefix = objectPrefix(backup.id()) + SNAPSHOT_PREFIX;
 
     final var futures =
         backup.snapshot().namedFiles().entrySet().stream()
@@ -113,7 +115,7 @@ public final class S3BackupStore implements BackupStore {
         AsyncRequestBody.fromFile(filePath));
   }
 
-  private static String objectPrefix(BackupIdentifier id) {
+  public static String objectPrefix(BackupIdentifier id) {
     return "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
   }
 }
