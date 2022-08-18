@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.api.Task;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
+import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
 import java.time.Duration;
 import java.util.function.BiConsumer;
 
@@ -64,19 +65,27 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
 
   Runnable toRunnable(final Task task) {
     return () -> {
-      // todo we want so suspend the task execution
+      if (streamProcessorContext.getAbortCondition().getAsBoolean()) {
+        // it might be that we are closing, then we should just stop
+        return;
+      }
 
-      if (streamProcessorContext.isInProcessing()) {
-        if (streamProcessorContext.getAbortCondition().getAsBoolean()) {
-          // it might be that we are closing then we should just stop
-          return;
-        }
+      final var currentStreamProcessorPhase = streamProcessorContext.getStreamProcessorPhase();
+      if (currentStreamProcessorPhase != Phase.PROCESSING
+          || streamProcessorContext.isInProcessing()) {
 
-        // we want to execute the tasks only if no processing is happening
-        // to make sure that we are not interfering with the processing and that all transaction
-        // changes
-        // are available during our task execution
-        Loggers.PROCESS_PROCESSOR_LOGGER.trace("Processing is currently ongoing, reschedule task.");
+        // We want to execute the scheduled tasks only if the StreamProcessor is in the PROCESSING
+        // PHASE, but no processing is currently happening.
+        //
+        // To make sure that:
+        //
+        //  * we are not running during replay/init phase (the state might not be up-to-date yet)
+        //  * we are not running during suspending
+        //  * we are not interfering with the current ongoing processing,
+        //    such that all transaction changes are available during our task execution
+        Loggers.PROCESS_PROCESSOR_LOGGER.trace("Not able to execute scheduled task right now. [streamProcessorPhase: {}, inProcessing: {}]",
+            currentStreamProcessorPhase,
+            streamProcessorContext.isInProcessing());
         actorControl.submit(toRunnable(task));
         return;
       }
