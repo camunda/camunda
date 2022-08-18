@@ -231,11 +231,11 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     this.partitionCommandSender = partitionCommandSender;
   }
 
-  public Phase getPhase() {
+  public Phase getStreamProcessorPhase() {
     return phase;
   }
 
-  public void phase(final Phase phase) {
+  public void streamProcessorPhase(final Phase phase) {
     this.phase = phase;
   }
 }
