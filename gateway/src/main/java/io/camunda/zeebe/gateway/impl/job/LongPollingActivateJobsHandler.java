@@ -36,7 +36,7 @@ import org.slf4j.Logger;
 public final class LongPollingActivateJobsHandler implements ActivateJobsHandler {
 
   private static final String JOBS_AVAILABLE_TOPIC = "jobsAvailable";
-  private static final Logger LOG = Loggers.GATEWAY_LOGGER;
+  private static final Logger LOG = Loggers.LONG_POLLING;
   private static final String ERROR_MSG_ACTIVATED_EXHAUSTED =
       "Expected to activate jobs of type '%s', but no jobs available and at least one broker returned 'RESOURCE_EXHAUSTED'. Please try again later.";
 
@@ -68,7 +68,7 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
   }
 
   @Override
-  public void accept(ActorControl actor) {
+  public void accept(final ActorControl actor) {
     this.actor = actor;
     activateJobsHandler.accept(actor);
     onActorStarted();

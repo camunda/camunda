@@ -28,8 +28,8 @@ import java.util.Map;
  *
  * <p>Adding a new method is simple: simply define the input/output here as you normally would, and
  * make sure to add the correct JSON encoding headers (`Accept` for the response type,
- * `Content-Type` if there's a body to send). See {@link io.zeebe.containers.clock.ZeebeClockClient}
- * for a more complete example.
+ * `Content-Type` if there's a body to send). See {@link LoggersActuator} for a more complete
+ * example.
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public interface PartitionsActuator {
