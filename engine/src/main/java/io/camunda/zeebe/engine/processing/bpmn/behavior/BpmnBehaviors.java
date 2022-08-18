@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
+import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 
 public interface BpmnBehaviors {
@@ -37,4 +39,8 @@ public interface BpmnBehaviors {
   BpmnJobBehavior jobBehavior();
 
   MultiInstanceOutputCollectionBehavior outputCollectionBehavior();
+
+  CatchEventBehavior catchEventBehavior();
+
+  EventTriggerBehavior eventTriggerBehavior();
 }
