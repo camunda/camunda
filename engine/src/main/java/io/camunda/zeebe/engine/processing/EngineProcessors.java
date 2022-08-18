@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
@@ -70,6 +71,7 @@ public final class EngineProcessors {
 
     final var jobMetrics = new JobMetrics(partitionId);
     final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
+    final var sideEffectQueue = new SideEffectQueue();
 
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
@@ -79,7 +81,8 @@ public final class EngineProcessors {
             partitionsCount,
             timerChecker,
             jobMetrics,
-            processEngineMetrics);
+            processEngineMetrics,
+            sideEffectQueue);
 
     addDeploymentRelatedProcessorAndServices(
         bpmnBehaviors,
@@ -99,7 +102,8 @@ public final class EngineProcessors {
             typedRecordProcessors,
             subscriptionCommandSender,
             writers,
-            timerChecker);
+            timerChecker,
+            sideEffectQueue);
 
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
@@ -121,7 +125,8 @@ public final class EngineProcessors {
       final int partitionsCount,
       final DueDateTimerChecker timerChecker,
       final JobMetrics jobMetrics,
-      final ProcessEngineMetrics processEngineMetrics) {
+      final ProcessEngineMetrics processEngineMetrics,
+      final SideEffectQueue sideEffectQueue) {
     final var variablesState = zeebeState.getVariableState();
     final var expressionProcessor =
         new ExpressionProcessor(
@@ -147,7 +152,7 @@ public final class EngineProcessors {
 
     return new BpmnBehaviorsImpl(
         expressionProcessor,
-        null, // TODO side effect queue
+        sideEffectQueue,
         zeebeState,
         catchEventBehavior,
         variableBehavior,
@@ -164,14 +169,16 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
-      final DueDateTimerChecker timerChecker) {
+      final DueDateTimerChecker timerChecker,
+      final SideEffectQueue sideEffectQueue) {
     return ProcessEventProcessors.addProcessProcessors(
         zeebeState,
         bpmnBehaviors,
         typedRecordProcessors,
         subscriptionCommandSender,
         timerChecker,
-        writers);
+        writers,
+        sideEffectQueue);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(

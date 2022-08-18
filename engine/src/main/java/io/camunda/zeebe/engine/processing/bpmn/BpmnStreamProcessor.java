@@ -31,9 +31,9 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
 
   private static final Logger LOGGER = Loggers.PROCESS_PROCESSOR_LOGGER;
 
-  private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
   private final BpmnElementContextImpl context = new BpmnElementContextImpl();
 
+  private final SideEffectQueue sideEffectQueue;
   private final ProcessState processState;
   private final BpmnElementProcessors processors;
   private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
@@ -44,7 +44,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   public BpmnStreamProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final MutableZeebeState zeebeState,
-      final Writers writers) {
+      final Writers writers,
+      final SideEffectQueue sideEffectQueue) {
     processState = zeebeState.getProcessState();
 
     rejectionWriter = writers.rejection();
@@ -53,6 +54,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
 
     stateTransitionGuard = bpmnBehaviors.stateTransitionGuard();
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
+    this.sideEffectQueue = sideEffectQueue;
   }
 
   // TODO figure out how to get this in the bpmn behaviors
