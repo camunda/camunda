@@ -7,15 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing;
 
-import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
-import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
-import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.message.PendingProcessMessageSubscriptionChecker;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCorrelateProcessor;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCreateProcessor;
@@ -53,59 +48,44 @@ public final class ProcessEventProcessors {
 
   public static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
       final MutableZeebeState zeebeState,
-      final ExpressionProcessor expressionProcessor,
+      final BpmnBehaviors bpmnBehaviors,
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final CatchEventBehavior catchEventBehavior,
       final DueDateTimerChecker timerChecker,
-      final EventTriggerBehavior eventTriggerBehavior,
-      final Writers writers,
-      final JobMetrics jobMetrics,
-      final BpmnJobBehavior jobBehavior,
-      final BpmnIncidentBehavior incidentBehavior) {
+      final Writers writers) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         zeebeState.getProcessMessageSubscriptionState();
     final var keyGenerator = zeebeState.getKeyGenerator();
 
+    // TODO put this inside the bpmnBehaviors
     final VariableBehavior variableBehavior =
         new VariableBehavior(zeebeState.getVariableState(), writers.state(), keyGenerator);
 
+    // TODO put this inside the bpmnBehaviors
     final var elementActivationBehavior =
         new ElementActivationBehavior(
-            keyGenerator, writers, catchEventBehavior, zeebeState.getElementInstanceState());
+            keyGenerator,
+            writers,
+            bpmnBehaviors.catchEventBehavior(),
+            zeebeState.getElementInstanceState());
 
     final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
 
     addProcessInstanceCommandProcessor(
         writers, typedRecordProcessors, zeebeState.getElementInstanceState());
 
-    final var bpmnStreamProcessor =
-        new BpmnStreamProcessor(
-            expressionProcessor,
-            catchEventBehavior,
-            variableBehavior,
-            eventTriggerBehavior,
-            zeebeState,
-            writers,
-            jobMetrics,
-            processEngineMetrics);
+    final var bpmnStreamProcessor = new BpmnStreamProcessor(bpmnBehaviors, zeebeState, writers);
     addBpmnStepProcessor(typedRecordProcessors, bpmnStreamProcessor);
 
     addMessageStreamProcessors(
         typedRecordProcessors,
         subscriptionState,
         subscriptionCommandSender,
-        eventTriggerBehavior,
+        bpmnBehaviors,
         zeebeState,
         writers);
     addTimerStreamProcessors(
-        typedRecordProcessors,
-        timerChecker,
-        zeebeState,
-        catchEventBehavior,
-        eventTriggerBehavior,
-        expressionProcessor,
-        writers);
+        typedRecordProcessors, timerChecker, zeebeState, bpmnBehaviors, writers);
     addVariableDocumentStreamProcessors(
         typedRecordProcessors,
         variableBehavior,
@@ -116,16 +96,15 @@ public final class ProcessEventProcessors {
         typedRecordProcessors,
         zeebeState,
         writers,
-        variableBehavior,
+       variableBehavior, bpmnBehaviors,
         elementActivationBehavior,
         processEngineMetrics);
     addProcessInstanceModificationStreamProcessors(
         typedRecordProcessors,
         zeebeState,
         writers,
-        jobBehavior,
-        incidentBehavior,
-        catchEventBehavior,
+        keyGenerator,
+        bpmnBehaviors,
         elementActivationBehavior);
 
     return bpmnStreamProcessor;
@@ -163,7 +142,7 @@ public final class ProcessEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessMessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final EventTriggerBehavior eventTriggerBehavior,
+      final BpmnBehaviors bpmnBehaviors,
       final MutableZeebeState zeebeState,
       final Writers writers) {
     typedRecordProcessors
@@ -179,7 +158,7 @@ public final class ProcessEventProcessors {
                 subscriptionState,
                 subscriptionCommandSender,
                 zeebeState,
-                eventTriggerBehavior,
+                bpmnBehaviors.eventTriggerBehavior(),
                 writers))
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
@@ -194,16 +173,13 @@ public final class ProcessEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final DueDateTimerChecker timerChecker,
       final MutableZeebeState zeebeState,
-      final CatchEventBehavior catchEventOutput,
-      final EventTriggerBehavior eventTriggerBehavior,
-      final ExpressionProcessor expressionProcessor,
+      final BpmnBehaviors bpmnBehaviors,
       final Writers writers) {
     typedRecordProcessors
         .onCommand(
             ValueType.TIMER,
             TimerIntent.TRIGGER,
-            new TriggerTimerProcessor(
-                zeebeState, catchEventOutput, eventTriggerBehavior, expressionProcessor, writers))
+            new TriggerTimerProcessor(zeebeState, bpmnBehaviors, writers))
         .onCommand(
             ValueType.TIMER,
             TimerIntent.CANCEL,
@@ -230,6 +206,7 @@ public final class ProcessEventProcessors {
       final MutableZeebeState zeebeState,
       final Writers writers,
       final VariableBehavior variableBehavior,
+      final BpmnBehaviors bpmnBehaviors,
       final ElementActivationBehavior elementActivationBehavior,
       final ProcessEngineMetrics metrics) {
     final MutableElementInstanceState elementInstanceState = zeebeState.getElementInstanceState();
@@ -240,7 +217,7 @@ public final class ProcessEventProcessors {
             zeebeState.getProcessState(),
             keyGenerator,
             writers,
-            variableBehavior,
+            bpmnBehaviors,
             elementActivationBehavior,
             metrics);
     typedRecordProcessors.onCommand(
@@ -256,18 +233,15 @@ public final class ProcessEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ZeebeState zeebeState,
       final Writers writers,
-      final BpmnJobBehavior jobBehavior,
-      final BpmnIncidentBehavior incidentBehavior,
-      final CatchEventBehavior catchEventBehavior,
+      final KeyGenerator keyGenerator,
+      final BpmnBehaviors bpmnBehaviors,
       final ElementActivationBehavior elementActivationBehavior) {
     final ProcessInstanceModificationProcessor modificationProcessor =
         new ProcessInstanceModificationProcessor(
             writers,
             zeebeState.getElementInstanceState(),
             zeebeState.getProcessState(),
-            jobBehavior,
-            incidentBehavior,
-            catchEventBehavior,
+            bpmnBehaviors,
             elementActivationBehavior);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MODIFICATION,

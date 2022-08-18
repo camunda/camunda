@@ -99,8 +99,7 @@ public final class EngineProcessors {
             typedRecordProcessors,
             subscriptionCommandSender,
             writers,
-            timerChecker,
-            jobMetrics);
+            timerChecker);
 
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
@@ -165,20 +164,14 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
-      final DueDateTimerChecker timerChecker,
-      final JobMetrics jobMetrics) {
+      final DueDateTimerChecker timerChecker) {
     return ProcessEventProcessors.addProcessProcessors(
         zeebeState,
-        bpmnBehaviors.expressionBehavior(),
+        bpmnBehaviors,
         typedRecordProcessors,
         subscriptionCommandSender,
-        bpmnBehaviors.catchEventBehavior(),
         timerChecker,
-        bpmnBehaviors.eventTriggerBehavior(),
-        writers,
-        jobMetrics,
-        bpmnBehaviors.jobBehavior(),
-        bpmnBehaviors.incidentBehavior());
+        writers);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
