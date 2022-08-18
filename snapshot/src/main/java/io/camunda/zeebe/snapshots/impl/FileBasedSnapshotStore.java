@@ -125,7 +125,7 @@ public final class FileBasedSnapshotStore extends Actor
         final var snapshot = collectSnapshot(path);
         if (snapshot != null) {
           if ((latestPersistedSnapshot == null)
-              || snapshot.getMetadata().compareTo(latestPersistedSnapshot.getMetadata()) >= 0) {
+              || snapshot.getSnapshotId().compareTo(latestPersistedSnapshot.getSnapshotId()) >= 0) {
             latestPersistedSnapshot = snapshot;
           }
         }
@@ -371,7 +371,7 @@ public final class FileBasedSnapshotStore extends Actor
     final var newSnapshotId =
         new FileBasedSnapshotMetadata(index, term, processedPosition, exportedPosition);
     final FileBasedSnapshot currentSnapshot = currentPersistedSnapshotRef.get();
-    if (currentSnapshot != null && currentSnapshot.getMetadata().compareTo(newSnapshotId) == 0) {
+    if (currentSnapshot != null && currentSnapshot.getSnapshotId().compareTo(newSnapshotId) == 0) {
       final String error =
           String.format(
               "Previous snapshot was taken for the same processed position %d and exported position %d.",
@@ -473,7 +473,8 @@ public final class FileBasedSnapshotStore extends Actor
 
   private boolean isCurrentSnapshotNewer(final FileBasedSnapshotMetadata metadata) {
     final var persistedSnapshot = currentPersistedSnapshotRef.get();
-    return (persistedSnapshot != null && persistedSnapshot.getMetadata().compareTo(metadata) >= 0);
+    return (persistedSnapshot != null
+        && persistedSnapshot.getSnapshotId().compareTo(metadata) >= 0);
   }
 
   // TODO(npepinpe): using Either here would allow easy rollback regardless of when or where an
@@ -483,7 +484,7 @@ public final class FileBasedSnapshotStore extends Actor
     final var currentPersistedSnapshot = currentPersistedSnapshotRef.get();
 
     if (isCurrentSnapshotNewer(metadata)) {
-      final var currentPersistedSnapshotMetadata = currentPersistedSnapshot.getMetadata();
+      final var currentPersistedSnapshotMetadata = currentPersistedSnapshot.getSnapshotId();
 
       LOGGER.debug(
           "Snapshot is older than the latest snapshot {}. Snapshot {} won't be committed.",
@@ -536,7 +537,7 @@ public final class FileBasedSnapshotStore extends Actor
           String.format(
               errorMessage,
               currentPersistedSnapshot,
-              newPersistedSnapshot.getMetadata(),
+              newPersistedSnapshot.getSnapshotId(),
               currentPersistedSnapshotRef.get()));
     }
 
@@ -557,7 +558,7 @@ public final class FileBasedSnapshotStore extends Actor
   private void deleteOlderSnapshots(final FileBasedSnapshot newPersistedSnapshot) {
     LOGGER.trace(
         "Purging snapshots older than {}",
-        newPersistedSnapshot.getMetadata().getSnapshotIdAsString());
+        newPersistedSnapshot.getSnapshotId().getSnapshotIdAsString());
     final var snapshotsToDelete =
         availableSnapshots.stream()
             .filter(s -> !s.getId().equals(newPersistedSnapshot.getId()))
@@ -568,7 +569,7 @@ public final class FileBasedSnapshotStore extends Actor
           LOGGER.debug("Deleting previous snapshot {}", previousSnapshot.getId());
           previousSnapshot.delete();
         });
-    purgePendingSnapshots(newPersistedSnapshot.getMetadata());
+    purgePendingSnapshots(newPersistedSnapshot.getSnapshotId());
   }
 
   private void moveToSnapshotDirectory(final Path directory, final Path destination) {

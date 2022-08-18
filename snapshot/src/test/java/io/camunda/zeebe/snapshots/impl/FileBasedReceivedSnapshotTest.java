@@ -169,7 +169,7 @@ public class FileBasedReceivedSnapshotTest {
             persistedSnapshot.getDirectory(),
             persistedSnapshot.getChecksumFile(),
             0xDEADBEEFL,
-            persistedSnapshot.getMetadata(),
+            persistedSnapshot.getSnapshotId(),
             s -> {},
             null);
 

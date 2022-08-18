@@ -56,7 +56,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     this.actor = actor;
   }
 
-  public FileBasedSnapshotMetadata getMetadata() {
+  public FileBasedSnapshotMetadata getSnapshotId() {
     return metadata;
   }
 
@@ -160,7 +160,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     int result = getDirectory().hashCode();
     result = 31 * result + checksumFile.hashCode();
     result = 31 * result + (int) (getChecksum() ^ (getChecksum() >>> 32));
-    result = 31 * result + getMetadata().hashCode();
+    result = 31 * result + getSnapshotId().hashCode();
     return result;
   }
 
@@ -184,7 +184,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     if (!checksumFile.equals(that.checksumFile)) {
       return false;
     }
-    return getMetadata().equals(that.getMetadata());
+    return getSnapshotId().equals(that.getSnapshotId());
   }
 
   @Override
