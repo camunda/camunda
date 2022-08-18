@@ -38,6 +38,8 @@ jobs:
       - uses: ./.github/actions/use-ci-nexus-cache
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        with:
+          maven-extra-args: -T1C
       - uses: ./.github/actions/build-docker
         with:
           repository: localhost:5000/camunda/zeebe
