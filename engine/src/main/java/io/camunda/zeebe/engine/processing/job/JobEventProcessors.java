@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -26,7 +26,7 @@ public final class JobEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableZeebeState zeebeState,
       final Consumer<String> onJobsAvailableCallback,
-      final BpmnBehaviorsImpl bpmnBehaviors,
+      final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final JobMetrics jobMetrics) {
 
@@ -39,7 +39,7 @@ public final class JobEventProcessors {
             zeebeState.getEventScopeInstanceState(),
             writers,
             zeebeState.getProcessState(),
-            eventTriggerBehavior);
+            bpmnBehaviors.eventTriggerBehavior());
 
     final var jobBackoffChecker = new JobBackoffChecker(jobState);
     typedRecordProcessors
@@ -55,7 +55,8 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB,
             JobIntent.THROW_ERROR,
-            new JobThrowErrorProcessor(zeebeState, bpmnBehaviors, keyGenerator, jobMetrics))
+            new JobThrowErrorProcessor(
+                zeebeState, bpmnBehaviors.eventPublicationBehavior(), keyGenerator, jobMetrics))
         .onCommand(
             ValueType.JOB, JobIntent.TIME_OUT, new JobTimeOutProcessor(zeebeState, jobMetrics))
         .onCommand(

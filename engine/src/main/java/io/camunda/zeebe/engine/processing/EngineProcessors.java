@@ -188,8 +188,7 @@ public final class EngineProcessors {
     final var processor =
         new DeploymentCreateProcessor(
             zeebeState,
-            bpmnBehaviors.catchEventBehavior(),
-            bpmnBehaviors.expressionBehavior(),
+            bpmnBehaviors,
             partitionsCount,
             writers,
             deploymentDistributionCommandSender,

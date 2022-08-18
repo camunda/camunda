@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment;
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
@@ -65,8 +66,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
   public DeploymentCreateProcessor(
       final ZeebeState zeebeState,
-      final CatchEventBehavior catchEventBehavior,
-      final ExpressionProcessor expressionProcessor,
+      final BpmnBehaviors bpmnBehaviors,
       final int partitionsCount,
       final Writers writers,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
@@ -78,10 +78,10 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     commandWriter = writers.command();
+    catchEventBehavior = bpmnBehaviors.catchEventBehavior();
+    expressionProcessor = bpmnBehaviors.expressionBehavior();
     deploymentTransformer =
         new DeploymentTransformer(stateWriter, zeebeState, expressionProcessor, keyGenerator);
-    this.catchEventBehavior = catchEventBehavior;
-    this.expressionProcessor = expressionProcessor;
     messageStartEventSubscriptionManager =
         new MessageStartEventSubscriptionManager(
             processState, zeebeState.getMessageStartEventSubscriptionState(), keyGenerator);
