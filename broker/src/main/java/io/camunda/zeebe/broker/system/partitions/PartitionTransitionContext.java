@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
@@ -110,4 +112,12 @@ public interface PartitionTransitionContext extends PartitionContext {
   BackupApiRequestHandler getBackupApiRequestHandler();
 
   void setBackupApiRequestHandler(BackupApiRequestHandler backupApiRequestHandler);
+
+  BackupManager getBackupManager();
+
+  void setBackupManager(BackupManager backupManager);
+
+  CheckpointRecordsProcessor getCheckpointProcessor();
+
+  void setCheckpointProcessor(CheckpointRecordsProcessor checkpointRecordsProcessor);
 }

@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
@@ -217,6 +219,22 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   public void setBackupApiRequestHandler(final BackupApiRequestHandler backupApiRequestHandler) {
     this.backupApiRequestHandler = backupApiRequestHandler;
   }
+
+  @Override
+  public BackupManager getBackupManager() {
+    return null;
+  }
+
+  @Override
+  public void setBackupManager(final BackupManager backupManager) {}
+
+  @Override
+  public CheckpointRecordsProcessor getCheckpointProcessor() {
+    return null;
+  }
+
+  @Override
+  public void setCheckpointProcessor(final CheckpointRecordsProcessor checkpointRecordsProcessor) {}
 
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {
     this.gatewayBrokerTransport = gatewayBrokerTransport;
