@@ -83,10 +83,10 @@ camunda-platform:
     partitionCount: "1"
     # ReplicationFactor defines how each partition is replicated, the value defines the number of nodes
     replicationFactor: "1"
-    # Disable the creation of persistent volumes.
-    persistenceType: local
+    # Enable the creation of persistent volumes.
+    persistenceType: disk
     # Defines a reasonable default for the `zeebe` StatefulSet, for when persistence is enabled.
-    pvcSize: 2Gi
+    pvcSize: 1Gi
     resources:
       limits:
         cpu: 1
@@ -122,11 +122,11 @@ camunda-platform:
     replicas: 1
     imageTag: 7.16.2
     persistence:
-      enabled: false
+      enabled: true
     volumeClaimTemplate:
       resources:
         requests:
-          storage: 2Gi
+          storage: 1Gi
     # This is needed to disable the creation of poddisruptionbudget resource coming from ES chart (supported in k8s 1.21)
     maxUnavailable: ""
     minimumMasterNodes: 1
