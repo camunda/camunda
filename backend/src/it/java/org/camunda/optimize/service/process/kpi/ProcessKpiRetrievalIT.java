@@ -57,12 +57,13 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
 
     // then
     assertThat(processes).hasSize(1)
-      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey, ProcessOverviewResponseDto::getKpis)
-      .containsExactlyInAnyOrder(
-        Tuple.tuple(
-          PROCESS_DEFINITION_KEY,
-          List.of(createExpectedKpiResponse(reportId1, "1"), createExpectedKpiResponse(reportId2, "2"))
-        ));
+      .extracting(ProcessOverviewResponseDto::getProcessDefinitionKey)
+      .containsExactly(PROCESS_DEFINITION_KEY);
+    assertThat(processes.get(0).getKpis()).containsExactlyInAnyOrder(
+      createExpectedKpiResponse(reportId1, "1"),
+      createExpectedKpiResponse(reportId2, "2")
+    );
+
   }
 
   @Test
