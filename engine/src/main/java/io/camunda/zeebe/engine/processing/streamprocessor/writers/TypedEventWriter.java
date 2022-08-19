@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
-import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
 public interface TypedEventWriter {
 
-  void appendFollowUpEvent(long key, Intent intent, RecordValue value);
+  void appendFollowUpEvent(long key, Intent intent, UnifiedRecordValue value);
 
   /**
    * Use this to know whether you can write an event of this length.

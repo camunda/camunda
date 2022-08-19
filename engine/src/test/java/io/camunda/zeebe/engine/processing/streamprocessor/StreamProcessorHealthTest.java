@@ -195,7 +195,7 @@ public class StreamProcessorHealthTest {
   private final class WrappedStreamWriterLegacy implements LegacyTypedStreamWriter {
 
     @Override
-    public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {}
+    public void appendFollowUpEvent(final long key, final Intent intent, final UnifiedRecordValue value) {}
 
     @Override
     public int getMaxEventLength() {

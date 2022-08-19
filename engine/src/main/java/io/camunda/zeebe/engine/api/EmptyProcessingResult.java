@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.api;
 
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.camunda.zeebe.streamprocessor.records.RecordBatch;
+import io.camunda.zeebe.streamprocessor.records.UnmodifiableRecordBatch;
 
 public final class EmptyProcessingResult implements ProcessingResult {
 
@@ -23,6 +25,11 @@ public final class EmptyProcessingResult implements ProcessingResult {
   @Override
   public boolean writeResponse(final CommandResponseWriter commandResponseWriter) {
     return true;
+  }
+
+  @Override
+  public UnmodifiableRecordBatch getResultingRecordBatch() {
+    return new RecordBatch(1);
   }
 
   @Override

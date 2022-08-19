@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.variable;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.streamprocessor.LegacyTypedStreamWriter;
 
@@ -34,7 +34,7 @@ public final class EventApplyingStateWriter implements StateWriter {
   }
 
   @Override
-  public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
+  public void appendFollowUpEvent(final long key, final Intent intent, final UnifiedRecordValue value) {
     eventWriter.appendFollowUpEvent(key, intent, value);
     eventApplier.applyState(key, intent, value);
   }

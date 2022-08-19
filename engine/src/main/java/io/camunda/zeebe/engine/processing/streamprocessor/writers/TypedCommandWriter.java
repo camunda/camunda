@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
-import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
 /** This interface is supposed to replace TypedCommandWriter */
 public interface TypedCommandWriter {
-  void appendNewCommand(Intent intent, RecordValue value);
+  void appendNewCommand(Intent intent, UnifiedRecordValue value);
 
-  void appendFollowUpCommand(long key, Intent intent, RecordValue value);
+  void appendFollowUpCommand(long key, Intent intent, UnifiedRecordValue value);
 }

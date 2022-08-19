@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.function.Supplier;
@@ -23,16 +23,16 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
   }
 
   @Override
-  public void appendNewCommand(final Intent intent, final RecordValue value) {
+  public void appendNewCommand(final Intent intent, final UnifiedRecordValue value) {
     appendRecord(-1, intent, value);
   }
 
   @Override
-  public void appendFollowUpCommand(final long key, final Intent intent, final RecordValue value) {
+  public void appendFollowUpCommand(final long key, final Intent intent, final UnifiedRecordValue value) {
     appendRecord(key, intent, value);
   }
 
-  private void appendRecord(final long key, final Intent intent, final RecordValue value) {
+  private void appendRecord(final long key, final Intent intent, final UnifiedRecordValue value) {
     resultBuilder()
         .appendRecord(key, RecordType.COMMAND, intent, RejectionType.NULL_VAL, "", value);
   }

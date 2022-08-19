@@ -13,6 +13,8 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.streamprocessor.records.ModifiableRecordBatch;
+import io.camunda.zeebe.streamprocessor.records.RecordBatch;
 import java.util.Collections;
 
 /**
@@ -25,11 +27,13 @@ final class DirectTaskResultBuilder implements TaskResultBuilder {
 
   private final StreamProcessorContext context;
   private final LegacyTypedStreamWriter streamWriter;
+  private final ModifiableRecordBatch modifiableRecordBatch;
 
   DirectTaskResultBuilder(final StreamProcessorContext context) {
     this.context = context;
     streamWriter = context.getLogStreamWriter();
     streamWriter.configureSourceContext(-1);
+    modifiableRecordBatch = new RecordBatch(context.getLogStreamBatchWriter().getMaxFragmentLength());
   }
 
   @Override

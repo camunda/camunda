@@ -13,6 +13,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -107,7 +108,7 @@ public class LegacyTypedStreamWriterImpl implements LegacyTypedStreamWriter {
   }
 
   @Override
-  public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
+  public void appendFollowUpEvent(final long key, final Intent intent, final UnifiedRecordValue value) {
     appendRecord(key, RecordType.EVENT, intent, value);
   }
 
