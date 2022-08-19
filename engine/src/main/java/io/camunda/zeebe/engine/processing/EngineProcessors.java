@@ -9,13 +9,9 @@ package io.camunda.zeebe.engine.processing;
 
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
-import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
-import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
-import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.CompleteDeploymentDistributionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
@@ -31,8 +27,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
-import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
-import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationController;
@@ -127,39 +121,15 @@ public final class EngineProcessors {
       final JobMetrics jobMetrics,
       final ProcessEngineMetrics processEngineMetrics,
       final SideEffectQueue sideEffectQueue) {
-    final var variablesState = zeebeState.getVariableState();
-    final var expressionProcessor =
-        new ExpressionProcessor(
-            ExpressionLanguageFactory.createExpressionLanguage(),
-            new VariableStateEvaluationContextLookup(variablesState));
-
-    final CatchEventBehavior catchEventBehavior =
-        new CatchEventBehavior(
-            zeebeState,
-            zeebeState.getKeyGenerator(),
-            expressionProcessor,
-            subscriptionCommandSender,
-            writers.state(),
-            timerChecker,
-            partitionsCount);
-
-    final VariableBehavior variableBehavior =
-        new VariableBehavior(variablesState, writers.state(), zeebeState.getKeyGenerator());
-
-    final var eventTriggerBehavior =
-        new EventTriggerBehavior(
-            zeebeState.getKeyGenerator(), catchEventBehavior, writers, zeebeState);
-
     return new BpmnBehaviorsImpl(
-        expressionProcessor,
         sideEffectQueue,
         zeebeState,
-        catchEventBehavior,
-        variableBehavior,
-        eventTriggerBehavior,
         writers,
         jobMetrics,
-        processEngineMetrics);
+        processEngineMetrics,
+        subscriptionCommandSender,
+        partitionsCount,
+        timerChecker);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
