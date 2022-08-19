@@ -96,7 +96,7 @@ final class S3BackupStoreIT {
             .getObject(
                 GetObjectRequest.builder()
                     .bucket(config.bucketName())
-                    .key("2/1/3/metadata")
+                    .key("2/1/3/metadata.json")
                     .build(),
                 AsyncResponseTransformer.toBytes())
             .join();

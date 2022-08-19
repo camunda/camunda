@@ -29,7 +29,7 @@ record Metadata(
     Set<String> snapshotFileNames,
     Set<String> segmentFileNames) {
 
-  static final String OBJECT_KEY = "metadata";
+  static final String OBJECT_KEY = "metadata.json";
 
   static Metadata of(Backup backup) {
     return new Metadata(
