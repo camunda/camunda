@@ -166,4 +166,138 @@ describe('stores/modifications', () => {
 
     expect(modificationsStore.lastModification).toEqual(undefined);
   });
+
+  it('should get modifications by flow node', async () => {
+    modificationsStore.addModification({
+      type: 'token',
+      modification: {
+        operation: 'add',
+        flowNode: {id: 'flowNode1', name: 'flow-node-1'},
+        affectedTokenCount: 1,
+      },
+    });
+
+    modificationsStore.addModification({
+      type: 'token',
+      modification: {
+        operation: 'add',
+        flowNode: {id: 'flowNode1', name: 'flow-node-1'},
+        affectedTokenCount: 1,
+      },
+    });
+
+    modificationsStore.addModification({
+      type: 'token',
+      modification: {
+        operation: 'cancel',
+        flowNode: {id: 'flowNode2', name: 'flow-node-2'},
+        affectedTokenCount: 3,
+      },
+    });
+
+    modificationsStore.addModification({
+      type: 'token',
+      modification: {
+        operation: 'move',
+        flowNode: {id: 'flowNode3', name: 'flow-node-3'},
+        targetFlowNode: {id: 'flowNode4', name: 'flow-node-4'},
+        affectedTokenCount: 3,
+      },
+    });
+
+    modificationsStore.addModification({
+      type: 'token',
+      modification: {
+        operation: 'add',
+        flowNode: {id: 'flowNode5', name: 'flow-node-5'},
+        affectedTokenCount: 1,
+      },
+    });
+
+    modificationsStore.addModification({
+      type: 'token',
+      modification: {
+        operation: 'move',
+        flowNode: {id: 'flowNode5', name: 'flow-node-5'},
+        targetFlowNode: {id: 'flowNode6', name: 'flow-node-6'},
+        affectedTokenCount: 2,
+      },
+    });
+
+    expect(modificationsStore.modificationsByFlowNode).toEqual({
+      flowNode1: {
+        cancelledTokens: 0,
+        newTokens: 2,
+      },
+      flowNode2: {
+        cancelledTokens: 3,
+        newTokens: 0,
+      },
+      flowNode3: {
+        cancelledTokens: 3,
+        newTokens: 0,
+      },
+      flowNode4: {
+        cancelledTokens: 0,
+        newTokens: 3,
+      },
+      flowNode5: {
+        cancelledTokens: 2,
+        newTokens: 1,
+      },
+      flowNode6: {
+        cancelledTokens: 0,
+        newTokens: 2,
+      },
+    });
+  });
+
+  it('should check if tokens on a flow node is cancelled', async () => {
+    modificationsStore.addModification({
+      type: 'token',
+      modification: {
+        operation: 'add',
+        flowNode: {id: 'flowNode1', name: 'flow-node-1'},
+        affectedTokenCount: 1,
+      },
+    });
+
+    expect(
+      modificationsStore.isCancelModificationAppliedOnFlowNode('flowNode1')
+    ).toBe(false);
+
+    modificationsStore.addModification({
+      type: 'token',
+      modification: {
+        operation: 'cancel',
+        flowNode: {id: 'flowNode1', name: 'flow-node-1'},
+        affectedTokenCount: 1,
+      },
+    });
+    expect(
+      modificationsStore.isCancelModificationAppliedOnFlowNode('flowNode1')
+    ).toBe(true);
+
+    expect(
+      modificationsStore.isCancelModificationAppliedOnFlowNode(
+        'non-existing-flownode'
+      )
+    ).toBe(false);
+
+    modificationsStore.addModification({
+      type: 'token',
+      modification: {
+        operation: 'move',
+        flowNode: {id: 'flowNode2', name: 'flow-node-2'},
+        targetFlowNode: {id: 'flowNode3', name: 'flow-node-3'},
+        affectedTokenCount: 1,
+      },
+    });
+    expect(
+      modificationsStore.isCancelModificationAppliedOnFlowNode('flowNode2')
+    ).toBe(true);
+    expect(
+      modificationsStore.isCancelModificationAppliedOnFlowNode('flowNode3')
+    ).toBe(false);
+  });
 });

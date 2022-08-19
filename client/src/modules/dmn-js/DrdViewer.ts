@@ -7,6 +7,7 @@
 
 import {Event} from 'dmn-js-shared/lib/base/Manager';
 import {isEqual} from 'lodash';
+import {DECISION_STATE} from 'modules/bpmn-js/badgePositions';
 import {drdDataStore} from 'modules/stores/drdData';
 import {OutlineModule} from './modules/Outline';
 import {Viewer} from './Viewer';
@@ -123,10 +124,7 @@ class DrdViewer {
         const container = document.createElement('div');
 
         overlays.add(decisionId, 'decisionState', {
-          position: {
-            bottom: 12,
-            left: -12,
-          },
+          position: DECISION_STATE,
           html: container,
         });
 

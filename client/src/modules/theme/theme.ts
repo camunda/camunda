@@ -515,6 +515,9 @@ const theme = {
               },
             },
           },
+          modificationsBadgeOverlay: {
+            backgroundColor: SEMANTIC_COLORS.primaryButton04,
+          },
           statisticOverlay: {
             statistic: {
               active: {
@@ -1412,6 +1415,9 @@ const theme = {
                 borderColor: LIGHT_COLORS.ui02,
               },
             },
+          },
+          modificationsBadgeOverlay: {
+            backgroundColor: SEMANTIC_COLORS.primaryButton04,
           },
           statisticOverlay: {
             statistic: {

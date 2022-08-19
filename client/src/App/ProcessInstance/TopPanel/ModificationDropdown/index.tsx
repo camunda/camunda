@@ -52,30 +52,69 @@ const ModificationDropdown: React.FC<Props> = observer(
           {processInstanceDetailsDiagramStore.appendableFlowNodes.includes(
             flowNodeId
           ) && (
-            <Option title="Add single flow node instance">
+            <Option
+              title="Add single flow node instance"
+              onClick={() => {
+                modificationsStore.addModification({
+                  type: 'token',
+                  modification: {
+                    operation: 'add',
+                    flowNode: {
+                      id: flowNodeId,
+                      name: processInstanceDetailsDiagramStore.getFlowNodeName(
+                        flowNodeId
+                      ),
+                    },
+                    affectedTokenCount: 1,
+                  },
+                });
+                flowNodeSelectionStore.clearSelection();
+              }}
+            >
               <AddIcon />
               Add
             </Option>
           )}
           {processInstanceDetailsDiagramStore.cancellableFlowNodes.includes(
             flowNodeId
-          ) && (
-            <>
-              <Option title="Cancel all running flow node instances in this flow node">
-                <CancelIcon />
-                Cancel
-              </Option>
-              <Option
-                title="Move all running instances in this flow node to another target"
-                onClick={() => {
-                  modificationsStore.startMovingToken();
-                }}
-              >
-                <MoveIcon />
-                Move
-              </Option>
-            </>
-          )}
+          ) &&
+            !modificationsStore.isCancelModificationAppliedOnFlowNode(
+              flowNodeId
+            ) && (
+              <>
+                <Option
+                  title="Cancel all running flow node instances in this flow node"
+                  onClick={() => {
+                    modificationsStore.addModification({
+                      type: 'token',
+                      modification: {
+                        operation: 'cancel',
+                        flowNode: {
+                          id: flowNodeId,
+                          name: processInstanceDetailsDiagramStore.getFlowNodeName(
+                            flowNodeId
+                          ),
+                        },
+                        affectedTokenCount: 1, //  TODO: This can only be set when instance counts are known #2926
+                      },
+                    });
+                    flowNodeSelectionStore.clearSelection();
+                  }}
+                >
+                  <CancelIcon />
+                  Cancel
+                </Option>
+                <Option
+                  title="Move all running instances in this flow node to another target"
+                  onClick={() => {
+                    modificationsStore.startMovingToken();
+                  }}
+                >
+                  <MoveIcon />
+                  Move
+                </Option>
+              </>
+            )}
           {processInstanceDetailsDiagramStore.nonModifiableFlowNodes.includes(
             flowNodeId
           ) && <Unsupported>Unsupported flow node type</Unsupported>}

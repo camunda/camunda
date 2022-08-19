@@ -48,6 +48,11 @@ const DEFAULT_STATE: State = {
   modifications: [],
 };
 
+const EMPTY_MODIFICATION = Object.freeze({
+  newTokens: 0,
+  cancelledTokens: 0,
+});
+
 class Modifications {
   state: State = {...DEFAULT_STATE};
 
@@ -107,6 +112,58 @@ class Modifications {
 
     return lastModification;
   }
+
+  get modificationsByFlowNode() {
+    return this.state.modifications.reduce<{
+      [key: string]: {
+        newTokens: number;
+        cancelledTokens: number;
+      };
+    }>((modificationsByFlowNode, {type, modification}) => {
+      if (type === 'variable') {
+        return modificationsByFlowNode;
+      }
+      const {flowNode, operation, affectedTokenCount} = modification;
+
+      if (modificationsByFlowNode[flowNode.id] === undefined) {
+        modificationsByFlowNode[flowNode.id] = {...EMPTY_MODIFICATION};
+      }
+
+      if (operation === 'move') {
+        if (
+          modificationsByFlowNode[modification.targetFlowNode.id] === undefined
+        ) {
+          modificationsByFlowNode[modification.targetFlowNode.id] = {
+            ...EMPTY_MODIFICATION,
+          };
+        }
+
+        modificationsByFlowNode[flowNode.id]!.cancelledTokens =
+          affectedTokenCount;
+
+        modificationsByFlowNode[modification.targetFlowNode.id]!.newTokens =
+          affectedTokenCount;
+      }
+
+      if (operation === 'cancel') {
+        modificationsByFlowNode[flowNode.id]!.cancelledTokens =
+          affectedTokenCount;
+      }
+
+      if (operation === 'add') {
+        modificationsByFlowNode[flowNode.id]!.newTokens =
+          modificationsByFlowNode[flowNode.id]!.newTokens + affectedTokenCount;
+      }
+
+      return modificationsByFlowNode;
+    }, {});
+  }
+
+  isCancelModificationAppliedOnFlowNode = (flowNodeId: string) => {
+    const cancelledTokens =
+      this.modificationsByFlowNode[flowNodeId]?.cancelledTokens ?? 0;
+    return cancelledTokens > 0;
+  };
 
   reset = () => {
     this.state = {...DEFAULT_STATE};

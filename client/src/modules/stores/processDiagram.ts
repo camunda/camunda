@@ -14,6 +14,12 @@ import {fetchProcessXML} from 'modules/api/diagram';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {getFlowNodes} from 'modules/utils/flowNodes';
 import {processInstancesStore} from './processInstances';
+import {
+  ACTIVE_BADGE,
+  CANCELED_BADGE,
+  COMPLETED_BADGE,
+  INCIDENTS_BADGE,
+} from 'modules/bpmn-js/badgePositions';
 
 type Node = {
   $type: string;
@@ -46,22 +52,10 @@ const DEFAULT_STATE: State = {
 };
 
 const overlayPositions = {
-  active: {
-    bottom: 9,
-    left: 0,
-  },
-  incidents: {
-    bottom: 9,
-    right: 0,
-  },
-  canceled: {
-    top: -16,
-    left: 0,
-  },
-  completed: {
-    bottom: 1,
-    left: 17,
-  },
+  active: ACTIVE_BADGE,
+  incidents: INCIDENTS_BADGE,
+  canceled: CANCELED_BADGE,
+  completed: COMPLETED_BADGE,
 } as const;
 
 class ProcessDiagram extends NetworkReconnectionHandler {

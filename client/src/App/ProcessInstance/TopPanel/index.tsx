@@ -29,8 +29,16 @@ import {MetadataPopover} from './MetadataPopover';
 import {modificationsStore} from 'modules/stores/modifications';
 import {ModificationDropdown} from './ModificationDropdown';
 import {MoveTokenBanner} from './MoveTokenBanner';
+import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
+import {MODIFICATIONS, FLOW_NODE_STATE} from 'modules/bpmn-js/badgePositions';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
+const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
+
+type ModificationBadgePayload = {
+  newTokenCount: number;
+  cancelledTokenCount: number;
+};
 
 type Props = {
   incidents?: unknown;
@@ -80,11 +88,35 @@ const TopPanel: React.FC<Props> = observer(() => {
           {
             flowNodeId,
             type: OVERLAY_TYPE_STATE,
-            position: {bottom: 17, left: -7},
+            position: FLOW_NODE_STATE,
             payload: {state},
           },
         ];
       }
+    }, [])
+  );
+
+  const modificationBadgesPerFlowNode = computed(() =>
+    Object.entries(modificationsStore.modificationsByFlowNode).reduce<
+      {
+        flowNodeId: string;
+        type: string;
+        payload: ModificationBadgePayload;
+        position: OverlayPosition;
+      }[]
+    >((badges, [flowNodeId, tokens]) => {
+      return [
+        ...badges,
+        {
+          flowNodeId,
+          type: OVERLAY_TYPE_MODIFICATIONS_BADGE,
+          position: MODIFICATIONS,
+          payload: {
+            newTokenCount: tokens.newTokens,
+            cancelledTokenCount: tokens.cancelledTokens,
+          },
+        },
+      ];
     }, [])
   );
 
@@ -93,7 +125,9 @@ const TopPanel: React.FC<Props> = observer(() => {
   const stateOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type === OVERLAY_TYPE_STATE
   );
-
+  const modificationBadgeOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type === OVERLAY_TYPE_MODIFICATIONS_BADGE
+  );
   const {
     state: {status, xml},
     modifiableFlowNodes,
@@ -179,7 +213,14 @@ const TopPanel: React.FC<Props> = observer(() => {
                     });
                   }
                 }}
-                overlaysData={flowNodeStateOverlays.get()}
+                overlaysData={
+                  isModificationModeEnabled
+                    ? [
+                        ...flowNodeStateOverlays.get(),
+                        ...modificationBadgesPerFlowNode.get(),
+                      ]
+                    : flowNodeStateOverlays.get()
+                }
                 selectedFlowNodeOverlay={
                   isModificationModeEnabled ? (
                     <ModificationDropdown />
@@ -199,6 +240,18 @@ const TopPanel: React.FC<Props> = observer(() => {
                       key={overlay.flowNodeId}
                       state={payload.state}
                       container={overlay.container}
+                    />
+                  );
+                })}
+                {modificationBadgeOverlays?.map((overlay) => {
+                  const payload = overlay.payload as ModificationBadgePayload;
+
+                  return (
+                    <ModificationBadgeOverlay
+                      key={overlay.flowNodeId}
+                      container={overlay.container}
+                      newTokenCount={payload.newTokenCount}
+                      cancelledTokenCount={payload.cancelledTokenCount}
                     />
                   );
                 })}
