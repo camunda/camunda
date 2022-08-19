@@ -205,7 +205,7 @@ const TopPanel: React.FC<Props> = observer(() => {
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
                   if (modificationsStore.state.status === 'moving-token') {
                     flowNodeSelectionStore.clearSelection();
-                    modificationsStore.finishMovingToken();
+                    modificationsStore.finishMovingToken(flowNodeId);
                   } else {
                     flowNodeSelectionStore.selectFlowNode({
                       flowNodeId,

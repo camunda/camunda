@@ -92,6 +92,7 @@ describe('stores/processInstanceDiagram', () => {
       type: {
         elementType: 'START',
         eventType: undefined,
+        isMultiInstance: false,
         multiInstanceType: undefined,
         inputMappings: [],
         outputMappings: [],
@@ -105,6 +106,7 @@ describe('stores/processInstanceDiagram', () => {
       type: {
         elementType: 'TASK_SERVICE',
         eventType: undefined,
+        isMultiInstance: false,
         multiInstanceType: undefined,
         inputMappings: [],
         outputMappings: [],
@@ -118,6 +120,7 @@ describe('stores/processInstanceDiagram', () => {
       type: {
         elementType: 'END',
         eventType: undefined,
+        isMultiInstance: false,
         multiInstanceType: undefined,
         inputMappings: [],
         outputMappings: [],
@@ -355,10 +358,11 @@ describe('stores/processInstanceDiagram', () => {
       'intermediate-throw',
     ]);
 
-    modificationsStore.startMovingToken();
+    modificationsStore.startMovingToken('service-task-1');
 
     expect(processInstanceDetailsDiagramStore.nonModifiableFlowNodes).toEqual([
       'StartEvent_1',
+      'service-task-1',
       'subprocess-start-1',
       'subprocess-end-task',
       'subprocess-service-task',

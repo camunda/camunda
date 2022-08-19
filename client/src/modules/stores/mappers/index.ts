@@ -30,6 +30,7 @@ type NodeMetaDataMap = {
     type: {
       elementType: string;
       eventType: string;
+      isMultiInstance: boolean;
       multiInstanceType?: string;
       inputMappings: {source: string; target: string}[];
       outputMappings: {source: string; target: string}[];
@@ -66,6 +67,9 @@ const createNodeMetaDataMap = (bpmnElements: {
         type: {
           elementType: getElementType(bpmnElement),
           eventType: getEventType(bpmnElement),
+          isMultiInstance:
+            bpmnElement?.loopCharacteristics?.$type ===
+              'bpmn:MultiInstanceLoopCharacteristics' ?? false,
           multiInstanceType: getMultiInstanceType(bpmnElement),
           inputMappings,
           outputMappings,

@@ -196,7 +196,11 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
 
   get modifiableFlowNodes() {
     if (modificationsStore.state.status === 'moving-token') {
-      return this.appendableFlowNodes;
+      return this.appendableFlowNodes.filter(
+        (flowNodeId) =>
+          flowNodeId !==
+          modificationsStore.state.sourceFlowNodeIdForMoveOperation
+      );
     } else {
       return Array.from(
         new Set([...this.appendableFlowNodes, ...this.cancellableFlowNodes])

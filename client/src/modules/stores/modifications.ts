@@ -6,6 +6,7 @@
  */
 
 import {makeAutoObservable} from 'mobx';
+import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 
 type FlowNodeModification =
   | {
@@ -41,11 +42,13 @@ type Modification =
 type State = {
   status: 'enabled' | 'moving-token' | 'disabled';
   modifications: Modification[];
+  sourceFlowNodeIdForMoveOperation: string | null;
 };
 
 const DEFAULT_STATE: State = {
   status: 'disabled',
   modifications: [],
+  sourceFlowNodeIdForMoveOperation: null,
 };
 
 const EMPTY_MODIFICATION = Object.freeze({
@@ -60,12 +63,38 @@ class Modifications {
     makeAutoObservable(this);
   }
 
-  startMovingToken = () => {
+  startMovingToken = (sourceFlowNodeId: string) => {
     this.state.status = 'moving-token';
+    this.state.sourceFlowNodeIdForMoveOperation = sourceFlowNodeId;
   };
 
-  finishMovingToken = () => {
-    // TODO: #2948: Add flow node modification
+  finishMovingToken = (targetFlowNodeId?: string) => {
+    if (
+      targetFlowNodeId !== undefined &&
+      this.state.sourceFlowNodeIdForMoveOperation !== null
+    ) {
+      modificationsStore.addModification({
+        type: 'token',
+        modification: {
+          operation: 'move',
+          flowNode: {
+            id: this.state.sourceFlowNodeIdForMoveOperation,
+            name: processInstanceDetailsDiagramStore.getFlowNodeName(
+              this.state.sourceFlowNodeIdForMoveOperation
+            ),
+          },
+          targetFlowNode: {
+            id: targetFlowNodeId,
+            name: processInstanceDetailsDiagramStore.getFlowNodeName(
+              targetFlowNodeId
+            ),
+          },
+          affectedTokenCount: 2, //  TODO: This can only be set when instance counts are known #2926
+        },
+      });
+    }
+
+    this.state.sourceFlowNodeIdForMoveOperation = null;
     this.state.status = 'enabled';
   };
 
@@ -141,8 +170,13 @@ class Modifications {
         modificationsByFlowNode[flowNode.id]!.cancelledTokens =
           affectedTokenCount;
 
+        const isSourceFlowNodeMultiInstance =
+          processInstanceDetailsDiagramStore.state.nodeMetaDataMap?.[
+            flowNode.id
+          ]?.type.isMultiInstance ?? false;
+
         modificationsByFlowNode[modification.targetFlowNode.id]!.newTokens =
-          affectedTokenCount;
+          isSourceFlowNodeMultiInstance ? 1 : affectedTokenCount;
       }
 
       if (operation === 'cancel') {

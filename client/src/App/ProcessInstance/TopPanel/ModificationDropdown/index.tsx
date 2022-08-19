@@ -107,7 +107,8 @@ const ModificationDropdown: React.FC<Props> = observer(
                 <Option
                   title="Move all running instances in this flow node to another target"
                   onClick={() => {
-                    modificationsStore.startMovingToken();
+                    modificationsStore.startMovingToken(flowNodeId);
+                    flowNodeSelectionStore.clearSelection();
                   }}
                 >
                   <MoveIcon />

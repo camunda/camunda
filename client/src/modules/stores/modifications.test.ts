@@ -6,10 +6,17 @@
  */
 
 import {modificationsStore} from './modifications';
+import {mockServer} from 'modules/mock-server/node';
+import {rest} from 'msw';
+import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
+import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
+import {flowNodeStatesStore} from './flowNodeStates';
 
 describe('stores/modifications', () => {
   afterEach(() => {
     modificationsStore.reset();
+    processInstanceDetailsDiagramStore.reset();
+    flowNodeStatesStore.reset();
   });
 
   it('should enable/disable modification mode', async () => {
@@ -299,5 +306,74 @@ describe('stores/modifications', () => {
     expect(
       modificationsStore.isCancelModificationAppliedOnFlowNode('flowNode3')
     ).toBe(false);
+  });
+
+  it('should move tokens', async () => {
+    expect(modificationsStore.modificationsByFlowNode).toEqual({});
+    expect(
+      modificationsStore.state.sourceFlowNodeIdForMoveOperation
+    ).toBeNull();
+
+    modificationsStore.startMovingToken('flowNode1');
+    expect(modificationsStore.state.sourceFlowNodeIdForMoveOperation).toBe(
+      'flowNode1'
+    );
+
+    modificationsStore.finishMovingToken('flowNode2');
+
+    expect(modificationsStore.modificationsByFlowNode).toEqual({
+      flowNode1: {
+        cancelledTokens: 2,
+        newTokens: 0,
+      },
+      flowNode2: {
+        cancelledTokens: 0,
+        newTokens: 2,
+      },
+    });
+
+    expect(
+      modificationsStore.state.sourceFlowNodeIdForMoveOperation
+    ).toBeNull();
+  });
+
+  it('should move tokens from multi instance process', async () => {
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessForModifications))
+      ),
+      rest.get(
+        '/api/process-instances/:processId/flow-node-states',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              StartEvent_1: 'COMPLETED',
+              'service-task-1': 'COMPLETED',
+              'multi-instance-subprocess': 'INCIDENT',
+              'subprocess-start-1': 'COMPLETED',
+              'subprocess-service-task': 'INCIDENT',
+              'service-task-7': 'ACTIVE',
+              'message-boundary': 'ACTIVE',
+            })
+          )
+      )
+    );
+    await processInstanceDetailsDiagramStore.fetchProcessXml(
+      'processInstanceId'
+    );
+    await flowNodeStatesStore.fetchFlowNodeStates('processInstanceId');
+    modificationsStore.startMovingToken('multi-instance-subprocess');
+    modificationsStore.finishMovingToken('service-task-7');
+
+    expect(modificationsStore.modificationsByFlowNode).toEqual({
+      'multi-instance-subprocess': {
+        cancelledTokens: 2,
+        newTokens: 0,
+      },
+      'service-task-7': {
+        cancelledTokens: 0,
+        newTokens: 1,
+      },
+    });
   });
 });
