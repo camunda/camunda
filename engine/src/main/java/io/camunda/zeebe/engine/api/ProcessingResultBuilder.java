@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.api;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -28,7 +28,7 @@ public interface ProcessingResultBuilder {
       final Intent intent,
       final RejectionType rejectionType,
       final String rejectionReason,
-      final RecordValue value);
+      final UnifiedRecordValue value);
 
   /**
    * Sets the response for the result; will be overwritten if called more than once

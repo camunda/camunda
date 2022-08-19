@@ -10,14 +10,20 @@ package io.camunda.zeebe.streamprocessor;
 import io.camunda.zeebe.engine.api.PostCommitTask;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.streamprocessor.records.ModifiableRecordBatch;
+import io.camunda.zeebe.streamprocessor.records.RecordBatch;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of {@code ProcessingResultBuilder} that uses direct access to the stream and to
@@ -29,6 +35,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   private final List<PostCommitTask> postCommitTasks = new ArrayList<>();
 
+  private final ModifiableRecordBatch modifiableRecordBatch;
   private final StreamProcessorContext context;
   private final LegacyTypedStreamWriter streamWriter;
   private final DirectTypedResponseWriter responseWriter;
@@ -36,6 +43,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
   private boolean hasResponse =
       true; // TODO figure out why this still needs to be true for tests to pass
   private final long sourceRecordPosition;
+  private final Map<Class<? extends UnifiedRecordValue>, ValueType> valueTypeMap;
 
   DirectProcessingResultBuilder(
       final StreamProcessorContext context, final long sourceRecordPosition) {
@@ -44,6 +52,9 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
     streamWriter = context.getLogStreamWriter();
     streamWriter.configureSourceContext(sourceRecordPosition);
     responseWriter = context.getTypedResponseWriter();
+    modifiableRecordBatch = new RecordBatch(context.getLogStreamWriter().getMaxEventLength());
+    valueTypeMap = TypedEventRegistry.EVENT_REGISTRY.entrySet()
+        .stream().collect(Collectors.toMap(Entry::getValue, Entry::getKey));
   }
 
   @Override
@@ -53,7 +64,15 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
       final Intent intent,
       final RejectionType rejectionType,
       final String rejectionReason,
-      final RecordValue value) {
+      final UnifiedRecordValue value) {
+    modifiableRecordBatch.appendRecord(key,
+        -1,
+        type,
+        intent,
+        rejectionType,
+        rejectionReason,
+        valueTypeMap.get(value.getClass()),
+        value);
     streamWriter.appendRecord(key, type, intent, rejectionType, rejectionReason, value);
     return this;
   }
@@ -106,7 +125,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   @Override
   public ProcessingResult build() {
-    return new DirectProcessingResult(context, postCommitTasks, hasResponse);
+    return new DirectProcessingResult(context, modifiableRecordBatch, postCommitTasks, hasResponse);
   }
 
   @Override

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.api;
 
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.camunda.zeebe.streamprocessor.records.UnmodifiableRecordBatch;
 
 /**
  * Here the interface is just a suggestion. Can be whatever PDT teams thinks is best to work with
@@ -17,6 +18,8 @@ public interface ProcessingResult {
   long writeRecordsToStream(LogStreamBatchWriter logStreamBatchWriter);
 
   boolean writeResponse(CommandResponseWriter commandResponseWriter);
+
+  UnmodifiableRecordBatch getResultingRecordBatch();
 
   /**
    * @return <code>false</code> to indicate that the side effect could not be applied successfully

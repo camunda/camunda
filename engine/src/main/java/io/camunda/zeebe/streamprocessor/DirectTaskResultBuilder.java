@@ -41,6 +41,6 @@ final class DirectTaskResultBuilder implements TaskResultBuilder {
 
   @Override
   public TaskResult build() {
-    return new DirectProcessingResult(context, Collections.emptyList(), false);
+    return new DirectProcessingResult(context, modifiableRecordBatch, Collections.emptyList(), false);
   }
 }

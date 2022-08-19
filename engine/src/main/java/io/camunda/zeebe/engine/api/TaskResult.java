@@ -12,5 +12,6 @@ import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 /** Here the interface is just a suggestion. Can be whatever PDT team thinks is best to work with */
 public interface TaskResult {
 
+
   long writeRecordsToStream(LogStreamBatchWriter logStreamBatchWriter);
 }
