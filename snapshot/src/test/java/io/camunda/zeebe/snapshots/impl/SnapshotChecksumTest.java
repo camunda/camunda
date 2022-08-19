@@ -133,7 +133,7 @@ public class SnapshotChecksumTest {
     final var actualChecksum = SnapshotChecksum.calculate(corruptedSnapshot).getCombinedValue();
 
     // then
-    assertThat(actualChecksum).isNotEqualTo(expectedChecksum);
+    assertThat(actualChecksum).isNotEqualTo(expectedChecksum.getCombinedValue());
   }
 
   @Test
