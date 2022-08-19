@@ -24,9 +24,11 @@ public class IntermediateThrowEventProcessor
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnJobBehavior jobBehavior;
 
-  public IntermediateThrowEventProcessor(final BpmnBehaviors bpmnBehaviors) {
+  public IntermediateThrowEventProcessor(
+      final BpmnBehaviors bpmnBehaviors,
+      final BpmnStateTransitionBehavior stateTransitionBehavior) {
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
-    stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
+    this.stateTransitionBehavior = stateTransitionBehavior;
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
   }

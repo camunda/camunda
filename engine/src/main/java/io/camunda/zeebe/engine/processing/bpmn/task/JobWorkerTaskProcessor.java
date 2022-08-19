@@ -31,10 +31,11 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   private final BpmnJobBehavior jobBehavior;
   private final BpmnStateBehavior stateBehavior;
 
-  public JobWorkerTaskProcessor(final BpmnBehaviors behaviors) {
+  public JobWorkerTaskProcessor(
+      final BpmnBehaviors behaviors, final BpmnStateTransitionBehavior stateTransitionBehavior) {
     eventSubscriptionBehavior = behaviors.eventSubscriptionBehavior();
     incidentBehavior = behaviors.incidentBehavior();
-    stateTransitionBehavior = behaviors.stateTransitionBehavior();
+    this.stateTransitionBehavior = stateTransitionBehavior;
     variableMappingBehavior = behaviors.variableMappingBehavior();
     jobBehavior = behaviors.jobBehavior();
     stateBehavior = behaviors.stateBehavior();

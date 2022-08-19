@@ -32,10 +32,12 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnJobBehavior jobBehavior;
 
-  public EndEventProcessor(final BpmnBehaviors bpmnBehaviors) {
+  public EndEventProcessor(
+      final BpmnBehaviors bpmnBehaviors,
+      final BpmnStateTransitionBehavior stateTransitionBehavior) {
     eventPublicationBehavior = bpmnBehaviors.eventPublicationBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
-    stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
+    this.stateTransitionBehavior = stateTransitionBehavior;
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
   }

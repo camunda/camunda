@@ -52,7 +52,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
 
     rejectionWriter = writers.rejection();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
-    processors = new BpmnElementProcessors(bpmnBehaviors);
     stateTransitionGuard = bpmnBehaviors.stateTransitionGuard();
     stateTransitionBehavior =
         new BpmnStateTransitionBehavior(
@@ -61,10 +60,10 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             processEngineMetrics,
             this::getContainerProcessor,
             writers);
+    processors = new BpmnElementProcessors(bpmnBehaviors, stateTransitionBehavior);
     this.sideEffectQueue = sideEffectQueue;
   }
 
-  // TODO figure out how to get this in the bpmn behaviors
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
       final BpmnElementType elementType) {
     return processors.getContainerProcessor(elementType);

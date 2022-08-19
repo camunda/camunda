@@ -27,9 +27,11 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnStateBehavior stateBehavior;
 
-  public StartEventProcessor(final BpmnBehaviors bpmnBehaviors) {
+  public StartEventProcessor(
+      final BpmnBehaviors bpmnBehaviors,
+      final BpmnStateTransitionBehavior stateTransitionBehavior) {
     incidentBehavior = bpmnBehaviors.incidentBehavior();
-    stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
+    this.stateTransitionBehavior = stateTransitionBehavior;
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     stateBehavior = bpmnBehaviors.stateBehavior();

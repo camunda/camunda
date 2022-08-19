@@ -31,9 +31,11 @@ public final class SubProcessProcessor
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
 
-  public SubProcessProcessor(final BpmnBehaviors bpmnBehaviors) {
+  public SubProcessProcessor(
+      final BpmnBehaviors bpmnBehaviors,
+      final BpmnStateTransitionBehavior stateTransitionBehavior) {
     stateBehavior = bpmnBehaviors.stateBehavior();
-    stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
+    this.stateTransitionBehavior = stateTransitionBehavior;
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();

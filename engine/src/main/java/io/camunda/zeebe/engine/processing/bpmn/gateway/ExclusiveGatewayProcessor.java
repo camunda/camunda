@@ -32,10 +32,11 @@ public final class ExclusiveGatewayProcessor
   private final BpmnIncidentBehavior incidentBehavior;
   private final ExpressionProcessor expressionBehavior;
 
-  public ExclusiveGatewayProcessor(final BpmnBehaviors behaviors) {
+  public ExclusiveGatewayProcessor(
+      final BpmnBehaviors behaviors, final BpmnStateTransitionBehavior stateTransitionBehavior) {
     expressionBehavior = behaviors.expressionBehavior();
     incidentBehavior = behaviors.incidentBehavior();
-    stateTransitionBehavior = behaviors.stateTransitionBehavior();
+    this.stateTransitionBehavior = stateTransitionBehavior;
   }
 
   @Override

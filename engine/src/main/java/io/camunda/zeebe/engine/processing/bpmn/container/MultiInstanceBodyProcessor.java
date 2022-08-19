@@ -63,8 +63,10 @@ public final class MultiInstanceBodyProcessor
   private final BpmnIncidentBehavior incidentBehavior;
   private final MultiInstanceOutputCollectionBehavior multiInstanceOutputCollectionBehavior;
 
-  public MultiInstanceBodyProcessor(final BpmnBehaviors bpmnBehaviors) {
-    stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
+  public MultiInstanceBodyProcessor(
+      final BpmnBehaviors bpmnBehaviors,
+      final BpmnStateTransitionBehavior stateTransitionBehavior) {
+    this.stateTransitionBehavior = stateTransitionBehavior;
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     stateBehavior = bpmnBehaviors.stateBehavior();
     expressionBehavior = bpmnBehaviors.expressionBehavior();
