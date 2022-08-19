@@ -27,6 +27,7 @@ import {useNotifications} from 'modules/notifications';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {modificationsStore} from 'modules/stores/modifications';
 import {IS_MODIFICATION_MODE_ENABLED} from 'modules/feature-flags';
+import {storeStateLocally} from 'modules/utils/localStorage';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -248,6 +249,9 @@ describe('Instance', () => {
         screen.queryByTestId('apply-modifications-button')
       ).not.toBeInTheDocument();
 
+      storeStateLocally({
+        [`hideModificationHelperModal`]: true,
+      });
       await user.click(
         screen.getByRole('button', {
           name: /modify instance/i,
@@ -291,6 +295,9 @@ describe('Instance', () => {
         screen.getByTestId('instance-header-skeleton')
       );
 
+      storeStateLocally({
+        [`hideModificationHelperModal`]: true,
+      });
       await user.click(
         screen.getByRole('button', {
           name: /modify instance/i,
@@ -335,6 +342,9 @@ describe('Instance', () => {
         screen.getByTestId('instance-header-skeleton')
       );
 
+      storeStateLocally({
+        [`hideModificationHelperModal`]: true,
+      });
       await user.click(
         screen.getByRole('button', {
           name: /modify instance/i,

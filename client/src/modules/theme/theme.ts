@@ -344,6 +344,11 @@ const theme = {
               color: SEMANTIC_COLORS.white,
             },
           },
+          helperModal: {
+            modificationType: {
+              color: DARK_COLORS.linkDefault,
+            },
+          },
         },
       },
       sortableTable: {
@@ -1249,6 +1254,11 @@ const theme = {
               buttonColor: LIGHT_COLORS.linkDefault,
               separatorColor: LIGHT_COLORS.ui03,
               color: DARK_COLORS.ui04,
+            },
+          },
+          helperModal: {
+            modificationType: {
+              color: LIGHT_COLORS.linkDefault,
             },
           },
         },

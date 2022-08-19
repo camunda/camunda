@@ -21,6 +21,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {modificationsStore} from 'modules/stores/modifications';
+import {storeStateLocally} from 'modules/utils/localStorage';
 
 const instanceMock: ProcessInstanceEntity = {
   id: 'instance_1',
@@ -78,16 +79,16 @@ describe('Operations', () => {
       );
 
       expect(
-        screen.getByTitle(`Retry Instance instance_1`)
+        screen.getByTitle('Retry Instance instance_1')
       ).toBeInTheDocument();
       expect(
-        screen.getByTitle(`Cancel Instance instance_1`)
+        screen.getByTitle('Cancel Instance instance_1')
       ).toBeInTheDocument();
       expect(
-        screen.queryByTitle(`Delete Instance instance_1`)
+        screen.queryByTitle('Delete Instance instance_1')
       ).not.toBeInTheDocument();
       expect(
-        screen.getByTitle(`Modify Instance instance_1`)
+        screen.getByTitle('Modify Instance instance_1')
       ).toBeInTheDocument();
     });
     it('should render cancel and modify buttons if instance is running and does not have an incident', () => {
@@ -102,16 +103,16 @@ describe('Operations', () => {
       );
 
       expect(
-        screen.queryByTitle(`Retry Instance instance_1`)
+        screen.queryByTitle('Retry Instance instance_1')
       ).not.toBeInTheDocument();
       expect(
-        screen.getByTitle(`Cancel Instance instance_1`)
+        screen.getByTitle('Cancel Instance instance_1')
       ).toBeInTheDocument();
       expect(
-        screen.queryByTitle(`Delete Instance instance_1`)
+        screen.queryByTitle('Delete Instance instance_1')
       ).not.toBeInTheDocument();
       expect(
-        screen.getByTitle(`Modify Instance instance_1`)
+        screen.getByTitle('Modify Instance instance_1')
       ).toBeInTheDocument();
     });
     it('should render delete button if instance is completed', () => {
@@ -127,16 +128,16 @@ describe('Operations', () => {
       );
 
       expect(
-        screen.queryByTitle(`Retry Instance instance_1`)
+        screen.queryByTitle('Retry Instance instance_1')
       ).not.toBeInTheDocument();
       expect(
-        screen.queryByTitle(`Cancel Instance instance_1`)
+        screen.queryByTitle('Cancel Instance instance_1')
       ).not.toBeInTheDocument();
       expect(
-        screen.getByTitle(`Delete Instance instance_1`)
+        screen.getByTitle('Delete Instance instance_1')
       ).toBeInTheDocument();
       expect(
-        screen.queryByTitle(`Modify Instance instance_1`)
+        screen.queryByTitle('Modify Instance instance_1')
       ).not.toBeInTheDocument();
     });
 
@@ -153,16 +154,16 @@ describe('Operations', () => {
       );
 
       expect(
-        screen.queryByTitle(`Retry Instance instance_1`)
+        screen.queryByTitle('Retry Instance instance_1')
       ).not.toBeInTheDocument();
       expect(
-        screen.queryByTitle(`Cancel Instance instance_1`)
+        screen.queryByTitle('Cancel Instance instance_1')
       ).not.toBeInTheDocument();
       expect(
-        screen.getByTitle(`Delete Instance instance_1`)
+        screen.getByTitle('Delete Instance instance_1')
       ).toBeInTheDocument();
       expect(
-        screen.queryByTitle(`Modify Instance instance_1`)
+        screen.queryByTitle('Modify Instance instance_1')
       ).not.toBeInTheDocument();
     });
 
@@ -178,31 +179,34 @@ describe('Operations', () => {
       );
 
       expect(
-        screen.getByTitle(`Retry Instance instance_1`)
+        screen.getByTitle('Retry Instance instance_1')
       ).toBeInTheDocument();
       expect(
-        screen.getByTitle(`Cancel Instance instance_1`)
+        screen.getByTitle('Cancel Instance instance_1')
       ).toBeInTheDocument();
       expect(
-        screen.queryByTitle(`Delete Instance instance_1`)
+        screen.queryByTitle('Delete Instance instance_1')
       ).not.toBeInTheDocument();
       expect(
-        screen.getByTitle(`Modify Instance instance_1`)
+        screen.getByTitle('Modify Instance instance_1')
       ).toBeInTheDocument();
 
-      await user.click(screen.getByTitle(`Modify Instance instance_1`));
+      storeStateLocally({
+        [`hideModificationHelperModal`]: true,
+      });
+      await user.click(screen.getByTitle('Modify Instance instance_1'));
 
       expect(
-        screen.queryByTitle(`Retry Instance instance_1`)
+        screen.queryByTitle('Retry Instance instance_1')
       ).not.toBeInTheDocument();
       expect(
-        screen.queryByTitle(`Cancel Instance instance_1`)
+        screen.queryByTitle('Cancel Instance instance_1')
       ).not.toBeInTheDocument();
       expect(
-        screen.queryByTitle(`Delete Instance instance_1`)
+        screen.queryByTitle('Delete Instance instance_1')
       ).not.toBeInTheDocument();
       expect(
-        screen.queryByTitle(`Modify Instance instance_1`)
+        screen.queryByTitle('Modify Instance instance_1')
       ).not.toBeInTheDocument();
     });
 
@@ -212,16 +216,16 @@ describe('Operations', () => {
       });
 
       expect(
-        screen.getByTitle(`Retry Instance instance_1`)
+        screen.getByTitle('Retry Instance instance_1')
       ).toBeInTheDocument();
       expect(
-        screen.getByTitle(`Cancel Instance instance_1`)
+        screen.getByTitle('Cancel Instance instance_1')
       ).toBeInTheDocument();
       expect(
-        screen.queryByTitle(`Delete Instance instance_1`)
+        screen.queryByTitle('Delete Instance instance_1')
       ).not.toBeInTheDocument();
       expect(
-        screen.queryByTitle(`Modify Instance instance_1`)
+        screen.queryByTitle('Modify Instance instance_1')
       ).not.toBeInTheDocument();
     });
   });
@@ -435,6 +439,55 @@ describe('Operations', () => {
       expect(screen.getByTestId('pathname').textContent).toBe(
         `/processes/${rootInstanceId}`
       );
+    });
+
+    it('should display helper modal when clicking modify instance, until user clicks do not show', async () => {
+      const {user} = render(
+        <Operations
+          instance={{...instanceMock, state: 'INCIDENT'}}
+          isInstanceModificationVisible
+        />,
+        {
+          wrapper: Wrapper,
+        }
+      );
+
+      await user.click(screen.getByTitle('Modify Instance instance_1'));
+      expect(
+        screen.queryByTestId('apply-modifications-button')
+      ).not.toBeInTheDocument();
+
+      expect(
+        screen.getByText(
+          'Process instance modification mode allows you to plan multiple modifications on a process instance.'
+        )
+      ).toBeInTheDocument();
+
+      await user.click(
+        screen.getByRole('checkbox', {name: 'Do not show this message again'})
+      );
+      await user.click(screen.getByTestId('continue-button'));
+
+      await waitForElementToBeRemoved(() =>
+        screen.getByText(
+          'Process instance modification mode allows you to plan multiple modifications on a process instance.'
+        )
+      );
+      expect(modificationsStore.state.status).toBe('enabled');
+
+      modificationsStore.disableModificationMode();
+
+      expect(modificationsStore.state.status).toBe('disabled');
+
+      await user.click(screen.getByTitle('Modify Instance instance_1'));
+
+      expect(modificationsStore.state.status).toBe('enabled');
+
+      expect(
+        screen.queryByText(
+          'Process instance modification mode allows you to plan multiple modifications on a process instance.'
+        )
+      ).not.toBeInTheDocument();
     });
   });
 });

@@ -23,6 +23,8 @@ import {ConfirmOperationModal} from 'modules/components/ConfirmOperationModal';
 import {OperationsContainer} from './styled';
 import {CalledInstanceCancellationModal} from './CalledInstanceCancellationModal';
 import {modificationsStore} from 'modules/stores/modifications';
+import {ModificationHelperModal} from './ModificationHelperModal';
+import {getStateLocally} from 'modules/utils/localStorage';
 
 type Props = {
   instance: ProcessInstanceEntity;
@@ -43,6 +45,10 @@ const Operations: React.FC<Props> = observer(
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
     const [isCancellationModalVisible, setIsCancellationModalVisible] =
       useState(false);
+    const [
+      isModificationModeHelperModalVisible,
+      setIsModificationModeHelperModalVisible,
+    ] = useState(false);
 
     const {isModificationModeEnabled} = modificationsStore;
 
@@ -115,7 +121,13 @@ const Operations: React.FC<Props> = observer(
             !isModificationModeEnabled && (
               <OperationItem
                 type="ENTER_MODIFICATION_MODE"
-                onClick={() => modificationsStore.enableModificationMode()}
+                onClick={() => {
+                  if (getStateLocally()?.['hideModificationHelperModal']) {
+                    modificationsStore.enableModificationMode();
+                  } else {
+                    setIsModificationModeHelperModalVisible(true);
+                  }
+                }}
                 title={`Modify Instance ${instance.id}`}
               />
             )}
@@ -146,6 +158,13 @@ const Operations: React.FC<Props> = observer(
           onDeleteClick={() => {
             applyOperation('DELETE_PROCESS_INSTANCE');
             setIsDeleteModalVisible(false);
+          }}
+        />
+        <ModificationHelperModal
+          isVisible={isModificationModeHelperModalVisible}
+          onClose={() => {
+            setIsModificationModeHelperModalVisible(false);
+            modificationsStore.enableModificationMode();
           }}
         />
       </OperationsContainer>

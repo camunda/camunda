@@ -99,15 +99,31 @@ const MODAL_SIZES = Object.freeze({
 });
 
 type ModalContentProps = {
-  size: 'BIG' | 'SMALL';
+  size: 'BIG' | 'SMALL' | 'CUSTOM';
+  $width?: string;
+  $maxHeight?: string;
 };
 
 const ModalContent = styled(Panel)<ModalContentProps>`
-  ${({theme, size}) => {
+  ${({theme, size, $width, $maxHeight}) => {
     const colors = theme.colors.modules.modal.modalContent;
 
     return css`
-      ${MODAL_SIZES[size]}
+      ${size !== 'CUSTOM' &&
+      css`
+        ${MODAL_SIZES[size]}
+      `}
+      ${size === 'CUSTOM' &&
+      css`
+        ${$width &&
+        css`
+          width: ${$width};
+        `};
+        ${$maxHeight &&
+        css`
+          max-height: ${$maxHeight};
+        `};
+      `}
       border: 1px solid ${colors.borderColor};
       border-radius: 3px;
       box-shadow: 0 2px 2px 0 ${rgba(theme.colors.black, 0.5)};

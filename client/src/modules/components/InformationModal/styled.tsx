@@ -5,11 +5,17 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import Modal from 'modules/components/Modal';
 
 const Body = styled(Modal.Body)`
-  padding-top: 0;
+  ${({theme}) => {
+    return css`
+      padding-top: 0;
+      color: ${theme.colors.text01};
+      overflow: auto;
+    `;
+  }}
 `;
 
 const Footer = styled(Modal.Footer)`

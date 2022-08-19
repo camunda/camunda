@@ -8,7 +8,7 @@
 import React from 'react';
 
 type Props = {
-  onCmInput: React.ChangeEventHandler<HTMLInputElement>;
+  onCmInput: (event: {detail: {isChecked: boolean}}) => {};
   indeterminate: boolean;
   label?: string;
   id?: string;
@@ -26,7 +26,14 @@ const Checkbox: React.FC<Props> = ({
   return (
     <label htmlFor={id}>
       {label ?? title}
-      <input type="checkbox" onChange={onCmInput} id={id} {...props} />
+      <input
+        type="checkbox"
+        onChange={(event) => {
+          onCmInput({detail: {isChecked: event.target.checked}});
+        }}
+        id={id}
+        {...props}
+      />
     </label>
   );
 };

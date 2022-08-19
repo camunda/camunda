@@ -35,9 +35,12 @@ type ModalProps = {
   onModalClose: () => void;
   isVisible: boolean;
   className?: string;
-  size: 'SMALL' | 'BIG';
+  size: 'SMALL' | 'BIG' | 'CUSTOM';
   preventKeyboardEvents?: boolean;
   children: React.ReactNode;
+  width?: string;
+  height?: string;
+  maxHeight?: string;
 };
 
 class Modal extends React.Component<ModalProps> {
@@ -109,7 +112,7 @@ class Modal extends React.Component<ModalProps> {
   handleTabKeyDown = (e: any) => {
     const focusableModalElements = [
       ...this.modalRef?.current.querySelectorAll(
-        'a[href], button, textarea, code, input[type="text"], input[type="radio"], input[type="checkbox"], select, cm-button'
+        'a[href], button, textarea, code, input[type="text"], input[type="radio"], input[type="checkbox"], select, cm-checkbox, cm-button'
       ),
     ].filter((element) => !!element.disabled === false);
 
@@ -140,7 +143,15 @@ class Modal extends React.Component<ModalProps> {
     this.keyHandlers.set(keyCode, handler);
 
   render() {
-    const {onModalClose, children, className, isVisible, size} = this.props;
+    const {
+      onModalClose,
+      children,
+      className,
+      isVisible,
+      size,
+      width,
+      maxHeight,
+    } = this.props;
     return createPortal(
       <Styled.Transition
         in={isVisible}
@@ -154,7 +165,11 @@ class Modal extends React.Component<ModalProps> {
           ref={this.modalRef}
           role="dialog"
         >
-          <Styled.ModalContent size={size}>
+          <Styled.ModalContent
+            size={size}
+            $width={width}
+            $maxHeight={maxHeight}
+          >
             <ModalContext.Provider
               value={{
                 onModalClose,

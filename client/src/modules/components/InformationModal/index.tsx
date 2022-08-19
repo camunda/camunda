@@ -14,7 +14,8 @@ type Props = {
   title: string;
   body: React.ReactNode;
   footer: React.ReactNode;
-};
+  size?: React.ComponentProps<typeof Modal>['size'];
+} & Pick<React.ComponentProps<typeof Modal>, 'width' | 'maxHeight'>;
 
 const InformationModal: React.FC<Props> = ({
   isVisible,
@@ -22,9 +23,18 @@ const InformationModal: React.FC<Props> = ({
   title,
   body,
   footer,
+  size,
+  width,
+  maxHeight,
 }) => {
   return (
-    <Modal onModalClose={onClose} isVisible={isVisible} size={SIZES.SMALL}>
+    <Modal
+      onModalClose={onClose}
+      isVisible={isVisible}
+      size={size ?? SIZES.SMALL}
+      width={width}
+      maxHeight={maxHeight}
+    >
       <Modal.Header>{title}</Modal.Header>
       <Body>
         <Modal.BodyText>{body}</Modal.BodyText>
