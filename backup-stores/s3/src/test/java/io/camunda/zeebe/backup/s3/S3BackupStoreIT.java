@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -132,6 +133,29 @@ final class S3BackupStoreIT {
     assertThat(listed.contents().stream().map(S3Object::key))
         .isNotEmpty()
         .allSatisfy(k -> assertThat(k).startsWith(prefix).isIn(expectedObjects));
+  }
+
+  @Test
+  void bucketContainsExpectedObjectsOnly(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+    final var prefix = S3BackupStore.objectPrefix(backup.id);
+
+    final var snapshotFiles =
+        backup.snapshot.names().stream().map(name -> prefix + S3BackupStore.SNAPSHOT_PREFIX + name);
+    final var metadata = prefix + Metadata.OBJECT_KEY;
+    final var expectedObjects = Stream.concat(snapshotFiles, Stream.of(metadata)).toList();
+
+    // when
+    store.save(backup).join();
+
+    // then
+    final var listed =
+        client.listObjectsV2(req -> req.bucket(config.bucketName())).join().contents().stream()
+            .map(S3Object::key)
+            .toList();
+
+    assertThat(listed).containsExactlyInAnyOrderElementsOf(expectedObjects);
   }
 
   @Test
