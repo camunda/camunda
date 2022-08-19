@@ -14,6 +14,7 @@ const Panel = styled(BasePanel)`
   ${({theme}) => {
     return css`
       border-right: solid 1px ${theme.colors.borderColor};
+      border-top: 1px solid ${theme.colors.borderColor};
     `;
   }}
 `;

@@ -183,6 +183,12 @@ const theme = {
         footer: {
           backgroundColor: DARK_COLORS.ui05,
         },
+        ioMappings: {
+          banner: {
+            backgroundColor: DARK_COLORS.selectedOdd,
+            closeIconColor: SEMANTIC_COLORS.white,
+          },
+        },
       },
       variables: {
         skeleton: {
@@ -343,9 +349,22 @@ const theme = {
       sortableTable: {
         backgroundColor: DARK_COLORS.ui02,
         hover: DARK_COLORS.rowHover,
+        header: {
+          tr: {
+            backgroundColor: DARK_COLORS.ui03,
+          },
+        },
         tr: {
           selected: {
             backgroundColor: DARK_COLORS.selectedOdd,
+          },
+        },
+      },
+      dataTable: {
+        backgroundColor: DARK_COLORS.ui02,
+        header: {
+          tr: {
+            backgroundColor: DARK_COLORS.ui02,
           },
         },
       },
@@ -776,13 +795,6 @@ const theme = {
           td: {
             color: rgba(SEMANTIC_COLORS.white, 0.9),
           },
-
-          thead: {
-            backgroundColor: DARK_COLORS.ui04,
-            tr: {
-              backgroundColor: DARK_COLORS.ui03,
-            },
-          },
           columnHeader: {
             color: LIGHT_COLORS.ui02,
             disabled: {
@@ -798,6 +810,12 @@ const theme = {
           color: rgba(SEMANTIC_COLORS.white, 0.9),
           placeholder: {
             color: rgba(SEMANTIC_COLORS.white, 0.7),
+          },
+        },
+        tabView: {
+          backgroundColor: DARK_COLORS.ui02,
+          header: {
+            backgroundColor: DARK_COLORS.ui03,
           },
         },
       },
@@ -933,6 +951,9 @@ const theme = {
       },
       variablesPanel: {
         footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
+        ioMappings: {
+          banner: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
+        },
       },
       modificationMode: {
         footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
@@ -1065,6 +1086,12 @@ const theme = {
       variablesPanel: {
         footer: {
           backgroundColor: LIGHT_COLORS.button05,
+        },
+        ioMappings: {
+          banner: {
+            backgroundColor: LIGHT_COLORS.focusInner,
+            closeIconColor: DARK_COLORS.ui04,
+          },
         },
       },
       variables: {
@@ -1226,9 +1253,22 @@ const theme = {
       sortableTable: {
         backgroundColor: LIGHT_COLORS.ui04,
         hover: LIGHT_COLORS.rowHover,
+        header: {
+          tr: {
+            backgroundColor: LIGHT_COLORS.ui02,
+          },
+        },
         tr: {
           selected: {
             backgroundColor: LIGHT_COLORS.focusInner,
+          },
+        },
+      },
+      dataTable: {
+        backgroundColor: LIGHT_COLORS.ui04,
+        header: {
+          tr: {
+            backgroundColor: LIGHT_COLORS.ui04,
           },
         },
       },
@@ -1652,12 +1692,6 @@ const theme = {
           td: {
             color: rgba(LIGHT_COLORS.ui06, 0.9),
           },
-          thead: {
-            backgroundColor: LIGHT_COLORS.ui02,
-            tr: {
-              backgroundColor: LIGHT_COLORS.ui02,
-            },
-          },
           columnHeader: {
             color: LIGHT_COLORS.ui06,
             disabled: {
@@ -1673,6 +1707,12 @@ const theme = {
           color: DARK_COLORS.ui03,
           placeholder: {
             color: rgba(LIGHT_COLORS.ui06, 0.9),
+          },
+        },
+        tabView: {
+          backgroundColor: LIGHT_COLORS.ui04,
+          header: {
+            backgroundColor: LIGHT_COLORS.ui02,
           },
         },
       },
@@ -1808,6 +1848,9 @@ const theme = {
       },
       variablesPanel: {
         footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
+        ioMappings: {
+          banner: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
+        },
       },
       modificationMode: {
         footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,

@@ -21,7 +21,11 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {createInstance} from 'modules/testUtils';
+import {
+  createInstance,
+  mockProcessWithInputOutputMappingsXML,
+} from 'modules/testUtils';
+import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -79,6 +83,7 @@ describe('VariablePanel', () => {
     variablesStore.reset();
     flowNodeSelectionStore.reset();
     flowNodeMetaDataStore.reset();
+    processInstanceDetailsDiagramStore.reset();
   });
 
   it('should show multiple scope placeholder when multiple nodes are selected', async () => {
@@ -631,5 +636,128 @@ describe('VariablePanel', () => {
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('variables-spinner')
     );
+  });
+
+  it('should select correct tab when navigating between flow nodes', async () => {
+    mockServer.use(
+      rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
+        res.once(ctx.text(mockProcessWithInputOutputMappingsXML))
+      )
+    );
+
+    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
+
+    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+    mockServer.use(
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res(
+          ctx.json({
+            id: '9007199254742796-test',
+            name: 'test',
+            value: '123',
+            scopeId: '9007199254742796',
+            processInstanceId: '9007199254742796',
+            hasActiveOperation: false,
+          })
+        )
+      )
+    );
+
+    flowNodeSelectionStore.setSelection({flowNodeId: 'Activity_0qtp1k6'});
+
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+
+    await user.click(screen.getByRole('button', {name: 'Input Mappings'}));
+
+    expect(screen.getByText('localVariable1')).toBeInTheDocument();
+    expect(screen.getByText('localVariable2')).toBeInTheDocument();
+
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) => res.once(ctx.json(undefined))
+      )
+    );
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'Event_0bonl61',
+    });
+
+    expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
+
+    flowNodeSelectionStore.clearSelection();
+
+    expect(
+      screen.queryByText('No Input Mappings defined')
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {name: 'Variables'})
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Variables'})
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Input Mappings'})
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Output Mappings'})
+    ).not.toBeInTheDocument();
+
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) => res.once(ctx.json(undefined))
+      )
+    );
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'StartEvent_1',
+    });
+
+    expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole('heading', {name: 'Variables'})
+    ).not.toBeInTheDocument();
+
+    expect(screen.getByRole('button', {name: 'Variables'})).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Input Mappings'})
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Output Mappings'})
+    ).toBeInTheDocument();
+  });
+
+  it('should display spinner for variables tab when switching between tabs', async () => {
+    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+    mockServer.use(
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res(
+          ctx.json({
+            id: '9007199254742796-test',
+            name: 'test',
+            value: '123',
+            scopeId: '9007199254742796',
+            processInstanceId: '9007199254742796',
+            hasActiveOperation: false,
+          })
+        )
+      )
+    );
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeInstanceId: 'another_flow_node',
+    });
+
+    await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
+
+    await user.click(screen.getByRole('button', {name: 'Input Mappings'}));
+
+    await user.click(screen.getByRole('button', {name: 'Variables'}));
+    await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
   });
 });

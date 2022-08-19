@@ -65,6 +65,7 @@ class Variables extends NetworkReconnectionHandler {
   state: State = {
     ...DEFAULT_STATE,
   };
+  areVariablesLoadedOnce: boolean = false;
   isPollRequestRunning: boolean = false;
   intervalId: null | ReturnType<typeof setInterval> = null;
   isPollOperationRequestRunning: boolean = false;
@@ -99,6 +100,8 @@ class Variables extends NetworkReconnectionHandler {
       scopeId: computed,
       displayStatus: computed,
       setLatestFetchDetails: action,
+      setAreVariablesLoadedOnce: action,
+      areVariablesLoadedOnce: observable,
     });
 
     this.pollingAbortController = new AbortController();
@@ -148,6 +151,10 @@ class Variables extends NetworkReconnectionHandler {
 
   clearItems = () => {
     this.state.items = [];
+  };
+
+  setAreVariablesLoadedOnce = (areVariablesLoadedOnce: boolean) => {
+    this.areVariablesLoadedOnce = areVariablesLoadedOnce;
   };
 
   setLatestFetchDetails = (fetchType: FetchType, itemsCount: number) => {
@@ -647,7 +654,7 @@ class Variables extends NetworkReconnectionHandler {
       return 'error';
     }
     if (['initial', 'first-fetch'].includes(status)) {
-      return 'skeleton';
+      return this.areVariablesLoadedOnce ? 'spinner' : 'skeleton';
     }
     if (flowNodeMetaDataStore.hasMultipleInstances) {
       return 'multi-instances';
@@ -680,7 +687,9 @@ class Variables extends NetworkReconnectionHandler {
 
     this.stopPolling();
     this.stopPollingOperation();
-    this.state = {...DEFAULT_STATE};
+    this.state = {
+      ...DEFAULT_STATE,
+    };
     this.disposer?.();
     this.variablesWithActiveOperationsDisposer?.();
     this.fetchVariablesDisposer?.();

@@ -140,6 +140,22 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
     return this.state.nodeMetaDataMap?.[flowNodeId];
   };
 
+  getInputOutputMappings = (
+    type: 'Input' | 'Output',
+    flowNodeId: string | null
+  ) => {
+    if (flowNodeId === null) {
+      return [];
+    }
+
+    const mappings =
+      type === 'Input'
+        ? this.state.nodeMetaDataMap?.[flowNodeId]?.type.inputMappings
+        : this.state.nodeMetaDataMap?.[flowNodeId]?.type.outputMappings;
+
+    return mappings ?? [];
+  };
+
   getFlowNodeName = (flowNodeId: string) => {
     return this.getMetaData(flowNodeId)?.name || flowNodeId;
   };

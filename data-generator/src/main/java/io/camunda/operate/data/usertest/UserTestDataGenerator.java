@@ -70,6 +70,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     }
     logger.debug("Test data will be generated");
 
+    createInputOutputMappingInstances();
     createProcessWithoutInstances();
     createProcessWithInstancesThatHasOnlyIncidents(5 + random.nextInt(17), 5 + random.nextInt(17));
     createProcessWithInstancesWithoutIncidents(5 + random.nextInt(23), 5 + random.nextInt(23));
@@ -99,6 +100,13 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     return true;
 
+  }
+
+  private void createInputOutputMappingInstances() {
+    logger.debug("Create input/output mapping process instances");
+    ZeebeTestUtil.deployProcess(client, "develop/always-completing-process.bpmn");
+    ZeebeTestUtil.deployProcess(client, "develop/input-output-mappings-process.bpmn");
+    ZeebeTestUtil.startProcessInstance(client, "Process_b1711b2e-ec8e-4dad-908c-8c12e028f32f", null);
   }
 
   private void createAndStartProcessWithLargeVariableValue() {

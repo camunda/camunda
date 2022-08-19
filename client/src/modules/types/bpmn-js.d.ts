@@ -12,9 +12,20 @@ declare module 'bpmn-js/lib/util/ModelUtil' {
 declare module 'bpmn-js/lib/NavigatedViewer' {
   export type BusinessObject = {
     id: string;
+    name: string;
     $type: string;
-    $parent: BusinessObject;
+    $parent?: BusinessObject;
     loopCharacteristics?: {$type: string};
+    extensionElements?: {
+      values: {
+        $type: string;
+        $children?: {
+          $type: string;
+          source: string;
+          target: string;
+        }[];
+      }[];
+    };
   };
 
   export type BpmnElement = {

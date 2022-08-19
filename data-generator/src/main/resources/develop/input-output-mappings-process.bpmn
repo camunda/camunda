@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="174e755" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.0.0" camunda:diagramRelationId="9ee67cec-c2eb-4b0d-968b-f7a9ae3d6d3d">
+  <bpmn:process id="Process_b1711b2e-ec8e-4dad-908c-8c12e028f32f" name="Input Output Mapping Test" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_17h9txj</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_17h9txj" sourceRef="StartEvent_1" targetRef="Activity_0qtp1k6" />
+    <bpmn:callActivity id="Activity_0qtp1k6" name="with input output mapping">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="always-completing-process" propagateAllChildVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:input source="= &#34;test1&#34;" target="inputTest1" />
+          <zeebe:input source="= &#34;test2&#34;" target="inputTest2" />
+          <zeebe:output source="=&#34;outputTest1&#34;" target="outputTest" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_17h9txj</bpmn:incoming>
+      <bpmn:outgoing>Flow_19ntyc5</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_19ntyc5" sourceRef="Activity_0qtp1k6" targetRef="Activity_13tz2gk" />
+    <bpmn:callActivity id="Activity_13tz2gk" name="with output mapping">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="always-completing-process" propagateAllChildVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:output source="=&#34;outputTest2&#34;" target="outputTest2" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_19ntyc5</bpmn:incoming>
+      <bpmn:outgoing>Flow_16pcz7d</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_16pcz7d" sourceRef="Activity_13tz2gk" targetRef="Activity_1rrenlk" />
+    <bpmn:callActivity id="Activity_1rrenlk" name="with input mapping">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="always-completing-process" propagateAllChildVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=&#34;inputTest3&#34;" target="inputTest3" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_16pcz7d</bpmn:incoming>
+      <bpmn:outgoing>Flow_1w8z8ie</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="Event_0fj8u6m">
+      <bpmn:incoming>Flow_1ptmk8y</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1w8z8ie" sourceRef="Activity_1rrenlk" targetRef="Activity_1wjqbgh" />
+    <bpmn:userTask id="Activity_1wjqbgh" name="do something">
+      <bpmn:extensionElements />
+      <bpmn:incoming>Flow_1w8z8ie</bpmn:incoming>
+      <bpmn:outgoing>Flow_1ptmk8y</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_1ptmk8y" sourceRef="Activity_1wjqbgh" targetRef="Event_0fj8u6m" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_b1711b2e-ec8e-4dad-908c-8c12e028f32f">
+      <bpmndi:BPMNEdge id="Flow_1ptmk8y_di" bpmnElement="Flow_1ptmk8y">
+        <di:waypoint x="870" y="118" />
+        <di:waypoint x="952" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1w8z8ie_di" bpmnElement="Flow_1w8z8ie">
+        <di:waypoint x="690" y="118" />
+        <di:waypoint x="770" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16pcz7d_di" bpmnElement="Flow_16pcz7d">
+        <di:waypoint x="510" y="118" />
+        <di:waypoint x="590" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19ntyc5_di" bpmnElement="Flow_19ntyc5">
+        <di:waypoint x="340" y="118" />
+        <di:waypoint x="410" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17h9txj_di" bpmnElement="Flow_17h9txj">
+        <di:waypoint x="186" y="118" />
+        <di:waypoint x="240" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="150" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1spoc9v_di" bpmnElement="Activity_0qtp1k6">
+        <dc:Bounds x="240" y="78" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1fy7lf5_di" bpmnElement="Activity_13tz2gk">
+        <dc:Bounds x="410" y="78" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_053dkro_di" bpmnElement="Activity_1rrenlk">
+        <dc:Bounds x="590" y="78" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0fj8u6m_di" bpmnElement="Event_0fj8u6m">
+        <dc:Bounds x="952" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0qlir79_di" bpmnElement="Activity_1wjqbgh">
+        <dc:Bounds x="770" y="78" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

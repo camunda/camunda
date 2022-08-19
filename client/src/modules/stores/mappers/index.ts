@@ -11,6 +11,18 @@ import {
   FLOWNODE_TYPE_HANDLE,
   MULTI_INSTANCE_TYPE,
 } from 'modules/constants';
+import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+
+type InputOutputMappings = {
+  inputMappings: {
+    source: string;
+    target: string;
+  }[];
+  outputMappings: {
+    source: string;
+    target: string;
+  }[];
+};
 
 type NodeMetaDataMap = {
   [flowNodeId: string]: {
@@ -19,6 +31,8 @@ type NodeMetaDataMap = {
       elementType: string;
       eventType: string;
       multiInstanceType?: string;
+      inputMappings: {source: string; target: string}[];
+      outputMappings: {source: string; target: string}[];
     };
   };
 };
@@ -39,16 +53,22 @@ const getSelectableFlowNodes = (bpmnElements: any) => {
   );
 };
 
-const createNodeMetaDataMap = (bpmnElements: any) => {
+const createNodeMetaDataMap = (bpmnElements: {
+  [key: string]: BusinessObject;
+}) => {
   return Object.entries(bpmnElements).reduce<NodeMetaDataMap>(
     (map, [activityId, bpmnElement]) => {
+      const {inputMappings, outputMappings} =
+        getInputOutputMappings(bpmnElement);
+
       map[activityId] = {
-        // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
         name: bpmnElement.name,
         type: {
           elementType: getElementType(bpmnElement),
           eventType: getEventType(bpmnElement),
           multiInstanceType: getMultiInstanceType(bpmnElement),
+          inputMappings,
+          outputMappings,
         },
       };
       return map;
@@ -91,6 +111,39 @@ const getMultiInstanceType = (bpmnElement: any) => {
     ? MULTI_INSTANCE_TYPE.SEQUENTIAL
     : MULTI_INSTANCE_TYPE.PARALLEL;
 };
+
+function getInputOutputMappings(
+  bpmnElement: BusinessObject
+): InputOutputMappings {
+  const {extensionElements} = bpmnElement;
+
+  const ioMappings = extensionElements?.values?.find(
+    (element) => element.$type === 'zeebe:ioMapping'
+  );
+
+  if (ioMappings === undefined || ioMappings.$children === undefined) {
+    return {inputMappings: [], outputMappings: []};
+  }
+
+  return ioMappings.$children.reduce<InputOutputMappings>(
+    (ioMappings, object) => {
+      const {$type, source, target} = object;
+      if ($type === 'zeebe:input') {
+        ioMappings.inputMappings.push({
+          source,
+          target,
+        });
+      } else if ($type === 'zeebe:output') {
+        ioMappings.outputMappings.push({
+          source,
+          target,
+        });
+      }
+      return ioMappings;
+    },
+    {inputMappings: [], outputMappings: []}
+  );
+}
 
 const getProcessedSequenceFlows = (sequenceFlows: any) => {
   return sequenceFlows

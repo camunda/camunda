@@ -74,7 +74,14 @@ const TH = styled(Table.TH)`
 `;
 
 const TRHeader = styled(Table.TR)`
-  border-top: none;
+  ${({theme}) => {
+    const colors = theme.colors.sortableTable.header.tr;
+
+    return css`
+      border-top: none;
+      background-color: ${colors.backgroundColor};
+    `;
+  }}
 `;
 
 type THeadProps = {

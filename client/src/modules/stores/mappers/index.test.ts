@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {getProcessedSequenceFlows} from './index';
+import {getProcessedSequenceFlows, createNodeMetaDataMap} from './index';
 
 describe('mappers', () => {
   describe('getProcessedSequenceFlows', () => {
@@ -62,6 +62,72 @@ describe('mappers', () => {
       // then
       expect(activityIds.length).toBe(0);
       expect(activityIds).toEqual([]);
+    });
+  });
+
+  describe('createNodeMetaDataMap', () => {
+    it('should get input output mappings', () => {
+      const metaData = createNodeMetaDataMap({
+        activity1: {
+          id: '1',
+          name: 'element1',
+          $type: 'type1',
+        },
+        activity2: {id: '2', name: 'element2', $type: 'type2'},
+        activity3: {
+          id: '3',
+          name: 'element3',
+          $type: 'type3',
+          extensionElements: {
+            values: [{$type: 'value1'}],
+          },
+        },
+        activity4: {
+          id: '4',
+          name: 'element4',
+          $type: 'type4',
+          extensionElements: {
+            values: [{$type: 'zeebe:ioMapping'}],
+          },
+        },
+        activity5: {
+          id: '5',
+          name: 'element5',
+          $type: 'type5',
+          extensionElements: {
+            values: [
+              {
+                $type: 'zeebe:ioMapping',
+                $children: [
+                  {$type: 'zeebe:input', source: 'source1', target: 'target1'},
+                  {$type: 'zeebe:input', source: 'source2', target: 'target2'},
+                  {$type: 'zeebe:output', source: 'source3', target: 'target3'},
+                ],
+              },
+            ],
+          },
+        },
+      });
+
+      expect(metaData['activity1']?.type.inputMappings).toEqual([]);
+      expect(metaData['activity1']?.type.outputMappings).toEqual([]);
+
+      expect(metaData['activity2']?.type.inputMappings).toEqual([]);
+      expect(metaData['activity2']?.type.outputMappings).toEqual([]);
+
+      expect(metaData['activity3']?.type.inputMappings).toEqual([]);
+      expect(metaData['activity3']?.type.outputMappings).toEqual([]);
+
+      expect(metaData['activity4']?.type.inputMappings).toEqual([]);
+      expect(metaData['activity4']?.type.outputMappings).toEqual([]);
+
+      expect(metaData['activity5']?.type.inputMappings).toEqual([
+        {source: 'source1', target: 'target1'},
+        {source: 'source2', target: 'target2'},
+      ]);
+      expect(metaData['activity5']?.type.outputMappings).toEqual([
+        {source: 'source3', target: 'target3'},
+      ]);
     });
   });
 });

@@ -13,6 +13,7 @@ import {
   createInstance,
   mockProcessXML,
   mockCallActivityProcessXML,
+  mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {waitFor} from 'modules/testing-library';
 import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
@@ -92,6 +93,8 @@ describe('stores/processInstanceDiagram', () => {
         elementType: 'START',
         eventType: undefined,
         multiInstanceType: undefined,
+        inputMappings: [],
+        outputMappings: [],
       },
     });
 
@@ -103,6 +106,8 @@ describe('stores/processInstanceDiagram', () => {
         elementType: 'TASK_SERVICE',
         eventType: undefined,
         multiInstanceType: undefined,
+        inputMappings: [],
+        outputMappings: [],
       },
     });
 
@@ -114,8 +119,40 @@ describe('stores/processInstanceDiagram', () => {
         elementType: 'END',
         eventType: undefined,
         multiInstanceType: undefined,
+        inputMappings: [],
+        outputMappings: [],
       },
     });
+  });
+
+  it('should get input and output mappings', async () => {
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessWithInputOutputMappingsXML))
+      )
+    );
+    await processInstanceDetailsDiagramStore.fetchProcessXml('1');
+
+    expect(
+      processInstanceDetailsDiagramStore.getInputOutputMappings(
+        'Input',
+        'Activity_0qtp1k6'
+      )
+    ).toEqual([
+      {source: '= "test1"', target: 'localVariable1'},
+      {source: '= "test2"', target: 'localVariable2'},
+    ]);
+    expect(
+      processInstanceDetailsDiagramStore.getInputOutputMappings(
+        'Output',
+        'Activity_0qtp1k6'
+      )
+    ).toEqual([
+      {
+        source: '= 2',
+        target: 'outputTest',
+      },
+    ]);
   });
 
   it('should get areDiagramDefinitionsAvailable', async () => {

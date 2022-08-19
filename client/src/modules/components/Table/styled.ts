@@ -51,18 +51,7 @@ const TR = styled.tr`
 `;
 
 const THead = styled.thead`
-  ${({theme}) => {
-    const colors = theme.colors.modules.table.thead;
-
-    return css`
-      text-align: left;
-      background-color: ${colors.backgroundColor};
-
-      ${TR} {
-        background-color: ${colors.tr.backgroundColor};
-      }
-    `;
-  }}
+  text-align: left;
 `;
 
 export {Table, TH, TD, TR, THead};

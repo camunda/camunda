@@ -61,14 +61,9 @@ const PanelContainer = styled.div`
 `;
 
 const BottomPanel = styled.div`
-  ${({theme}) => {
-    return css`
-      border-top: 1px solid ${theme.colors.borderColor};
-      display: flex;
-      flex-direction: row;
-      height: 100%;
-    `;
-  }}
+  display: flex;
+  flex-direction: row;
+  height: 100%;
 `;
 
 const ModificationHeader = styled.div`

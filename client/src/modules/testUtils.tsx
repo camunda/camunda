@@ -334,6 +334,52 @@ export const mockProcessXML = `<?xml version="1.0" encoding="UTF-8"?>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
 
+export const mockProcessWithInputOutputMappingsXML = `<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="eb9fa7e" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.0.0" camunda:diagramRelationId="9ee67cec-c2eb-4b0d-968b-f7a9ae3d6d3d">
+<bpmn:process id="Process_b1711b2e-ec8e-4dad-908c-8c12e028f32f" name="Input Output Mapping Test" isExecutable="true">
+  <bpmn:startEvent id="StartEvent_1">
+    <bpmn:outgoing>Flow_17h9txj</bpmn:outgoing>
+  </bpmn:startEvent>
+  <bpmn:sequenceFlow id="Flow_17h9txj" sourceRef="StartEvent_1" targetRef="Activity_0qtp1k6"/>
+  <bpmn:callActivity id="Activity_0qtp1k6">
+    <bpmn:extensionElements>
+      <zeebe:calledElement processId="called-element-test" propagateAllChildVariables="false"/>
+      <zeebe:ioMapping>
+        <zeebe:input source="= &quot;test1&quot;" target="localVariable1"/>
+        <zeebe:input source="= &quot;test2&quot;" target="localVariable2"/>
+        <zeebe:output source="= 2" target="outputTest"/>
+      </zeebe:ioMapping>
+    </bpmn:extensionElements>
+    <bpmn:incoming>Flow_17h9txj</bpmn:incoming>
+    <bpmn:outgoing>Flow_02c6e87</bpmn:outgoing>
+  </bpmn:callActivity>
+  <bpmn:endEvent id="Event_0bonl61">
+    <bpmn:incoming>Flow_02c6e87</bpmn:incoming>
+  </bpmn:endEvent>
+  <bpmn:sequenceFlow id="Flow_02c6e87" sourceRef="Activity_0qtp1k6" targetRef="Event_0bonl61"/>
+</bpmn:process>
+<bpmndi:BPMNDiagram id="BPMNDiagram_1">
+  <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_b1711b2e-ec8e-4dad-908c-8c12e028f32f">
+    <bpmndi:BPMNEdge id="Flow_02c6e87_di" bpmnElement="Flow_02c6e87">
+      <di:waypoint x="340" y="118"/>
+      <di:waypoint x="402" y="118"/>
+    </bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="Flow_17h9txj_di" bpmnElement="Flow_17h9txj">
+      <di:waypoint x="186" y="118"/>
+      <di:waypoint x="240" y="118"/>
+    </bpmndi:BPMNEdge>
+    <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+      <dc:Bounds x="150" y="100" width="36" height="36"/>
+    </bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Activity_1spoc9v_di" bpmnElement="Activity_0qtp1k6">
+      <dc:Bounds x="240" y="78" width="100" height="80"/>
+    </bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="Event_0bonl61_di" bpmnElement="Event_0bonl61">
+      <dc:Bounds x="402" y="100" width="36" height="36"/>
+    </bpmndi:BPMNShape>
+  </bpmndi:BPMNPlane>
+</bpmndi:BPMNDiagram>
+</bpmn:definitions>`;
+
 export const mockCallActivityProcessXML = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1e4hrq2" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.8.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
   <bpmn:process id="Process_0r3smqt" isExecutable="true">
