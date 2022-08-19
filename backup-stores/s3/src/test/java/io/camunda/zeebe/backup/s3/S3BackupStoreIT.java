@@ -148,26 +148,52 @@ final class S3BackupStoreIT {
   }
 
   @Test
-  void bucketContainsExpectedObjectsOnly(@TempDir Path tempDir) throws IOException {
+  void segmentFilesExist(@TempDir Path tempDir) throws IOException {
     // given
     final var backup = prepareTestBackup(tempDir);
-    final var prefix = S3BackupStore.objectPrefix(backup.id);
+    final var prefix = S3BackupStore.objectPrefix(backup.id) + S3BackupStore.SEGMENTS_PREFIX;
 
-    final var snapshotFiles =
-        backup.snapshot.names().stream().map(name -> prefix + S3BackupStore.SNAPSHOT_PREFIX + name);
-    final var metadata = prefix + Metadata.OBJECT_KEY;
-    final var expectedObjects = Stream.concat(snapshotFiles, Stream.of(metadata)).toList();
+    final var expectedObjects =
+        backup.segments.names().stream().map(name -> prefix + name).toList();
 
     // when
     store.save(backup).join();
 
     // then
     final var listed =
+        client.listObjectsV2(req -> req.bucket(config.bucketName()).prefix(prefix)).join();
+
+    assertThat(listed.contents().stream().map(S3Object::key))
+        .isNotEmpty()
+        .allSatisfy(k -> assertThat(k).startsWith(prefix).isIn(expectedObjects));
+  }
+
+  @Test
+  void bucketContainsExpectedObjectsOnly(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+    final var prefix = S3BackupStore.objectPrefix(backup.id);
+
+    final var metadata = prefix + Metadata.OBJECT_KEY;
+    final var snapshotObjects =
+        backup.snapshot.names().stream().map(name -> prefix + S3BackupStore.SNAPSHOT_PREFIX + name);
+    final var segmentObjects =
+        backup.segments.names().stream().map(name -> prefix + S3BackupStore.SEGMENTS_PREFIX + name);
+
+    final var contentObjects = Stream.concat(snapshotObjects, segmentObjects);
+    final var managementObjects = Stream.of(metadata);
+    final var expectedObjects = Stream.concat(managementObjects, contentObjects).toList();
+
+    // when
+    store.save(backup).join();
+
+    // then
+    final var listedObjects =
         client.listObjectsV2(req -> req.bucket(config.bucketName())).join().contents().stream()
             .map(S3Object::key)
             .toList();
 
-    assertThat(listed).containsExactlyInAnyOrderElementsOf(expectedObjects);
+    assertThat(listedObjects).containsExactlyInAnyOrderElementsOf(expectedObjects);
   }
 
   @Test
