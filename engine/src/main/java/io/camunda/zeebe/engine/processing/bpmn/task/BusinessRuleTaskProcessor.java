@@ -25,9 +25,11 @@ public final class BusinessRuleTaskProcessor
   private final BusinessRuleTaskBehavior calledDecisionBehavior;
   private final BusinessRuleTaskBehavior jobWorkerTaskBehavior;
 
-  public BusinessRuleTaskProcessor(final BpmnBehaviors bpmnBehaviors) {
-    calledDecisionBehavior = new CalledDecisionBehavior(bpmnBehaviors);
-    jobWorkerTaskBehavior = new JobWorkerTaskBehavior(bpmnBehaviors);
+  public BusinessRuleTaskProcessor(
+      final BpmnBehaviors bpmnBehaviors,
+      final BpmnStateTransitionBehavior stateTransitionBehavior) {
+    calledDecisionBehavior = new CalledDecisionBehavior(bpmnBehaviors, stateTransitionBehavior);
+    jobWorkerTaskBehavior = new JobWorkerTaskBehavior(bpmnBehaviors, stateTransitionBehavior);
   }
 
   @Override
@@ -75,11 +77,13 @@ public final class BusinessRuleTaskProcessor
     private final BpmnVariableMappingBehavior variableMappingBehavior;
     private final BpmnStateBehavior stateBehavior;
 
-    public CalledDecisionBehavior(final BpmnBehaviors bpmnBehaviors) {
+    public CalledDecisionBehavior(
+        final BpmnBehaviors bpmnBehaviors,
+        final BpmnStateTransitionBehavior stateTransitionBehavior) {
       decisionBehavior = bpmnBehaviors.decisionBehavior();
       eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
       incidentBehavior = bpmnBehaviors.incidentBehavior();
-      stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
+      this.stateTransitionBehavior = stateTransitionBehavior;
       variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
       stateBehavior = bpmnBehaviors.stateBehavior();
     }
@@ -139,8 +143,10 @@ public final class BusinessRuleTaskProcessor
 
     private final JobWorkerTaskProcessor delegate;
 
-    public JobWorkerTaskBehavior(final BpmnBehaviors bpmnBehaviors) {
-      delegate = new JobWorkerTaskProcessor(bpmnBehaviors);
+    public JobWorkerTaskBehavior(
+        final BpmnBehaviors bpmnBehaviors,
+        final BpmnStateTransitionBehavior stateTransitionBehavior) {
+      delegate = new JobWorkerTaskProcessor(bpmnBehaviors, stateTransitionBehavior);
     }
 
     @Override

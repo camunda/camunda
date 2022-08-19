@@ -19,8 +19,10 @@ public class ManualTaskProcessor implements BpmnElementProcessor<ExecutableActiv
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
 
-  public ManualTaskProcessor(final BpmnBehaviors bpmnBehaviors) {
-    stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
+  public ManualTaskProcessor(
+      final BpmnBehaviors bpmnBehaviors,
+      final BpmnStateTransitionBehavior stateTransitionBehavior) {
+    this.stateTransitionBehavior = stateTransitionBehavior;
     incidentBehavior = bpmnBehaviors.incidentBehavior();
   }
 

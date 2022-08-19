@@ -20,8 +20,9 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnIncidentBehavior bpmnIncidentBehavior;
 
-  public ParallelGatewayProcessor(final BpmnBehaviors behaviors) {
-    stateTransitionBehavior = behaviors.stateTransitionBehavior();
+  public ParallelGatewayProcessor(
+      final BpmnBehaviors behaviors, final BpmnStateTransitionBehavior stateTransitionBehavior) {
+    this.stateTransitionBehavior = stateTransitionBehavior;
     bpmnIncidentBehavior = behaviors.incidentBehavior();
   }
 

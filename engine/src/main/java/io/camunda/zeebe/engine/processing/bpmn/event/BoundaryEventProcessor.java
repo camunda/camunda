@@ -22,8 +22,10 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
 
-  public BoundaryEventProcessor(final BpmnBehaviors bpmnBehaviors) {
-    stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
+  public BoundaryEventProcessor(
+      final BpmnBehaviors bpmnBehaviors,
+      final BpmnStateTransitionBehavior stateTransitionBehavior) {
+    this.stateTransitionBehavior = stateTransitionBehavior;
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
   }

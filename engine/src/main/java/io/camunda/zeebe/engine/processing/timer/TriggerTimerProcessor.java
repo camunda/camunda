@@ -8,9 +8,9 @@
 package io.camunda.zeebe.engine.processing.timer;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
@@ -59,12 +59,10 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
 
   public TriggerTimerProcessor(
       final MutableZeebeState zeebeState,
-      final CatchEventBehavior catchEventBehavior,
-      final EventTriggerBehavior eventTriggerBehavior,
-      final ExpressionProcessor expressionProcessor,
+      final BpmnBehaviors bpmnBehaviors,
       final Writers writers) {
-    this.catchEventBehavior = catchEventBehavior;
-    this.expressionProcessor = expressionProcessor;
+    catchEventBehavior = bpmnBehaviors.catchEventBehavior();
+    expressionProcessor = bpmnBehaviors.expressionBehavior();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
 
@@ -79,7 +77,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
             zeebeState.getEventScopeInstanceState(),
             writers,
             processState,
-            eventTriggerBehavior);
+            bpmnBehaviors.eventTriggerBehavior());
   }
 
   @Override

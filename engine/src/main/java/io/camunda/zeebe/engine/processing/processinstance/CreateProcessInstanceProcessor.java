@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -83,16 +84,15 @@ public final class CreateProcessInstanceProcessor
       final ProcessState processState,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final VariableBehavior variableBehavior,
-      final ElementActivationBehavior elementActivationBehavior,
+      final BpmnBehaviors bpmnBehaviors,
       final ProcessEngineMetrics metrics) {
     this.processState = processState;
-    this.variableBehavior = variableBehavior;
+    variableBehavior = bpmnBehaviors.variableBehavior();
     this.keyGenerator = keyGenerator;
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     this.metrics = metrics;
-    this.elementActivationBehavior = elementActivationBehavior;
+    elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
   }
 
   @Override

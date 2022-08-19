@@ -25,10 +25,11 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnStateBehavior stateBehavior;
 
-  public ReceiveTaskProcessor(final BpmnBehaviors behaviors) {
+  public ReceiveTaskProcessor(
+      final BpmnBehaviors behaviors, final BpmnStateTransitionBehavior stateTransitionBehavior) {
     eventSubscriptionBehavior = behaviors.eventSubscriptionBehavior();
     incidentBehavior = behaviors.incidentBehavior();
-    stateTransitionBehavior = behaviors.stateTransitionBehavior();
+    this.stateTransitionBehavior = stateTransitionBehavior;
     variableMappingBehavior = behaviors.variableMappingBehavior();
     stateBehavior = behaviors.stateBehavior();
   }

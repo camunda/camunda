@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
@@ -48,19 +49,16 @@ public final class ProcessInstanceModificationProcessor
       final Writers writers,
       final ElementInstanceState elementInstanceState,
       final ProcessState processState,
-      final BpmnJobBehavior jobBehavior,
-      final BpmnIncidentBehavior incidentBehavior,
-      final CatchEventBehavior catchEventBehavior,
-      final ElementActivationBehavior elementActivationBehavior) {
+      final BpmnBehaviors bpmnBehaviors) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
-    this.jobBehavior = jobBehavior;
-    this.incidentBehavior = incidentBehavior;
-    this.catchEventBehavior = catchEventBehavior;
-    this.elementActivationBehavior = elementActivationBehavior;
+    jobBehavior = bpmnBehaviors.jobBehavior();
+    incidentBehavior = bpmnBehaviors.incidentBehavior();
+    catchEventBehavior = bpmnBehaviors.catchEventBehavior();
+    elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
   }
 
   @Override
