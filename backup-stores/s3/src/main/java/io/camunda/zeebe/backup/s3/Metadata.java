@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.s3;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.backup.api.Backup;
 import java.util.Set;
 
@@ -17,6 +18,7 @@ import java.util.Set;
  *
  * <p>Used for JSON serialization.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 record Metadata(
     long checkpointId,
     int partitionId,
