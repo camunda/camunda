@@ -13,6 +13,7 @@ import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
+import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -39,6 +40,8 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
  */
 public final class S3BackupStore implements BackupStore {
 
+  public static final String SNAPSHOT_PREFIX = "snapshot/";
+
   static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final S3BackupConfig config;
@@ -52,8 +55,8 @@ public final class S3BackupStore implements BackupStore {
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
     final var metadata = saveMetadata(backup);
-
-    return CompletableFuture.allOf(metadata);
+    final var snapshot = saveSnapshotFiles(backup);
+    return CompletableFuture.allOf(metadata, snapshot);
   }
 
   @Override
@@ -91,7 +94,28 @@ public final class S3BackupStore implements BackupStore {
     }
   }
 
-  private static String objectPrefix(BackupIdentifier id) {
+  private CompletableFuture<Void> saveSnapshotFiles(Backup backup) {
+    final var prefix = objectPrefix(backup.id()) + SNAPSHOT_PREFIX;
+
+    final var futures =
+        backup.snapshot().namedFiles().entrySet().stream()
+            .map(
+                snapshotFile ->
+                    saveNamedFile(prefix, snapshotFile.getKey(), snapshotFile.getValue()))
+            .toList();
+
+    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[] {}));
+  }
+
+  private CompletableFuture<PutObjectResponse> saveNamedFile(
+      final String prefix, String fileName, Path filePath) {
+
+    return client.putObject(
+        put -> put.bucket(config.bucketName()).key(prefix + fileName),
+        AsyncRequestBody.fromFile(filePath));
+  }
+
+  public static String objectPrefix(BackupIdentifier id) {
     return "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
   }
 }
