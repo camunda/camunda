@@ -12,7 +12,6 @@ import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Collectors;
 
 final class SnapshotChecksum {
 
@@ -37,12 +36,24 @@ final class SnapshotChecksum {
   }
 
   public static SfvChecksum calculate(final Path snapshotDirectory) throws IOException {
-    try (final var fileStream = Files.list(snapshotDirectory).sorted()) {
-      final SfvChecksum sfvChecksum =
-          createCombinedChecksum(fileStream.collect(Collectors.toList()));
-      sfvChecksum.setSnapshotDirectoryComment(snapshotDirectory.toString());
+    try (final var fileStream =
+        Files.list(snapshotDirectory).filter(SnapshotChecksum::isNotMetadataFile).sorted()) {
+      final SfvChecksum sfvChecksum = createCombinedChecksum(fileStream.toList());
+
+      // While persisting transient snapshot, the checksum of metadata file is added at the end.
+      // Hence when we recalculate the checksum, we must follow the same order. Otherwise base on
+      // the file name, the sorted file list will have a differnt order and thus result in a
+      // different checksum.
+      final var metadataFile = snapshotDirectory.resolve(FileBasedSnapshotStore.METADATA_FILE_NAME);
+      if (metadataFile.toFile().exists()) {
+        sfvChecksum.updateFromFile(metadataFile);
+      }
       return sfvChecksum;
     }
+  }
+
+  private static boolean isNotMetadataFile(final Path file) {
+    return !file.getFileName().toString().equals(FileBasedSnapshotStore.METADATA_FILE_NAME);
   }
 
   public static void persist(final Path checksumPath, final SfvChecksum checksum)

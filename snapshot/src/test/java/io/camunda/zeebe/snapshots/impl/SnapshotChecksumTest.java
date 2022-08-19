@@ -190,4 +190,26 @@ public class SnapshotChecksumTest {
     // then
     assertThat(serialized).contains("; number of files used for combined value = 3");
   }
+
+  public void shouldAddChecksumOfMetadataAtTheEnd() throws IOException {
+    // given
+    final var folder = temporaryFolder.newFolder().toPath();
+    createChunk(folder, "file1.txt");
+    createChunk(folder, "file2.txt");
+    createChunk(folder, "file3.txt");
+    final SfvChecksum checksumCalculatedInSteps = SnapshotChecksum.calculate(folder);
+
+    // when
+    createChunk(folder, FileBasedSnapshotStore.METADATA_FILE_NAME);
+    // This is how checksum is calculated when persisting a transient snapshot
+    checksumCalculatedInSteps.updateFromFile(
+        folder.resolve(FileBasedSnapshotStore.METADATA_FILE_NAME));
+
+    // This is how checksum is calculated when verifying
+    final SfvChecksum checksumCalculatedAtOnce = SnapshotChecksum.calculate(folder);
+
+    // then
+    assertThat(checksumCalculatedInSteps.getCombinedValue())
+        .isEqualTo(checksumCalculatedAtOnce.getCombinedValue());
+  }
 }
