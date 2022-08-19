@@ -342,6 +342,12 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then
+    verifyThatElementIsActivated(
+        processInstanceKey,
+        "event-subprocess",
+        BpmnElementType.EVENT_SUB_PROCESS,
+        processInstanceKey);
+
     final var eventSubprocessKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -354,17 +360,12 @@ public class ModifyProcessInstanceTest {
     verifyThatElementIsActivated(
         processInstanceKey, "C", BpmnElementType.USER_TASK, eventSubprocessKey);
 
-    verifyThatElementIsActivated(
-        processInstanceKey,
-        "event-subprocess",
-        BpmnElementType.EVENT_SUB_PROCESS,
-        processInstanceKey);
-
     // and
     completeJobs(processInstanceKey, 3);
 
     verifyThatElementIsCompleted(processInstanceKey, "B");
     verifyThatElementIsCompleted(processInstanceKey, "C");
+    verifyThatElementIsCompleted(processInstanceKey, "event-subprocess");
     verifyThatProcessInstanceIsCompleted(processInstanceKey);
   }
 
@@ -411,6 +412,17 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then
+    verifyThatElementIsActivated(
+        processInstanceKey,
+        "event-subprocess-1",
+        BpmnElementType.EVENT_SUB_PROCESS,
+        processInstanceKey);
+    verifyThatElementIsActivated(
+        processInstanceKey,
+        "event-subprocess-2",
+        BpmnElementType.EVENT_SUB_PROCESS,
+        processInstanceKey);
+
     final var eventSubprocessKeysByElementId =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -429,22 +441,13 @@ public class ModifyProcessInstanceTest {
         BpmnElementType.USER_TASK,
         eventSubprocessKeysByElementId.get("event-subprocess-2"));
 
-    verifyThatElementIsActivated(
-        processInstanceKey,
-        "event-subprocess-1",
-        BpmnElementType.EVENT_SUB_PROCESS,
-        processInstanceKey);
-    verifyThatElementIsActivated(
-        processInstanceKey,
-        "event-subprocess-2",
-        BpmnElementType.EVENT_SUB_PROCESS,
-        processInstanceKey);
-
     // and
     completeJobs(processInstanceKey, 3);
 
     verifyThatElementIsCompleted(processInstanceKey, "B");
     verifyThatElementIsCompleted(processInstanceKey, "C");
+    verifyThatElementIsCompleted(processInstanceKey, "event-subprocess-1");
+    verifyThatElementIsCompleted(processInstanceKey, "event-subprocess-2");
     verifyThatProcessInstanceIsCompleted(processInstanceKey);
   }
 
@@ -495,12 +498,18 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then
+    verifyThatElementIsActivated(
+        processInstanceKey, "subprocess", BpmnElementType.SUB_PROCESS, processInstanceKey);
+
     final var subprocessKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.SUB_PROCESS)
             .getFirst()
             .getKey();
+
+    verifyThatElementIsActivated(
+        processInstanceKey, "event-subprocess", BpmnElementType.EVENT_SUB_PROCESS, subprocessKey);
 
     final var eventSubprocessKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -513,16 +522,13 @@ public class ModifyProcessInstanceTest {
         processInstanceKey, "B", BpmnElementType.SERVICE_TASK, eventSubprocessKey);
     verifyThatElementIsActivated(processInstanceKey, "C", BpmnElementType.USER_TASK, subprocessKey);
 
-    verifyThatElementIsActivated(
-        processInstanceKey, "subprocess", BpmnElementType.SUB_PROCESS, processInstanceKey);
-    verifyThatElementIsActivated(
-        processInstanceKey, "event-subprocess", BpmnElementType.EVENT_SUB_PROCESS, subprocessKey);
-
     // and
     completeJobs(processInstanceKey, 4);
 
     verifyThatElementIsCompleted(processInstanceKey, "B");
     verifyThatElementIsCompleted(processInstanceKey, "C");
+    verifyThatElementIsCompleted(processInstanceKey, "subprocess");
+    verifyThatElementIsCompleted(processInstanceKey, "event-subprocess");
     verifyThatProcessInstanceIsCompleted(processInstanceKey);
   }
 
