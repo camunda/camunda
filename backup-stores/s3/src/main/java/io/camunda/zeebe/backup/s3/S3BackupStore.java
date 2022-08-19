@@ -22,19 +22,19 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
  * {@link BackupStore} for S3. Stores all backups in a given bucket.
  *
  * <p>All created object keys are prefixed by the {@link BackupIdentifier}, with the following
- * scheme: {@code checkpointId/partitionId/nodeId}
+ * scheme: {@code partitionId/checkpointId/nodeId}
  *
  * <p>Each backup contains:
  *
  * <ol>
  *   <li>A 'metadata' object, containing {@link Metadata} serialized as JSON, for example
- *       <pre>checkpointId/partitionId/nodeId/metadata</pre>
+ *       <pre>partitionId/checkpointId/nodeId/metadata</pre>
  *   <li>A 'status' object, containing the {@link BackupStatus}, for example
- *       <pre>checkpointId/partitionId/nodeId/status</pre>
+ *       <pre>partitionId/checkpointId/nodeId/status</pre>
  *   <li>Objects for snapshot files, additionally prefixed with 'snapshot', for example
- *       <pre>checkpointId/partitionId/nodeId/snapshots/snapshot-file-1</pre>
+ *       <pre>partitionId/checkpointId/nodeId/snapshots/snapshot-file-1</pre>
  *   <li>Objects for segment files, additionally prefixed with 'segments', for example
- *       <pre>checkpointId/partitionId/nodeId/segments/segment-file-1</pre>
+ *       <pre>partitionId/checkpointId/nodeId/segments/segment-file-1</pre>
  * </ol>
  */
 public final class S3BackupStore implements BackupStore {
@@ -92,6 +92,6 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private static String objectPrefix(BackupIdentifier id) {
-    return "%s/%s/%s/".formatted(id.checkpointId(), id.partitionId(), id.nodeId());
+    return "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
   }
 }
