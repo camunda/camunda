@@ -350,17 +350,39 @@ public final class ProcessingStateMachine {
         writeRetryStrategy.runWithRetry(
             () -> {
               final var batchWriter = context.getLogStreamBatchWriter();
-              final long position1 = currentProcessingResult.writeRecordsToStream(batchWriter);
-              final long position2 = batchWriter.tryWrite();
+//              final long position1 = currentProcessingResult.writeRecordsToStream(batchWriter);
+//              final long position2 = batchWriter.tryWrite();
+//
+//              final var maxPosition = Math.max(position1, position2);
+//
+//              // only overwrite position if records were flushed
+//              if (maxPosition > 0) {
+//                writtenPosition = maxPosition;
+//              }
+//
+//              return maxPosition >= 0;
+//
 
-              final var maxPosition = Math.max(position1, position2);
+              batchWriter.reset();
+              batchWriter.sourceRecordPosition(typedCommand.getPosition());
+              // alternative way to write records
+              currentProcessingResult.getResultingRecordBatch().forEach(entry ->
+                  batchWriter
+                      .event()
+                      .key(entry.key())
+                      .metadataWriter(entry.recordMetadata())
+                      .sourceIndex(entry.sourceIndex())
+                      .valueWriter(entry.recordValue())
+                      .done());
+
+              final long position = batchWriter.tryWrite();
 
               // only overwrite position if records were flushed
-              if (maxPosition > 0) {
-                writtenPosition = maxPosition;
+              if (position > 0) {
+                writtenPosition = position;
               }
 
-              return maxPosition >= 0;
+              return position >= 0;
             },
             abortCondition);
 
