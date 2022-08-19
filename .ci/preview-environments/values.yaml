@@ -67,10 +67,10 @@ camunda-platform:
     image:
       tag: 8.0.0
     partitionCount: 1
-    # Disable the creation of persistent volumes.
-    persistenceType: local
+    # Enable the creation of persistent volumes.
+    persistenceType: disk
     # Defines a reasonable default for the `zeebe` StatefulSet, for when persistence is enabled.
-    pvcSize: 2Gi
+    pvcSize: 1Gi
     replicationFactor: 1
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
@@ -117,7 +117,7 @@ camunda-platform:
     clusterHealthCheckParams: wait_for_status=yellow&timeout=1s
     esJavaOpts: "-Xms512m -Xmx512m"
     persistence:
-      enabled: false
+      enabled: true
     securityContext:
       capabilities:
         add:
@@ -138,7 +138,7 @@ camunda-platform:
     volumeClaimTemplate:
       resources:
         requests:
-          storage: 2Gi
+          storage: 1Gi
 
 # Configuration of global values as required by the camunda-platform chart and to comply
 # with Infra best practices.
