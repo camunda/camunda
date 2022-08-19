@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
@@ -38,6 +39,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final CatchEventBehavior catchEventBehavior;
   private final EventTriggerBehavior eventTriggerBehavior;
   private final VariableBehavior variableBehavior;
+  private final ElementActivationBehavior elementActivationBehavior;
 
   public BpmnBehaviorsImpl(
       final ExpressionProcessor expressionBehavior,
@@ -96,6 +98,12 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     this.variableBehavior =
         new VariableBehavior(
             zeebeState.getVariableState(), writers.state(), zeebeState.getKeyGenerator());
+    elementActivationBehavior =
+        new ElementActivationBehavior(
+            zeebeState.getKeyGenerator(),
+            writers,
+            catchEventBehavior,
+            zeebeState.getElementInstanceState());
   }
 
   @Override
@@ -171,5 +179,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public VariableBehavior variableBehavior() {
     return variableBehavior;
+  }
+
+  @Override
+  public ElementActivationBehavior elementActivationBehavior() {
+    return elementActivationBehavior;
   }
 }

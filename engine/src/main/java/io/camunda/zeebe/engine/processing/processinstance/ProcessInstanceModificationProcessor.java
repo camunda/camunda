@@ -49,8 +49,7 @@ public final class ProcessInstanceModificationProcessor
       final Writers writers,
       final ElementInstanceState elementInstanceState,
       final ProcessState processState,
-      final BpmnBehaviors bpmnBehaviors,
-      final ElementActivationBehavior elementActivationBehavior) {
+      final BpmnBehaviors bpmnBehaviors) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -59,7 +58,7 @@ public final class ProcessInstanceModificationProcessor
     jobBehavior = bpmnBehaviors.jobBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
-    this.elementActivationBehavior = elementActivationBehavior;
+    elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
   }
 
   @Override

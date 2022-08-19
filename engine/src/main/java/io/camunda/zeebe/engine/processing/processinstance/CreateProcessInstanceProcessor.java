@@ -85,7 +85,6 @@ public final class CreateProcessInstanceProcessor
       final KeyGenerator keyGenerator,
       final Writers writers,
       final BpmnBehaviors bpmnBehaviors,
-      final ElementActivationBehavior elementActivationBehavior,
       final ProcessEngineMetrics metrics) {
     this.processState = processState;
     variableBehavior = bpmnBehaviors.variableBehavior();
@@ -93,7 +92,7 @@ public final class CreateProcessInstanceProcessor
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     this.metrics = metrics;
-    this.elementActivationBehavior = elementActivationBehavior;
+    elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
   }
 
   @Override
