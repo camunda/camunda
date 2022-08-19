@@ -7,4 +7,5 @@
  */
 package io.camunda.zeebe.backup.s3;
 
-public record S3Config(String bucketName) {}
+/** Holds configuration for the {@link S3BackupStore S3 Backup Store}. */
+public record S3BackupConfig(String bucketName) {}

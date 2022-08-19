@@ -44,7 +44,7 @@ final class S3BackupStoreIT {
           .withServices(Service.S3);
 
   private S3AsyncClient client;
-  private S3Config config;
+  private S3BackupConfig config;
   private S3BackupStore store;
 
   @BeforeEach
@@ -59,7 +59,7 @@ final class S3BackupStoreIT {
                         localStack.getAccessKey(), localStack.getSecretKey())))
             .build();
 
-    config = new S3Config(RandomStringUtils.randomAlphabetic(10).toLowerCase());
+    config = new S3BackupConfig(RandomStringUtils.randomAlphabetic(10).toLowerCase());
     store = new S3BackupStore(config, client);
 
     client.createBucket(CreateBucketRequest.builder().bucket(config.bucketName()).build()).join();

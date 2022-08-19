@@ -41,10 +41,10 @@ public final class S3BackupStore implements BackupStore {
 
   static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private final S3Config config;
+  private final S3BackupConfig config;
   private final S3AsyncClient client;
 
-  public S3BackupStore(final S3Config config, final S3AsyncClient client) {
+  public S3BackupStore(final S3BackupConfig config, final S3AsyncClient client) {
     this.config = config;
     this.client = client;
   }
