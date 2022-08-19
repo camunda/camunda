@@ -72,7 +72,8 @@ public final class ProcessEventProcessors {
         writers, typedRecordProcessors, zeebeState.getElementInstanceState());
 
     final var bpmnStreamProcessor =
-        new BpmnStreamProcessor(bpmnBehaviors, zeebeState, writers, sideEffectQueue);
+        new BpmnStreamProcessor(
+            bpmnBehaviors, zeebeState, writers, sideEffectQueue, processEngineMetrics);
     addBpmnStepProcessor(typedRecordProcessors, bpmnStreamProcessor);
 
     addMessageStreamProcessors(

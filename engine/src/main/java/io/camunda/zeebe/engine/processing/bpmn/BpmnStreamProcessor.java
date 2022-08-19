@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn;
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
@@ -45,15 +46,21 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final BpmnBehaviors bpmnBehaviors,
       final MutableZeebeState zeebeState,
       final Writers writers,
-      final SideEffectQueue sideEffectQueue) {
+      final SideEffectQueue sideEffectQueue,
+      final ProcessEngineMetrics processEngineMetrics) {
     processState = zeebeState.getProcessState();
 
     rejectionWriter = writers.rejection();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     processors = new BpmnElementProcessors(bpmnBehaviors);
-
     stateTransitionGuard = bpmnBehaviors.stateTransitionGuard();
-    stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
+    stateTransitionBehavior =
+        new BpmnStateTransitionBehavior(
+            zeebeState.getKeyGenerator(),
+            bpmnBehaviors.stateBehavior(),
+            processEngineMetrics,
+            this::getContainerProcessor,
+            writers);
     this.sideEffectQueue = sideEffectQueue;
   }
 

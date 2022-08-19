@@ -157,7 +157,6 @@ public final class EngineProcessors {
         catchEventBehavior,
         variableBehavior,
         eventTriggerBehavior,
-        null, // TODO processor lookup
         writers,
         jobMetrics,
         processEngineMetrics);

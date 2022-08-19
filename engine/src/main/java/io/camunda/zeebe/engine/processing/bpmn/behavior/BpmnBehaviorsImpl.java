@@ -10,19 +10,15 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
-import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import java.util.function.Function;
 
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
@@ -33,7 +29,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnStateBehavior stateBehavior;
-  private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
   private final BpmnProcessResultSenderBehavior processResultSenderBehavior;
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
@@ -51,8 +46,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final CatchEventBehavior catchEventBehavior,
       final VariableBehavior variableBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
-          processorLookup,
       final Writers writers,
       final JobMetrics jobMetrics,
       final ProcessEngineMetrics processEngineMetrics) {
@@ -74,13 +67,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     stateTransitionGuard = new ProcessInstanceStateTransitionGuard(stateBehavior);
     variableMappingBehavior =
         new BpmnVariableMappingBehavior(expressionBehavior, zeebeState, variableBehavior);
-    stateTransitionBehavior =
-        new BpmnStateTransitionBehavior(
-            zeebeState.getKeyGenerator(),
-            stateBehavior,
-            processEngineMetrics,
-            processorLookup,
-            writers);
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
             catchEventBehavior, eventTriggerBehavior, sideEffects, zeebeState);
@@ -145,11 +131,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnStateBehavior stateBehavior() {
     return stateBehavior;
-  }
-
-  @Override
-  public BpmnStateTransitionBehavior stateTransitionBehavior() {
-    return stateTransitionBehavior;
   }
 
   @Override
