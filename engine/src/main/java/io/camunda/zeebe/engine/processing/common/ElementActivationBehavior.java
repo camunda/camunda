@@ -23,8 +23,9 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 
@@ -79,31 +80,30 @@ public final class ElementActivationBehavior {
     return elementInstanceKey;
   }
 
-  private List<ExecutableFlowElement> collectFlowScopesOfElement(
+  private Deque<ExecutableFlowElement> collectFlowScopesOfElement(
       final ExecutableFlowElement element) {
-    final List<ExecutableFlowElement> flowScopes = new ArrayList<>();
+    final Deque<ExecutableFlowElement> flowScopes = new ArrayDeque<>();
 
     ExecutableFlowElement currentElement = element.getFlowScope();
 
     while (currentElement != null) {
-      flowScopes.add(currentElement);
+      flowScopes.addFirst(currentElement);
 
       currentElement = currentElement.getFlowScope();
     }
 
-    Collections.reverse(flowScopes);
     return flowScopes;
   }
 
   private long activateFlowScopes(
       final ProcessInstanceRecord processInstanceRecord,
       final long flowScopeKey,
-      final List<ExecutableFlowElement> flowScopes) {
+      final Deque<ExecutableFlowElement> flowScopes) {
 
     if (flowScopes.isEmpty()) {
       return flowScopeKey;
     }
-    final var flowScope = flowScopes.remove(0);
+    final var flowScope = flowScopes.poll();
 
     final List<ElementInstance> elementInstancesOfScope =
         findElementInstances(flowScope, flowScopeKey);
