@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.message.PendingProcessMessageSubscriptionChecker;
@@ -65,8 +66,13 @@ public final class ProcessEventProcessors {
     final MutableProcessMessageSubscriptionState subscriptionState =
         zeebeState.getProcessMessageSubscriptionState();
     final var keyGenerator = zeebeState.getKeyGenerator();
+
     final VariableBehavior variableBehavior =
         new VariableBehavior(zeebeState.getVariableState(), writers.state(), keyGenerator);
+
+    final var elementActivationBehavior =
+        new ElementActivationBehavior(
+            keyGenerator, writers, catchEventBehavior, zeebeState.getElementInstanceState());
 
     final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
 
@@ -111,16 +117,16 @@ public final class ProcessEventProcessors {
         zeebeState,
         writers,
         variableBehavior,
-        catchEventBehavior,
+        elementActivationBehavior,
         processEngineMetrics);
     addProcessInstanceModificationStreamProcessors(
         typedRecordProcessors,
         zeebeState,
         writers,
-        keyGenerator,
         jobBehavior,
         incidentBehavior,
-        catchEventBehavior);
+        catchEventBehavior,
+        elementActivationBehavior);
 
     return bpmnStreamProcessor;
   }
@@ -224,7 +230,7 @@ public final class ProcessEventProcessors {
       final MutableZeebeState zeebeState,
       final Writers writers,
       final VariableBehavior variableBehavior,
-      final CatchEventBehavior catchEventBehavior,
+      final ElementActivationBehavior elementActivationBehavior,
       final ProcessEngineMetrics metrics) {
     final MutableElementInstanceState elementInstanceState = zeebeState.getElementInstanceState();
     final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
@@ -235,7 +241,7 @@ public final class ProcessEventProcessors {
             keyGenerator,
             writers,
             variableBehavior,
-            catchEventBehavior,
+            elementActivationBehavior,
             metrics);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
@@ -250,19 +256,19 @@ public final class ProcessEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ZeebeState zeebeState,
       final Writers writers,
-      final KeyGenerator keyGenerator,
       final BpmnJobBehavior jobBehavior,
       final BpmnIncidentBehavior incidentBehavior,
-      final CatchEventBehavior catchEventBehavior) {
+      final CatchEventBehavior catchEventBehavior,
+      final ElementActivationBehavior elementActivationBehavior) {
     final ProcessInstanceModificationProcessor modificationProcessor =
         new ProcessInstanceModificationProcessor(
             writers,
-            keyGenerator,
             zeebeState.getElementInstanceState(),
             zeebeState.getProcessState(),
             jobBehavior,
             incidentBehavior,
-            catchEventBehavior);
+            catchEventBehavior,
+            elementActivationBehavior);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         ProcessInstanceModificationIntent.MODIFY,
