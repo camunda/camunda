@@ -109,12 +109,15 @@ public final class ElementActivationBehavior {
         findElementInstances(flowScope, flowScopeKey);
 
     if (elementInstancesOfScope.isEmpty()) {
-
+      // there is no active instance of this flow scope
+      // - create/activate a new instance and continue with the remaining flow scopes
       final long elementInstanceKey =
           activateFlowScope(processInstanceRecord, flowScopeKey, flowScope);
       return activateFlowScopes(processInstanceRecord, elementInstanceKey, flowScopes);
 
     } else if (elementInstancesOfScope.size() == 1) {
+      // there is an active instance of this flow scope
+      // - no need to create a new instance; continue with the remaining flow scopes
       final var elementInstance = elementInstancesOfScope.get(0);
       return activateFlowScopes(processInstanceRecord, elementInstance.getKey(), flowScopes);
 
