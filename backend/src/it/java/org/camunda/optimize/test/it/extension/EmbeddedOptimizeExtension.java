@@ -176,6 +176,7 @@ public class EmbeddedOptimizeExtension
       ((ConfigurableApplicationContext) applicationContext).close();
       setCloseContextAfterTest(false);
       setApplicationContext(SpringExtension.getApplicationContext(extensionContext));
+      reloadConfiguration();
     }
   }
 

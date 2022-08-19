@@ -131,6 +131,11 @@
       <version>${spring.boot.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+      <version>${spring.boot.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-web</artifactId>
       <version>${spring.security.version}</version>
@@ -258,6 +263,13 @@
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <version>2.11.0</version>
+    </dependency>
+
+    <!-- Micrometer Prometheus registry  -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+      <version>1.9.1</version>
     </dependency>
 
     <!--Test dependencies-->
@@ -493,6 +505,7 @@
                 <optimizeHttpPort>400${surefire.forkNumber}</optimizeHttpPort>
                 <optimizeHttpsPort>401${surefire.forkNumber}</optimizeHttpsPort>
                 <smtpTestPort>500${surefire.forkNumber}</smtpTestPort>
+                <management.server.port>600${surefire.forkNumber}</management.server.port>
                 <elasticSearchMockServerPort>108${surefire.forkNumber}</elasticSearchMockServerPort>
                 <engineMockServerPort>109${surefire.forkNumber}</engineMockServerPort>
                 <camunda.engine.version>${camunda.engine.version}</camunda.engine.version>

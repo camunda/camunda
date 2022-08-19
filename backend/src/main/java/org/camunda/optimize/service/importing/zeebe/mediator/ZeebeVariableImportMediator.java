@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.zeebe.mediator;
 
+import org.camunda.optimize.OptimizeMetrics;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import org.camunda.optimize.service.importing.PositionBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.MediatorRank;
@@ -15,6 +16,9 @@ import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
+
+import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
+import static org.camunda.optimize.MetricEnum.NEW_PAGE_FETCH_TIME_METRIC;
 
 public class ZeebeVariableImportMediator
   extends PositionBasedImportMediator<ZeebeVariableImportIndexHandler, ZeebeVariableRecordDto> {
@@ -43,7 +47,18 @@ public class ZeebeVariableImportMediator
     return importNextPagePositionBased(getVariables(), importCompleteCallback);
   }
 
+  @Override
+  protected String getRecordType() {
+    return VARIABLE.name();
+  }
+
+  @Override
+  protected Integer getPartitionId() {
+    return zeebeVariableFetcher.getPartitionId();
+  }
+
   private List<ZeebeVariableRecordDto> getVariables() {
-    return zeebeVariableFetcher.getZeebeRecordsForPrefixAndPartitionFrom(importIndexHandler.getNextPage());
+    return OptimizeMetrics.getTimer(NEW_PAGE_FETCH_TIME_METRIC, getRecordType(), getPartitionId())
+      .record(() -> zeebeVariableFetcher.getZeebeRecordsForPrefixAndPartitionFrom(importIndexHandler.getNextPage()));
   }
 }

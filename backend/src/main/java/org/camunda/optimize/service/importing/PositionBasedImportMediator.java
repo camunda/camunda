@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing;
 
+import io.micrometer.core.instrument.Timer;
+import org.camunda.optimize.OptimizeMetrics;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -19,7 +21,10 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public abstract class PositionBasedImportMediator<T extends PositionBasedImportIndexHandler, DTO extends ZeebeRecordDto>
+import static org.camunda.optimize.MetricEnum.INDEXING_DURATION_METRIC;
+
+public abstract class PositionBasedImportMediator<T extends PositionBasedImportIndexHandler,
+  DTO extends ZeebeRecordDto<?, ?>>
   implements ImportMediator {
 
   private final BackoffCalculator errorBackoffCalculator = new BackoffCalculator(10, 1000);
@@ -102,12 +107,15 @@ public abstract class PositionBasedImportMediator<T extends PositionBasedImportI
     if (!entitiesNextPage.isEmpty()) {
       final DTO lastImportedEntity = entitiesNextPage.get(entitiesNextPage.size() - 1);
       final long currentPageLastEntityPosition = lastImportedEntity.getPosition();
-      importService.executeImport(entitiesNextPage, () -> {
-        importIndexHandler.updateLastPersistedEntityPosition(currentPageLastEntityPosition);
-        importIndexHandler.updateTimestampOfLastPersistedEntity(
-          OffsetDateTime.ofInstant(Instant.ofEpochMilli(lastImportedEntity.getTimestamp()), ZoneId.systemDefault()));
-        importCompleteCallback.run();
-      });
+
+      getIndexingDurationTimer()
+        .record(() -> importService.executeImport(entitiesNextPage, () -> {
+          importIndexHandler.updateLastPersistedEntityPosition(currentPageLastEntityPosition);
+          importIndexHandler.updateTimestampOfLastPersistedEntity(
+            OffsetDateTime.ofInstant(Instant.ofEpochMilli(lastImportedEntity.getTimestamp()), ZoneId.systemDefault()));
+          OptimizeMetrics.recordOverallEntitiesImportTime(entitiesNextPage);
+          importCompleteCallback.run();
+        }));
       importIndexHandler.updatePendingLastEntityPosition(currentPageLastEntityPosition);
     } else {
       importCompleteCallback.run();
@@ -115,6 +123,17 @@ public abstract class PositionBasedImportMediator<T extends PositionBasedImportI
 
     return entitiesNextPage.size() >= configurationService.getConfiguredZeebe().getMaxImportPageSize();
   }
+
+  public Timer getIndexingDurationTimer() {
+    return OptimizeMetrics.getTimer(
+      INDEXING_DURATION_METRIC,
+      getRecordType(),
+      getPartitionId()
+    );
+  }
+
+  protected abstract String getRecordType();
+  protected abstract Integer getPartitionId();
 
   private void calculateNewDateUntilIsBlocked() {
     if (idleBackoffCalculator.isMaximumBackoffReached()) {

@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.zeebe.fetcher;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -37,6 +38,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 @Slf4j
 public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
 
+  @Getter
   protected int partitionId;
 
   private OptimizeElasticsearchClient esClient;
