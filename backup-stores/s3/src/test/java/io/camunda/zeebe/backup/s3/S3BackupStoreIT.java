@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.s3;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.backup.api.Backup;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
@@ -130,6 +132,18 @@ final class S3BackupStoreIT {
     assertThat(listed.contents().stream().map(S3Object::key))
         .isNotEmpty()
         .allSatisfy(k -> assertThat(k).startsWith(prefix).isIn(expectedObjects));
+  }
+
+  @Test
+  void backupFailsIfFilesAreMissing(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+
+    // when
+    Files.delete(backup.snapshot().files().stream().findFirst().orElseThrow());
+
+    // then
+    assertThatCode(() -> store.save(backup)).hasCauseInstanceOf(NoSuchFileException.class);
   }
 
   private TestBackup prepareTestBackup(Path tempDir) throws IOException {
