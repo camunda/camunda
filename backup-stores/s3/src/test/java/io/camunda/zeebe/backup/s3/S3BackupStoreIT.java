@@ -25,6 +25,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -50,14 +52,7 @@ final class S3BackupStoreIT {
       new LocalStackContainer(DockerImageName.parse("localstack/localstack:0.14.5"))
           .withServices(Service.S3);
 
-  private final S3AsyncClient client =
-      S3AsyncClient.builder()
-          .endpointOverride(S3.getEndpointOverride(Service.S3))
-          .region(Region.of(S3.getRegion()))
-          .credentialsProvider(
-              StaticCredentialsProvider.create(
-                  AwsBasicCredentials.create(S3.getAccessKey(), S3.getSecretKey())))
-          .build();
+  private static S3AsyncClient client;
   private S3BackupConfig config;
   private S3BackupStore store;
 
@@ -66,6 +61,23 @@ final class S3BackupStoreIT {
     config = new S3BackupConfig(RandomStringUtils.randomAlphabetic(10).toLowerCase());
     store = new S3BackupStore(config, client);
     client.createBucket(CreateBucketRequest.builder().bucket(config.bucketName()).build()).join();
+  }
+
+  @BeforeAll
+  static void startClient() {
+    client =
+        S3AsyncClient.builder()
+            .endpointOverride(S3.getEndpointOverride(Service.S3))
+            .region(Region.of(S3.getRegion()))
+            .credentialsProvider(
+                StaticCredentialsProvider.create(
+                    AwsBasicCredentials.create(S3.getAccessKey(), S3.getSecretKey())))
+            .build();
+  }
+
+  @AfterAll
+  static void closeClient() {
+    client.close();
   }
 
   @Test
