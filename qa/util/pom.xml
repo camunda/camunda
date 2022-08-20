@@ -22,13 +22,13 @@
     </dependency>
 
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-test-container</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-util</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
     </dependency>
 
     <dependency>
@@ -38,12 +38,17 @@
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
+      <artifactId>jackson-annotations</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
+      <groupId>io.github.openfeign</groupId>
+      <artifactId>feign-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.github.openfeign</groupId>
+      <artifactId>feign-jackson</artifactId>
     </dependency>
   </dependencies>
 </project>
