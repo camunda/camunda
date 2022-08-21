@@ -65,7 +65,7 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
                                                                    final boolean excludeUserGroups) {
     final String lowerCasedSearchString = searchString.toLowerCase();
     try {
-      final List<IdentityWithMetadataResponseDto> users = usersService.fetchAllUsers()
+      final List<IdentityWithMetadataResponseDto> users = usersService.getAllUsers()
         .stream()
         .filter(cloudUser -> cloudUser.getName().toLowerCase().contains(lowerCasedSearchString)
           || cloudUser.getEmail().toLowerCase().contains(lowerCasedSearchString))
@@ -82,7 +82,7 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
   public List<UserDto> getUsersByEmail(final List<String> emails) {
     final Set<String> lowerCasedEmails = emails.stream().map(String::toLowerCase).collect(Collectors.toSet());
     try {
-      return usersService.fetchAllUsers()
+      return usersService.getAllUsers()
         .stream()
         .filter(cloudUser -> lowerCasedEmails.contains(cloudUser.getEmail()))
         .map(this::mapToUserDto)

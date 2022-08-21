@@ -8,10 +8,7 @@ package org.camunda.optimize.service.util.configuration;
 import lombok.Data;
 
 @Data
-public class GlobalCacheConfiguration {
-  private CacheConfiguration tenants;
-  private CacheConfiguration definitions;
-  private CacheConfiguration definitionEngines;
-  private CacheConfiguration eventProcessRoles;
-  private CloudUserCacheConfiguration cloudUsers;
+public class CloudUserCacheConfiguration {
+  private int maxSize;
+  private long fetchIntervalSeconds;
 }

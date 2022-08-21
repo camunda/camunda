@@ -657,6 +657,12 @@ caches:
     maxSize: 1000
     # the time a read result will be cached
     defaultTtlMillis: 10000
+  # This cache is used to cache the most recently fetched CCSaaS users.
+  # It prevents too many fetch requests to the external service.
+  cloudUsers:
+    maxSize: ${CAMUNDA_OPTIMIZE_CLOUD_USER_CACHE_MAX_SIZE:10000}
+    # the interval (in seconds) between each request to repopulate the cache
+    fetchIntervalSeconds: ${CAMUNDA_OPTIMIZE_CLOUD_USER_CACHE_FETCH_INTERVAL:600}
 
 externalVariable:
   import:

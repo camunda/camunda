@@ -5,37 +5,100 @@
  */
 package org.camunda.optimize.rest.cloud;
 
-import lombok.RequiredArgsConstructor;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.cloud.CloudUserDto;
+import org.camunda.optimize.service.AbstractScheduledService;
+import org.camunda.optimize.service.util.configuration.CloudUserCacheConfiguration;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.scheduling.Trigger;
+import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotAuthorizedException;
-import java.util.List;
+import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+/**
+ * The class uses a cache to prevent repeated fetching of all members from a Cloud organisation. The interval between
+ * repopulating the cache is configurable. If a user does not exist in the cache, a request to fetch that user is made
+ * directly to the user client
+ */
 @Component
 @Slf4j
 @Conditional(CCSaaSCondition.class)
-@RequiredArgsConstructor
-public class CloudUsersService {
+public class CloudUsersService extends AbstractScheduledService {
+
+  private final Cache<String, CloudUserDto> cloudUsersCache;
 
   private static final String ERROR_MISSING_ACCESS_TOKEN = "Missing user access token for service access.";
 
   private final CCSaaSUserClient userClient;
   private final AccountsUserAccessTokenProvider accessTokenProvider;
+  private final ConfigurationService configurationService;
 
-  public Optional<CloudUserDto> getUserById(final String userId) {
-    return accessTokenProvider.getCurrentUsersAccessToken()
-      .map(accessToken -> userClient.getCloudUserById(userId, accessToken))
-      .orElseThrow(() -> new NotAuthorizedException(ERROR_MISSING_ACCESS_TOKEN));
+  public CloudUsersService(final CCSaaSUserClient userClient,
+                           final AccountsUserAccessTokenProvider accessTokenProvider,
+                           final ConfigurationService configurationService) {
+    this.userClient = userClient;
+    this.accessTokenProvider = accessTokenProvider;
+    this.configurationService = configurationService;
+
+    final CloudUserCacheConfiguration cloudUsersCacheConfiguration = configurationService.getCaches().getCloudUsers();
+    cloudUsersCache = Caffeine.newBuilder()
+      .maximumSize(cloudUsersCacheConfiguration.getMaxSize())
+      .build();
+    cloudUsersCache.putAll(fetchAllUsers());
   }
 
-  public List<CloudUserDto> fetchAllUsers() {
+  public Optional<CloudUserDto> getUserById(final String userId) {
+    final Optional<CloudUserDto> cloudUser = Optional.ofNullable(cloudUsersCache.getIfPresent(userId));
+    if (cloudUser.isPresent()) {
+      return cloudUser;
+    }
+    final Optional<CloudUserDto> fetchedUser = accessTokenProvider.getCurrentUsersAccessToken()
+      .map(accessToken -> userClient.getCloudUserById(userId, accessToken))
+      .orElseThrow(() -> new NotAuthorizedException(ERROR_MISSING_ACCESS_TOKEN));
+    fetchedUser.ifPresent(user -> cloudUsersCache.put(user.getUserId(), user));
+    return fetchedUser;
+  }
+
+  /**
+   * Returns the users currently in the user cache
+   */
+  public Collection<CloudUserDto> getAllUsers() {
+    return cloudUsersCache.asMap().values();
+  }
+
+  @Override
+  protected void run() {
+    cloudUsersCache.invalidateAll();
+    cloudUsersCache.putAll(fetchAllUsers());
+  }
+
+  @Override
+  protected Trigger createScheduleTrigger() {
+    return new PeriodicTrigger(
+      configurationService.getCaches().getCloudUsers().getFetchIntervalSeconds(),
+      TimeUnit.MILLISECONDS
+    );
+  }
+
+  /**
+   * This fetches the users from the actual Cloud Users client
+   */
+  private Map<String, CloudUserDto> fetchAllUsers() {
     return accessTokenProvider.getCurrentUsersAccessToken()
       .map(userClient::fetchAllCloudUsers)
-      .orElseThrow(() -> new NotAuthorizedException(ERROR_MISSING_ACCESS_TOKEN));
+      .orElseThrow(() -> new NotAuthorizedException(ERROR_MISSING_ACCESS_TOKEN))
+      .stream()
+      .collect(Collectors.toMap(CloudUserDto::getUserId, Function.identity()));
   }
 }
