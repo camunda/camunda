@@ -1,5 +1,5 @@
 alertmanager:
-  enabled: false
+  enabled: true
 
 grafana:
   image:
@@ -9,6 +9,9 @@ grafana:
     userKey: admin-user
     passwordKey: admin-password
   grafana.ini:
+    server:
+      # REPLACE THIS WITH THE ACTUAL ROOT URL
+      root_url: "http://localhost:3000"
     auth.github:
       enabled: true
       allow_sign_up: true
@@ -53,23 +56,28 @@ grafana:
 
 prometheusOperator:
   admissionWebhooks:
-    enabled: false
+    patch:
+      image:
+        # the default image in newer chart versions, and required for k8s 1.22
+        repository: k8s.gcr.io/ingress-nginx/kube-webhook-certgen
+        tag: v1.2.0
+
+thanosRuler:
+  enabled: false
 
 prometheus:
   prometheusSpec:
     retention: 30d
     storageSpec:
       volumeClaimTemplate:
-        metadata:
-          name: prometheus-data
+        spec:
+          storageClassName: ssd
           selector:
             matchLabels:
               app: prometheus
-        spec:
           accessModes:
             - ReadWriteOnce
           resources:
             requests:
               storage: 150Gi
-          storageClassName: ssd
 
