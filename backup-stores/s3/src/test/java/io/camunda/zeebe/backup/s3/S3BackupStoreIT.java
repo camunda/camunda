@@ -175,13 +175,14 @@ final class S3BackupStoreIT {
     final var prefix = S3BackupStore.objectPrefix(backup.id);
 
     final var metadata = prefix + Metadata.OBJECT_KEY;
+    final var status = prefix + Status.OBJECT_KEY;
     final var snapshotObjects =
         backup.snapshot.names().stream().map(name -> prefix + S3BackupStore.SNAPSHOT_PREFIX + name);
     final var segmentObjects =
         backup.segments.names().stream().map(name -> prefix + S3BackupStore.SEGMENTS_PREFIX + name);
 
     final var contentObjects = Stream.concat(snapshotObjects, segmentObjects);
-    final var managementObjects = Stream.of(metadata);
+    final var managementObjects = Stream.of(metadata, status);
     final var expectedObjects = Stream.concat(managementObjects, contentObjects).toList();
 
     // when
