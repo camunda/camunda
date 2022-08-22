@@ -102,6 +102,7 @@ class Variables extends NetworkReconnectionHandler {
       setLatestFetchDetails: action,
       setAreVariablesLoadedOnce: action,
       areVariablesLoadedOnce: observable,
+      hasNoContent: computed,
     });
 
     this.pollingAbortController = new AbortController();
@@ -595,6 +596,10 @@ class Variables extends NetworkReconnectionHandler {
     return status === 'fetched' && items.length === 0;
   }
 
+  get hasNoContent() {
+    return flowNodeSelectionStore.hasSelectedNodeTokens;
+  }
+
   removeVariablesWithActiveOperations = () => {
     this.state.items = this.state.items.filter(
       ({hasActiveOperation}) => !hasActiveOperation
@@ -653,6 +658,11 @@ class Variables extends NetworkReconnectionHandler {
     if (status === 'error') {
       return 'error';
     }
+
+    if (this.hasNoContent) {
+      return 'no-content';
+    }
+
     if (['initial', 'first-fetch'].includes(status)) {
       return this.areVariablesLoadedOnce ? 'spinner' : 'skeleton';
     }

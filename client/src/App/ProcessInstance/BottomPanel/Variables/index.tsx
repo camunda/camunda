@@ -95,6 +95,10 @@ const Variables: React.FC = observer(() => {
     });
   }
 
+  if (displayStatus === 'no-content') {
+    return null;
+  }
+
   return (
     <Styled.VariablesContent ref={variablesContentRef}>
       {isViewMode && displayStatus === 'skeleton' && (

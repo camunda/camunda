@@ -108,7 +108,7 @@ const VariablesContent: React.FC = observer(() => {
         {({form, handleSubmit, values}) => {
           return (
             <Form onSubmit={handleSubmit}>
-              {isModificationModeEnabled && (
+              {isModificationModeEnabled && !variablesStore.hasNoContent && (
                 <AddVariableButton
                   onClick={() => {
                     form.mutators.push?.('newVariables');

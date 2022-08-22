@@ -26,6 +26,8 @@ import {
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
+import {modificationsStore} from 'modules/stores/modifications';
+import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -66,6 +68,16 @@ describe('VariablePanel', () => {
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
         (_, res, ctx) => res.once(ctx.json(undefined))
+      ),
+      rest.get(
+        '/api/process-instances/:instanceId/flow-node-states',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              TEST_FLOW_NODE: 'COMPLETED',
+              Activity_0qtp1k6: 'INCIDENT',
+            })
+          )
       )
     );
 
@@ -77,6 +89,7 @@ describe('VariablePanel', () => {
         state: 'ACTIVE',
       })
     );
+    flowNodeStatesStore.fetchFlowNodeStates('instance_id');
   });
 
   afterEach(() => {
@@ -84,6 +97,8 @@ describe('VariablePanel', () => {
     flowNodeSelectionStore.reset();
     flowNodeMetaDataStore.reset();
     processInstanceDetailsDiagramStore.reset();
+    modificationsStore.reset();
+    flowNodeStatesStore.reset();
   });
 
   it('should show multiple scope placeholder when multiple nodes are selected', async () => {
@@ -106,7 +121,7 @@ describe('VariablePanel', () => {
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
     flowNodeSelectionStore.setSelection({
-      flowNodeId: '1',
+      flowNodeId: 'TEST_FLOW_NODE',
     });
 
     expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
@@ -329,7 +344,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     flowNodeSelectionStore.setSelection({
-      flowNodeId: '1',
+      flowNodeId: 'TEST_FLOW_NODE',
       flowNodeInstanceId: '2',
     });
 
@@ -649,25 +664,32 @@ describe('VariablePanel', () => {
 
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+    expect(screen.getByText('test')).toBeInTheDocument();
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res(
-          ctx.json({
-            id: '9007199254742796-test',
-            name: 'test',
-            value: '123',
-            scopeId: '9007199254742796',
-            processInstanceId: '9007199254742796',
-            hasActiveOperation: false,
-          })
+          ctx.json([
+            {
+              id: '9007199254742796-test',
+              name: 'test2',
+              value: '123',
+              scopeId: '9007199254742796',
+              processInstanceId: '9007199254742796',
+              hasActiveOperation: false,
+            },
+          ])
         )
       )
     );
 
-    flowNodeSelectionStore.setSelection({flowNodeId: 'Activity_0qtp1k6'});
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'Activity_0qtp1k6',
+      flowNodeInstanceId: '2',
+    });
 
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+    expect(screen.getByText('test2')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Input Mappings'}));
 
@@ -733,18 +755,21 @@ describe('VariablePanel', () => {
   it('should display spinner for variables tab when switching between tabs', async () => {
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+    expect(screen.getByText('test')).toBeInTheDocument();
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res(
-          ctx.json({
-            id: '9007199254742796-test',
-            name: 'test',
-            value: '123',
-            scopeId: '9007199254742796',
-            processInstanceId: '9007199254742796',
-            hasActiveOperation: false,
-          })
+          ctx.json([
+            {
+              id: '9007199254742796-test',
+              name: 'test2',
+              value: '123',
+              scopeId: '9007199254742796',
+              processInstanceId: '9007199254742796',
+              hasActiveOperation: false,
+            },
+          ])
         )
       )
     );
@@ -754,10 +779,50 @@ describe('VariablePanel', () => {
     });
 
     await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
+    expect(screen.getByText('test2')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Input Mappings'}));
 
     await user.click(screen.getByRole('button', {name: 'Variables'}));
     await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
+  });
+
+  it('should not display spinner for variables tab when switching between tabs if scope does not exist', async () => {
+    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+    expect(screen.getByText('test')).toBeInTheDocument();
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'non-existing',
+    });
+
+    expect(screen.queryByText('test')).not.toBeInTheDocument();
+
+    await user.dblClick(screen.getByRole('button', {name: 'Input Mappings'}));
+    expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Variables'}));
+    expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
+  });
+
+  it('should display empty panel on non existing scope during modification mode', async () => {
+    render(<VariablePanel />, {wrapper: Wrapper});
+    expect(await screen.findByText('test')).toBeInTheDocument();
+
+    modificationsStore.enableModificationMode();
+    expect(
+      screen.getByRole('button', {name: /add variable/i})
+    ).toBeInTheDocument();
+    expect(screen.getByText('test')).toBeInTheDocument();
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'non-existing',
+    });
+
+    expect(
+      screen.queryByRole('button', {name: /add variable/i})
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('test')).not.toBeInTheDocument();
   });
 });

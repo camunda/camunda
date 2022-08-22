@@ -9,6 +9,7 @@ import {IReactionDisposer, makeAutoObservable, when, reaction} from 'mobx';
 import {FlowNodeInstance} from './flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {modificationsStore} from './modifications';
+import {flowNodeStatesStore} from './flowNodeStates';
 
 type Selection = {
   flowNodeId?: string;
@@ -85,6 +86,17 @@ class FlowNodeSelection {
     return (
       this.state.selection?.flowNodeInstanceId ===
       processInstanceDetailsStore.state.processInstance?.id
+    );
+  }
+
+  get hasSelectedNodeTokens() {
+    const currentFlowNodeSelection = this.state.selection;
+
+    return (
+      currentFlowNodeSelection?.flowNodeId !== undefined &&
+      flowNodeStatesStore.state.flowNodes[
+        currentFlowNodeSelection.flowNodeId
+      ] === undefined
     );
   }
 
