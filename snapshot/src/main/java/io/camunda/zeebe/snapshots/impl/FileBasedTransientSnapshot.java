@@ -159,7 +159,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   }
 
   private void writeMetadataAndUpdateChecksum(final FileBasedSnapshotMetadata metadata)
-      throws Exception {
+      throws IOException {
     final var metadataPath = directory.resolve(FileBasedSnapshotStore.METADATA_FILE_NAME);
     // Write metadata file along with snapshot files
     try (final var channel =
