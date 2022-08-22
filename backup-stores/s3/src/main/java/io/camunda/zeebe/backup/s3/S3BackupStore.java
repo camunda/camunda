@@ -41,6 +41,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 public final class S3BackupStore implements BackupStore {
 
   public static final String SNAPSHOT_PREFIX = "snapshot/";
+  public static final String SEGMENTS_PREFIX = "segments/";
 
   static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -56,7 +57,8 @@ public final class S3BackupStore implements BackupStore {
   public CompletableFuture<Void> save(final Backup backup) {
     final var metadata = saveMetadata(backup);
     final var snapshot = saveSnapshotFiles(backup);
-    return CompletableFuture.allOf(metadata, snapshot);
+    final var segments = saveSegmentFiles(backup);
+    return CompletableFuture.allOf(metadata, snapshot, segments);
   }
 
   @Override
@@ -102,6 +104,16 @@ public final class S3BackupStore implements BackupStore {
             .map(
                 snapshotFile ->
                     saveNamedFile(prefix, snapshotFile.getKey(), snapshotFile.getValue()))
+            .toList();
+
+    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[] {}));
+  }
+
+  private CompletableFuture<Void> saveSegmentFiles(final Backup backup) {
+    final var prefix = objectPrefix(backup.id()) + SEGMENTS_PREFIX;
+    final var futures =
+        backup.segments().namedFiles().entrySet().stream()
+            .map(segmentFile -> saveNamedFile(prefix, segmentFile.getKey(), segmentFile.getValue()))
             .toList();
 
     return CompletableFuture.allOf(futures.toArray(new CompletableFuture[] {}));
