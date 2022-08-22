@@ -1,7 +1,7 @@
 namespace ?= default
 
 .PHONY: all
-all: zeebe starter timer simpleStarter worker
+all: zeebe starter publisher timer simpleStarter worker
 
 .PHONY: zeebe
 zeebe:
@@ -21,6 +21,10 @@ update:
 starter:
 	kubectl apply -n $(namespace) -f starter.yaml
 
+.PHONY: publisher
+publisher:
+	kubectl apply -n $(namespace) -f publisher.yaml
+
 .PHONY: timer
 timer:
 	kubectl apply -n $(namespace) -f timer.yaml
@@ -35,7 +39,7 @@ worker:
 
 
 .PHONY: clean
-clean: clean-starter clean-timer clean-simpleStarter clean-worker clean-zeebe
+clean: clean-starter clean-publisher clean-timer clean-simpleStarter clean-worker clean-zeebe
 
 .PHONY: clean-zeebe
 clean-zeebe:
@@ -46,6 +50,10 @@ clean-zeebe:
 .PHONY: clean-starter
 clean-starter:
 	-kubectl delete -n $(namespace) -f starter.yaml
+
+.PHONY: clean-publisher
+clean-publisher:
+	-kubectl delete -n $(namespace) -f publisher.yaml
 
 .PHONY: clean-timer
 clean-timer:
