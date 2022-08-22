@@ -60,8 +60,11 @@ public class CompactRecordLogger {
   // List rather than Map to preserve order
   private static final List<Entry<String, String>> ABBREVIATIONS =
       List.of(
+          entry("PROCESS_INSTANCE_CREATION", "CREA"),
+          entry("PROCESS_INSTANCE_MODIFICATION", "MOD"),
+          entry("PROCESS_INSTANCE", "PI"),
           entry("PROCESS", "PROC"),
-          entry("INSTANCE", "INST"),
+          entry("TIMER", "TIME"),
           entry("MESSAGE", "MSG"),
           entry("SUBSCRIPTION", "SUB"),
           entry("SEQUENCE", "SEQ"),
