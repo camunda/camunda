@@ -16,6 +16,24 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 /** Backup manager that takes and manages backup asynchronously */
 public class BackupService extends Actor implements BackupManager {
 
+  private final int nodeId;
+  private final int partitionId;
+  private final String actorName;
+
+  private final int numberOfPartitions;
+
+  public BackupService(final int nodeId, final int partitionId, final int numberOfPartitions) {
+    this.nodeId = nodeId;
+    this.partitionId = partitionId;
+    this.numberOfPartitions = numberOfPartitions;
+    actorName = buildActorName(nodeId, "SnapshotStore", partitionId);
+  }
+
+  @Override
+  public String getName() {
+    return actorName;
+  }
+
   @Override
   public void takeBackup(final long checkpointId, final long checkpointPosition) {
     // Will be implemented later
