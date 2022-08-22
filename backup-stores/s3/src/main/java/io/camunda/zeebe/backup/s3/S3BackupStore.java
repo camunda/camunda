@@ -29,9 +29,9 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
  *
  * <ol>
  *   <li>A 'metadata' object, containing {@link Metadata} serialized as JSON, for example
- *       <pre>partitionId/checkpointId/nodeId/metadata</pre>
- *   <li>A 'status' object, containing the {@link BackupStatus}, for example
- *       <pre>partitionId/checkpointId/nodeId/status</pre>
+ *       <pre>partitionId/checkpointId/nodeId/metadata.json</pre>
+ *   <li>A 'status' object, containing the {@link Status}, for example
+ *       <pre>partitionId/checkpointId/nodeId/status.json</pre>
  *   <li>Objects for snapshot files, additionally prefixed with 'snapshot', for example
  *       <pre>partitionId/checkpointId/nodeId/snapshots/snapshot-file-1</pre>
  *   <li>Objects for segment files, additionally prefixed with 'segments', for example
@@ -55,10 +55,17 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    final var metadata = saveMetadata(backup);
-    final var snapshot = saveSnapshotFiles(backup);
-    final var segments = saveSegmentFiles(backup);
-    return CompletableFuture.allOf(metadata, snapshot, segments);
+    return setStatus(Status.inProgress())
+        .thenComposeAsync(
+            status -> {
+              final var metadata = saveMetadata(backup);
+              final var snapshot = saveSnapshotFiles(backup);
+              final var segments = saveSegmentFiles(backup);
+              return CompletableFuture.allOf(metadata, snapshot, segments);
+            })
+        .thenComposeAsync(content -> setStatus(Status.complete()))
+        .exceptionallyComposeAsync(throwable -> setStatus(Status.failed(throwable)))
+        .thenApply(result -> null);
   }
 
   @Override
@@ -79,6 +86,18 @@ public final class S3BackupStore implements BackupStore {
   @Override
   public CompletableFuture<Void> markFailed(final BackupIdentifier id) {
     throw new UnsupportedOperationException();
+  }
+
+  private CompletableFuture<PutObjectResponse> setStatus(Status status) {
+    AsyncRequestBody body;
+    try {
+      body = AsyncRequestBody.fromBytes(MAPPER.writeValueAsBytes(status));
+    } catch (JsonProcessingException e) {
+      return CompletableFuture.failedFuture(e);
+    }
+
+    return client.putObject(
+        request -> request.bucket(config.bucketName()).key(Status.OBJECT_KEY).build(), body);
   }
 
   private CompletableFuture<PutObjectResponse> saveMetadata(Backup backup) {
