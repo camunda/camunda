@@ -114,6 +114,4 @@ public class StarterCfg {
   public void setDurationLimit(final int durationLimit) {
     this.durationLimit = durationLimit;
   }
-
-
 }

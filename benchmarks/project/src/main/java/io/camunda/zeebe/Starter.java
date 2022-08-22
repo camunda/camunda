@@ -135,9 +135,7 @@ public class Starter extends App {
                   .correlationKey("") // for start-events it is empty
                   .variables(variables)
                   .send());
-        }
-        else
-        {
+        } else {
           startViaCommand(starterCfg, processId, requestFutures, client, variables);
         }
 
@@ -149,9 +147,13 @@ public class Starter extends App {
     }
   }
 
-  private static void startViaCommand(final StarterCfg starterCfg, final String processId,
-      final BlockingQueue<Future<?>> requestFutures, final ZeebeClient client,
-      final String variables) throws InterruptedException {
+  private static void startViaCommand(
+      final StarterCfg starterCfg,
+      final String processId,
+      final BlockingQueue<Future<?>> requestFutures,
+      final ZeebeClient client,
+      final String variables)
+      throws InterruptedException {
     if (starterCfg.isWithResults()) {
       requestFutures.put(
           client
