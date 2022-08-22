@@ -66,4 +66,49 @@ public class ModifyProcessInstanceVariablesTest {
         .hasProcessInstanceKey(processInstanceKey)
         .hasScopeKey(processInstanceKey);
   }
+
+  @Test
+  public void shouldUpdateGlobalVariablesIfTheyAlreadyExist() {
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .userTask("A")
+                    .userTask("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("x", "variable"))
+            .create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("B", null, Map.of("x", "updated"))
+        .modify();
+
+    // then
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that variable is updated")
+        .hasName("x")
+        .hasValue("\"updated\"")
+        .hasBpmnProcessId(PROCESS_ID)
+        .hasProcessDefinitionKey(
+            deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasScopeKey(processInstanceKey);
+  }
 }
