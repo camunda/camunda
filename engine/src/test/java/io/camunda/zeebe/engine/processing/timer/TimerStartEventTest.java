@@ -1071,7 +1071,7 @@ public final class TimerStartEventTest {
     final long secondDeploymentProcessDefinitionKey = secondDeployment.getProcessDefinitionKey();
 
     // when
-    engine.increaseTime(Duration.ofSeconds(25));
+    engine.increaseTime(Duration.ofSeconds(15));
 
     // then
     assertThat(
