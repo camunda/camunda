@@ -320,7 +320,7 @@ public class FileBasedTransientSnapshotTest {
   }
 
   @Test
-  public void shouldAddMetadataToPeristedSnapshot() {
+  public void shouldAddMetadataToPersistedSnapshot() {
     // given
     final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3, 4).get();
     transientSnapshot.take(this::writeSnapshot).join();
