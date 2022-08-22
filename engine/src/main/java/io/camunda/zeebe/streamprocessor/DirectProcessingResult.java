@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.streamprocessor;
 
+import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.PostCommitTask;
 import io.camunda.zeebe.engine.api.ProcessingResult;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
+import io.camunda.zeebe.engine.api.TaskResult;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,7 @@ import java.util.List;
  * shaped into the interfaces defined in engine abstraction, and subseqeently the interfaces can be
  * re-implemented to allow for buffered writing to stream and response writer
  */
-final class DirectProcessingResult implements ProcessingResult {
+final class DirectProcessingResult implements ProcessingResult, TaskResult {
 
   private final List<PostCommitTask> postCommitTasks;
 

@@ -68,8 +68,12 @@ public final class BpmnIncidentBehavior {
   }
 
   public void resolveIncidents(final BpmnElementContext context) {
+    resolveIncidents(context.getElementInstanceKey());
+  }
+
+  public void resolveIncidents(final long elementInstanceKey) {
     incidentState.forExistingProcessIncident(
-        context.getElementInstanceKey(),
+        elementInstanceKey,
         (record, key) -> stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, record));
   }
 }

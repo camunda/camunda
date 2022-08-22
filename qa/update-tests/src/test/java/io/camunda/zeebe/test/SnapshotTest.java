@@ -10,7 +10,6 @@ package io.camunda.zeebe.test;
 import static io.camunda.zeebe.test.ContainerStateAssert.assertThat;
 import static io.camunda.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
 
-import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
@@ -46,9 +45,7 @@ final class SnapshotTest {
     final long key = testCase.runBefore(state);
 
     // when
-    EitherAssert.assertThat(state.getPartitionsActuatorClient().takeSnapshot())
-        .as("expect successful response as right member")
-        .isRight();
+    state.getPartitionsActuator().takeSnapshot();
     assertThat(state).eventuallyHasSnapshotAvailable(1);
 
     // perform the update
@@ -59,15 +56,5 @@ final class SnapshotTest {
     // then
     testCase.runAfter(state, processInstanceKey, key);
     assertThat(state).eventuallyHasCompletedProcess(PROCESS_ID);
-  }
-
-  private void sendDummyMessageToEnforceSnapshot(final ContainerState state) {
-    state
-        .client()
-        .newPublishMessageCommand()
-        .messageName("enforceSnapshot")
-        .correlationKey("dummy")
-        .send()
-        .join(5, TimeUnit.SECONDS);
   }
 }

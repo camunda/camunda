@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.backup.api;
 
-/** BackupMetadata must uniquely identify a backup stored in the BackupStore. */
+/** Uniquely identifies a backup stored in the BackupStore. */
 public interface BackupIdentifier {
 
   /**
-   * @return Id of the broker which took this backup
+   * @return id of the broker which took this backup
    */
   int nodeId();
 

@@ -16,7 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedCommandWriter;
+import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.TriggerTimersSideEffect;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.YieldingDecorator;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
@@ -45,8 +45,7 @@ class DueDateTimerCheckerTest {
        */
 
       // given
-      final var mockTypedCommandWriter = mock(LegacyTypedCommandWriter.class);
-      when(mockTypedCommandWriter.flush()).thenReturn(1L);
+      final var mockTaskResultBuilder = mock(TaskResultBuilder.class);
 
       final var mockTimer = mock(TimerInstance.class, Mockito.RETURNS_DEEP_STUBS);
       final var timerKey = 42L;
@@ -61,11 +60,11 @@ class DueDateTimerCheckerTest {
       final var sut = new TriggerTimersSideEffect(testTimerInstanceState, testActorClock, true);
 
       // when
-      sut.apply(mockTypedCommandWriter);
+      sut.apply(mockTaskResultBuilder);
 
       // then
-      verify(mockTypedCommandWriter, times(4))
-          .appendFollowUpCommand(eq(timerKey), eq(TimerIntent.TRIGGER), any());
+      verify(mockTaskResultBuilder, times(4))
+          .appendCommandRecord(eq(timerKey), eq(TimerIntent.TRIGGER), any());
       /*
        * Why 4 times? The actor clock is advanced by 10 units before the timer visitor is called, and
        * thus before a trigger event command is written.

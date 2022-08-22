@@ -10,8 +10,7 @@ package io.camunda.zeebe.test;
 import static io.camunda.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.zeebe.test.util.actuator.PartitionsActuatorClient.PartitionStatus;
-import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuator.PartitionStatus;
 import java.time.Duration;
 import java.util.Map;
 import org.assertj.core.api.AbstractObjectAssert;
@@ -47,14 +46,8 @@ final class ContainerStateAssert
 
   @SuppressWarnings("ConstantConditions")
   public ContainerStateAssert hasSnapshotAvailable(final int partitionId) {
-    final Either<Throwable, Map<String, PartitionStatus>> response =
-        actual.getPartitionsActuatorClient().queryPartitions();
-    if (response.isLeft()) {
-      failWithMessage("expected partitions query to be successful, but was %s", response.getLeft());
-    }
-
-    final Map<String, PartitionStatus> partitions = response.get();
-    final PartitionStatus partitionStatus = partitions.get(String.valueOf(partitionId));
+    final Map<Integer, PartitionStatus> partitions = actual.getPartitionsActuator().query();
+    final PartitionStatus partitionStatus = partitions.get(partitionId);
     if (partitionStatus == null) {
       failWithMessage(
           "expected partitions query to return info about partition %d, but got %s",
@@ -80,14 +73,8 @@ final class ContainerStateAssert
 
   @SuppressWarnings("ConstantConditions")
   public ContainerStateAssert hasNoSnapshotAvailable(final int partitionId) {
-    final Either<Throwable, Map<String, PartitionStatus>> response =
-        actual.getPartitionsActuatorClient().queryPartitions();
-    if (response.isLeft()) {
-      failWithMessage("expected partitions query to be successful, but was %s", response.getLeft());
-    }
-
-    final Map<String, PartitionStatus> partitions = response.get();
-    final PartitionStatus partitionStatus = partitions.get(String.valueOf(partitionId));
+    final Map<Integer, PartitionStatus> partitions = actual.getPartitionsActuator().query();
+    final PartitionStatus partitionStatus = partitions.get(partitionId);
     if (partitionStatus == null) {
       failWithMessage(
           "expected partitions query to return info about partition %d, but got %s",

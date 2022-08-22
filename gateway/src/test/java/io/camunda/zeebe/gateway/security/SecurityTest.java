@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.gateway.Gateway;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
@@ -145,12 +146,14 @@ final class SecurityTest {
             .build();
     final var actorScheduler = ActorScheduler.newActorScheduler().build();
     actorScheduler.start();
-
-    return new Gateway(
-        gatewayCfg,
-        atomix.getMessagingService(),
-        atomix.getMembershipService(),
-        atomix.getEventService(),
-        actorScheduler);
+    final var brokerClient =
+        new BrokerClientImpl(
+            gatewayCfg,
+            atomix.getMessagingService(),
+            atomix.getMembershipService(),
+            atomix.getEventService(),
+            actorScheduler);
+    brokerClient.start();
+    return new Gateway(gatewayCfg, brokerClient, actorScheduler);
   }
 }

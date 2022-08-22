@@ -16,12 +16,12 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.EmptyProcessingResult;
+import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -33,6 +33,7 @@ import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.streamprocessor.LegacyTypedStreamWriter;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.util.FileUtil;
@@ -70,7 +71,9 @@ public final class StreamPlatform {
   private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
   private boolean snapshotWasTaken = false;
   private final StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
-  private RecordProcessor recordProcessor;
+  private List<RecordProcessor> recordProcessors;
+
+  private final RecordProcessor defaultRecordProcessor;
 
   private final WriteActor writeActor = new WriteActor();
   private final ZeebeDbFactory zeebeDbFactory;
@@ -97,6 +100,13 @@ public final class StreamPlatform {
 
     when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     actorScheduler.submitActor(writeActor);
+
+    defaultRecordProcessor = mock(RecordProcessor.class);
+    when(defaultRecordProcessor.process(any(), any())).thenReturn(EmptyProcessingResult.INSTANCE);
+    when(defaultRecordProcessor.onProcessingError(any(), any(), any()))
+        .thenReturn(EmptyProcessingResult.INSTANCE);
+    when(defaultRecordProcessor.accepts(any())).thenReturn(true);
+    recordProcessors = List.of(defaultRecordProcessor);
   }
 
   public SynchronousLogStream createLogStream(final String name, final int partitionId) {
@@ -161,6 +171,11 @@ public final class StreamPlatform {
     return rootDirectory.resolve("runtime");
   }
 
+  public StreamPlatform withRecordProcessors(final List<RecordProcessor> recordProcessors) {
+    this.recordProcessors = recordProcessors;
+    return this;
+  }
+
   public StreamProcessor startStreamProcessor() {
     final var logName = getLogName(DEFAULT_PARTITION);
     final SynchronousLogStream stream = getLogStream(logName);
@@ -190,10 +205,6 @@ public final class StreamPlatform {
       zeebeDb = zeebeDbFactory.createDb(storage.toFile());
     }
     final String logName = stream.getLogName();
-    recordProcessor = mock(RecordProcessor.class);
-    when(recordProcessor.process(any(), any())).thenReturn(EmptyProcessingResult.INSTANCE);
-    when(recordProcessor.onProcessingError(any(), any(), any()))
-        .thenReturn(EmptyProcessingResult.INSTANCE);
 
     final var builder =
         StreamProcessor.builder()
@@ -201,9 +212,10 @@ public final class StreamPlatform {
             .zeebeDb(zeebeDb)
             .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
-            .recordProcessor(recordProcessor)
+            .recordProcessors(recordProcessors)
             .eventApplierFactory(EventAppliers::new) // todo remove this soon
-            .streamProcessorMode(streamProcessorMode);
+            .streamProcessorMode(streamProcessorMode)
+            .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
     builder.getLifecycleListeners().add(recoveredAwaiter);
 
@@ -251,8 +263,12 @@ public final class StreamPlatform {
     LOG.info("Closed stream {}", streamName);
   }
 
-  public RecordProcessor getRecordProcessor() {
-    return recordProcessor;
+  public List<RecordProcessor> getRecordProcessors() {
+    return recordProcessors;
+  }
+
+  public RecordProcessor getDefaultRecordProcessor() {
+    return defaultRecordProcessor;
   }
 
   public StreamProcessor getStreamProcessor() {

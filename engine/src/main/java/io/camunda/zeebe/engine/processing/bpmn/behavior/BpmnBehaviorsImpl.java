@@ -8,21 +8,21 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
+import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
-import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import java.util.function.Function;
 
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
@@ -33,70 +33,84 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnStateBehavior stateBehavior;
-  private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
   private final BpmnProcessResultSenderBehavior processResultSenderBehavior;
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
   private final BpmnJobBehavior jobBehavior;
 
   private final MultiInstanceOutputCollectionBehavior multiInstanceOutputCollectionBehavior;
+  private final CatchEventBehavior catchEventBehavior;
+  private final EventTriggerBehavior eventTriggerBehavior;
+  private final VariableBehavior variableBehavior;
+  private final ElementActivationBehavior elementActivationBehavior;
 
   public BpmnBehaviorsImpl(
-      final ExpressionProcessor expressionBehavior,
       final SideEffects sideEffects,
       final MutableZeebeState zeebeState,
-      final CatchEventBehavior catchEventBehavior,
-      final VariableBehavior variableBehavior,
-      final EventTriggerBehavior eventTriggerBehavior,
-      final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
-          processorLookup,
       final Writers writers,
       final JobMetrics jobMetrics,
-      final ProcessEngineMetrics processEngineMetrics) {
+      final ProcessEngineMetrics processEngineMetrics,
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final int partitionsCount,
+      final DueDateTimerChecker timerChecker) {
+    expressionBehavior =
+        new ExpressionProcessor(
+            ExpressionLanguageFactory.createExpressionLanguage(),
+            new VariableStateEvaluationContextLookup(zeebeState.getVariableState()));
 
-    final StateWriter stateWriter = writers.state();
-    final var commandWriter = writers.command();
-    this.expressionBehavior = expressionBehavior;
+    variableBehavior =
+        new VariableBehavior(
+            zeebeState.getVariableState(), writers.state(), zeebeState.getKeyGenerator());
+
+    catchEventBehavior =
+        new CatchEventBehavior(
+            zeebeState,
+            zeebeState.getKeyGenerator(),
+            expressionBehavior,
+            subscriptionCommandSender,
+            writers.state(),
+            timerChecker,
+            partitionsCount);
+
+    eventTriggerBehavior =
+        new EventTriggerBehavior(
+            zeebeState.getKeyGenerator(), catchEventBehavior, writers, zeebeState);
 
     decisionBehavior =
         new BpmnDecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(),
             zeebeState,
             eventTriggerBehavior,
-            stateWriter,
+            writers.state(),
             zeebeState.getKeyGenerator(),
             expressionBehavior,
             processEngineMetrics);
 
     stateBehavior = new BpmnStateBehavior(zeebeState, variableBehavior);
+
     stateTransitionGuard = new ProcessInstanceStateTransitionGuard(stateBehavior);
+
     variableMappingBehavior =
         new BpmnVariableMappingBehavior(expressionBehavior, zeebeState, variableBehavior);
-    stateTransitionBehavior =
-        new BpmnStateTransitionBehavior(
-            zeebeState.getKeyGenerator(),
-            stateBehavior,
-            processEngineMetrics,
-            processorLookup,
-            writers);
+
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
-            catchEventBehavior,
-            eventTriggerBehavior,
-            commandWriter,
-            sideEffects,
-            zeebeState,
-            zeebeState.getKeyGenerator());
+            catchEventBehavior, eventTriggerBehavior, sideEffects, zeebeState);
+
     incidentBehavior =
-        new BpmnIncidentBehavior(zeebeState, zeebeState.getKeyGenerator(), stateWriter);
+        new BpmnIncidentBehavior(zeebeState, zeebeState.getKeyGenerator(), writers.state());
+
     eventPublicationBehavior =
         new BpmnEventPublicationBehavior(
             zeebeState, zeebeState.getKeyGenerator(), eventTriggerBehavior, writers);
+
     processResultSenderBehavior =
         new BpmnProcessResultSenderBehavior(zeebeState, writers.response());
+
     bufferedMessageStartEventBehavior =
         new BpmnBufferedMessageStartEventBehavior(
             zeebeState, zeebeState.getKeyGenerator(), eventTriggerBehavior, writers);
+
     jobBehavior =
         new BpmnJobBehavior(
             zeebeState.getKeyGenerator(),
@@ -109,6 +123,13 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     multiInstanceOutputCollectionBehavior =
         new MultiInstanceOutputCollectionBehavior(stateBehavior, expressionBehavior());
+
+    elementActivationBehavior =
+        new ElementActivationBehavior(
+            zeebeState.getKeyGenerator(),
+            writers,
+            catchEventBehavior,
+            zeebeState.getElementInstanceState());
   }
 
   @Override
@@ -147,11 +168,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   }
 
   @Override
-  public BpmnStateTransitionBehavior stateTransitionBehavior() {
-    return stateTransitionBehavior;
-  }
-
-  @Override
   public ProcessInstanceStateTransitionGuard stateTransitionGuard() {
     return stateTransitionGuard;
   }
@@ -174,5 +190,25 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public MultiInstanceOutputCollectionBehavior outputCollectionBehavior() {
     return multiInstanceOutputCollectionBehavior;
+  }
+
+  @Override
+  public CatchEventBehavior catchEventBehavior() {
+    return catchEventBehavior;
+  }
+
+  @Override
+  public EventTriggerBehavior eventTriggerBehavior() {
+    return eventTriggerBehavior;
+  }
+
+  @Override
+  public VariableBehavior variableBehavior() {
+    return variableBehavior;
+  }
+
+  @Override
+  public ElementActivationBehavior elementActivationBehavior() {
+    return elementActivationBehavior;
   }
 }

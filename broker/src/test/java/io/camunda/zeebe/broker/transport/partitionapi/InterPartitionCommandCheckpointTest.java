@@ -11,14 +11,12 @@ import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionComma
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
@@ -28,7 +26,6 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
-import org.agrona.collections.Int2IntHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,12 +49,8 @@ final class InterPartitionCommandCheckpointTest {
     this.communicationService = communicationService;
     this.logStreamRecordWriter = logStreamRecordWriter;
 
-    final var topology = new Int2IntHashMap(-1);
-    topology.put(1, 2);
-    final var topologyListener = mock(TopologyPartitionListenerImpl.class);
-    when(topologyListener.getPartitionLeaders()).thenReturn(topology);
-
-    sender = new InterPartitionCommandSenderImpl(communicationService, topologyListener);
+    sender = new InterPartitionCommandSenderImpl(communicationService);
+    sender.setCurrentLeader(1, 2);
     receiver = new InterPartitionCommandReceiverImpl(logStreamRecordWriter);
   }
 
@@ -82,7 +75,7 @@ final class InterPartitionCommandCheckpointTest {
   void shouldCreateFirstCheckpoint() {
     // given
     when(logStreamRecordWriter.tryWrite()).thenReturn(1L);
-    sender.onNewCheckpointCreated(1);
+    sender.setCheckpointId(1);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -105,7 +98,7 @@ final class InterPartitionCommandCheckpointTest {
     // given
     when(logStreamRecordWriter.tryWrite()).thenReturn(1L);
     receiver.setCheckpointId(5);
-    sender.onNewCheckpointCreated(17);
+    sender.setCheckpointId(17);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -126,7 +119,7 @@ final class InterPartitionCommandCheckpointTest {
     // given
     when(logStreamRecordWriter.tryWrite()).thenReturn(1L);
     receiver.setCheckpointId(5);
-    sender.onNewCheckpointCreated(5);
+    sender.setCheckpointId(5);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -144,7 +137,7 @@ final class InterPartitionCommandCheckpointTest {
     // given
     when(logStreamRecordWriter.tryWrite()).thenReturn(1L);
     receiver.setCheckpointId(6);
-    sender.onNewCheckpointCreated(5);
+    sender.setCheckpointId(5);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -162,7 +155,7 @@ final class InterPartitionCommandCheckpointTest {
     // given
     when(logStreamRecordWriter.tryWrite()).thenReturn(-1L, 1L);
     receiver.setCheckpointId(5);
-    sender.onNewCheckpointCreated(17);
+    sender.setCheckpointId(17);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -180,7 +173,7 @@ final class InterPartitionCommandCheckpointTest {
     // given
     receiver.setDiskSpaceAvailable(false);
     receiver.setCheckpointId(5);
-    sender.onNewCheckpointCreated(17);
+    sender.setCheckpointId(17);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);

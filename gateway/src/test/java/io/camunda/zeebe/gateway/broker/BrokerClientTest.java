@@ -99,6 +99,8 @@ public final class BrokerClientTest {
             atomixCluster.getEventService(),
             actorScheduler.get());
 
+    client.start();
+
     final BrokerClusterStateImpl topology = new BrokerClusterStateImpl();
     topology.addPartitionIfAbsent(START_PARTITION_ID);
     topology.setPartitionLeader(START_PARTITION_ID, 0, 1);

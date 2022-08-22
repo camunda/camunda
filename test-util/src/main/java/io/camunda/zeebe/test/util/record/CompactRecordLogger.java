@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
+import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
@@ -62,14 +63,16 @@ public class CompactRecordLogger {
   private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test");
   private static final String BLOCK_SEPARATOR = " - ";
 
-  private static final Map<String, String> ABBREVIATIONS =
-      ofEntries(
+  // List rather than Map to preserve order
+  private static final List<Entry<String, String>> ABBREVIATIONS =
+      List.of(
           entry("PROCESS", "PROC"),
           entry("INSTANCE", "INST"),
           entry("MESSAGE", "MSG"),
           entry("SUBSCRIPTION", "SUB"),
           entry("SEQUENCE", "SEQ"),
-          entry("DISTRIBUTED", "DISTR"),
+          entry("DEPLOYMENT_DISTRIBUTION", "DSTR"),
+          entry("DEPLOYMENT", "DPLY"),
           entry("VARIABLE", "VAR"),
           entry("ELEMENT_", ""),
           entry("_ELEMENT", ""),
@@ -95,6 +98,7 @@ public class CompactRecordLogger {
 
   {
     valueLoggers.put(ValueType.DEPLOYMENT, this::summarizeDeployment);
+    valueLoggers.put(ValueType.DEPLOYMENT_DISTRIBUTION, this::summarizeDeploymentDistribution);
     valueLoggers.put(ValueType.PROCESS, this::summarizeProcess);
     valueLoggers.put(ValueType.INCIDENT, this::summarizeIncident);
     valueLoggers.put(ValueType.JOB, this::summarizeJob);
@@ -279,6 +283,11 @@ public class CompactRecordLogger {
             .map(DecisionRequirementsMetadataValue::getResourceName);
 
     return Stream.concat(bpmnResources, dmnResources).collect(Collectors.joining(", "));
+  }
+
+  private String summarizeDeploymentDistribution(final Record<?> record) {
+    final var value = (DeploymentDistributionRecordValue) record.getValue();
+    return "on partition %d".formatted(value.getPartitionId());
   }
 
   private String summarizeProcess(final Record<?> record) {
@@ -662,8 +671,8 @@ public class CompactRecordLogger {
   private String abbreviate(final String input) {
     String result = input;
 
-    for (final String longForm : ABBREVIATIONS.keySet()) {
-      result = result.replace(longForm, ABBREVIATIONS.get(longForm));
+    for (final Entry<String, String> entry : ABBREVIATIONS) {
+      result = result.replace(entry.getKey(), entry.getValue());
     }
 
     return result;

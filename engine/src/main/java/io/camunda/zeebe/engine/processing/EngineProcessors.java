@@ -9,12 +9,9 @@ package io.camunda.zeebe.engine.processing;
 
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
-import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
-import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
-import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.CompleteDeploymentDistributionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
@@ -27,9 +24,9 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
-import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationController;
@@ -63,103 +60,100 @@ public final class EngineProcessors {
 
     final int partitionId = typedRecordProcessorContext.getPartitionId();
 
-    final var variablesState = zeebeState.getVariableState();
-    final var expressionProcessor =
-        new ExpressionProcessor(
-            ExpressionLanguageFactory.createExpressionLanguage(),
-            new VariableStateEvaluationContextLookup(variablesState));
-
     final DueDateTimerChecker timerChecker =
         new DueDateTimerChecker(zeebeState.getTimerState(), featureFlags);
-    final CatchEventBehavior catchEventBehavior =
-        new CatchEventBehavior(
+
+    final var jobMetrics = new JobMetrics(partitionId);
+    final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
+    final var sideEffectQueue = new SideEffectQueue();
+
+    final BpmnBehaviorsImpl bpmnBehaviors =
+        createBehaviors(
             zeebeState,
-            zeebeState.getKeyGenerator(),
-            expressionProcessor,
+            writers,
             subscriptionCommandSender,
-            writers.state(),
+            partitionsCount,
             timerChecker,
-            partitionsCount);
-
-    final var eventTriggerBehavior =
-        new EventTriggerBehavior(
-            zeebeState.getKeyGenerator(), catchEventBehavior, writers, zeebeState);
-
-    final var eventPublicationBehavior =
-        new BpmnEventPublicationBehavior(
-            zeebeState, zeebeState.getKeyGenerator(), eventTriggerBehavior, writers);
+            jobMetrics,
+            processEngineMetrics,
+            sideEffectQueue);
 
     addDeploymentRelatedProcessorAndServices(
-        catchEventBehavior,
+        bpmnBehaviors,
         zeebeState,
         typedRecordProcessors,
-        expressionProcessor,
         writers,
         partitionsCount,
         deploymentDistributionCommandSender,
         zeebeState.getKeyGenerator());
     addMessageProcessors(
-        eventTriggerBehavior,
-        subscriptionCommandSender,
-        zeebeState,
-        typedRecordProcessors,
-        writers);
-
-    final var jobMetrics = new JobMetrics(partitionId);
+        bpmnBehaviors, subscriptionCommandSender, zeebeState, typedRecordProcessors, writers);
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
             zeebeState,
-            expressionProcessor,
+            bpmnBehaviors,
             typedRecordProcessors,
             subscriptionCommandSender,
-            catchEventBehavior,
-            eventTriggerBehavior,
             writers,
             timerChecker,
-            jobMetrics);
+            sideEffectQueue);
 
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
         zeebeState,
         onJobsAvailableCallback,
-        eventPublicationBehavior,
+        bpmnBehaviors,
         writers,
-        jobMetrics,
-        eventTriggerBehavior);
+        jobMetrics);
 
     addIncidentProcessors(zeebeState, bpmnStreamProcessor, typedRecordProcessors, writers);
 
     return typedRecordProcessors;
   }
 
+  private static BpmnBehaviorsImpl createBehaviors(
+      final MutableZeebeState zeebeState,
+      final Writers writers,
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final int partitionsCount,
+      final DueDateTimerChecker timerChecker,
+      final JobMetrics jobMetrics,
+      final ProcessEngineMetrics processEngineMetrics,
+      final SideEffectQueue sideEffectQueue) {
+    return new BpmnBehaviorsImpl(
+        sideEffectQueue,
+        zeebeState,
+        writers,
+        jobMetrics,
+        processEngineMetrics,
+        subscriptionCommandSender,
+        partitionsCount,
+        timerChecker);
+  }
+
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
       final MutableZeebeState zeebeState,
-      final ExpressionProcessor expressionProcessor,
+      final BpmnBehaviorsImpl bpmnBehaviors,
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final CatchEventBehavior catchEventBehavior,
-      final EventTriggerBehavior eventTriggerBehavior,
       final Writers writers,
       final DueDateTimerChecker timerChecker,
-      final JobMetrics jobMetrics) {
+      final SideEffectQueue sideEffectQueue) {
     return ProcessEventProcessors.addProcessProcessors(
         zeebeState,
-        expressionProcessor,
+        bpmnBehaviors,
         typedRecordProcessors,
         subscriptionCommandSender,
-        catchEventBehavior,
         timerChecker,
-        eventTriggerBehavior,
         writers,
-        jobMetrics);
+        sideEffectQueue);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
-      final CatchEventBehavior catchEventBehavior,
+      final BpmnBehaviorsImpl bpmnBehaviors,
       final ZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
-      final ExpressionProcessor expressionProcessor,
       final Writers writers,
       final int partitionsCount,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
@@ -170,8 +164,7 @@ public final class EngineProcessors {
     final var processor =
         new DeploymentCreateProcessor(
             zeebeState,
-            catchEventBehavior,
-            expressionProcessor,
+            bpmnBehaviors,
             partitionsCount,
             writers,
             deploymentDistributionCommandSender,
@@ -214,13 +207,13 @@ public final class EngineProcessors {
   }
 
   private static void addMessageProcessors(
-      final EventTriggerBehavior eventTriggerBehavior,
+      final BpmnBehaviorsImpl bpmnBehaviors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final MutableZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers) {
     MessageEventProcessors.addMessageProcessors(
-        eventTriggerBehavior,
+        bpmnBehaviors.eventTriggerBehavior(),
         typedRecordProcessors,
         zeebeState,
         subscriptionCommandSender,

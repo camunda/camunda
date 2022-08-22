@@ -16,6 +16,7 @@ import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.gateway.Gateway;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -54,13 +55,16 @@ class UnavailableBrokersTest {
     actorScheduler = ActorScheduler.newActorScheduler().build();
     actorScheduler.start();
 
-    gateway =
-        new Gateway(
-            new GatewayCfg().setNetwork(networkCfg),
+    final var brokerClient =
+        new BrokerClientImpl(
+            config,
             cluster.getMessagingService(),
             cluster.getMembershipService(),
             cluster.getEventService(),
             actorScheduler);
+    brokerClient.start();
+
+    gateway = new Gateway(config, brokerClient, actorScheduler);
     gateway.start().join();
 
     final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());

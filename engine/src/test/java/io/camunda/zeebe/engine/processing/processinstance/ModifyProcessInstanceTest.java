@@ -8,18 +8,25 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
@@ -80,12 +87,6 @@ public class ModifyProcessInstanceTest {
         .deploy();
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    final var processInstance =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.PROCESS)
-            .getFirst()
-            .getValue();
 
     // when
     ENGINE
@@ -96,49 +97,7 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then
-    final var elementInstanceEvents =
-        RecordingExporter.processInstanceRecords()
-            .onlyEvents()
-            .withElementId("B")
-            .withProcessInstanceKey(processInstanceKey)
-            .limit("B", ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .toList();
-
-    Assertions.assertThat(elementInstanceEvents)
-        .extracting(Record::getIntent)
-        .describedAs("Expect the element instance to have been activated")
-        .containsExactly(
-            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
-
-    Assertions.assertThat(elementInstanceEvents)
-        .extracting(Record::getKey)
-        .describedAs("Expect each element instance event to refer to the same entity")
-        .containsOnly(elementInstanceEvents.get(0).getKey());
-
-    Assertions.assertThat(elementInstanceEvents)
-        .extracting(Record::getValue)
-        .describedAs("Expect each element instance event to contain the complete record value")
-        .extracting(
-            ProcessInstanceRecordValue::getBpmnProcessId,
-            ProcessInstanceRecordValue::getProcessDefinitionKey,
-            ProcessInstanceRecordValue::getProcessInstanceKey,
-            ProcessInstanceRecordValue::getBpmnElementType,
-            ProcessInstanceRecordValue::getElementId,
-            ProcessInstanceRecordValue::getFlowScopeKey,
-            ProcessInstanceRecordValue::getVersion,
-            ProcessInstanceRecordValue::getParentProcessInstanceKey,
-            ProcessInstanceRecordValue::getParentElementInstanceKey)
-        .containsOnly(
-            Tuple.tuple(
-                PROCESS_ID,
-                processInstance.getProcessDefinitionKey(),
-                processInstanceKey,
-                BpmnElementType.SERVICE_TASK,
-                "B",
-                processInstanceKey,
-                processInstance.getVersion(),
-                -1L,
-                -1L));
+    verifyThatRootElementIsActivated(processInstanceKey, "B", BpmnElementType.SERVICE_TASK);
   }
 
   @Test
@@ -175,33 +134,12 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords()
-                .onlyEvents()
-                .withElementId("B")
-                .withProcessInstanceKey(processInstanceKey)
-                .limit("B", ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .toList())
-        .extracting(Record::getIntent)
-        .describedAs("Expect the service task to have been activated")
-        .containsExactly(
-            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
-
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords()
-                .onlyEvents()
-                .withElementId("C")
-                .withProcessInstanceKey(processInstanceKey)
-                .limit("C", ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .toList())
-        .extracting(Record::getIntent)
-        .describedAs("Expect the user task to have been activated")
-        .containsExactly(
-            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    verifyThatRootElementIsActivated(processInstanceKey, "B", BpmnElementType.SERVICE_TASK);
+    verifyThatRootElementIsActivated(processInstanceKey, "C", BpmnElementType.USER_TASK);
   }
 
   @Test
-  public void shouldBeAbleToCompleteActivatedRootElement() {
+  public void shouldCompleteModifiedProcessInstanceWithActivatedRootElements() {
     // given
     ENGINE
         .deployment()
@@ -228,64 +166,11 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // when
-    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
+    completeJobs(processInstanceKey, 3);
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords()
-                .onlyEvents()
-                .withElementId("B")
-                .withProcessInstanceKey(processInstanceKey)
-                .limit("B", ProcessInstanceIntent.ELEMENT_COMPLETED))
-        .describedAs("Expect the element instance to have been completed")
-        .extracting(Record::getIntent)
-        .containsSequence(
-            ProcessInstanceIntent.ELEMENT_COMPLETING, ProcessInstanceIntent.ELEMENT_COMPLETED);
-  }
-
-  @Test
-  public void shouldBeAbleToCompleteModfiedProcessInstance() {
-    // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .serviceTask("A", a -> a.zeebeJobType("A"))
-                .serviceTask("B", b -> b.zeebeJobType("B"))
-                .endEvent()
-                .done())
-        .deploy();
-
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementType(BpmnElementType.PROCESS)
-        .await();
-
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .modification()
-        .activateElement("B")
-        .modify();
-
-    // when
-    RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .limit(3)
-        .map(Record::getKey)
-        .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
-
-    // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.PROCESS)
-                .limitToProcessInstanceCompleted()
-                .findAny())
-        .describedAs("Expect the process instance to have been completed")
-        .isPresent();
+    verifyThatElementIsCompleted(processInstanceKey, "B");
+    verifyThatProcessInstanceIsCompleted(processInstanceKey);
   }
 
   @Test
@@ -324,49 +209,8 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then
-    final var elementInstanceEvents =
-        RecordingExporter.processInstanceRecords()
-            .onlyEvents()
-            .withElementId("B")
-            .withProcessInstanceKey(processInstanceKey)
-            .limit("B", ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .toList();
-
-    Assertions.assertThat(elementInstanceEvents)
-        .extracting(Record::getIntent)
-        .describedAs("Expect the element instance to have been activated")
-        .containsExactly(
-            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
-
-    Assertions.assertThat(elementInstanceEvents)
-        .extracting(Record::getKey)
-        .describedAs("Expect each element instance event to refer to the same entity")
-        .containsOnly(elementInstanceEvents.get(0).getKey());
-
-    Assertions.assertThat(elementInstanceEvents)
-        .extracting(Record::getValue)
-        .describedAs("Expect each element instance event to contain the complete record value")
-        .extracting(
-            ProcessInstanceRecordValue::getBpmnProcessId,
-            ProcessInstanceRecordValue::getProcessDefinitionKey,
-            ProcessInstanceRecordValue::getProcessInstanceKey,
-            ProcessInstanceRecordValue::getBpmnElementType,
-            ProcessInstanceRecordValue::getElementId,
-            ProcessInstanceRecordValue::getFlowScopeKey,
-            ProcessInstanceRecordValue::getVersion,
-            ProcessInstanceRecordValue::getParentProcessInstanceKey,
-            ProcessInstanceRecordValue::getParentElementInstanceKey)
-        .containsOnly(
-            Tuple.tuple(
-                PROCESS_ID,
-                subProcessInstance.getValue().getProcessDefinitionKey(),
-                subProcessInstance.getValue().getProcessInstanceKey(),
-                BpmnElementType.SERVICE_TASK,
-                "B",
-                subProcessInstance.getKey(),
-                subProcessInstance.getValue().getVersion(),
-                -1L,
-                -1L));
+    verifyThatElementIsActivated(
+        processInstanceKey, "B", BpmnElementType.SERVICE_TASK, subProcessInstance.getKey());
   }
 
   @Test
@@ -410,35 +254,14 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords()
-                .onlyEvents()
-                .withElementId("B")
-                .withProcessInstanceKey(processInstanceKey)
-                .limit("B", ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .toList())
-        .extracting(Record::getIntent, r -> r.getValue().getFlowScopeKey())
-        .describedAs("Expect the tasks to have been activated in the correct scope")
-        .containsExactly(
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATING, subprocessScopeKey),
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, subprocessScopeKey));
-
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords()
-                .onlyEvents()
-                .withElementId("C")
-                .withProcessInstanceKey(processInstanceKey)
-                .limit("C", ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .toList())
-        .extracting(Record::getIntent, r -> r.getValue().getFlowScopeKey())
-        .describedAs("Expect the tasks to have been activated in the correct scope")
-        .containsExactly(
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATING, subprocessScopeKey),
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, subprocessScopeKey));
+    verifyThatElementIsActivated(
+        processInstanceKey, "B", BpmnElementType.SERVICE_TASK, subprocessScopeKey);
+    verifyThatElementIsActivated(
+        processInstanceKey, "C", BpmnElementType.USER_TASK, subprocessScopeKey);
   }
 
   @Test
-  public void shouldCompletedProcessInstanceWhenElementsInsideExistingFlowScopesAreCompleted() {
+  public void shouldCompleteModifiedProcessInstanceWithActivatedElementsInExistingFlowScope() {
     // given
     ENGINE
         .deployment()
@@ -471,13 +294,414 @@ public class ModifyProcessInstanceTest {
         .modify();
 
     // when
-    RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .limit(3) // 3 jobs as A creates another B
-        .map(Record::getKey)
-        .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
+    // 3 jobs as A creates another B
+    completeJobs(processInstanceKey, 3);
 
     // then
+    verifyThatElementIsCompleted(processInstanceKey, "B");
+    verifyThatProcessInstanceIsCompleted(processInstanceKey);
+  }
+
+  @Test
+  public void shouldActivateElementsInsideSameNonExistingFlowScope() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .eventSubProcess(
+                    "event-subprocess",
+                    s ->
+                        s.startEvent()
+                            .message(m -> m.name("start").zeebeCorrelationKeyExpression("key"))
+                            .parallelGateway("fork")
+                            .serviceTask("B", t -> t.zeebeJobType("B"))
+                            .moveToNode("fork")
+                            .userTask("C"))
+                .startEvent()
+                .userTask("A")
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "1").create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("B")
+        .activateElement("C")
+        .modify();
+
+    // then
+    verifyThatElementIsActivated(
+        processInstanceKey,
+        "event-subprocess",
+        BpmnElementType.EVENT_SUB_PROCESS,
+        processInstanceKey);
+
+    final var eventSubprocessKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+            .getFirst()
+            .getKey();
+
+    verifyThatElementIsActivated(
+        processInstanceKey, "B", BpmnElementType.SERVICE_TASK, eventSubprocessKey);
+    verifyThatElementIsActivated(
+        processInstanceKey, "C", BpmnElementType.USER_TASK, eventSubprocessKey);
+
+    // and
+    completeJobs(processInstanceKey, 3);
+
+    verifyThatElementIsCompleted(processInstanceKey, "B");
+    verifyThatElementIsCompleted(processInstanceKey, "C");
+    verifyThatElementIsCompleted(processInstanceKey, "event-subprocess");
+    verifyThatProcessInstanceIsCompleted(processInstanceKey);
+  }
+
+  @Test
+  public void shouldActivateElementsInsideDifferentNonExistingFlowScopes() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .eventSubProcess(
+                    "event-subprocess-1",
+                    s ->
+                        s.startEvent()
+                            .message(m -> m.name("start-1").zeebeCorrelationKeyExpression("key"))
+                            .serviceTask("B", t -> t.zeebeJobType("B")))
+                .eventSubProcess(
+                    "event-subprocess-2",
+                    s ->
+                        s.startEvent()
+                            .message(m -> m.name("start-2").zeebeCorrelationKeyExpression("key"))
+                            .userTask("C"))
+                .startEvent()
+                .userTask("A")
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "1").create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("B")
+        .activateElement("C")
+        .modify();
+
+    // then
+    verifyThatElementIsActivated(
+        processInstanceKey,
+        "event-subprocess-1",
+        BpmnElementType.EVENT_SUB_PROCESS,
+        processInstanceKey);
+    verifyThatElementIsActivated(
+        processInstanceKey,
+        "event-subprocess-2",
+        BpmnElementType.EVENT_SUB_PROCESS,
+        processInstanceKey);
+
+    final var eventSubprocessKeysByElementId =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+            .limit(2)
+            .collect(Collectors.toMap(r -> r.getValue().getElementId(), Record::getKey));
+
+    verifyThatElementIsActivated(
+        processInstanceKey,
+        "B",
+        BpmnElementType.SERVICE_TASK,
+        eventSubprocessKeysByElementId.get("event-subprocess-1"));
+    verifyThatElementIsActivated(
+        processInstanceKey,
+        "C",
+        BpmnElementType.USER_TASK,
+        eventSubprocessKeysByElementId.get("event-subprocess-2"));
+
+    // and
+    completeJobs(processInstanceKey, 3);
+
+    verifyThatElementIsCompleted(processInstanceKey, "B");
+    verifyThatElementIsCompleted(processInstanceKey, "C");
+    verifyThatElementIsCompleted(processInstanceKey, "event-subprocess-1");
+    verifyThatElementIsCompleted(processInstanceKey, "event-subprocess-2");
+    verifyThatProcessInstanceIsCompleted(processInstanceKey);
+  }
+
+  @Test
+  public void shouldActivateElementsInsideNestedNonExistingFlowScopes() {
+    // given
+    final Consumer<SubProcessBuilder> subprocessBuilder =
+        subprocess ->
+            subprocess
+                .embeddedSubProcess()
+                .eventSubProcess(
+                    "event-subprocess",
+                    eventSubprocess ->
+                        eventSubprocess
+                            .startEvent()
+                            .message(m -> m.name("start").zeebeCorrelationKeyExpression("key"))
+                            .serviceTask("B", t -> t.zeebeJobType("B")))
+                .startEvent()
+                .userTask("C")
+                .endEvent();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .subProcess("subprocess", subprocessBuilder)
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "1").create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("B")
+        .activateElement("C")
+        .modify();
+
+    // then
+    verifyThatElementIsActivated(
+        processInstanceKey, "subprocess", BpmnElementType.SUB_PROCESS, processInstanceKey);
+
+    final var subprocessKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .getFirst()
+            .getKey();
+
+    verifyThatElementIsActivated(
+        processInstanceKey, "event-subprocess", BpmnElementType.EVENT_SUB_PROCESS, subprocessKey);
+
+    final var eventSubprocessKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+            .getFirst()
+            .getKey();
+
+    verifyThatElementIsActivated(
+        processInstanceKey, "B", BpmnElementType.SERVICE_TASK, eventSubprocessKey);
+    verifyThatElementIsActivated(processInstanceKey, "C", BpmnElementType.USER_TASK, subprocessKey);
+
+    // and
+    completeJobs(processInstanceKey, 4);
+
+    verifyThatElementIsCompleted(processInstanceKey, "B");
+    verifyThatElementIsCompleted(processInstanceKey, "C");
+    verifyThatElementIsCompleted(processInstanceKey, "subprocess");
+    verifyThatElementIsCompleted(processInstanceKey, "event-subprocess");
+    verifyThatProcessInstanceIsCompleted(processInstanceKey);
+  }
+
+  @Test
+  public void shouldCreateEventSubscriptionsWhenActivatingElementsInsideNonExistingFlowScopes() {
+    // given
+    final Consumer<SubProcessBuilder> subprocessBuilder1 =
+        subprocess ->
+            subprocess
+                .embeddedSubProcess()
+                .eventSubProcess(
+                    "event-subprocess-1",
+                    eventSubprocess ->
+                        eventSubprocess
+                            .startEvent()
+                            .message(m -> m.name("start-1").zeebeCorrelationKeyExpression("key"))
+                            .endEvent())
+                .startEvent()
+                .serviceTask("B", t -> t.zeebeJobType("B"));
+
+    final Consumer<SubProcessBuilder> subprocessBuilder2 =
+        subprocess ->
+            subprocess
+                .embeddedSubProcess()
+                .eventSubProcess(
+                    "event-subprocess-2",
+                    eventSubprocess ->
+                        eventSubprocess
+                            .startEvent()
+                            .message(m -> m.name("start-2").zeebeCorrelationKeyExpression("key"))
+                            .endEvent())
+                .startEvent()
+                .userTask("C");
+
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .subProcess("subprocess-1", subprocessBuilder1)
+                .subProcess("subprocess-2", subprocessBuilder2)
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "1").create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("B")
+        .activateElement("C")
+        .modify();
+
+    // then
+    final var subprocessKeysByElementId =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .limit(2)
+            .collect(Collectors.toMap(r -> r.getValue().getElementId(), Record::getKey));
+
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            ProcessMessageSubscriptionRecordValue::getMessageName,
+            ProcessMessageSubscriptionRecordValue::getElementInstanceKey)
+        .describedAs("Expect one message subscription for each subprocess to be created")
+        .contains(
+            tuple("start-1", subprocessKeysByElementId.get("subprocess-1")),
+            tuple("start-2", subprocessKeysByElementId.get("subprocess-2")));
+
+    // and
+    ENGINE.message().withName("start-1").withCorrelationKey("1").publish();
+    ENGINE.message().withName("start-2").withCorrelationKey("1").publish();
+
+    verifyThatElementIsCompleted(processInstanceKey, "event-subprocess-1");
+    verifyThatElementIsCompleted(processInstanceKey, "event-subprocess-2");
+  }
+
+  private static void verifyThatRootElementIsActivated(
+      final long processInstanceKey, final String elementId, final BpmnElementType elementType) {
+    verifyThatElementIsActivated(processInstanceKey, elementId, elementType, processInstanceKey);
+  }
+
+  private static void verifyThatElementIsActivated(
+      final long processInstanceKey,
+      final String elementId,
+      final BpmnElementType elementType,
+      final long flowScopeKey) {
+
+    final var processActivatedEvent =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getValue();
+
+    final var elementInstanceEvents =
+        RecordingExporter.processInstanceRecords()
+            .onlyEvents()
+            .withElementId(elementId)
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(elementId, ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .toList();
+
+    Assertions.assertThat(elementInstanceEvents)
+        .extracting(Record::getIntent)
+        .describedAs("Expect the element instance to have been activated")
+        .containsExactly(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    Assertions.assertThat(elementInstanceEvents)
+        .extracting(Record::getKey)
+        .describedAs("Expect each element instance event to refer to the same entity")
+        .containsOnly(elementInstanceEvents.get(0).getKey());
+
+    Assertions.assertThat(elementInstanceEvents)
+        .extracting(Record::getValue)
+        .describedAs("Expect each element instance event to contain the complete record value")
+        .extracting(
+            ProcessInstanceRecordValue::getProcessDefinitionKey,
+            ProcessInstanceRecordValue::getBpmnProcessId,
+            ProcessInstanceRecordValue::getVersion,
+            ProcessInstanceRecordValue::getProcessInstanceKey,
+            ProcessInstanceRecordValue::getBpmnElementType,
+            ProcessInstanceRecordValue::getElementId,
+            ProcessInstanceRecordValue::getFlowScopeKey,
+            ProcessInstanceRecordValue::getParentProcessInstanceKey,
+            ProcessInstanceRecordValue::getParentElementInstanceKey)
+        .containsOnly(
+            Tuple.tuple(
+                processActivatedEvent.getProcessDefinitionKey(),
+                processActivatedEvent.getBpmnProcessId(),
+                processActivatedEvent.getVersion(),
+                processActivatedEvent.getProcessInstanceKey(),
+                elementType,
+                elementId,
+                flowScopeKey,
+                -1L,
+                -1L));
+  }
+
+  private static void verifyThatElementIsCompleted(
+      final long processInstanceKey, final String elementId) {
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .onlyEvents()
+                .withElementId(elementId)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(elementId, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs("Expect the element instance to have been completed")
+        .extracting(Record::getIntent)
+        .containsSequence(
+            ProcessInstanceIntent.ELEMENT_COMPLETING, ProcessInstanceIntent.ELEMENT_COMPLETED);
+  }
+
+  private static void verifyThatProcessInstanceIsCompleted(final long processInstanceKey) {
+
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .withProcessInstanceKey(processInstanceKey)
@@ -486,5 +710,13 @@ public class ModifyProcessInstanceTest {
                 .findAny())
         .describedAs("Expect the process instance to have been completed")
         .isPresent();
+  }
+
+  private static void completeJobs(final long processInstanceKey, final int numberOfJobs) {
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .limit(numberOfJobs)
+        .map(Record::getKey)
+        .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
   }
 }

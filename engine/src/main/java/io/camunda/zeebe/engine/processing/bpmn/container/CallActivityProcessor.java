@@ -41,9 +41,11 @@ public final class CallActivityProcessor
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
 
-  public CallActivityProcessor(final BpmnBehaviors bpmnBehaviors) {
+  public CallActivityProcessor(
+      final BpmnBehaviors bpmnBehaviors,
+      final BpmnStateTransitionBehavior stateTransitionBehavior) {
     expressionProcessor = bpmnBehaviors.expressionBehavior();
-    stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
+    this.stateTransitionBehavior = stateTransitionBehavior;
     stateBehavior = bpmnBehaviors.stateBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();

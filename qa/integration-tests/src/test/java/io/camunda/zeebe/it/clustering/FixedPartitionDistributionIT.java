@@ -7,17 +7,15 @@
  */
 package io.camunda.zeebe.it.clustering;
 
-import io.camunda.zeebe.test.util.actuator.PartitionsActuatorClient;
-import io.camunda.zeebe.test.util.actuator.PartitionsActuatorClient.PartitionStatus;
-import io.camunda.zeebe.test.util.asserts.EitherAssert;
-import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
-import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
-import io.camunda.zeebe.util.Either;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
+import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
+import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.cluster.ZeebeCluster;
 import java.util.List;
 import org.agrona.CloseHelper;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,9 +59,9 @@ final class FixedPartitionDistributionIT {
     cluster.start();
 
     // when - then
-    final var brokerZeroPartitions = List.of("2", "3");
-    final var brokerOnePartitions = List.of("1", "3");
-    final var brokerTwoPartitions = List.of("1", "2");
+    final var brokerZeroPartitions = List.of(2, 3);
+    final var brokerOnePartitions = List.of(1, 3);
+    final var brokerTwoPartitions = List.of(1, 2);
 
     assertPartitionsDistributedPerBroker(brokerZeroPartitions, 0);
     assertPartitionsDistributedPerBroker(brokerOnePartitions, 1);
@@ -71,16 +69,12 @@ final class FixedPartitionDistributionIT {
   }
 
   private void assertPartitionsDistributedPerBroker(
-      final List<String> expectedPartitionIds, final Integer nodeId) {
+      final List<Integer> expectedPartitionIds, final Integer nodeId) {
     final var broker = cluster.getBrokers().get(nodeId);
-    final var client = new PartitionsActuatorClient(broker.getExternalMonitoringAddress());
-    final var partitionsResult = client.queryPartitions();
+    final var client = PartitionsActuator.of(broker);
+    final var partitions = client.query();
 
-    EitherAssert.assertThat(partitionsResult)
-        .as("partitions status request should have succeeded")
-        .isRight()
-        .extracting(Either::get)
-        .asInstanceOf(InstanceOfAssertFactories.map(String.class, PartitionStatus.class))
+    assertThat(partitions)
         .as("broker %d should report entries for the expected partitions", nodeId)
         .containsOnlyKeys(expectedPartitionIds);
   }

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
@@ -18,7 +17,6 @@ import io.camunda.zeebe.broker.engine.impl.LongPollingJobNotification;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
-import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -35,8 +33,9 @@ import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupApiRequestHandlerStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupServiceTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionTransitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.InterPartitionCommandReceiverStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.InterPartitionCommandServiceStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionTransitionStep;
@@ -46,9 +45,8 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPart
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
-import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -62,7 +60,6 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 final class PartitionFactory {
 
@@ -74,9 +71,10 @@ final class PartitionFactory {
       List.of(
           new LogStoragePartitionTransitionStep(),
           new LogStreamPartitionTransitionStep(),
-          new InterPartitionCommandReceiverStep(),
+          new InterPartitionCommandServiceStep(),
           new ZeebeDbPartitionTransitionStep(),
           new QueryServicePartitionTransitionStep(),
+          new BackupServiceTransitionStep(),
           new StreamProcessorTransitionStep(),
           new SnapshotDirectorPartitionTransitionStep(),
           new ExporterDirectorPartitionTransitionStep(),
@@ -131,11 +129,9 @@ final class PartitionFactory {
     final List<RaftPartition> owningPartitions =
         partitionGroup.getPartitionsWithMember(nodeId).stream()
             .map(RaftPartition.class::cast)
-            .collect(Collectors.toList());
+            .toList();
 
-    final var typedRecordProcessorsFactory =
-        createFactory(
-            topologyManager, localBroker, communicationService, eventService, featureFlags);
+    final var typedRecordProcessorsFactory = createFactory(localBroker, eventService, featureFlags);
 
     for (final RaftPartition owningPartition : owningPartitions) {
       final var partitionId = owningPartition.id().id();
@@ -166,7 +162,8 @@ final class PartitionFactory {
               exporterRepository,
               new PartitionProcessingState(owningPartition),
               diskSpaceUsageMonitor,
-              gatewayBrokerTransport);
+              gatewayBrokerTransport,
+              topologyManager);
 
       final PartitionTransition newTransitionBehavior =
           new PartitionTransitionImpl(TRANSITION_STEPS);
@@ -202,20 +199,12 @@ final class PartitionFactory {
   }
 
   private TypedRecordProcessorsFactory createFactory(
-      final TopologyManager topologyManager,
       final BrokerInfo localBroker,
-      final ClusterCommunicationService communicationService,
       final ClusterEventService eventService,
       final FeatureFlags featureFlags) {
-    return (recordProcessorContext) -> {
-      final var scheduleService = recordProcessorContext.getScheduleService();
-
-      final TopologyPartitionListenerImpl partitionListener =
-          new TopologyPartitionListenerImpl(scheduleService);
-      topologyManager.addTopologyPartitionListener(partitionListener);
-
-      final InterPartitionCommandSenderImpl partitionCommandSender =
-          new InterPartitionCommandSenderImpl(communicationService, partitionListener);
+    return recordProcessorContext -> {
+      final InterPartitionCommandSender partitionCommandSender =
+          recordProcessorContext.getPartitionCommandSender();
       final SubscriptionCommandSender subscriptionCommandSender =
           new SubscriptionCommandSender(
               recordProcessorContext.getPartitionId(), partitionCommandSender);
@@ -226,22 +215,13 @@ final class PartitionFactory {
       final LongPollingJobNotification jobsAvailableNotification =
           new LongPollingJobNotification(eventService);
 
-      final var processor =
-          EngineProcessors.createEngineProcessors(
-              recordProcessorContext,
-              localBroker.getPartitionsCount(),
-              subscriptionCommandSender,
-              deploymentDistributionCommandSender,
-              jobsAvailableNotification::onJobsAvailable,
-              featureFlags);
-
-      return processor.withListener(
-          new StreamProcessorLifecycleAware() {
-            @Override
-            public void onClose() {
-              topologyManager.removeTopologyPartitionListener(partitionListener);
-            }
-          });
+      return EngineProcessors.createEngineProcessors(
+          recordProcessorContext,
+          localBroker.getPartitionsCount(),
+          subscriptionCommandSender,
+          deploymentDistributionCommandSender,
+          jobsAvailableNotification::onJobsAvailable,
+          featureFlags);
     };
   }
 }

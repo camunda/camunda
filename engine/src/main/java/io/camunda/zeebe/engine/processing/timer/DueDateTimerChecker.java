@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.timer;
 
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedCommandWriter;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
@@ -66,7 +66,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
   }
 
   protected static final class TriggerTimersSideEffect
-      implements Function<LegacyTypedCommandWriter, Long> {
+      implements Function<TaskResultBuilder, Long> {
 
     private final ActorClock actorClock;
 
@@ -83,7 +83,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
     }
 
     @Override
-    public Long apply(final LegacyTypedCommandWriter legacyTypedCommandWriter) {
+    public Long apply(final TaskResultBuilder taskResultBuilder) {
       final var now = actorClock.getTimeMillis();
 
       final var yieldAfter = now + Math.round(TIMER_RESOLUTION * GIVE_YIELD_FACTOR);
@@ -92,11 +92,9 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
       if (yieldControl) {
         timerVisitor =
             new YieldingDecorator(
-                actorClock,
-                yieldAfter,
-                new WriteTriggerTimerCommandVisitor(legacyTypedCommandWriter));
+                actorClock, yieldAfter, new WriteTriggerTimerCommandVisitor(taskResultBuilder));
       } else {
-        timerVisitor = new WriteTriggerTimerCommandVisitor(legacyTypedCommandWriter);
+        timerVisitor = new WriteTriggerTimerCommandVisitor(taskResultBuilder);
       }
 
       return timerInstanceState.processTimersWithDueDateBefore(now, timerVisitor);
@@ -107,11 +105,10 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
 
     private final TimerRecord timerRecord = new TimerRecord();
 
-    private final LegacyTypedCommandWriter legacyTypedCommandWriter;
+    private final TaskResultBuilder taskResultBuilder;
 
-    public WriteTriggerTimerCommandVisitor(
-        final LegacyTypedCommandWriter legacyTypedCommandWriter) {
-      this.legacyTypedCommandWriter = legacyTypedCommandWriter;
+    public WriteTriggerTimerCommandVisitor(final TaskResultBuilder taskResultBuilder) {
+      this.taskResultBuilder = taskResultBuilder;
     }
 
     @Override
@@ -125,11 +122,9 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
           .setRepetitions(timer.getRepetitions())
           .setProcessDefinitionKey(timer.getProcessDefinitionKey());
 
-      legacyTypedCommandWriter.reset();
-      legacyTypedCommandWriter.appendFollowUpCommand(
-          timer.getKey(), TimerIntent.TRIGGER, timerRecord);
+      taskResultBuilder.appendCommandRecord(timer.getKey(), TimerIntent.TRIGGER, timerRecord);
 
-      return legacyTypedCommandWriter.flush() > 0; // means the write was successful
+      return true;
     }
   }
 

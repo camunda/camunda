@@ -11,7 +11,7 @@ import static io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder.key
 import static io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder.partitionIdNullValue;
 import static io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder.valueHeaderLength;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;

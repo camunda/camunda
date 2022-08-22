@@ -60,10 +60,18 @@ final class InterceptorIT {
         AtomixCluster.builder()
             .withAddress(Address.from(clusterAddress.getHostName(), clusterAddress.getPort()))
             .build();
-    gateway = new Gateway(config, this::getBrokerClient, scheduler);
+    final var brokerClient =
+        new BrokerClientImpl(
+            config,
+            cluster.getMessagingService(),
+            cluster.getMembershipService(),
+            cluster.getEventService(),
+            scheduler);
+    gateway = new Gateway(config, brokerClient, scheduler);
 
     cluster.start().join();
     scheduler.start();
+    brokerClient.start();
 
     // gateway is purposefully not started to allow configuration changes
   }
@@ -120,15 +128,6 @@ final class InterceptorIT {
 
     // then
     assertThat(ContextInspectingInterceptor.CONTEXT_QUERY_API.get()).isNotNull();
-  }
-
-  private BrokerClientImpl getBrokerClient(final GatewayCfg gatewayConfig) {
-    return new BrokerClientImpl(
-        gatewayConfig,
-        cluster.getMessagingService(),
-        cluster.getMembershipService(),
-        cluster.getEventService(),
-        scheduler);
   }
 
   private ZeebeClient createZeebeClient() {

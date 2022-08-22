@@ -36,9 +36,11 @@ public final class ProcessProcessor
   private final BpmnProcessResultSenderBehavior processResultSenderBehavior;
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
 
-  public ProcessProcessor(final BpmnBehaviors bpmnBehaviors) {
+  public ProcessProcessor(
+      final BpmnBehaviors bpmnBehaviors,
+      final BpmnStateTransitionBehavior stateTransitionBehavior) {
     stateBehavior = bpmnBehaviors.stateBehavior();
-    stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
+    this.stateTransitionBehavior = stateTransitionBehavior;
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     processResultSenderBehavior = bpmnBehaviors.processResultSenderBehavior();

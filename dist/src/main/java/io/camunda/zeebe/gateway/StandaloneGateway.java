@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -38,6 +37,7 @@ import org.springframework.context.event.ContextClosedEvent;
  * <p>See {@link #main(String[])} for more.
  */
 @SpringBootApplication(
+    proxyBeanMethods = false,
     scanBasePackages = {
       "io.camunda.zeebe.gateway",
       "io.camunda.zeebe.shared",
@@ -52,6 +52,7 @@ public class StandaloneGateway
   private final SpringGatewayBridge springGatewayBridge;
   private final ActorScheduler actorScheduler;
   private final AtomixCluster atomixCluster;
+  private final BrokerClient brokerClient;
 
   private Gateway gateway;
 
@@ -60,11 +61,13 @@ public class StandaloneGateway
       final GatewayCfg configuration,
       final SpringGatewayBridge springGatewayBridge,
       final ActorScheduler actorScheduler,
-      final AtomixCluster atomixCluster) {
+      final AtomixCluster atomixCluster,
+      final BrokerClient brokerClient) {
     this.configuration = configuration;
     this.springGatewayBridge = springGatewayBridge;
     this.actorScheduler = actorScheduler;
     this.atomixCluster = atomixCluster;
+    this.brokerClient = brokerClient;
   }
 
   public static void main(final String[] args) {
@@ -91,7 +94,7 @@ public class StandaloneGateway
       LOG.info("Starting standalone gateway with configuration {}", configuration.toJson());
     }
 
-    gateway = new Gateway(configuration, this::createBrokerClient, actorScheduler);
+    gateway = new Gateway(configuration, brokerClient, actorScheduler);
 
     springGatewayBridge.registerBrokerClientSupplier(gateway::getBrokerClient);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
@@ -103,6 +106,7 @@ public class StandaloneGateway
 
     actorScheduler.start();
     atomixCluster.start();
+    brokerClient.start();
     gateway.start().join(30, TimeUnit.SECONDS);
   }
 
@@ -138,14 +142,5 @@ public class StandaloneGateway
     }
 
     LogManager.shutdown();
-  }
-
-  private BrokerClient createBrokerClient(final GatewayCfg config) {
-    return new BrokerClientImpl(
-        config,
-        atomixCluster.getMessagingService(),
-        atomixCluster.getMembershipService(),
-        atomixCluster.getEventService(),
-        actorScheduler);
   }
 }

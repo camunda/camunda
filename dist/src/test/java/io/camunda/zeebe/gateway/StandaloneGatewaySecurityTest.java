@@ -132,11 +132,13 @@ final class StandaloneGatewaySecurityTest {
     final AtomixComponent clusterComponent = new AtomixComponent(gatewayCfg);
     final ActorSchedulerComponent actorSchedulerComponent =
         new ActorSchedulerComponent(gatewayCfg, new ActorClockConfiguration(false));
+    final var atomixCluster = clusterComponent.createAtomixCluster();
+    final var actorScheduler = actorSchedulerComponent.createActorSchedulingService();
+    final BrokerClientComponent brokerClientComponent =
+        new BrokerClientComponent(gatewayCfg, atomixCluster, actorScheduler);
+    final var brokerClient = brokerClientComponent.createBrokerClient();
 
     return new StandaloneGateway(
-        gatewayCfg,
-        new SpringGatewayBridge(),
-        actorSchedulerComponent.createActorSchedulingService(),
-        clusterComponent.createAtomixCluster());
+        gatewayCfg, new SpringGatewayBridge(), actorScheduler, atomixCluster, brokerClient);
   }
 }

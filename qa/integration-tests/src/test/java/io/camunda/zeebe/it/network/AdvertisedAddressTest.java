@@ -9,8 +9,8 @@ package io.camunda.zeebe.it.network;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.ZeebeGatewayNode;
 import io.zeebe.containers.ZeebeNode;
@@ -107,7 +107,9 @@ final class AdvertisedAddressTest {
               .map(ContainerProxy::getOriginalProxyPort)
               .toList();
       TopologyAssert.assertThat(topology)
-          .isComplete(3, 1, 3)
+          .hasClusterSize(3)
+          .hasExpectedReplicasCount(1, 3)
+          .hasLeaderForEachPartition(1)
           .hasBrokerSatisfying(
               b ->
                   assertThat(b.getAddress())

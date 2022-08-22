@@ -33,10 +33,11 @@ public final class InclusiveGatewayProcessor
   private final BpmnIncidentBehavior incidentBehavior;
   private final ExpressionProcessor expressionBehavior;
 
-  public InclusiveGatewayProcessor(final BpmnBehaviors behaviors) {
+  public InclusiveGatewayProcessor(
+      final BpmnBehaviors behaviors, final BpmnStateTransitionBehavior stateTransitionBehavior) {
     expressionBehavior = behaviors.expressionBehavior();
     incidentBehavior = behaviors.incidentBehavior();
-    stateTransitionBehavior = behaviors.stateTransitionBehavior();
+    this.stateTransitionBehavior = stateTransitionBehavior;
   }
 
   @Override

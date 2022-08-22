@@ -23,8 +23,10 @@ public final class EventBasedGatewayProcessor
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
 
-  public EventBasedGatewayProcessor(final BpmnBehaviors bpmnBehaviors) {
-    stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
+  public EventBasedGatewayProcessor(
+      final BpmnBehaviors bpmnBehaviors,
+      final BpmnStateTransitionBehavior stateTransitionBehavior) {
+    this.stateTransitionBehavior = stateTransitionBehavior;
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
   }

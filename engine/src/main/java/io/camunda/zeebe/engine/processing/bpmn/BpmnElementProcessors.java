@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.container.CallActivityProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.container.EventSubProcessProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.container.MultiInstanceBodyProcessor;
@@ -36,42 +37,77 @@ public final class BpmnElementProcessors {
   private final Map<BpmnElementType, BpmnElementProcessor<?>> processors =
       new EnumMap<>(BpmnElementType.class);
 
-  public BpmnElementProcessors(final BpmnBehaviors bpmnBehaviors) {
+  public BpmnElementProcessors(
+      final BpmnBehaviors bpmnBehaviors,
+      final BpmnStateTransitionBehavior stateTransitionBehavior) {
     // tasks
-    processors.put(BpmnElementType.SERVICE_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
     processors.put(
-        BpmnElementType.BUSINESS_RULE_TASK, new BusinessRuleTaskProcessor(bpmnBehaviors));
-    processors.put(BpmnElementType.SCRIPT_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
-    processors.put(BpmnElementType.SEND_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
-    processors.put(BpmnElementType.USER_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
-    processors.put(BpmnElementType.RECEIVE_TASK, new ReceiveTaskProcessor(bpmnBehaviors));
-    processors.put(BpmnElementType.MANUAL_TASK, new ManualTaskProcessor(bpmnBehaviors));
+        BpmnElementType.SERVICE_TASK,
+        new JobWorkerTaskProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.BUSINESS_RULE_TASK,
+        new BusinessRuleTaskProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.SCRIPT_TASK,
+        new JobWorkerTaskProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.SEND_TASK,
+        new JobWorkerTaskProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.USER_TASK,
+        new JobWorkerTaskProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.RECEIVE_TASK,
+        new ReceiveTaskProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.MANUAL_TASK,
+        new ManualTaskProcessor(bpmnBehaviors, stateTransitionBehavior));
 
     // gateways
-    processors.put(BpmnElementType.EXCLUSIVE_GATEWAY, new ExclusiveGatewayProcessor(bpmnBehaviors));
-    processors.put(BpmnElementType.PARALLEL_GATEWAY, new ParallelGatewayProcessor(bpmnBehaviors));
     processors.put(
-        BpmnElementType.EVENT_BASED_GATEWAY, new EventBasedGatewayProcessor(bpmnBehaviors));
-    processors.put(BpmnElementType.INCLUSIVE_GATEWAY, new InclusiveGatewayProcessor(bpmnBehaviors));
+        BpmnElementType.EXCLUSIVE_GATEWAY,
+        new ExclusiveGatewayProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.PARALLEL_GATEWAY,
+        new ParallelGatewayProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.EVENT_BASED_GATEWAY,
+        new EventBasedGatewayProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.INCLUSIVE_GATEWAY,
+        new InclusiveGatewayProcessor(bpmnBehaviors, stateTransitionBehavior));
 
     // containers
-    processors.put(BpmnElementType.PROCESS, new ProcessProcessor(bpmnBehaviors));
-    processors.put(BpmnElementType.SUB_PROCESS, new SubProcessProcessor(bpmnBehaviors));
-    processors.put(BpmnElementType.EVENT_SUB_PROCESS, new EventSubProcessProcessor(bpmnBehaviors));
     processors.put(
-        BpmnElementType.MULTI_INSTANCE_BODY, new MultiInstanceBodyProcessor(bpmnBehaviors));
-    processors.put(BpmnElementType.CALL_ACTIVITY, new CallActivityProcessor(bpmnBehaviors));
+        BpmnElementType.PROCESS, new ProcessProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.SUB_PROCESS,
+        new SubProcessProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.EVENT_SUB_PROCESS,
+        new EventSubProcessProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.MULTI_INSTANCE_BODY,
+        new MultiInstanceBodyProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.CALL_ACTIVITY,
+        new CallActivityProcessor(bpmnBehaviors, stateTransitionBehavior));
 
     // events
-    processors.put(BpmnElementType.START_EVENT, new StartEventProcessor(bpmnBehaviors));
+    processors.put(
+        BpmnElementType.START_EVENT,
+        new StartEventProcessor(bpmnBehaviors, stateTransitionBehavior));
     processors.put(
         BpmnElementType.INTERMEDIATE_CATCH_EVENT,
-        new IntermediateCatchEventProcessor(bpmnBehaviors));
+        new IntermediateCatchEventProcessor(bpmnBehaviors, stateTransitionBehavior));
     processors.put(
         BpmnElementType.INTERMEDIATE_THROW_EVENT,
-        new IntermediateThrowEventProcessor(bpmnBehaviors));
-    processors.put(BpmnElementType.END_EVENT, new EndEventProcessor(bpmnBehaviors));
-    processors.put(BpmnElementType.BOUNDARY_EVENT, new BoundaryEventProcessor(bpmnBehaviors));
+        new IntermediateThrowEventProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.END_EVENT, new EndEventProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.BOUNDARY_EVENT,
+        new BoundaryEventProcessor(bpmnBehaviors, stateTransitionBehavior));
   }
 
   public <T extends ExecutableFlowElement> BpmnElementProcessor<T> getProcessor(

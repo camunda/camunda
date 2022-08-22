@@ -29,4 +29,6 @@ public interface RecordProcessorContext {
   List<StreamProcessorLifecycleAware> getLifecycleListeners();
 
   void addLifecycleListeners(final List<StreamProcessorLifecycleAware> lifecycleListeners);
+
+  InterPartitionCommandSender getPartitionCommandSender();
 }

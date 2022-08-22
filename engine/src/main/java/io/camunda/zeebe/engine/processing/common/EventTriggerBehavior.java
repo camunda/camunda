@@ -61,7 +61,7 @@ public class EventTriggerBehavior {
 
   private void unsubscribeEventSubprocesses(final BpmnElementContext context) {
     final var sideEffectQueue = new SideEffectQueue();
-    catchEventBehavior.unsubscribeEventSubprocesses(context, commandWriter, sideEffectQueue);
+    catchEventBehavior.unsubscribeEventSubprocesses(context, sideEffectQueue);
 
     // side effect can immediately executed, since on restart we not reprocess anymore the commands
     sideEffectQueue.flush();

@@ -12,6 +12,13 @@ import org.agrona.DirectBuffer;
 
 public interface DeploymentState {
 
+  /**
+   * Returns whether there are any deployment distributions pending for a deployment.
+   *
+   * @param deploymentKey the key of the deployment that may have a pending distribution
+   * @return {@code true} if a pending deployment for the deployment key exists, otherwise {@code
+   *     false}.
+   */
   boolean hasPendingDeploymentDistribution(long deploymentKey);
 
   boolean hasPendingDeploymentDistribution(long deploymentKey, int partitionId);

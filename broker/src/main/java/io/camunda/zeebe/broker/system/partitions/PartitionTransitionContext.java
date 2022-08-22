@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
@@ -18,10 +20,11 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
+import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -82,6 +85,10 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   void setPartitionCommandReceiver(InterPartitionCommandReceiverActor receiver);
 
+  InterPartitionCommandSenderService getPartitionCommandSender();
+
+  void setPartitionCommandSender(InterPartitionCommandSenderService sender);
+
   boolean shouldExport();
 
   Collection<ExporterDescriptor> getExportedDescriptors();
@@ -105,4 +112,12 @@ public interface PartitionTransitionContext extends PartitionContext {
   BackupApiRequestHandler getBackupApiRequestHandler();
 
   void setBackupApiRequestHandler(BackupApiRequestHandler backupApiRequestHandler);
+
+  BackupManager getBackupManager();
+
+  void setBackupManager(BackupManager backupManager);
+
+  CheckpointRecordsProcessor getCheckpointProcessor();
+
+  void setCheckpointProcessor(CheckpointRecordsProcessor checkpointRecordsProcessor);
 }

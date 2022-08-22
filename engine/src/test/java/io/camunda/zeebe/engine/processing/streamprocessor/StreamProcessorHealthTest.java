@@ -13,7 +13,6 @@ import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
@@ -26,6 +25,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.streamprocessor.LegacyTypedStreamWriter;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.concurrent.TimeUnit;
@@ -195,10 +195,16 @@ public class StreamProcessorHealthTest {
   private final class WrappedStreamWriterLegacy implements LegacyTypedStreamWriter {
 
     @Override
-    public void appendRejection(
-        final TypedRecord<? extends RecordValue> command,
-        final RejectionType type,
-        final String reason) {}
+    public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {}
+
+    @Override
+    public int getMaxEventLength() {
+      return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public void appendFollowUpCommand(
+        final long key, final Intent intent, final RecordValue value) {}
 
     @Override
     public void appendRecord(
@@ -215,21 +221,6 @@ public class StreamProcessorHealthTest {
 
     @Override
     public void configureSourceContext(final long sourceRecordPosition) {}
-
-    @Override
-    public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {}
-
-    @Override
-    public int getMaxEventLength() {
-      return Integer.MAX_VALUE;
-    }
-
-    @Override
-    public void appendNewCommand(final Intent intent, final RecordValue value) {}
-
-    @Override
-    public void appendFollowUpCommand(
-        final long key, final Intent intent, final RecordValue value) {}
 
     @Override
     public void reset() {}

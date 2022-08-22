@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -278,6 +279,13 @@ public final class ProcessInstanceClient {
       return this;
     }
 
+    public ProcessInstanceModificationClient terminateElement(final long elementInstanceKey) {
+      record.addTerminateInstruction(
+          new ProcessInstanceModificationTerminateInstruction()
+              .setElementInstanceKey(elementInstanceKey));
+      return this;
+    }
+
     public ProcessInstanceModificationClient expectRejection() {
       expectation = REJECTION_EXPECTATION;
       return this;
@@ -290,7 +298,11 @@ public final class ProcessInstanceClient {
           environmentRule.writeCommand(
               processInstanceKey, ProcessInstanceModificationIntent.MODIFY, record);
 
-      return expectation.apply(position);
+      if (expectation == REJECTION_EXPECTATION) {
+        return expectation.apply(processInstanceKey);
+      } else {
+        return expectation.apply(position);
+      }
     }
   }
 }

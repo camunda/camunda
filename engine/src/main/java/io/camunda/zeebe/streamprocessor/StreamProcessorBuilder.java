@@ -8,11 +8,10 @@
 package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.api.CommandResponseWriter;
+import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.LegacyTypedStreamWriterImpl;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -34,14 +33,14 @@ public final class StreamProcessorBuilder {
   private Function<LogStreamBatchWriter, LegacyTypedStreamWriter> typedStreamWriterFactory =
       LegacyTypedStreamWriterImpl::new;
 
-  private RecordProcessor recordProcessor;
+  private List<RecordProcessor> recordProcessors;
 
   public StreamProcessorBuilder() {
     streamProcessorContext = new StreamProcessorContext();
   }
 
-  public StreamProcessorBuilder recordProcessor(final RecordProcessor recordProcessor) {
-    this.recordProcessor = recordProcessor;
+  public StreamProcessorBuilder recordProcessors(final List<RecordProcessor> recordProcessors) {
+    this.recordProcessors = recordProcessors;
     return this;
   }
 
@@ -88,6 +87,12 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
+  public StreamProcessorBuilder partitionCommandSender(
+      final InterPartitionCommandSender interPartitionCommandSender) {
+    streamProcessorContext.partitionCommandSender(interPartitionCommandSender);
+    return this;
+  }
+
   public StreamProcessorContext getProcessingContext() {
     return streamProcessorContext;
   }
@@ -108,8 +113,8 @@ public final class StreamProcessorBuilder {
     return nodeId;
   }
 
-  public RecordProcessor getRecordProcessor() {
-    return recordProcessor;
+  public List<RecordProcessor> getRecordProcessors() {
+    return recordProcessors;
   }
 
   public Function<MutableZeebeState, EventApplier> getEventApplierFactory() {
@@ -127,6 +132,11 @@ public final class StreamProcessorBuilder {
     Objects.requireNonNull(streamProcessorContext.getLogStream(), "No log stream provided.");
     Objects.requireNonNull(zeebeDb, "No database provided.");
     Objects.requireNonNull(eventApplierFactory, "No factory for the event supplier provided.");
+    if (streamProcessorContext.getProcessorMode() == StreamProcessorMode.PROCESSING) {
+      Objects.requireNonNull(
+          streamProcessorContext.getPartitionCommandSender(),
+          "No partition command sender provided");
+    }
   }
 
   public Function<LogStreamBatchWriter, LegacyTypedStreamWriter> getTypedStreamWriterFactory() {

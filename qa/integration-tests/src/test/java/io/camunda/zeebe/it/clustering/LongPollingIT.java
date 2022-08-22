@@ -7,98 +7,134 @@
  */
 package io.camunda.zeebe.it.clustering;
 
-import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
+import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
-import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.process.test.assertions.BpmnAssert;
+import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.qa.util.actuator.LoggersActuator;
+import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
+import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.test.util.record.JobBatchRecordStream;
+import io.zeebe.containers.ZeebeGatewayNode;
+import io.zeebe.containers.ZeebePort;
 import io.zeebe.containers.cluster.ZeebeCluster;
+import io.zeebe.containers.engine.ContainerEngine;
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.StreamSupport;
 import org.agrona.CloseHelper;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 import org.testcontainers.containers.Network;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 final class LongPollingIT {
-  private static final Logger LOGGER = LoggerFactory.getLogger(LongPollingIT.class);
-  private static final BpmnModelInstance PROCESS =
-      Bpmn.createExecutableProcess("process")
-          .startEvent()
-          .serviceTask("task", t -> t.zeebeJobType("foo"))
-          .endEvent()
-          .done();
-
-  private Network network;
-  private ZeebeCluster cluster;
-
-  @SuppressWarnings("unused")
-  @RegisterExtension
-  final ContainerLogsDumper gatewayLogsWatcher =
-      new ContainerLogsDumper(() -> cluster.getGateways(), LOGGER);
+  private final Network network = Network.newNetwork();
+  private final ZeebeCluster cluster =
+      ZeebeCluster.builder()
+          .withBrokersCount(1)
+          .withGatewaysCount(1)
+          .withPartitionsCount(1)
+          .withEmbeddedGateway(false)
+          .withImage(ZeebeTestContainerDefaults.defaultTestImage())
+          .withGatewayConfig(this::configureGateway)
+          .build();
 
   @SuppressWarnings("unused")
   @RegisterExtension
-  final ContainerLogsDumper brokerLogsWatcher =
-      new ContainerLogsDumper(() -> cluster.getBrokers(), LOGGER);
+  final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(cluster::getNodes);
+
+  @Container
+  private final ContainerEngine engine =
+      ContainerEngine.builder().withCluster(cluster).withIdlePeriod(Duration.ofSeconds(5)).build();
 
   @BeforeEach
   void beforeEach() {
-    network = Network.newNetwork();
+    // set log level for long polling to trace to have more debugging info when the test fails
+    for (final var gateway : cluster.getGateways().values()) {
+      LoggersActuator.of(gateway).set(Loggers.LONG_POLLING.getName(), Level.TRACE);
+    }
   }
 
   @AfterEach
   void afterEach() {
-    CloseHelper.quietCloseAll(cluster, network);
+    CloseHelper.quietCloseAll(network);
   }
 
   // regression test of https://github.com/camunda/zeebe/issues/9658
   @Test
-  void shouldActivateAndCompleteJobsInTime() {
+  void shouldActivateAndCompleteJobsInTime() throws InterruptedException, TimeoutException {
     // given
-    cluster =
-        ZeebeCluster.builder()
-            .withBrokersCount(1)
-            .withGatewaysCount(1)
-            .withEmbeddedGateway(false)
-            .withPartitionsCount(3)
-            .withReplicationFactor(1)
-            .withImage(ZeebeTestContainerDefaults.defaultTestImage())
-            .build();
-    cluster.start();
-    final var zeebeClient = cluster.newClientBuilder().build();
-    final var deploymentEvent =
-        zeebeClient
-            .newDeployResourceCommand()
-            .addProcessModel(PROCESS, "process.bpmn")
-            .send()
-            .join();
-    // open the worker first and cause so to run into long polling mode
-    zeebeClient
-        .newWorker()
-        .jobType("foo")
-        .handler((c, j) -> c.newCompleteCommand(j).send())
-        .timeout(Duration.ofSeconds(10))
-        .pollInterval(Duration.ofMillis(10))
-        .open();
+    final var process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("foo"))
+            .endEvent()
+            .done();
 
-    // when
-    final var resultZeebeFuture =
-        zeebeClient
-            .newCreateInstanceCommand()
-            .processDefinitionKey(deploymentEvent.getProcesses().get(0).getProcessDefinitionKey())
-            .withResult()
-            .send();
+    try (final var client = engine.createClient()) {
+      final var deploymentEvent =
+          client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
 
-    // then
-    Assertions.assertThat((CompletionStage<ProcessInstanceResult>) resultZeebeFuture)
-        .succeedsWithin(2, TimeUnit.SECONDS)
-        .isNotNull();
+      // when - send the ActivateJobs request first, before the process instance is created
+      final var jobs =
+          client
+              .newActivateJobsCommand()
+              .jobType("foo")
+              .maxJobsToActivate(1)
+              .requestTimeout(Duration.ofSeconds(30))
+              .send();
+
+      // wait until the first activate command before starting the process instance to ensure long
+      // polling will come in effect
+      engine.waitForIdleState(Duration.ofSeconds(30));
+      records()
+          .withIntent(JobBatchIntent.ACTIVATE)
+          .findFirst()
+          .orElseThrow(
+              () ->
+                  new IllegalStateException(
+                      "Expected at least one job batch ACTIVATE command, but none found"));
+      client
+          .newCreateInstanceCommand()
+          .processDefinitionKey(deploymentEvent.getProcesses().get(0).getProcessDefinitionKey())
+          .requestTimeout(Duration.ofMinutes(1))
+          .send()
+          .join();
+
+      // then - ensure that we tried to activate before the job was created, and that we activated
+      // it AGAIN after it was created, without the client sending a new request
+      engine.waitForIdleState(Duration.ofSeconds(30));
+      assertThat(records().withIntent(JobBatchIntent.ACTIVATE).limit(2))
+          .as("long polling should trigger a second ACTIVATE command without the client doing so")
+          .hasSize(2);
+      assertThat((CompletionStage<ActivateJobsResponse>) jobs)
+          .succeedsWithin(30, TimeUnit.SECONDS)
+          .extracting(ActivateJobsResponse::getJobs)
+          .asList()
+          .hasSize(1);
+    }
+  }
+
+  private JobBatchRecordStream records() {
+    return new JobBatchRecordStream(
+        StreamSupport.stream(BpmnAssert.getRecordStream().jobBatchRecords().spliterator(), false));
+  }
+
+  private void configureGateway(final ZeebeGatewayNode<?> gateway) {
+    gateway
+        .withEnv("ZEEBE_GATEWAY_LONGPOLLING_ENABLED", "true")
+        // https://github.com/camunda-community-hub/zeebe-test-container/issues/332
+        .addExposedPort(ZeebePort.MONITORING.getPort());
   }
 }

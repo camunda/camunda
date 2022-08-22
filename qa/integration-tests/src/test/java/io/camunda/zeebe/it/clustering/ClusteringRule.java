@@ -15,6 +15,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setCluster
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInitialContactPoints;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.AtomixClusterBuilder;
@@ -45,6 +46,7 @@ import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.Gateway;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
@@ -406,16 +408,19 @@ public final class ClusteringRule extends ExternalResource {
 
     actorScheduler.start();
 
-    final Gateway gateway =
-        new Gateway(
+    final var brokerClient =
+        new BrokerClientImpl(
             gatewayCfg,
             atomixCluster.getMessagingService(),
             atomixCluster.getMembershipService(),
             atomixCluster.getEventService(),
             actorScheduler);
+    brokerClient.start();
+    final Gateway gateway = new Gateway(gatewayCfg, brokerClient, actorScheduler);
     closeables.manage(actorScheduler::stop);
     closeables.manage(gateway::stop);
     closeables.manage(atomixCluster::stop);
+    closeables.manage(brokerClient);
     return gateway;
   }
 
@@ -598,27 +603,38 @@ public final class ClusteringRule extends ExternalResource {
     }
   }
 
-  public void forceClusterToHaveNewLeader(final int expectedLeader) {
-    final var previousLeader = getCurrentLeaderForPartition(1);
-    if (previousLeader.getNodeId() == expectedLeader) {
+  public void forceNewLeaderForPartition(final int expectedLeaderId, final int partitionId) {
+    final var previousLeader = getCurrentLeaderForPartition(partitionId);
+    final var expectedLeader = brokers.get(expectedLeaderId);
+
+    if (previousLeader.getNodeId() == expectedLeaderId) {
       return;
     }
 
-    final var broker = brokers.get(expectedLeader);
-    final var atomix = broker.getBrokerContext().getClusterServices();
-    final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
+    final var serverOfExpectedLeader =
+        ((RaftPartition)
+                expectedLeader
+                    .getBrokerContext()
+                    .getPartitionManager()
+                    .getPartitionGroup()
+                    .getPartition(partitionId))
+            .getServer();
 
-    final var raftPartition =
-        broker.getBrokerContext().getPartitionManager().getPartitionGroup().getPartitions().stream()
-            .filter(partition -> partition.members().contains(nodeId))
-            .filter(partition -> partition.id().id() == START_PARTITION_ID)
-            .map(RaftPartition.class::cast)
-            .findFirst()
-            .orElseThrow();
+    Awaitility.await("Promote request is successful")
+        .pollInterval(Duration.ofMillis(500))
+        .timeout(Duration.ofMinutes(1))
+        .untilAsserted(
+            () ->
+                assertThat(serverOfExpectedLeader.promote())
+                    .succeedsWithin(Duration.ofSeconds(15)));
 
-    raftPartition.getServer().promote().join();
-
-    awaitOtherLeader(START_PARTITION_ID, previousLeader.getNodeId());
+    Awaitility.await("New leader of partition %s is %s".formatted(partitionId, expectedLeaderId))
+        .pollInterval(Duration.ofMillis(500))
+        .atMost(Duration.ofMinutes(1))
+        .ignoreExceptions()
+        .until(
+            () -> getLeaderForPartition(partitionId),
+            (leader) -> leader.getNodeId() == expectedLeaderId);
   }
 
   public void waitForTopology(final Consumer<TopologyAssert> assertions) {
