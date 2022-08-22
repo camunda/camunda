@@ -8,7 +8,6 @@
 package io.camunda.zeebe.backup.s3;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.backup.api.Backup;
@@ -207,7 +206,11 @@ final class S3BackupStoreIT {
     Files.delete(backup.snapshot().files().stream().findFirst().orElseThrow());
 
     // then
-    assertThatCode(() -> store.save(backup)).hasCauseInstanceOf(NoSuchFileException.class);
+
+    //noinspection ResultOfMethodCallIgnored -- we only need to check the exception type
+    assertThat(store.save(backup))
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(NoSuchFileException.class);
   }
 
   @Test
