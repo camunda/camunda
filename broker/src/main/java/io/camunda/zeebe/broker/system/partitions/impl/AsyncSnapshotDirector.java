@@ -338,7 +338,8 @@ public final class AsyncSnapshotDirector extends Actor
           commitPosition,
           lastWrittenPosition,
           pendingSnapshot);
-      final var snapshotPersistFuture = pendingSnapshot.persist();
+      final var snapshotPersistFuture =
+          pendingSnapshot.withLastFollowupEventPosition(lastWrittenPosition).persist();
 
       snapshotPersistFuture.onComplete(
           (snapshot, persistError) -> {

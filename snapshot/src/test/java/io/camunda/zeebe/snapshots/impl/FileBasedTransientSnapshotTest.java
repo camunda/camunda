@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -68,7 +69,7 @@ public class FileBasedTransientSnapshotTest {
     final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
 
     // when
-    final var pathId = FileBasedSnapshotMetadata.ofPath(transientSnapshot.getPath()).orElseThrow();
+    final var pathId = FileBasedSnapshotId.ofPath(transientSnapshot.getPath()).orElseThrow();
 
     // then
     assertThat(pathId).isEqualTo(transientSnapshot.snapshotId());
@@ -316,6 +317,44 @@ public class FileBasedTransientSnapshotTest {
         .asInstanceOf(DirectoryAssert.factory())
         .as("snapshots directory only contains snapshot %s", firstSnapshot.getId())
         .isDirectoryContainingExactly(firstSnapshot.getPath(), firstSnapshot.getChecksumFile());
+  }
+
+  @Test
+  public void shouldAddMetadataToPersistedSnapshot() {
+    // given
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3, 4).get();
+    transientSnapshot.take(this::writeSnapshot).join();
+    // when
+    final var persistedSnapshot =
+        transientSnapshot.withLastFollowupEventPosition(100L).persist().join();
+
+    // then
+    final SnapshotMetadata metadata = persistedSnapshot.getMetadata();
+    assertThat(metadata)
+        .extracting(
+            SnapshotMetadata::processedPosition,
+            SnapshotMetadata::exportedPosition,
+            SnapshotMetadata::lastFollowupEventPosition,
+            SnapshotMetadata::version)
+        .containsExactly(3L, 4L, 100L, FileBasedSnapshotStore.VERSION);
+  }
+
+  @Test
+  public void shouldPersistMetadata() {
+    // given
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3, 4).get();
+    transientSnapshot.take(this::writeSnapshot).join();
+
+    // when
+    final var persistedSnapshot =
+        transientSnapshot.withLastFollowupEventPosition(100L).persist().join();
+
+    // then
+    assertThat(persistedSnapshot.getPath())
+        .describedAs("Metadata file is persisted in snapshot path")
+        .isDirectoryContaining(
+            path ->
+                path.getFileName().toString().equals(FileBasedSnapshotStore.METADATA_FILE_NAME));
   }
 
   private boolean writeSnapshot(final Path path) {

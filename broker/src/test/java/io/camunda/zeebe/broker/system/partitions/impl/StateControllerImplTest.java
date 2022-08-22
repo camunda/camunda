@@ -19,7 +19,7 @@ import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.SnapshotMetrics;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
@@ -193,9 +193,8 @@ public final class StateControllerImplTest {
         .extracting(PersistedSnapshot::getCompactionBound)
         .isEqualTo(firstSnapshot.getCompactionBound());
     assertThat(snapshot.getId()).isNotEqualTo(firstSnapshot.getId());
-    final var newSnapshotId = FileBasedSnapshotMetadata.ofFileName(snapshot.getId()).orElseThrow();
-    final var firstSnapshotId =
-        FileBasedSnapshotMetadata.ofFileName(firstSnapshot.getId()).orElseThrow();
+    final var newSnapshotId = FileBasedSnapshotId.ofFileName(snapshot.getId()).orElseThrow();
+    final var firstSnapshotId = FileBasedSnapshotId.ofFileName(firstSnapshot.getId()).orElseThrow();
     assertThat(firstSnapshotId).isLessThan(newSnapshotId);
   }
 
@@ -218,9 +217,8 @@ public final class StateControllerImplTest {
         .extracting(PersistedSnapshot::getCompactionBound)
         .isEqualTo(firstSnapshot.getCompactionBound());
     assertThat(snapshot.getId()).isNotEqualTo(firstSnapshot.getId());
-    final var newSnapshotId = FileBasedSnapshotMetadata.ofFileName(snapshot.getId()).orElseThrow();
-    final var firstSnapshotId =
-        FileBasedSnapshotMetadata.ofFileName(firstSnapshot.getId()).orElseThrow();
+    final var newSnapshotId = FileBasedSnapshotId.ofFileName(snapshot.getId()).orElseThrow();
+    final var firstSnapshotId = FileBasedSnapshotId.ofFileName(firstSnapshot.getId()).orElseThrow();
     assertThat(firstSnapshotId).isLessThan(newSnapshotId);
   }
 
