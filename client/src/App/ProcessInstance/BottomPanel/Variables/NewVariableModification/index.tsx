@@ -25,6 +25,7 @@ import {
   validateNameCharacters,
   validateModifiedNameComplete,
   validateModifiedValueComplete,
+  validateModifiedValueValid,
   validateModifiedNameNotDuplicate,
 } from '../validators';
 
@@ -69,7 +70,10 @@ const NewVariableModification: React.FC<Props> = ({variableName, onRemove}) => {
         <EditInputContainer>
           <Field
             name={valueFieldName}
-            validate={validateModifiedValueComplete}
+            validate={mergeValidators(
+              validateModifiedValueComplete,
+              validateModifiedValueValid
+            )}
             parse={(value) => value}
           >
             {({input, meta}) => (

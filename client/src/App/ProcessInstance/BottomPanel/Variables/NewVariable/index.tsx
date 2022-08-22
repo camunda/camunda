@@ -18,6 +18,7 @@ import {
   validateNameCharacters,
   validateNameComplete,
   validateNameNotDuplicate,
+  validateValueValid,
   validateValueComplete,
 } from '../validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
@@ -55,7 +56,7 @@ const NewVariable: React.FC = () => {
       <InputFieldContainer>
         <Field
           name="value"
-          validate={validateValueComplete}
+          validate={mergeValidators(validateValueComplete, validateValueValid)}
           parse={(value) => value}
         >
           {({input, meta}) => (

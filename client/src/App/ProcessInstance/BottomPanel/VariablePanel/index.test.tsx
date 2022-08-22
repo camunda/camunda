@@ -389,17 +389,15 @@ describe('VariablePanel', () => {
       headline: 'Variable could not be saved',
     });
 
-    expect(screen.getByText('Variable should be unique')).toBeInTheDocument();
+    expect(screen.getByText('Name should be unique')).toBeInTheDocument();
 
     await user.type(screen.getByTestId('add-variable-name'), '2');
-    expect(
-      screen.queryByText('Variable should be unique')
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Name should be unique')).not.toBeInTheDocument();
 
     await user.type(screen.getByTestId('add-variable-name'), '{backspace}');
 
     expect(
-      await screen.findByText('Variable should be unique')
+      await screen.findByText('Name should be unique')
     ).toBeInTheDocument();
   });
 

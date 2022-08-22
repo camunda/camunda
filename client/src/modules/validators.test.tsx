@@ -14,6 +14,7 @@ import {
   validateOperationIdComplete,
   validateVariableNameComplete,
   validateVariableValueComplete,
+  validateVariableValueValid,
   validateIdsLength,
   validateParentInstanceIdCharacters,
   validateParentInstanceIdNotTooLong,
@@ -369,16 +370,16 @@ describe('validators', () => {
   it('should validate variable name with delay', () => {
     expect(
       validateVariableNameComplete('', {variableValue: '"somethingValid"'})
-    ).resolves.toBe('Variable has to be filled');
+    ).resolves.toBe('Name has to be filled');
     expect(
       validateVariableNameComplete('', {variableValue: '123'})
-    ).resolves.toBe('Variable has to be filled');
+    ).resolves.toBe('Name has to be filled');
     expect(
       validateVariableNameComplete('', {variableValue: true})
-    ).resolves.toBe('Variable has to be filled');
+    ).resolves.toBe('Name has to be filled');
     expect(
       validateVariableNameComplete('', {variableValue: 'somethingInvalid'})
-    ).resolves.toBe('Variable has to be filled and Value has to be JSON');
+    ).resolves.toBe('Name has to be filled and Value has to be JSON');
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(4);
   });
@@ -395,6 +396,11 @@ describe('validators', () => {
       validateVariableValueComplete('"test"', {variableName: 'test'})
     ).toBeUndefined();
 
+    expect(
+      validateVariableValueValid('', {variableName: 'test'})
+    ).toBeUndefined();
+    expect(validateVariableValueComplete('a', {})).toBeUndefined();
+
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
   });
 
@@ -405,15 +411,15 @@ describe('validators', () => {
     expect(validateVariableValueComplete('{"test": true}', {})).toBeUndefined();
 
     expect(
-      validateVariableValueComplete('{"tes}', {variableName: 'test'})
+      validateVariableValueValid('{"tes}', {variableName: 'test'})
     ).resolves.toBe('Value has to be JSON');
 
     expect(
       validateVariableValueComplete('', {variableName: 'test'})
-    ).resolves.toBe('Value has to be JSON');
+    ).resolves.toBe('Value has to be filled');
 
-    expect(validateVariableValueComplete('a', {})).resolves.toBe(
-      'Variable has to be filled and Value has to be JSON'
+    expect(validateVariableValueValid('a', {})).resolves.toBe(
+      'Value has to be JSON'
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(3);

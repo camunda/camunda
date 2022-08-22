@@ -24,9 +24,9 @@ const ERRORS = {
   date: 'Date has to be in format YYYY-MM-DD hh:mm:ss',
   operationId: 'Id has to be a UUID',
   variables: {
-    nameUnfilled: 'Variable has to be filled',
+    nameUnfilled: 'Name has to be filled',
+    valueUnfilled: 'Value has to be filled',
     valueInvalid: 'Value has to be JSON',
-    bothInvalid: 'Variable has to be filled and Value has to be JSON',
   },
 } as const;
 
@@ -179,20 +179,24 @@ const validateVariableValueComplete: FieldValidator<
   (variableValue = '', allValues: {variableName?: string} | undefined) => {
     const variableName = allValues?.variableName ?? '';
 
-    if (variableName === '' && variableValue === '') {
-      return undefined;
+    if ((variableName === '' && variableValue === '') || variableValue !== '') {
+      return;
     }
 
-    if (variableName !== '' && isValidJSON(variableValue)) {
-      return undefined;
-    }
-
-    if (!isValidJSON(variableValue)) {
-      return ERRORS.variables.valueInvalid;
-    }
+    return ERRORS.variables.valueUnfilled;
   },
   VALIDATION_TIMEOUT
 );
+
+const validateVariableValueValid: FieldValidator<
+  ProcessInstanceFilters['variableValue']
+> = promisifyValidator((variableValue = '') => {
+  if (variableValue === '' || isValidJSON(variableValue)) {
+    return undefined;
+  }
+
+  return ERRORS.variables.valueInvalid;
+}, VALIDATION_TIMEOUT);
 
 const validateOperationIdCharacters: FieldValidator<
   ProcessInstanceFilters['operationId']
@@ -229,6 +233,7 @@ export {
   validateVariableNameCharacters,
   validateVariableNameComplete,
   validateVariableValueComplete,
+  validateVariableValueValid,
   validateDecisionIdsCharacters,
   validateDecisionIdsLength,
   validatesDecisionIdsComplete,

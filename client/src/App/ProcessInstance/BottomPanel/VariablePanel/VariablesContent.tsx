@@ -97,7 +97,7 @@ const VariablesContent: React.FC = observer(() => {
           if (initialValues.name === '') {
             const result = await variablesStore.addVariable(params);
             if (result === 'VALIDATION_ERROR') {
-              return {name: 'Variable should be unique'};
+              return {name: 'Name should be unique'};
             }
           } else if (initialValues.name === name) {
             variablesStore.updateVariable(params);

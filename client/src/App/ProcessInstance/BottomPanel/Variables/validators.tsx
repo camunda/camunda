@@ -117,15 +117,24 @@ const validateValueComplete: FieldValidator<string | undefined> =
 
       if (
         (variableName === '' && variableValue === '') ||
-        isValidJSON(variableValue)
+        variableValue !== ''
       ) {
         return;
       }
 
-      return ERRORS.INVALID_VALUE;
+      return ERRORS.EMPTY_VALUE;
     },
     VALIDATION_DELAY
   );
+
+const validateValueValid: FieldValidator<string | undefined> =
+  promisifyValidator((variableValue = '') => {
+    if (variableValue === '' || isValidJSON(variableValue)) {
+      return;
+    }
+
+    return ERRORS.INVALID_VALUE;
+  }, VALIDATION_DELAY);
 
 const validateModifiedValueComplete: FieldValidator<string | undefined> =
   promisifyValidator(
@@ -137,22 +146,33 @@ const validateModifiedValueComplete: FieldValidator<string | undefined> =
 
       if (
         (variableName === '' && variableValue === '') ||
-        isValidJSON(variableValue)
+        variableValue !== ''
       ) {
         return;
       }
 
-      return ERRORS.INVALID_VALUE;
+      return ERRORS.EMPTY_VALUE;
     },
     VALIDATION_DELAY
   );
+
+const validateModifiedValueValid: FieldValidator<string | undefined> =
+  promisifyValidator((variableValue = '') => {
+    if (variableValue === '' || isValidJSON(variableValue)) {
+      return;
+    }
+
+    return ERRORS.INVALID_VALUE;
+  }, VALIDATION_DELAY);
 
 export {
   validateNameCharacters,
   validateNameComplete,
   validateNameNotDuplicate,
   validateValueComplete,
+  validateValueValid,
   validateModifiedNameComplete,
   validateModifiedValueComplete,
+  validateModifiedValueValid,
   validateModifiedNameNotDuplicate,
 };

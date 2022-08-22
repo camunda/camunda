@@ -519,7 +519,7 @@ describe('Filters', () => {
       await user.type(screen.getByLabelText(/value/i), '"someValidValue"');
 
       expect(
-        await screen.findByText('Variable has to be filled')
+        await screen.findByText('Name has to be filled')
       ).toBeInTheDocument();
 
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
@@ -528,7 +528,7 @@ describe('Filters', () => {
       await user.type(screen.getByLabelText(/value/i), 'somethingInvalid');
 
       expect(
-        await screen.findByText('Variable has to be filled')
+        await screen.findByText('Name has to be filled')
       ).toBeInTheDocument();
 
       expect(
@@ -553,7 +553,7 @@ describe('Filters', () => {
       );
 
       expect(
-        await screen.findByText('Value has to be JSON')
+        await screen.findByText('Value has to be filled')
       ).toBeInTheDocument();
 
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
@@ -561,7 +561,7 @@ describe('Filters', () => {
       await user.clear(screen.getByTestId('optional-filter-variable-name'));
 
       expect(
-        screen.queryByText('Value has to be JSON')
+        screen.queryByText('Value has to be filled')
       ).not.toBeInTheDocument();
 
       await user.type(screen.getByLabelText(/value/i), 'invalidValue');
@@ -570,7 +570,7 @@ describe('Filters', () => {
         await screen.findByText('Value has to be JSON')
       ).toBeInTheDocument();
       expect(
-        await screen.findByText('Variable has to be filled')
+        await screen.findByText('Name has to be filled')
       ).toBeInTheDocument();
       expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
@@ -868,7 +868,7 @@ describe('Filters', () => {
       ).toBeInTheDocument();
 
       expect(
-        await screen.findByText('Variable has to be filled')
+        await screen.findByText('Name has to be filled')
       ).toBeInTheDocument();
 
       expect(
@@ -908,7 +908,7 @@ describe('Filters', () => {
       ).toBeInTheDocument();
 
       expect(
-        await screen.findByText('Value has to be JSON')
+        await screen.findByText('Value has to be filled')
       ).toBeInTheDocument();
 
       expect(

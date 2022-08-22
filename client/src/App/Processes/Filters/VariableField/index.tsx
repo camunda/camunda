@@ -12,6 +12,7 @@ import {
   validateVariableNameCharacters,
   validateVariableNameComplete,
   validateVariableValueComplete,
+  validateVariableValueValid,
 } from 'modules/validators';
 import {Field, useForm, useFormState} from 'react-final-form';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
@@ -44,7 +45,13 @@ const Variable: React.FC = observer(() => {
           />
         )}
       </Field>
-      <Field name="variableValue" validate={validateVariableValueComplete}>
+      <Field
+        name="variableValue"
+        validate={mergeValidators(
+          validateVariableValueComplete,
+          validateVariableValueValid
+        )}
+      >
         {({input, meta}) => (
           <VariableValueField
             {...input}

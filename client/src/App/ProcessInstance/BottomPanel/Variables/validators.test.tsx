@@ -9,6 +9,7 @@ import {
   validateNameCharacters,
   validateNameComplete,
   validateValueComplete,
+  validateValueValid,
 } from './validators';
 import {variablesStore} from 'modules/stores/variables';
 
@@ -102,12 +103,16 @@ describe('validators', () => {
 
     expect(validateValueComplete('false', {name: 'name'})).toBeUndefined();
 
-    expect(validateValueComplete('invalid json', {name: 'name'})).resolves.toBe(
-      'Invalid input text'
+    expect(
+      validateValueComplete('invalid json', {name: 'name'})
+    ).toBeUndefined();
+
+    expect(validateValueValid('invalid json', {name: 'name'})).resolves.toBe(
+      'Value has to be JSON'
     );
 
     expect(validateValueComplete('', {name: 'name'})).resolves.toBe(
-      'Invalid input text'
+      'Name has to be filled'
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);

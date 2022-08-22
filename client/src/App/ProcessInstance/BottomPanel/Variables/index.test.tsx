@@ -273,8 +273,12 @@ describe('Variables', () => {
       await user.type(screen.getByTestId('add-variable-value'), '    ');
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
-      expect(screen.queryByTitle('Invalid input text')).not.toBeInTheDocument();
-      expect(await screen.findByText('Invalid input text')).toBeInTheDocument();
+      expect(
+        screen.queryByTitle('Value has to be JSON')
+      ).not.toBeInTheDocument();
+      expect(
+        await screen.findByText('Value has to be JSON')
+      ).toBeInTheDocument();
     });
 
     it('should not allow empty characters in variable name', async () => {
@@ -317,17 +321,21 @@ describe('Variables', () => {
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
 
       expect(screen.getByText('Name has to be filled')).toBeInTheDocument();
-      expect(screen.queryByText('Invalid input text')).not.toBeInTheDocument();
-      expect(await screen.findByText('Invalid input text')).toBeInTheDocument();
+      expect(
+        screen.queryByText('Value has to be JSON')
+      ).not.toBeInTheDocument();
+      expect(
+        await screen.findByText('Value has to be JSON')
+      ).toBeInTheDocument();
 
       await user.type(screen.getByTestId('add-variable-name'), '   ');
 
-      expect(screen.getByText('Invalid input text')).toBeInTheDocument();
+      expect(screen.getByText('Value has to be JSON')).toBeInTheDocument();
       expect(await screen.findByText('Name is invalid')).toBeInTheDocument();
 
       await user.type(screen.getByTestId('add-variable-name'), ' test');
 
-      expect(screen.getByText('Invalid input text')).toBeInTheDocument();
+      expect(screen.getByText('Value has to be JSON')).toBeInTheDocument();
       expect(screen.getByText('Name is invalid')).toBeInTheDocument();
 
       await user.dblClick(screen.getByTestId('add-variable-value'));
@@ -336,7 +344,9 @@ describe('Variables', () => {
         '"valid value"'
       );
 
-      expect(screen.queryByText('Invalid input text')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Value has to be JSON')
+      ).not.toBeInTheDocument();
       expect(screen.getByText('Name is invalid')).toBeInTheDocument();
     });
 
@@ -370,17 +380,23 @@ describe('Variables', () => {
       expect(
         screen.queryByText('Name should be unique')
       ).not.toBeInTheDocument();
-      expect(screen.queryByText('Invalid input text')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Value has to be filled')
+      ).not.toBeInTheDocument();
       expect(
         await screen.findByText('Name should be unique')
       ).toBeInTheDocument();
-      expect(await screen.findByText('Invalid input text')).toBeInTheDocument();
+      expect(
+        await screen.findByText('Value has to be filled')
+      ).toBeInTheDocument();
 
       await user.type(screen.getByTestId('add-variable-value'), '123');
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
 
-      expect(screen.queryByText('Invalid input text')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Value has to be filled')
+      ).not.toBeInTheDocument();
       expect(screen.getByText('Name should be unique')).toBeInTheDocument();
 
       await user.dblClick(screen.getByTestId('add-variable-name'));
@@ -717,13 +733,19 @@ describe('Variables', () => {
       );
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
-      expect(screen.queryByText('Invalid input text')).not.toBeInTheDocument();
-      expect(await screen.findByText('Invalid input text')).toBeInTheDocument();
+      expect(
+        screen.queryByText('Value has to be JSON')
+      ).not.toBeInTheDocument();
+      expect(
+        await screen.findByText('Value has to be JSON')
+      ).toBeInTheDocument();
 
       await user.clear(screen.getByTestId('edit-variable-value'));
       await user.type(screen.getByTestId('edit-variable-value'), '123');
 
-      expect(screen.queryByText('Invalid input text')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Value has to be JSON')
+      ).not.toBeInTheDocument();
       await waitFor(() =>
         expect(screen.getByTitle(/save variable/i)).toBeEnabled()
       );

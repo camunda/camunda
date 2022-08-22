@@ -10,7 +10,8 @@ const ERRORS = {
   EMPTY_NAME: 'Name has to be filled',
   INVALID_NAME: 'Name is invalid',
   DUPLICATE_NAME: 'Name should be unique',
-  INVALID_VALUE: 'Invalid input text',
+  INVALID_VALUE: 'Value has to be JSON',
+  EMPTY_VALUE: 'Value has to be filled',
 } as const;
 
 export {VALIDATION_DELAY, ERRORS};

@@ -12,7 +12,7 @@ import {
   EditInputTD,
   EditInputContainer,
 } from './styled';
-import {validateValueComplete} from './validators';
+import {validateValueComplete, validateValueValid} from './validators';
 import {Field, useForm, useFormState} from 'react-final-form';
 import {useRef, useState} from 'react';
 import {EditButtons} from './EditButtons';
@@ -21,6 +21,7 @@ import {tracking} from 'modules/tracking';
 import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {createVariableFieldName} from './createVariableFieldName';
+import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 
 type Props = {
   variableName: string;
@@ -50,7 +51,10 @@ const ExistingVariable: React.FC<Props> = observer(
             <Field
               name={fieldName}
               initialValue={variableValue}
-              validate={validateValueComplete}
+              validate={mergeValidators(
+                validateValueComplete,
+                validateValueValid
+              )}
               parse={(value) => value}
             >
               {({input}) => (
