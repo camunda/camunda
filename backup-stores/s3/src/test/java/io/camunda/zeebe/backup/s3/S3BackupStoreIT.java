@@ -17,6 +17,7 @@ import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
@@ -202,12 +203,15 @@ final class S3BackupStoreIT {
     final var backup = prepareTestBackup(tempDir);
 
     // when
-    Files.delete(backup.snapshot().files().stream().findFirst().orElseThrow());
+    final var deletedFile = backup.snapshot().files().stream().findFirst().orElseThrow();
+    Files.delete(deletedFile);
 
     // then
     assertThat(store.save(backup))
-        .succeedsWithin(Duration.ofMinutes(1))
-        .isEqualTo(BackupStatusCode.FAILED);
+        .failsWithin(Duration.ofMinutes(1))
+        .withThrowableOfType(Throwable.class)
+        .withRootCauseInstanceOf(NoSuchFileException.class)
+        .withMessageContaining(deletedFile.toString());
   }
 
   @Test

@@ -65,7 +65,11 @@ public final class S3BackupStore implements BackupStore {
               return CompletableFuture.allOf(metadata, snapshot, segments);
             })
         .thenComposeAsync(content -> setStatus(backup.id(), Status.complete()))
-        .exceptionallyComposeAsync((throwable -> setStatus(backup.id(), Status.failed(throwable))));
+        .exceptionallyComposeAsync(
+            throwable ->
+                setStatus(backup.id(), Status.failed(throwable))
+                    // Mark the returned future as failed.
+                    .thenCompose(status -> CompletableFuture.failedStage(throwable)));
   }
 
   @Override
