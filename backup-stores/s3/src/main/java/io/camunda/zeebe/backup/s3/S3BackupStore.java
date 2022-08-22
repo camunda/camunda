@@ -55,7 +55,7 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    return setStatus(Status.inProgress())
+    return setStatus(backup.id(), Status.inProgress())
         .thenComposeAsync(
             status -> {
               final var metadata = saveMetadata(backup);
@@ -63,8 +63,8 @@ public final class S3BackupStore implements BackupStore {
               final var segments = saveSegmentFiles(backup);
               return CompletableFuture.allOf(metadata, snapshot, segments);
             })
-        .thenComposeAsync(content -> setStatus(Status.complete()))
-        .exceptionallyComposeAsync(throwable -> setStatus(Status.failed(throwable)))
+        .thenComposeAsync(content -> setStatus(backup.id(), Status.complete()))
+        .exceptionallyComposeAsync(throwable -> setStatus(backup.id(), Status.failed(throwable)))
         .thenApply(result -> null);
   }
 
@@ -85,11 +85,11 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> markFailed(final BackupIdentifier id) {
-    return setStatus(new Status(BackupStatus.FAILED, "Explicitly marked as failed"))
+    return setStatus(id, new Status(BackupStatus.FAILED, "Explicitly marked as failed"))
         .thenApply(res -> null);
   }
 
-  private CompletableFuture<PutObjectResponse> setStatus(Status status) {
+  private CompletableFuture<PutObjectResponse> setStatus(BackupIdentifier id, Status status) {
     AsyncRequestBody body;
     try {
       body = AsyncRequestBody.fromBytes(MAPPER.writeValueAsBytes(status));
@@ -98,7 +98,9 @@ public final class S3BackupStore implements BackupStore {
     }
 
     return client.putObject(
-        request -> request.bucket(config.bucketName()).key(Status.OBJECT_KEY).build(), body);
+        request ->
+            request.bucket(config.bucketName()).key(objectPrefix(id) + Status.OBJECT_KEY).build(),
+        body);
   }
 
   private CompletableFuture<PutObjectResponse> saveMetadata(Backup backup) {
