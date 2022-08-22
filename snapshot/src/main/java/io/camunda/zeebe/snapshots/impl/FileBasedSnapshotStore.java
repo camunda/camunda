@@ -51,10 +51,12 @@ public final class FileBasedSnapshotStore extends Actor
   // When sorted with other files in the snapshot, the metadata file must be ordered at the end.
   // This is required for backward compatibility of checksum calculation. Otherwise, the older
   // versions, which are not aware of the metadata will calculate the checksum using a different
-  // order of files. We can change the name in later versions, because the new checksum calculation
-  // already order the metadata file explicitly instead of using the implicit sort order.
+  // order of files. The  ordering requirement is fulfilled because the name "zeebe.metadata" is
+  // lexicographically greater than all other snapshot files. We can change the name in later
+  // versions, because the new checksum calculation already order the metadata file explicitly
+  // instead of using the implicit sort order.
   static final String METADATA_FILE_NAME = "zeebe.metadata";
-  // first is the metadata and the second the the received snapshot count
+  // first is the metadata and the second the received snapshot count
   private static final String RECEIVING_DIR_FORMAT = "%s-%d";
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotStore.class);
   private static final String CHECKSUM_SUFFIX = ".checksum";
