@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -207,6 +208,31 @@ final class S3BackupStoreIT {
 
     // then
     assertThatCode(() -> store.save(backup)).hasCauseInstanceOf(NoSuchFileException.class);
+  }
+
+  @Test
+  void backupIsMarkedAsCompleted(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+
+    // when
+    store.save(backup).join();
+
+    // then
+    final var statusObject =
+        client
+            .getObject(
+                GetObjectRequest.builder()
+                    .bucket(config.bucketName())
+                    .key(S3BackupStore.objectPrefix(backup.id()) + Status.OBJECT_KEY)
+                    .build(),
+                AsyncResponseTransformer.toBytes())
+            .join();
+
+    final var objectMapper = new ObjectMapper();
+    final var readStatus = objectMapper.readValue(statusObject.asByteArray(), Status.class);
+
+    assertThat(readStatus.status()).isEqualTo(BackupStatus.COMPLETED);
   }
 
   private TestBackup prepareTestBackup(Path tempDir) throws IOException {
