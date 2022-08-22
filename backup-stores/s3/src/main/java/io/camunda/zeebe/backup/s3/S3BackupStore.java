@@ -89,7 +89,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<BackupStatusCode> setStatus(BackupIdentifier id, Status status) {
-    AsyncRequestBody body;
+    final AsyncRequestBody body;
     try {
       body = AsyncRequestBody.fromBytes(MAPPER.writeValueAsBytes(status));
     } catch (JsonProcessingException e) {
