@@ -13,11 +13,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
-import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
@@ -89,7 +88,7 @@ final class S3BackupStoreIT {
     final var result = store.save(backup);
 
     // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(10));
+    assertThat(result).succeedsWithin(Duration.ofSeconds(10)).isEqualTo(BackupStatusCode.COMPLETED);
   }
 
   @Test
