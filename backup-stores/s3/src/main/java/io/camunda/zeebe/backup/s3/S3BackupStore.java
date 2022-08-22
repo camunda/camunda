@@ -85,7 +85,8 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> markFailed(final BackupIdentifier id) {
-    throw new UnsupportedOperationException();
+    return setStatus(new Status(BackupStatus.FAILED, "Explicitly marked as failed"))
+        .thenApply(res -> null);
   }
 
   private CompletableFuture<PutObjectResponse> setStatus(Status status) {
