@@ -12,7 +12,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -131,7 +130,7 @@ public final class TestActorFuture<V> implements ActorFuture<V> {
     if (result.isRight()) {
       return result.get();
     } else {
-      throw new CompletionException(result.getLeft());
+      throw new ExecutionException(result.getLeft());
     }
   }
 
