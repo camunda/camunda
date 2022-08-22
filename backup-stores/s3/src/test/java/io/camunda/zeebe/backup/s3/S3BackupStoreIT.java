@@ -236,6 +236,32 @@ final class S3BackupStoreIT {
     assertThat(readStatus.statusCode()).isEqualTo(BackupStatusCode.COMPLETED);
   }
 
+  @Test
+  void backupCanBeMarkedAsFailed(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+
+    // when
+    store.save(backup).join();
+    store.markFailed(backup.id).join();
+
+    // then
+    final var statusObject =
+        client
+            .getObject(
+                GetObjectRequest.builder()
+                    .bucket(config.bucketName())
+                    .key(S3BackupStore.objectPrefix(backup.id()) + Status.OBJECT_KEY)
+                    .build(),
+                AsyncResponseTransformer.toBytes())
+            .join();
+
+    final var objectMapper = new ObjectMapper();
+    final var readStatus = objectMapper.readValue(statusObject.asByteArray(), Status.class);
+
+    assertThat(readStatus.statusCode()).isEqualTo(BackupStatusCode.FAILED);
+    assertThat(readStatus.failureReason()).isNotEmpty();
+  }
 
   private TestBackup prepareTestBackup(Path tempDir) throws IOException {
     Files.createDirectory(tempDir.resolve("segments/"));
