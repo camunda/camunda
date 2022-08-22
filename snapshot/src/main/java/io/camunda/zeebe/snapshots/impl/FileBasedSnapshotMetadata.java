@@ -8,18 +8,20 @@
 package io.camunda.zeebe.snapshots.impl;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import java.io.IOException;
+import java.io.OutputStream;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record FileBasedSnapshotMetadata(
     int version, long processedPosition, long exportedPosition, long lastFollowupEventPosition)
     implements SnapshotMetadata {
 
-  public byte[] encode() throws JsonProcessingException {
-    return new ObjectMapper().writeValueAsBytes(this);
+  private static final ObjectMapper OBJECTMAPPER = new ObjectMapper();
+
+  public void encode(final OutputStream output) throws IOException {
+    OBJECTMAPPER.writeValue(output, this);
   }
 
   public static FileBasedSnapshotMetadata decode(final byte[] serializedBytes) throws IOException {

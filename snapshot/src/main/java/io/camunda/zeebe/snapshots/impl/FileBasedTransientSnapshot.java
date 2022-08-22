@@ -16,8 +16,10 @@ import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,10 +162,14 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
       throws Exception {
     final var metadataPath = directory.resolve(FileBasedSnapshotStore.METADATA_FILE_NAME);
     // Write metadata file along with snapshot files
-    try (final RandomAccessFile metadataFile = new RandomAccessFile(metadataPath.toFile(), "rwd")) {
-      final byte[] data = metadata.encode();
-      metadataFile.write(data);
-      metadataFile.setLength(data.length);
+    try (final var channel =
+            FileChannel.open(
+                metadataPath,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.DSYNC);
+        final var output = Channels.newOutputStream(channel)) {
+      metadata.encode(output);
       checksum.updateFromFile(metadataPath);
     }
   }
