@@ -198,4 +198,21 @@ public class RepeatingIntervalTest {
     // then
     assertThat(newDueDate).isEqualTo(expected);
   }
+
+  @Test
+  public void shouldNotBeLessThanCurrentTime() {
+    // given
+    final Interval interval = new Interval(Period.ZERO, Duration.ofSeconds(10));
+    final Instant currentTime = Instant.now();
+    final long fromEpochMilli = currentTime.toEpochMilli();
+
+    // set start time to be less than current time
+    final Instant start = currentTime.minus(Duration.ofDays(1));
+
+    // when
+    final long dueDate = interval.withStart(start).toEpochMilli(fromEpochMilli);
+
+    // then
+    assertThat(dueDate).isEqualTo(currentTime.plusSeconds(10).toEpochMilli());
+  }
 }
