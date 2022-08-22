@@ -35,7 +35,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   private final Path checksumFile;
   private final long checksum;
   private final FileBasedSnapshotId snapshotId;
-  private final SnapshotMetadata metdata;
+  private final SnapshotMetadata metadata;
   private final Consumer<FileBasedSnapshot> onSnapshotDeleted;
 
   private final Set<FileBasedSnapshotReservation> reservations = new HashSet<>();
@@ -48,14 +48,14 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
       final Path checksumFile,
       final long checksum,
       final FileBasedSnapshotId snapshotId,
-      final SnapshotMetadata metdata,
+      final SnapshotMetadata metadata,
       final Consumer<FileBasedSnapshot> onSnapshotDeleted,
       final ActorControl actor) {
     this.directory = directory;
     this.checksumFile = checksumFile;
     this.checksum = checksum;
     this.snapshotId = snapshotId;
-    this.metdata = metdata;
+    this.metadata = metadata;
     this.onSnapshotDeleted = onSnapshotDeleted;
     this.actor = actor;
   }
@@ -118,7 +118,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
 
   @Override
   public SnapshotMetadata getMetadata() {
-    return metdata;
+    return metadata;
   }
 
   @Override
@@ -205,8 +205,10 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
         + checksumFile
         + ", checksum="
         + checksum
-        + ", metadata="
+        + ", snapshotId="
         + snapshotId
+        + ", metadata="
+        + metadata
         + '}';
   }
 

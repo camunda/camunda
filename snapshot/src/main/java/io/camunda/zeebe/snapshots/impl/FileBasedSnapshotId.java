@@ -112,7 +112,7 @@ public final class FileBasedSnapshotId implements SnapshotId {
 
   @Override
   public String toString() {
-    return "FileBasedSnapshotMetadata{"
+    return "FileBasedSnapshotId{"
         + "index="
         + index
         + ", term="

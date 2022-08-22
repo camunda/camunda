@@ -186,10 +186,10 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     return "FileBasedTransientSnapshot{"
         + "directory="
         + directory
+        + ", snapshotId="
+        + snapshotId
         + ", checksum="
         + checksum
-        + ", metadata="
-        + snapshotId
         + '}';
   }
 }
