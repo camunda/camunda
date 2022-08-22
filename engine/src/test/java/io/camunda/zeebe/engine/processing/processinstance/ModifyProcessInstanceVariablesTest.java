@@ -8,13 +8,22 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -110,5 +119,82 @@ public class ModifyProcessInstanceVariablesTest {
             deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey())
         .hasProcessInstanceKey(processInstanceKey)
         .hasScopeKey(processInstanceKey);
+  }
+
+  @Test
+  public void shouldCreateVariablesBeforeElementScopes() {
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .exclusiveGateway()
+                .defaultFlow()
+                .userTask("A")
+                .endEvent()
+                .moveToLastExclusiveGateway()
+                .conditionExpression("false")
+                .subProcess(
+                    "subprocess",
+                    sp -> sp.embeddedSubProcess().startEvent().userTask("B").endEvent())
+                .boundaryEvent(
+                    "timer", b -> b.timerWithDurationExpression("duration( durationVar )"))
+                .endEvent()
+                .moveToActivity("subprocess")
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("B", null, Map.of("durationVar", "PT1H"))
+        .modify();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .skipUntil(
+                    r ->
+                        r.getValueType() == ValueType.PROCESS_INSTANCE_MODIFICATION
+                            && r.getIntent() == ProcessInstanceModificationIntent.MODIFY)
+                .onlyEvents()
+                .limit(
+                    r ->
+                        r.getValueType() == ValueType.PROCESS_INSTANCE
+                            && ((ProcessInstanceRecordValue) r.getValue())
+                                .getElementId()
+                                .equals("B")
+                            && r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .extracting(
+            Record::getValueType,
+            r ->
+                r.getValueType() == ValueType.PROCESS_INSTANCE
+                    ? ((ProcessInstanceRecordValue) r.getValue()).getBpmnElementType()
+                    : null,
+            Record::getIntent)
+        .describedAs("Expect to create variable before element scopes")
+        .containsSubsequence(
+            tuple(ValueType.VARIABLE, null, VariableIntent.CREATED),
+            tuple(
+                ValueType.PROCESS_INSTANCE,
+                BpmnElementType.SUB_PROCESS,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(
+                ValueType.PROCESS_INSTANCE,
+                BpmnElementType.USER_TASK,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING));
+
+    Assertions.assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withHandlerNodeId("timer")
+                .findAny())
+        .describedAs("Expect timer boundary event subscription opened")
+        .isPresent();
   }
 }
