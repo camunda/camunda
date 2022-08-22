@@ -206,11 +206,9 @@ final class S3BackupStoreIT {
     Files.delete(backup.snapshot().files().stream().findFirst().orElseThrow());
 
     // then
-
-    //noinspection ResultOfMethodCallIgnored -- we only need to check the exception type
     assertThat(store.save(backup))
-        .failsWithin(Duration.ofSeconds(10))
-        .withThrowableOfType(NoSuchFileException.class);
+        .succeedsWithin(Duration.ofMinutes(1))
+        .isEqualTo(BackupStatusCode.FAILED);
   }
 
   @Test
@@ -235,8 +233,9 @@ final class S3BackupStoreIT {
     final var objectMapper = new ObjectMapper();
     final var readStatus = objectMapper.readValue(statusObject.asByteArray(), Status.class);
 
-    assertThat(readStatus.status()).isEqualTo(BackupStatus.COMPLETED);
+    assertThat(readStatus.statusCode()).isEqualTo(BackupStatusCode.COMPLETED);
   }
+
 
   private TestBackup prepareTestBackup(Path tempDir) throws IOException {
     Files.createDirectory(tempDir.resolve("segments/"));

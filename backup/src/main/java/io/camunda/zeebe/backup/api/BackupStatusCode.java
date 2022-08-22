@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.backup.api;
 
-/** Represents the status of a backup. */
-public interface BackupStatus {
-  BackupStatusCode statusCode();
+public enum BackupStatusCode {
+  DOES_NOT_EXIST,
+  IN_PROGRESS,
+  COMPLETED,
+  FAILED,
 }

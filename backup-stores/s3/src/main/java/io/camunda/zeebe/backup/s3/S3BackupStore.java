@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
@@ -54,7 +55,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> save(final Backup backup) {
+  public CompletableFuture<BackupStatusCode> save(final Backup backup) {
     return setStatus(backup.id(), Status.inProgress())
         .thenComposeAsync(
             status -> {
@@ -64,8 +65,7 @@ public final class S3BackupStore implements BackupStore {
               return CompletableFuture.allOf(metadata, snapshot, segments);
             })
         .thenComposeAsync(content -> setStatus(backup.id(), Status.complete()))
-        .exceptionallyComposeAsync(throwable -> setStatus(backup.id(), Status.failed(throwable)))
-        .thenApply(result -> null);
+        .exceptionallyComposeAsync((throwable -> setStatus(backup.id(), Status.failed(throwable))));
   }
 
   @Override
@@ -84,12 +84,11 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> markFailed(final BackupIdentifier id) {
-    return setStatus(id, new Status(BackupStatus.FAILED, "Explicitly marked as failed"))
-        .thenApply(res -> null);
+  public CompletableFuture<BackupStatusCode> markFailed(final BackupIdentifier id) {
+    return setStatus(id, new Status(BackupStatusCode.FAILED, "Explicitly marked as failed"));
   }
 
-  private CompletableFuture<PutObjectResponse> setStatus(BackupIdentifier id, Status status) {
+  private CompletableFuture<BackupStatusCode> setStatus(BackupIdentifier id, Status status) {
     AsyncRequestBody body;
     try {
       body = AsyncRequestBody.fromBytes(MAPPER.writeValueAsBytes(status));
@@ -97,10 +96,15 @@ public final class S3BackupStore implements BackupStore {
       return CompletableFuture.failedFuture(e);
     }
 
-    return client.putObject(
-        request ->
-            request.bucket(config.bucketName()).key(objectPrefix(id) + Status.OBJECT_KEY).build(),
-        body);
+    return client
+        .putObject(
+            request ->
+                request
+                    .bucket(config.bucketName())
+                    .key(objectPrefix(id) + Status.OBJECT_KEY)
+                    .build(),
+            body)
+        .thenApply(resp -> status.statusCode());
   }
 
   private CompletableFuture<PutObjectResponse> saveMetadata(Backup backup) {

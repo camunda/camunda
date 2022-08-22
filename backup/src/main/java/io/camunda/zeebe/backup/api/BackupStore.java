@@ -13,7 +13,7 @@ import java.util.concurrent.CompletableFuture;
 public interface BackupStore {
 
   /** Saves the backup to the backup storage. */
-  CompletableFuture<Void> save(Backup backup);
+  CompletableFuture<BackupStatusCode> save(Backup backup);
 
   /** Returns the status of the backup */
   CompletableFuture<BackupStatus> getStatus(BackupIdentifier id);
@@ -28,5 +28,5 @@ public interface BackupStore {
    * Marks the backup as failed. If saving a backup failed, the backups store must mark it as
    * failed. This method can be used if we want to explicitly mark a partial backup as failed.
    */
-  CompletableFuture<Void> markFailed(BackupIdentifier id);
+  CompletableFuture<BackupStatusCode> markFailed(BackupIdentifier id);
 }

@@ -10,34 +10,35 @@ package io.camunda.zeebe.backup.s3;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
 /**
- * Holds the current {@link BackupStatus backup status} and an optional description in case of
- * failed backups.
+ * Holds the current {@link BackupStatusCode} and an optional failureReason in case of failed
+ * backups.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record Status(BackupStatus status, @JsonInclude(Include.NON_EMPTY) String description) {
+public record Status(
+    BackupStatusCode statusCode, @JsonInclude(Include.NON_EMPTY) String failureReason) {
 
   public static final String OBJECT_KEY = "status.json";
 
-  public Status(BackupStatus status) {
+  public Status(BackupStatusCode status) {
     this(status, "");
   }
 
   public static Status inProgress() {
-    return new Status(BackupStatus.IN_PROGRESS);
+    return new Status(BackupStatusCode.IN_PROGRESS);
   }
 
   public static Status complete() {
-    return new Status(BackupStatus.COMPLETED);
+    return new Status(BackupStatusCode.COMPLETED);
   }
 
   public static Status failed(Throwable throwable) {
     final var writer = new StringWriter();
     throwable.printStackTrace(new PrintWriter(writer));
-    return new Status(BackupStatus.FAILED, writer.toString());
+    return new Status(BackupStatusCode.FAILED, writer.toString());
   }
 }
