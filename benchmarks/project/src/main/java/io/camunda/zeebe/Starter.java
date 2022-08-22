@@ -127,30 +127,49 @@ public class Starter extends App {
       final CountDownLatch countDownLatch) {
     if (shouldContinue.getAsBoolean()) {
       try {
-        if (starterCfg.isWithResults()) {
+        if (starterCfg.isStartViaMessage()) {
           requestFutures.put(
               client
-                  .newCreateInstanceCommand()
-                  .bpmnProcessId(processId)
-                  .latestVersion()
-                  .variables(variables)
-                  .withResult()
-                  .requestTimeout(starterCfg.getWithResultsTimeout())
-                  .send());
-        } else {
-          requestFutures.put(
-              client
-                  .newCreateInstanceCommand()
-                  .bpmnProcessId(processId)
-                  .latestVersion()
+                  .newPublishMessageCommand()
+                  .messageName(starterCfg.getMsgName())
+                  .correlationKey("") // for start-events it is empty
                   .variables(variables)
                   .send());
         }
+        else
+        {
+          startViaCommand(starterCfg, processId, requestFutures, client, variables);
+        }
+
       } catch (final Exception e) {
         LOG.error("Error on creating new process instance", e);
       }
     } else {
       countDownLatch.countDown();
+    }
+  }
+
+  private static void startViaCommand(final StarterCfg starterCfg, final String processId,
+      final BlockingQueue<Future<?>> requestFutures, final ZeebeClient client,
+      final String variables) throws InterruptedException {
+    if (starterCfg.isWithResults()) {
+      requestFutures.put(
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .variables(variables)
+              .withResult()
+              .requestTimeout(starterCfg.getWithResultsTimeout())
+              .send());
+    } else {
+      requestFutures.put(
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .variables(variables)
+              .send());
     }
   }
 

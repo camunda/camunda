@@ -32,11 +32,30 @@ public class StarterCfg {
 
   private int durationLimit;
 
+  private boolean startViaMessage;
+  private String msgName;
+
+  public boolean isStartViaMessage() {
+    return startViaMessage;
+  }
+
+  public void setStartViaMessage(final boolean startViaMessage) {
+    this.startViaMessage = startViaMessage;
+  }
+
+  public String getMsgName() {
+    return msgName;
+  }
+
+  public void setMsgName(final String msgName) {
+    this.msgName = msgName;
+  }
+
   public String getProcessId() {
     return processId;
   }
 
-  public void setProcessId(String processId) {
+  public void setProcessId(final String processId) {
     this.processId = processId;
   }
 
@@ -44,7 +63,7 @@ public class StarterCfg {
     return rate;
   }
 
-  public void setRate(int rate) {
+  public void setRate(final int rate) {
     this.rate = rate;
   }
 
@@ -52,7 +71,7 @@ public class StarterCfg {
     return threads;
   }
 
-  public void setThreads(int threads) {
+  public void setThreads(final int threads) {
     this.threads = threads;
   }
 
@@ -60,7 +79,7 @@ public class StarterCfg {
     return bpmnXmlPath;
   }
 
-  public void setBpmnXmlPath(String bpmnXmlPath) {
+  public void setBpmnXmlPath(final String bpmnXmlPath) {
     this.bpmnXmlPath = bpmnXmlPath;
   }
 
@@ -68,15 +87,15 @@ public class StarterCfg {
     return payloadPath;
   }
 
-  public void setPayloadPath(String payloadPath) {
+  public void setPayloadPath(final String payloadPath) {
     this.payloadPath = payloadPath;
   }
 
   public boolean isWithResults() {
-    return this.withResults;
+    return withResults;
   }
 
-  public void setWithResults(boolean withResults) {
+  public void setWithResults(final boolean withResults) {
     this.withResults = withResults;
   }
 
@@ -84,7 +103,7 @@ public class StarterCfg {
     return withResultsTimeout;
   }
 
-  public void setWithResultsTimeout(Duration withResultsTimeout) {
+  public void setWithResultsTimeout(final Duration withResultsTimeout) {
     this.withResultsTimeout = withResultsTimeout;
   }
 
@@ -92,7 +111,9 @@ public class StarterCfg {
     return durationLimit;
   }
 
-  public void setDurationLimit(int durationLimit) {
+  public void setDurationLimit(final int durationLimit) {
     this.durationLimit = durationLimit;
   }
+
+
 }
