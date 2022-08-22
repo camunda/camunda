@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public final class FileBasedSnapshotId implements SnapshotId {
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotId.class);
-  private static final int METADATA_PARTS = 4;
+  private static final int SNAPSHOT_ID_PARTS = 4;
 
   private final long index;
   private final long term;
@@ -43,25 +43,25 @@ public final class FileBasedSnapshotId implements SnapshotId {
 
   public static Optional<FileBasedSnapshotId> ofFileName(final String name) {
     final var parts = name.split("-");
-    Optional<FileBasedSnapshotId> metadata = Optional.empty();
+    Optional<FileBasedSnapshotId> snapshotId = Optional.empty();
 
-    if (parts.length >= METADATA_PARTS) {
+    if (parts.length >= SNAPSHOT_ID_PARTS) {
       try {
         final var index = Long.parseLong(parts[0]);
         final var term = Long.parseLong(parts[1]);
         final var processedPosition = Long.parseLong(parts[2]);
         final var exporterPosition = Long.parseLong(parts[3]);
 
-        metadata =
+        snapshotId =
             Optional.of(new FileBasedSnapshotId(index, term, processedPosition, exporterPosition));
       } catch (final NumberFormatException e) {
-        LOGGER.warn("Failed to parse part of snapshot metadata", e);
+        LOGGER.warn("Failed to parse part of snapshot id", e);
       }
     } else {
       LOGGER.warn("Expected snapshot file format to be %d-%d-%d-%d, but was {}", name);
     }
 
-    return metadata;
+    return snapshotId;
   }
 
   @Override

@@ -361,9 +361,9 @@ public final class FileBasedSnapshotStore extends Actor
 
   @Override
   public FileBasedReceivedSnapshot newReceivedSnapshot(final String snapshotId) {
-    final var optMetadata = FileBasedSnapshotId.ofFileName(snapshotId);
+    final var optSnapshotId = FileBasedSnapshotId.ofFileName(snapshotId);
     final var parsedSnapshotId =
-        optMetadata.orElseThrow(
+        optSnapshotId.orElseThrow(
             () ->
                 new IllegalArgumentException(
                     "Expected snapshot id in a format like 'index-term-processedPosition-exportedPosition', got '"

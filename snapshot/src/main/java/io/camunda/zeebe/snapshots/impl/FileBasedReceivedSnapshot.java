@@ -176,12 +176,12 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
           String.format("Snapshot file name '%s' has unexpected format", snapshotId));
     }
 
-    final FileBasedSnapshotId chunkMetadata = receivedSnapshotId.get();
-    if (this.snapshotId.compareTo(chunkMetadata) != 0) {
+    final FileBasedSnapshotId chunkSnapshotId = receivedSnapshotId.get();
+    if (this.snapshotId.compareTo(chunkSnapshotId) != 0) {
       throw new SnapshotWriteException(
           String.format(
-              "Expected snapshot chunk metadata to match metadata '%s' but was '%s' instead",
-              this.snapshotId, chunkMetadata));
+              "Expected snapshot id in chunk to be '%s' but was '%s' instead",
+              this.snapshotId, chunkSnapshotId));
     }
   }
 
