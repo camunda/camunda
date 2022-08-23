@@ -9,14 +9,19 @@ package io.camunda.zeebe.backup.s3;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
@@ -76,7 +81,26 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<BackupStatus> getStatus(final BackupIdentifier id) {
-    throw new UnsupportedOperationException();
+    final var metadataResponseFuture =
+        client.getObject(
+            req -> req.bucket(config.bucketName()).key(objectPrefix(id) + Metadata.OBJECT_KEY),
+            AsyncResponseTransformer.toBytes());
+    final var statusResponseFuture =
+        client.getObject(
+            req -> req.bucket(config.bucketName()).key(objectPrefix(id) + Status.OBJECT_KEY),
+            AsyncResponseTransformer.toBytes());
+    return statusResponseFuture.thenCombine(
+        metadataResponseFuture,
+        (statusResponse, metadataResponse) -> {
+          try {
+            final var status = MAPPER.readValue(statusResponse.asByteArray(), Status.class);
+            final var metadata = MAPPER.readValue(metadataResponse.asByteArray(), Metadata.class);
+            return new BackupStatusImpl(
+                id, metadata.descriptor(), status.statusCode(), status.failureReason());
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   @Override
