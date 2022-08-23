@@ -10,7 +10,6 @@ package io.camunda.zeebe.backup.s3;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStatus;
@@ -19,6 +18,8 @@ import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.MetadataParseException;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.StatusParseException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -283,7 +284,7 @@ final class S3BackupStoreIT {
         .returns(BackupStatusCode.COMPLETED, from(BackupStatus::statusCode))
         .returns(Optional.empty(), from(BackupStatus::failureReason))
         .returns(backup.id(), from(BackupStatus::id))
-        .returns(backup.descriptor(), from(BackupStatus::descriptor));
+        .returns(Optional.of(backup.descriptor()), from(BackupStatus::descriptor));
   }
 
   @Test
@@ -302,7 +303,7 @@ final class S3BackupStoreIT {
         .returns(BackupStatusCode.FAILED, from(BackupStatus::statusCode))
         .doesNotReturn(Optional.empty(), from(BackupStatus::failureReason))
         .returns(backup.id(), from(BackupStatus::id))
-        .returns(backup.descriptor(), from(BackupStatus::descriptor));
+        .returns(Optional.of(backup.descriptor()), from(BackupStatus::descriptor));
   }
 
   @Test
@@ -325,7 +326,40 @@ final class S3BackupStoreIT {
     assertThat(status)
         .failsWithin(Duration.ofSeconds(10))
         .withThrowableOfType(Throwable.class)
-        .withRootCauseInstanceOf(JsonParseException.class);
+        .withCauseInstanceOf(StatusParseException.class);
+  }
+
+  @Test
+  void statusQueryFailsIfMetadataIsCorrupt(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+    store.save(backup).join();
+
+    // when
+    client
+        .putObject(
+            req ->
+                req.bucket(config.bucketName())
+                    .key(S3BackupStore.objectPrefix(backup.id()) + Metadata.OBJECT_KEY),
+            AsyncRequestBody.fromString("{s"))
+        .join();
+
+    // then
+    final var status = store.getStatus(backup.id());
+    assertThat(status)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(Throwable.class)
+        .withCauseInstanceOf(MetadataParseException.class);
+  }
+
+  @Test
+  void statusQueryFailsIfBackupDoesNotExist() {
+    // when
+    final var result = store.getStatus(new BackupIdentifierImpl(1, 1, 15));
+    // then
+    assertThat(result)
+        .succeedsWithin(Duration.ofSeconds(10))
+        .returns(BackupStatusCode.DOES_NOT_EXIST, from(BackupStatus::statusCode));
   }
 
   private Backup prepareTestBackup(Path tempDir) throws IOException {

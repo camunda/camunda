@@ -15,7 +15,7 @@ import java.util.Optional;
 
 public record BackupStatusImpl(
     BackupIdentifier id,
-    BackupDescriptor descriptor,
+    Optional<BackupDescriptor> descriptor,
     BackupStatusCode statusCode,
     Optional<String> failureReason)
     implements BackupStatus {}

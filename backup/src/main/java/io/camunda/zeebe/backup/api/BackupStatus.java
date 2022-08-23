@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface BackupStatus {
   BackupIdentifier id();
 
-  BackupDescriptor descriptor();
+  Optional<BackupDescriptor> descriptor();
 
   BackupStatusCode statusCode();
 
