@@ -54,7 +54,8 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
         new BackupService(
             context.getNodeId(),
             context.getPartitionId(),
-            context.getBrokerCfg().getCluster().getPartitionsCount());
+            context.getBrokerCfg().getCluster().getPartitionsCount(),
+            context.getPersistedSnapshotStore());
     final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
     context
         .getActorSchedulingService()
