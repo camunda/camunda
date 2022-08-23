@@ -199,5 +199,5 @@ public final class ProcessInstanceModificationProcessor
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATED, elementInstanceRecord);
   }
 
-  record Rejection(RejectionType type, String reason) {}
+  private record Rejection(RejectionType type, String reason) {}
 }
