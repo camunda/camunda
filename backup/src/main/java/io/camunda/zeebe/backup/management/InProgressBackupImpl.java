@@ -9,12 +9,17 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
+import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
+import io.camunda.zeebe.snapshots.SnapshotReservation;
 import io.camunda.zeebe.util.Either;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,6 +36,8 @@ final class InProgressBackupImpl implements InProgressBackup {
   // Snapshot related data
   private boolean hasSnapshot = true;
   private Set<PersistedSnapshot> availableValidSnapshots;
+  private SnapshotReservation snapshotReservation;
+  private PersistedSnapshot reservedSnapshot;
 
   InProgressBackupImpl(
       final PersistedSnapshotStore snapshotStore,
@@ -85,7 +92,21 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   @Override
   public ActorFuture<Void> reserveSnapshot() {
-    return concurrencyControl.createCompletedFuture();
+    final ActorFuture<Void> future = concurrencyControl.createFuture();
+    if (hasSnapshot) {
+      // Try reserve snapshot in the order - latest snapshot first
+      final var snapshotIterator =
+          availableValidSnapshots.stream()
+              .sorted(Comparator.comparingLong(PersistedSnapshot::getCompactionBound).reversed())
+              .iterator();
+
+      tryReserveAnySnapshot(snapshotIterator, future);
+    } else {
+      // No snapshot to reserve
+      future.complete(null);
+    }
+
+    return future;
   }
 
   @Override
@@ -100,8 +121,18 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   @Override
   public Backup createBackup() {
-    // Should return a Backup object
-    return null;
+    final String snapshotId;
+
+    if (hasSnapshot) {
+      snapshotId = reservedSnapshot.getId();
+    } else {
+      // To do : change snapshotId in BackupDescriptor to Optional
+      snapshotId = null;
+    }
+
+    final var backupDescriptor =
+        new BackupDescriptorImpl(snapshotId, checkpointPosition, numberOfPartitions);
+    return new BackupImpl(backupId, backupDescriptor, null, null);
   }
 
   @Override
@@ -111,7 +142,9 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   @Override
   public void close() {
-    // To be implemented
+    if (snapshotReservation != null) {
+      snapshotReservation.release();
+    }
   }
 
   private Either<String, Set<PersistedSnapshot>> findValidSnapshot(
@@ -129,5 +162,27 @@ final class InProgressBackupImpl implements InProgressBackup {
     } else {
       return Either.right(validSnapshots);
     }
+  }
+
+  private void tryReserveAnySnapshot(
+      final Iterator<PersistedSnapshot> snapshotIterator, final ActorFuture<Void> future) {
+    final var snapshot = snapshotIterator.next();
+    final ActorFuture<SnapshotReservation> reservationFuture = snapshot.reserve();
+    reservationFuture.onComplete(
+        (reservation, error) -> {
+          if (error != null) {
+            if (snapshotIterator.hasNext()) {
+              tryReserveAnySnapshot(snapshotIterator, future);
+            } else {
+              // fail future.
+              future.completeExceptionally("No snapshot could be reserved", error);
+            }
+          } else {
+            // complete
+            snapshotReservation = reservation;
+            reservedSnapshot = snapshot;
+            future.complete(null);
+          }
+        });
   }
 }
