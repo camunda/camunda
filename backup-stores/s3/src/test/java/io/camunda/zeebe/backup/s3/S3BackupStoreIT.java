@@ -89,7 +89,7 @@ final class S3BackupStoreIT {
     final var result = store.save(backup);
 
     // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(10)).isEqualTo(BackupStatusCode.COMPLETED);
+    assertThat(result).succeedsWithin(Duration.ofSeconds(10));
   }
 
   @Test

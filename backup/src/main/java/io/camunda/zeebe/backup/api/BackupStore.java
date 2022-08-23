@@ -13,7 +13,7 @@ import java.util.concurrent.CompletableFuture;
 public interface BackupStore {
 
   /** Saves the backup to the backup storage. */
-  CompletableFuture<BackupStatusCode> save(Backup backup);
+  CompletableFuture<Void> save(Backup backup);
 
   /** Returns the status of the backup */
   CompletableFuture<BackupStatus> getStatus(BackupIdentifier id);

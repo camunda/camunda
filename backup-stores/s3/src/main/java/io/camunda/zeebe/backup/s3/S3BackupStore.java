@@ -55,7 +55,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<BackupStatusCode> save(final Backup backup) {
+  public CompletableFuture<Void> save(final Backup backup) {
     return setStatus(backup.id(), Status.inProgress())
         .thenComposeAsync(
             status -> {
@@ -69,7 +69,9 @@ public final class S3BackupStore implements BackupStore {
             throwable ->
                 setStatus(backup.id(), Status.failed(throwable))
                     // Mark the returned future as failed.
-                    .thenCompose(status -> CompletableFuture.failedStage(throwable)));
+                    .thenCompose(status -> CompletableFuture.failedStage(throwable)))
+        // Discard status, it's either COMPLETED or the future is completed exceptionally
+        .thenApply(status -> null);
   }
 
   @Override
