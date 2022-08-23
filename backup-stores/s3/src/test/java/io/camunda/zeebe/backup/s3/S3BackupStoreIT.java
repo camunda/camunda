@@ -8,12 +8,12 @@
 package io.camunda.zeebe.backup.s3;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -175,13 +175,14 @@ final class S3BackupStoreIT {
     final var prefix = S3BackupStore.objectPrefix(backup.id);
 
     final var metadata = prefix + Metadata.OBJECT_KEY;
+    final var status = prefix + Status.OBJECT_KEY;
     final var snapshotObjects =
         backup.snapshot.names().stream().map(name -> prefix + S3BackupStore.SNAPSHOT_PREFIX + name);
     final var segmentObjects =
         backup.segments.names().stream().map(name -> prefix + S3BackupStore.SEGMENTS_PREFIX + name);
 
     final var contentObjects = Stream.concat(snapshotObjects, segmentObjects);
-    final var managementObjects = Stream.of(metadata);
+    final var managementObjects = Stream.of(metadata, status);
     final var expectedObjects = Stream.concat(managementObjects, contentObjects).toList();
 
     // when
@@ -202,10 +203,67 @@ final class S3BackupStoreIT {
     final var backup = prepareTestBackup(tempDir);
 
     // when
-    Files.delete(backup.snapshot().files().stream().findFirst().orElseThrow());
+    final var deletedFile = backup.snapshot().files().stream().findFirst().orElseThrow();
+    Files.delete(deletedFile);
 
     // then
-    assertThatCode(() -> store.save(backup)).hasCauseInstanceOf(NoSuchFileException.class);
+    assertThat(store.save(backup))
+        .failsWithin(Duration.ofMinutes(1))
+        .withThrowableOfType(Throwable.class)
+        .withRootCauseInstanceOf(NoSuchFileException.class)
+        .withMessageContaining(deletedFile.toString());
+  }
+
+  @Test
+  void backupIsMarkedAsCompleted(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+
+    // when
+    store.save(backup).join();
+
+    // then
+    final var statusObject =
+        client
+            .getObject(
+                GetObjectRequest.builder()
+                    .bucket(config.bucketName())
+                    .key(S3BackupStore.objectPrefix(backup.id()) + Status.OBJECT_KEY)
+                    .build(),
+                AsyncResponseTransformer.toBytes())
+            .join();
+
+    final var objectMapper = new ObjectMapper();
+    final var readStatus = objectMapper.readValue(statusObject.asByteArray(), Status.class);
+
+    assertThat(readStatus.statusCode()).isEqualTo(BackupStatusCode.COMPLETED);
+  }
+
+  @Test
+  void backupCanBeMarkedAsFailed(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+
+    // when
+    store.save(backup).join();
+    store.markFailed(backup.id).join();
+
+    // then
+    final var statusObject =
+        client
+            .getObject(
+                GetObjectRequest.builder()
+                    .bucket(config.bucketName())
+                    .key(S3BackupStore.objectPrefix(backup.id()) + Status.OBJECT_KEY)
+                    .build(),
+                AsyncResponseTransformer.toBytes())
+            .join();
+
+    final var objectMapper = new ObjectMapper();
+    final var readStatus = objectMapper.readValue(statusObject.asByteArray(), Status.class);
+
+    assertThat(readStatus.statusCode()).isEqualTo(BackupStatusCode.FAILED);
+    assertThat(readStatus.failureReason()).isNotEmpty();
   }
 
   private TestBackup prepareTestBackup(Path tempDir) throws IOException {

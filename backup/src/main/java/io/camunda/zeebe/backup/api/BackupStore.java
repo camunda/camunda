@@ -28,5 +28,5 @@ public interface BackupStore {
    * Marks the backup as failed. If saving a backup failed, the backups store must mark it as
    * failed. This method can be used if we want to explicitly mark a partial backup as failed.
    */
-  CompletableFuture<Void> markFailed(BackupIdentifier id);
+  CompletableFuture<BackupStatusCode> markFailed(BackupIdentifier id);
 }

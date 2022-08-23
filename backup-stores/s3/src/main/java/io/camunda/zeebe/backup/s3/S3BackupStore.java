@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
@@ -29,9 +30,9 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
  *
  * <ol>
  *   <li>A 'metadata' object, containing {@link Metadata} serialized as JSON, for example
- *       <pre>partitionId/checkpointId/nodeId/metadata</pre>
- *   <li>A 'status' object, containing the {@link BackupStatus}, for example
- *       <pre>partitionId/checkpointId/nodeId/status</pre>
+ *       <pre>partitionId/checkpointId/nodeId/metadata.json</pre>
+ *   <li>A 'status' object, containing the {@link Status}, for example
+ *       <pre>partitionId/checkpointId/nodeId/status.json</pre>
  *   <li>Objects for snapshot files, additionally prefixed with 'snapshot', for example
  *       <pre>partitionId/checkpointId/nodeId/snapshots/snapshot-file-1</pre>
  *   <li>Objects for segment files, additionally prefixed with 'segments', for example
@@ -55,10 +56,22 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    final var metadata = saveMetadata(backup);
-    final var snapshot = saveSnapshotFiles(backup);
-    final var segments = saveSegmentFiles(backup);
-    return CompletableFuture.allOf(metadata, snapshot, segments);
+    return setStatus(backup.id(), Status.inProgress())
+        .thenComposeAsync(
+            status -> {
+              final var metadata = saveMetadata(backup);
+              final var snapshot = saveSnapshotFiles(backup);
+              final var segments = saveSegmentFiles(backup);
+              return CompletableFuture.allOf(metadata, snapshot, segments);
+            })
+        .thenComposeAsync(content -> setStatus(backup.id(), Status.complete()))
+        .exceptionallyComposeAsync(
+            throwable ->
+                setStatus(backup.id(), Status.failed(throwable))
+                    // Mark the returned future as failed.
+                    .thenCompose(status -> CompletableFuture.failedStage(throwable)))
+        // Discard status, it's either COMPLETED or the future is completed exceptionally
+        .thenApply(status -> null);
   }
 
   @Override
@@ -77,8 +90,27 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> markFailed(final BackupIdentifier id) {
-    throw new UnsupportedOperationException();
+  public CompletableFuture<BackupStatusCode> markFailed(final BackupIdentifier id) {
+    return setStatus(id, new Status(BackupStatusCode.FAILED, "Explicitly marked as failed"));
+  }
+
+  private CompletableFuture<BackupStatusCode> setStatus(BackupIdentifier id, Status status) {
+    final AsyncRequestBody body;
+    try {
+      body = AsyncRequestBody.fromBytes(MAPPER.writeValueAsBytes(status));
+    } catch (JsonProcessingException e) {
+      return CompletableFuture.failedFuture(e);
+    }
+
+    return client
+        .putObject(
+            request ->
+                request
+                    .bucket(config.bucketName())
+                    .key(objectPrefix(id) + Status.OBJECT_KEY)
+                    .build(),
+            body)
+        .thenApply(resp -> status.statusCode());
   }
 
   private CompletableFuture<PutObjectResponse> saveMetadata(Backup backup) {
