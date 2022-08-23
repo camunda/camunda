@@ -22,8 +22,13 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class InProgressBackupImpl implements InProgressBackup {
+
+  private static final Logger LOG = LoggerFactory.getLogger(InProgressBackup.class);
+
   private static final String ERROR_MSG_NO_VALID_SNAPSHOT =
       "Cannot find a snapshot that can be included in the backup %d. All available snapshots (%s) have processedPosition or exportedPosition > checkpointPosition %d";
 
@@ -144,6 +149,7 @@ final class InProgressBackupImpl implements InProgressBackup {
   public void close() {
     if (snapshotReservation != null) {
       snapshotReservation.release();
+      LOG.debug("Released reservation for snapshot {}", reservedSnapshot.getId());
     }
   }
 
@@ -167,20 +173,28 @@ final class InProgressBackupImpl implements InProgressBackup {
   private void tryReserveAnySnapshot(
       final Iterator<PersistedSnapshot> snapshotIterator, final ActorFuture<Void> future) {
     final var snapshot = snapshotIterator.next();
+
+    LOG.debug("Attempting to reserve snapshot {}", snapshot.getId());
     final ActorFuture<SnapshotReservation> reservationFuture = snapshot.reserve();
     reservationFuture.onComplete(
         (reservation, error) -> {
           if (error != null) {
+            LOG.trace("Attempting to reserve snapshot {}, but failed", snapshot.getId(), error);
             if (snapshotIterator.hasNext()) {
               tryReserveAnySnapshot(snapshotIterator, future);
             } else {
               // fail future.
-              future.completeExceptionally("No snapshot could be reserved", error);
+              future.completeExceptionally(
+                  String.format(
+                      "Attempted to reserve snapshots %s, but no snapshot could be reserved",
+                      availableValidSnapshots),
+                  error);
             }
           } else {
             // complete
             snapshotReservation = reservation;
             reservedSnapshot = snapshot;
+            LOG.debug("Reserved snapshot {}", snapshot.getId());
             future.complete(null);
           }
         });
