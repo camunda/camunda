@@ -19,7 +19,7 @@ public class NamedFileSetImpl implements NamedFileSet {
 
   @Override
   public Set<String> names() {
-    return namedFiles.keySet();
+    return Set.copyOf(namedFiles.keySet());
   }
 
   @Override
