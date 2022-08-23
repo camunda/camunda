@@ -103,8 +103,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ProcessingStateMachine processingStateMachine;
   private ReplayStateMachine replayStateMachine;
 
-  private volatile Phase phase = Phase.INITIAL;
-
   private CompletableActorFuture<Void> openFuture;
   private final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
   private volatile long lastTickTime;
@@ -183,7 +181,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       if (!shouldProcess) {
         setStateToPausedAndNotifyListeners();
       } else {
-        phase = Phase.REPLAY;
+        streamProcessorContext.streamProcessorPhase(Phase.REPLAY);
       }
 
       if (isInReplayOnlyMode()) {
@@ -245,7 +243,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   @Override
   public void onActorFailed() {
-    phase = Phase.FAILED;
+    streamProcessorContext.streamProcessorPhase(Phase.FAILED);
     isOpened.set(false);
     lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onFailed);
     tearDown();
@@ -277,7 +275,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       streamProcessorContext.logStreamBatchWriter(batchWriter);
 
-      phase = Phase.PROCESSING;
+      streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
 
       processingStateMachine =
           new ProcessingStateMachine(
@@ -399,7 +397,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   public boolean isFailed() {
-    return phase == Phase.FAILED;
+    return streamProcessorContext.getStreamProcessorPhase() == Phase.FAILED;
   }
 
   public ActorFuture<Long> getLastProcessedPositionAsync() {
@@ -447,7 +445,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     // If healthCheckTick was not invoked it indicates the actor is blocked in a runUntilDone loop.
     if (ActorClock.currentTimeMillis() - lastTickTime > HEALTH_CHECK_TICK_DURATION.toMillis() * 2) {
       return HealthReport.unhealthy(this).withMessage("actor appears blocked");
-    } else if (phase == Phase.FAILED) {
+    } else if (streamProcessorContext.getStreamProcessorPhase() == Phase.FAILED) {
       return HealthReport.unhealthy(this).withMessage("in failed phase");
     } else {
       return HealthReport.healthy(this);
@@ -465,7 +463,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   public ActorFuture<Phase> getCurrentPhase() {
-    return actor.call(() -> phase);
+    return actor.call(streamProcessorContext::getStreamProcessorPhase);
   }
 
   public ActorFuture<Void> pauseProcessing() {
@@ -494,7 +492,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     }
 
     shouldProcess = false;
-    phase = Phase.PAUSED;
+    streamProcessorContext.streamProcessorPhase(Phase.PAUSED);
   }
 
   public void resumeProcessing() {
@@ -504,14 +502,14 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             shouldProcess = true;
 
             if (isInReplayOnlyMode() || !replayCompletedFuture.isDone()) {
-              phase = Phase.REPLAY;
+              streamProcessorContext.streamProcessorPhase(Phase.REPLAY);
               actor.submit(replayStateMachine::replayNextEvent);
               LOG.debug("Resumed replay for partition {}", partitionId);
             } else {
               // we only want to call the lifecycle listeners on processing resume
               // since the listeners are not recovered yet
               lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
-              phase = Phase.PROCESSING;
+              streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
               if (processingStateMachine != null) {
                 actor.submit(processingStateMachine::readNextRecord);
               }
