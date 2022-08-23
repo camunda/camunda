@@ -44,7 +44,7 @@ public final class S3BackupStore implements BackupStore {
   public static final String SNAPSHOT_PREFIX = "snapshot/";
   public static final String SEGMENTS_PREFIX = "segments/";
 
-  static final ObjectMapper MAPPER = new ObjectMapper();
+  static final ObjectMapper MAPPER = new ObjectMapper().registerModule(new Jdk8Module());
 
   private final S3BackupConfig config;
   private final S3AsyncClient client;
@@ -91,7 +91,8 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<BackupStatusCode> markFailed(final BackupIdentifier id) {
-    return setStatus(id, new Status(BackupStatusCode.FAILED, "Explicitly marked as failed"));
+    return setStatus(
+        id, new Status(BackupStatusCode.FAILED, Optional.of("Explicitly marked as failed")));
   }
 
   private CompletableFuture<BackupStatusCode> setStatus(BackupIdentifier id, Status status) {
