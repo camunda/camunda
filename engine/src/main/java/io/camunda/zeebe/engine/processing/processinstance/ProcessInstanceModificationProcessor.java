@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -97,19 +98,11 @@ public final class ProcessInstanceModificationProcessor
     final var process =
         processState.getProcessByKey(processInstanceRecord.getProcessDefinitionKey());
 
-    final Set<String> unknownElementIds =
-        value.getActivateInstructions().stream()
-            .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
-            .filter(targetElementId -> process.getProcess().getElementById(targetElementId) == null)
-            .collect(Collectors.toSet());
-    if (!unknownElementIds.isEmpty()) {
-      final String reason =
-          String.format(
-              ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND,
-              BufferUtil.bufferAsString(process.getBpmnProcessId()),
-              String.join("', '", unknownElementIds));
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
+    final var optRejection = validateCommand(command, process);
+    if (optRejection.isPresent()) {
+      final var rejection = optRejection.get();
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -134,6 +127,27 @@ public final class ProcessInstanceModificationProcessor
 
     responseWriter.writeEventOnCommand(
         eventKey, ProcessInstanceModificationIntent.MODIFIED, value, command);
+  }
+
+  private Optional<Rejection> validateCommand(
+      final TypedRecord<ProcessInstanceModificationRecord> command, final DeployedProcess process) {
+    final var value = command.getValue();
+
+    final Set<String> unknownElementIds =
+        value.getActivateInstructions().stream()
+            .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .filter(targetElementId -> process.getProcess().getElementById(targetElementId) == null)
+            .collect(Collectors.toSet());
+    if (!unknownElementIds.isEmpty()) {
+      final String reason =
+          String.format(
+              ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND,
+              BufferUtil.bufferAsString(process.getBpmnProcessId()),
+              String.join("', '", unknownElementIds));
+      return Optional.of(new Rejection(RejectionType.NOT_FOUND, reason));
+    }
+
+    return Optional.empty();
   }
 
   private void executeGlobalVariableInstructions(
@@ -184,4 +198,6 @@ public final class ProcessInstanceModificationProcessor
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATED, elementInstanceRecord);
   }
+
+  record Rejection(RejectionType type, String reason) {}
 }
