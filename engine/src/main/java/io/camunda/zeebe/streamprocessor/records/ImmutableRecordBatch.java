@@ -8,8 +8,7 @@
 package io.camunda.zeebe.streamprocessor.records;
 
 /**
- * Represents an unmodifiable batch of records, which extends the {@link
- * Iterable<UnmodifiableRecordBatchEntry>} in order to make sure that the contained entries can be
- * accessed.
+ * Represents an unmodifiable batch of records, which extends the {@link Iterable<
+ * ImmutableRecordBatchEntry >} in order to make sure that the contained entries can be accessed.
  */
-public interface UnmodifiableRecordBatch extends Iterable<UnmodifiableRecordBatchEntry> {}
+public interface ImmutableRecordBatch extends Iterable<ImmutableRecordBatchEntry> {}

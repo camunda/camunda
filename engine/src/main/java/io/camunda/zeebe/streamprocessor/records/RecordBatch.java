@@ -18,9 +18,9 @@ import java.util.List;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 
-public final class RecordBatch implements ModifiableRecordBatch {
+public final class RecordBatch implements MutableRecordBatch {
 
-  final List<UnmodifiableRecordBatchEntry> recordBatchEntries = new ArrayList<>();
+  final List<ImmutableRecordBatchEntry> recordBatchEntries = new ArrayList<>();
   private int batchSize;
   private final int maxBatchSize;
 
@@ -69,17 +69,17 @@ public final class RecordBatch implements ModifiableRecordBatch {
   }
 
   @Override
-  public Iterator<UnmodifiableRecordBatchEntry> iterator() {
+  public Iterator<ImmutableRecordBatchEntry> iterator() {
     return recordBatchEntries.iterator();
   }
 
   @Override
-  public void forEach(final Consumer<? super UnmodifiableRecordBatchEntry> action) {
+  public void forEach(final Consumer<? super ImmutableRecordBatchEntry> action) {
     recordBatchEntries.forEach(action);
   }
 
   @Override
-  public Spliterator<UnmodifiableRecordBatchEntry> spliterator() {
+  public Spliterator<ImmutableRecordBatchEntry> spliterator() {
     return recordBatchEntries.spliterator();
   }
 }

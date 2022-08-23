@@ -16,8 +16,8 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.streamprocessor.records.ImmutableRecordBatchEntry;
 import io.camunda.zeebe.streamprocessor.records.RecordBatch;
-import io.camunda.zeebe.streamprocessor.records.UnmodifiableRecordBatchEntry;
 import org.junit.jupiter.api.Test;
 
 public class RecordBatchTest {
@@ -43,30 +43,30 @@ public class RecordBatchTest {
     final var batchSize = recordBatch.getBatchSize();
     assertThat(batchSize).isGreaterThan(processInstanceRecord.getLength());
 
-    assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::key).containsOnly(1L);
-    assertThat(recordBatch).map(UnmodifiableRecordBatchEntry::sourceIndex).containsOnly(-1);
+    assertThat(recordBatch).map(ImmutableRecordBatchEntry::key).containsOnly(1L);
+    assertThat(recordBatch).map(ImmutableRecordBatchEntry::sourceIndex).containsOnly(-1);
     assertThat(recordBatch)
-        .map(UnmodifiableRecordBatchEntry::recordMetadata)
+        .map(ImmutableRecordBatchEntry::recordMetadata)
         .map(RecordMetadata::getIntent)
         .containsOnly(ProcessInstanceIntent.ACTIVATE_ELEMENT);
     assertThat(recordBatch)
-        .map(UnmodifiableRecordBatchEntry::recordMetadata)
+        .map(ImmutableRecordBatchEntry::recordMetadata)
         .map(RecordMetadata::getRecordType)
         .containsOnly(RecordType.COMMAND);
     assertThat(recordBatch)
-        .map(UnmodifiableRecordBatchEntry::recordMetadata)
+        .map(ImmutableRecordBatchEntry::recordMetadata)
         .map(RecordMetadata::getRejectionType)
         .containsOnly(RejectionType.ALREADY_EXISTS);
     assertThat(recordBatch)
-        .map(UnmodifiableRecordBatchEntry::recordMetadata)
+        .map(ImmutableRecordBatchEntry::recordMetadata)
         .map(RecordMetadata::getValueType)
         .containsOnly(ValueType.PROCESS_INSTANCE);
     assertThat(recordBatch)
-        .map(UnmodifiableRecordBatchEntry::recordMetadata)
+        .map(ImmutableRecordBatchEntry::recordMetadata)
         .map(RecordMetadata::getRejectionReason)
         .containsOnly("broken somehow");
     assertThat(recordBatch)
-        .map(UnmodifiableRecordBatchEntry::recordValue)
+        .map(ImmutableRecordBatchEntry::recordValue)
         .containsOnly(processInstanceRecord);
   }
 

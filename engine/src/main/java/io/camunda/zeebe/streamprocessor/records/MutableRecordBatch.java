@@ -17,7 +17,7 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
  * Represents a modifiable batch of record, which means we can add multiple Records to the batch.
  * For further processing the user can iterate of the appended entries and retrieve the needed data.
  */
-public interface ModifiableRecordBatch extends UnmodifiableRecordBatch {
+public interface MutableRecordBatch extends ImmutableRecordBatch {
 
   /**
    * Allows to add a new Record to the batch

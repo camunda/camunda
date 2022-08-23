@@ -11,10 +11,10 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 
 /**
- * Represents an unmodifiable entry of an {@link UnmodifiableRecordBatch}. Contains data about a
- * record which has been created by an RecordProcessor.
+ * Represents an unmodifiable entry of an {@link ImmutableRecordBatch}. Contains data about a record
+ * which has been created by an RecordProcessor.
  */
-public interface UnmodifiableRecordBatchEntry {
+public interface ImmutableRecordBatchEntry {
 
   /**
    * @return the key of the record

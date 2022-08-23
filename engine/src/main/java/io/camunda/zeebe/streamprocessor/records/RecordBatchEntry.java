@@ -22,7 +22,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public record RecordBatchEntry(
     long key, int sourceIndex, RecordMetadata recordMetadata, DirectBuffer recordValueBuffer)
-    implements UnmodifiableRecordBatchEntry {
+    implements ImmutableRecordBatchEntry {
 
   @Override
   public UnifiedRecordValue recordValue() {
