@@ -51,7 +51,26 @@ class BackupServiceImplTest {
   }
 
   @Test
-  void shouldCloseInProgressBackupAfterBackupIsTaken() {
+  void shouldCloseAllInProgressBackupsWhenClosing() {
+    // given
+    final InProgressBackup backup1 = mock(InProgressBackup.class);
+    final InProgressBackup backup2 = mock(InProgressBackup.class);
+    when(backup1.findValidSnapshot()).thenReturn(concurrencyControl.createFuture());
+    when(backup2.findValidSnapshot()).thenReturn(concurrencyControl.createFuture());
+
+    backupService.takeBackup(backup1, concurrencyControl);
+    backupService.takeBackup(backup2, concurrencyControl);
+
+    // when
+    backupService.close();
+
+    // then
+    verify(backup1).close();
+    verify(backup2).close();
+  }
+
+  @Test
+  void shouldCloseInProgressBackupsAfterBackupIsTaken() {
     // given
     mockInProgressBackup();
 
@@ -60,7 +79,6 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).succeedsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).close();
   }
 
   @Test
