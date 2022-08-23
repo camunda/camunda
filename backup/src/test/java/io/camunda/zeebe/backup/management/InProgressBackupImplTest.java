@@ -10,8 +10,10 @@ package io.camunda.zeebe.backup.management;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -19,6 +21,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
+import io.camunda.zeebe.snapshots.SnapshotReservation;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -44,10 +47,9 @@ class InProgressBackupImplTest {
   }
 
   @Test
-  void shouldCompleteFutureNoSnapshotExists() {
+  void shouldCompleteFutureWhenNoSnapshotExists() {
     // given
-    when(snapshotStore.getAvailableSnapshots())
-        .thenReturn(TestActorFuture.completedFuture(Set.of()));
+    setAvailableSnapshots(Set.of());
 
     // when
     final var future = inProgressBackup.findValidSnapshot();
@@ -62,8 +64,7 @@ class InProgressBackupImplTest {
     final var validSnapshot = snapshotWith(1L, 5L);
     final var invalidSnapshot = snapshotWith(8L, 20L);
     final Set<PersistedSnapshot> snapshots = Set.of(validSnapshot, invalidSnapshot);
-    when(snapshotStore.getAvailableSnapshots())
-        .thenReturn(TestActorFuture.completedFuture(snapshots));
+    setAvailableSnapshots(snapshots);
 
     // when
     final var future = inProgressBackup.findValidSnapshot();
@@ -76,9 +77,7 @@ class InProgressBackupImplTest {
   void shouldFailFutureWhenSnapshotIsPastCheckpointPosition() {
     // given - checkpointPosition < processedPosition <  followupPosition
     final var invalidSnapshot = snapshotWith(11L, 20L);
-    final Set<PersistedSnapshot> snapshots = Set.of(invalidSnapshot);
-    when(snapshotStore.getAvailableSnapshots())
-        .thenReturn(TestActorFuture.completedFuture(snapshots));
+    setAvailableSnapshots(Set.of(invalidSnapshot));
 
     // when - then
     // when
@@ -95,9 +94,7 @@ class InProgressBackupImplTest {
   void shouldFailFutureWhenSnapshotOverlapsWithCheckpoint() {
     // given - processedPosition < checkpointPosition < followupPosition
     final var invalidSnapshot = snapshotWith(8L, 20L);
-    final Set<PersistedSnapshot> snapshots = Set.of(invalidSnapshot);
-    when(snapshotStore.getAvailableSnapshots())
-        .thenReturn(TestActorFuture.completedFuture(snapshots));
+    setAvailableSnapshots(Set.of(invalidSnapshot));
 
     // when
     final var future = inProgressBackup.findValidSnapshot();
@@ -109,6 +106,123 @@ class InProgressBackupImplTest {
         .withRootCauseInstanceOf(SnapshotNotFoundException.class);
   }
 
+  @Test
+  void shouldReserveSnapshotWhenValidSnapshotExists(
+      @Mock final SnapshotReservation snapshotReservation) {
+    // given
+    final var validSnapshot = snapshotWith(1L, 5L);
+    onReserve(validSnapshot, snapshotReservation);
+    setAvailableSnapshots(Set.of(validSnapshot));
+
+    final var backup = collectBackupContents();
+
+    // then
+    assertThat(backup.descriptor().snapshotId()).isEqualTo(validSnapshot.getId());
+    verify(validSnapshot).reserve();
+  }
+
+  @Test
+  void shouldNotFailReservationWhenNoSnapshotExists() {
+    // given
+    setAvailableSnapshots(Set.of());
+
+    inProgressBackup.findValidSnapshot().join();
+
+    // when
+    final var future = inProgressBackup.reserveSnapshot();
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofMillis(100));
+  }
+
+  @Test
+  void shouldReserveLatestSnapshotWhenMoreThanOneValidSnapshotExists(
+      @Mock final SnapshotReservation snapshotReservation) {
+    // given
+    final var oldValidSnapshot = snapshotWith(1L, 5L);
+    final var latestValidSnapshot = snapshotWith(2L, 6L);
+    onReserve(oldValidSnapshot, snapshotReservation);
+    onReserve(latestValidSnapshot, snapshotReservation);
+    setAvailableSnapshots(Set.of(oldValidSnapshot, latestValidSnapshot));
+
+    // when
+    final var backup = collectBackupContents();
+
+    // then
+    assertThat(backup.descriptor().snapshotId()).isEqualTo(latestValidSnapshot.getId());
+    verify(latestValidSnapshot).reserve();
+  }
+
+  @Test
+  void shouldFailWhenSnapshotCannotBeReserved() {
+    // given
+    final var validSnapshot = snapshotWith(1L, 5L);
+    failOnReserve(validSnapshot);
+    final Set<PersistedSnapshot> snapshots = Set.of(validSnapshot);
+    setAvailableSnapshots(snapshots);
+
+    inProgressBackup.findValidSnapshot().join();
+    final var future = inProgressBackup.reserveSnapshot();
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Reservation Failed");
+  }
+
+  @Test
+  void shouldReserveNextSnapshotWhenOneSnapshotFails(
+      @Mock final SnapshotReservation snapshotReservation) {
+    // given
+    final var oldValidSnapshot = snapshotWith(1L, 5L);
+    final var latestValidSnapshot = snapshotWith(2L, 6L);
+
+    onReserve(oldValidSnapshot, snapshotReservation);
+    failOnReserve(latestValidSnapshot);
+
+    final Set<PersistedSnapshot> snapshots = Set.of(oldValidSnapshot, latestValidSnapshot);
+    setAvailableSnapshots(snapshots);
+
+    // when
+    final var backup = collectBackupContents();
+
+    // then
+    assertThat(backup.descriptor().snapshotId()).isEqualTo(oldValidSnapshot.getId());
+    verify(oldValidSnapshot).reserve();
+  }
+
+  @Test
+  void shouldReleaseReservationWhenClosed(@Mock final SnapshotReservation snapshotReservation) {
+    // given
+    final var validSnapshot = snapshotWith(1L, 5L);
+    onReserve(validSnapshot, snapshotReservation);
+    final Set<PersistedSnapshot> snapshots = Set.of(validSnapshot);
+    setAvailableSnapshots(snapshots);
+
+    inProgressBackup.findValidSnapshot().join();
+    inProgressBackup.reserveSnapshot().join();
+
+    // when
+    inProgressBackup.close();
+
+    // then
+    verify(snapshotReservation).release();
+  }
+
+  private void setAvailableSnapshots(final Set<PersistedSnapshot> snapshots) {
+    when(snapshotStore.getAvailableSnapshots())
+        .thenReturn(TestActorFuture.completedFuture(snapshots));
+  }
+
+  private Backup collectBackupContents() {
+    inProgressBackup.findValidSnapshot().join();
+    inProgressBackup.reserveSnapshot().join();
+    inProgressBackup.findSegmentFiles().join();
+    inProgressBackup.findSnapshotFiles().join();
+    return inProgressBackup.createBackup();
+  }
+
   private PersistedSnapshot snapshotWith(
       final long processedPosition, final long followUpPosition) {
     final PersistedSnapshot snapshot = mock(PersistedSnapshot.class);
@@ -117,6 +231,23 @@ class InProgressBackupImplTest {
     lenient().when(snapshotMetadata.lastFollowupEventPosition()).thenReturn(followUpPosition);
 
     when(snapshot.getMetadata()).thenReturn(snapshotMetadata);
+    lenient()
+        .when(snapshot.getId())
+        .thenReturn(String.format("%d-%d", processedPosition, followUpPosition));
+    lenient().when(snapshot.getCompactionBound()).thenReturn(processedPosition);
     return snapshot;
+  }
+
+  private void onReserve(
+      final PersistedSnapshot snapshot, final SnapshotReservation snapshotReservation) {
+    lenient()
+        .when(snapshot.reserve())
+        .thenReturn(TestActorFuture.completedFuture(snapshotReservation));
+  }
+
+  private void failOnReserve(final PersistedSnapshot snapshot) {
+    lenient()
+        .when(snapshot.reserve())
+        .thenReturn(TestActorFuture.failedFuture(new RuntimeException("Reservation Failed")));
   }
 }
