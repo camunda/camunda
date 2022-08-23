@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.backup.management;
 
-import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 interface InProgressBackup {
@@ -24,7 +24,7 @@ interface InProgressBackup {
 
   ActorFuture<Void> findSegmentFiles();
 
-  ActorFuture<Void> save(BackupStore store);
+  Backup createBackup();
 
   void fail(Throwable error);
 

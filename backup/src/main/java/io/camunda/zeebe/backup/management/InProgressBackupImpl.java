@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.backup.management;
 
+import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
-import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
@@ -61,9 +61,9 @@ final class InProgressBackupImpl implements InProgressBackup {
   }
 
   @Override
-  public ActorFuture<Void> save(final BackupStore store) {
-    // save backup
-    return concurrencyControl.createCompletedFuture();
+  public Backup createBackup() {
+    // Should return a Backup object
+    return null;
   }
 
   @Override

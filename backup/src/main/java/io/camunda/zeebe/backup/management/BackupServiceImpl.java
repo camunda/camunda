@@ -23,6 +23,7 @@ final class BackupServiceImpl {
 
   private final Set<InProgressBackup> backupsInProgress = new HashSet<>();
   private final BackupStore backupStore;
+  private ConcurrencyControl concurrencyControl;
 
   BackupServiceImpl(
       final int nodeId,
@@ -41,6 +42,7 @@ final class BackupServiceImpl {
 
   ActorFuture<Void> takeBackup(
       final InProgressBackup inProgressBackup, final ConcurrencyControl concurrencyControl) {
+    this.concurrencyControl = concurrencyControl;
 
     backupsInProgress.add(inProgressBackup);
 
@@ -75,8 +77,7 @@ final class BackupServiceImpl {
 
   private void saveBackup(
       final InProgressBackup inProgressBackup, final ActorFuture<Void> backupSaved) {
-    inProgressBackup
-        .save(backupStore)
+    saveBackup(inProgressBackup)
         .onComplete(
             proceed(
                 error -> failBackup(inProgressBackup, backupSaved, error),
@@ -84,6 +85,22 @@ final class BackupServiceImpl {
                   backupSaved.complete(null);
                   closeInProgressBackup(inProgressBackup);
                 }));
+  }
+
+  private ActorFuture<Void> saveBackup(final InProgressBackup inProgressBackup) {
+    final ActorFuture<Void> future = concurrencyControl.createFuture();
+    final var backup = inProgressBackup.createBackup();
+    backupStore
+        .save(backup)
+        .whenComplete(
+            (ignore, error) -> {
+              if (error == null) {
+                future.complete(null);
+              } else {
+                future.completeExceptionally("Failed to save backup", error);
+              }
+            });
+    return future;
   }
 
   private void failBackup(

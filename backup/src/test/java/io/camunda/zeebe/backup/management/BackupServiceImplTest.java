@@ -18,6 +18,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,13 +30,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class BackupServiceImplTest {
 
   @Mock InProgressBackup inProgressBackup;
+  @Mock BackupStore backupStore;
 
   private BackupServiceImpl backupService;
   private final ConcurrencyControl concurrencyControl = new TestConcurrencyControl();
 
   @BeforeEach
   void setup() {
-    backupService = new BackupServiceImpl(0, 1, 1, mock(BackupStore.class));
+    backupService = new BackupServiceImpl(0, 1, 1, backupStore);
   }
 
   @Test
@@ -154,7 +156,8 @@ class BackupServiceImplTest {
     mockReserveSnapshot();
     mockFindSnapshotFiles();
     mockFindSegmentFiles();
-    when(inProgressBackup.save(any())).thenReturn(failedFuture());
+    when(backupStore.save(any()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")));
 
     // when
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
@@ -194,7 +197,7 @@ class BackupServiceImplTest {
   }
 
   private void mockSaveBackup() {
-    when(inProgressBackup.save(any())).thenReturn(concurrencyControl.createCompletedFuture());
+    when(backupStore.save(any())).thenReturn(CompletableFuture.completedFuture(null));
   }
 
   private void mockFindSegmentFiles() {
