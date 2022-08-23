@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.management;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -59,7 +60,7 @@ public final class BackupService extends Actor implements BackupManager {
         () -> {
           final InProgressBackupImpl inProgressBackup =
               new InProgressBackupImpl(
-                  new BackupIdentifierRecord(nodeId, partitionId, checkpointId),
+                  new BackupIdentifierImpl(nodeId, partitionId, checkpointId),
                   checkpointPosition,
                   numberOfPartitions,
                   actor);

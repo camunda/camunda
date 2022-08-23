@@ -5,9 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.backup.management;
+package io.camunda.zeebe.backup.common;
 
-import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupDescriptor;
 
-public record BackupIdentifierRecord(int nodeId, int partitionId, long checkpointId)
-    implements BackupIdentifier {}
+public record BackupDescriptorImpl(
+    String snapshotId, long checkpointPosition, int numberOfPartitions)
+    implements BackupDescriptor {}
