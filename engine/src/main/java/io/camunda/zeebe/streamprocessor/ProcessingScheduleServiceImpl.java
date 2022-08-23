@@ -56,7 +56,16 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
      * this only works because this class is scheduled on the same actor as the
      * stream processor.
      */
-    runAtFixedRate(delay, toRunnable(task));
+    runDelayed(
+        delay,
+        toRunnable(
+            builder -> {
+              try {
+                return task.execute(builder);
+              } finally {
+                runAtFixedRate(delay, task);
+              }
+            }));
   }
 
   private void scheduleOnActor(final Runnable task) {

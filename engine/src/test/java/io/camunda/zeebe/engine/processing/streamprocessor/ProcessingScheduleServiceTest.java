@@ -200,6 +200,22 @@ public class ProcessingScheduleServiceTest {
         .process(Mockito.argThat(record -> record.getKey() == 1), any());
   }
 
+  @Test
+  public void shouldScheduleOnFixedRate() {
+    // given
+    final var dummyProcessorSpy = spy(dummyProcessor);
+    streamPlatform.withRecordProcessors(List.of(dummyProcessorSpy)).startStreamProcessor();
+
+    // when
+    dummyProcessorSpy.scheduleService.runAtFixedRate(
+        Duration.ofMillis(100),
+        (builder) -> builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD).build());
+
+    // then
+    verify(dummyProcessorSpy, TIMEOUT.times(5))
+        .process(Mockito.argThat(record -> record.getKey() == 1), any());
+  }
+
   private static final class DummyTask implements Task {
     @Override
     public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
