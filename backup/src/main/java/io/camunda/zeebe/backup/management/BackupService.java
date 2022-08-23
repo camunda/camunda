@@ -60,6 +60,7 @@ public final class BackupService extends Actor implements BackupManager {
         () -> {
           final InProgressBackupImpl inProgressBackup =
               new InProgressBackupImpl(
+                  null,
                   new BackupIdentifierImpl(nodeId, partitionId, checkpointId),
                   checkpointPosition,
                   numberOfPartitions,
