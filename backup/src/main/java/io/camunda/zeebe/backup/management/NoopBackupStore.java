@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.management;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import java.util.concurrent.CompletableFuture;
 
@@ -43,7 +44,7 @@ final class NoopBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> markFailed(final BackupIdentifier id) {
+  public CompletableFuture<BackupStatusCode> markFailed(final BackupIdentifier id) {
     return CompletableFuture.completedFuture(null);
   }
 }
