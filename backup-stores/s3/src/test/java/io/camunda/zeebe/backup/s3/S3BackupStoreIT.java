@@ -8,7 +8,9 @@
 package io.camunda.zeebe.backup.s3;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.from;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStatus;
@@ -264,6 +266,66 @@ final class S3BackupStoreIT {
 
     assertThat(readStatus.statusCode()).isEqualTo(BackupStatusCode.FAILED);
     assertThat(readStatus.failureReason()).isNotEmpty();
+  }
+
+  @Test
+  void canGetStatus(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+
+    // when
+    store.save(backup).join();
+    final var status = store.getStatus(backup.id());
+
+    // then
+    assertThat(status)
+        .succeedsWithin(Duration.ofSeconds(10))
+        .returns(BackupStatusCode.COMPLETED, from(BackupStatus::statusCode))
+        .returns(Optional.empty(), from(BackupStatus::failureReason))
+        .returns(backup.id(), from(BackupStatus::id))
+        .returns(backup.descriptor(), from(BackupStatus::descriptor));
+  }
+
+  @Test
+  void statusIsFailedAfterMarkingAsFailed(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+
+    // when
+    store.save(backup).join();
+    store.markFailed(backup.id());
+    final var status = store.getStatus(backup.id());
+
+    // then
+    assertThat(status)
+        .succeedsWithin(Duration.ofSeconds(10))
+        .returns(BackupStatusCode.FAILED, from(BackupStatus::statusCode))
+        .doesNotReturn(Optional.empty(), from(BackupStatus::failureReason))
+        .returns(backup.id(), from(BackupStatus::id))
+        .returns(backup.descriptor(), from(BackupStatus::descriptor));
+  }
+
+  @Test
+  void statusQueryFailsIfStatusIsCorrupt(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+    store.save(backup).join();
+
+    // when
+    client
+        .putObject(
+            req ->
+                req.bucket(config.bucketName())
+                    .key(S3BackupStore.objectPrefix(backup.id()) + Status.OBJECT_KEY),
+            AsyncRequestBody.fromString("{s"))
+        .join();
+
+    // then
+    final var status = store.getStatus(backup.id());
+    assertThat(status)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(Throwable.class)
+        .withRootCauseInstanceOf(JsonParseException.class);
   }
 
   private Backup prepareTestBackup(Path tempDir) throws IOException {
