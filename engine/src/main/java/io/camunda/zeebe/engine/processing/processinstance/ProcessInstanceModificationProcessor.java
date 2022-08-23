@@ -31,7 +31,10 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.agrona.Strings;
 
 public final class ProcessInstanceModificationProcessor
@@ -39,6 +42,8 @@ public final class ProcessInstanceModificationProcessor
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to modify process instance but no process instance found with key '%d'";
+  private static final String ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND =
+      "Expected to activate element but no element found in process '%s' for element id(s): '%s'";
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
@@ -92,14 +97,28 @@ public final class ProcessInstanceModificationProcessor
     final var process =
         processState.getProcessByKey(processInstanceRecord.getProcessDefinitionKey());
 
+    final Set<String> unknownElementIds =
+        value.getActivateInstructions().stream()
+            .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .filter(targetElementId -> process.getProcess().getElementById(targetElementId) == null)
+            .collect(Collectors.toSet());
+    if (!unknownElementIds.isEmpty()) {
+      final String reason =
+          String.format(
+              ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND,
+              BufferUtil.bufferAsString(process.getBpmnProcessId()),
+              String.join("', '", unknownElementIds));
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
+      return;
+    }
+
     value
         .getActivateInstructions()
         .forEach(
             instruction -> {
               final var elementToActivate =
                   process.getProcess().getElementById(instruction.getElementId());
-
-              // todo: reject if elementToActivate could not be found (#9976)
 
               executeGlobalVariableInstructions(processInstance, process, instruction);
               // todo(#9663): execute local variable instructions
