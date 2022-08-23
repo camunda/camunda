@@ -39,7 +39,7 @@ public final class RecordBatch implements MutableRecordBatch {
       final ValueType valueType,
       final BufferWriter valueWriter) {
     final var recordBatchEntry =
-        RecordBatchEntry.createRecordBatchEntry(
+        RecordBatchEntry.createEntry(
             key,
             sourceIndex,
             recordType,

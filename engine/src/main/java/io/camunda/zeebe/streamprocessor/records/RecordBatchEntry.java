@@ -17,18 +17,14 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.ReflectUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public record RecordBatchEntry(
-    long key, int sourceIndex, RecordMetadata recordMetadata, DirectBuffer recordValueBuffer)
+    long key, int sourceIndex, RecordMetadata recordMetadata, UnifiedRecordValue unifiedRecordValue)
     implements ImmutableRecordBatchEntry {
 
   @Override
   public UnifiedRecordValue recordValue() {
-    final UnifiedRecordValue unifiedRecordValue =
-        ReflectUtil.newInstance(EVENT_REGISTRY.get(recordMetadata.getValueType()));
-    unifiedRecordValue.wrap(recordValueBuffer, 0, recordValueBuffer.capacity());
     return unifiedRecordValue;
   }
 
@@ -39,10 +35,10 @@ public record RecordBatchEntry(
         Integer.BYTES
         + // source Index
         recordMetadata.getLength()
-        + recordValueBuffer.capacity();
+        + unifiedRecordValue.getLength();
   }
 
-  public static RecordBatchEntry createRecordBatchEntry(
+  public static RecordBatchEntry createEntry(
       final long key,
       final int sourceIndex,
       final RecordType recordType,
@@ -59,10 +55,15 @@ public record RecordBatchEntry(
             .rejectionReason(rejectionReason)
             .valueType(valueType);
 
+    // we need to copy the value, to make sure that it will not change later
     final var bytes = new byte[valueWriter.getLength()];
     final var recordValueBuffer = new UnsafeBuffer(bytes);
     valueWriter.write(recordValueBuffer, 0);
 
-    return new RecordBatchEntry(key, sourceIndex, recordMetadata, recordValueBuffer);
+    final UnifiedRecordValue unifiedRecordValue =
+        ReflectUtil.newInstance(EVENT_REGISTRY.get(recordMetadata.getValueType()));
+    unifiedRecordValue.wrap(recordValueBuffer, 0, recordValueBuffer.capacity());
+
+    return new RecordBatchEntry(key, sourceIndex, recordMetadata, unifiedRecordValue);
   }
 }
