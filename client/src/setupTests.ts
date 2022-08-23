@@ -37,18 +37,7 @@ afterAll(() => mockServer.close());
 // mock app version
 process.env.REACT_APP_VERSION = '1.2.3';
 
-class MockJSONEditor {
-  updateText() {}
-  destroy() {}
-  set() {}
-  get() {}
-}
-
-jest.mock('jsoneditor', () => MockJSONEditor);
-jest.mock('jsoneditor/dist/jsoneditor.css', () => undefined);
 jest.mock('@bpmn-io/form-js/dist/assets/form-js.css', () => undefined);
-jest.mock('brace/theme/tomorrow_night', () => undefined);
-jest.mock('brace/theme/tomorrow', () => undefined);
 jest.mock('@camunda-cloud/common-ui-react', () => ({
   ...jest.requireActual('@camunda-cloud/common-ui-react'),
   CmNotificationContainer: () => {

@@ -15,16 +15,9 @@ type Props = {
   title?: string;
   onClose?: () => void;
   onSave?: () => void;
-  isSaveDisabled?: boolean;
 };
 
-const Modal: React.FC<Props> = ({
-  children,
-  title,
-  onClose,
-  onSave,
-  isSaveDisabled,
-}) => {
+const Modal: React.FC<Props> = ({children, title, onClose, onSave}) => {
   return createPortal(
     <Container>
       <Content>
@@ -37,12 +30,7 @@ const Modal: React.FC<Props> = ({
           <CmButton appearance="secondary" label="Cancel" onCmPress={onClose}>
             Cancel
           </CmButton>
-          <CmButton
-            appearance="primary"
-            label="Apply"
-            onCmPress={onSave}
-            disabled={isSaveDisabled}
-          >
+          <CmButton appearance="primary" label="Apply" onCmPress={onSave}>
             Apply
           </CmButton>
         </Footer>

@@ -6,17 +6,41 @@
  */
 
 import {Modal} from './Modal';
-import {useLayoutEffect, useRef, useState} from 'react';
-import JSONEditor from 'jsoneditor';
-import 'jsoneditor/dist/jsoneditor.css';
-import {GlobalStyles} from './styled';
-import 'brace/theme/tomorrow';
+import {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import Editor, {useMonaco} from '@monaco-editor/react';
+import {editor} from 'monaco-editor';
 import {isValidJSON} from 'modules/utils/isValidJSON';
+
+const options: React.ComponentProps<typeof Editor>['options'] = {
+  minimap: {
+    enabled: false,
+  },
+  fontSize: 13,
+  lineHeight: 20,
+  fontFamily:
+    '"IBM Plex Mono", "Droid Sans Mono", "monospace", monospace, "Droid Sans Fallback"',
+  formatOnPaste: true,
+  formatOnType: true,
+  tabSize: 2,
+  wordWrap: 'on',
+  scrollBeyondLastLine: false,
+} as const;
+
+function beautifyJSON(value: string) {
+  try {
+    const parsedValue = JSON.parse(value);
+
+    return JSON.stringify(parsedValue, null, '\t');
+  } catch {
+    return value;
+  }
+}
+
 type Props = {
-  onClose?: () => void;
-  onSave?: (value: string | undefined) => void;
+  onClose: () => void;
+  onSave: (value: string | undefined) => void;
   value: string | undefined;
-  title?: string;
+  title: string;
 };
 
 const JSONEditorModal: React.FC<Props> = ({
@@ -25,62 +49,65 @@ const JSONEditorModal: React.FC<Props> = ({
   value = '',
   title,
 }) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const editorRef = useRef<JSONEditor | null>(null);
-  const [isJSONValid, setIsJSONValid] = useState(true);
+  const [isValid, setIsValid] = useState(true);
+  const [editedValue, setEditedValue] = useState('');
+  const editorRef = useRef<null | editor.IStandaloneCodeEditor>(null);
+  const monaco = useMonaco();
 
-  function checkIfJSONIsValid(editor: JSONEditor) {
-    try {
-      editor.get();
-      setIsJSONValid(true);
-    } catch {
-      setIsJSONValid(false);
-    }
-  }
-
-  useLayoutEffect(() => {
-    if (editorRef.current === null && containerRef.current !== null) {
-      const editor = new JSONEditor(containerRef.current, {
-        mode: 'code',
-        mainMenuBar: false,
-        statusBar: false,
-        theme: 'ace/theme/tomorrow',
-        onChange() {
-          checkIfJSONIsValid(editor);
-        },
-      });
-
-      if (isValidJSON(value)) {
-        editor.set(JSON.parse(value));
-      } else {
-        editor.updateText(value);
-      }
-
-      checkIfJSONIsValid(editor);
-
-      editorRef.current = editor;
-    }
-
-    return () => {
-      editorRef.current?.destroy();
-      editorRef.current = null;
-    };
+  useEffect(() => {
+    setEditedValue(beautifyJSON(value));
   }, [value]);
 
+  useLayoutEffect(() => {
+    monaco?.languages.json.jsonDefaults.setDiagnosticsOptions({
+      schemaValidation: 'error',
+      schemaRequest: 'error',
+    });
+  }, [monaco]);
+
+  useEffect(() => {
+    if (isValid) {
+      editorRef.current?.trigger('', 'closeMarkersNavigation', undefined);
+    }
+  }, [isValid]);
+
   return (
-    <>
-      <GlobalStyles />
-      <Modal
-        title={title}
-        onClose={onClose}
-        onSave={() => {
-          onSave?.(JSON.stringify(editorRef.current?.get()));
+    <Modal
+      title={title}
+      onClose={onClose}
+      onSave={() => {
+        if (isValid) {
+          onSave?.(editedValue);
+        } else {
+          editorRef.current?.trigger(
+            '',
+            'editor.action.marker.next',
+            undefined,
+          );
+          editorRef.current?.trigger(
+            '',
+            'editor.action.marker.prev',
+            undefined,
+          );
+        }
+      }}
+    >
+      <Editor
+        options={options}
+        language="json"
+        value={editedValue}
+        theme="light"
+        onChange={(value) => {
+          const newValue = value ?? '';
+          setEditedValue(newValue);
+          setIsValid(isValidJSON(newValue));
         }}
-        isSaveDisabled={!isJSONValid}
-      >
-        <div ref={containerRef} />
-      </Modal>
-    </>
+        onMount={(editor) => {
+          editor.focus();
+          editorRef.current = editor;
+        }}
+      />
+    </Modal>
   );
 };
 
