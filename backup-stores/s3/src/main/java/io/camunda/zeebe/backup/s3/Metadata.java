@@ -9,6 +9,10 @@ package io.camunda.zeebe.backup.s3;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupDescriptor;
+import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import java.util.Set;
 
 /**
@@ -41,5 +45,13 @@ record Metadata(
         backup.descriptor().snapshotId(),
         backup.snapshot().names(),
         backup.segments().names());
+  }
+
+  BackupIdentifier id() {
+    return new BackupIdentifierImpl(nodeId, partitionId, checkpointId);
+  }
+
+  BackupDescriptor descriptor() {
+    return new BackupDescriptorImpl(snapshotId, checkpointPosition, numberOfPartitions);
   }
 }
