@@ -20,14 +20,19 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
 import java.util.function.Consumer;
+import org.agrona.Strings;
 
 public final class ProcessInstanceModificationProcessor
     implements TypedRecordProcessor<ProcessInstanceModificationRecord> {
@@ -44,6 +49,7 @@ public final class ProcessInstanceModificationProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final CatchEventBehavior catchEventBehavior;
   private final ElementActivationBehavior elementActivationBehavior;
+  private final VariableBehavior variableBehavior;
 
   public ProcessInstanceModificationProcessor(
       final Writers writers,
@@ -59,6 +65,7 @@ public final class ProcessInstanceModificationProcessor
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
+    variableBehavior = bpmnBehaviors.variableBehavior();
   }
 
   @Override
@@ -93,6 +100,10 @@ public final class ProcessInstanceModificationProcessor
                   process.getProcess().getElementById(instruction.getElementId());
 
               // todo: reject if elementToActivate could not be found (#9976)
+
+              executeGlobalVariableInstructions(processInstance, process, instruction);
+              // todo(#9663): execute local variable instructions
+
               elementActivationBehavior.activateElement(processInstanceRecord, elementToActivate);
             });
 
@@ -104,6 +115,34 @@ public final class ProcessInstanceModificationProcessor
 
     responseWriter.writeEventOnCommand(
         eventKey, ProcessInstanceModificationIntent.MODIFIED, value, command);
+  }
+
+  private void executeGlobalVariableInstructions(
+      final ElementInstance processInstance,
+      final DeployedProcess process,
+      final ProcessInstanceModificationActivateInstructionValue activate) {
+    final var scopeKey = processInstance.getKey();
+    activate.getVariableInstructions().stream()
+        .filter(v -> Strings.isEmpty(v.getElementId()))
+        .map(
+            instruction -> {
+              if (instruction instanceof ProcessInstanceModificationVariableInstruction vi) {
+                return vi.getVariablesBuffer();
+              }
+              throw new UnsupportedOperationException(
+                  "Expected variable instruction of type %s, but was %s"
+                      .formatted(
+                          ProcessInstanceModificationActivateInstructionValue.class.getName(),
+                          instruction.getClass().getName()));
+            })
+        .forEach(
+            variableDocument ->
+                variableBehavior.mergeLocalDocument(
+                    scopeKey,
+                    process.getKey(),
+                    processInstance.getKey(),
+                    process.getBpmnProcessId(),
+                    variableDocument));
   }
 
   private void terminateElement(
