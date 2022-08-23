@@ -18,6 +18,8 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.streamprocessor.records.ImmutableRecordBatchEntry;
 import io.camunda.zeebe.streamprocessor.records.RecordBatch;
+import io.camunda.zeebe.streamprocessor.records.RecordBatchSizePredicate;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 public class RecordBatchTest {
@@ -25,7 +27,7 @@ public class RecordBatchTest {
   @Test
   public void shouldAppendToRecordBatch() {
     // given
-    final var recordBatch = new RecordBatch(1024);
+    final var recordBatch = new RecordBatch((count, size) -> true);
     final var processInstanceRecord = Records.processInstance(1);
 
     // when
@@ -71,10 +73,86 @@ public class RecordBatchTest {
   }
 
   @Test
+  public void shouldUseRecordSizePredicate() {
+    // given
+    final AtomicInteger batchEntryCount = new AtomicInteger(-1);
+    final AtomicInteger batchSize = new AtomicInteger(-1);
+    final var batchSizePredicate =
+        new RecordBatchSizePredicate() {
+          @Override
+          public boolean test(final Integer count, final Integer size) {
+            batchEntryCount.set(count);
+            batchSize.set(size);
+            return true;
+          }
+        };
+    final var recordBatch = new RecordBatch(batchSizePredicate);
+    final var processInstanceRecord = Records.processInstance(1);
+
+    // when
+    recordBatch.appendRecord(
+        1,
+        -1,
+        RecordType.COMMAND,
+        ProcessInstanceIntent.ACTIVATE_ELEMENT,
+        RejectionType.ALREADY_EXISTS,
+        "broken somehow",
+        ValueType.PROCESS_INSTANCE,
+        processInstanceRecord);
+
+    // then
+    assertThat(recordBatch.getBatchSize()).isEqualTo(batchSize.get());
+    assertThat(batchSize.get()).isGreaterThan(processInstanceRecord.getLength());
+    assertThat(batchEntryCount.get()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldUpdateBatchEntryCountWhenUsingRecordSizePredicate() {
+    // given
+    final AtomicInteger batchEntryCount = new AtomicInteger(-1);
+    final AtomicInteger batchSize = new AtomicInteger(-1);
+    final var batchSizePredicate =
+        new RecordBatchSizePredicate() {
+          @Override
+          public boolean test(final Integer count, final Integer size) {
+            batchEntryCount.set(count);
+            batchSize.set(size);
+            return true;
+          }
+        };
+    final var recordBatch = new RecordBatch(batchSizePredicate);
+    final var processInstanceRecord = Records.processInstance(1);
+    recordBatch.appendRecord(
+        1,
+        -1,
+        RecordType.COMMAND,
+        ProcessInstanceIntent.ACTIVATE_ELEMENT,
+        RejectionType.ALREADY_EXISTS,
+        "broken somehow",
+        ValueType.PROCESS_INSTANCE,
+        processInstanceRecord);
+
+    // when
+    recordBatch.appendRecord(
+        1,
+        -1,
+        RecordType.COMMAND,
+        ProcessInstanceIntent.ACTIVATE_ELEMENT,
+        RejectionType.ALREADY_EXISTS,
+        "broken somehow",
+        ValueType.PROCESS_INSTANCE,
+        processInstanceRecord);
+
+    // then
+    assertThat(recordBatch.getBatchSize()).isEqualTo(batchSize.get());
+    assertThat(batchSize.get()).isGreaterThan(processInstanceRecord.getLength());
+    assertThat(batchEntryCount.get()).isEqualTo(2);
+  }
+
+  @Test
   public void shouldNotAppendToRecordBatchIfMaxSizeIsReached() {
     // given
-    final var maxBatchSize = 100; // bytes
-    final var recordBatch = new RecordBatch(maxBatchSize);
+    final var recordBatch = new RecordBatch((count, size) -> false);
     final var processInstanceRecord = Records.processInstance(1);
 
     // expect
@@ -89,6 +167,39 @@ public class RecordBatchTest {
                     "broken somehow",
                     ValueType.PROCESS_INSTANCE,
                     processInstanceRecord))
-        .hasMessageContaining("Batch would reach his maxBatchSize ");
+        .hasMessageContaining("Can't append entry")
+        .hasMessageContaining("[ currentBatchEntryCount: 0, currentBatchSize: 0]");
+  }
+
+  @Test
+  public void shouldOnlyAddUntilMaxBatchSizeIsReached() {
+    // given
+    final var recordBatch = new RecordBatch((count, size) -> count < 2);
+    final var processInstanceRecord = Records.processInstance(1);
+
+    recordBatch.appendRecord(
+        1,
+        -1,
+        RecordType.COMMAND,
+        ProcessInstanceIntent.ACTIVATE_ELEMENT,
+        RejectionType.ALREADY_EXISTS,
+        "broken somehow",
+        ValueType.PROCESS_INSTANCE,
+        processInstanceRecord);
+
+    // expect
+    assertThatThrownBy(
+            () ->
+                recordBatch.appendRecord(
+                    1,
+                    -1,
+                    RecordType.COMMAND,
+                    ProcessInstanceIntent.ACTIVATE_ELEMENT,
+                    RejectionType.ALREADY_EXISTS,
+                    "broken somehow",
+                    ValueType.PROCESS_INSTANCE,
+                    processInstanceRecord))
+        .hasMessageContaining("Can't append entry")
+        .hasMessageContaining("[ currentBatchEntryCount: 1, currentBatchSize: 249]");
   }
 }

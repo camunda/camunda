@@ -22,10 +22,10 @@ public final class RecordBatch implements MutableRecordBatch {
 
   final List<ImmutableRecordBatchEntry> recordBatchEntries = new ArrayList<>();
   private int batchSize;
-  private final int maxBatchSize;
+  private final RecordBatchSizePredicate recordBatchSizePredicate;
 
-  public RecordBatch(final int maxBatchSize) {
-    this.maxBatchSize = maxBatchSize;
+  public RecordBatch(final RecordBatchSizePredicate recordBatchSizePredicate) {
+    this.recordBatchSizePredicate = recordBatchSizePredicate;
   }
 
   @Override
@@ -50,14 +50,19 @@ public final class RecordBatch implements MutableRecordBatch {
             valueWriter);
     final var entryLength = recordBatchEntry.getLength();
 
-    if (batchSize + entryLength >= maxBatchSize) {
+    if (!recordBatchSizePredicate.test(recordBatchEntries.size() + 1, batchSize + entryLength)) {
       // todo decided whether we want to throw or return a bool or a either?!
       throw new IllegalStateException(
-          "Batch would reach his maxBatchSize ("
-              + maxBatchSize
-              + ") if entry with size "
+          "Can't append entry: '"
+              + recordBatchEntry
+              + "' with size: "
               + entryLength
-              + " would be added.");
+              + " this would exceed the maximum batch size."
+              + " [ currentBatchEntryCount: "
+              + recordBatchEntries.size()
+              + ", currentBatchSize: "
+              + batchSize
+              + "]");
     }
 
     recordBatchEntries.add(recordBatchEntry);
