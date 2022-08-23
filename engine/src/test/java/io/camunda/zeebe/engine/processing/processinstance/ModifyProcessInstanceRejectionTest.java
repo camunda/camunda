@@ -10,7 +10,9 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -22,6 +24,7 @@ import org.junit.rules.TestWatcher;
 public class ModifyProcessInstanceRejectionTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  private static final String PROCESS_ID = "process";
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -51,5 +54,40 @@ public class ModifyProcessInstanceRejectionTest {
                 "Expected to modify process instance but no process instance found with key '%d'",
                 unknownKey))
         .hasKey(unknownKey);
+  }
+
+  @Test
+  public void shouldRejectCommandWhenAtLeastOneElementIdIsUnknown() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask("A").endEvent().done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("A")
+            .activateElement("B")
+            .activateElement("C")
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that elements with ids 'B' and 'C' are not found")
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to activate element but no element found in process '%s' for element id(s): 'B', 'C'"
+                .formatted(PROCESS_ID));
   }
 }
