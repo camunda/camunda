@@ -10,11 +10,13 @@ Docker Compose 1.29.2+
 ## Installation
 
 Install yarn
+
 ```bash
 npm install -g yarn
 ```
 
 Install dependencies
+
 ```bash
 yarn
 ```
@@ -51,6 +53,23 @@ To do that set ``FAST_BUILD`` environment on scope. For example:
 ```bash
 export FAST_BUILD=1
 yarn run start-backend
+```
+
+### Run Optimize server in cloud or self managed mode
+
+1 - Create .env file in the root directory that contains the following:
+```bash
+AUTH0_CLIENTSECRET=
+AUTH0_USEREMAIL=
+AUTH0_USERPASSWORD=
+```
+2- Retrieve the credentials from [vault](https://vault.int.camunda.com/ui/vault/secrets/secret/show/products/optimize/ci/jenkins) and paste them in the .env file
+
+3- Run Optimize server in cloud or self managed mode:
+
+```bash
+yarn run start-backend-cloud
+yarn run start-backend-sm
 ```
 
 ### Problems that may happen
@@ -117,8 +136,8 @@ Waiting...Fatal error: watch ENOSPC
     at FSWatcher.start (fs.js:1376:19)
     ....
 ```
-then you can find [here](https://stackoverflow.com/a/17437601) a solution for this.
 
+then you can find [here](https://stackoverflow.com/a/17437601) a solution for this.
 
 ## E2E Testing
 
