@@ -11,17 +11,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.backup.api.Backup;
-import io.camunda.zeebe.backup.api.BackupDescriptor;
-import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
-import io.camunda.zeebe.backup.api.NamedFileSet;
+import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupImpl;
+import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
@@ -37,6 +39,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -111,29 +114,24 @@ final class S3BackupStoreIT {
                 AsyncResponseTransformer.toBytes())
             .join();
 
-    final var objectMapper = new ObjectMapper();
-    final var readMetadata = objectMapper.readValue(metadataObject.asByteArray(), Metadata.class);
+    final var readMetadata =
+        S3BackupStore.MAPPER.readValue(metadataObject.asByteArray(), Metadata.class);
 
-    assertThat(readMetadata.checkpointId()).isEqualTo(backup.id.checkpointId);
-    assertThat(readMetadata.partitionId()).isEqualTo(backup.id.partitionId);
-    assertThat(readMetadata.nodeId()).isEqualTo(backup.id.nodeId);
+    assertThat(readMetadata.descriptor()).isEqualTo(backup.descriptor());
+    assertThat(readMetadata.id()).isEqualTo(backup.id());
 
-    assertThat(readMetadata.checkpointPosition()).isEqualTo(backup.descriptor.checkpointPosition);
-    assertThat(readMetadata.snapshotId()).isEqualTo(backup.descriptor.snapshotId);
-    assertThat(readMetadata.numberOfPartitions()).isEqualTo(backup.descriptor.numberOfPartitions);
-
-    assertThat(readMetadata.snapshotFileNames()).isEqualTo(backup.snapshot.names());
-    assertThat(readMetadata.segmentFileNames()).isEqualTo(backup.segments.names());
+    assertThat(readMetadata.snapshotFileNames()).isEqualTo(backup.snapshot().names());
+    assertThat(readMetadata.segmentFileNames()).isEqualTo(backup.segments().names());
   }
 
   @Test
   void snapshotFilesExist(@TempDir Path tempDir) throws IOException {
     // given
     final var backup = prepareTestBackup(tempDir);
-    final var prefix = S3BackupStore.objectPrefix(backup.id) + S3BackupStore.SNAPSHOT_PREFIX;
+    final var prefix = S3BackupStore.objectPrefix(backup.id()) + S3BackupStore.SNAPSHOT_PREFIX;
 
     final var expectedObjects =
-        backup.snapshot.names().stream().map(name -> prefix + name).toList();
+        backup.snapshot().names().stream().map(name -> prefix + name).toList();
 
     // when
     store.save(backup).join();
@@ -151,10 +149,10 @@ final class S3BackupStoreIT {
   void segmentFilesExist(@TempDir Path tempDir) throws IOException {
     // given
     final var backup = prepareTestBackup(tempDir);
-    final var prefix = S3BackupStore.objectPrefix(backup.id) + S3BackupStore.SEGMENTS_PREFIX;
+    final var prefix = S3BackupStore.objectPrefix(backup.id()) + S3BackupStore.SEGMENTS_PREFIX;
 
     final var expectedObjects =
-        backup.segments.names().stream().map(name -> prefix + name).toList();
+        backup.segments().names().stream().map(name -> prefix + name).toList();
 
     // when
     store.save(backup).join();
@@ -172,14 +170,16 @@ final class S3BackupStoreIT {
   void bucketContainsExpectedObjectsOnly(@TempDir Path tempDir) throws IOException {
     // given
     final var backup = prepareTestBackup(tempDir);
-    final var prefix = S3BackupStore.objectPrefix(backup.id);
+    final var prefix = S3BackupStore.objectPrefix(backup.id());
 
     final var metadata = prefix + Metadata.OBJECT_KEY;
     final var status = prefix + Status.OBJECT_KEY;
     final var snapshotObjects =
-        backup.snapshot.names().stream().map(name -> prefix + S3BackupStore.SNAPSHOT_PREFIX + name);
+        backup.snapshot().names().stream()
+            .map(name -> prefix + S3BackupStore.SNAPSHOT_PREFIX + name);
     final var segmentObjects =
-        backup.segments.names().stream().map(name -> prefix + S3BackupStore.SEGMENTS_PREFIX + name);
+        backup.segments().names().stream()
+            .map(name -> prefix + S3BackupStore.SEGMENTS_PREFIX + name);
 
     final var contentObjects = Stream.concat(snapshotObjects, segmentObjects);
     final var managementObjects = Stream.of(metadata, status);
@@ -246,7 +246,7 @@ final class S3BackupStoreIT {
 
     // when
     store.save(backup).join();
-    store.markFailed(backup.id).join();
+    store.markFailed(backup.id()).join();
 
     // then
     final var statusObject =
@@ -259,14 +259,14 @@ final class S3BackupStoreIT {
                 AsyncResponseTransformer.toBytes())
             .join();
 
-    final var objectMapper = new ObjectMapper();
+    final var objectMapper = S3BackupStore.MAPPER;
     final var readStatus = objectMapper.readValue(statusObject.asByteArray(), Status.class);
 
     assertThat(readStatus.statusCode()).isEqualTo(BackupStatusCode.FAILED);
     assertThat(readStatus.failureReason()).isNotEmpty();
   }
 
-  private TestBackup prepareTestBackup(Path tempDir) throws IOException {
+  private Backup prepareTestBackup(Path tempDir) throws IOException {
     Files.createDirectory(tempDir.resolve("segments/"));
     final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
     final var seg2 = Files.createFile(tempDir.resolve("segments/segment-file-2"));
@@ -279,36 +279,10 @@ final class S3BackupStoreIT {
     Files.write(s1, RandomUtils.nextBytes(1024));
     Files.write(s2, RandomUtils.nextBytes(1024));
 
-    return new TestBackup(
-        new TestBackupIdentifier(1, 2, 3),
-        new TestBackupDescriptor(4, 5, "test-snapshot-id"),
-        new TestNamedFileSet(Map.of("segment-file-1", seg1, "segment-file-2", seg2)),
-        new TestNamedFileSet(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)));
-  }
-
-  record TestBackup(
-      TestBackupIdentifier id,
-      TestBackupDescriptor descriptor,
-      TestNamedFileSet segments,
-      TestNamedFileSet snapshot)
-      implements Backup {}
-
-  record TestBackupIdentifier(long checkpointId, int partitionId, int nodeId)
-      implements BackupIdentifier {}
-
-  record TestBackupDescriptor(long checkpointPosition, int numberOfPartitions, String snapshotId)
-      implements BackupDescriptor {}
-
-  record TestNamedFileSet(Map<String, Path> namedFiles) implements NamedFileSet {
-
-    @Override
-    public Set<String> names() {
-      return namedFiles.keySet();
-    }
-
-    @Override
-    public Set<Path> files() {
-      return Set.copyOf(namedFiles.values());
-    }
+    return new BackupImpl(
+        new BackupIdentifierImpl(1, 2, 3),
+        new BackupDescriptorImpl("test-snapshot-id", 4, 5),
+        new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)),
+        new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)));
   }
 }
