@@ -10,8 +10,11 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -486,6 +489,75 @@ public class ModifyProcessInstanceTerminationTest {
             tuple(
                 BpmnElementType.SEQUENCE_FLOW, "to-end", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(BpmnElementType.END_EVENT, "end", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldNotTerminateFlowScopeIfPendingActivation() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .parallelGateway("fork")
+                .userTask("A")
+                .moveToNode("fork")
+                .userTask("B")
+                .sequenceFlowId("b-to-c")
+                .userTask("C")
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKeyOfA = getElementInstanceKeyOfElement(processInstanceKey, "A");
+
+    final var elementRecordOfB =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("B")
+            .getFirst();
+
+    // when
+    final var modificationCommand =
+        new ProcessInstanceModificationRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .addTerminateInstruction(
+                new ProcessInstanceModificationTerminateInstruction()
+                    .setElementInstanceKey(elementInstanceKeyOfA));
+
+    // write the commands in a specific order to ensure that we took the outgoing sequence flow of
+    // B, and we wrote a command to activate the element C (i.e. the pending activation), before
+    // we process the modification command
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .processInstance(ProcessInstanceIntent.COMPLETE_ELEMENT, elementRecordOfB.getValue())
+            .key(elementRecordOfB.getKey()),
+        RecordToWrite.command().modification(modificationCommand).key(processInstanceKey));
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit("C", ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            r -> r.getValue().getElementId(),
+            Record::getIntent)
+        .describedAs("Ensure the precondition of a pending activation")
+        .containsSequence(
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.SEQUENCE_FLOW, "b-to-c", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATING))
+        .describedAs("Expect the flow scope not to be terminated")
+        .doesNotContain(
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "subprocess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED))
+        .describedAs("Expect the pending element to be activated")
+        .contains(tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   private static long getElementInstanceKeyOfElement(
