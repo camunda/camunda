@@ -138,7 +138,7 @@ public class FileBasedReceivedSnapshotTest {
         .as("there is only the latest snapshot in the receiver's snapshot directory")
         .isDirectoryContainingExactly(
             secondReceivedPersistedSnapshot.getPath(),
-            secondReceivedPersistedSnapshot.getChecksumFile());
+            secondReceivedPersistedSnapshot.getChecksumPath());
   }
 
   @Test
@@ -167,7 +167,7 @@ public class FileBasedReceivedSnapshotTest {
     final var corruptedSnapshot =
         new FileBasedSnapshot(
             persistedSnapshot.getDirectory(),
-            persistedSnapshot.getChecksumFile(),
+            persistedSnapshot.getChecksumPath(),
             0xDEADBEEFL,
             persistedSnapshot.getSnapshotId(),
             null,
