@@ -31,8 +31,9 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.Optional;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -99,8 +100,8 @@ public final class ProcessInstanceModificationProcessor
         processState.getProcessByKey(processInstanceRecord.getProcessDefinitionKey());
 
     final var optRejection = validateCommand(command, process);
-    if (optRejection.isPresent()) {
-      final var rejection = optRejection.get();
+    if (optRejection.isLeft()) {
+      final var rejection = optRejection.getLeft();
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
@@ -129,12 +130,20 @@ public final class ProcessInstanceModificationProcessor
         eventKey, ProcessInstanceModificationIntent.MODIFIED, value, command);
   }
 
-  private Optional<Rejection> validateCommand(
+  private Either<Rejection, DeployedProcess> validateCommand(
       final TypedRecord<ProcessInstanceModificationRecord> command, final DeployedProcess process) {
     final var value = command.getValue();
+    final var activateInstructions = value.getActivateInstructions();
 
+    return validateElementExists(process, activateInstructions)
+        .map(valid -> process);
+  }
+
+
+  private Either<Rejection, DeployedProcess> validateElementExists(final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
     final Set<String> unknownElementIds =
-        value.getActivateInstructions().stream()
+        activateInstructions.stream()
             .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
             .filter(targetElementId -> process.getProcess().getElementById(targetElementId) == null)
             .collect(Collectors.toSet());
@@ -144,10 +153,9 @@ public final class ProcessInstanceModificationProcessor
               ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND,
               BufferUtil.bufferAsString(process.getBpmnProcessId()),
               String.join("', '", unknownElementIds));
-      return Optional.of(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+      return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
     }
-
-    return Optional.empty();
+    return Either.right(process);
   }
 
   private void executeGlobalVariableInstructions(
