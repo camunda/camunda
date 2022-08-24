@@ -90,4 +90,48 @@ public class ModifyProcessInstanceRejectionTest {
             "Expected to activate element but no element found in process '%s' for element id(s): 'B', 'C'"
                 .formatted(PROCESS_ID));
   }
+
+  @Test
+  public void shouldRejectCommandWhenAtLeastOneElementIsInsideMultiInstance() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .subProcess(
+                    "subprocess",
+                    s -> s.embeddedSubProcess().startEvent().manualTask("B").manualTask("C").done())
+                .multiInstance(m -> m.zeebeInputCollectionExpression("[1,2,3]"))
+                .manualTask("task")
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("B")
+            .activateElement("C")
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that elements with ids 'B' and 'C' are inside multi-instance")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' with activate instructions but the element(s) with id(s) 'B', 'C'"
+                    + " is inside a multi-instance subprocess. The activation of element(s) inside a multi-instance subprocess is not supported.")
+                .formatted(PROCESS_ID));
+  }
 }
