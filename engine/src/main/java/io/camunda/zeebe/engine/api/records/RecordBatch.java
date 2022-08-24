@@ -11,6 +11,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -33,7 +34,7 @@ public final class RecordBatch implements MutableRecordBatch {
   }
 
   @Override
-  public void appendRecord(
+  public Either<RuntimeException, Void> appendRecord(
       final long key,
       final int sourceIndex,
       final RecordType recordType,
@@ -55,22 +56,23 @@ public final class RecordBatch implements MutableRecordBatch {
     final var entryLength = recordBatchEntry.getLength();
 
     if (!recordBatchSizePredicate.test(recordBatchEntries.size() + 1, batchSize + entryLength)) {
-      // todo decided whether we want to throw or return a bool or a either?!
-      throw new IllegalStateException(
-          "Can't append entry: '"
-              + recordBatchEntry
-              + "' with size: "
-              + entryLength
-              + " this would exceed the maximum batch size."
-              + " [ currentBatchEntryCount: "
-              + recordBatchEntries.size()
-              + ", currentBatchSize: "
-              + batchSize
-              + "]");
+      return Either.left(
+          new IllegalStateException(
+              "Can't append entry: '"
+                  + recordBatchEntry
+                  + "' with size: "
+                  + entryLength
+                  + " this would exceed the maximum batch size."
+                  + " [ currentBatchEntryCount: "
+                  + recordBatchEntries.size()
+                  + ", currentBatchSize: "
+                  + batchSize
+                  + "]"));
     }
 
     recordBatchEntries.add(recordBatchEntry);
     batchSize += entryLength;
+    return Either.right(null);
   }
 
   @Override
