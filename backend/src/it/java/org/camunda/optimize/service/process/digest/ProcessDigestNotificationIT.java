@@ -9,6 +9,7 @@ import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.GreenMailUtil;
 import com.icegreen.greenmail.util.ServerSetup;
 import lombok.SneakyThrows;
+import org.apache.commons.mail.util.MimeMessageParser;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
@@ -166,10 +167,13 @@ public class ProcessDigestNotificationIT extends AbstractIT {
 
     // then
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
-    assertThat(GreenMailUtil.getBody(greenMail.getReceivedMessages()[0]))
-      .isEqualTo("Hello firstName lastName, \r\n" +
-                   "Here is your KPI digest for the Process \"aProcessDefKey\":\r\n" +
-                   "There are currently 0 KPI reports defined for this process.");
+    assertThat(readEmailHtmlContent(greenMail.getReceivedMessages()[0]))
+      .containsIgnoringWhitespaces("Hi firstName lastName,")
+      .containsIgnoringWhitespaces(
+        "Here's your digest for the " + DEF_KEY + " process, showing you the current state of your KPIs compared to their " +
+          "targets.")
+      .containsIgnoringWhitespaces("There are currently no time KPIs defined for this process.")
+      .containsIgnoringWhitespaces("There are currently no quality KPIs defined for this process.");
   }
 
   @Test
@@ -185,35 +189,37 @@ public class ProcessDigestNotificationIT extends AbstractIT {
 
     // then
     assertThat(greenMail.waitForIncomingEmail(100, 1)).isTrue();
-    assertThat(GreenMailUtil.getBody(greenMail.getReceivedMessages()[0]))
-      .isEqualTo("Hello firstName lastName, \r\n" +
-                   "Here is your KPI digest for the Process \"aProcessDefKey\":\r\n" +
-                   "There are currently 2 KPI reports defined for this process.\r\n" +
-                   "KPI Report \"KPI Report 1\": \r\n" +
-                   "Target: 1\r\n" +
-                   "Current Value: 1.0\r\n" +
-                   "Previous Value: -\r\n" +
-                   "\r\n" +
-                   "KPI Report \"KPI Report 2\": \r\n" +
-                   "Target: 1\r\n" +
-                   "Current Value: 1.0\r\n" +
-                   "Previous Value: -");
-    // then
-    greenMail.reset();
-    assertThat(greenMail.waitForIncomingEmail(1500, 1)).isTrue();
-    assertThat(GreenMailUtil.getBody(greenMail.getReceivedMessages()[0]))
-      .isEqualTo("Hello firstName lastName, \r\n" +
-                   "Here is your KPI digest for the Process \"aProcessDefKey\":\r\n" +
-                   "There are currently 2 KPI reports defined for this process.\r\n" +
-                   "KPI Report \"KPI Report 1\": \r\n" +
-                   "Target: 1\r\n" +
-                   "Current Value: 1.0\r\n" +
-                   "Previous Value: 1.0\r\n" +
-                   "\r\n" +
-                   "KPI Report \"KPI Report 2\": \r\n" +
-                   "Target: 1\r\n" +
-                   "Current Value: 1.0\r\n" +
-                   "Previous Value: 1.0");
+    assertThat(readEmailHtmlContent(greenMail.getReceivedMessages()[0]))
+      .containsIgnoringWhitespaces("Hi firstName lastName,")
+      .containsIgnoringWhitespaces(
+        "Here's your digest for the " + DEF_KEY + " process, showing you the current state of your KPIs compared to their " +
+          "targets.")
+      .containsIgnoringWhitespaces("There are currently no time KPIs defined for this process.")
+      .containsIgnoringWhitespaces("100%</span> of your quality KPIs met their targets")
+      .containsIgnoringWhitespaces("Quality")
+      .containsIgnoringWhitespaces("KPI Report 1")
+      .containsIgnoringWhitespaces("KPI Report 2")
+      .containsIgnoringWhitespaces("< 1") // target
+      .containsIgnoringWhitespaces("--") // change
+      .containsIgnoringWhitespaces("1.0"); // current
+  }
+
+  @Test
+  public void emailContainsCorrectLinks() {
+    // given
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
+    final String reportId = createKpiReport("KPI Report 1");
+    importAllEngineEntitiesFromScratch();
+    runKpiSchedulerAndRefreshIndices();
+    processOverviewClient.updateProcess(
+      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+
+    // then email contains report and process page links
+    assertThat(greenMail.waitForIncomingEmail(100, 1)).isTrue();
+    assertThat(readEmailHtmlContent(greenMail.getReceivedMessages()[0]))
+      .containsIgnoringWhitespaces(
+        "#/report/" + reportId + "?utm_medium=email&utm_source=digest")
+      .containsIgnoringWhitespaces("#/processes");
   }
 
   @Test
@@ -291,6 +297,11 @@ public class ProcessDigestNotificationIT extends AbstractIT {
   private void runKpiSchedulerAndRefreshIndices() {
     embeddedOptimizeExtension.getKpiSchedulerService().runKpiImportTask();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
+  @SneakyThrows
+  private String readEmailHtmlContent(final MimeMessage message) {
+    return new MimeMessageParser(message).parse().getHtmlContent();
   }
 
 }

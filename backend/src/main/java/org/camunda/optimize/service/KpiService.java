@@ -120,12 +120,6 @@ public class KpiService {
     return kpiResponseDtos;
   }
 
-  public Map<String, KpiResultDto> getKpiResultsByProcessDefinition(final ProcessOverviewDto processOverviewDto) {
-    return extractKpiResultsForProcessDefinition(processOverviewDto)
-      .stream()
-      .collect(toMap(KpiResultDto::getReportId, Function.identity()));
-  }
-
   private KpiType getKpiType(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
     return getViewProperty(singleProcessReportDefinitionRequestDto)
       .filter(measure -> (ViewProperty.DURATION.equals(measure) || (ViewProperty.PERCENTAGE.equals(measure)

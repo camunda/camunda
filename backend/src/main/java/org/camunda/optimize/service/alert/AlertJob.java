@@ -22,6 +22,7 @@ import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.es.writer.AlertWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.DurationFormatterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.quartz.Job;
@@ -223,25 +224,7 @@ public class AlertJob implements Job {
       return String.valueOf(durationInMsAsDouble);
     }
     final long durationInMs = durationInMsAsDouble.longValue();
-    return formatMilliSecondsToReadableDurationString(durationInMs);
-  }
-
-  private String formatMilliSecondsToReadableDurationString(final long durationInMs) {
-    final long days = TimeUnit.MILLISECONDS.toDays(durationInMs);
-    final long hours = TimeUnit.MILLISECONDS.toHours(durationInMs) - TimeUnit.DAYS.toHours(days);
-    final long minutes = TimeUnit.MILLISECONDS.toMinutes(durationInMs)
-      - TimeUnit.DAYS.toMinutes(days)
-      - TimeUnit.HOURS.toMinutes(hours);
-    final long seconds = TimeUnit.MILLISECONDS.toSeconds(durationInMs)
-      - TimeUnit.DAYS.toSeconds(days)
-      - TimeUnit.HOURS.toSeconds(hours)
-      - TimeUnit.MINUTES.toSeconds(minutes);
-    final long milliSeconds = durationInMs - TimeUnit.DAYS.toMillis(days)
-      - TimeUnit.HOURS.toMillis(hours)
-      - TimeUnit.MINUTES.toMillis(minutes)
-      - TimeUnit.SECONDS.toMillis(seconds);
-
-    return String.format("%sd %sh %smin %ss %sms", days, hours, minutes, seconds, milliSeconds);
+    return DurationFormatterUtil.formatMilliSecondsToReadableDurationString(durationInMs);
   }
 
   private String createReportViewLink(final AlertDefinitionDto alert,

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.processoverview;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -28,5 +29,14 @@ public class KpiResultDto {
   private KpiType type;
   private ViewProperty measure;
   private TargetValueUnit unit;
+
+  @JsonIgnore
+  public boolean isTargetMet() {
+    if (isBelow) {
+      return Double.parseDouble(value) <= Double.parseDouble(target);
+    } else {
+      return Double.parseDouble(value) >= Double.parseDouble(target);
+    }
+  }
 
 }

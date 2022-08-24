@@ -408,13 +408,13 @@ public class AlertWebhookIT extends AbstractAlertIT {
 
   private String createAlertMessage(final String expectedLink) {
     return "Camunda Optimize - Report Status\\nAlert name:" +
-      " test alert\\nReport name: something\\nStatus: Given threshold [0d 0h 0min 1s 500ms] was exceeded. Current" +
-      " value: 0d 0h 0min 2s 0ms. Please check your Optimize report for more information! \\n" + expectedLink;
+      " test alert\\nReport name: something\\nStatus: Given threshold [1s 500ms] was exceeded. Current" +
+      " value: 2s. Please check your Optimize report for more information! \\n" + expectedLink;
   }
 
   private String createAlertResolvedMessage(final String expectedLink) {
     return "Camunda Optimize - Report Status\\nAlert name: test alert\\nReport name: something\\nStatus: Given " +
-      "threshold [0d 0h 0min 1s 500ms] is not exceeded anymore. Current value: 0d 0h 0min 1s 500ms. Please check your" +
+      "threshold [1s 500ms] is not exceeded anymore. Current value: 1s 500ms. Please check your" +
       " Optimize report for more information! \\n" + expectedLink;
   }
 

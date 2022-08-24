@@ -235,6 +235,11 @@
       <artifactId>commons-email</artifactId>
       <version>1.5</version>
     </dependency>
+    <dependency>
+      <groupId>org.freemarker</groupId>
+      <artifactId>freemarker</artifactId>
+      <version>2.3.31</version>
+    </dependency>
 
     <!-- CSV -->
     <dependency>
