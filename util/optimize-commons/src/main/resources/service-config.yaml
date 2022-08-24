@@ -661,8 +661,8 @@ caches:
   # It prevents too many fetch requests to the external service.
   cloudUsers:
     maxSize: ${CAMUNDA_OPTIMIZE_CLOUD_USER_CACHE_MAX_SIZE:10000}
-    # the interval (in seconds) between each request to repopulate the cache
-    fetchIntervalSeconds: ${CAMUNDA_OPTIMIZE_CLOUD_USER_CACHE_FETCH_INTERVAL:600}
+    # the minimum interval (in seconds) between each request to repopulate the cache.
+    minFetchIntervalSeconds: ${CAMUNDA_OPTIMIZE_CLOUD_USER_CACHE_MIN_FETCH_INTERVAL_SECONDS:600}
 
 externalVariable:
   import:

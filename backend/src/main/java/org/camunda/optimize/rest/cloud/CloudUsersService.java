@@ -9,32 +9,31 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.cloud.CloudUserDto;
-import org.camunda.optimize.service.AbstractScheduledService;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.CloudUserCacheConfiguration;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.scheduling.Trigger;
-import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotAuthorizedException;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * The class uses a cache to prevent repeated fetching of all members from a Cloud organisation. The interval between
+ * The class uses a cache to prevent repeated fetching of all members from a Cloud organisation. The minimum interval between
  * repopulating the cache is configurable. If a user does not exist in the cache, a request to fetch that user is made
  * directly to the user client
  */
 @Component
 @Slf4j
 @Conditional(CCSaaSCondition.class)
-public class CloudUsersService extends AbstractScheduledService {
+public class CloudUsersService {
 
   private final Cache<String, CloudUserDto> cloudUsersCache;
 
@@ -43,6 +42,8 @@ public class CloudUsersService extends AbstractScheduledService {
   private final CCSaaSUserClient userClient;
   private final AccountsUserAccessTokenProvider accessTokenProvider;
   private final ConfigurationService configurationService;
+
+  private OffsetDateTime cacheLastPopulatedTimestamp;
 
   public CloudUsersService(final CCSaaSUserClient userClient,
                            final AccountsUserAccessTokenProvider accessTokenProvider,
@@ -55,7 +56,7 @@ public class CloudUsersService extends AbstractScheduledService {
     cloudUsersCache = Caffeine.newBuilder()
       .maximumSize(cloudUsersCacheConfiguration.getMaxSize())
       .build();
-    cloudUsersCache.putAll(fetchAllUsers());
+    cacheLastPopulatedTimestamp = OffsetDateTime.MIN;
   }
 
   public Optional<CloudUserDto> getUserById(final String userId) {
@@ -74,21 +75,17 @@ public class CloudUsersService extends AbstractScheduledService {
    * Returns the users currently in the user cache
    */
   public Collection<CloudUserDto> getAllUsers() {
+    repopulateCacheIfMinFetchIntervalExceeded();
     return cloudUsersCache.asMap().values();
   }
 
-  @Override
-  protected void run() {
-    cloudUsersCache.invalidateAll();
-    cloudUsersCache.putAll(fetchAllUsers());
-  }
-
-  @Override
-  protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(
-      configurationService.getCaches().getCloudUsers().getFetchIntervalSeconds(),
-      TimeUnit.MILLISECONDS
-    );
+  private synchronized void repopulateCacheIfMinFetchIntervalExceeded() {
+    final OffsetDateTime currentTime = LocalDateUtil.getCurrentDateTime();
+    final long secondsSinceCacheRepopulated = cacheLastPopulatedTimestamp.until(currentTime, ChronoUnit.SECONDS);
+    if (secondsSinceCacheRepopulated > configurationService.getCaches().getCloudUsers().getMinFetchIntervalSeconds()) {
+      cloudUsersCache.putAll(fetchAllUsers());
+      cacheLastPopulatedTimestamp = currentTime;
+    }
   }
 
   /**

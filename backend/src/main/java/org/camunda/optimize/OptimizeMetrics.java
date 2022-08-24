@@ -19,10 +19,10 @@ import static org.camunda.optimize.MetricEnum.OVERALL_IMPORT_TIME_METRIC;
 
 @UtilityClass
 public class OptimizeMetrics {
+
   public static final String RECORD_TYPE_TAG = "RECORD_TYPE";
   public static final String PARTITION_ID_TAG = "PARTITION_ID";
   public static final String METRICS_ENDPOINT = "metrics";
-
 
   public static <T extends ZeebeRecordDto<?, ?>> void recordOverallEntitiesImportTime(List<T> entities) {
     OffsetDateTime currentTime = LocalDateUtil.getCurrentDateTime();

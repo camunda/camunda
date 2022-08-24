@@ -10,5 +10,5 @@ import lombok.Data;
 @Data
 public class CloudUserCacheConfiguration {
   private int maxSize;
-  private long fetchIntervalSeconds;
+  private long minFetchIntervalSeconds;
 }
