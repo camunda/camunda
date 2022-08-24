@@ -269,6 +269,82 @@ public class ModifyProcessInstanceTerminationTest {
         .isPresent();
   }
 
+  @Test
+  public void shouldTerminateAllElementsInRootScope() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask("A").endEvent().done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey = getElementInstanceKeyOfElement(processInstanceKey, "A");
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(elementInstanceKey)
+        .modify();
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "A");
+    assertThatElementIsTerminated(processInstanceKey, PROCESS_ID);
+  }
+
+  @Test
+  public void shouldTerminateAllElementsOfFlowScope() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    subprocess ->
+                        subprocess
+                            .embeddedSubProcess()
+                            .startEvent()
+                            .parallelGateway("fork")
+                            .userTask("A")
+                            .moveToNode("fork")
+                            .userTask("B"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKeyOfA = getElementInstanceKeyOfElement(processInstanceKey, "A");
+    final var elementInstanceKeyOfB = getElementInstanceKeyOfElement(processInstanceKey, "B");
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(elementInstanceKeyOfA)
+        .terminateElement(elementInstanceKeyOfB)
+        .modify();
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "A");
+    assertThatElementIsTerminated(processInstanceKey, "B");
+    assertThatElementIsTerminated(processInstanceKey, "subprocess");
+    assertThatElementIsTerminated(processInstanceKey, PROCESS_ID);
+  }
+
+  private static long getElementInstanceKeyOfElement(
+      final long processInstanceKey, final String elementId) {
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId(elementId)
+        .getFirst()
+        .getKey();
+  }
+
   private void assertThatElementIsTerminated(
       final long processInstanceKey, final String elementId) {
     Assertions.assertThat(
@@ -281,15 +357,6 @@ public class ModifyProcessInstanceTerminationTest {
         .extracting(Record::getIntent)
         .containsSequence(
             ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED);
-  }
-
-  private static long getElementInstanceKeyOfElement(
-      final long processInstanceKey, final String elementId) {
-    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId(elementId)
-        .getFirst()
-        .getKey();
   }
 
   private void assertThatJobIsCancelled(final long processInstanceKey, final String elementId) {
