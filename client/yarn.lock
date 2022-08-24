@@ -5587,22 +5587,7 @@ diagram-js@^8.2.0, diagram-js@^8.2.1:
     path-intersection "^2.2.1"
     tiny-svg "^2.2.2"
 
-diagram-js@^8.7.0:
-  version "8.7.1"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-8.7.1.tgz#8639e66ffcb1190b8978440013fc163bda3b90ba"
-  integrity sha512-A6kEiE7yxqgR3o7fFBIeA7miQxxJG/hjpGtjuRfC6Eprs5W5YtZDKeE4efRVrD2NNH/s6bVWuZ4XW5tkDsiH8Q==
-  dependencies:
-    css.escape "^1.5.1"
-    didi "^8.0.0"
-    hammerjs "^2.0.1"
-    inherits-browser "0.0.1"
-    min-dash "^3.5.2"
-    min-dom "^3.2.0"
-    object-refs "^0.3.0"
-    path-intersection "^2.2.1"
-    tiny-svg "^2.2.2"
-
-diagram-js@^8.9.0:
+diagram-js@^8.8.0, diagram-js@^8.9.0:
   version "8.9.0"
   resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-8.9.0.tgz#851e8bda1a97d0e2995a3c853691cd4261a1777b"
   integrity sha512-577bUEbkwZ7id4SCXcD2qrlKoRPXry2SDSPt5T6tEOjwKrTllKr5d1HZoJzGws4VMQq5fmY51Gce1iFT9S4Dlw==
@@ -5621,11 +5606,6 @@ didi@^5.2.1:
   version "5.2.1"
   resolved "https://registry.yarnpkg.com/didi/-/didi-5.2.1.tgz#1a0b1336be8baa0b068a72036eedd9fb94135bff"
   integrity sha512-IKNnajUlD4lWMy/Q9Emkk7H1qnzREgY4UyE3IhmOi/9IKua0JYtYldk928bOdt1yNxN8EiOy1sqtSozEYsmjCg==
-
-didi@^8.0.0:
-  version "8.0.0"
-  resolved "https://registry.yarnpkg.com/didi/-/didi-8.0.0.tgz#37a552ea0cdba65a97b5170c37cb07d6852e5b45"
-  integrity sha512-PwqTBaYzzfJSyxvpXPcTWF6nDdCKx2mFAU5eup1ZSb5wbaAS9a/HiKdtcAUdie/VMLHoFI50jkYZcA+bhUOugw==
 
 didi@^8.0.1:
   version "8.0.1"
@@ -5663,54 +5643,55 @@ dir-glob@^3.0.1:
   dependencies:
     path-type "^4.0.0"
 
-dmn-js-decision-table@^12.2.0:
-  version "12.2.0"
-  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-12.2.0.tgz#87158a483eec8bf92fc9dcb5b744ea4e45fb9f11"
-  integrity sha512-Z92GVzEeAvkGP2Brqau1ctTCr0nQhbRYB5FBw/iYD0BosCZLoVSguGVFjrND8Pn/GwJcUsMOxBsddXKBaSBGcw==
+dmn-js-decision-table@^12.3.0:
+  version "12.3.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-12.3.0.tgz#7c2520e32a893642f9eb2b411784ad00e8dd423c"
+  integrity sha512-dwRSmvT5KlF4fXgwnWCSNU5H2FbvU8o6D//KQyMoQAEWBNH4pA+gRr5x1xF5ulZRblqK02wrWDGYVymflz3rNg==
   dependencies:
     css.escape "^1.5.1"
-    diagram-js "^8.7.0"
-    dmn-js-shared "^12.2.0"
+    diagram-js "^8.8.0"
+    dmn-js-shared "^12.3.0"
     escape-html "^1.0.3"
     inferno "~5.6.2"
     min-dash "^3.5.2"
     min-dom "^3.1.3"
     selection-ranges "^3.0.2"
-    table-js "^7.2.0"
+    table-js "^7.3.0"
 
-dmn-js-drd@^12.2.1:
-  version "12.2.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-12.2.1.tgz#635955a205d45a59a88faac224ca69a617037dcc"
-  integrity sha512-H0nI6DSJWCumUkVqzWMHqxQn1tyStkOxXCPdLdETC+3+2rr88NZyEPDhpcW6JD9KgXUpQ4CMOs8QDC/LS4ngMA==
+dmn-js-drd@^12.3.0:
+  version "12.3.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-12.3.0.tgz#b84fbc693642f699b7aa7a54b1d85990a319396c"
+  integrity sha512-I4V2YsHeQnXxs4A3HfSb/UqDhzHQ4Z5K20bPLlH0g8csMIwvQXlwT0mULuurcjSUweGioLpmZc+vsbgPOJnbew==
   dependencies:
-    diagram-js "^8.7.0"
+    diagram-js "^8.8.0"
     diagram-js-direct-editing "^1.6.3"
-    dmn-js-shared "^12.2.0"
-    inherits "^2.0.1"
+    dmn-js-shared "^12.3.0"
+    inherits-browser "^0.1.0"
     min-dash "^3.5.2"
     min-dom "^3.1.3"
     object-refs "^0.3.0"
     tiny-svg "^2.2.1"
 
-dmn-js-literal-expression@^12.2.0:
-  version "12.2.0"
-  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-12.2.0.tgz#f514f0409ddca601fb35c3ec3382454cdd0c94a8"
-  integrity sha512-OHpSKYVSOJ+FdwmTwpUpn0+pHaLoGlds1VVB/QRwWJ0RZMWGKqcYzYf0R53Br0Fd+RBVFp78GrG9bc6xf5VZIA==
+dmn-js-literal-expression@^12.3.0:
+  version "12.3.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-12.3.0.tgz#294e2b072a32b9415d42c7158cca9ef749c15ea1"
+  integrity sha512-7GEp8cojeQ9DMy7hpiAYwmFcw141NRuM1HVZHTuS5VA+QwI9vGVyzmeN4Y2k3Gj9YCaCexrXhNrhsbVmRZ/99A==
   dependencies:
-    diagram-js "^8.7.0"
-    dmn-js-shared "^12.2.0"
+    diagram-js "^8.8.0"
+    dmn-js-shared "^12.3.0"
     escape-html "^1.0.3"
     inferno "~5.6.2"
     min-dash "^3.5.2"
     min-dom "^3.1.3"
-    table-js "^7.2.0"
+    table-js "^7.3.0"
 
-dmn-js-shared@^12.2.0:
-  version "12.2.0"
-  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-12.2.0.tgz#77141051be6efc1c24e67cb741a51b685e987ace"
-  integrity sha512-Ike+3HtXK11FDbbNLtQdzn/9kes5b/UWKTmYcupukqcOMmhS0aqJI5X4gaswlDEfITw/WFfGmm32oAtIhCGFiw==
+dmn-js-shared@^12.3.0:
+  version "12.3.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-12.3.0.tgz#f7028828ecaba9dfaf318509e5a28f875f69a8f0"
+  integrity sha512-89D8VMMz7Cn9dmH/kFgJyMJxLF2Z0rWscSYVS4JQyTG5Vhpa3YF9RT2skSHlq76I+FlNbkaSf5Bcun9ut8LPWw==
   dependencies:
-    diagram-js "^8.7.0"
+    diagram-js "^8.8.0"
+    didi "^8.0.1"
     dmn-moddle "^10.0.0"
     ids "^0.2.0"
     inferno "~5.6.2"
@@ -5718,17 +5699,17 @@ dmn-js-shared@^12.2.0:
     min-dom "^3.1.3"
     selection-ranges "^3.0.2"
     selection-update "^0.1.2"
-    table-js "^7.2.0"
+    table-js "^7.3.0"
 
-dmn-js@12.2.1:
-  version "12.2.1"
-  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-12.2.1.tgz#6837108253b6d1d6578b0299df87d76d755d6468"
-  integrity sha512-xYGOyigiqdKAr1O7ey0opTquCZ3utitbBVxc829BP/XIxfNNglNezgLYdYXPH4yftR6ZJm6aA1fXX7gREs988A==
+dmn-js@12.3.0:
+  version "12.3.0"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-12.3.0.tgz#578d9fd179085b4c13baddff23766d7d302a2fdf"
+  integrity sha512-7j8rRvwK1VK+oMQSi3Cwcce+cKvTZCHusmwpsEPjc5k2OdkNKtyEKoc4FyxJIMzOHnOaNu7sTRDdDQ1tfmysmQ==
   dependencies:
-    dmn-js-decision-table "^12.2.0"
-    dmn-js-drd "^12.2.1"
-    dmn-js-literal-expression "^12.2.0"
-    dmn-js-shared "^12.2.0"
+    dmn-js-decision-table "^12.3.0"
+    dmn-js-drd "^12.3.0"
+    dmn-js-literal-expression "^12.3.0"
+    dmn-js-shared "^12.3.0"
 
 dmn-moddle@^10.0.0:
   version "10.0.0"
@@ -7989,6 +7970,11 @@ inherits-browser@0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/inherits-browser/-/inherits-browser-0.0.1.tgz#e85be69ebe554cc9840ec816ef3596a4316645ec"
   integrity sha512-kaDA3DkCdCpvrKIo/1T/3yVn+qpFUHLjYtSHmTYewb+QfjfaQy6FGQ7LwBu7st0tG9UvYad/XAlqQmdIh6CICw==
+
+inherits-browser@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/inherits-browser/-/inherits-browser-0.1.0.tgz#893a7c9cc78f2a1e18093aaa203bbb8cf5c30511"
+  integrity sha512-CJHHvW3jQ6q7lzsXPpapLdMx5hDpSF3FSh45pwsj6bKxJJ8Nl8v43i5yXnr3BdfOimGHKyniewQtnAIp3vyJJw==
 
 inherits@2, inherits@2.0.4, inherits@^2.0.1, inherits@^2.0.3, inherits@^2.0.4, inherits@~2.0.1, inherits@~2.0.3:
   version "2.0.4"
@@ -13950,15 +13936,15 @@ symbol-tree@^3.2.4:
   resolved "https://registry.yarnpkg.com/symbol-tree/-/symbol-tree-3.2.4.tgz#430637d248ba77e078883951fb9aa0eed7c63fa2"
   integrity sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==
 
-table-js@^7.2.0:
-  version "7.2.0"
-  resolved "https://registry.yarnpkg.com/table-js/-/table-js-7.2.0.tgz#3e41a73de4c02dddb548f3ffbec363c724c4d3bf"
-  integrity sha512-Qo+1RZFeEh1kvrc0ol67/5izV9WvCjipfD9iLQtGipPj8k1H2gRZnrkGs4BlwZOC9ke+JJB0yUZEQ+rf7wn/Og==
+table-js@^7.3.0:
+  version "7.3.0"
+  resolved "https://registry.yarnpkg.com/table-js/-/table-js-7.3.0.tgz#862ad78b0c224b821683f7b4e0ff32474a0efd86"
+  integrity sha512-4SkzffNPPM3x3JC2c1WQ967lC+B5FjtfLBt/SZzqKBavzf0dp/lfPIQMU5obYFnKua6OViXEIkq8lIem/UPXDw==
   dependencies:
-    didi "^5.2.1"
+    didi "^8.0.1"
     ids "^1.0.0"
-    min-dash "^3.5.2"
-    min-dom "^3.1.3"
+    min-dash "^3.8.1"
+    min-dom "^3.2.1"
     selection-ranges "^3.0.3"
 
 table@^6.0.9:
