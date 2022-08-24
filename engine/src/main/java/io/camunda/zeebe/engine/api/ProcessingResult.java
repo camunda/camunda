@@ -21,10 +21,9 @@ public interface ProcessingResult {
 
   /**
    * Returns the resulting record batch, which can be empty or consist of multiple {@link
-   * RecordBatchEntry}s. These entries are the result of
-   * the current processing. If an entry is of type {@link
-   * io.camunda.zeebe.protocol.record.RecordType#COMMAND} it will be later processed as follow-up
-   * command.
+   * RecordBatchEntry}s. These entries are the result of the current processing. If an entry is of
+   * type {@link io.camunda.zeebe.protocol.record.RecordType#COMMAND} it will be later processed as
+   * follow-up command.
    *
    * @return returns the resulting immutable record batch
    */
