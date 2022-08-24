@@ -181,10 +181,15 @@ public class CompactRecordLogger {
   }
 
   private void addSummarizedRecords(final StringBuilder bulkMessage) {
+    bulkMessage.append("--------\n");
+
+    bulkMessage.append("\t");
+    if (hasTimerEvents) {
+      bulkMessage.append("[Timestamp] ");
+    }
+    bulkMessage.append(
+        "[Partition] ['C'ommand/'E'event/'R'ejection] [valueType] [intent] - #[position]->#[source record position]  P[partitionId]K[key] - [summary of value]\n");
     bulkMessage
-        .append("--------\n")
-        .append(
-            "\t[Timestamp] [Partition] ['C'ommand/'E'event/'R'ejection] [valueType] [intent] - #[position]->#[source record position]  P[partitionId]K[key] - [summary of value]\n")
         .append(
             "\tP9K999 - key; #999 - record position; \"ID\" element/process id; @\"elementid\"/[P9K999] - element with ID and key\n")
         .append(
