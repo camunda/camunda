@@ -146,8 +146,8 @@ public final class ProcessInstanceModificationProcessor
         .map(valid -> process);
   }
 
-
-  private Either<Rejection, DeployedProcess> validateElementExists(final DeployedProcess process,
+  private Either<Rejection, DeployedProcess> validateElementExists(
+      final DeployedProcess process,
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
     final Set<String> unknownElementIds =
         activateInstructions.stream()
@@ -164,12 +164,15 @@ public final class ProcessInstanceModificationProcessor
     }
     return Either.right(process);
   }
-  private Either<Rejection, DeployedProcess> validateElementsNotInsideMultiInstance(final DeployedProcess process,
+
+  private Either<Rejection, DeployedProcess> validateElementsNotInsideMultiInstance(
+      final DeployedProcess process,
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
     final Set<String> elementsInsideMultiInstance =
         activateInstructions.stream()
             .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
-            .filter(elementId -> isInsideMultiInstanceBody(process, BufferUtil.wrapString(elementId)))
+            .filter(
+                elementId -> isInsideMultiInstanceBody(process, BufferUtil.wrapString(elementId)))
             .collect(Collectors.toSet());
     if (!elementsInsideMultiInstance.isEmpty()) {
       final String reason =
@@ -182,7 +185,8 @@ public final class ProcessInstanceModificationProcessor
     return Either.right(process);
   }
 
-  private boolean isInsideMultiInstanceBody(final DeployedProcess process, final DirectBuffer elementId) {
+  private boolean isInsideMultiInstanceBody(
+      final DeployedProcess process, final DirectBuffer elementId) {
     final var element = process.getProcess().getElementById(elementId);
 
     if (element.getFlowScope() == null) {
