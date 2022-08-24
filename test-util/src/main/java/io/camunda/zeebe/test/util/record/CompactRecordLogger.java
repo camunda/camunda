@@ -178,16 +178,23 @@ public class CompactRecordLogger {
     if (hasTimerEvents) {
       bulkMessage.append("[Timestamp] ");
     }
+    if (multiPartition) {
+      bulkMessage.append("[Partition] ");
+    }
     bulkMessage.append(
-        "[Partition] ['C'ommand/'E'event/'R'ejection] [valueType] [intent] - #[position]->#[source record position]  P[partitionId]K[key] - [summary of value]\n");
-    bulkMessage
-        .append(
-            "\tP9K999 - key; #999 - record position; \"ID\" element/process id; @\"elementid\"/[P9K999] - element with ID and key\n")
-        .append(
-            "\tKeys are decomposed into partition id and per partition key (e.g. 2251799813685253 -> P1K005). If single partition, the partition is omitted.\n")
-        .append(
-            "\tLong IDs are shortened (e.g. 'startEvent_5d56488e-0570-416c-ba2d-36d2a3acea78' -> 'star..acea78'\n")
-        .append("--------\n");
+        "['C'ommand/'E'event/'R'ejection] [valueType] [intent] - #[position]->#[source record position] ");
+    if (multiPartition) {
+      bulkMessage.append("P[partitionId]");
+    }
+    bulkMessage.append("K[key] - [summary of value]\n");
+
+    bulkMessage.append(
+        "\tP9K999 - key; #999 - record position; \"ID\" element/process id; @\"elementid\"/[P9K999] - element with ID and key\n");
+    bulkMessage.append(
+        "\tKeys are decomposed into partition id and per partition key (e.g. 2251799813685253 -> P1K005). If single partition, the partition is omitted.\n");
+    bulkMessage.append(
+        "\tLong IDs are shortened (e.g. 'startEvent_5d56488e-0570-416c-ba2d-36d2a3acea78' -> 'star..acea78'\n");
+    bulkMessage.append("--------\n");
 
     records.forEach(record -> bulkMessage.append(summarizeRecord(record)).append("\n"));
   }
