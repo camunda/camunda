@@ -122,7 +122,9 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
-    throw new UnsupportedOperationException();
+    return requireBackupStatus(id, EnumSet.complementOf(EnumSet.of(BackupStatusCode.IN_PROGRESS)))
+        .thenComposeAsync(this::listBackupObjects)
+        .thenComposeAsync(this::deleteBackupObjects);
   }
 
   @Override
@@ -219,7 +221,7 @@ public final class S3BackupStore implements BackupStore {
             });
   }
 
-  private CompletableFuture<BackupStatusCode> setStatus(BackupIdentifier id, Status status) {
+  public CompletableFuture<BackupStatusCode> setStatus(BackupIdentifier id, Status status) {
     final AsyncRequestBody body;
     try {
       body = AsyncRequestBody.fromBytes(MAPPER.writeValueAsBytes(status));
