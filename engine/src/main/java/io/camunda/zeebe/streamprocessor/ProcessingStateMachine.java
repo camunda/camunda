@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -88,14 +87,8 @@ public final class ProcessingStateMachine {
       "Expected to execute side effects for record '{} {}' successfully, but exception was thrown.";
   private static final String ERROR_MESSAGE_UPDATE_STATE_FAILED =
       "Expected to successfully update state for record '{} {}', but caught an exception. Retry.";
-  private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
-      "Expected to find processor for record '{} {}', but caught an exception. Skip this record.";
-  private static final String ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT =
-      "Expected to successfully process record '{} {}' with processor, but caught an exception. Skip this record.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING =
       "Expected to process record '{} {}' successfully on stream processor, but caught recoverable exception. Retry processing.";
-  private static final String PROCESSING_ERROR_MESSAGE =
-      "Expected to process record '%s' without errors, but exception occurred with message '%s'.";
   private static final String NOTIFY_PROCESSED_LISTENER_ERROR_MESSAGE =
       "Expected to invoke processed listener for record {} successfully, but exception was thrown.";
   private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
@@ -113,11 +106,9 @@ public final class ProcessingStateMachine {
       new MetadataEventFilter(
           recordMetadata -> recordMetadata.getRecordType() != RecordType.COMMAND);
 
-  private final MutableZeebeState zeebeState;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final RecordMetadata metadata = new RecordMetadata();
   private final ActorControl actor;
-  private final LogStream logStream;
   private final LogStreamReader logStreamReader;
   private final LegacyTypedStreamWriter logStreamWriter;
   private final TransactionContext transactionContext;
@@ -157,8 +148,7 @@ public final class ProcessingStateMachine {
     recordValues = context.getRecordValues();
     logStreamReader = context.getLogStreamReader();
     logStreamWriter = context.getLogStreamWriter();
-    logStream = context.getLogStream();
-    zeebeState = context.getZeebeState();
+    final LogStream logStream = context.getLogStream();
     transactionContext = context.getTransactionContext();
     abortCondition = context.getAbortCondition();
     lastProcessedPositionState = context.getLastProcessedPositionState();
