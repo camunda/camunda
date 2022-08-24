@@ -57,8 +57,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Uses a DeterministicScheduler and controllable messaging layer to get a deterministic execution
- * of raft threads. Note:- Currently there is some non-determinism hidden in the raft. Hence the
- * resulting execution is not fully deterministic.
+ * of raft threads.
  */
 public final class ControllableRaftContexts {
 
@@ -317,12 +316,23 @@ public final class ControllableRaftContexts {
     final var readers =
         raftServers.values().stream()
             .collect(Collectors.toMap(Function.identity(), s -> s.getLog().openCommittedReader()));
-    long index = 0;
+    long index =
+        raftServers.values().stream()
+                .map(s -> s.getLog().getFirstIndex())
+                .min(Long::compareTo)
+                .orElse(1L)
+            - 1;
+
+    readers.values().forEach(r -> r.seek(-1)); // seek to first
+
     while (true) {
+      final var nextIndex = index + 1;
       final var entries =
           readers.keySet().stream()
               .filter(s -> readers.get(s).hasNext())
-              .collect(Collectors.toMap(s -> s.getName(), s -> readers.get(s).next()));
+              // only compared not compacted entries
+              .filter(s -> s.getLog().getFirstIndex() <= nextIndex)
+              .collect(Collectors.toMap(RaftContext::getName, s -> readers.get(s).next()));
       if (entries.size() == 0) {
         break;
       }
