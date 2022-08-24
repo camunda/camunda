@@ -294,7 +294,7 @@ final class S3BackupStoreIT {
 
     // when
     store.save(backup).join();
-    store.markFailed(backup.id());
+    store.markFailed(backup.id()).join();
     final var status = store.getStatus(backup.id());
 
     // then
