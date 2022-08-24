@@ -525,7 +525,7 @@ public class CompactRecordLogger {
         .append("!")
         .append(record.getRejectionType())
         .append(" (")
-        .append(StringUtils.abbreviate(record.getRejectionReason(), "..", 200))
+        .append(StringUtils.abbreviate(record.getRejectionReason(), "..", 500))
         .append(")");
   }
 
