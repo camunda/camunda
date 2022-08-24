@@ -8,36 +8,46 @@
 import {makeAutoObservable} from 'mobx';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 
-type FlowNodeModification =
+type FlowNodeModificationPayload =
   | {
-      operation: 'add' | 'cancel';
+      operation: 'ADD_TOKEN';
+      scopeId: string;
       flowNode: {id: string; name: string};
       affectedTokenCount: number;
     }
   | {
-      operation: 'move';
+      operation: 'CANCEL_TOKEN';
+      flowNode: {id: string; name: string};
+      affectedTokenCount: number;
+    }
+  | {
+      operation: 'MOVE_TOKEN';
       flowNode: {id: string; name: string};
       affectedTokenCount: number;
       targetFlowNode: {id: string; name: string};
     };
 
-type VariableModification = {
-  operation: 'add' | 'edit';
-  flowNode: {id: string; name: string};
+type VariableModificationPayload = {
+  operation: 'ADD_VARIABLE' | 'EDIT_VARIABLE';
+  id: string;
+  scopeId: string;
+  flowNodeName: string;
   name: string;
   oldValue?: string;
   newValue: string;
 };
 
-type Modification =
-  | {
-      type: 'token';
-      modification: FlowNodeModification;
-    }
-  | {
-      type: 'variable';
-      modification: VariableModification;
-    };
+type FlowNodeModification = {
+  type: 'token';
+  payload: FlowNodeModificationPayload;
+};
+
+type VariableModification = {
+  type: 'variable';
+  payload: VariableModificationPayload;
+};
+
+type Modification = FlowNodeModification | VariableModification;
 
 type State = {
   status: 'enabled' | 'moving-token' | 'disabled';
@@ -75,8 +85,8 @@ class Modifications {
     ) {
       modificationsStore.addModification({
         type: 'token',
-        modification: {
-          operation: 'move',
+        payload: {
+          operation: 'MOVE_TOKEN',
           flowNode: {
             id: this.state.sourceFlowNodeIdForMoveOperation,
             name: processInstanceDetailsDiagramStore.getFlowNodeName(
@@ -116,18 +126,18 @@ class Modifications {
 
   removeFlowNodeModification = (flowNodeId: string) => {
     this.state.modifications = this.state.modifications.filter(
-      ({type, modification}) =>
-        !(type === 'token' && modification.flowNode.id === flowNodeId)
+      ({type, payload}) =>
+        !(type === 'token' && payload.flowNode.id === flowNodeId)
     );
   };
 
-  removeVariableModification = (flowNodeId: string, variableName: string) => {
+  removeVariableModification = (scopeId: string, id: string) => {
     this.state.modifications = this.state.modifications.filter(
-      ({type, modification}) =>
+      ({type, payload}) =>
         !(
           type === 'variable' &&
-          modification.flowNode.id === flowNodeId &&
-          modification.name === variableName
+          payload.scopeId === scopeId &&
+          payload.id === id
         )
     );
   };
@@ -148,21 +158,19 @@ class Modifications {
         newTokens: number;
         cancelledTokens: number;
       };
-    }>((modificationsByFlowNode, {type, modification}) => {
+    }>((modificationsByFlowNode, {type, payload}) => {
       if (type === 'variable') {
         return modificationsByFlowNode;
       }
-      const {flowNode, operation, affectedTokenCount} = modification;
+      const {flowNode, operation, affectedTokenCount} = payload;
 
       if (modificationsByFlowNode[flowNode.id] === undefined) {
         modificationsByFlowNode[flowNode.id] = {...EMPTY_MODIFICATION};
       }
 
-      if (operation === 'move') {
-        if (
-          modificationsByFlowNode[modification.targetFlowNode.id] === undefined
-        ) {
-          modificationsByFlowNode[modification.targetFlowNode.id] = {
+      if (operation === 'MOVE_TOKEN') {
+        if (modificationsByFlowNode[payload.targetFlowNode.id] === undefined) {
+          modificationsByFlowNode[payload.targetFlowNode.id] = {
             ...EMPTY_MODIFICATION,
           };
         }
@@ -175,16 +183,16 @@ class Modifications {
             flowNode.id
           ]?.type.isMultiInstance ?? false;
 
-        modificationsByFlowNode[modification.targetFlowNode.id]!.newTokens =
+        modificationsByFlowNode[payload.targetFlowNode.id]!.newTokens =
           isSourceFlowNodeMultiInstance ? 1 : affectedTokenCount;
       }
 
-      if (operation === 'cancel') {
+      if (operation === 'CANCEL_TOKEN') {
         modificationsByFlowNode[flowNode.id]!.cancelledTokens =
           affectedTokenCount;
       }
 
-      if (operation === 'add') {
+      if (operation === 'ADD_TOKEN') {
         modificationsByFlowNode[flowNode.id]!.newTokens =
           modificationsByFlowNode[flowNode.id]!.newTokens + affectedTokenCount;
       }
@@ -198,6 +206,29 @@ class Modifications {
       this.modificationsByFlowNode[flowNodeId]?.cancelledTokens ?? 0;
     return cancelledTokens > 0;
   };
+
+  get variableModifications() {
+    function isVariableModification(
+      modification: Modification
+    ): modification is VariableModification {
+      const {type} = modification;
+
+      return type === 'variable';
+    }
+
+    const latestVariableModifications = this.state.modifications
+      .filter(isVariableModification)
+      .map(({payload}) => payload)
+      .reduce<{
+        [key: string]: VariableModificationPayload;
+      }>((accumulator, modification) => {
+        const {id, scopeId} = modification;
+        accumulator[`${scopeId}-${id}`] = modification;
+        return accumulator;
+      }, {});
+
+    return Object.values(latestVariableModifications);
+  }
 
   reset = () => {
     this.state = {...DEFAULT_STATE};

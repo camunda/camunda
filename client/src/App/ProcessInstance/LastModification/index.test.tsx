@@ -10,6 +10,7 @@ import {LastModification} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MemoryRouter} from 'react-router-dom';
 import {modificationsStore} from 'modules/stores/modifications';
+import {generateUniqueID} from 'modules/utils/generateUniqueID';
 
 type Props = {
   children?: React.ReactNode;
@@ -41,8 +42,9 @@ describe('LastModification', () => {
 
     modificationsStore.addModification({
       type: 'token',
-      modification: {
-        operation: 'add',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId: generateUniqueID(),
         flowNode: {id: '1', name: 'flowNode1'},
         affectedTokenCount: 1,
       },
@@ -52,8 +54,8 @@ describe('LastModification', () => {
 
     modificationsStore.addModification({
       type: 'token',
-      modification: {
-        operation: 'cancel',
+      payload: {
+        operation: 'CANCEL_TOKEN',
         flowNode: {id: '2', name: 'flowNode2'},
         affectedTokenCount: 2,
       },
@@ -63,8 +65,8 @@ describe('LastModification', () => {
 
     modificationsStore.addModification({
       type: 'token',
-      modification: {
-        operation: 'move',
+      payload: {
+        operation: 'MOVE_TOKEN',
         flowNode: {id: '3', name: 'flowNode3'},
         targetFlowNode: {id: '4', name: 'flowNode4'},
         affectedTokenCount: 2,
@@ -77,9 +79,11 @@ describe('LastModification', () => {
 
     modificationsStore.addModification({
       type: 'variable',
-      modification: {
-        operation: 'add',
-        flowNode: {id: '5', name: 'flowNode5'},
+      payload: {
+        id: '1',
+        operation: 'ADD_VARIABLE',
+        scopeId: '5',
+        flowNodeName: 'flowNode5',
         name: 'variableName1',
         newValue: 'variableValue1',
       },
@@ -91,9 +95,11 @@ describe('LastModification', () => {
 
     modificationsStore.addModification({
       type: 'variable',
-      modification: {
-        operation: 'edit',
-        flowNode: {id: '5', name: 'flowNode6'},
+      payload: {
+        id: '2',
+        operation: 'EDIT_VARIABLE',
+        scopeId: '5',
+        flowNodeName: 'flowNode6',
         name: 'variableName2',
         oldValue: 'variableValue2',
         newValue: 'editedVariableValue2',

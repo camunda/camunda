@@ -10,15 +10,15 @@ import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
 
 const TOKEN_TEMPLATES = {
-  add: (flowNode: string) => `Add "${flowNode}"`,
-  cancel: (flowNode: string) => `Cancel "${flowNode}"`,
-  move: (sourceFlowNode: string, targetFlowNode: string) =>
+  ADD_TOKEN: (flowNode: string) => `Add "${flowNode}"`,
+  CANCEL_TOKEN: (flowNode: string) => `Cancel "${flowNode}"`,
+  MOVE_TOKEN: (sourceFlowNode: string, targetFlowNode: string) =>
     `Move "${sourceFlowNode}" to "${targetFlowNode}"`,
 };
 
 const VARIABLE_TEMPLATES = {
-  add: (variableName: string) => `Add new variable "${variableName}"`,
-  edit: (variableName: string) => `Edit variable "${variableName}"`,
+  ADD_VARIABLE: (variableName: string) => `Add new variable "${variableName}"`,
+  EDIT_VARIABLE: (variableName: string) => `Edit variable "${variableName}"`,
 };
 
 const LastModification: React.FC = observer(() => {
@@ -28,7 +28,7 @@ const LastModification: React.FC = observer(() => {
     return null;
   }
 
-  const {type, modification} = lastModification;
+  const {type, payload} = lastModification;
   return (
     <Container>
       <div>
@@ -36,19 +36,17 @@ const LastModification: React.FC = observer(() => {
         <ModificationDetail>
           <>
             {type === 'token' &&
-              modification.operation === 'move' &&
-              TOKEN_TEMPLATES[modification.operation](
-                modification.flowNode.name,
-                modification.targetFlowNode.name
+              payload.operation === 'MOVE_TOKEN' &&
+              TOKEN_TEMPLATES[payload.operation](
+                payload.flowNode.name,
+                payload.targetFlowNode.name
               )}
             {type === 'token' &&
-              (modification.operation === 'add' ||
-                modification.operation === 'cancel') &&
-              TOKEN_TEMPLATES[modification.operation](
-                modification.flowNode.name
-              )}
+              (payload.operation === 'ADD_TOKEN' ||
+                payload.operation === 'CANCEL_TOKEN') &&
+              TOKEN_TEMPLATES[payload.operation](payload.flowNode.name)}
             {type === 'variable' &&
-              VARIABLE_TEMPLATES[modification.operation](modification.name)}
+              VARIABLE_TEMPLATES[payload.operation](payload.name)}
           </>
         </ModificationDetail>
       </div>

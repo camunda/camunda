@@ -19,6 +19,7 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
+import {generateUniqueID} from 'modules/utils/generateUniqueID';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -57,8 +58,9 @@ const ModificationDropdown: React.FC<Props> = observer(
               onClick={() => {
                 modificationsStore.addModification({
                   type: 'token',
-                  modification: {
-                    operation: 'add',
+                  payload: {
+                    operation: 'ADD_TOKEN',
+                    scopeId: generateUniqueID(),
                     flowNode: {
                       id: flowNodeId,
                       name: processInstanceDetailsDiagramStore.getFlowNodeName(
@@ -87,8 +89,8 @@ const ModificationDropdown: React.FC<Props> = observer(
                   onClick={() => {
                     modificationsStore.addModification({
                       type: 'token',
-                      modification: {
-                        operation: 'cancel',
+                      payload: {
+                        operation: 'CANCEL_TOKEN',
                         flowNode: {
                           id: flowNodeId,
                           name: processInstanceDetailsDiagramStore.getFlowNodeName(
