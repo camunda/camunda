@@ -85,7 +85,7 @@ public class ModifyProcessInstanceRejectionTest {
     // then
     assertThat(rejection)
         .describedAs("Expect that elements with ids 'B' and 'C' are not found")
-        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             "Expected to activate element but no element found in process '%s' for element id(s): 'B', 'C'"
                 .formatted(PROCESS_ID));

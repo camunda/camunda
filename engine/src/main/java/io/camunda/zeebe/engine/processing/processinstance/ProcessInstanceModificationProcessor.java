@@ -144,7 +144,7 @@ public final class ProcessInstanceModificationProcessor
               ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND,
               BufferUtil.bufferAsString(process.getBpmnProcessId()),
               String.join("', '", unknownElementIds));
-      return Optional.of(new Rejection(RejectionType.NOT_FOUND, reason));
+      return Optional.of(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
     }
 
     return Optional.empty();
