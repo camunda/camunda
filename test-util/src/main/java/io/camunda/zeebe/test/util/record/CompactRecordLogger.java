@@ -86,6 +86,7 @@ public class CompactRecordLogger {
   private final int valueTypeChars;
   private final int intentChars;
   private final boolean multiPartition;
+  private final boolean hasTimerEvents;
   private final Map<Long, String> substitutions = new HashMap<>();
   private final ArrayList<Record<?>> records;
 
@@ -116,6 +117,7 @@ public class CompactRecordLogger {
   public CompactRecordLogger(final Collection<Record<?>> records) {
     this.records = new ArrayList<>(records);
     multiPartition = isMultiPartition();
+    hasTimerEvents = records.stream().anyMatch(r -> r.getValueType() == ValueType.TIMER);
 
     final var highestPosition = this.records.get(this.records.size() - 1).getPosition();
 
@@ -170,17 +172,29 @@ public class CompactRecordLogger {
   }
 
   private void addSummarizedRecords(final StringBuilder bulkMessage) {
-    bulkMessage
-        .append("--------\n")
-        .append(
-            "\t[Partition] ['C'ommand/'E'event/'R'ejection] [valueType] [intent] - #[position]->#[source record position]  P[partitionId]K[key] - [summary of value]\n")
-        .append(
-            "\tP9K999 - key; #999 - record position; \"ID\" element/process id; @\"elementid\"/[P9K999] - element with ID and key\n")
-        .append(
-            "\tKeys are decomposed into partition id and per partition key (e.g. 2251799813685253 -> P1K005). If single partition, the partition is omitted.\n")
-        .append(
-            "\tLong IDs are shortened (e.g. 'startEvent_5d56488e-0570-416c-ba2d-36d2a3acea78' -> 'star..acea78'\n")
-        .append("--------\n");
+    bulkMessage.append("--------\n");
+
+    bulkMessage.append("\t");
+    if (hasTimerEvents) {
+      bulkMessage.append("[Timestamp] ");
+    }
+    if (multiPartition) {
+      bulkMessage.append("[Partition] ");
+    }
+    bulkMessage.append(
+        "['C'ommand/'E'event/'R'ejection] [valueType] [intent] - #[position]->#[source record position] ");
+    if (multiPartition) {
+      bulkMessage.append("P[partitionId]");
+    }
+    bulkMessage.append("K[key] - [summary of value]\n");
+
+    bulkMessage.append(
+        "\tP9K999 - key; #999 - record position; \"ID\" element/process id; @\"elementid\"/[P9K999] - element with ID and key\n");
+    bulkMessage.append(
+        "\tKeys are decomposed into partition id and per partition key (e.g. 2251799813685253 -> P1K005). If single partition, the partition is omitted.\n");
+    bulkMessage.append(
+        "\tLong IDs are shortened (e.g. 'startEvent_5d56488e-0570-416c-ba2d-36d2a3acea78' -> 'star..acea78'\n");
+    bulkMessage.append("--------\n");
 
     records.forEach(record -> bulkMessage.append(summarizeRecord(record)).append("\n"));
   }
@@ -215,6 +229,7 @@ public class CompactRecordLogger {
   private StringBuilder summarizeRecord(final Record<?> record) {
     final StringBuilder message = new StringBuilder();
 
+    message.append(summarizeTimestamp(record));
     message.append(summarizePartition(record));
     message.append(summarizeIntent(record));
     message.append(summarizePositionFields(record));
@@ -226,6 +241,16 @@ public class CompactRecordLogger {
     }
 
     return message;
+  }
+
+  private String summarizeTimestamp(final Record<?> record) {
+    if (!hasTimerEvents) {
+      return "";
+    }
+    final var timestampWithoutMillis =
+        ZonedDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneId.systemDefault())
+            .withNano(0);
+    return DateTimeFormatter.ISO_LOCAL_TIME.format(timestampWithoutMillis) + " ";
   }
 
   private String summarizePartition(final Record<?> record) {
