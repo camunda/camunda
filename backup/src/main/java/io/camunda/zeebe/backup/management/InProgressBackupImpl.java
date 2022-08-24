@@ -11,6 +11,7 @@ import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
+import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -18,8 +19,13 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotReservation;
 import io.camunda.zeebe.util.Either;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -43,6 +49,7 @@ final class InProgressBackupImpl implements InProgressBackup {
   private Set<PersistedSnapshot> availableValidSnapshots;
   private SnapshotReservation snapshotReservation;
   private PersistedSnapshot reservedSnapshot;
+  private NamedFileSetImpl snapshotFileSet;
 
   InProgressBackupImpl(
       final PersistedSnapshotStore snapshotStore,
@@ -116,7 +123,36 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   @Override
   public ActorFuture<Void> findSnapshotFiles() {
-    return concurrencyControl.createCompletedFuture();
+    if (!hasSnapshot) {
+      snapshotFileSet = new NamedFileSetImpl(Map.of());
+      return concurrencyControl.createCompletedFuture();
+    }
+
+    final ActorFuture<Void> filesCollected = concurrencyControl.createFuture();
+
+    final Path snapshotRoot = reservedSnapshot.getPath();
+    try (final var stream = Files.list(snapshotRoot)) {
+      final var snapshotFiles = stream.collect(Collectors.toSet());
+      final var checksumFile = reservedSnapshot.getChecksumPath();
+
+      final Map<String, Path> fileSet = new HashMap<>();
+      snapshotFiles.forEach(
+          path -> {
+            final var name = snapshotRoot.relativize(path);
+            fileSet.put(name.toString(), path);
+          });
+
+      fileSet.put(checksumFile.getFileName().toString(), checksumFile);
+
+      snapshotFileSet = new NamedFileSetImpl(fileSet);
+
+      filesCollected.complete(null);
+
+    } catch (final IOException e) {
+      filesCollected.completeExceptionally(e);
+    }
+
+    return filesCollected;
   }
 
   @Override
@@ -137,7 +173,7 @@ final class InProgressBackupImpl implements InProgressBackup {
 
     final var backupDescriptor =
         new BackupDescriptorImpl(snapshotId, checkpointPosition, numberOfPartitions);
-    return new BackupImpl(backupId, backupDescriptor, null, null);
+    return new BackupImpl(backupId, backupDescriptor, snapshotFileSet, null);
   }
 
   @Override
