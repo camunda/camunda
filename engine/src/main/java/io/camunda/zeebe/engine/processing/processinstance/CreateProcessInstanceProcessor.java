@@ -392,7 +392,7 @@ public final class CreateProcessInstanceProcessor
         });
   }
 
-  record Rejection(RejectionType type, String reason) {}
+  private record Rejection(RejectionType type, String reason) {}
 
-  record ElementIdAndType(String elementId, BpmnElementType elementType) {}
+  private record ElementIdAndType(String elementId, BpmnElementType elementType) {}
 }
