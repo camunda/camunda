@@ -336,6 +336,48 @@ public class ModifyProcessInstanceTerminationTest {
     assertThatElementIsTerminated(processInstanceKey, PROCESS_ID);
   }
 
+  @Test
+  public void shouldTerminateAllElementsOfNestedFlowScope() {
+    // given
+    final Consumer<SubProcessBuilder> subprocessLvl2Builder =
+        subprocessLvl2 -> subprocessLvl2.embeddedSubProcess().startEvent().userTask("A").endEvent();
+
+    final Consumer<SubProcessBuilder> subprocessLvl1Builder =
+        subprocessLvl1 ->
+            subprocessLvl1
+                .embeddedSubProcess()
+                .startEvent()
+                .subProcess("subprocess-lvl-2", subprocessLvl2Builder)
+                .endEvent();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess("subprocess-lvl-1", subprocessLvl1Builder)
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKeyOfA = getElementInstanceKeyOfElement(processInstanceKey, "A");
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(elementInstanceKeyOfA)
+        .modify();
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "A");
+    assertThatElementIsTerminated(processInstanceKey, "subprocess-lvl-2");
+    assertThatElementIsTerminated(processInstanceKey, "subprocess-lvl-1");
+    assertThatElementIsTerminated(processInstanceKey, PROCESS_ID);
+  }
+
   private static long getElementInstanceKeyOfElement(
       final long processInstanceKey, final String elementId) {
     return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
