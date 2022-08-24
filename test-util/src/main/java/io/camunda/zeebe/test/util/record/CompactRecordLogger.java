@@ -86,6 +86,7 @@ public class CompactRecordLogger {
   private final int valueTypeChars;
   private final int intentChars;
   private final boolean multiPartition;
+  private final boolean hasTimerEvents;
   private final Map<Long, String> substitutions = new HashMap<>();
   private final ArrayList<Record<?>> records;
 
@@ -116,6 +117,7 @@ public class CompactRecordLogger {
   public CompactRecordLogger(final Collection<Record<?>> records) {
     this.records = new ArrayList<>(records);
     multiPartition = isMultiPartition();
+    hasTimerEvents = records.stream().anyMatch(r -> r.getValueType() == ValueType.TIMER);
 
     final var highestPosition = this.records.get(this.records.size() - 1).getPosition();
 
@@ -173,7 +175,7 @@ public class CompactRecordLogger {
     bulkMessage
         .append("--------\n")
         .append(
-            "\t[Partition] ['C'ommand/'E'event/'R'ejection] [valueType] [intent] - #[position]->#[source record position]  P[partitionId]K[key] - [summary of value]\n")
+            "\t[Timestamp] [Partition] ['C'ommand/'E'event/'R'ejection] [valueType] [intent] - #[position]->#[source record position]  P[partitionId]K[key] - [summary of value]\n")
         .append(
             "\tP9K999 - key; #999 - record position; \"ID\" element/process id; @\"elementid\"/[P9K999] - element with ID and key\n")
         .append(
@@ -215,6 +217,7 @@ public class CompactRecordLogger {
   private StringBuilder summarizeRecord(final Record<?> record) {
     final StringBuilder message = new StringBuilder();
 
+    message.append(summarizeTimestamp(record));
     message.append(summarizePartition(record));
     message.append(summarizeIntent(record));
     message.append(summarizePositionFields(record));
@@ -226,6 +229,16 @@ public class CompactRecordLogger {
     }
 
     return message;
+  }
+
+  private String summarizeTimestamp(final Record<?> record) {
+    if (!hasTimerEvents) {
+      return "";
+    }
+    final var timestampWithoutMillis =
+        ZonedDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneId.systemDefault())
+            .withNano(0);
+    return DateTimeFormatter.ISO_LOCAL_TIME.format(timestampWithoutMillis) + " ";
   }
 
   private String summarizePartition(final Record<?> record) {
