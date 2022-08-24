@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
@@ -376,6 +377,48 @@ public class ModifyProcessInstanceTerminationTest {
     assertThatElementIsTerminated(processInstanceKey, "subprocess-lvl-2");
     assertThatElementIsTerminated(processInstanceKey, "subprocess-lvl-1");
     assertThatElementIsTerminated(processInstanceKey, PROCESS_ID);
+  }
+
+  @Test
+  public void shouldDeleteEventSubscriptionsOfTerminatedFlowScope() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    subprocess -> subprocess.embeddedSubProcess().startEvent().userTask("A"))
+                .boundaryEvent(
+                    "boundary-event",
+                    b -> b.message(m -> m.name("message").zeebeCorrelationKeyExpression("\"key\"")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKeyOfA = getElementInstanceKeyOfElement(processInstanceKey, "A");
+    final var elementInstanceKeyOfSubprocess =
+        getElementInstanceKeyOfElement(processInstanceKey, "subprocess");
+
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementInstanceKey(elementInstanceKeyOfSubprocess)
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(elementInstanceKeyOfA)
+        .modify();
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "A");
+    assertThatElementIsTerminated(processInstanceKey, "subprocess");
+    assertThatMessageEventSubscriptionIsDeleted(processInstanceKey, elementInstanceKeyOfSubprocess);
   }
 
   private static long getElementInstanceKeyOfElement(
