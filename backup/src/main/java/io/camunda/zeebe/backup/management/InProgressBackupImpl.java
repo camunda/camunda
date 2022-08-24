@@ -30,7 +30,7 @@ final class InProgressBackupImpl implements InProgressBackup {
   private static final Logger LOG = LoggerFactory.getLogger(InProgressBackup.class);
 
   private static final String ERROR_MSG_NO_VALID_SNAPSHOT =
-      "Cannot find a snapshot that can be included in the backup %d. All available snapshots (%s) have processedPosition or exportedPosition > checkpointPosition %d";
+      "Cannot find a snapshot that can be included in the backup %d. All available snapshots (%s) have processedPosition or lastFollowupEventPosition > checkpointPosition %d";
 
   private final PersistedSnapshotStore snapshotStore;
   private final BackupIdentifier backupId;
