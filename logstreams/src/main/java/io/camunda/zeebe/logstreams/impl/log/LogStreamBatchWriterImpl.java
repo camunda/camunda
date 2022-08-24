@@ -102,6 +102,11 @@ final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBu
   }
 
   @Override
+  public boolean canWriteAdditionalEvent(final int eventCount, final int batchSize) {
+    return logWriteBuffer.canClaimFragmentBatch(eventCount, batchSize);
+  }
+
+  @Override
   public LogEntryBuilder keyNull() {
     return key(LogEntryDescriptor.KEY_NULL_VALUE);
   }

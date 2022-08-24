@@ -38,6 +38,16 @@ public interface LogStreamBatchWriter extends LogStreamWriter {
    */
   boolean canWriteAdditionalEvent(final int length);
 
+  /**
+   * Returns true if the given eventCount with the given batchLength could potentially be written
+   * with the BatchWriter, false otherwise.
+   *
+   * @param eventCount the potential event count we want to check
+   * @param batchSize the potential batch Size (in bytes) we want to check
+   * @return true if the event count with corresponding size could be written, false otherwise
+   */
+  boolean canWriteAdditionalEvent(final int eventCount, final int batchSize);
+
   /** Builder to add a log entry to the batch. */
   interface LogEntryBuilder {
     /** Use the default values as key. */
