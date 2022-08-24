@@ -73,7 +73,8 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    return setStatus(backup.id(), Status.inProgress())
+    return requireBackupStatus(backup.id(), EnumSet.of(BackupStatusCode.DOES_NOT_EXIST))
+        .thenComposeAsync(id -> setStatus(id, Status.inProgress()))
         .thenComposeAsync(
             status -> {
               final var metadata = saveMetadata(backup);
@@ -81,6 +82,8 @@ public final class S3BackupStore implements BackupStore {
               final var segments = saveSegmentFiles(backup);
               return CompletableFuture.allOf(metadata, snapshot, segments);
             })
+        .thenComposeAsync(
+            ignored -> requireBackupStatus(backup.id(), EnumSet.of(BackupStatusCode.IN_PROGRESS)))
         .thenComposeAsync(content -> setStatus(backup.id(), Status.complete()))
         .exceptionallyComposeAsync(
             throwable ->

@@ -202,6 +202,21 @@ final class S3BackupStoreIT {
   }
 
   @Test
+  void backupFailsIfBackupAlreadyExists(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+
+    // when
+    store.save(backup).join();
+
+    // then
+    assertThat(store.save(backup))
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(Throwable.class)
+        .withRootCauseInstanceOf(BackupInInvalidStateException.class);
+  }
+
+  @Test
   void backupFailsIfFilesAreMissing(@TempDir Path tempDir) throws IOException {
     // given
     final var backup = prepareTestBackup(tempDir);
