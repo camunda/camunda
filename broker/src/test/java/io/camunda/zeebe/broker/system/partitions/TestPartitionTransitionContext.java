@@ -34,6 +34,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
@@ -352,6 +353,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public StateController getStateController() {
     return stateController;
+  }
+
+  @Override
+  public PersistedSnapshotStore getPersistedSnapshotStore() {
+    return null;
   }
 
   @Override

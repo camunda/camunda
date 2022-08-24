@@ -14,6 +14,7 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,20 +26,27 @@ public final class BackupService extends Actor implements BackupManager {
   private final int partitionId;
   private final int numberOfPartitions;
   private final BackupServiceImpl internalBackupManager;
+  private final PersistedSnapshotStore snapshotStore;
 
-  public BackupService(final int nodeId, final int partitionId, final int numberOfPartitions) {
+  public BackupService(
+      final int nodeId,
+      final int partitionId,
+      final int numberOfPartitions,
+      final PersistedSnapshotStore snapshotStore) {
     // Use a noop backup store until a proper backup store is available
-    this(nodeId, partitionId, numberOfPartitions, NoopBackupStore.INSTANCE);
+    this(nodeId, partitionId, numberOfPartitions, NoopBackupStore.INSTANCE, snapshotStore);
   }
 
   public BackupService(
       final int nodeId,
       final int partitionId,
       final int numberOfPartitions,
-      final BackupStore backupStore) {
+      final BackupStore backupStore,
+      final PersistedSnapshotStore snapshotStore) {
     this.nodeId = nodeId;
     this.partitionId = partitionId;
     this.numberOfPartitions = numberOfPartitions;
+    this.snapshotStore = snapshotStore;
     internalBackupManager =
         new BackupServiceImpl(nodeId, partitionId, numberOfPartitions, backupStore);
     actorName = buildActorName(nodeId, "BackupService", partitionId);
@@ -60,6 +68,7 @@ public final class BackupService extends Actor implements BackupManager {
         () -> {
           final InProgressBackupImpl inProgressBackup =
               new InProgressBackupImpl(
+                  snapshotStore,
                   new BackupIdentifierImpl(nodeId, partitionId, checkpointId),
                   checkpointPosition,
                   numberOfPartitions,
