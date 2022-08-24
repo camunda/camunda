@@ -130,7 +130,13 @@ public final class ProcessInstanceModificationProcessor
 
     value
         .getTerminateInstructions()
-        .forEach(instruction -> terminateElement(instruction.getElementInstanceKey(), sideEffect));
+        .forEach(
+            instruction -> {
+              final var flowScopeKey =
+                  terminateElement(instruction.getElementInstanceKey(), sideEffect);
+
+              terminateFlowScopes(flowScopeKey, sideEffect);
+            });
 
     stateWriter.appendFollowUpEvent(eventKey, ProcessInstanceModificationIntent.MODIFIED, value);
 
@@ -235,7 +241,7 @@ public final class ProcessInstanceModificationProcessor
                     variableDocument));
   }
 
-  private void terminateElement(
+  private long terminateElement(
       final long elementInstanceKey, final Consumer<SideEffectProducer> sideEffect) {
     // todo: deal with non-existing element instance (#9983)
 
@@ -254,6 +260,28 @@ public final class ProcessInstanceModificationProcessor
 
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATED, elementInstanceRecord);
+
+    return elementInstanceRecord.getFlowScopeKey();
+  }
+
+  private void terminateFlowScopes(
+      final long elementInstanceKey, final Consumer<SideEffectProducer> sideEffect) {
+    long currentElementInstanceKey = elementInstanceKey;
+
+    while (canTerminateElementInstance(currentElementInstanceKey)) {
+
+      final long flowScopeKey = terminateElement(currentElementInstanceKey, sideEffect);
+      currentElementInstanceKey = flowScopeKey;
+    }
+  }
+
+  private boolean canTerminateElementInstance(final long key) {
+    final var elementInstance = elementInstanceState.getInstance(key);
+    return elementInstance != null
+        // if it has no active element instances
+        && elementInstance.getNumberOfActiveElementInstances() == 0
+        // and no pending element activations (i.e. activate command is written but not processed)
+        && elementInstance.getActiveSequenceFlows() == 0;
   }
 
   private record Rejection(RejectionType type, String reason) {}
