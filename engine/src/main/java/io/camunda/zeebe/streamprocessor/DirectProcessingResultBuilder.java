@@ -12,6 +12,8 @@ import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegis
 import io.camunda.zeebe.engine.api.PostCommitTask;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
+import io.camunda.zeebe.engine.api.records.RecordBatch;
+import io.camunda.zeebe.engine.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -19,8 +21,6 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.streamprocessor.records.RecordBatch;
-import io.camunda.zeebe.streamprocessor.records.RecordBatchSizePredicate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

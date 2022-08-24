@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.api;
 
+import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
+import io.camunda.zeebe.engine.api.records.RecordBatch;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
-import io.camunda.zeebe.streamprocessor.records.ImmutableRecordBatch;
-import io.camunda.zeebe.streamprocessor.records.RecordBatch;
 
 public final class EmptyProcessingResult implements ProcessingResult {
 
