@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -47,12 +48,7 @@ public class ModifyProcessInstanceTerminationTest {
         .deploy();
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    final var elementInstanceKey =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId("A")
-            .getFirst()
-            .getKey();
+    final long elementInstanceKey = getElementInstanceKeyOfElement(processInstanceKey, "A");
 
     // when
     ENGINE
@@ -241,12 +237,7 @@ public class ModifyProcessInstanceTerminationTest {
         .deploy();
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    final var elementInstanceKey =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId("A")
-            .getFirst()
-            .getKey();
+    final long elementInstanceKey = getElementInstanceKeyOfElement(processInstanceKey, "A");
 
     // when
     ENGINE
@@ -290,6 +281,15 @@ public class ModifyProcessInstanceTerminationTest {
         .extracting(Record::getIntent)
         .containsSequence(
             ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED);
+  }
+
+  private static long getElementInstanceKeyOfElement(
+      final long processInstanceKey, final String elementId) {
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId(elementId)
+        .getFirst()
+        .getKey();
   }
 
   private void assertThatJobIsCancelled(final long processInstanceKey, final String elementId) {
