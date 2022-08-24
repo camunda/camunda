@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -146,6 +147,7 @@ public final class ProcessingStateMachine {
   private final List<RecordProcessor> recordProcessors;
   private ProcessingResult currentProcessingResult;
   private RecordProcessor currentProcessor;
+  private final LogStreamBatchWriter logStreamBatchWriter;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -157,6 +159,7 @@ public final class ProcessingStateMachine {
     recordValues = context.getRecordValues();
     logStreamReader = context.getLogStreamReader();
     logStreamWriter = context.getLogStreamWriter();
+    logStreamBatchWriter = context.getLogStreamBatchWriter();
     logStream = context.getLogStream();
     zeebeState = context.getZeebeState();
     transactionContext = context.getTransactionContext();
@@ -252,7 +255,8 @@ public final class ProcessingStateMachine {
 
       final long position = typedCommand.getPosition();
       final ProcessingResultBuilder processingResultBuilder =
-          new DirectProcessingResultBuilder(context, position);
+          new DirectProcessingResultBuilder(
+              context, position, logStreamBatchWriter::canWriteAdditionalEvent);
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
@@ -333,7 +337,8 @@ public final class ProcessingStateMachine {
         () -> {
           final long position = typedCommand.getPosition();
           final ProcessingResultBuilder processingResultBuilder =
-              new DirectProcessingResultBuilder(context, position);
+              new DirectProcessingResultBuilder(
+                  context, position, logStreamBatchWriter::canWriteAdditionalEvent);
           // todo(#10047): replace this reset method by using Buffered Writers
           processingResultBuilder.reset();
 

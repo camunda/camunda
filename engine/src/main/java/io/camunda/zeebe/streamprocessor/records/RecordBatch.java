@@ -28,6 +28,10 @@ public final class RecordBatch implements MutableRecordBatch {
     this.recordBatchSizePredicate = recordBatchSizePredicate;
   }
 
+  public static ImmutableRecordBatch empty() {
+    return new RecordBatch((c, s) -> false);
+  }
+
   @Override
   public void appendRecord(
       final long key,

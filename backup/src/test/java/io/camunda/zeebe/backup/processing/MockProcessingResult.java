@@ -18,6 +18,8 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.streamprocessor.records.ImmutableRecordBatch;
+import io.camunda.zeebe.streamprocessor.records.RecordBatch;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +28,11 @@ record MockProcessingResult(List<Event> records) implements ProcessingResult {
   @Override
   public long writeRecordsToStream(final LogStreamBatchWriter logStreamBatchWriter) {
     return 0;
+  }
+
+  @Override
+  public ImmutableRecordBatch getRecordBatch() {
+    return RecordBatch.empty();
   }
 
   @Override
