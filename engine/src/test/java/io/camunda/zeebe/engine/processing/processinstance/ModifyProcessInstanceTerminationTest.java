@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import static org.assertj.core.groups.Tuple.tuple;
+
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
@@ -419,6 +421,71 @@ public class ModifyProcessInstanceTerminationTest {
     assertThatElementIsTerminated(processInstanceKey, "A");
     assertThatElementIsTerminated(processInstanceKey, "subprocess");
     assertThatMessageEventSubscriptionIsDeleted(processInstanceKey, elementInstanceKeyOfSubprocess);
+  }
+
+  @Test
+  public void shouldNotCompleteFlowScopeIfElementsAreTerminated() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    subprocess -> subprocess.embeddedSubProcess().startEvent().userTask("A"))
+                .sequenceFlowId("to-end")
+                .endEvent("end")
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementInstanceKey = getElementInstanceKeyOfElement(processInstanceKey, "A");
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(elementInstanceKey)
+        .modify();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            r -> r.getValue().getElementId(),
+            Record::getIntent)
+        .describedAs("Expect to terminate the element and its flow scope")
+        .containsSequence(
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "subprocess",
+                ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "subprocess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATED))
+        .describedAs("Expect the flow scope not to be completed")
+        .doesNotContain(
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "subprocess",
+                ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(
+                BpmnElementType.SUB_PROCESS, "subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs("Expect to elements after the flow scope not to be activated")
+        .doesNotContain(
+            tuple(
+                BpmnElementType.SEQUENCE_FLOW, "to-end", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.END_EVENT, "end", ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   private static long getElementInstanceKeyOfElement(
