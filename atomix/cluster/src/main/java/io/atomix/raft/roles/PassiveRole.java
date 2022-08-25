@@ -182,6 +182,7 @@ public class PassiveRole extends InactiveRole {
     }
 
     if (!request.complete() && request.nextChunkId() == null) {
+      abortPendingSnapshots();
       return CompletableFuture.completedFuture(
           logResponse(
               InstallResponse.builder()
@@ -195,6 +196,7 @@ public class PassiveRole extends InactiveRole {
     final var snapshotChunk = new SnapshotChunkImpl();
     final var snapshotChunkBuffer = new UnsafeBuffer(request.data());
     if (!snapshotChunk.tryWrap(snapshotChunkBuffer)) {
+      abortPendingSnapshots();
       return CompletableFuture.completedFuture(
           logResponse(
               InstallResponse.builder()
@@ -229,6 +231,7 @@ public class PassiveRole extends InactiveRole {
     } else {
       // fail the request if this is not the expected next chunk
       if (!isExpectedChunk(request.chunkId())) {
+        abortPendingSnapshots();
         return CompletableFuture.completedFuture(
             logResponse(
                 InstallResponse.builder()
