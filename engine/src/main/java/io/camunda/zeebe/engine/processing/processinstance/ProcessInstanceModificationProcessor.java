@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
@@ -178,8 +179,36 @@ public final class ProcessInstanceModificationProcessor
   private Either<Rejection, ?> validateElementSupported(
       final DeployedProcess process,
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
-    return validateElementsNotInsideMultiInstance(process, activateInstructions)
+    return validateElementsDoNotBelongToEventBasedGateway(process, activateInstructions)
+        .flatMap(valid -> validateElementsNotInsideMultiInstance(process, activateInstructions))
         .map(valid -> VALID);
+  }
+
+  private static Either<Rejection, ?> validateElementsDoNotBelongToEventBasedGateway(
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
+    final Set<String> elementIdsConnectedToEventBasedGateway =
+        activateInstructions.stream()
+            .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .filter(
+                elementId -> {
+                  final var element = process.getProcess().getElementById(elementId);
+                  return element instanceof ExecutableCatchEventElement event
+                      && event.isConnectedToEventBasedGateway();
+                })
+            .collect(Collectors.toSet());
+
+    if (elementIdsConnectedToEventBasedGateway.isEmpty()) {
+      return VALID;
+    }
+
+    final var reason =
+        ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED.formatted(
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", elementIdsConnectedToEventBasedGateway),
+            "The activation of events belonging to an event-based gateway is not supported",
+            SUPPORTED_ELEMENT_TYPES);
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
   private Either<Rejection, ?> validateElementsNotInsideMultiInstance(
