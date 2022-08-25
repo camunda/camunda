@@ -22,10 +22,11 @@ This document contains instructions for developers who want to contribute to thi
 
 ## How to create a new record?
 
-Generally, you'll need to do 3 things:
+Generally, you'll need to do 4 things:
 1. [Expand our `protocol` with a new `RecordValue` interface (incl. a new `ValueType` value)](#expanding-our-protocol-with-a-new-recordvalue).
 2. [Implement this `RecordValue` in the `protocol-impl` module](#implement-a-new-recordvalue-in-protocol-impl).
 3. [Support this `RecordValue` in the Elasticsearch exporter](#support-a-recordvalue-in-the-elasticsearch-exporter).
+4. Add support for it to the [CompactRecordLogger](../test-util/src/main/java/io/camunda/zeebe/test/util/record/CompactRecordLogger.java).
 
 ### Expanding our protocol with a new RecordValue
 
