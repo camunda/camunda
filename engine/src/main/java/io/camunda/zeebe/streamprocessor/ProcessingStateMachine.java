@@ -17,7 +17,6 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.logstreams.impl.Loggers;
-import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -148,7 +147,6 @@ public final class ProcessingStateMachine {
     recordValues = context.getRecordValues();
     logStreamReader = context.getLogStreamReader();
     logStreamWriter = context.getLogStreamWriter();
-    final LogStream logStream = context.getLogStream();
     transactionContext = context.getTransactionContext();
     abortCondition = context.getAbortCondition();
     lastProcessedPositionState = context.getLastProcessedPositionState();
@@ -158,7 +156,7 @@ public final class ProcessingStateMachine {
     updateStateRetryStrategy = new RecoverableRetryStrategy(actor);
     this.shouldProcessNext = shouldProcessNext;
 
-    final int partitionId = logStream.getPartitionId();
+    final int partitionId = context.getLogStream().getPartitionId();
     typedCommand = new TypedRecordImpl(partitionId);
 
     metrics = new StreamProcessorMetrics(partitionId);
