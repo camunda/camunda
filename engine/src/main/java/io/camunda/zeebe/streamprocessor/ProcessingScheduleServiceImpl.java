@@ -99,8 +99,8 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
         actorControl.submit(toRunnable(task));
         return;
       }
-
-      final var builder = new DirectTaskResultBuilder(streamProcessorContext);
+      final var logStreamBatchWriter = streamProcessorContext.getLogStreamBatchWriter();
+      final var builder = new DirectTaskResultBuilder(streamProcessorContext, logStreamBatchWriter::canWriteAdditionalEvent);
       final var result = task.execute(builder);
 
       // we need to retry the writing if the dispatcher return zero or negative position (this means
@@ -111,8 +111,19 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
           writeRetryStrategy.runWithRetry(
               () -> {
                 Loggers.PROCESS_PROCESSOR_LOGGER.trace("Write scheduled TaskResult to dispatcher!");
-                return result.writeRecordsToStream(streamProcessorContext.getLogStreamBatchWriter())
-                    >= 0;
+                result
+                    .getRecordBatch()
+                    .forEach(
+                        entry ->
+                            logStreamBatchWriter
+                                .event()
+                                .key(entry.key())
+                                .metadataWriter(entry.recordMetadata())
+                                .sourceIndex(entry.sourceIndex())
+                                .valueWriter(entry.recordValue())
+                                .done());
+
+                return logStreamBatchWriter.tryWrite() >= 0;
               },
               streamProcessorContext.getAbortCondition());
 

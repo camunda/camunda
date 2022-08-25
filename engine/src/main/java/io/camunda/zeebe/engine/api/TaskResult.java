@@ -7,10 +7,22 @@
  */
 package io.camunda.zeebe.engine.api;
 
+import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
+import io.camunda.zeebe.engine.api.records.RecordBatchEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 
 /** Here the interface is just a suggestion. Can be whatever PDT team thinks is best to work with */
 public interface TaskResult {
 
   long writeRecordsToStream(LogStreamBatchWriter logStreamBatchWriter);
+
+  /**
+   * Returns the resulting record batch, which can be empty or consist of multiple {@link
+   * RecordBatchEntry}s. These entries are the result of the current task execution. If an entry is of
+   * type {@link io.camunda.zeebe.protocol.record.RecordType#COMMAND} it will be later processed as
+   * follow-up command by the {@link RecordProcessor}
+   *
+   * @return returns the resulting immutable record batch
+   */
+  ImmutableRecordBatch getRecordBatch();
 }
