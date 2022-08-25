@@ -98,7 +98,25 @@ public class ModifyProcessInstanceUnsupportedElementsTest {
             new Rejection(
                 RejectionType.INVALID_ARGUMENT,
                 "'root_start', 'sub_start'",
-                "The activation of elements with type 'START_EVENT' is not supported")));
+                "The activation of elements with type 'START_EVENT' is not supported")),
+        new Scenario(
+            "Activate sequence flows",
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .sequenceFlowId("flow_to_A")
+                .userTask("A")
+                .sequenceFlowId("flow_from_A")
+                .endEvent()
+                .done(),
+            instructionBuilder ->
+                instructionBuilder
+                    .activateElement("flow_to_A")
+                    .activateElement("flow_from_A")
+                    .activateElement("A"),
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                "'flow_to_A', 'flow_from_A'",
+                "The activation of elements with type 'SEQUENCE_FLOW' is not supported")));
   }
 
   @Test
