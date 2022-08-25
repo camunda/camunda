@@ -116,7 +116,35 @@ public class ModifyProcessInstanceUnsupportedElementsTest {
             new Rejection(
                 RejectionType.INVALID_ARGUMENT,
                 "'flow_to_A', 'flow_from_A'",
-                "The activation of elements with type 'SEQUENCE_FLOW' is not supported")));
+                "The activation of elements with type 'SEQUENCE_FLOW' is not supported")),
+        new Scenario(
+            "Activate boundary events",
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .boundaryEvent(
+                    "timer_boundary_on_user_task", t -> t.timerWithDuration(Duration.ofHours(1)))
+                .endEvent()
+                .moveToActivity("A")
+                .subProcess("subprocess", s -> s.embeddedSubProcess().startEvent().done())
+                .boundaryEvent(
+                    "non_interrupting_msg_boundary_on_subprocess",
+                    m ->
+                        m.cancelActivity(false)
+                            .message(msg -> msg.name("msg").zeebeCorrelationKeyExpression("key")))
+                .endEvent()
+                .moveToActivity("subprocess")
+                .endEvent()
+                .done(),
+            instructionBuilder ->
+                instructionBuilder
+                    .activateElement("timer_boundary_on_user_task")
+                    .activateElement("non_interrupting_msg_boundary_on_subprocess")
+                    .activateElement("A"),
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                "'timer_boundary_on_user_task', 'non_interrupting_msg_boundary_on_subprocess'",
+                "The activation of elements with type 'BOUNDARY_EVENT' is not supported")));
   }
 
   @Test

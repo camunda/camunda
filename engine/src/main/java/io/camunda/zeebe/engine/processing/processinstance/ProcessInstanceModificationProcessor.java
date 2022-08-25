@@ -58,7 +58,10 @@ public final class ProcessInstanceModificationProcessor
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
-          BpmnElementType.UNSPECIFIED, BpmnElementType.START_EVENT, BpmnElementType.SEQUENCE_FLOW);
+          BpmnElementType.UNSPECIFIED,
+          BpmnElementType.START_EVENT,
+          BpmnElementType.SEQUENCE_FLOW,
+          BpmnElementType.BOUNDARY_EVENT);
   private static final Set<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
       Arrays.stream(BpmnElementType.values())
           .filter(elementType -> !UNSUPPORTED_ELEMENT_TYPES.contains(elementType))
