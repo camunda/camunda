@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.api;
 
+import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
+import io.camunda.zeebe.engine.api.records.RecordBatchEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 
 /**
@@ -14,7 +16,18 @@ import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
  */
 public interface ProcessingResult {
 
+  @Deprecated
   long writeRecordsToStream(LogStreamBatchWriter logStreamBatchWriter);
+
+  /**
+   * Returns the resulting record batch, which can be empty or consist of multiple {@link
+   * RecordBatchEntry}s. These entries are the result of the current processing. If an entry is of
+   * type {@link io.camunda.zeebe.protocol.record.RecordType#COMMAND} it will be later processed as
+   * follow-up command.
+   *
+   * @return returns the resulting immutable record batch
+   */
+  ImmutableRecordBatch getRecordBatch();
 
   boolean writeResponse(CommandResponseWriter commandResponseWriter);
 

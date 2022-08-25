@@ -10,15 +10,15 @@ package io.camunda.zeebe.streamprocessor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.engine.api.records.ImmutableRecordBatchEntry;
+import io.camunda.zeebe.engine.api.records.RecordBatch;
+import io.camunda.zeebe.engine.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.streamprocessor.records.ImmutableRecordBatchEntry;
-import io.camunda.zeebe.streamprocessor.records.RecordBatch;
-import io.camunda.zeebe.streamprocessor.records.RecordBatchSizePredicate;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 

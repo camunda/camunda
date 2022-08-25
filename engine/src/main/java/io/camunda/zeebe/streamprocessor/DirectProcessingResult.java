@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.PostCommitTask;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.TaskResult;
+import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,21 +29,28 @@ final class DirectProcessingResult implements ProcessingResult, TaskResult {
   private final LegacyTypedStreamWriter streamWriter;
   private final DirectTypedResponseWriter responseWriter;
   private boolean hasResponse;
+  private final ImmutableRecordBatch immutableRecordBatch;
 
   DirectProcessingResult(
       final StreamProcessorContext context,
+      final ImmutableRecordBatch immutableRecordBatch,
       final List<PostCommitTask> postCommitTasks,
       final boolean hasResponse) {
     this.postCommitTasks = new ArrayList<>(postCommitTasks);
     streamWriter = context.getLogStreamWriter();
     responseWriter = context.getTypedResponseWriter();
-
+    this.immutableRecordBatch = immutableRecordBatch;
     this.hasResponse = hasResponse;
   }
 
   @Override
   public long writeRecordsToStream(final LogStreamBatchWriter logStreamBatchWriter) {
     return streamWriter.flush();
+  }
+
+  @Override
+  public ImmutableRecordBatch getRecordBatch() {
+    return immutableRecordBatch;
   }
 
   @Override

@@ -9,6 +9,7 @@ package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.engine.api.TaskResult;
 import io.camunda.zeebe.engine.api.TaskResultBuilder;
+import io.camunda.zeebe.engine.api.records.RecordBatch;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -41,6 +42,6 @@ final class DirectTaskResultBuilder implements TaskResultBuilder {
 
   @Override
   public TaskResult build() {
-    return new DirectProcessingResult(context, Collections.emptyList(), false);
+    return new DirectProcessingResult(context, RecordBatch.empty(), Collections.emptyList(), false);
   }
 }

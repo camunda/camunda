@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.streamprocessor.records;
+package io.camunda.zeebe.engine.api.records;
 
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -26,6 +26,10 @@ public final class RecordBatch implements MutableRecordBatch {
 
   public RecordBatch(final RecordBatchSizePredicate recordBatchSizePredicate) {
     this.recordBatchSizePredicate = recordBatchSizePredicate;
+  }
+
+  public static ImmutableRecordBatch empty() {
+    return new RecordBatch((c, s) -> false);
   }
 
   @Override

@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -136,6 +137,7 @@ public final class ProcessingStateMachine {
   private final List<RecordProcessor> recordProcessors;
   private ProcessingResult currentProcessingResult;
   private RecordProcessor currentProcessor;
+  private final LogStreamBatchWriter logStreamBatchWriter;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -147,6 +149,7 @@ public final class ProcessingStateMachine {
     recordValues = context.getRecordValues();
     logStreamReader = context.getLogStreamReader();
     logStreamWriter = context.getLogStreamWriter();
+    logStreamBatchWriter = context.getLogStreamBatchWriter();
     transactionContext = context.getTransactionContext();
     abortCondition = context.getAbortCondition();
     lastProcessedPositionState = context.getLastProcessedPositionState();
@@ -240,7 +243,8 @@ public final class ProcessingStateMachine {
 
       final long position = typedCommand.getPosition();
       final ProcessingResultBuilder processingResultBuilder =
-          new DirectProcessingResultBuilder(context, position);
+          new DirectProcessingResultBuilder(
+              context, position, logStreamBatchWriter::canWriteAdditionalEvent);
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
@@ -321,7 +325,8 @@ public final class ProcessingStateMachine {
         () -> {
           final long position = typedCommand.getPosition();
           final ProcessingResultBuilder processingResultBuilder =
-              new DirectProcessingResultBuilder(context, position);
+              new DirectProcessingResultBuilder(
+                  context, position, logStreamBatchWriter::canWriteAdditionalEvent);
           // todo(#10047): replace this reset method by using Buffered Writers
           processingResultBuilder.reset();
 
@@ -337,18 +342,26 @@ public final class ProcessingStateMachine {
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
-              final var batchWriter = context.getLogStreamBatchWriter();
-              final long position1 = currentProcessingResult.writeRecordsToStream(batchWriter);
-              final long position2 = batchWriter.tryWrite();
+              logStreamBatchWriter.reset();
+              logStreamBatchWriter.sourceRecordPosition(typedCommand.getPosition());
 
-              final var maxPosition = Math.max(position1, position2);
+              currentProcessingResult
+                  .getRecordBatch()
+                  .forEach(
+                      entry ->
+                          logStreamBatchWriter
+                              .event()
+                              .key(entry.key())
+                              .metadataWriter(entry.recordMetadata())
+                              .sourceIndex(entry.sourceIndex())
+                              .valueWriter(entry.recordValue())
+                              .done());
 
-              // only overwrite position if records were flushed
-              if (maxPosition > 0) {
-                writtenPosition = maxPosition;
+              final long position = logStreamBatchWriter.tryWrite();
+              if (position > 0) {
+                writtenPosition = position;
               }
-
-              return maxPosition >= 0;
+              return position >= 0;
             },
             abortCondition);
 
