@@ -44,6 +44,7 @@ import org.junit.Test;
 public final class CreateDeploymentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  private static final String TOO_LARGE_DEPLOYMENT_RESOURCE = "/processes/too_large_process.bpmn";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -640,6 +641,25 @@ public final class CreateDeploymentTest {
                 + "failed to evaluate expression "
                 + "'INVALID_CYCLE_EXPRESSION': no variable found for name "
                 + "'INVALID_CYCLE_EXPRESSION')\n");
+  }
+
+  @Test
+  public void shouldRejectDeploymentIfResourceIsTooLarge() {
+    // when
+    final Record<DeploymentRecordValue> deploymentRejection =
+        ENGINE
+            .deployment()
+            .withXmlClasspathResource(TOO_LARGE_DEPLOYMENT_RESOURCE)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentRejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Unable to deploy resources as the size exceeds the maximum batch size. Please split "
+                + "the resources into separate deployments, or reduce the size of the deployed "
+                + "resource.");
   }
 
   private ProcessMetadataValue findProcess(
