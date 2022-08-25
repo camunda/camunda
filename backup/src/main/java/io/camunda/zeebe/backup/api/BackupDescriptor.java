@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.api;
 
+import java.util.Optional;
+
 /**
  * Additional information about the backup that might be required for restoring or querying the
  * status
@@ -15,7 +17,7 @@ public interface BackupDescriptor {
   /**
    * @return id of the snapshot included in the backup
    */
-  String snapshotId();
+  Optional<String> snapshotId();
 
   /**
    * @return the checkpoint position of the checkpoint included in the backup

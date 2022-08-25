@@ -123,7 +123,7 @@ class InProgressBackupImplTest {
     final var backup = collectBackupContents();
 
     // then
-    assertThat(backup.descriptor().snapshotId()).isEqualTo(validSnapshot.getId());
+    assertThat(backup.descriptor().snapshotId()).hasValue(validSnapshot.getId());
     verify(validSnapshot).reserve();
   }
 
@@ -155,7 +155,7 @@ class InProgressBackupImplTest {
     final var backup = collectBackupContents();
 
     // then
-    assertThat(backup.descriptor().snapshotId()).isEqualTo(latestValidSnapshot.getId());
+    assertThat(backup.descriptor().snapshotId()).hasValue(latestValidSnapshot.getId());
     verify(latestValidSnapshot).reserve();
   }
 
@@ -194,7 +194,7 @@ class InProgressBackupImplTest {
     final var backup = collectBackupContents();
 
     // then
-    assertThat(backup.descriptor().snapshotId()).isEqualTo(oldValidSnapshot.getId());
+    assertThat(backup.descriptor().snapshotId()).hasValue(oldValidSnapshot.getId());
     verify(oldValidSnapshot).reserve();
   }
 
