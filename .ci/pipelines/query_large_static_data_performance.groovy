@@ -153,6 +153,8 @@ spec:
           value: false
         - name: CAMUNDA_OPERATE_ELASTICSEARCH_CREATESCHEMA
           value: false
+        - name: CAMUNDA_OPERATE_MIGRATION_MIGRATIONENABLED
+          value: false
       resources:
         limits:
           cpu: 2
