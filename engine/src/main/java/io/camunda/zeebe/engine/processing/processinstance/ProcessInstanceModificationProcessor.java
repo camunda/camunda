@@ -30,12 +30,15 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.Optional;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 import org.agrona.Strings;
 
 public final class ProcessInstanceModificationProcessor
@@ -44,7 +47,13 @@ public final class ProcessInstanceModificationProcessor
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to modify process instance but no process instance found with key '%d'";
   private static final String ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND =
-      "Expected to activate element but no element found in process '%s' for element id(s): '%s'";
+      "Expected to modify instance of process '%s' but it contains one or more activate instructions with an element that could not be found: '%s'";
+  private static final String ERROR_MESSAGE_TARGET_ELEMENT_IN_MULTI_INSTANCE_BODY =
+      "Expected to modify instance of process '%s' but it contains one or more activate instructions"
+          + " for elements inside a multi-instance subprocess: '%s'. The activation of elements inside"
+          + " a multi-instance subprocess is not supported.";
+
+  private static final Either<Rejection, Object> VALID = Either.right(null);
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
@@ -98,9 +107,9 @@ public final class ProcessInstanceModificationProcessor
     final var process =
         processState.getProcessByKey(processInstanceRecord.getProcessDefinitionKey());
 
-    final var optRejection = validateCommand(command, process);
-    if (optRejection.isPresent()) {
-      final var rejection = optRejection.get();
+    final var validationResult = validateCommand(command, process);
+    if (validationResult.isLeft()) {
+      final var rejection = validationResult.getLeft();
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
@@ -129,25 +138,73 @@ public final class ProcessInstanceModificationProcessor
         eventKey, ProcessInstanceModificationIntent.MODIFIED, value, command);
   }
 
-  private Optional<Rejection> validateCommand(
+  private Either<Rejection, ?> validateCommand(
       final TypedRecord<ProcessInstanceModificationRecord> command, final DeployedProcess process) {
     final var value = command.getValue();
+    final var activateInstructions = value.getActivateInstructions();
 
+    return validateElementExists(process, activateInstructions)
+        .flatMap(valid -> validateElementsNotInsideMultiInstance(process, activateInstructions))
+        .map(valid -> VALID);
+  }
+
+  private Either<Rejection, ?> validateElementExists(
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
     final Set<String> unknownElementIds =
-        value.getActivateInstructions().stream()
+        activateInstructions.stream()
             .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
             .filter(targetElementId -> process.getProcess().getElementById(targetElementId) == null)
             .collect(Collectors.toSet());
-    if (!unknownElementIds.isEmpty()) {
-      final String reason =
-          String.format(
-              ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND,
-              BufferUtil.bufferAsString(process.getBpmnProcessId()),
-              String.join("', '", unknownElementIds));
-      return Optional.of(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+
+    if (unknownElementIds.isEmpty()) {
+      return VALID;
     }
 
-    return Optional.empty();
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", unknownElementIds));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateElementsNotInsideMultiInstance(
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
+    final Set<String> elementsInsideMultiInstance =
+        activateInstructions.stream()
+            .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .filter(
+                elementId -> isInsideMultiInstanceBody(process, BufferUtil.wrapString(elementId)))
+            .collect(Collectors.toSet());
+
+    if (elementsInsideMultiInstance.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_TARGET_ELEMENT_IN_MULTI_INSTANCE_BODY,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", elementsInsideMultiInstance));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private boolean isInsideMultiInstanceBody(
+      final DeployedProcess process, final DirectBuffer elementId) {
+    final var element = process.getProcess().getElementById(elementId);
+
+    if (element.getFlowScope() == null) {
+      return false;
+    }
+
+    // We can't use element.getFlowScope() here as it return the element instead of the
+    // multi-instance body (e.g. the subprocess)
+    final var flowScope = process.getProcess().getElementById(element.getFlowScope().getId());
+
+    return flowScope.getElementType() == BpmnElementType.MULTI_INSTANCE_BODY
+        || isInsideMultiInstanceBody(process, flowScope.getId());
   }
 
   private void executeGlobalVariableInstructions(
