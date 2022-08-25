@@ -16,9 +16,9 @@ public interface TaskResultBuilder {
   /**
    * Appends a record to the result
    *
-   * @return returns itself for method chaining
+   * @return returns true if the record still fits into the result, false otherwise
    */
-  TaskResultBuilder appendCommandRecord(
+  boolean appendCommandRecord(
       final long key, final Intent intent, final UnifiedRecordValue value);
 
   TaskResult build();

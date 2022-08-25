@@ -193,7 +193,10 @@ public class ProcessingScheduleServiceTest {
     // when
     dummyProcessorSpy.scheduleService.runDelayed(
         Duration.ZERO,
-        (builder) -> builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD).build());
+        (builder) -> {
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
+          return builder.build();
+        });
 
     // then
     verify(dummyProcessorSpy, TIMEOUT)
@@ -209,7 +212,10 @@ public class ProcessingScheduleServiceTest {
     // when
     dummyProcessorSpy.scheduleService.runAtFixedRate(
         Duration.ofMillis(100),
-        (builder) -> builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD).build());
+        (builder) -> {
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
+          return builder.build();
+        });
 
     // then
     verify(dummyProcessorSpy, TIMEOUT.times(5))

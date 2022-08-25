@@ -39,7 +39,7 @@ final class DirectTaskResultBuilder implements TaskResultBuilder {
   }
 
   @Override
-  public DirectTaskResultBuilder appendCommandRecord(
+  public boolean appendCommandRecord(
       final long key, final Intent intent, final UnifiedRecordValue value) {
 
     final ValueType valueType = TYPE_REGISTRY.get(value.getClass());
@@ -48,9 +48,10 @@ final class DirectTaskResultBuilder implements TaskResultBuilder {
       throw new IllegalStateException("Missing value type mapping for record: " + value.getClass());
     }
 
-    mutableRecordBatch.appendRecord(
+    final var either = mutableRecordBatch.appendRecord(
         key, -1, RecordType.COMMAND, intent, RejectionType.NULL_VAL, "", valueType, value);
-    return this;
+
+    return either.isRight();
   }
 
   @Override
