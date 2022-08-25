@@ -47,11 +47,12 @@ public final class ProcessInstanceModificationProcessor
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to modify process instance but no process instance found with key '%d'";
   private static final String ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND =
-      "Expected to activate element but no element found in process '%s' for element id(s): '%s'";
+      "Expected to modify instance of process '%s' but it contains one or more activate instructions with an element that could not be found: '%s'";
   private static final String ERROR_MESSAGE_TARGET_ELEMENT_IN_MULTI_INSTANCE_BODY =
-      "Expected to modify instance of process '%s' with activate instructions but the element(s) "
-          + "with id(s) '%s' is inside a multi-instance subprocess. The activation of element(s) "
-          + "inside a multi-instance subprocess is not supported.";
+      "Expected to modify instance of process '%s' but it contains one or more activate instructions"
+          + " for elements inside a multi-instance subprocess: '%s'. The activation of elements inside"
+          + " a multi-instance subprocess is not supported.";
+
   private static final Either<Rejection, Object> VALID = Either.right(null);
 
   private final StateWriter stateWriter;

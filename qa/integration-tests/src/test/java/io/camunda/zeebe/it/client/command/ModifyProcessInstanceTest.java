@@ -53,7 +53,7 @@ public class ModifyProcessInstanceTest {
             .send();
 
     // then
-    assertThatThrownBy(() -> command.join())
+    assertThatThrownBy(command::join)
         .isInstanceOf(ClientStatusException.class)
         .hasMessageContaining(
             String.format(
