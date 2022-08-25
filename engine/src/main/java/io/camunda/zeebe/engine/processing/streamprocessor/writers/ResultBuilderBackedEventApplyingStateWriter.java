@@ -45,9 +45,4 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
   public boolean canWriteEventOfLength(final int eventLength) {
     return resultBuilder().canWriteEventOfLength(eventLength);
   }
-
-  @Override
-  public int getMaxEventLength() {
-    return resultBuilder().getMaxEventLength();
-  }
 }

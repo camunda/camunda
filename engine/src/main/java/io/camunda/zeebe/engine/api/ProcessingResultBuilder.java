@@ -72,6 +72,4 @@ public interface ProcessingResultBuilder {
   ProcessingResult build();
 
   boolean canWriteEventOfLength(int eventLength);
-
-  int getMaxEventLength();
 }
