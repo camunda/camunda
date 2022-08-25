@@ -63,7 +63,7 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
       final long index, final long term, final int size, final TestSnapshotStore snapshotStore) {
     final var snapshot = new InMemorySnapshot(snapshotStore, index, term);
     for (int i = 0; i < size; i++) {
-      snapshot.writeChunks("chunk-" + i, "test".getBytes());
+      snapshot.writeChunks("chunk-" + i, ("test-" + i).getBytes());
     }
     snapshot.persist();
     return snapshot;
