@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.api;
 
+import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 
 /** A store where the backup is stored * */
@@ -22,7 +23,7 @@ public interface BackupStore {
   CompletableFuture<Void> delete(BackupIdentifier id);
 
   /** Restores the backup */
-  CompletableFuture<Backup> restore(BackupIdentifier id);
+  CompletableFuture<Backup> restore(BackupIdentifier id, Path targetFolder);
 
   /**
    * Marks the backup as failed. If saving a backup failed, the backups store must mark it as

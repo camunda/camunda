@@ -131,7 +131,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Backup> restore(final BackupIdentifier id) {
+  public CompletableFuture<Backup> restore(final BackupIdentifier id, Path targetFolder) {
     throw new UnsupportedOperationException();
   }
 
