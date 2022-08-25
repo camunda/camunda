@@ -18,6 +18,7 @@ import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.MetadataParseException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.StatusParseException;
 import java.io.IOException;
@@ -201,6 +202,21 @@ final class S3BackupStoreIT {
   }
 
   @Test
+  void backupFailsIfBackupAlreadyExists(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+
+    // when
+    store.save(backup).join();
+
+    // then
+    assertThat(store.save(backup))
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(Throwable.class)
+        .withRootCauseInstanceOf(BackupInInvalidStateException.class);
+  }
+
+  @Test
   void backupFailsIfFilesAreMissing(@TempDir Path tempDir) throws IOException {
     // given
     final var backup = prepareTestBackup(tempDir);
@@ -360,6 +376,70 @@ final class S3BackupStoreIT {
     assertThat(result)
         .succeedsWithin(Duration.ofSeconds(10))
         .returns(BackupStatusCode.DOES_NOT_EXIST, from(BackupStatus::statusCode));
+  }
+
+  @Test
+  void allBackupObjectsAreDeleted(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+    store.save(backup).join();
+
+    // when
+    store.delete(backup.id()).join();
+
+    // then
+    final var listed =
+        client
+            .listObjectsV2(
+                req ->
+                    req.bucket(config.bucketName()).prefix(S3BackupStore.objectPrefix(backup.id())))
+            .join();
+    assertThat(listed.contents()).isEmpty();
+  }
+
+  @Test
+  void deletingNonExistingBackupSucceeds() {
+    // when
+    final var delete = store.delete(new BackupIdentifierImpl(1, 2, 3));
+
+    // then
+    assertThat(delete).succeedsWithin(Duration.ofSeconds(10));
+  }
+
+  @Test
+  void deletingPartialBackupSucceeds(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+    store.save(backup).join();
+
+    // when
+    client
+        .deleteObject(
+            delete ->
+                delete
+                    .bucket(config.bucketName())
+                    .key(S3BackupStore.objectPrefix(backup.id()) + Status.OBJECT_KEY))
+        .join();
+
+    // then
+    assertThat(store.delete(backup.id())).succeedsWithin(Duration.ofSeconds(10));
+  }
+
+  @Test
+  void deletingInProgressBackupFails(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+    store.save(backup).join();
+
+    // when
+    store.setStatus(backup.id(), new Status(BackupStatusCode.IN_PROGRESS)).join();
+    final var delete = store.delete(backup.id());
+
+    // then
+    assertThat(delete)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(Throwable.class)
+        .withRootCauseInstanceOf(BackupInInvalidStateException.class);
   }
 
   private Backup prepareTestBackup(Path tempDir) throws IOException {

@@ -42,4 +42,25 @@ public abstract sealed class S3BackupStoreException extends RuntimeException {
       super(message, cause);
     }
   }
+
+  /**
+   * Thrown when the backup is in an invalid state, for example when attempting to restore a failed
+   * backup or deleting an in progress backup.
+   */
+  public static final class BackupInInvalidStateException extends S3BackupStoreException {
+    public BackupInInvalidStateException(final String message) {
+      super(message, null);
+    }
+  }
+
+  /**
+   * Thrown when not all objects belonging to a backup were deleted successfully. Retrying the
+   * deletion might resolve this.
+   */
+  public static final class BackupDeletionIncomplete extends S3BackupStoreException {
+
+    public BackupDeletionIncomplete(final String message) {
+      super(message, null);
+    }
+  }
 }
