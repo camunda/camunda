@@ -147,7 +147,7 @@ public final class FileBasedSnapshotStore extends Actor
   private void cleanupSnapshotDirectory(
       final Path snapshotDirectory, final FileBasedSnapshot latestPersistedSnapshot)
       throws IOException {
-    final var latestChecksumFile = latestPersistedSnapshot.getChecksumFile();
+    final var latestChecksumFile = latestPersistedSnapshot.getChecksumPath();
     final var latestDirectory = latestPersistedSnapshot.getDirectory();
     try (final var paths =
         Files.newDirectoryStream(

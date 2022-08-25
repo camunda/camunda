@@ -22,20 +22,26 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.snapshots.SnapshotReservation;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class InProgressBackupImplTest {
 
+  private static final Path CHECKSUM_PATH = Path.of("snapshot-root/checksum");
+  @TempDir Path snapshotDir;
   @Mock PersistedSnapshotStore snapshotStore;
-
   InProgressBackupImpl inProgressBackup;
   private final TestConcurrencyControl concurrencyControl = new TestConcurrencyControl();
 
@@ -210,6 +216,39 @@ class InProgressBackupImplTest {
     verify(snapshotReservation).release();
   }
 
+  @Test
+  void shouldCollectSnapshotFilesWhenValidSnapshotIsReserved(
+      @Mock final SnapshotReservation snapshotReservation) throws IOException {
+    // given
+    final var validSnapshot = snapshotWith(1L, 5L);
+    onReserve(validSnapshot, snapshotReservation);
+    setAvailableSnapshots(Set.of(validSnapshot));
+
+    // create snapshot files
+    final var file1 = Files.createFile(snapshotDir.resolve("file1"));
+    final var file2 = Files.createFile(snapshotDir.resolve("file2"));
+
+    // when
+    final var backup = collectBackupContents();
+
+    // then
+    assertThat(backup.snapshot().namedFiles())
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of("file1", file1, "file2", file2, "checksum", CHECKSUM_PATH));
+  }
+
+  @Test
+  void shouldHaveEmptySnapshotFilesWhenNoSnapshot() {
+    // given
+    setAvailableSnapshots(Set.of());
+
+    // when
+    final var backup = collectBackupContents();
+
+    // then
+    assertThat(backup.snapshot().namedFiles()).isEmpty();
+  }
+
   private void setAvailableSnapshots(final Set<PersistedSnapshot> snapshots) {
     when(snapshotStore.getAvailableSnapshots())
         .thenReturn(TestActorFuture.completedFuture(snapshots));
@@ -235,6 +274,10 @@ class InProgressBackupImplTest {
         .when(snapshot.getId())
         .thenReturn(String.format("%d-%d", processedPosition, followUpPosition));
     lenient().when(snapshot.getCompactionBound()).thenReturn(processedPosition);
+
+    lenient().when(snapshot.getPath()).thenReturn(snapshotDir);
+
+    lenient().when(snapshot.getChecksumPath()).thenReturn(CHECKSUM_PATH);
     return snapshot;
   }
 

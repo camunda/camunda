@@ -68,10 +68,6 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     return directory;
   }
 
-  public Path getChecksumFile() {
-    return checksumFile;
-  }
-
   @Override
   public int version() {
     return VERSION;
@@ -99,6 +95,11 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   @Override
   public Path getPath() {
     return getDirectory();
+  }
+
+  @Override
+  public Path getChecksumPath() {
+    return checksumFile;
   }
 
   @Override

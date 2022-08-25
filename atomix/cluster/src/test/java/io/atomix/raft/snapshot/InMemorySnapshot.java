@@ -136,6 +136,11 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
   }
 
   @Override
+  public Path getChecksumPath() {
+    return null;
+  }
+
+  @Override
   public long getCompactionBound() {
     return index;
   }
