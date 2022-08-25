@@ -32,6 +32,10 @@ import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
@@ -113,6 +117,8 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.MESSAGE_SUBSCRIPTION, this::summarizeMessageSubscription);
     valueLoggers.put(ValueType.PROCESS_INSTANCE, this::summarizeProcessInstance);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_CREATION, this::summarizeProcessInstanceCreation);
+    valueLoggers.put(
+        ValueType.PROCESS_INSTANCE_MODIFICATION, this::summarizeProcessInstanceModification);
     valueLoggers.put(
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION, this::summarizeProcessInstanceSubscription);
     valueLoggers.put(ValueType.VARIABLE, this::summarizeVariable);
@@ -531,6 +537,55 @@ public class CompactRecordLogger {
           .map(ProcessInstanceCreationStartInstructionValue::getElementId)
           .collect(Collectors.joining(", ", " (starting before elements: ", ") "));
     }
+  }
+
+  private String summarizeProcessInstanceModification(final Record<?> record) {
+    final var value = (ProcessInstanceModificationRecordValue) record.getValue();
+    return new StringBuilder()
+        .append(summarizeActivateInstructions(value.getActivateInstructions()))
+        .append(summarizeTerminateInstructions(value.getTerminateInstructions()))
+        .toString();
+  }
+
+  private String summarizeActivateInstructions(
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
+    if (activateInstructions.isEmpty()) {
+      return "";
+    }
+    return activateInstructions.stream()
+        .map(
+            a ->
+                "activate "
+                    + formatId(a.getElementId())
+                    + " "
+                    + summarizeVariableInstructions(a.getVariableInstructions()))
+        .collect(Collectors.joining("> <", "<", "> "));
+  }
+
+  private String summarizeVariableInstructions(
+      final List<ProcessInstanceModificationVariableInstructionValue> variableInstructions) {
+    if (variableInstructions.isEmpty()) {
+      return "no vars";
+    }
+    final var builder = new StringBuilder().append("with vars ");
+    variableInstructions.forEach(
+        v -> {
+          if (v.getElementId() != null) {
+            builder.append("@").append(formatId(v.getElementId()));
+          }
+          builder.append(v.getVariables());
+        });
+    return builder.toString();
+  }
+
+  private String summarizeTerminateInstructions(
+      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions) {
+    if (terminateInstructions.isEmpty()) {
+      return "";
+    }
+    return terminateInstructions.stream()
+        .map(t -> "terminate " + formatKey(t.getElementInstanceKey()))
+        .collect(Collectors.joining("> <", "<", "> "));
   }
 
   private String summarizeProcessInstanceSubscription(final Record<?> record) {
