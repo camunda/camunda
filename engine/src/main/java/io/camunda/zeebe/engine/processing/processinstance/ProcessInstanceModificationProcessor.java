@@ -52,6 +52,7 @@ public final class ProcessInstanceModificationProcessor
       "Expected to modify instance of process '%s' with activate instructions but the element(s) "
           + "with id(s) '%s' is inside a multi-instance subprocess. The activation of element(s) "
           + "inside a multi-instance subprocess is not supported.";
+  private static final Either<Rejection, Object> VALID = Either.right(null);
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
@@ -105,9 +106,9 @@ public final class ProcessInstanceModificationProcessor
     final var process =
         processState.getProcessByKey(processInstanceRecord.getProcessDefinitionKey());
 
-    final var optRejection = validateCommand(command, process);
-    if (optRejection.isLeft()) {
-      final var rejection = optRejection.getLeft();
+    final var validationResult = validateCommand(command, process);
+    if (validationResult.isLeft()) {
+      final var rejection = validationResult.getLeft();
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
@@ -136,17 +137,17 @@ public final class ProcessInstanceModificationProcessor
         eventKey, ProcessInstanceModificationIntent.MODIFIED, value, command);
   }
 
-  private Either<Rejection, DeployedProcess> validateCommand(
+  private Either<Rejection, ?> validateCommand(
       final TypedRecord<ProcessInstanceModificationRecord> command, final DeployedProcess process) {
     final var value = command.getValue();
     final var activateInstructions = value.getActivateInstructions();
 
     return validateElementExists(process, activateInstructions)
         .flatMap(valid -> validateElementsNotInsideMultiInstance(process, activateInstructions))
-        .map(valid -> process);
+        .map(valid -> VALID);
   }
 
-  private Either<Rejection, DeployedProcess> validateElementExists(
+  private Either<Rejection, ?> validateElementExists(
       final DeployedProcess process,
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
     final Set<String> unknownElementIds =
@@ -162,10 +163,10 @@ public final class ProcessInstanceModificationProcessor
               String.join("', '", unknownElementIds));
       return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
     }
-    return Either.right(process);
+    return VALID;
   }
 
-  private Either<Rejection, DeployedProcess> validateElementsNotInsideMultiInstance(
+  private Either<Rejection, ?> validateElementsNotInsideMultiInstance(
       final DeployedProcess process,
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
     final Set<String> elementsInsideMultiInstance =
@@ -182,7 +183,7 @@ public final class ProcessInstanceModificationProcessor
               String.join("', '", elementsInsideMultiInstance));
       return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
     }
-    return Either.right(process);
+    return VALID;
   }
 
   private boolean isInsideMultiInstanceBody(
