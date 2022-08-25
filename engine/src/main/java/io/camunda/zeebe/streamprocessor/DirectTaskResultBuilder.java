@@ -32,8 +32,8 @@ final class DirectTaskResultBuilder implements TaskResultBuilder {
   private final StreamProcessorContext context;
   private final MutableRecordBatch mutableRecordBatch;
 
-  DirectTaskResultBuilder(final StreamProcessorContext context,
-      final RecordBatchSizePredicate predicate) {
+  DirectTaskResultBuilder(
+      final StreamProcessorContext context, final RecordBatchSizePredicate predicate) {
     this.context = context;
     mutableRecordBatch = new RecordBatch(predicate);
   }
@@ -48,7 +48,8 @@ final class DirectTaskResultBuilder implements TaskResultBuilder {
       throw new IllegalStateException("Missing value type mapping for record: " + value.getClass());
     }
 
-    mutableRecordBatch.appendRecord(key, -1, RecordType.COMMAND, intent, RejectionType.NULL_VAL, "", valueType, value);
+    mutableRecordBatch.appendRecord(
+        key, -1, RecordType.COMMAND, intent, RejectionType.NULL_VAL, "", valueType, value);
     return this;
   }
 

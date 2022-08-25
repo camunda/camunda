@@ -70,8 +70,7 @@ public final class TypedEventRegistry {
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 
-    final Map<Class<? extends UnifiedRecordValue>, ValueType> typeRegistry =
-        new HashMap<>();
+    final Map<Class<? extends UnifiedRecordValue>, ValueType> typeRegistry = new HashMap<>();
     EVENT_REGISTRY.forEach((e, c) -> typeRegistry.put(c, e));
     TYPE_REGISTRY = Collections.unmodifiableMap(typeRegistry);
   }

@@ -9,15 +9,11 @@ package io.camunda.zeebe.engine.api;
 
 import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.engine.api.records.RecordBatchEntry;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 
 /**
  * Here the interface is just a suggestion. Can be whatever PDT teams thinks is best to work with
  */
 public interface ProcessingResult {
-
-  @Deprecated
-  long writeRecordsToStream(LogStreamBatchWriter logStreamBatchWriter);
 
   /**
    * Returns the resulting record batch, which can be empty or consist of multiple {@link

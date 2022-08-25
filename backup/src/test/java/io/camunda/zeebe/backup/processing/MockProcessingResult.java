@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.engine.api.records.RecordBatch;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -24,11 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 record MockProcessingResult(List<Event> records) implements ProcessingResult {
-
-  @Override
-  public long writeRecordsToStream(final LogStreamBatchWriter logStreamBatchWriter) {
-    return 0;
-  }
 
   @Override
   public ImmutableRecordBatch getRecordBatch() {
