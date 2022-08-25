@@ -29,6 +29,7 @@ import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import java.util.Collection;
@@ -48,6 +49,8 @@ public interface PartitionTransitionContext extends PartitionContext {
   void setSnapshotDirector(AsyncSnapshotDirector snapshotDirector);
 
   StateController getStateController();
+
+  PersistedSnapshotStore getPersistedSnapshotStore();
 
   List<PartitionListener> getPartitionListeners();
 

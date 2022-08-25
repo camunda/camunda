@@ -8,24 +8,22 @@
 package io.camunda.zeebe.backup.s3;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Optional;
 
 /**
  * Holds the current {@link BackupStatusCode} and an optional failureReason in case of failed
  * backups.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record Status(
-    BackupStatusCode statusCode, @JsonInclude(Include.NON_EMPTY) String failureReason) {
+public record Status(BackupStatusCode statusCode, Optional<String> failureReason) {
 
   public static final String OBJECT_KEY = "status.json";
 
   public Status(BackupStatusCode status) {
-    this(status, "");
+    this(status, Optional.empty());
   }
 
   public static Status inProgress() {
@@ -39,6 +37,6 @@ public record Status(
   public static Status failed(Throwable throwable) {
     final var writer = new StringWriter();
     throwable.printStackTrace(new PrintWriter(writer));
-    return new Status(BackupStatusCode.FAILED, writer.toString());
+    return new Status(BackupStatusCode.FAILED, Optional.of(writer.toString()));
   }
 }

@@ -55,6 +55,11 @@ public interface PersistedSnapshot extends CloseableSilently {
   Path getPath();
 
   /**
+   * @return path to checksum file
+   */
+  Path getChecksumPath();
+
+  /**
    * Returns an implementation specific compaction bound, e.g. a log stream position, index etc.,
    * used during compaction
    *

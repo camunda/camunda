@@ -196,7 +196,7 @@ public class FileBasedTransientSnapshotTest {
         .asInstanceOf(DirectoryAssert.factory())
         .as("the committed snapshots directory only contains the latest snapshot")
         .isDirectoryContainingExactly(
-            persistedSnapshot.getPath(), persistedSnapshot.getChecksumFile());
+            persistedSnapshot.getPath(), persistedSnapshot.getChecksumPath());
   }
 
   @Test
@@ -316,7 +316,7 @@ public class FileBasedTransientSnapshotTest {
     assertThat(snapshotsDir)
         .asInstanceOf(DirectoryAssert.factory())
         .as("snapshots directory only contains snapshot %s", firstSnapshot.getId())
-        .isDirectoryContainingExactly(firstSnapshot.getPath(), firstSnapshot.getChecksumFile());
+        .isDirectoryContainingExactly(firstSnapshot.getPath(), firstSnapshot.getChecksumPath());
   }
 
   @Test

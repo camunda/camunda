@@ -7,7 +7,15 @@
  */
 package io.camunda.zeebe.backup.api;
 
+import java.util.Optional;
+
 /** Represents the status of a backup. */
 public interface BackupStatus {
+  BackupIdentifier id();
+
+  Optional<BackupDescriptor> descriptor();
+
   BackupStatusCode statusCode();
+
+  Optional<String> failureReason();
 }

@@ -114,14 +114,14 @@ public class FileBasedSnapshotStoreTest {
     assertThat(snapshotsDir)
         .asInstanceOf(DirectoryAssert.factory())
         .as("the older snapshots should have been deleted")
-        .isDirectoryContainingExactly(newerSnapshot.getPath(), newerSnapshot.getChecksumFile());
+        .isDirectoryContainingExactly(newerSnapshot.getPath(), newerSnapshot.getChecksumPath());
   }
 
   @Test
   public void shouldNotLoadCorruptedSnapshot() throws Exception {
     // given
     final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
-    SnapshotChecksum.persist(persistedSnapshot.getChecksumFile(), new SfvChecksum(0xCAFEL));
+    SnapshotChecksum.persist(persistedSnapshot.getChecksumPath(), new SfvChecksum(0xCAFEL));
 
     // when
     snapshotStore.close();
@@ -135,7 +135,7 @@ public class FileBasedSnapshotStoreTest {
   public void shouldDeleteSnapshotWithoutChecksumFile() throws IOException {
     // given
     final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
-    Files.delete(persistedSnapshot.getChecksumFile());
+    Files.delete(persistedSnapshot.getChecksumPath());
 
     // when
     snapshotStore.close();
@@ -152,7 +152,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(snapshotsDir, pendingSnapshotsDir);
     final var corruptOlderSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(1, otherStore).persist().join();
-    SnapshotChecksum.persist(corruptOlderSnapshot.getChecksumFile(), new SfvChecksum(0xCAFEL));
+    SnapshotChecksum.persist(corruptOlderSnapshot.getChecksumPath(), new SfvChecksum(0xCAFEL));
 
     final var newerSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(2, snapshotStore).persist().join();
@@ -164,9 +164,9 @@ public class FileBasedSnapshotStoreTest {
     // then
     assertThat(snapshotStore.getLatestSnapshot()).hasValue(newerSnapshot);
     assertThat(newerSnapshot.getDirectory()).exists();
-    assertThat(newerSnapshot.getChecksumFile()).exists();
+    assertThat(newerSnapshot.getChecksumPath()).exists();
     assertThat(corruptOlderSnapshot.getDirectory()).doesNotExist();
-    assertThat(corruptOlderSnapshot.getChecksumFile()).doesNotExist();
+    assertThat(corruptOlderSnapshot.getChecksumPath()).doesNotExist();
   }
 
   @Test
@@ -175,7 +175,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(snapshotsDir, pendingSnapshotsDir);
     final var corruptOlderSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(1, otherStore).persist().join();
-    Files.delete(corruptOlderSnapshot.getChecksumFile());
+    Files.delete(corruptOlderSnapshot.getChecksumPath());
 
     final var newerSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(2, snapshotStore).persist().join();
@@ -187,9 +187,9 @@ public class FileBasedSnapshotStoreTest {
     // then
     assertThat(snapshotStore.getLatestSnapshot()).get().isEqualTo(newerSnapshot);
     assertThat(newerSnapshot.getDirectory()).exists();
-    assertThat(newerSnapshot.getChecksumFile()).exists();
+    assertThat(newerSnapshot.getChecksumPath()).exists();
     assertThat(corruptOlderSnapshot.getDirectory()).doesNotExist();
-    assertThat(corruptOlderSnapshot.getChecksumFile()).doesNotExist();
+    assertThat(corruptOlderSnapshot.getChecksumPath()).doesNotExist();
   }
 
   @Test
@@ -200,16 +200,16 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(snapshotsDir, pendingSnapshotsDir);
 
     // when - corrupting old snapshot and adding new valid snapshot
-    SnapshotChecksum.persist(olderSnapshot.getChecksumFile(), new SfvChecksum(0xCAFEL));
+    SnapshotChecksum.persist(olderSnapshot.getChecksumPath(), new SfvChecksum(0xCAFEL));
     final var newerSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(2, otherStore).persist().join();
 
     // then -- valid snapshot is unaffected and corrupt snapshot is deleted
     assertThat(otherStore.getLatestSnapshot()).get().isEqualTo(newerSnapshot);
     assertThat(newerSnapshot.getDirectory()).exists();
-    assertThat(newerSnapshot.getChecksumFile()).exists();
+    assertThat(newerSnapshot.getChecksumPath()).exists();
     assertThat(olderSnapshot.getDirectory()).doesNotExist();
-    assertThat(olderSnapshot.getChecksumFile()).doesNotExist();
+    assertThat(olderSnapshot.getChecksumPath()).doesNotExist();
   }
 
   @Test
@@ -218,7 +218,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(snapshotsDir, pendingSnapshotsDir);
     final var corruptSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(1, otherStore).persist().join();
-    SnapshotChecksum.persist(corruptSnapshot.getChecksumFile(), new SfvChecksum(0xCAFEL));
+    SnapshotChecksum.persist(corruptSnapshot.getChecksumPath(), new SfvChecksum(0xCAFEL));
 
     // when
     snapshotStore.close();
@@ -227,7 +227,7 @@ public class FileBasedSnapshotStoreTest {
     // then
     assertThat(snapshotStore.getLatestSnapshot()).isEmpty();
     assertThat(corruptSnapshot.getDirectory()).exists();
-    assertThat(corruptSnapshot.getChecksumFile()).exists();
+    assertThat(corruptSnapshot.getChecksumPath()).exists();
   }
 
   @Test
