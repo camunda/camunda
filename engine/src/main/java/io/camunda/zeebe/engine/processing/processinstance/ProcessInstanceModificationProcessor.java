@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -48,11 +49,16 @@ public final class ProcessInstanceModificationProcessor
       "Expected to modify process instance but no process instance found with key '%d'";
   private static final String ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND =
       "Expected to modify instance of process '%s' but it contains one or more activate instructions with an element that could not be found: '%s'";
-  private static final String ERROR_MESSAGE_TARGET_ELEMENT_IN_MULTI_INSTANCE_BODY =
+  private static final String ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED =
       "Expected to modify instance of process '%s' but it contains one or more activate instructions"
-          + " for elements inside a multi-instance subprocess: '%s'. The activation of elements inside"
-          + " a multi-instance subprocess is not supported.";
+          + " for elements that are unsupported: '%s'. %s. Supported element types are: %s";
 
+  private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
+      Set.of(BpmnElementType.UNSPECIFIED);
+  private static final Set<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
+      Arrays.stream(BpmnElementType.values())
+          .filter(elementType -> !UNSUPPORTED_ELEMENT_TYPES.contains(elementType))
+          .collect(Collectors.toSet());
   private static final Either<Rejection, Object> VALID = Either.right(null);
 
   private final StateWriter stateWriter;
@@ -144,7 +150,7 @@ public final class ProcessInstanceModificationProcessor
     final var activateInstructions = value.getActivateInstructions();
 
     return validateElementExists(process, activateInstructions)
-        .flatMap(valid -> validateElementsNotInsideMultiInstance(process, activateInstructions))
+        .flatMap(valid -> validateElementSupported(process, activateInstructions))
         .map(valid -> VALID);
   }
 
@@ -169,6 +175,13 @@ public final class ProcessInstanceModificationProcessor
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
+  private Either<Rejection, ?> validateElementSupported(
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
+    return validateElementsNotInsideMultiInstance(process, activateInstructions)
+        .map(valid -> VALID);
+  }
+
   private Either<Rejection, ?> validateElementsNotInsideMultiInstance(
       final DeployedProcess process,
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
@@ -185,9 +198,11 @@ public final class ProcessInstanceModificationProcessor
 
     final String reason =
         String.format(
-            ERROR_MESSAGE_TARGET_ELEMENT_IN_MULTI_INSTANCE_BODY,
+            ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED,
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
-            String.join("', '", elementsInsideMultiInstance));
+            String.join("', '", elementsInsideMultiInstance),
+            "The activation of elements inside a multi-instance subprocess is not supported",
+            SUPPORTED_ELEMENT_TYPES);
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
