@@ -48,6 +48,9 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
   private static final String COULD_NOT_CREATE_TIMER_MESSAGE =
       "Expected to create timer for start event, but encountered the following error: %s";
+  private static final String ERROR_DEPLOYMENT_TOO_LARGE_MESSAGE =
+      "Unable to deploy resources as the size exceeds the maximum batch size. Please split the"
+          + " resources into separate deployments, or reduce the size of the deployed resource.";
 
   private final SideEffectQueue sideEffects = new SideEffectQueue();
 
@@ -129,6 +132,20 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
           deploymentTransformer.getRejectionType(),
           deploymentTransformer.getRejectionReason());
     }
+  }
+
+  @Override
+  public ProcessingError tryHandleError(
+      final TypedRecord<DeploymentRecord> command, final Throwable error) {
+    if (error instanceof IllegalStateException
+        && error.getMessage().contains("this would exceed the maximum batch size")) {
+      rejectionWriter.appendRejection(
+          command, RejectionType.INVALID_ARGUMENT, ERROR_DEPLOYMENT_TOO_LARGE_MESSAGE);
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.INVALID_ARGUMENT, ERROR_DEPLOYMENT_TOO_LARGE_MESSAGE);
+      return ProcessingError.EXPECTED_ERROR;
+    }
+    return ProcessingError.UNEXPECTED_ERROR;
   }
 
   private void createTimerIfTimerStartEvent(
