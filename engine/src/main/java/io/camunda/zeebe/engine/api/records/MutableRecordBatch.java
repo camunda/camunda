@@ -45,8 +45,8 @@ public interface MutableRecordBatch extends ImmutableRecordBatch {
 
   /**
    * Allows to verify whether the given record length is suitable to be appended in the current
-   * batch. This method is useful if you have one record which will be updated and you don't want
-   * to append it right now, just to verify whether it would still fit.
+   * batch. This method is useful if you have one record which will be updated and you don't want to
+   * append it right now, just to verify whether it would still fit.
    *
    * @param recordLength the expected record length, which needs to be verified
    * @return true if the record length would fit into the batch, false otherwise

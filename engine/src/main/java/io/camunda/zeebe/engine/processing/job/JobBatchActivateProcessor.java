@@ -79,7 +79,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     final Either<TooLargeJob, Integer> result = jobBatchCollector.collectJobs(record);
     final var activatedJobCount = result.getOrElse(0);
     result.ifLeft(
-        largeJob -> raiseIncidentJobTooLargeForMessageSize(largeJob.key(), largeJob.jobRecord(), largeJob.expectedEventLength()));
+        largeJob ->
+            raiseIncidentJobTooLargeForMessageSize(
+                largeJob.key(), largeJob.jobRecord(), largeJob.expectedEventLength()));
 
     activateJobBatch(record, value, jobBatchKey, activatedJobCount);
   }
@@ -126,9 +128,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   private void raiseIncidentJobTooLargeForMessageSize(
-      final long jobKey,
-      final JobRecord job,
-      final int expectedJobRecordSize) {
+      final long jobKey, final JobRecord job, final int expectedJobRecordSize) {
     final String jobSize = ByteValue.prettyPrint(expectedJobRecordSize);
     final DirectBuffer incidentMessage =
         wrapString(

@@ -249,6 +249,7 @@ public class RecordBatchTest {
     // then
     assertThat(canAppend).isFalse();
   }
+
   @Test
   public void shouldOnlyReturnTrueUntilMaxCountIsReached() {
     // given
