@@ -140,7 +140,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   @Override
   public boolean canWriteEventOfLength(final int eventLength) {
-    return streamWriter.canWriteEventOfLength(eventLength);
+    return mutableRecordBatch.canAppendRecordOfLength(eventLength);
   }
 
   @Override

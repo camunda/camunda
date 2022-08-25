@@ -202,4 +202,73 @@ public class RecordBatchTest {
         .hasMessageContaining("Can't append entry")
         .hasMessageContaining("[ currentBatchEntryCount: 1, currentBatchSize: 249]");
   }
+
+  @Test
+  public void shouldReturnFalseIfRecordSizeDoesReachSizelimit() {
+    // given
+    final var recordBatch = new RecordBatch((count, size) -> size < 100);
+
+    // when
+    final var canAppend = recordBatch.canAppendRecordOfLength(100);
+
+    // then
+    assertThat(canAppend).isFalse();
+  }
+
+  @Test
+  public void shouldReturnTrueIfRecordSizeDoesntReachSizelimit() {
+    // given
+    final var recordBatch = new RecordBatch((count, size) -> size < 100);
+
+    // when
+    final var canAppend = recordBatch.canAppendRecordOfLength(99);
+
+    // then
+    assertThat(canAppend).isTrue();
+  }
+
+  @Test
+  public void shouldOnlyReturnTrueUntilMaxBatchSizeIsReached() {
+    // given
+    final var recordBatch = new RecordBatch((count, size) -> size < 300);
+    final var processInstanceRecord = Records.processInstance(1);
+
+    recordBatch.appendRecord(
+        1,
+        -1,
+        RecordType.COMMAND,
+        ProcessInstanceIntent.ACTIVATE_ELEMENT,
+        RejectionType.ALREADY_EXISTS,
+        "broken somehow",
+        ValueType.PROCESS_INSTANCE,
+        processInstanceRecord);
+
+    // when
+    final var canAppend = recordBatch.canAppendRecordOfLength(recordBatch.getBatchSize());
+
+    // then
+    assertThat(canAppend).isFalse();
+  }
+  @Test
+  public void shouldOnlyReturnTrueUntilMaxCountIsReached() {
+    // given
+    final var recordBatch = new RecordBatch((count, size) -> count < 2);
+    final var processInstanceRecord = Records.processInstance(1);
+
+    recordBatch.appendRecord(
+        1,
+        -1,
+        RecordType.COMMAND,
+        ProcessInstanceIntent.ACTIVATE_ELEMENT,
+        RejectionType.ALREADY_EXISTS,
+        "broken somehow",
+        ValueType.PROCESS_INSTANCE,
+        processInstanceRecord);
+
+    // when
+    final var canAppend = recordBatch.canAppendRecordOfLength(recordBatch.getBatchSize());
+
+    // then
+    assertThat(canAppend).isFalse();
+  }
 }
