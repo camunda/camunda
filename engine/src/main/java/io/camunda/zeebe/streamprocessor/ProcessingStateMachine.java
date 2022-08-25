@@ -29,6 +29,7 @@ import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.prometheus.client.Histogram;
@@ -412,14 +413,33 @@ public final class ProcessingStateMachine {
             () -> {
               // TODO refactor this into two parallel tasks, which are then combined, and on the
               // completion of which the process continues
-              final boolean responseSent =
-                  currentProcessingResult.writeResponse(context.getCommandResponseWriter());
 
-              if (!responseSent) {
-                return false;
-              } else {
-                return currentProcessingResult.executePostCommitTasks();
+              final var processingResponseOptional =
+                  currentProcessingResult.getProcessingResponse();
+
+              if (processingResponseOptional.isPresent()) {
+                final var processingResponse = processingResponseOptional.get();
+                final var responseWriter = context.getCommandResponseWriter();
+
+                final var responseValue = processingResponse.responseValue();
+                final var recordMetadata = responseValue.recordMetadata();
+                final boolean responseSent =
+                    responseWriter
+                        .intent(recordMetadata.getIntent())
+                        .key(responseValue.key())
+                        .recordType(recordMetadata.getRecordType())
+                        .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
+                        .rejectionType(recordMetadata.getRejectionType())
+                        .partitionId(context.getPartitionId())
+                        .tryWriteResponse(
+                            processingResponse.requestStreamId(), processingResponse.requestId());
+                if (!responseSent) {
+                  return false;
+                } else {
+                  return currentProcessingResult.executePostCommitTasks();
+                }
               }
+              return currentProcessingResult.executePostCommitTasks();
             },
             abortCondition);
 

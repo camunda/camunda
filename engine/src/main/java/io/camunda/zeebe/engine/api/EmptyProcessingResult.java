@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.api;
 
 import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.engine.api.records.RecordBatch;
+import java.util.Optional;
 
 public final class EmptyProcessingResult implements ProcessingResult {
 
@@ -25,8 +26,8 @@ public final class EmptyProcessingResult implements ProcessingResult {
   }
 
   @Override
-  public boolean writeResponse(final CommandResponseWriter commandResponseWriter) {
-    return true;
+  public Optional<ProcessingResponse> getProcessingResponse() {
+    return Optional.empty();
   }
 
   @Override

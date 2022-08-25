@@ -10,8 +10,8 @@ package io.camunda.zeebe.engine.api;
 import io.camunda.zeebe.engine.api.records.RecordBatchEntry;
 
 /**
- * The response which has been created during processing, for a request which can be identified
- * by {@link #requestId} and {@link #requestStreamId}.
+ * The response which has been created during processing, for a request which can be identified by
+ * {@link #requestId} and {@link #requestStreamId}.
  */
 public interface ProcessingResponse {
 
@@ -22,7 +22,7 @@ public interface ProcessingResponse {
 
   /**
    * @return the id of the stream on which the request was sent, together with the request id the
-   * request can be identified
+   *     request can be identified
    */
   int requestStreamId();
 

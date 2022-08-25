@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.api;
 
 import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.engine.api.records.RecordBatchEntry;
+import java.util.Optional;
 
 /**
  * Here the interface is just a suggestion. Can be whatever PDT teams thinks is best to work with
@@ -26,11 +27,10 @@ public interface ProcessingResult {
   ImmutableRecordBatch getRecordBatch();
 
   /**
-   * @return the processing response, which should be sent as answer of a user command.
+   * @return the processing response, which should be sent as answer of a user command. Can be empty
+   *     if no user command was processed.
    */
-  ProcessingResponse getProcessingResponse();
-
-  boolean writeResponse(CommandResponseWriter commandResponseWriter);
+  Optional<ProcessingResponse> getProcessingResponse();
 
   /**
    * @return <code>false</code> to indicate that the side effect could not be applied successfully

@@ -7,14 +7,15 @@
  */
 package io.camunda.zeebe.streamprocessor;
 
-import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.PostCommitTask;
+import io.camunda.zeebe.engine.api.ProcessingResponse;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.TaskResult;
 import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.streamprocessor.DirectProcessingResultBuilder.ProcessingResponseImpl;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Implementation of {@code ProcessingResult} that uses direct access to the stream and to response
@@ -25,22 +26,16 @@ import java.util.List;
 final class DirectProcessingResult implements ProcessingResult, TaskResult {
 
   private final List<PostCommitTask> postCommitTasks;
-  private final DirectTypedResponseWriter responseWriter;
-  private boolean hasResponse;
   private final ImmutableRecordBatch immutableRecordBatch;
   private final ProcessingResponseImpl processingResponse;
 
   DirectProcessingResult(
-      final StreamProcessorContext context,
       final ImmutableRecordBatch immutableRecordBatch,
       final ProcessingResponseImpl processingResponse,
-      final List<PostCommitTask> postCommitTasks,
-      final boolean hasResponse) {
+      final List<PostCommitTask> postCommitTasks) {
     this.postCommitTasks = new ArrayList<>(postCommitTasks);
-    responseWriter = context.getTypedResponseWriter();
     this.processingResponse = processingResponse;
     this.immutableRecordBatch = immutableRecordBatch;
-    this.hasResponse = hasResponse;
   }
 
   @Override
@@ -49,20 +44,8 @@ final class DirectProcessingResult implements ProcessingResult, TaskResult {
   }
 
   @Override
-  public ProcessingResponseImpl getProcessingResponse() {
-    return processingResponse;
-  }
-
-  @Override
-  public boolean writeResponse(final CommandResponseWriter commandResponseWriter) {
-    // here we must assume that response writer is backed up by command response writer internally
-
-    if (hasResponse) {
-      hasResponse = false;
-      return responseWriter.flush();
-    } else {
-      return true;
-    }
+  public Optional<ProcessingResponse> getProcessingResponse() {
+    return Optional.of(processingResponse);
   }
 
   @Override

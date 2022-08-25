@@ -37,12 +37,9 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   private final List<PostCommitTask> postCommitTasks = new ArrayList<>();
 
-  private final StreamProcessorContext context;
   private final LegacyTypedStreamWriter streamWriter;
   private final DirectTypedResponseWriter responseWriter;
 
-  private final boolean hasResponse =
-      true; // TODO figure out why this still needs to be true for tests to pass
   private final long sourceRecordPosition;
   private final RecordBatch mutableRecordBatch;
   private ProcessingResponseImpl processingResponse;
@@ -51,7 +48,6 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
       final StreamProcessorContext context,
       final long sourceRecordPosition,
       final RecordBatchSizePredicate predicate) {
-    this.context = context;
     this.sourceRecordPosition = sourceRecordPosition;
     streamWriter = context.getLogStreamWriter();
     streamWriter.configureSourceContext(sourceRecordPosition);
@@ -101,8 +97,9 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
       final String rejectionReason,
       final long requestId,
       final int requestStreamId) {
-    final var entry = RecordBatchEntry.createEntry(key, -1, recordType, intent, rejectionType,
-        rejectionReason, valueType, value);
+    final var entry =
+        RecordBatchEntry.createEntry(
+            key, -1, recordType, intent, rejectionType, rejectionReason, valueType, value);
     processingResponse = new ProcessingResponseImpl(entry, requestId, requestStreamId);
     return this;
   }
@@ -130,7 +127,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   @Override
   public ProcessingResult build() {
-    return new DirectProcessingResult(context, mutableRecordBatch, processingResponse, postCommitTasks, hasResponse);
+    return new DirectProcessingResult(mutableRecordBatch, processingResponse, postCommitTasks);
   }
 
   @Override
@@ -138,6 +135,6 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
     return mutableRecordBatch.canAppendRecordOfLength(eventLength);
   }
 
-  record ProcessingResponseImpl(RecordBatchEntry responseValue, long requestId, int requestStreamId) implements
-      ProcessingResponse {}
+  record ProcessingResponseImpl(RecordBatchEntry responseValue, long requestId, int requestStreamId)
+      implements ProcessingResponse {}
 }
