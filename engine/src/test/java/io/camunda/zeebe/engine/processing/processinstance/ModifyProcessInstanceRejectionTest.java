@@ -104,7 +104,7 @@ public class ModifyProcessInstanceRejectionTest {
                     "subprocess",
                     s -> s.embeddedSubProcess().startEvent().manualTask("B").manualTask("C").done())
                 .multiInstance(m -> m.zeebeInputCollectionExpression("[1,2,3]"))
-                .manualTask("task")
+                .manualTask("D")
                 .endEvent()
                 .done())
         .deploy();
@@ -122,6 +122,7 @@ public class ModifyProcessInstanceRejectionTest {
             .modification()
             .activateElement("B")
             .activateElement("C")
+            .activateElement("D")
             .expectRejection()
             .modify();
 
@@ -131,7 +132,8 @@ public class ModifyProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             ("Expected to modify instance of process '%s' with activate instructions but the element(s) with id(s) 'B', 'C'"
-                    + " is inside a multi-instance subprocess. The activation of element(s) inside a multi-instance subprocess is not supported.")
+                    + " is inside a multi-instance subprocess. The activation of element(s) inside a multi-instance"
+                    + " subprocess is not supported.")
                 .formatted(PROCESS_ID));
   }
 }
