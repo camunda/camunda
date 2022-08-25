@@ -156,15 +156,17 @@ public final class ProcessInstanceModificationProcessor
             .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
             .filter(targetElementId -> process.getProcess().getElementById(targetElementId) == null)
             .collect(Collectors.toSet());
-    if (!unknownElementIds.isEmpty()) {
-      final String reason =
-          String.format(
-              ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND,
-              BufferUtil.bufferAsString(process.getBpmnProcessId()),
-              String.join("', '", unknownElementIds));
-      return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+
+    if (unknownElementIds.isEmpty()) {
+      return VALID;
     }
-    return VALID;
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", unknownElementIds));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
   private Either<Rejection, ?> validateElementsNotInsideMultiInstance(
@@ -176,15 +178,17 @@ public final class ProcessInstanceModificationProcessor
             .filter(
                 elementId -> isInsideMultiInstanceBody(process, BufferUtil.wrapString(elementId)))
             .collect(Collectors.toSet());
-    if (!elementsInsideMultiInstance.isEmpty()) {
-      final String reason =
-          String.format(
-              ERROR_MESSAGE_TARGET_ELEMENT_IN_MULTI_INSTANCE_BODY,
-              BufferUtil.bufferAsString(process.getBpmnProcessId()),
-              String.join("', '", elementsInsideMultiInstance));
-      return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+
+    if (elementsInsideMultiInstance.isEmpty()) {
+      return VALID;
     }
-    return VALID;
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_TARGET_ELEMENT_IN_MULTI_INSTANCE_BODY,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", elementsInsideMultiInstance));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
   private boolean isInsideMultiInstanceBody(
