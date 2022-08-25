@@ -45,6 +45,24 @@ public class ModifyProcessInstanceUnsupportedElementsTest {
   public static Collection<Object> scenarios() {
     return List.of(
         new Scenario(
+            "Activate element inside multi-instance sub-process",
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .subProcess(
+                    "subprocess",
+                    s -> s.embeddedSubProcess().startEvent().manualTask("B").manualTask("C").done())
+                .multiInstance(m -> m.zeebeInputCollectionExpression("[1,2,3]"))
+                .manualTask("D")
+                .endEvent()
+                .done(),
+            instructionBuilder ->
+                instructionBuilder.activateElement("B").activateElement("C").activateElement("D"),
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                "'B', 'C'",
+                "The activation of elements inside a multi-instance subprocess is not supported")),
+        new Scenario(
             "Activate element that belongs to an event-based gateway",
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
