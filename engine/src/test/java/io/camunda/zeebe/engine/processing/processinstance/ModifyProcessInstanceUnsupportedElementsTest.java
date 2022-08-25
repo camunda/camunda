@@ -80,7 +80,25 @@ public class ModifyProcessInstanceUnsupportedElementsTest {
             new Rejection(
                 RejectionType.INVALID_ARGUMENT,
                 "'gateway_timer_event'",
-                "The activation of events belonging to an event-based gateway is not supported")));
+                "The activation of events belonging to an event-based gateway is not supported")),
+        new Scenario(
+            "Activate start events",
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .eventSubProcess(
+                    "event_sub_process",
+                    e -> e.startEvent("sub_start", s -> s.timerWithDuration(Duration.ofHours(1))))
+                .startEvent("root_start")
+                .userTask("A")
+                .done(),
+            instructionBuilder ->
+                instructionBuilder
+                    .activateElement("root_start")
+                    .activateElement("sub_start")
+                    .activateElement("A"),
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                "'root_start', 'sub_start'",
+                "The activation of elements with type 'START_EVENT' is not supported")));
   }
 
   @Test
