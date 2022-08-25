@@ -19,7 +19,6 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.api.EmptyProcessingResult;
-import io.camunda.zeebe.engine.api.EmptyTaskResult;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
@@ -29,6 +28,7 @@ import io.camunda.zeebe.engine.api.Task;
 import io.camunda.zeebe.engine.api.TaskResult;
 import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.api.records.RecordBatch;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamPlatform;
 import io.camunda.zeebe.engine.util.StreamPlatformExtension;
@@ -219,7 +219,7 @@ public class ProcessingScheduleServiceTest {
   private static final class DummyTask implements Task {
     @Override
     public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-      return EmptyTaskResult.INSTANCE;
+      return RecordBatch::empty;
     }
   }
 
