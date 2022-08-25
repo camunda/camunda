@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
@@ -37,6 +38,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -55,7 +57,7 @@ public final class ProcessInstanceModificationProcessor
           + " for elements that are unsupported: '%s'. %s. Supported element types are: %s";
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
-      Set.of(BpmnElementType.UNSPECIFIED);
+      Set.of(BpmnElementType.UNSPECIFIED, BpmnElementType.START_EVENT);
   private static final Set<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
       Arrays.stream(BpmnElementType.values())
           .filter(elementType -> !UNSUPPORTED_ELEMENT_TYPES.contains(elementType))
@@ -181,6 +183,7 @@ public final class ProcessInstanceModificationProcessor
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
     return validateElementsDoNotBelongToEventBasedGateway(process, activateInstructions)
         .flatMap(valid -> validateElementsNotInsideMultiInstance(process, activateInstructions))
+        .flatMap(valid -> validateElementsHaveSupportedType(process, activateInstructions))
         .map(valid -> VALID);
   }
 
@@ -231,6 +234,42 @@ public final class ProcessInstanceModificationProcessor
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", elementsInsideMultiInstance),
             "The activation of elements inside a multi-instance subprocess is not supported",
+            SUPPORTED_ELEMENT_TYPES);
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateElementsHaveSupportedType(
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
+
+    final List<AbstractFlowElement> elementsWithUnsupportedElementType =
+        activateInstructions.stream()
+            .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .map(elementId -> process.getProcess().getElementById(elementId))
+            .filter(element -> UNSUPPORTED_ELEMENT_TYPES.contains(element.getElementType()))
+            .toList();
+
+    if (elementsWithUnsupportedElementType.isEmpty()) {
+      return VALID;
+    }
+
+    final String usedUnsupportedElementIds =
+        elementsWithUnsupportedElementType.stream()
+            .map(AbstractFlowElement::getId)
+            .map(BufferUtil::bufferAsString)
+            .collect(Collectors.joining("', '"));
+    final String usedUnsupportedElementTypes =
+        elementsWithUnsupportedElementType.stream()
+            .map(AbstractFlowElement::getElementType)
+            .map(Objects::toString)
+            .distinct()
+            .collect(Collectors.joining("', '"));
+    final var reason =
+        ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED.formatted(
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            usedUnsupportedElementIds,
+            "The activation of elements with type '%s' is not supported"
+                .formatted(usedUnsupportedElementTypes),
             SUPPORTED_ELEMENT_TYPES);
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
