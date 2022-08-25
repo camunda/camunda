@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,7 +57,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
   }
 
   @Override
-  public ProcessingResultBuilder appendRecord(
+  public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
       final long key,
       final RecordType type,
       final Intent intent,
@@ -71,15 +72,19 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
     }
 
     if (value instanceof UnifiedRecordValue unifiedRecordValue) {
-      mutableRecordBatch.appendRecord(
+      final var either = mutableRecordBatch.appendRecord(
           key, -1, type, intent, rejectionType, rejectionReason, valueType, unifiedRecordValue);
+      if (either.isLeft())
+      {
+        return Either.left(either.getLeft());
+      }
     } else {
       throw new IllegalStateException(
           String.format("The record value %s is not a UnifiedRecordValue", value));
     }
 
     streamWriter.appendRecord(key, type, intent, rejectionType, rejectionReason, value);
-    return this;
+    return Either.right(this);
   }
 
   @Override
