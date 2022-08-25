@@ -16,7 +16,10 @@ import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.NamedFileSet;
+import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupDeletionIncomplete;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReadException;
@@ -28,7 +31,9 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -132,7 +137,39 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Backup> restore(final BackupIdentifier id, Path targetFolder) {
-    throw new UnsupportedOperationException();
+    final var backupPrefix = objectPrefix(id);
+    return requireBackupStatus(id, EnumSet.of(BackupStatusCode.COMPLETED))
+        .thenComposeAsync(this::readMetadataObject)
+        .thenComposeAsync(
+            metadata ->
+                downloadNamedFileSet(
+                        backupPrefix + SEGMENTS_PREFIX, metadata.segmentFileNames(), targetFolder)
+                    .thenCombineAsync(
+                        downloadNamedFileSet(
+                            backupPrefix + SNAPSHOT_PREFIX,
+                            metadata.snapshotFileNames(),
+                            targetFolder),
+                        (segments, snapshot) ->
+                            new BackupImpl(id, metadata.descriptor(), snapshot, segments)));
+  }
+
+  private CompletableFuture<NamedFileSet> downloadNamedFileSet(
+      final String sourcePrefix, final Set<String> fileNames, Path targetFolder) {
+    final var downloadedFiles = new ConcurrentHashMap<String, Path>();
+    final CompletableFuture<?>[] futures =
+        fileNames.stream()
+            .map(
+                fileName -> {
+                  final var path = targetFolder.resolve(fileName);
+                  return client
+                      .getObject(
+                          req -> req.bucket(config.bucketName()).key(sourcePrefix + fileName), path)
+                      .thenApply(response -> downloadedFiles.put(fileName, path));
+                })
+            .toArray(CompletableFuture[]::new);
+
+    return CompletableFuture.allOf(futures)
+        .thenApply(ignored -> new NamedFileSetImpl(downloadedFiles));
   }
 
   @Override
