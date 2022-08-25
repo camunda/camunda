@@ -15,6 +15,8 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import java.nio.file.Path;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,14 +29,25 @@ public final class BackupService extends Actor implements BackupManager {
   private final int numberOfPartitions;
   private final BackupServiceImpl internalBackupManager;
   private final PersistedSnapshotStore snapshotStore;
+  private final Path segmentsDirectory;
+  private final Predicate<Path> isSegmentsFile;
 
   public BackupService(
       final int nodeId,
       final int partitionId,
       final int numberOfPartitions,
-      final PersistedSnapshotStore snapshotStore) {
+      final PersistedSnapshotStore snapshotStore,
+      final Predicate<Path> isSegmentsFile,
+      final Path segmentsDirectory) {
     // Use a noop backup store until a proper backup store is available
-    this(nodeId, partitionId, numberOfPartitions, NoopBackupStore.INSTANCE, snapshotStore);
+    this(
+        nodeId,
+        partitionId,
+        numberOfPartitions,
+        NoopBackupStore.INSTANCE,
+        snapshotStore,
+        segmentsDirectory,
+        isSegmentsFile);
   }
 
   public BackupService(
@@ -42,11 +55,15 @@ public final class BackupService extends Actor implements BackupManager {
       final int partitionId,
       final int numberOfPartitions,
       final BackupStore backupStore,
-      final PersistedSnapshotStore snapshotStore) {
+      final PersistedSnapshotStore snapshotStore,
+      final Path segmentsDirectory,
+      final Predicate<Path> isSegmentsFile) {
     this.nodeId = nodeId;
     this.partitionId = partitionId;
     this.numberOfPartitions = numberOfPartitions;
     this.snapshotStore = snapshotStore;
+    this.segmentsDirectory = segmentsDirectory;
+    this.isSegmentsFile = isSegmentsFile;
     internalBackupManager =
         new BackupServiceImpl(nodeId, partitionId, numberOfPartitions, backupStore);
     actorName = buildActorName(nodeId, "BackupService", partitionId);
@@ -72,7 +89,9 @@ public final class BackupService extends Actor implements BackupManager {
                   new BackupIdentifierImpl(nodeId, partitionId, checkpointId),
                   checkpointPosition,
                   numberOfPartitions,
-                  actor);
+                  actor,
+                  segmentsDirectory,
+                  isSegmentsFile);
           internalBackupManager
               .takeBackup(inProgressBackup, actor)
               .onComplete(
