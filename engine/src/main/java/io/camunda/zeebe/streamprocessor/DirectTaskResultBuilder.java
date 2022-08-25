@@ -48,8 +48,9 @@ final class DirectTaskResultBuilder implements TaskResultBuilder {
       throw new IllegalStateException("Missing value type mapping for record: " + value.getClass());
     }
 
-    final var either = mutableRecordBatch.appendRecord(
-        key, -1, RecordType.COMMAND, intent, RejectionType.NULL_VAL, "", valueType, value);
+    final var either =
+        mutableRecordBatch.appendRecord(
+            key, -1, RecordType.COMMAND, intent, RejectionType.NULL_VAL, "", valueType, value);
 
     return either.isRight();
   }

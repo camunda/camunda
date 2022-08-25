@@ -30,9 +30,10 @@ public interface ProcessingResultBuilder {
       final Intent intent,
       final RejectionType rejectionType,
       final String rejectionReason,
-      final RecordValue value) throws RuntimeException {
-    final var either = appendRecordReturnEither(key, type,
-        intent, rejectionType, rejectionReason, value);
+      final RecordValue value)
+      throws RuntimeException {
+    final var either =
+        appendRecordReturnEither(key, type, intent, rejectionType, rejectionReason, value);
 
     if (either.isLeft()) {
       // This is how we handled too big record batches as well, except that this is now a
@@ -45,10 +46,10 @@ public interface ProcessingResultBuilder {
   }
 
   /**
-   * Appends a record to the result, returns an {@link Either<RuntimeException, ProcessingResultBuilder>}
-   * which indicates whether the appending was successful or not. This is useful in case were potentially
-   * we could reach the record batch limit size.
-   * The return either allows to handle such error case gracefully.
+   * Appends a record to the result, returns an {@link Either<RuntimeException,
+   * ProcessingResultBuilder>} which indicates whether the appending was successful or not. This is
+   * useful in case were potentially we could reach the record batch limit size. The return either
+   * allows to handle such error case gracefully.
    *
    * @return returns either a failure or itself for chaining
    */

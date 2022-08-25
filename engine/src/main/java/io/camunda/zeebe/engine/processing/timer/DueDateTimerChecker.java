@@ -122,7 +122,8 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
           .setRepetitions(timer.getRepetitions())
           .setProcessDefinitionKey(timer.getProcessDefinitionKey());
 
-      return taskResultBuilder.appendCommandRecord(timer.getKey(), TimerIntent.TRIGGER, timerRecord);
+      return taskResultBuilder.appendCommandRecord(
+          timer.getKey(), TimerIntent.TRIGGER, timerRecord);
     }
   }
 

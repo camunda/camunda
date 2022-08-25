@@ -28,8 +28,9 @@ public final class JobBackoffChecker implements StreamProcessorLifecycleAware {
             taskResultBuilder ->
                 jobState.findBackedOffJobs(
                     ActorClock.currentTimeMillis(),
-                    (key, record) -> taskResultBuilder.appendCommandRecord(
-                        key, JobIntent.RECUR_AFTER_BACKOFF, record)));
+                    (key, record) ->
+                        taskResultBuilder.appendCommandRecord(
+                            key, JobIntent.RECUR_AFTER_BACKOFF, record)));
   }
 
   public void scheduleBackOff(final long dueDate) {

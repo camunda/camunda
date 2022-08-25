@@ -54,8 +54,12 @@ record MockProcessingResult(List<Event> records) implements ProcessingResult {
 
     @Override
     public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
-        final long key, final RecordType type, final Intent intent,
-        final RejectionType rejectionType, final String rejectionReason, final RecordValue value) {
+        final long key,
+        final RecordType type,
+        final Intent intent,
+        final RejectionType rejectionType,
+        final String rejectionReason,
+        final RecordValue value) {
 
       final var record = new Event(intent, type, rejectionType, rejectionReason, key, value);
       followupRecords.add(record);

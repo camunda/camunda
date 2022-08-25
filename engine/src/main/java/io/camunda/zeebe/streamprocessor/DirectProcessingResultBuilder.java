@@ -72,10 +72,10 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
     }
 
     if (value instanceof UnifiedRecordValue unifiedRecordValue) {
-      final var either = mutableRecordBatch.appendRecord(
-          key, -1, type, intent, rejectionType, rejectionReason, valueType, unifiedRecordValue);
-      if (either.isLeft())
-      {
+      final var either =
+          mutableRecordBatch.appendRecord(
+              key, -1, type, intent, rejectionType, rejectionReason, valueType, unifiedRecordValue);
+      if (either.isLeft()) {
         return Either.left(either.getLeft());
       }
     } else {
