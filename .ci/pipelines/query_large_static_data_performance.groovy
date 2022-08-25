@@ -250,7 +250,13 @@ pipeline {
   }
 
   post {
-    failure {
+    unsuccessful {
+      // Store container logs
+      writeFile(
+              file: "elastic_logs.txt",
+              text: containerLog( name: "elasticsearch", returnLog: true )
+      )
+      archiveArtifacts artifacts: '*.txt'
       script {
         def notification = load "${pwd()}/.ci/pipelines/build_notification.groovy"
         notification.buildNotification(currentBuild.result)
