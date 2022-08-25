@@ -38,20 +38,13 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
   private final List<PostCommitTask> postCommitTasks = new ArrayList<>();
 
   private final LegacyTypedStreamWriter streamWriter;
-  private final DirectTypedResponseWriter responseWriter;
 
-  private final long sourceRecordPosition;
   private final RecordBatch mutableRecordBatch;
   private ProcessingResponseImpl processingResponse;
 
   DirectProcessingResultBuilder(
-      final StreamProcessorContext context,
-      final long sourceRecordPosition,
-      final RecordBatchSizePredicate predicate) {
-    this.sourceRecordPosition = sourceRecordPosition;
+      final StreamProcessorContext context, final RecordBatchSizePredicate predicate) {
     streamWriter = context.getLogStreamWriter();
-    streamWriter.configureSourceContext(sourceRecordPosition);
-    responseWriter = context.getTypedResponseWriter();
     mutableRecordBatch = new RecordBatch(predicate);
   }
 
@@ -112,9 +105,6 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   @Override
   public ProcessingResultBuilder reset() {
-    streamWriter.reset();
-    streamWriter.configureSourceContext(sourceRecordPosition);
-    responseWriter.reset();
     postCommitTasks.clear();
     return this;
   }

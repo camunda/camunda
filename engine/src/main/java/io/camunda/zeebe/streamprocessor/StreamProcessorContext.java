@@ -41,8 +41,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private LogStream logStream;
   private LogStreamReader logStreamReader;
   private LegacyTypedStreamWriter logStreamWriter;
-  private DirectTypedResponseWriterImpl typedResponseWriter;
-
   private RecordValues recordValues;
   private ZeebeDbState zeebeState;
   private TransactionContext transactionContext;
@@ -165,13 +163,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   public StreamProcessorContext commandResponseWriter(
       final CommandResponseWriter commandResponseWriter) {
     this.commandResponseWriter = commandResponseWriter;
-    typedResponseWriter =
-        new DirectTypedResponseWriterImpl(commandResponseWriter, getLogStream().getPartitionId());
     return this;
-  }
-
-  public DirectTypedResponseWriterImpl getTypedResponseWriter() {
-    return typedResponseWriter;
   }
 
   public StreamProcessorContext processorMode(final StreamProcessorMode streamProcessorMode) {

@@ -244,8 +244,7 @@ public final class ProcessingStateMachine {
 
       final long position = typedCommand.getPosition();
       final ProcessingResultBuilder processingResultBuilder =
-          new DirectProcessingResultBuilder(
-              context, position, logStreamBatchWriter::canWriteAdditionalEvent);
+          new DirectProcessingResultBuilder(context, logStreamBatchWriter::canWriteAdditionalEvent);
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
@@ -327,7 +326,7 @@ public final class ProcessingStateMachine {
           final long position = typedCommand.getPosition();
           final ProcessingResultBuilder processingResultBuilder =
               new DirectProcessingResultBuilder(
-                  context, position, logStreamBatchWriter::canWriteAdditionalEvent);
+                  context, logStreamBatchWriter::canWriteAdditionalEvent);
           // todo(#10047): replace this reset method by using Buffered Writers
           processingResultBuilder.reset();
 
