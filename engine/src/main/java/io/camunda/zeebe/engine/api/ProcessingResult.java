@@ -25,6 +25,11 @@ public interface ProcessingResult {
    */
   ImmutableRecordBatch getRecordBatch();
 
+  /**
+   * @return the processing response, which should be sent as answer of a user command.
+   */
+  ProcessingResponse getProcessingResponse();
+
   boolean writeResponse(CommandResponseWriter commandResponseWriter);
 
   /**

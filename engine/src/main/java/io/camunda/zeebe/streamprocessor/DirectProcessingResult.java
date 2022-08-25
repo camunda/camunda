@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.api.PostCommitTask;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.TaskResult;
 import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
+import io.camunda.zeebe.streamprocessor.DirectProcessingResultBuilder.ProcessingResponseImpl;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,14 +28,17 @@ final class DirectProcessingResult implements ProcessingResult, TaskResult {
   private final DirectTypedResponseWriter responseWriter;
   private boolean hasResponse;
   private final ImmutableRecordBatch immutableRecordBatch;
+  private final ProcessingResponseImpl processingResponse;
 
   DirectProcessingResult(
       final StreamProcessorContext context,
       final ImmutableRecordBatch immutableRecordBatch,
+      final ProcessingResponseImpl processingResponse,
       final List<PostCommitTask> postCommitTasks,
       final boolean hasResponse) {
     this.postCommitTasks = new ArrayList<>(postCommitTasks);
     responseWriter = context.getTypedResponseWriter();
+    this.processingResponse = processingResponse;
     this.immutableRecordBatch = immutableRecordBatch;
     this.hasResponse = hasResponse;
   }
@@ -42,6 +46,11 @@ final class DirectProcessingResult implements ProcessingResult, TaskResult {
   @Override
   public ImmutableRecordBatch getRecordBatch() {
     return immutableRecordBatch;
+  }
+
+  @Override
+  public ProcessingResponseImpl getProcessingResponse() {
+    return processingResponse;
   }
 
   @Override

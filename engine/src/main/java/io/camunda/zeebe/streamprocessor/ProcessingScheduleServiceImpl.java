@@ -101,8 +101,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
       }
       final var logStreamBatchWriter = streamProcessorContext.getLogStreamBatchWriter();
       final var builder =
-          new DirectTaskResultBuilder(
-              streamProcessorContext, logStreamBatchWriter::canWriteAdditionalEvent);
+          new DirectTaskResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
       final var result = task.execute(builder);
 
       // we need to retry the writing if the dispatcher return zero or negative position (this means
