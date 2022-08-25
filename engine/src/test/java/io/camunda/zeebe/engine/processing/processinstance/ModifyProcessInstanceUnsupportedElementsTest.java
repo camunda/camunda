@@ -144,7 +144,30 @@ public class ModifyProcessInstanceUnsupportedElementsTest {
             new Rejection(
                 RejectionType.INVALID_ARGUMENT,
                 "'timer_boundary_on_user_task', 'non_interrupting_msg_boundary_on_subprocess'",
-                "The activation of elements with type 'BOUNDARY_EVENT' is not supported")));
+                "The activation of elements with type 'BOUNDARY_EVENT' is not supported")),
+        new Scenario(
+            "Activate a combination of unsupported elements",
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent("root_start")
+                .userTask("A")
+                .boundaryEvent(
+                    "timer_boundary_on_user_task", t -> t.timerWithDuration(Duration.ofHours(1)))
+                .endEvent()
+                .moveToActivity("A")
+                .sequenceFlowId("flow_from_A")
+                .endEvent()
+                .done(),
+            instructionBuilder ->
+                instructionBuilder
+                    .activateElement("root_start")
+                    .activateElement("flow_from_A")
+                    .activateElement("timer_boundary_on_user_task")
+                    .activateElement("A"),
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                "'root_start', 'flow_from_A', 'timer_boundary_on_user_task'",
+                "The activation of elements with type 'START_EVENT', 'SEQUENCE_FLOW',"
+                    + " 'BOUNDARY_EVENT' is not supported")));
   }
 
   @Test
