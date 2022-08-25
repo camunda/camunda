@@ -27,7 +27,7 @@ public interface ProcessingResult {
    *
    * @return returns the resulting immutable record batch
    */
-  public ImmutableRecordBatch getRecordBatch();
+  ImmutableRecordBatch getRecordBatch();
 
   boolean writeResponse(CommandResponseWriter commandResponseWriter);
 
