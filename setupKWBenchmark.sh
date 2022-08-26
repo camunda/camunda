@@ -50,10 +50,9 @@ cd ..
 #
 # Setup the mixed benchmark with timers, starters and message publishers
 #
-benchmark="$benchmark-mixed"
-./newBenchmark.sh "$benchmark"
+./newBenchmark.sh "$benchmark-mixed"
 
-cd "$benchmark"
+cd "$benchmark-mixed"
 
 sed_inplace 's/camunda\/zeebe/gcr.io\/zeebe-io\/zeebe/' zeebe-values.yaml
 sed_inplace "s/SNAPSHOT/$benchmark/" zeebe-values.yaml
@@ -68,5 +67,5 @@ sed_inplace "s/rate=200/rate=100/" starter.yaml
 make zeebe starter worker timer publisher
 
 git add .
-git commit -m "test(benchmark): add $benchmark"
+git commit -m "test(benchmark): add $benchmark-mixed"
 git push origin medic-cw-benchmarks
