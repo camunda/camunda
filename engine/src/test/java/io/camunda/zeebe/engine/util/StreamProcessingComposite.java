@@ -149,7 +149,6 @@ public class StreamProcessingComposite {
               zeebeState = processingContext.getZeebeState();
               return factory.createProcessors(processingContext);
             }),
-            streamWriterFactory,
             Optional.empty());
 
     lastProcessedPositionState = result.getStreamProcessorDbState().getLastProcessedPositionState();
