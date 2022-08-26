@@ -1,0 +1,72 @@
+---
+name: demo-ci-analytics
+
+on: [pull_request]
+
+jobs:
+  goodjob:
+    runs-on: ubuntu-20.04
+    steps:
+    # Needed for submit-build-status to work!
+    - uses: actions/checkout@v3
+
+    # One way to get secrets is using Vault
+    - name: Import Secrets
+      id: secrets
+      uses: hashicorp/vault-action@v2.4.2
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        exportEnv: false # we rely on step outputs, no need for environment variables
+        secrets: |
+          secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
+
+    # Step that does the actual testing/linting/whatever, with ID to allow
+    # getting failed/success status later (up to the user to implement)
+    - id: hello
+      run: |
+        echo Hello World
+        exit 0
+
+    # Always submit build status to CI Analytics
+    - uses: camunda/infra-global-github-actions/submit-build-status@main
+      if: always()
+      with:
+        build_status: "${{ steps.hello.outcome }}"
+        gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
+
+  badjob:
+    runs-on: ubuntu-20.04
+    steps:
+    # Needed for submit-build-status to work!
+    - uses: actions/checkout@v3
+
+    # One way to get secrets is using Vault
+    - name: Import Secrets
+      id: secrets
+      uses: hashicorp/vault-action@v2.4.2
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        exportEnv: false # we rely on step outputs, no need for environment variables
+        secrets: |
+          secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
+
+    # Step that does the actual testing/linting/whatever, with ID to allow
+    # getting failed/success status later (up to the user to implement)
+    - id: hello
+      run: |
+        echo Hello World
+        exit 1
+
+    # Always submit build status to CI Analytics
+    - uses: camunda/infra-global-github-actions/submit-build-status@main
+      if: always()
+      with:
+        build_status: "${{ steps.hello.outcome }}"
+        gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
+        user_reason: "intentional-failure"
