@@ -63,7 +63,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
     }
     if (configurationService.getOnboarding().isEnableOnboardingEmails()) {
       this.setNotificationHandler(processKey -> {
-        onboardingNotificationService.notifyOnboarding(processKey);
+        onboardingNotificationService.notifyOnboardingWithErrorHandling(processKey);
         return processKey;
       });
     }

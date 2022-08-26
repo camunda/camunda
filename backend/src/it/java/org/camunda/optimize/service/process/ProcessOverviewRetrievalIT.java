@@ -102,7 +102,7 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
     final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
 
     // then
-    assertThat(processes).hasSize(0);
+    assertThat(processes).isEmpty();
   }
 
   @Test
@@ -266,7 +266,7 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
       .equals(FIRST_PROCESS_DEFINITION_KEY))
       .singleElement()
       .satisfies(process -> assertThat(process.getLinkToDashboard()).isEqualTo(
-        String.format(MAGIC_LINK_TEMPLATE, FIRST_PROCESS_DEFINITION_KEY, FIRST_PROCESS_DEFINITION_KEY)
+        String.format(MAGIC_LINK_TEMPLATE, "", FIRST_PROCESS_DEFINITION_KEY, FIRST_PROCESS_DEFINITION_KEY)
           + APP_CUE_DASHBOARD_SUFFIX));
   }
 
@@ -291,7 +291,7 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
       .singleElement()
       .satisfies(process -> assertThat(process.getLinkToDashboard()).isEqualTo(
         // No suffix
-        String.format(MAGIC_LINK_TEMPLATE, SECOND_PROCESS_DEFINITION_KEY, SECOND_PROCESS_DEFINITION_KEY)));
+        String.format(MAGIC_LINK_TEMPLATE, "", SECOND_PROCESS_DEFINITION_KEY, SECOND_PROCESS_DEFINITION_KEY)));
   }
 
   @Test

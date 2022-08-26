@@ -82,7 +82,7 @@ public class ProcessOverviewService {
       .map(entry -> {
         final String procDefKey = entry.getKey();
         String appCueSuffix = collectionAlreadyCreatedForProcess(procDefKey) ? "" : APP_CUE_DASHBOARD_SUFFIX;
-        String magicLinkToDashboard = String.format(MAGIC_LINK_TEMPLATE, procDefKey, procDefKey) + appCueSuffix;
+        String magicLinkToDashboard = String.format(MAGIC_LINK_TEMPLATE, "", procDefKey, procDefKey) + appCueSuffix;
         final Optional<ProcessOverviewDto> overviewForKey = Optional.ofNullable(processOverviewByKey.get(procDefKey));
         return new ProcessOverviewResponseDto(
           entry.getValue(),
