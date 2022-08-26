@@ -68,10 +68,7 @@ public class PassiveRole extends InactiveRole {
   public CompletableFuture<RaftRole> start() {
     snapshotListener = createSnapshotListener();
 
-    return super.start()
-        .thenRun(this::truncateUncommittedEntries)
-        .thenRun(this::addSnapshotListener)
-        .thenApply(v -> this);
+    return super.start().thenRun(this::truncateUncommittedEntries).thenApply(v -> this);
   }
 
   @Override
@@ -99,14 +96,6 @@ public class PassiveRole extends InactiveRole {
 
       raft.getLog().flush();
       raft.setLastWrittenIndex(raft.getCommitIndex());
-    }
-
-    // to fix the edge case where we might have been stopped
-    // between persisting snapshot and truncating log we need to call on restart snapshot listener
-    // again, such that we truncate the log when necessary
-    final var latestSnapshot = raft.getCurrentSnapshot();
-    if (latestSnapshot != null && snapshotListener != null) {
-      snapshotListener.onNewSnapshot(latestSnapshot);
     }
   }
 
@@ -268,11 +257,12 @@ public class PassiveRole extends InactiveRole {
       final long elapsed = System.currentTimeMillis() - pendingSnapshotStartTimestamp;
       log.debug("Committing snapshot {}", pendingSnapshot);
       try {
+        // Reset before committing to prevent the edge case where the system crashes after
+        // committing the snapshot, and restart with a snapshot and invalid log.
+        resetLogOnReceivingSnapshot(pendingSnapshot.index());
+
         final var snapshot = pendingSnapshot.persist().join();
         log.info("Committed snapshot {}", snapshot);
-        // Must be executed immediately before any other operation on this threadcontext. Hence
-        // don't wait for the listener to be notified by the snapshot store.
-        snapshotListener.onNewSnapshot(snapshot);
       } catch (final Exception e) {
         log.error("Failed to commit pending snapshot {}, rolling back", pendingSnapshot, e);
         abortPendingSnapshots();
@@ -743,6 +733,17 @@ public class PassiveRole extends InactiveRole {
                 .withLastSnapshotIndex(raft.getCurrentSnapshotIndex())
                 .build()));
     return succeeded;
+  }
+
+  private void resetLogOnReceivingSnapshot(final long snapshotIndex) {
+    final var raftLog = raft.getLog();
+
+    log.info(
+        "Delete existing log (lastIndex '{}') and replace with received snapshot (index '{}'). First entry in the log will be at index {}",
+        raftLog.getLastIndex(),
+        snapshotIndex,
+        snapshotIndex + 1);
+    raftLog.reset(snapshotIndex + 1);
   }
 
   private static final class ResetWriterSnapshotListener implements PersistedSnapshotListener {
