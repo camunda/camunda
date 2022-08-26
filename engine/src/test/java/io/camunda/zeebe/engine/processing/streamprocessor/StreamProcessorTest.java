@@ -516,13 +516,11 @@ public final class StreamProcessorTest {
 
     // it doesn't send the staged command response
     verify(commandResponseWriter, TIMEOUT.times(1)).key(-1);
-    verify(commandResponseWriter, TIMEOUT.times(1))
-        .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT);
+    verify(commandResponseWriter, TIMEOUT.times(1)).intent(ProcessInstanceIntent.ACTIVATE_ELEMENT);
     verify(commandResponseWriter, TIMEOUT.times(1)).recordType(RecordType.COMMAND_REJECTION);
     verify(commandResponseWriter, TIMEOUT.times(1)).valueType(ValueType.PROCESS_INSTANCE);
     // instead, it sends a rejection response because of the failure
-    verify(commandResponseWriter, TIMEOUT.times(1))
-        .rejectionType(RejectionType.PROCESSING_ERROR);
+    verify(commandResponseWriter, TIMEOUT.times(1)).rejectionType(RejectionType.PROCESSING_ERROR);
     verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(anyInt(), anyLong());
   }
 
