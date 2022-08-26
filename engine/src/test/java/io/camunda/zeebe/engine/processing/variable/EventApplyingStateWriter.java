@@ -12,13 +12,12 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWrit
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.streamprocessor.LegacyTypedStreamWriter;
 
 /**
  * A state writer that uses the event applier, to alter the state for each written event.
  *
  * <p>Note that it does not write events to the stream itself, but it delegates this to the {@link
- * LegacyTypedStreamWriter}.
+ * TypedEventWriter}.
  *
  * <p>Note that it does not change the state itself, but delegates this to the {@link EventApplier}.
  */
