@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,7 +53,7 @@ record MockProcessingResult(List<Event> records) implements ProcessingResult {
     final List<Event> followupRecords = new ArrayList<>();
 
     @Override
-    public ProcessingResultBuilder appendRecord(
+    public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
         final long key,
         final RecordType type,
         final Intent intent,
@@ -62,7 +63,7 @@ record MockProcessingResult(List<Event> records) implements ProcessingResult {
 
       final var record = new Event(intent, type, rejectionType, rejectionReason, key, value);
       followupRecords.add(record);
-      return null;
+      return Either.right(null);
     }
 
     @Override

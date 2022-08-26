@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.timer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -46,6 +47,7 @@ class DueDateTimerCheckerTest {
 
       // given
       final var mockTaskResultBuilder = mock(TaskResultBuilder.class);
+      when(mockTaskResultBuilder.appendCommandRecord(anyLong(), any(), any())).thenReturn(true);
 
       final var mockTimer = mock(TimerInstance.class, Mockito.RETURNS_DEEP_STUBS);
       final var timerKey = 42L;
@@ -74,6 +76,38 @@ class DueDateTimerCheckerTest {
        *
        * So in the fifth iteration, the mechanism will yield
        */
+    }
+
+    @Test
+    void shouldAbortIterationWhenRecordBatchReturnsFalseOnAppend() {
+      /* This test verifies that the class will yield at some point, and will not add endless records
+       * to a batch.
+       */
+
+      // given
+      final var mockTaskResultBuilder = mock(TaskResultBuilder.class);
+      when(mockTaskResultBuilder.appendCommandRecord(anyLong(), any(), any()))
+          .thenReturn(true)
+          .thenReturn(false);
+
+      final var mockTimer = mock(TimerInstance.class, Mockito.RETURNS_DEEP_STUBS);
+      final var timerKey = 42L;
+      when(mockTimer.getKey()).thenReturn(timerKey);
+
+      final var testActorClock = new TestActorClock();
+
+      final var testTimerInstanceState =
+          new TestTimerInstanceStateThatSimulatesAnEndlessListOfDueTimers(
+              mockTimer, testActorClock);
+
+      final var sut = new TriggerTimersSideEffect(testTimerInstanceState, testActorClock, true);
+
+      // when
+      sut.apply(mockTaskResultBuilder);
+
+      // then
+      verify(mockTaskResultBuilder, times(2))
+          .appendCommandRecord(eq(timerKey), eq(TimerIntent.TRIGGER), any());
     }
   }
 

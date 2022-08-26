@@ -49,8 +49,7 @@ public final class MessageTimeToLiveChecker implements Task {
       deleteMessageCommand.setMessageId(message.getMessageIdBuffer());
     }
 
-    taskResultBuilder.appendCommandRecord(
+    return taskResultBuilder.appendCommandRecord(
         storedMessage.getMessageKey(), MessageIntent.EXPIRE, deleteMessageCommand);
-    return true;
   }
 }

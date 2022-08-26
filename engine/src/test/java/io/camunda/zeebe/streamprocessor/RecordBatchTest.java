@@ -8,7 +8,6 @@
 package io.camunda.zeebe.streamprocessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.engine.api.records.ImmutableRecordBatchEntry;
 import io.camunda.zeebe.engine.api.records.RecordBatch;
@@ -155,18 +154,21 @@ class RecordBatchTest {
     final var recordBatch = new RecordBatch((count, size) -> false);
     final var processInstanceRecord = Records.processInstance(1);
 
-    // expect
-    assertThatThrownBy(
-            () ->
-                recordBatch.appendRecord(
-                    1,
-                    -1,
-                    RecordType.COMMAND,
-                    ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                    RejectionType.ALREADY_EXISTS,
-                    "broken somehow",
-                    ValueType.PROCESS_INSTANCE,
-                    processInstanceRecord))
+    // when
+    final var either =
+        recordBatch.appendRecord(
+            1,
+            -1,
+            RecordType.COMMAND,
+            ProcessInstanceIntent.ACTIVATE_ELEMENT,
+            RejectionType.ALREADY_EXISTS,
+            "broken somehow",
+            ValueType.PROCESS_INSTANCE,
+            processInstanceRecord);
+
+    // then
+    assertThat(either.isLeft()).isTrue();
+    assertThat(either.getLeft())
         .hasMessageContaining("Can't append entry")
         .hasMessageContaining("[ currentBatchEntryCount: 0, currentBatchSize: 0]");
   }
@@ -187,18 +189,21 @@ class RecordBatchTest {
         ValueType.PROCESS_INSTANCE,
         processInstanceRecord);
 
-    // expect
-    assertThatThrownBy(
-            () ->
-                recordBatch.appendRecord(
-                    1,
-                    -1,
-                    RecordType.COMMAND,
-                    ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                    RejectionType.ALREADY_EXISTS,
-                    "broken somehow",
-                    ValueType.PROCESS_INSTANCE,
-                    processInstanceRecord))
+    // when
+    final var either =
+        recordBatch.appendRecord(
+            1,
+            -1,
+            RecordType.COMMAND,
+            ProcessInstanceIntent.ACTIVATE_ELEMENT,
+            RejectionType.ALREADY_EXISTS,
+            "broken somehow",
+            ValueType.PROCESS_INSTANCE,
+            processInstanceRecord);
+
+    // then
+    assertThat(either.isLeft()).isTrue();
+    assertThat(either.getLeft())
         .hasMessageContaining("Can't append entry")
         .hasMessageContaining("[ currentBatchEntryCount: 1, currentBatchSize: 249]");
   }

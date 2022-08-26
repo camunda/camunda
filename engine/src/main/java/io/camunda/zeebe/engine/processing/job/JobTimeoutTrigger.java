@@ -79,10 +79,7 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
       final long now = currentTimeMillis();
       state.forEachTimedOutEntry(
           now,
-          (key, record) -> {
-            taskResultBuilder.appendCommandRecord(key, JobIntent.TIME_OUT, record);
-            return true;
-          });
+          (key, record) -> taskResultBuilder.appendCommandRecord(key, JobIntent.TIME_OUT, record));
       if (shouldReschedule) {
         scheduleDeactivateTimedOutJobsTask();
       }
