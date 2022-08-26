@@ -45,7 +45,7 @@ final class DirectProcessingResult implements ProcessingResult, TaskResult {
 
   @Override
   public Optional<ProcessingResponse> getProcessingResponse() {
-    return Optional.of(processingResponse);
+    return Optional.ofNullable(processingResponse);
   }
 
   @Override
