@@ -240,11 +240,7 @@ public final class TestStreams {
       final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
     final SynchronousLogStream stream = getLogStream(log);
     return buildStreamProcessor(
-        stream,
-        zeebeDbFactory,
-        typedRecordProcessorFactory,
-        true,
-        streamProcessorListenerOpt);
+        stream, zeebeDbFactory, typedRecordProcessorFactory, true, streamProcessorListenerOpt);
   }
 
   public StreamProcessor startStreamProcessorNotAwaitOpening(
@@ -254,11 +250,7 @@ public final class TestStreams {
       final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
     final SynchronousLogStream stream = getLogStream(log);
     return buildStreamProcessor(
-        stream,
-        zeebeDbFactory,
-        typedRecordProcessorFactory,
-        false,
-        streamProcessorListenerOpt);
+        stream, zeebeDbFactory, typedRecordProcessorFactory, false, streamProcessorListenerOpt);
   }
 
   public StreamProcessor buildStreamProcessor(

@@ -323,8 +323,7 @@ public final class ProcessingStateMachine {
         () -> {
           final long position = typedCommand.getPosition();
           final ProcessingResultBuilder processingResultBuilder =
-              new DirectProcessingResultBuilder(
-                  logStreamBatchWriter::canWriteAdditionalEvent);
+              new DirectProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
           // todo(#10047): replace this reset method by using Buffered Writers
           processingResultBuilder.reset();
 

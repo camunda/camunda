@@ -40,8 +40,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
   private final RecordBatch mutableRecordBatch;
   private ProcessingResponseImpl processingResponse;
 
-  DirectProcessingResultBuilder(
-      final RecordBatchSizePredicate predicate) {
+  DirectProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
     mutableRecordBatch = new RecordBatch(predicate);
   }
 

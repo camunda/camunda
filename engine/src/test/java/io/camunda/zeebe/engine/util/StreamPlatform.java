@@ -187,8 +187,7 @@ public final class StreamPlatform {
   }
 
   public StreamProcessor buildStreamProcessor(
-      final SynchronousLogStream stream,
-      final boolean awaitOpening) {
+      final SynchronousLogStream stream, final boolean awaitOpening) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
 

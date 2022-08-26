@@ -27,10 +27,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public class StreamProcessorHealthTest {
 
   private static final ProcessInstanceRecord PROCESS_INSTANCE_RECORD = Records.processInstance(1);
+
   @SuppressWarnings("unused") // injected by the extension
   private StreamPlatform streamPlatform;
-  private StreamProcessor streamProcessor;
 
+  private StreamProcessor streamProcessor;
 
   @Test
   void shouldBeHealthyOnStart() {
@@ -49,16 +50,18 @@ public class StreamProcessorHealthTest {
 
     final var mockProcessor = streamPlatform.getDefaultRecordProcessor();
     when(mockProcessor.process(any(), any())).thenThrow(new RuntimeException("expected"));
-    when(mockProcessor.onProcessingError(any(), any(), any())).thenThrow(new RuntimeException("expected"));
+    when(mockProcessor.onProcessingError(any(), any(), any()))
+        .thenThrow(new RuntimeException("expected"));
 
     // when
     // since processing fails we will write error event
     // we want to fail error even transaction
-    streamPlatform.writeBatch(RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD));
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD));
 
     // then
     Awaitility.await("wait to become unhealthy")
-            .until(() -> streamProcessor.getHealthReport().isUnhealthy());
+        .until(() -> streamProcessor.getHealthReport().isUnhealthy());
   }
 
   @Test
@@ -70,13 +73,15 @@ public class StreamProcessorHealthTest {
     final var mockProcessor = streamPlatform.getDefaultRecordProcessor();
     when(mockProcessor.process(any(), any())).thenThrow(new RuntimeException("expected"));
     when(mockProcessor.onProcessingError(any(), any(), any()))
-        .thenAnswer(invocationOnMock -> {
-          if (shouldFail.get()) {
-            throw new RuntimeException("expected");
-          }
-          return EmptyProcessingResult.INSTANCE;
-        });
-    streamPlatform.writeBatch(RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD));
+        .thenAnswer(
+            invocationOnMock -> {
+              if (shouldFail.get()) {
+                throw new RuntimeException("expected");
+              }
+              return EmptyProcessingResult.INSTANCE;
+            });
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD));
     Awaitility.await("wait to become unhealthy")
         .until(() -> streamProcessor.getHealthReport().isUnhealthy());
 
