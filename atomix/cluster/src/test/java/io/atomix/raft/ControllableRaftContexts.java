@@ -360,8 +360,6 @@ public final class ControllableRaftContexts {
                 .orElse(1L)
             - 1;
 
-    readers.values().forEach(r -> r.seek(-1)); // seek to first
-
     final long commitIndexOnLeader =
         raftServers.values().stream()
             .map(RaftContext::getCommitIndex)
