@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,8 +29,6 @@ public final class StreamProcessorBuilder {
   private ZeebeDb zeebeDb;
   private Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private int nodeId;
-  private Function<LogStreamBatchWriter, LegacyTypedStreamWriter> typedStreamWriterFactory =
-      LegacyTypedStreamWriterImpl::new;
 
   private List<RecordProcessor> recordProcessors;
 
@@ -137,15 +134,5 @@ public final class StreamProcessorBuilder {
           streamProcessorContext.getPartitionCommandSender(),
           "No partition command sender provided");
     }
-  }
-
-  public Function<LogStreamBatchWriter, LegacyTypedStreamWriter> getTypedStreamWriterFactory() {
-    return typedStreamWriterFactory;
-  }
-
-  public StreamProcessorBuilder typedStreamWriterFactory(
-      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory) {
-    typedStreamWriterFactory = streamWriterFactory;
-    return this;
   }
 }
