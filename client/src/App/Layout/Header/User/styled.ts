@@ -7,6 +7,7 @@
 
 import styled, {css} from 'styled-components';
 import DefaultDropdown from 'modules/components/Dropdown';
+import {zUserDropdown} from 'modules/constants/componentHierarchy';
 
 const Dropdown = styled(DefaultDropdown)`
   > button > div {
@@ -18,7 +19,7 @@ const Dropdown = styled(DefaultDropdown)`
   }
 
   > ul {
-    z-index: 6;
+    z-index: ${zUserDropdown};
   }
 `;
 

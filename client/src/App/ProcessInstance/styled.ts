@@ -10,6 +10,7 @@ import {CmButton} from '@camunda-cloud/common-ui-react';
 import {styles} from '@carbon/elements';
 import {zModificationFrame} from 'modules/constants/componentHierarchy';
 import Modal from 'modules/components/Modal';
+import {MODIFICATION_HEADER_HEIGHT} from 'modules/constants';
 
 type ContainerProps = {
   $isModificationOutlineVisible: boolean;
@@ -31,9 +32,9 @@ const Container = styled.main<ContainerProps>`
   ${({theme, $isModificationOutlineVisible, $isBreadcrumbVisible}) => {
     return css`
       display: grid;
-      grid-template-rows: ${`${$isModificationOutlineVisible ? '34px' : ''} ${
-        $isBreadcrumbVisible ? '30px' : ''
-      } 56px 1fr`};
+      grid-template-rows: ${`${
+        $isModificationOutlineVisible ? `${MODIFICATION_HEADER_HEIGHT}px` : ''
+      } ${$isBreadcrumbVisible ? '30px' : ''} 56px 1fr`};
       height: 100%;
       ${$isModificationOutlineVisible &&
       css`

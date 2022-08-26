@@ -50,7 +50,7 @@ type VariableModification = {
 type Modification = FlowNodeModification | VariableModification;
 
 type State = {
-  status: 'enabled' | 'moving-token' | 'disabled';
+  status: 'enabled' | 'moving-token' | 'disabled' | 'adding-modification';
   modifications: Modification[];
   sourceFlowNodeIdForMoveOperation: string | null;
 };
@@ -68,6 +68,7 @@ const EMPTY_MODIFICATION = Object.freeze({
 
 class Modifications {
   state: State = {...DEFAULT_STATE};
+  modificationsLoadingTimeout: number | undefined;
 
   constructor() {
     makeAutoObservable(this);
@@ -102,10 +103,11 @@ class Modifications {
           affectedTokenCount: 2, //  TODO: This can only be set when instance counts are known #2926
         },
       });
+    } else {
+      this.state.status = 'enabled';
     }
 
     this.state.sourceFlowNodeIdForMoveOperation = null;
-    this.state.status = 'enabled';
   };
 
   enableModificationMode = () => {
@@ -117,6 +119,10 @@ class Modifications {
   };
 
   addModification = (modification: Modification) => {
+    this.state.status = 'adding-modification';
+    this.modificationsLoadingTimeout = window.setTimeout(() => {
+      this.enableModificationMode();
+    }, 500);
     this.state.modifications.push(modification);
   };
 
@@ -269,6 +275,7 @@ class Modifications {
 
   reset = () => {
     this.state = {...DEFAULT_STATE};
+    window.clearTimeout(this.modificationsLoadingTimeout);
   };
 }
 

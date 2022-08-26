@@ -42,6 +42,7 @@ import {InformationModal} from 'modules/components/InformationModal';
 import {CmButton} from '@camunda-cloud/common-ui-react';
 import {LastModification} from './LastModification';
 import {ModificationSummaryModal} from './ModificationSummaryModal';
+import {ModificationLoadingOverlay} from './ModificationLoadingOverlay';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -127,7 +128,7 @@ const ProcessInstance: React.FC = observer(() => {
 
   const {
     isModificationModeEnabled,
-    state: {modifications},
+    state: {modifications, status: modificationStatus},
   } = modificationsStore;
 
   const isBreadcrumbVisible =
@@ -148,6 +149,10 @@ const ProcessInstance: React.FC = observer(() => {
           Process Instance Modification Mode
         </ModificationHeader>
       )}
+      {modificationStatus === 'adding-modification' && (
+        <ModificationLoadingOverlay label="Adding modifications..." />
+      )}
+
       {isBreadcrumbVisible && (
         <Breadcrumb
           processInstance={processInstanceDetailsStore.state.processInstance!}

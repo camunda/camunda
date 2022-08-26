@@ -7,6 +7,7 @@
 
 import styled, {css} from 'styled-components';
 import {styles} from '@carbon/elements';
+import {zLicenseNote} from 'modules/constants/componentHierarchy';
 
 const Container = styled.div`
   position: relative;
@@ -43,7 +44,7 @@ const LicenseNoteBox = styled.div`
       box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.2);
       border: solid 1px ${licenseColors.borderColor};
 
-      z-index: 6;
+      z-index: ${zLicenseNote};
 
       &:before,
       &:after {

@@ -354,6 +354,12 @@ const theme = {
               backgroundColor: DARK_COLORS.ui01,
             },
           },
+          loadingOverlay: {
+            backgroundColor: rgba(SEMANTIC_COLORS.black, 0.65),
+            spinner: {
+              borderColor: SEMANTIC_COLORS.white,
+            },
+          },
         },
       },
       sortableTable: {
@@ -1269,6 +1275,12 @@ const theme = {
           summaryModal: {
             tableHeader: {
               backgroundColor: LIGHT_COLORS.ui04,
+            },
+          },
+          loadingOverlay: {
+            backgroundColor: rgba(SEMANTIC_COLORS.white, 0.75),
+            spinner: {
+              borderColor: LIGHT_COLORS.ui06,
             },
           },
         },

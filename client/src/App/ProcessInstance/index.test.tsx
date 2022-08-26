@@ -329,7 +329,7 @@ describe('Instance', () => {
     }
   );
 
-  (IS_MODIFICATION_MODE_ENABLED ? it.skip : it.skip)(
+  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
     'should display no planned modifications modal when apply modifications is clicked during the modification mode',
     async () => {
       mockServer.use(
@@ -420,13 +420,116 @@ describe('Instance', () => {
 
       expect(screen.getByText(/flow node modifications/i)).toBeInTheDocument();
 
-      expect(screen.getByText(/variable modifications/i)).toBeInTheDocument();
+      expect(screen.getByText(/variable modifications/gi)).toBeInTheDocument();
 
       await user.click(screen.getByRole('button', {name: 'Cancel'}));
 
       await waitForElementToBeRemoved(() =>
         screen.queryByText(/Planned modifications for Process Instance/i)
       );
+    }
+  );
+
+  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
+    'should display loading overlay when a flow node modification is made',
+    async () => {
+      mockServer.use(
+        rest.get('/api/process-instances/:id', (_, res, ctx) =>
+          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
+        ),
+        rest.post(
+          '/api/process-instances/:instanceId/flow-node-metadata',
+          (_, res, ctx) => res.once(ctx.json(undefined))
+        )
+      );
+
+      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+      await waitForElementToBeRemoved(
+        screen.getByTestId('instance-header-skeleton')
+      );
+
+      storeStateLocally({
+        [`hideModificationHelperModal`]: true,
+      });
+      await user.click(
+        screen.getByRole('button', {
+          name: /modify instance/i,
+        })
+      );
+
+      jest.useFakeTimers();
+
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'taskD',
+      });
+
+      await user.click(
+        screen.getByRole('button', {name: /add single flow node instance/i})
+      );
+
+      expect(screen.getByText(/adding modifications.../i)).toBeInTheDocument();
+      jest.runOnlyPendingTimers();
+      expect(
+        screen.queryByText(/adding modifications.../i)
+      ).not.toBeInTheDocument();
+
+      expect(await screen.findByTestId('badge-plus-icon')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', {name: /undo/i}));
+
+      mockServer.use(
+        rest.post(
+          '/api/process-instances/:instanceId/flow-node-metadata',
+          (_, res, ctx) => res.once(ctx.json(undefined))
+        )
+      );
+
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'taskD',
+      });
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /cancel all running flow node instances in this flow node/i,
+        })
+      );
+      expect(screen.getByText(/adding modifications.../i)).toBeInTheDocument();
+      jest.runOnlyPendingTimers();
+      expect(
+        screen.queryByText(/adding modifications.../i)
+      ).not.toBeInTheDocument();
+      expect(await screen.findByTestId('badge-minus-icon')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', {name: /undo/i}));
+
+      mockServer.use(
+        rest.post(
+          '/api/process-instances/:instanceId/flow-node-metadata',
+          (_, res, ctx) => res.once(ctx.json(undefined))
+        )
+      );
+
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'taskD',
+      });
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /move all running instances in this flow node to another target/i,
+        })
+      );
+      modificationsStore.finishMovingToken('EndEvent_042s0oc');
+
+      expect(screen.getByText(/adding modifications.../i)).toBeInTheDocument();
+      jest.runOnlyPendingTimers();
+      expect(
+        screen.queryByText(/adding modifications.../i)
+      ).not.toBeInTheDocument();
+      expect(await screen.findByTestId('badge-minus-icon')).toBeInTheDocument();
+      expect(screen.getByTestId('badge-plus-icon')).toBeInTheDocument();
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
     }
   );
 });
