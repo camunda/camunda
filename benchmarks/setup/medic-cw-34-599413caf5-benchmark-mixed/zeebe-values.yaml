@@ -1,6 +1,6 @@
 global:
   image:
-    tag: medic-cw-34-599413caf5-benchmark-mixed
+    tag: medic-cw-34-599413caf5-benchmark
     pullPolicy: Always
 
 zeebe:

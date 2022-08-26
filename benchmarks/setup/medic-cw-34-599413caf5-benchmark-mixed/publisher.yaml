@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: publisher
-        image: gcr.io/zeebe-io/starter:medic-cw-34-599413caf5-benchmark-mixed
+        image: gcr.io/zeebe-io/starter:medic-cw-34-599413caf5-benchmark
         imagePullPolicy: Always
         env:
           - name: JAVA_OPTIONS
