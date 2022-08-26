@@ -98,7 +98,8 @@ public class ModifyProcessInstanceUnsupportedElementsTest {
             new Rejection(
                 RejectionType.INVALID_ARGUMENT,
                 "'root_start', 'sub_start'",
-                "The activation of elements with type 'START_EVENT' is not supported")),
+                "The activation of elements with type 'START_EVENT' is not supported."
+                    + " Supported element types are:")),
         new Scenario(
             "Activate sequence flows",
             Bpmn.createExecutableProcess(PROCESS_ID)
@@ -116,7 +117,8 @@ public class ModifyProcessInstanceUnsupportedElementsTest {
             new Rejection(
                 RejectionType.INVALID_ARGUMENT,
                 "'flow_to_A', 'flow_from_A'",
-                "The activation of elements with type 'SEQUENCE_FLOW' is not supported")),
+                "The activation of elements with type 'SEQUENCE_FLOW' is not supported."
+                    + " Supported element types are:")),
         new Scenario(
             "Activate boundary events",
             Bpmn.createExecutableProcess(PROCESS_ID)
@@ -144,7 +146,8 @@ public class ModifyProcessInstanceUnsupportedElementsTest {
             new Rejection(
                 RejectionType.INVALID_ARGUMENT,
                 "'timer_boundary_on_user_task', 'non_interrupting_msg_boundary_on_subprocess'",
-                "The activation of elements with type 'BOUNDARY_EVENT' is not supported")),
+                "The activation of elements with type 'BOUNDARY_EVENT' is not supported."
+                    + " Supported element types are:")),
         new Scenario(
             "Activate a combination of unsupported elements",
             Bpmn.createExecutableProcess(PROCESS_ID)
@@ -167,7 +170,7 @@ public class ModifyProcessInstanceUnsupportedElementsTest {
                 RejectionType.INVALID_ARGUMENT,
                 "'root_start', 'flow_from_A', 'timer_boundary_on_user_task'",
                 "The activation of elements with type 'START_EVENT', 'SEQUENCE_FLOW',"
-                    + " 'BOUNDARY_EVENT' is not supported")));
+                    + " 'BOUNDARY_EVENT' is not supported. Supported element types are:")));
   }
 
   @Test
@@ -190,8 +193,7 @@ public class ModifyProcessInstanceUnsupportedElementsTest {
         .contains(
             String.format(
                 "Expected to modify instance of process '%s' but it contains one or more"
-                    + " activate instructions for elements that are unsupported:"
-                    + " %s. %s. Supported element types are:",
+                    + " activate instructions for elements that are unsupported: %s. %s",
                 PROCESS_ID, scenario.expectation().elementIds(), scenario.expectation().reason()));
   }
 

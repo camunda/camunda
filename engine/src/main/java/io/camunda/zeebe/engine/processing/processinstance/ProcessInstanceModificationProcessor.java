@@ -54,7 +54,7 @@ public final class ProcessInstanceModificationProcessor
       "Expected to modify instance of process '%s' but it contains one or more activate instructions with an element that could not be found: '%s'";
   private static final String ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED =
       "Expected to modify instance of process '%s' but it contains one or more activate instructions"
-          + " for elements that are unsupported: '%s'. %s. Supported element types are: %s";
+          + " for elements that are unsupported: '%s'. %s.";
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
@@ -213,8 +213,7 @@ public final class ProcessInstanceModificationProcessor
         ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED.formatted(
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", elementIdsConnectedToEventBasedGateway),
-            "The activation of events belonging to an event-based gateway is not supported",
-            SUPPORTED_ELEMENT_TYPES);
+            "The activation of events belonging to an event-based gateway is not supported");
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
@@ -237,8 +236,7 @@ public final class ProcessInstanceModificationProcessor
             ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED,
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", elementsInsideMultiInstance),
-            "The activation of elements inside a multi-instance subprocess is not supported",
-            SUPPORTED_ELEMENT_TYPES);
+            "The activation of elements inside a multi-instance subprocess is not supported");
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
@@ -272,9 +270,8 @@ public final class ProcessInstanceModificationProcessor
         ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED.formatted(
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             usedUnsupportedElementIds,
-            "The activation of elements with type '%s' is not supported"
-                .formatted(usedUnsupportedElementTypes),
-            SUPPORTED_ELEMENT_TYPES);
+            "The activation of elements with type '%s' is not supported. Supported element types are: %s"
+                .formatted(usedUnsupportedElementTypes, SUPPORTED_ELEMENT_TYPES));
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
