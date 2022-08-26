@@ -435,17 +435,15 @@ public final class ControllableRaftContexts {
   }
 
   public void assertAllEntriesCommittedAndReplicatedToAll() {
-    raftServers
-        .values()
-        .forEach(
-            s -> {
-              final var lastCommittedEntry = getLastCommittedEntry(s);
-              final var lastUncommittedEntry = getLastUncommittedEntry(s);
+    raftServers.forEach(
+        (memberId, raftServer) -> {
+          final var lastCommittedEntry = getLastCommittedEntry(raftServer);
+          final var lastUncommittedEntry = getLastUncommittedEntry(raftServer);
 
-              assertThat(lastCommittedEntry)
-                  .describedAs("All entries should be committed")
-                  .isEqualTo(lastUncommittedEntry);
-            });
+          assertThat(lastCommittedEntry)
+              .describedAs("All entries should be committed in %s", memberId.id())
+              .isEqualTo(lastUncommittedEntry);
+        });
 
     assertThat(hasReplicatedAllEntries())
         .describedAs("All entries are replicated to all followers")
