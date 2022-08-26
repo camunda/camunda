@@ -34,19 +34,14 @@ import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
-import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
-import io.camunda.zeebe.snapshots.PersistedSnapshot;
-import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.slf4j.Logger;
 
 /** Passive state. */
 public class PassiveRole extends InactiveRole {
@@ -54,7 +49,6 @@ public class PassiveRole extends InactiveRole {
   private final SnapshotReplicationMetrics snapshotReplicationMetrics;
   private long pendingSnapshotStartTimestamp;
   private ReceivedSnapshot pendingSnapshot;
-  private PersistedSnapshotListener snapshotListener;
   private ByteBuffer nextPendingSnapshotChunkId;
 
   public PassiveRole(final RaftContext context) {
@@ -66,7 +60,6 @@ public class PassiveRole extends InactiveRole {
 
   @Override
   public CompletableFuture<RaftRole> start() {
-    snapshotListener = createSnapshotListener();
 
     return super.start().thenRun(this::truncateUncommittedEntries).thenApply(v -> this);
   }
@@ -74,9 +67,6 @@ public class PassiveRole extends InactiveRole {
   @Override
   public CompletableFuture<Void> stop() {
     abortPendingSnapshots();
-    if (snapshotListener != null) {
-      raft.getPersistedSnapshotStore().removeSnapshotListener(snapshotListener);
-    }
 
     // as a safe guard, we clean up any orphaned pending snapshots
     try {
@@ -96,23 +86,6 @@ public class PassiveRole extends InactiveRole {
 
       raft.getLog().flush();
       raft.setLastWrittenIndex(raft.getCommitIndex());
-    }
-  }
-
-  /**
-   * Should be overwritten by sub classes to introduce different snapshot listener.
-   *
-   * <p>If null no snapshot listener will be installed
-   *
-   * @return the snapshot listener which will be installed
-   */
-  protected PersistedSnapshotListener createSnapshotListener() {
-    return new ResetWriterSnapshotListener(log, raft.getThreadContext(), raft.getLog());
-  }
-
-  private void addSnapshotListener() {
-    if (snapshotListener != null) {
-      raft.getPersistedSnapshotStore().addSnapshotListener(snapshotListener);
     }
   }
 
@@ -744,43 +717,5 @@ public class PassiveRole extends InactiveRole {
         snapshotIndex,
         snapshotIndex + 1);
     raftLog.reset(snapshotIndex + 1);
-  }
-
-  private static final class ResetWriterSnapshotListener implements PersistedSnapshotListener {
-
-    private final ThreadContext threadContext;
-    private final RaftLog raftLog;
-    private final Logger log;
-
-    ResetWriterSnapshotListener(
-        final Logger log, final ThreadContext threadContext, final RaftLog raftLog) {
-      this.log = log;
-      this.threadContext = threadContext;
-      this.raftLog = raftLog;
-    }
-
-    @Override
-    public void onNewSnapshot(final PersistedSnapshot persistedSnapshot) {
-      if (threadContext.isCurrentContext()) {
-        // this is called after the snapshot is commited
-        // on install requests and on Zeebe snapshot replication
-
-        final var index = persistedSnapshot.getIndex();
-        // It might happen that the last index is far behind our current snapshot index.
-        // E. g. on slower followers, we need to throw away the existing log,
-        // otherwise we might end with an inconsistent log (gaps between last index and
-        // snapshot index)
-        final var lastIndex = raftLog.getLastIndex();
-        if (lastIndex < index) {
-          log.info(
-              "Delete existing log (lastIndex '{}') and replace with received snapshot (index '{}')",
-              lastIndex,
-              index);
-          raftLog.reset(index + 1);
-        }
-      } else {
-        threadContext.execute(() -> onNewSnapshot(persistedSnapshot));
-      }
-    }
   }
 }
