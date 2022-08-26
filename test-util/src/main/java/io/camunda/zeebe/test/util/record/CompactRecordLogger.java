@@ -714,10 +714,32 @@ public class CompactRecordLogger {
     return String.format(" of <decision %s[%s]>", formatId(decisionId), formatKey(decisionKey));
   }
 
+  /**
+   * Shortens and formats the key and stores it in the key substitutions, that is printed in the
+   * list of decomposed keys for debugging at the end.
+   *
+   * @param input the key to shorten
+   * @return the shortened key, e.g. {@code "K01"}
+   */
   private String shortenKey(final long input) {
     return substitutions.computeIfAbsent(input, this::formatKey);
   }
 
+  /**
+   * Only formats the key. If you need a shortened key, you probably need {@link #shortenKey(long)}.
+   *
+   * <p>Formats the key to the format `[Pn]Km`, where:
+   *
+   * <ul>
+   *   <li>P: means Partition (only added in case of multiPartition)
+   *   <li>n: replaced with the partition id (only added in case of multiPartition)
+   *   <li>K: means Key
+   *   <li>m: the decoded key in the partition, leftpadded with '0's
+   * </ul>
+   *
+   * @param key the key to format (should be encoded with a partition id)
+   * @return the formatted key
+   */
   private String formatKey(final long key) {
     final var result = new StringBuilder();
 
