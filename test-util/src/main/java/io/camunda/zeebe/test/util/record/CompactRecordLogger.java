@@ -584,7 +584,7 @@ public class CompactRecordLogger {
       return "";
     }
     return terminateInstructions.stream()
-        .map(t -> "terminate " + formatKey(t.getElementInstanceKey()))
+        .map(t -> "terminate [%s]".formatted(shortenKey(t.getElementInstanceKey())))
         .collect(Collectors.joining("> <", "<", "> "));
   }
 
