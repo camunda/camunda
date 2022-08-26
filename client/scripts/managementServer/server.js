@@ -35,7 +35,7 @@ module.exports = function createServer(
 
     if (request.url === '/api/generateNewData') {
       if (!isDataGenerationCompleted()) {
-        response.statusCode = 400;
+        response.statusCode = 102;
         response.end('Data is currently being generated', 'utf-8');
         return;
       }

@@ -34,11 +34,33 @@ gcloud auth application-default login
 gcloud config set project ci-30-162810
 ```
 
+## Setup Auth0 credentials
+
+Create a file called `.env` in the root directory (client) that contains the following:
+```bash
+AUTH0_CLIENTSECRET=
+AUTH0_USEREMAIL=
+AUTH0_USERPASSWORD=
+```
+
+Retrieve the credentials from the [vault](https://vault.int.camunda.com/ui/vault/secrets/secret/show/products/optimize/ci/jenkins) and paste them into the .env file you have just created
+
+
 ## Development server
 
 ```bash
 yarn run start-backend
 ```
+
+The above command will run Optimize in Camunda Platform 7 mode.
+if you want to run Optimize in cloud or self managed mode, use one of the following:
+
+```bash
+yarn run start-backend-cloud
+yarn run start-backend-sm
+```
+> **Tip:**
+  Make sure you don't have any active docker containers running on the optimize ports (e.g. 8090, etc) before starting the backend.
 
 Then in new terminal
 
@@ -53,23 +75,6 @@ To do that set ``FAST_BUILD`` environment on scope. For example:
 ```bash
 export FAST_BUILD=1
 yarn run start-backend
-```
-
-### Run Optimize server in cloud or self managed mode
-
-1 - Create .env file in the root directory that contains the following:
-```bash
-AUTH0_CLIENTSECRET=
-AUTH0_USEREMAIL=
-AUTH0_USERPASSWORD=
-```
-2- Retrieve the credentials from [vault](https://vault.int.camunda.com/ui/vault/secrets/secret/show/products/optimize/ci/jenkins) and paste them in the .env file
-
-3- Run Optimize server in cloud or self managed mode:
-
-```bash
-yarn run start-backend-cloud
-yarn run start-backend-sm
 ```
 
 ### Problems that may happen
