@@ -321,7 +321,6 @@ public final class ProcessingStateMachine {
     zeebeDbTransaction = transactionContext.getCurrentTransaction();
     zeebeDbTransaction.run(
         () -> {
-          final long position = typedCommand.getPosition();
           final ProcessingResultBuilder processingResultBuilder =
               new DirectProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
           // todo(#10047): replace this reset method by using Buffered Writers
