@@ -6,7 +6,7 @@
  */
 
 import Modal, {SIZES} from 'modules/components/Modal';
-import {Body, Footer} from './styled';
+import {Body} from './styled';
 
 type Props = {
   isVisible: boolean;
@@ -39,7 +39,7 @@ const InformationModal: React.FC<Props> = ({
       <Body>
         <Modal.BodyText>{body}</Modal.BodyText>
       </Body>
-      <Footer>{footer}</Footer>
+      <Modal.Footer>{footer}</Modal.Footer>
     </Modal>
   );
 };

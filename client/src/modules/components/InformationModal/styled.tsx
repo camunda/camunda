@@ -18,10 +18,4 @@ const Body = styled(Modal.Body)`
   }}
 `;
 
-const Footer = styled(Modal.Footer)`
-  > :not(:last-child) {
-    margin-right: 15px;
-  }
-`;
-
-export {Body, Footer};
+export {Body};

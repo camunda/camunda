@@ -28,6 +28,7 @@ import {
   ModificationFooter,
   Button,
   Buttons,
+  SecondaryButton,
 } from './styled';
 import {Locations} from 'modules/routes';
 import {
@@ -39,8 +40,8 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {observer} from 'mobx-react';
 import {InformationModal} from 'modules/components/InformationModal';
 import {CmButton} from '@camunda-cloud/common-ui-react';
-import Modal from 'modules/components/Modal';
 import {LastModification} from './LastModification';
+import {ModificationSummaryModal} from './ModificationSummaryModal';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -56,6 +57,10 @@ const ProcessInstance: React.FC = observer(() => {
   const [
     isNoPlannedModificationsModalVisible,
     setIsNoPlannedModificationsModalVisible,
+  ] = useState(false);
+  const [
+    isModificationSummaryModalVisible,
+    setIsModificationSummaryModalVisible,
   ] = useState(false);
 
   useEffect(() => {
@@ -181,9 +186,17 @@ const ProcessInstance: React.FC = observer(() => {
                 onCmPress={() => {
                   if (modifications.length === 0) {
                     setIsNoPlannedModificationsModalVisible(true);
+                  } else {
+                    setIsModificationSummaryModalVisible(true);
                   }
                 }}
                 data-testid="apply-modifications-button"
+              />
+              <ModificationSummaryModal
+                isVisible={isModificationSummaryModalVisible}
+                onClose={() => {
+                  setIsModificationSummaryModalVisible(false);
+                }}
               />
               <InformationModal
                 isVisible={isNoPlannedModificationsModalVisible}
@@ -227,7 +240,7 @@ const ProcessInstance: React.FC = observer(() => {
                 }
                 footer={
                   <>
-                    <Modal.SecondaryButton
+                    <SecondaryButton
                       title="Cancel"
                       onClick={() =>
                         setIsDiscardModificationsModalVisible(false)
@@ -235,7 +248,7 @@ const ProcessInstance: React.FC = observer(() => {
                       data-testid="cancel-button"
                     >
                       Cancel
-                    </Modal.SecondaryButton>
+                    </SecondaryButton>
                     <CmButton
                       appearance="danger"
                       label="Discard"

@@ -6,6 +6,7 @@
  */
 
 import styled, {css, ThemedInterpolationFunction} from 'styled-components';
+import {zIconButton} from 'modules/constants/componentHierarchy';
 
 type Variant = 'default' | 'foldable';
 type IconProps = {
@@ -36,7 +37,7 @@ const Icon = styled.div<IconProps>`
     return css`
       border-radius: 50%;
       position: relative;
-      z-index: 1;
+      z-index: ${zIconButton};
       ${setSize}
 
       svg {

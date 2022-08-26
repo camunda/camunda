@@ -349,6 +349,11 @@ const theme = {
               color: DARK_COLORS.linkDefault,
             },
           },
+          summaryModal: {
+            tableHeader: {
+              backgroundColor: DARK_COLORS.ui01,
+            },
+          },
         },
       },
       sortableTable: {
@@ -1259,6 +1264,11 @@ const theme = {
           helperModal: {
             modificationType: {
               color: LIGHT_COLORS.linkDefault,
+            },
+          },
+          summaryModal: {
+            tableHeader: {
+              backgroundColor: LIGHT_COLORS.ui04,
             },
           },
         },

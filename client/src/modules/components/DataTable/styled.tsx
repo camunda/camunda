@@ -43,10 +43,11 @@ const TR = styled(Table.TR)`
 
 type TDProps = {
   $isBold?: boolean;
+  $hasFixedColumnWidths?: boolean;
 };
 
 const TD = styled(Table.TD)<TDProps>`
-  ${({theme, $isBold = false}) => {
+  ${({theme, $isBold = false, $hasFixedColumnWidths = false}) => {
     return css`
       ${styles.bodyShort01};
       color: ${theme.colors.text01};
@@ -59,6 +60,11 @@ const TD = styled(Table.TD)<TDProps>`
       &:first-child {
         padding-left: 20px;
       }
+
+      ${$hasFixedColumnWidths &&
+      css`
+        white-space: normal;
+      `}
     `;
   }}
 `;

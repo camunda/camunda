@@ -6,7 +6,6 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
 import Table from 'modules/components/Table';
 import {Container, THead, TH, TR, TD} from './styled';
 
@@ -25,36 +24,45 @@ type Row = {
 type Props = {
   headerColumns: Omit<Column, 'id'>[];
   rows: Row[];
+  hasFixedColumnWidths?: boolean;
+  className?: string;
 };
 
-const DataTable: React.FC<Props> = observer(({headerColumns, rows}) => {
-  return (
-    <Container>
-      <Table>
-        <THead>
-          <TR>
-            {headerColumns.map(({cellContent, isBold, width}, index) => (
-              <TH key={index} $isBold={isBold} $width={width}>
-                {cellContent}
-              </TH>
-            ))}
-          </TR>
-        </THead>
-        <tbody>
-          {rows.map(({id, columns}) => {
-            return (
-              <TR key={id}>
-                {columns.map(({id, cellContent, isBold}) => (
-                  <TD key={id} $isBold={isBold}>
-                    {cellContent}
-                  </TD>
-                ))}
-              </TR>
-            );
-          })}
-        </tbody>
-      </Table>
-    </Container>
-  );
-});
+const DataTable = React.forwardRef<HTMLDivElement, Props>(
+  ({headerColumns, rows, hasFixedColumnWidths, className}, ref) => {
+    return (
+      <Container className={className} ref={ref}>
+        <Table>
+          <THead>
+            <TR>
+              {headerColumns.map(({cellContent, isBold, width}, index) => (
+                <TH key={index} $isBold={isBold} $width={width}>
+                  {cellContent}
+                </TH>
+              ))}
+            </TR>
+          </THead>
+          <tbody>
+            {rows.map(({id, columns}) => {
+              return (
+                <TR key={id}>
+                  {columns.map(({id, cellContent, isBold}) => (
+                    <TD
+                      key={id}
+                      $isBold={isBold}
+                      $hasFixedColumnWidths={hasFixedColumnWidths}
+                    >
+                      {cellContent}
+                    </TD>
+                  ))}
+                </TR>
+              );
+            })}
+          </tbody>
+        </Table>
+      </Container>
+    );
+  }
+);
+
 export {DataTable};

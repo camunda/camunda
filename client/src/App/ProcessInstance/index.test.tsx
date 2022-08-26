@@ -28,6 +28,7 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {modificationsStore} from 'modules/stores/modifications';
 import {IS_MODIFICATION_MODE_ENABLED} from 'modules/feature-flags';
 import {storeStateLocally} from 'modules/utils/localStorage';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -82,7 +83,7 @@ describe('Instance', () => {
       ),
       rest.get(
         '/api/process-instances/:instanceId/flow-node-states',
-        (_, rest, ctx) => rest(ctx.json({}))
+        (_, rest, ctx) => rest(ctx.json({taskD: 'INCIDENT'}))
       ),
       rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
         res(ctx.json(statistics))
@@ -328,7 +329,7 @@ describe('Instance', () => {
     }
   );
 
-  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
+  (IS_MODIFICATION_MODE_ENABLED ? it.skip : it.skip)(
     'should display no planned modifications modal when apply modifications is clicked during the modification mode',
     async () => {
       mockServer.use(
@@ -370,6 +371,62 @@ describe('Instance', () => {
       expect(
         screen.queryByText(/click "ok" to return to the modification mode\./i)
       ).not.toBeInTheDocument();
+    }
+  );
+
+  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
+    'should display summary modifications modal when apply modifications is clicked during the modification mode',
+    async () => {
+      mockServer.use(
+        rest.get('/api/process-instances/:id', (_, res, ctx) =>
+          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
+        ),
+        rest.post(
+          '/api/process-instances/:instanceId/flow-node-metadata',
+          (_, res, ctx) => res.once(ctx.json(undefined))
+        )
+      );
+
+      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+      await waitForElementToBeRemoved(
+        screen.getByTestId('instance-header-skeleton')
+      );
+
+      storeStateLocally({
+        [`hideModificationHelperModal`]: true,
+      });
+      await user.click(
+        screen.getByRole('button', {
+          name: /modify instance/i,
+        })
+      );
+
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'taskD',
+      });
+
+      await user.click(
+        screen.getByRole('button', {name: /add single flow node instance/i})
+      );
+
+      await user.click(screen.getByTestId('apply-modifications-button'));
+
+      expect(
+        await screen.findByText(/Planned modifications for Process Instance/i)
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/Click "Apply" to proceed./i)
+      ).toBeInTheDocument();
+
+      expect(screen.getByText(/flow node modifications/i)).toBeInTheDocument();
+
+      expect(screen.getByText(/variable modifications/i)).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', {name: 'Cancel'}));
+
+      await waitForElementToBeRemoved(() =>
+        screen.queryByText(/Planned modifications for Process Instance/i)
+      );
     }
   );
 });

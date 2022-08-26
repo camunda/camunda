@@ -15,7 +15,8 @@ const zNotification = above + zLayoutTopBase;
 const zModificationFrame = above + zLayoutTopBase;
 const zModal = above + zModificationFrame;
 const zDateRangePopover = below + zNotification;
-const zDataTableHeader = above + zLayoutBase;
+const zIconButton = above + zLayoutBase;
+const zDataTableHeader = above + zIconButton;
 
 export {
   zNotification,
@@ -23,4 +24,5 @@ export {
   zModificationFrame,
   zDateRangePopover,
   zDataTableHeader,
+  zIconButton,
 };

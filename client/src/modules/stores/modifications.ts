@@ -124,20 +124,43 @@ class Modifications {
     this.state.modifications.pop();
   };
 
-  removeFlowNodeModification = (flowNodeId: string) => {
-    this.state.modifications = this.state.modifications.filter(
-      ({type, payload}) =>
-        !(type === 'token' && payload.flowNode.id === flowNodeId)
-    );
+  removeFlowNodeModification = (
+    flowNodeModification: FlowNodeModificationPayload
+  ) => {
+    if (flowNodeModification.operation === 'ADD_TOKEN') {
+      this.state.modifications = this.state.modifications.filter(
+        ({type, payload}) =>
+          !(
+            type === 'token' &&
+            payload.flowNode.id === flowNodeModification.flowNode.id &&
+            payload.operation === flowNodeModification.operation &&
+            payload.scopeId === flowNodeModification.scopeId
+          )
+      );
+    } else {
+      this.state.modifications = this.state.modifications.filter(
+        ({type, payload}) =>
+          !(
+            type === 'token' &&
+            payload.flowNode.id === flowNodeModification.flowNode.id &&
+            payload.operation === flowNodeModification.operation
+          )
+      );
+    }
   };
 
-  removeVariableModification = (scopeId: string, id: string) => {
+  removeVariableModification = (
+    scopeId: string,
+    id: string,
+    operation: 'ADD_VARIABLE' | 'EDIT_VARIABLE'
+  ) => {
     this.state.modifications = this.state.modifications.filter(
       ({type, payload}) =>
         !(
           type === 'variable' &&
           payload.scopeId === scopeId &&
-          payload.id === id
+          payload.id === id &&
+          payload.operation === operation
         )
     );
   };
@@ -228,6 +251,20 @@ class Modifications {
       }, {});
 
     return Object.values(latestVariableModifications);
+  }
+
+  get flowNodeModifications() {
+    function isFlowNodeModification(
+      modification: Modification
+    ): modification is FlowNodeModification {
+      const {type} = modification;
+
+      return type === 'token';
+    }
+
+    return this.state.modifications
+      .filter(isFlowNodeModification)
+      .map(({payload}) => payload);
   }
 
   reset = () => {
