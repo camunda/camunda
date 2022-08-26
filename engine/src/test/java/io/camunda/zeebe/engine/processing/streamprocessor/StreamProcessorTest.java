@@ -477,15 +477,12 @@ public final class StreamProcessorTest {
     final CommandResponseWriter commandResponseWriter =
         streamProcessorRule.getCommandResponseWriter();
 
-    final InOrder inOrder = inOrder(commandResponseWriter);
-
-    inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).key(3);
-    inOrder
-        .verify(commandResponseWriter, TIMEOUT.times(1))
+    verify(commandResponseWriter, TIMEOUT.times(1)).key(3);
+    verify(commandResponseWriter, TIMEOUT.times(1))
         .intent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
-    inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).recordType(RecordType.EVENT);
-    inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).valueType(ValueType.PROCESS_INSTANCE);
-    inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(anyInt(), anyLong());
+    verify(commandResponseWriter, TIMEOUT.times(1)).recordType(RecordType.EVENT);
+    verify(commandResponseWriter, TIMEOUT.times(1)).valueType(ValueType.PROCESS_INSTANCE);
+    verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(anyInt(), anyLong());
   }
 
   @Test
