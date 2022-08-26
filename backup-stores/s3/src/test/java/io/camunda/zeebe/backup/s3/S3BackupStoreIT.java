@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.s3;
 
+import static io.camunda.zeebe.backup.s3.BackupAssert.assertThatBackup;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 
@@ -440,6 +441,33 @@ final class S3BackupStoreIT {
         .failsWithin(Duration.ofSeconds(10))
         .withThrowableOfType(Throwable.class)
         .withRootCauseInstanceOf(BackupInInvalidStateException.class);
+  }
+
+  @Test
+  void restoreIsSuccessful(@TempDir Path sourceDir, @TempDir Path targetDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(sourceDir);
+    store.save(backup).join();
+
+    // when
+    final var result = store.restore(backup.id(), targetDir);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(10));
+  }
+
+  @Test
+  void restoredBackupHasSameContents(@TempDir Path sourceDir, @TempDir Path targetDir)
+      throws IOException {
+    // given
+    final var originalBackup = prepareTestBackup(sourceDir);
+    store.save(originalBackup).join();
+
+    // when
+    final var restored = store.restore(originalBackup.id(), targetDir).join();
+
+    // then
+    assertThatBackup(restored).hasSameContentsAs(originalBackup).residesInPath(targetDir);
   }
 
   private Backup prepareTestBackup(Path tempDir) throws IOException {

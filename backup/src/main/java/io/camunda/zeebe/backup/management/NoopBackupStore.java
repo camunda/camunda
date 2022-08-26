@@ -12,6 +12,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 
 // A placeholder backup store until a proper backup store is available
@@ -38,7 +39,7 @@ final class NoopBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Backup> restore(final BackupIdentifier id) {
+  public CompletableFuture<Backup> restore(final BackupIdentifier id, final Path targetFolder) {
     return CompletableFuture.failedFuture(
         new UnsupportedOperationException("No backup store configured"));
   }
