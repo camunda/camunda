@@ -166,8 +166,8 @@ public class StreamProcessorHealthTest {
     public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {}
 
     @Override
-    public int getMaxEventLength() {
-      return Integer.MAX_VALUE;
+    public boolean canWriteEventOfLength(final int eventLength) {
+      return true;
     }
 
     @Override

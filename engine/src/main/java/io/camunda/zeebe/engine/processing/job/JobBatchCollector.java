@@ -99,7 +99,7 @@ final class JobBatchCollector {
             // if no jobs were activated, then the current job is simply too large, and we cannot
             // activate it
             if (activatedCount.value == 0) {
-              unwritableJob.set(new TooLargeJob(key, jobRecord));
+              unwritableJob.set(new TooLargeJob(key, jobRecord, expectedEventLength));
             }
 
             value.setTruncated(true);
@@ -165,5 +165,5 @@ final class JobBatchCollector {
     return variables;
   }
 
-  record TooLargeJob(long key, JobRecord record) {}
+  record TooLargeJob(long key, JobRecord jobRecord, int expectedEventLength) {}
 }

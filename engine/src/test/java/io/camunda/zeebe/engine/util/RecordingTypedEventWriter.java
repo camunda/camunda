@@ -32,8 +32,8 @@ public final class RecordingTypedEventWriter implements TypedEventWriter {
   }
 
   @Override
-  public int getMaxEventLength() {
-    return Integer.MAX_VALUE;
+  public boolean canWriteEventOfLength(final int eventLength) {
+    return true;
   }
 
   public static final class RecordedEvent<T extends RecordValue> {

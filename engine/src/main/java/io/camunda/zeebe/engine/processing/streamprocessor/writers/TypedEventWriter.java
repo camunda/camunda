@@ -33,12 +33,5 @@ public interface TypedEventWriter {
    * @param eventLength the length of the event that will be written
    * @return true if an event of length {@code eventLength} can be written
    */
-  default boolean canWriteEventOfLength(final int eventLength) {
-    return eventLength <= getMaxEventLength();
-  }
-
-  /**
-   * @return the maximum event length
-   */
-  int getMaxEventLength();
+  boolean canWriteEventOfLength(final int eventLength);
 }

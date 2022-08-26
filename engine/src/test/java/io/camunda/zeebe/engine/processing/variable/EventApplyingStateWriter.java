@@ -43,9 +43,4 @@ public final class EventApplyingStateWriter implements StateWriter {
   public boolean canWriteEventOfLength(final int eventLength) {
     return eventWriter.canWriteEventOfLength(eventLength);
   }
-
-  @Override
-  public int getMaxEventLength() {
-    return eventWriter.getMaxEventLength();
-  }
 }
