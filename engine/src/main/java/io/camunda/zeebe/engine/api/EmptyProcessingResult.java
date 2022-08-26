@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.api;
 
 import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.engine.api.records.RecordBatch;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 
 public final class EmptyProcessingResult implements ProcessingResult {
 
@@ -18,11 +17,6 @@ public final class EmptyProcessingResult implements ProcessingResult {
 
   private EmptyProcessingResult() {
     emptyRecordBatch = RecordBatch.empty();
-  }
-
-  @Override
-  public long writeRecordsToStream(final LogStreamBatchWriter logStreamBatchWriter) {
-    return 0;
   }
 
   @Override

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.api;
 
-import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
 /** Here the interface is just a suggestion. Can be whatever PDT team thinks is best to work with */
@@ -19,7 +19,7 @@ public interface TaskResultBuilder {
    * @return returns itself for method chaining
    */
   TaskResultBuilder appendCommandRecord(
-      final long key, final Intent intent, final RecordValue value);
+      final long key, final Intent intent, final UnifiedRecordValue value);
 
   TaskResult build();
 }

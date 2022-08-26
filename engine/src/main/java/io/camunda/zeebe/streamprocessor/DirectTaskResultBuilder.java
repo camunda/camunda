@@ -7,12 +7,17 @@
  */
 package io.camunda.zeebe.streamprocessor;
 
+import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.TYPE_REGISTRY;
+
 import io.camunda.zeebe.engine.api.TaskResult;
 import io.camunda.zeebe.engine.api.TaskResultBuilder;
+import io.camunda.zeebe.engine.api.records.MutableRecordBatch;
 import io.camunda.zeebe.engine.api.records.RecordBatch;
+import io.camunda.zeebe.engine.api.records.RecordBatchSizePredicate;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Collections;
 
@@ -25,23 +30,31 @@ import java.util.Collections;
 final class DirectTaskResultBuilder implements TaskResultBuilder {
 
   private final StreamProcessorContext context;
-  private final LegacyTypedStreamWriter streamWriter;
+  private final MutableRecordBatch mutableRecordBatch;
 
-  DirectTaskResultBuilder(final StreamProcessorContext context) {
+  DirectTaskResultBuilder(
+      final StreamProcessorContext context, final RecordBatchSizePredicate predicate) {
     this.context = context;
-    streamWriter = context.getLogStreamWriter();
-    streamWriter.configureSourceContext(-1);
+    mutableRecordBatch = new RecordBatch(predicate);
   }
 
   @Override
   public DirectTaskResultBuilder appendCommandRecord(
-      final long key, final Intent intent, final RecordValue value) {
-    streamWriter.appendRecord(key, RecordType.COMMAND, intent, RejectionType.NULL_VAL, "", value);
+      final long key, final Intent intent, final UnifiedRecordValue value) {
+
+    final ValueType valueType = TYPE_REGISTRY.get(value.getClass());
+    if (valueType == null) {
+      // usually happens when the record is not registered at the TypedStreamEnvironment
+      throw new IllegalStateException("Missing value type mapping for record: " + value.getClass());
+    }
+
+    mutableRecordBatch.appendRecord(
+        key, -1, RecordType.COMMAND, intent, RejectionType.NULL_VAL, "", valueType, value);
     return this;
   }
 
   @Override
   public TaskResult build() {
-    return new DirectProcessingResult(context, RecordBatch.empty(), Collections.emptyList(), false);
+    return new DirectProcessingResult(context, mutableRecordBatch, Collections.emptyList(), false);
   }
 }

@@ -33,11 +33,13 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 
 public final class TypedEventRegistry {
 
   public static final Map<ValueType, Class<? extends UnifiedRecordValue>> EVENT_REGISTRY;
+  public static final Map<Class<? extends UnifiedRecordValue>, ValueType> TYPE_REGISTRY;
 
   static {
     final EnumMap<ValueType, Class<? extends UnifiedRecordValue>> registry =
@@ -67,5 +69,11 @@ public final class TypedEventRegistry {
     registry.put(ValueType.DECISION_EVALUATION, DecisionEvaluationRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
+
+    final Map<Class<? extends UnifiedRecordValue>, ValueType> typeRegistry = new HashMap<>();
+    EVENT_REGISTRY.forEach((e, c) -> typeRegistry.put(c, e));
+    TYPE_REGISTRY = Collections.unmodifiableMap(typeRegistry);
   }
+
+  private TypedEventRegistry() {}
 }

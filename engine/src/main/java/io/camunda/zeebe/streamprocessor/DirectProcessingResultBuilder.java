@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.streamprocessor;
 
-import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.EVENT_REGISTRY;
+import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.TYPE_REGISTRY;
 
 import io.camunda.zeebe.engine.api.PostCommitTask;
 import io.camunda.zeebe.engine.api.ProcessingResult;
@@ -22,9 +22,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Implementation of {@code ProcessingResultBuilder} that uses direct access to the stream and to
@@ -44,7 +42,6 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
       true; // TODO figure out why this still needs to be true for tests to pass
   private final long sourceRecordPosition;
   private final RecordBatch mutableRecordBatch;
-  private final Map<Class<? extends UnpackedObject>, ValueType> typeRegistry;
 
   DirectProcessingResultBuilder(
       final StreamProcessorContext context,
@@ -56,8 +53,6 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
     streamWriter.configureSourceContext(sourceRecordPosition);
     responseWriter = context.getTypedResponseWriter();
     mutableRecordBatch = new RecordBatch(predicate);
-    typeRegistry = new HashMap<>();
-    EVENT_REGISTRY.forEach((e, c) -> typeRegistry.put(c, e));
   }
 
   @Override
@@ -69,7 +64,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
       final String rejectionReason,
       final RecordValue value) {
 
-    final ValueType valueType = typeRegistry.get(value.getClass());
+    final ValueType valueType = TYPE_REGISTRY.get(value.getClass());
     if (valueType == null) {
       // usually happens when the record is not registered at the TypedStreamEnvironment
       throw new IllegalStateException("Missing value type mapping for record: " + value.getClass());
