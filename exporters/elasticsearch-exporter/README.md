@@ -194,7 +194,7 @@ exporters:
         messageSubscription: true
         process: true
         processInstance: true
-        processInstanceCreation: false
+        processInstanceCreation: true
         processInstanceModification: true
         processMessageSubscription: true
         variable: true

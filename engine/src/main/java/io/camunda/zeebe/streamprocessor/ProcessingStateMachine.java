@@ -16,9 +16,8 @@ import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
-import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -30,6 +29,7 @@ import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.prometheus.client.Histogram;
@@ -88,14 +88,8 @@ public final class ProcessingStateMachine {
       "Expected to execute side effects for record '{} {}' successfully, but exception was thrown.";
   private static final String ERROR_MESSAGE_UPDATE_STATE_FAILED =
       "Expected to successfully update state for record '{} {}', but caught an exception. Retry.";
-  private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
-      "Expected to find processor for record '{} {}', but caught an exception. Skip this record.";
-  private static final String ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT =
-      "Expected to successfully process record '{} {}' with processor, but caught an exception. Skip this record.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING =
       "Expected to process record '{} {}' successfully on stream processor, but caught recoverable exception. Retry processing.";
-  private static final String PROCESSING_ERROR_MESSAGE =
-      "Expected to process record '%s' without errors, but exception occurred with message '%s'.";
   private static final String NOTIFY_PROCESSED_LISTENER_ERROR_MESSAGE =
       "Expected to invoke processed listener for record {} successfully, but exception was thrown.";
   private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
@@ -113,11 +107,9 @@ public final class ProcessingStateMachine {
       new MetadataEventFilter(
           recordMetadata -> recordMetadata.getRecordType() != RecordType.COMMAND);
 
-  private final MutableZeebeState zeebeState;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final RecordMetadata metadata = new RecordMetadata();
   private final ActorControl actor;
-  private final LogStream logStream;
   private final LogStreamReader logStreamReader;
   private final LegacyTypedStreamWriter logStreamWriter;
   private final TransactionContext transactionContext;
@@ -146,6 +138,7 @@ public final class ProcessingStateMachine {
   private final List<RecordProcessor> recordProcessors;
   private ProcessingResult currentProcessingResult;
   private RecordProcessor currentProcessor;
+  private final LogStreamBatchWriter logStreamBatchWriter;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -157,8 +150,7 @@ public final class ProcessingStateMachine {
     recordValues = context.getRecordValues();
     logStreamReader = context.getLogStreamReader();
     logStreamWriter = context.getLogStreamWriter();
-    logStream = context.getLogStream();
-    zeebeState = context.getZeebeState();
+    logStreamBatchWriter = context.getLogStreamBatchWriter();
     transactionContext = context.getTransactionContext();
     abortCondition = context.getAbortCondition();
     lastProcessedPositionState = context.getLastProcessedPositionState();
@@ -168,7 +160,7 @@ public final class ProcessingStateMachine {
     updateStateRetryStrategy = new RecoverableRetryStrategy(actor);
     this.shouldProcessNext = shouldProcessNext;
 
-    final int partitionId = logStream.getPartitionId();
+    final int partitionId = context.getLogStream().getPartitionId();
     typedCommand = new TypedRecordImpl(partitionId);
 
     metrics = new StreamProcessorMetrics(partitionId);
@@ -252,7 +244,7 @@ public final class ProcessingStateMachine {
 
       final long position = typedCommand.getPosition();
       final ProcessingResultBuilder processingResultBuilder =
-          new DirectProcessingResultBuilder(context, position);
+          new DirectProcessingResultBuilder(context, logStreamBatchWriter::canWriteAdditionalEvent);
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
@@ -333,7 +325,8 @@ public final class ProcessingStateMachine {
         () -> {
           final long position = typedCommand.getPosition();
           final ProcessingResultBuilder processingResultBuilder =
-              new DirectProcessingResultBuilder(context, position);
+              new DirectProcessingResultBuilder(
+                  context, logStreamBatchWriter::canWriteAdditionalEvent);
           // todo(#10047): replace this reset method by using Buffered Writers
           processingResultBuilder.reset();
 
@@ -349,18 +342,26 @@ public final class ProcessingStateMachine {
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
-              final var batchWriter = context.getLogStreamBatchWriter();
-              final long position1 = currentProcessingResult.writeRecordsToStream(batchWriter);
-              final long position2 = batchWriter.tryWrite();
+              logStreamBatchWriter.reset();
+              logStreamBatchWriter.sourceRecordPosition(typedCommand.getPosition());
 
-              final var maxPosition = Math.max(position1, position2);
+              currentProcessingResult
+                  .getRecordBatch()
+                  .forEach(
+                      entry ->
+                          logStreamBatchWriter
+                              .event()
+                              .key(entry.key())
+                              .metadataWriter(entry.recordMetadata())
+                              .sourceIndex(entry.sourceIndex())
+                              .valueWriter(entry.recordValue())
+                              .done());
 
-              // only overwrite position if records were flushed
-              if (maxPosition > 0) {
-                writtenPosition = maxPosition;
+              final long position = logStreamBatchWriter.tryWrite();
+              if (position > 0) {
+                writtenPosition = position;
               }
-
-              return maxPosition >= 0;
+              return position >= 0;
             },
             abortCondition);
 
@@ -411,14 +412,35 @@ public final class ProcessingStateMachine {
             () -> {
               // TODO refactor this into two parallel tasks, which are then combined, and on the
               // completion of which the process continues
-              final boolean responseSent =
-                  currentProcessingResult.writeResponse(context.getCommandResponseWriter());
 
-              if (!responseSent) {
-                return false;
-              } else {
-                return currentProcessingResult.executePostCommitTasks();
+              final var processingResponseOptional =
+                  currentProcessingResult.getProcessingResponse();
+
+              if (processingResponseOptional.isPresent()) {
+                final var processingResponse = processingResponseOptional.get();
+                final var responseWriter = context.getCommandResponseWriter();
+
+                final var responseValue = processingResponse.responseValue();
+                final var recordMetadata = responseValue.recordMetadata();
+                final boolean responseSent =
+                    responseWriter
+                        .intent(recordMetadata.getIntent())
+                        .key(responseValue.key())
+                        .recordType(recordMetadata.getRecordType())
+                        .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
+                        .rejectionType(recordMetadata.getRejectionType())
+                        .partitionId(context.getPartitionId())
+                        .valueType(recordMetadata.getValueType())
+                        .valueWriter(responseValue.recordValue())
+                        .tryWriteResponse(
+                            processingResponse.requestStreamId(), processingResponse.requestId());
+                if (!responseSent) {
+                  return false;
+                } else {
+                  return currentProcessingResult.executePostCommitTasks();
+                }
               }
+              return currentProcessingResult.executePostCommitTasks();
             },
             abortCondition);
 

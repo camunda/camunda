@@ -50,7 +50,12 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
   }
 
   private ActorFuture<Void> installBackupManager(final PartitionTransitionContext context) {
-    final BackupService backupManager = new BackupService();
+    final BackupService backupManager =
+        new BackupService(
+            context.getNodeId(),
+            context.getPartitionId(),
+            context.getBrokerCfg().getCluster().getPartitionsCount(),
+            context.getPersistedSnapshotStore());
     final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
     context
         .getActorSchedulingService()

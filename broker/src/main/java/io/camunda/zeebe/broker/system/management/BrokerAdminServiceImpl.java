@@ -18,7 +18,7 @@ import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import java.util.Collections;
 import java.util.List;
@@ -158,8 +158,8 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
     final var snapshotId = getSnapshotId(partition);
     final var processedPositionInSnapshot =
         snapshotId
-            .flatMap(FileBasedSnapshotMetadata::ofFileName)
-            .map(FileBasedSnapshotMetadata::getProcessedPosition)
+            .flatMap(FileBasedSnapshotId::ofFileName)
+            .map(FileBasedSnapshotId::getProcessedPosition)
             .orElse(null);
     final var status =
         PartitionStatus.ofFollower(snapshotId.orElse(null), processedPositionInSnapshot);
@@ -179,8 +179,8 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
     final var snapshotId = getSnapshotId(partition);
     final var processedPositionInSnapshot =
         snapshotId
-            .flatMap(FileBasedSnapshotMetadata::ofFileName)
-            .map(FileBasedSnapshotMetadata::getProcessedPosition)
+            .flatMap(FileBasedSnapshotId::ofFileName)
+            .map(FileBasedSnapshotId::getProcessedPosition)
             .orElse(null);
 
     actor.runOnCompletion(

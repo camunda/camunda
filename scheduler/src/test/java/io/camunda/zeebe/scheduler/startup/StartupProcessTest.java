@@ -26,8 +26,8 @@ import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -180,8 +180,8 @@ class StartupProcessTest {
       assertThat(actualResult.isCompletedExceptionally()).isTrue();
 
       assertThatThrownBy(actualResult::join)
-          .isInstanceOf(CompletionException.class)
-          .getCause()
+          .isInstanceOf(ExecutionException.class)
+          .cause()
           .isInstanceOf(StartupProcessException.class);
     }
 
@@ -208,8 +208,8 @@ class StartupProcessTest {
       assertThat(actualResult.isCompletedExceptionally()).isTrue();
 
       assertThatThrownBy(actualResult::join)
-          .isInstanceOf(CompletionException.class)
-          .getCause()
+          .isInstanceOf(ExecutionException.class)
+          .cause()
           .isInstanceOf(StartupProcessException.class);
     }
 

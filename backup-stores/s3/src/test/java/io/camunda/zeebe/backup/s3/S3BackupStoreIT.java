@@ -7,21 +7,28 @@
  */
 package io.camunda.zeebe.backup.s3;
 
+import static io.camunda.zeebe.backup.s3.BackupAssert.assertThatBackup;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.from;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.backup.api.Backup;
-import io.camunda.zeebe.backup.api.BackupDescriptor;
-import io.camunda.zeebe.backup.api.BackupIdentifier;
-import io.camunda.zeebe.backup.api.NamedFileSet;
+import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
+import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupImpl;
+import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.MetadataParseException;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.StatusParseException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
@@ -37,6 +44,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -111,29 +119,45 @@ final class S3BackupStoreIT {
                 AsyncResponseTransformer.toBytes())
             .join();
 
-    final var objectMapper = new ObjectMapper();
-    final var readMetadata = objectMapper.readValue(metadataObject.asByteArray(), Metadata.class);
+    final var readMetadata =
+        S3BackupStore.MAPPER.readValue(metadataObject.asByteArray(), Metadata.class);
 
-    assertThat(readMetadata.checkpointId()).isEqualTo(backup.id.checkpointId);
-    assertThat(readMetadata.partitionId()).isEqualTo(backup.id.partitionId);
-    assertThat(readMetadata.nodeId()).isEqualTo(backup.id.nodeId);
+    assertThat(readMetadata.descriptor()).isEqualTo(backup.descriptor());
+    assertThat(readMetadata.id()).isEqualTo(backup.id());
 
-    assertThat(readMetadata.checkpointPosition()).isEqualTo(backup.descriptor.checkpointPosition);
-    assertThat(readMetadata.snapshotId()).isEqualTo(backup.descriptor.snapshotId);
-    assertThat(readMetadata.numberOfPartitions()).isEqualTo(backup.descriptor.numberOfPartitions);
-
-    assertThat(readMetadata.snapshotFileNames()).isEqualTo(backup.snapshot.names());
-    assertThat(readMetadata.segmentFileNames()).isEqualTo(backup.segments.names());
+    assertThat(readMetadata.snapshotFileNames()).isEqualTo(backup.snapshot().names());
+    assertThat(readMetadata.segmentFileNames()).isEqualTo(backup.segments().names());
   }
 
   @Test
   void snapshotFilesExist(@TempDir Path tempDir) throws IOException {
     // given
     final var backup = prepareTestBackup(tempDir);
-    final var prefix = S3BackupStore.objectPrefix(backup.id) + S3BackupStore.SNAPSHOT_PREFIX;
+    final var prefix = S3BackupStore.objectPrefix(backup.id()) + S3BackupStore.SNAPSHOT_PREFIX;
 
     final var expectedObjects =
-        backup.snapshot.names().stream().map(name -> prefix + name).toList();
+        backup.snapshot().names().stream().map(name -> prefix + name).toList();
+
+    // when
+    store.save(backup).join();
+
+    // then
+    final var listed =
+        client.listObjectsV2(req -> req.bucket(config.bucketName()).prefix(prefix)).join();
+
+    assertThat(listed.contents().stream().map(S3Object::key))
+        .isNotEmpty()
+        .allSatisfy(k -> assertThat(k).startsWith(prefix).isIn(expectedObjects));
+  }
+
+  @Test
+  void segmentFilesExist(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+    final var prefix = S3BackupStore.objectPrefix(backup.id()) + S3BackupStore.SEGMENTS_PREFIX;
+
+    final var expectedObjects =
+        backup.segments().names().stream().map(name -> prefix + name).toList();
 
     // when
     store.save(backup).join();
@@ -151,23 +175,46 @@ final class S3BackupStoreIT {
   void bucketContainsExpectedObjectsOnly(@TempDir Path tempDir) throws IOException {
     // given
     final var backup = prepareTestBackup(tempDir);
-    final var prefix = S3BackupStore.objectPrefix(backup.id);
+    final var prefix = S3BackupStore.objectPrefix(backup.id());
 
-    final var snapshotFiles =
-        backup.snapshot.names().stream().map(name -> prefix + S3BackupStore.SNAPSHOT_PREFIX + name);
     final var metadata = prefix + Metadata.OBJECT_KEY;
-    final var expectedObjects = Stream.concat(snapshotFiles, Stream.of(metadata)).toList();
+    final var status = prefix + Status.OBJECT_KEY;
+    final var snapshotObjects =
+        backup.snapshot().names().stream()
+            .map(name -> prefix + S3BackupStore.SNAPSHOT_PREFIX + name);
+    final var segmentObjects =
+        backup.segments().names().stream()
+            .map(name -> prefix + S3BackupStore.SEGMENTS_PREFIX + name);
+
+    final var contentObjects = Stream.concat(snapshotObjects, segmentObjects);
+    final var managementObjects = Stream.of(metadata, status);
+    final var expectedObjects = Stream.concat(managementObjects, contentObjects).toList();
 
     // when
     store.save(backup).join();
 
     // then
-    final var listed =
+    final var listedObjects =
         client.listObjectsV2(req -> req.bucket(config.bucketName())).join().contents().stream()
             .map(S3Object::key)
             .toList();
 
-    assertThat(listed).containsExactlyInAnyOrderElementsOf(expectedObjects);
+    assertThat(listedObjects).containsExactlyInAnyOrderElementsOf(expectedObjects);
+  }
+
+  @Test
+  void backupFailsIfBackupAlreadyExists(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+
+    // when
+    store.save(backup).join();
+
+    // then
+    assertThat(store.save(backup))
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(Throwable.class)
+        .withRootCauseInstanceOf(BackupInInvalidStateException.class);
   }
 
   @Test
@@ -176,13 +223,254 @@ final class S3BackupStoreIT {
     final var backup = prepareTestBackup(tempDir);
 
     // when
-    Files.delete(backup.snapshot().files().stream().findFirst().orElseThrow());
+    final var deletedFile = backup.snapshot().files().stream().findFirst().orElseThrow();
+    Files.delete(deletedFile);
 
     // then
-    assertThatCode(() -> store.save(backup)).hasCauseInstanceOf(NoSuchFileException.class);
+    assertThat(store.save(backup))
+        .failsWithin(Duration.ofMinutes(1))
+        .withThrowableOfType(Throwable.class)
+        .withRootCauseInstanceOf(NoSuchFileException.class)
+        .withMessageContaining(deletedFile.toString());
   }
 
-  private TestBackup prepareTestBackup(Path tempDir) throws IOException {
+  @Test
+  void backupIsMarkedAsCompleted(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+
+    // when
+    store.save(backup).join();
+
+    // then
+    final var statusObject =
+        client
+            .getObject(
+                GetObjectRequest.builder()
+                    .bucket(config.bucketName())
+                    .key(S3BackupStore.objectPrefix(backup.id()) + Status.OBJECT_KEY)
+                    .build(),
+                AsyncResponseTransformer.toBytes())
+            .join();
+
+    final var objectMapper = new ObjectMapper();
+    final var readStatus = objectMapper.readValue(statusObject.asByteArray(), Status.class);
+
+    assertThat(readStatus.statusCode()).isEqualTo(BackupStatusCode.COMPLETED);
+  }
+
+  @Test
+  void backupCanBeMarkedAsFailed(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+
+    // when
+    store.save(backup).join();
+    store.markFailed(backup.id()).join();
+
+    // then
+    final var statusObject =
+        client
+            .getObject(
+                GetObjectRequest.builder()
+                    .bucket(config.bucketName())
+                    .key(S3BackupStore.objectPrefix(backup.id()) + Status.OBJECT_KEY)
+                    .build(),
+                AsyncResponseTransformer.toBytes())
+            .join();
+
+    final var objectMapper = S3BackupStore.MAPPER;
+    final var readStatus = objectMapper.readValue(statusObject.asByteArray(), Status.class);
+
+    assertThat(readStatus.statusCode()).isEqualTo(BackupStatusCode.FAILED);
+    assertThat(readStatus.failureReason()).isNotEmpty();
+  }
+
+  @Test
+  void canGetStatus(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+
+    // when
+    store.save(backup).join();
+    final var status = store.getStatus(backup.id());
+
+    // then
+    assertThat(status)
+        .succeedsWithin(Duration.ofSeconds(10))
+        .returns(BackupStatusCode.COMPLETED, from(BackupStatus::statusCode))
+        .returns(Optional.empty(), from(BackupStatus::failureReason))
+        .returns(backup.id(), from(BackupStatus::id))
+        .returns(Optional.of(backup.descriptor()), from(BackupStatus::descriptor));
+  }
+
+  @Test
+  void statusIsFailedAfterMarkingAsFailed(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+
+    // when
+    store.save(backup).join();
+    store.markFailed(backup.id()).join();
+    final var status = store.getStatus(backup.id());
+
+    // then
+    assertThat(status)
+        .succeedsWithin(Duration.ofSeconds(10))
+        .returns(BackupStatusCode.FAILED, from(BackupStatus::statusCode))
+        .doesNotReturn(Optional.empty(), from(BackupStatus::failureReason))
+        .returns(backup.id(), from(BackupStatus::id))
+        .returns(Optional.of(backup.descriptor()), from(BackupStatus::descriptor));
+  }
+
+  @Test
+  void statusQueryFailsIfStatusIsCorrupt(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+    store.save(backup).join();
+
+    // when
+    client
+        .putObject(
+            req ->
+                req.bucket(config.bucketName())
+                    .key(S3BackupStore.objectPrefix(backup.id()) + Status.OBJECT_KEY),
+            AsyncRequestBody.fromString("{s"))
+        .join();
+
+    // then
+    final var status = store.getStatus(backup.id());
+    assertThat(status)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(Throwable.class)
+        .withCauseInstanceOf(StatusParseException.class);
+  }
+
+  @Test
+  void statusQueryFailsIfMetadataIsCorrupt(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+    store.save(backup).join();
+
+    // when
+    client
+        .putObject(
+            req ->
+                req.bucket(config.bucketName())
+                    .key(S3BackupStore.objectPrefix(backup.id()) + Metadata.OBJECT_KEY),
+            AsyncRequestBody.fromString("{s"))
+        .join();
+
+    // then
+    final var status = store.getStatus(backup.id());
+    assertThat(status)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(Throwable.class)
+        .withCauseInstanceOf(MetadataParseException.class);
+  }
+
+  @Test
+  void statusQueryFailsIfBackupDoesNotExist() {
+    // when
+    final var result = store.getStatus(new BackupIdentifierImpl(1, 1, 15));
+    // then
+    assertThat(result)
+        .succeedsWithin(Duration.ofSeconds(10))
+        .returns(BackupStatusCode.DOES_NOT_EXIST, from(BackupStatus::statusCode));
+  }
+
+  @Test
+  void allBackupObjectsAreDeleted(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+    store.save(backup).join();
+
+    // when
+    store.delete(backup.id()).join();
+
+    // then
+    final var listed =
+        client
+            .listObjectsV2(
+                req ->
+                    req.bucket(config.bucketName()).prefix(S3BackupStore.objectPrefix(backup.id())))
+            .join();
+    assertThat(listed.contents()).isEmpty();
+  }
+
+  @Test
+  void deletingNonExistingBackupSucceeds() {
+    // when
+    final var delete = store.delete(new BackupIdentifierImpl(1, 2, 3));
+
+    // then
+    assertThat(delete).succeedsWithin(Duration.ofSeconds(10));
+  }
+
+  @Test
+  void deletingPartialBackupSucceeds(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+    store.save(backup).join();
+
+    // when
+    client
+        .deleteObject(
+            delete ->
+                delete
+                    .bucket(config.bucketName())
+                    .key(S3BackupStore.objectPrefix(backup.id()) + Status.OBJECT_KEY))
+        .join();
+
+    // then
+    assertThat(store.delete(backup.id())).succeedsWithin(Duration.ofSeconds(10));
+  }
+
+  @Test
+  void deletingInProgressBackupFails(@TempDir Path tempDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(tempDir);
+    store.save(backup).join();
+
+    // when
+    store.setStatus(backup.id(), new Status(BackupStatusCode.IN_PROGRESS)).join();
+    final var delete = store.delete(backup.id());
+
+    // then
+    assertThat(delete)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(Throwable.class)
+        .withRootCauseInstanceOf(BackupInInvalidStateException.class);
+  }
+
+  @Test
+  void restoreIsSuccessful(@TempDir Path sourceDir, @TempDir Path targetDir) throws IOException {
+    // given
+    final var backup = prepareTestBackup(sourceDir);
+    store.save(backup).join();
+
+    // when
+    final var result = store.restore(backup.id(), targetDir);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(10));
+  }
+
+  @Test
+  void restoredBackupHasSameContents(@TempDir Path sourceDir, @TempDir Path targetDir)
+      throws IOException {
+    // given
+    final var originalBackup = prepareTestBackup(sourceDir);
+    store.save(originalBackup).join();
+
+    // when
+    final var restored = store.restore(originalBackup.id(), targetDir).join();
+
+    // then
+    assertThatBackup(restored).hasSameContentsAs(originalBackup).residesInPath(targetDir);
+  }
+
+  private Backup prepareTestBackup(Path tempDir) throws IOException {
     Files.createDirectory(tempDir.resolve("segments/"));
     final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
     final var seg2 = Files.createFile(tempDir.resolve("segments/segment-file-2"));
@@ -195,36 +483,10 @@ final class S3BackupStoreIT {
     Files.write(s1, RandomUtils.nextBytes(1024));
     Files.write(s2, RandomUtils.nextBytes(1024));
 
-    return new TestBackup(
-        new TestBackupIdentifier(1, 2, 3),
-        new TestBackupDescriptor(4, 5, "test-snapshot-id"),
-        new TestNamedFileSet(Map.of("segment-file-1", seg1, "segment-file-2", seg2)),
-        new TestNamedFileSet(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)));
-  }
-
-  record TestBackup(
-      TestBackupIdentifier id,
-      TestBackupDescriptor descriptor,
-      TestNamedFileSet segments,
-      TestNamedFileSet snapshot)
-      implements Backup {}
-
-  record TestBackupIdentifier(long checkpointId, int partitionId, int nodeId)
-      implements BackupIdentifier {}
-
-  record TestBackupDescriptor(long checkpointPosition, int numberOfPartitions, String snapshotId)
-      implements BackupDescriptor {}
-
-  record TestNamedFileSet(Map<String, Path> namedFiles) implements NamedFileSet {
-
-    @Override
-    public Set<String> names() {
-      return namedFiles.keySet();
-    }
-
-    @Override
-    public Set<Path> files() {
-      return Set.copyOf(namedFiles.values());
-    }
+    return new BackupImpl(
+        new BackupIdentifierImpl(1, 2, 3),
+        new BackupDescriptorImpl("test-snapshot-id", 4, 5),
+        new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)),
+        new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)));
   }
 }

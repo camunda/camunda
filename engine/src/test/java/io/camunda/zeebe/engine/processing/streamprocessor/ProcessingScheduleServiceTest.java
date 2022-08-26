@@ -8,9 +8,11 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import static io.camunda.zeebe.engine.util.RecordToWrite.command;
+import static io.camunda.zeebe.engine.util.RecordToWrite.event;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -23,7 +25,10 @@ import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.Task;
+import io.camunda.zeebe.engine.api.TaskResult;
+import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.api.records.RecordBatch;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamPlatform;
 import io.camunda.zeebe.engine.util.StreamPlatformExtension;
@@ -59,6 +64,7 @@ public class ProcessingScheduleServiceTest {
 
   @AfterEach
   public void clean() {
+    dummyProcessor.continueReplay();
     dummyProcessor.continueProcessing();
   }
 
@@ -66,7 +72,7 @@ public class ProcessingScheduleServiceTest {
   public void shouldExecuteScheduledTask() {
     // given
     streamPlatform.withRecordProcessors(List.of(dummyProcessor)).startStreamProcessor();
-    final var mockedTask = mock(Task.class);
+    final var mockedTask = spy(new DummyTask());
 
     // when
     dummyProcessor.scheduleService.runDelayed(Duration.ZERO, mockedTask);
@@ -81,7 +87,7 @@ public class ProcessingScheduleServiceTest {
     dummyProcessor.blockProcessing();
     streamPlatform.writeBatch(command().processInstance(ACTIVATE_ELEMENT, RECORD));
     streamPlatform.withRecordProcessors(List.of(dummyProcessor)).startStreamProcessor();
-    final var mockedTask = mock(Task.class);
+    final var mockedTask = spy(new DummyTask());
 
     // when
     dummyProcessor.scheduleService.runDelayed(Duration.ZERO, mockedTask);
@@ -96,12 +102,83 @@ public class ProcessingScheduleServiceTest {
     dummyProcessor.blockProcessing();
     streamPlatform.writeBatch(command().processInstance(ACTIVATE_ELEMENT, RECORD));
     streamPlatform.withRecordProcessors(List.of(dummyProcessor)).startStreamProcessor();
-    final var mockedTask = mock(Task.class);
+    final var mockedTask = spy(new DummyTask());
 
     // when
     dummyProcessor.scheduleService.runDelayed(Duration.ZERO, mockedTask);
     verify(mockedTask, never()).execute(any());
     dummyProcessor.continueProcessing();
+
+    // then
+    verify(mockedTask, TIMEOUT).execute(any());
+  }
+
+  @Test
+  public void shouldNotExecuteScheduledTaskIfOnReplay() {
+    // given
+    dummyProcessor.blockReplay();
+    streamPlatform.writeBatch(
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+    streamPlatform
+        .withRecordProcessors(List.of(dummyProcessor))
+        .startStreamProcessorNotAwaitOpening();
+    final var mockedTask = spy(new DummyTask());
+
+    // when
+    dummyProcessor.scheduleService.runDelayed(Duration.ZERO, mockedTask);
+
+    // then
+    verify(mockedTask, never()).execute(any());
+  }
+
+  @Test
+  public void shouldExecuteScheduledTaskAfterReplay() {
+    // given
+    final var processor = spy(dummyProcessor);
+    processor.blockReplay();
+    streamPlatform.writeBatch(
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+    streamPlatform.withRecordProcessors(List.of(processor)).startStreamProcessorNotAwaitOpening();
+    final var mockedTask = spy(new DummyTask());
+
+    // when
+    processor.scheduleService.runDelayed(Duration.ZERO, mockedTask);
+    processor.continueReplay();
+
+    // then
+    final var inOrder = inOrder(processor, mockedTask);
+    inOrder.verify(processor, TIMEOUT).init(any());
+    inOrder.verify(processor, TIMEOUT).replay(any());
+    inOrder.verify(mockedTask, TIMEOUT).execute(any());
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldNotExecuteScheduledTaskIfSuspended() {
+    // given
+    streamPlatform.withRecordProcessors(List.of(dummyProcessor)).startStreamProcessor();
+    streamPlatform.pauseProcessing();
+    final var mockedTask = spy(new DummyTask());
+
+    // when
+    dummyProcessor.scheduleService.runDelayed(Duration.ZERO, mockedTask);
+
+    // then
+    verify(mockedTask, never()).execute(any());
+  }
+
+  @Test
+  public void shouldExecuteScheduledTaskAfterResumed() {
+    // given
+    streamPlatform.withRecordProcessors(List.of(dummyProcessor)).startStreamProcessor();
+    streamPlatform.pauseProcessing();
+    final var mockedTask = spy(new DummyTask());
+
+    // when
+    dummyProcessor.scheduleService.runDelayed(Duration.ZERO, mockedTask);
+    streamPlatform.resumeProcessing();
 
     // then
     verify(mockedTask, TIMEOUT).execute(any());
@@ -116,17 +193,47 @@ public class ProcessingScheduleServiceTest {
     // when
     dummyProcessorSpy.scheduleService.runDelayed(
         Duration.ZERO,
-        (builder) -> builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD).build());
+        (builder) -> {
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
+          return builder.build();
+        });
 
     // then
     verify(dummyProcessorSpy, TIMEOUT)
         .process(Mockito.argThat(record -> record.getKey() == 1), any());
   }
 
+  @Test
+  public void shouldScheduleOnFixedRate() {
+    // given
+    final var dummyProcessorSpy = spy(dummyProcessor);
+    streamPlatform.withRecordProcessors(List.of(dummyProcessorSpy)).startStreamProcessor();
+
+    // when
+    dummyProcessorSpy.scheduleService.runAtFixedRate(
+        Duration.ofMillis(100),
+        (builder) -> {
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
+          return builder.build();
+        });
+
+    // then
+    verify(dummyProcessorSpy, TIMEOUT.times(5))
+        .process(Mockito.argThat(record -> record.getKey() == 1), any());
+  }
+
+  private static final class DummyTask implements Task {
+    @Override
+    public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
+      return RecordBatch::empty;
+    }
+  }
+
   private static final class DummyProcessor implements RecordProcessor {
 
     private ProcessingScheduleService scheduleService;
-    private CountDownLatch latch;
+    private CountDownLatch processingLatch;
+    private CountDownLatch replayLatch;
 
     @Override
     public void init(final RecordProcessorContext recordProcessorContext) {
@@ -140,15 +247,21 @@ public class ProcessingScheduleServiceTest {
 
     @Override
     public void replay(final TypedRecord record) {
-      // do nothing
+      if (replayLatch != null) {
+        try {
+          replayLatch.await();
+        } catch (final InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+      }
     }
 
     @Override
     public ProcessingResult process(
         final TypedRecord record, final ProcessingResultBuilder processingResultBuilder) {
-      if (latch != null) {
+      if (processingLatch != null) {
         try {
-          latch.await();
+          processingLatch.await();
         } catch (final InterruptedException e) {
           throw new RuntimeException(e);
         }
@@ -165,12 +278,22 @@ public class ProcessingScheduleServiceTest {
     }
 
     public void blockProcessing() {
-      latch = new CountDownLatch(1);
+      processingLatch = new CountDownLatch(1);
     }
 
     public void continueProcessing() {
-      if (latch != null) {
-        latch.countDown();
+      if (processingLatch != null) {
+        processingLatch.countDown();
+      }
+    }
+
+    public void blockReplay() {
+      replayLatch = new CountDownLatch(1);
+    }
+
+    public void continueReplay() {
+      if (replayLatch != null) {
+        replayLatch.countDown();
       }
     }
   }

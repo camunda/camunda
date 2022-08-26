@@ -51,20 +51,30 @@ final class SfvChecksum {
    *
    * @param combinedChecksum pre-defined checksum
    */
-  public SfvChecksum(long combinedChecksum) {
+  public SfvChecksum(final long combinedChecksum) {
     this.combinedChecksum = new PreDefinedImmutableChecksum(combinedChecksum);
   }
 
   public SfvChecksum() {
-    this.combinedChecksum = new CRC32C();
+    combinedChecksum = new CRC32C();
   }
 
   public long getCombinedValue() {
     return combinedChecksum.getValue();
   }
 
-  public void setSnapshotDirectoryComment(String headerComment) {
-    this.snapshotDirectoryComment = headerComment;
+  public void setSnapshotDirectoryComment(final String headerComment) {
+    snapshotDirectoryComment = headerComment;
+  }
+
+  @Override
+  public String toString() {
+    return "SfvChecksum{"
+        + "combinedChecksum="
+        + combinedChecksum.getValue()
+        + ", checksums="
+        + checksums
+        + '}';
   }
 
   public void updateFromFile(final Path filePath) throws IOException {
@@ -87,7 +97,7 @@ final class SfvChecksum {
     checksums.put(fileName, checksum.getValue());
   }
 
-  public void updateFromSfvFile(String... lines) {
+  public void updateFromSfvFile(final String... lines) {
     for (String line : lines) {
       line = line.trim();
       if (line.startsWith(";")) {
@@ -127,7 +137,7 @@ final class SfvChecksum {
     writer.newLine();
     writer.write("; number of files used for combined value = " + checksums.size());
     writer.newLine();
-    for (Entry<String, Long> entry : checksums.entrySet()) {
+    for (final Entry<String, Long> entry : checksums.entrySet()) {
       writer.write(entry.getKey());
       writer.write(FILE_CRC_SEPARATOR);
       writer.write(Long.toHexString(entry.getValue()));
@@ -141,17 +151,17 @@ final class SfvChecksum {
 
     private final long crc;
 
-    public PreDefinedImmutableChecksum(long crc) {
+    public PreDefinedImmutableChecksum(final long crc) {
       this.crc = crc;
     }
 
     @Override
-    public void update(int b) {
+    public void update(final int b) {
       throw getUnsupportedOperationException();
     }
 
     @Override
-    public void update(byte[] b, int off, int len) {
+    public void update(final byte[] b, final int off, final int len) {
       throw getUnsupportedOperationException();
     }
 

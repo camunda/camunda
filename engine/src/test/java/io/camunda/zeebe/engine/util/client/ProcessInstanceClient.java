@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -30,6 +31,8 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import javax.annotation.Nullable;
+import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceClient {
 
@@ -273,9 +276,76 @@ public final class ProcessInstanceClient {
       record = new ProcessInstanceModificationRecord();
     }
 
+    /**
+     * Add an activate element instruction.
+     *
+     * @param elementId the id of the element to activate
+     * @return this client builder for chaining
+     */
     public ProcessInstanceModificationClient activateElement(final String elementId) {
       record.addActivateInstruction(
           new ProcessInstanceModificationActivateInstruction().setElementId(elementId));
+      return this;
+    }
+
+    /**
+     * Add an activate element instruction, with variables.
+     *
+     * <p>The variables will be set locally on the defined {@code variablesScopeId}, or globally if
+     * the {@code variablesScopeId} is {@code null}.
+     *
+     * @param elementId the id of the element to activate
+     * @param variablesScopeId the element id to use as variable scope for the provided variables
+     * @param variables the variables to set locally
+     * @return this client builder for chaining
+     */
+    public ProcessInstanceModificationClient activateElement(
+        final String elementId, @Nullable final String variablesScopeId, final String variables) {
+      return activateElement(elementId, variablesScopeId, MsgPackUtil.asMsgPack(variables));
+    }
+
+    /**
+     * Add an activate element instruction, with variables.
+     *
+     * <p>The variables will be set locally on the defined {@code variablesScopeId}, or globally if
+     * the {@code variablesScopeId} is {@code null}.
+     *
+     * @param elementId the id of the element to activate
+     * @param variablesScopeId the element id to use as variable scope for the provided variables
+     * @param variables the variables to set locally
+     * @return this client builder for chaining
+     */
+    public ProcessInstanceModificationClient activateElement(
+        final String elementId,
+        @Nullable final String variablesScopeId,
+        final Map<String, Object> variables) {
+      return activateElement(elementId, variablesScopeId, MsgPackUtil.asMsgPack(variables));
+    }
+
+    /**
+     * Add an activate element instruction, with variables.
+     *
+     * <p>The variables will be set locally on the defined {@code variablesScopeId}, or globally if
+     * the {@code variablesScopeId} is {@code null}.
+     *
+     * @param elementId the id of the element to activate
+     * @param variablesScopeId the element id to use as variable scope for the provided variables
+     * @param variables the variables to set locally
+     * @return this client builder for chaining
+     */
+    public ProcessInstanceModificationClient activateElement(
+        final String elementId,
+        @Nullable final String variablesScopeId,
+        final DirectBuffer variables) {
+      final var variableInstruction = new ProcessInstanceModificationVariableInstruction();
+      if (variablesScopeId != null) {
+        variableInstruction.setElementId(variablesScopeId);
+      }
+      variableInstruction.setVariables(variables);
+      record.addActivateInstruction(
+          new ProcessInstanceModificationActivateInstruction()
+              .setElementId(elementId)
+              .addVariableInstruction(variableInstruction));
       return this;
     }
 

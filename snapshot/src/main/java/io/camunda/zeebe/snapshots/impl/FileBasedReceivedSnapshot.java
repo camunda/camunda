@@ -35,16 +35,17 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private final ActorControl actor;
   private final FileBasedSnapshotStore snapshotStore;
 
-  private final FileBasedSnapshotMetadata metadata;
+  private final FileBasedSnapshotId snapshotId;
   private long expectedSnapshotChecksum;
   private int expectedTotalCount;
+  private FileBasedSnapshotMetadata metadata;
 
   FileBasedReceivedSnapshot(
-      final FileBasedSnapshotMetadata metadata,
+      final FileBasedSnapshotId snapshotId,
       final Path directory,
       final FileBasedSnapshotStore snapshotStore,
       final ActorControl actor) {
-    this.metadata = metadata;
+    this.snapshotId = snapshotId;
     this.snapshotStore = snapshotStore;
     this.directory = directory;
     this.actor = actor;
@@ -54,7 +55,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   @Override
   public long index() {
-    return metadata.getIndex();
+    return snapshotId.getIndex();
   }
 
   @Override
@@ -113,6 +114,18 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
     LOGGER.trace("Consume snapshot snapshotChunk {} of snapshot {}", chunkName, snapshotId);
     writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
+
+    if (snapshotChunk.getChunkName().equals(FileBasedSnapshotStore.METADATA_FILE_NAME)) {
+      try {
+        collectMetadata(snapshotChunk.getContent());
+      } catch (final IOException e) {
+        throw new SnapshotWriteException("Cannot decode snapshot metadata");
+      }
+    }
+  }
+
+  private void collectMetadata(final byte[] content) throws IOException {
+    metadata = FileBasedSnapshotMetadata.decode(content);
   }
 
   private void checkChunkChecksumIsValid(
@@ -157,18 +170,18 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   private void checkSnapshotIdIsValid(final String snapshotId) throws SnapshotWriteException {
-    final var receivedSnapshotId = FileBasedSnapshotMetadata.ofFileName(snapshotId);
+    final var receivedSnapshotId = FileBasedSnapshotId.ofFileName(snapshotId);
     if (receivedSnapshotId.isEmpty()) {
       throw new SnapshotWriteException(
           String.format("Snapshot file name '%s' has unexpected format", snapshotId));
     }
 
-    final FileBasedSnapshotMetadata chunkMetadata = receivedSnapshotId.get();
-    if (metadata.compareTo(chunkMetadata) != 0) {
+    final FileBasedSnapshotId chunkSnapshotId = receivedSnapshotId.get();
+    if (this.snapshotId.compareTo(chunkSnapshotId) != 0) {
       throw new SnapshotWriteException(
           String.format(
-              "Expected snapshot chunk metadata to match metadata '%s' but was '%s' instead",
-              metadata, chunkMetadata));
+              "Expected snapshot id in chunk to be '%s' but was '%s' instead",
+              this.snapshotId, chunkSnapshotId));
     }
   }
 
@@ -213,7 +226,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   @Override
   public SnapshotId snapshotId() {
-    return metadata;
+    return snapshotId;
   }
 
   @Override
@@ -233,7 +246,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   private void persistInternal(final CompletableActorFuture<PersistedSnapshot> future) {
-    if (snapshotStore.hasSnapshotId(metadata.getSnapshotIdAsString())) {
+    if (snapshotStore.hasSnapshotId(snapshotId.getSnapshotIdAsString())) {
       abortInternal();
       future.complete(snapshotStore.getLatestSnapshot().orElseThrow());
       return;
@@ -257,8 +270,17 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
 
     try {
+      if (metadata == null) {
+        // backward compatibility
+        metadata =
+            new FileBasedSnapshotMetadata(
+                FileBasedSnapshotStore.VERSION,
+                snapshotId.getProcessedPosition(),
+                snapshotId.getExportedPosition(),
+                Long.MAX_VALUE);
+      }
       final PersistedSnapshot value =
-          snapshotStore.newSnapshot(metadata, directory, expectedSnapshotChecksum);
+          snapshotStore.newSnapshot(snapshotId, directory, expectedSnapshotChecksum, metadata);
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);
@@ -275,7 +297,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         + ", snapshotStore="
         + snapshotStore.getName()
         + ", metadata="
-        + metadata
+        + snapshotId
         + '}';
   }
 }

@@ -55,6 +55,11 @@ public interface PersistedSnapshot extends CloseableSilently {
   Path getPath();
 
   /**
+   * @return path to checksum file
+   */
+  Path getChecksumPath();
+
+  /**
    * Returns an implementation specific compaction bound, e.g. a log stream position, index etc.,
    * used during compaction
    *
@@ -74,6 +79,12 @@ public interface PersistedSnapshot extends CloseableSilently {
    */
   long getChecksum();
 
+  /**
+   * SnapshotMetadata includes information related to a snapshot.
+   *
+   * @return the metadata of the snapshot.
+   */
+  SnapshotMetadata getMetadata();
   /**
    * Reserves this snapshot. When the snapshot is reserved, it is not deleted until it is released.
    * The reservation status is not persisted. After a restart the snapshot will be in state

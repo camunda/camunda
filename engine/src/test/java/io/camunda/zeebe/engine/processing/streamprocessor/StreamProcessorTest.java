@@ -477,15 +477,12 @@ public final class StreamProcessorTest {
     final CommandResponseWriter commandResponseWriter =
         streamProcessorRule.getCommandResponseWriter();
 
-    final InOrder inOrder = inOrder(commandResponseWriter);
-
-    inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).key(3);
-    inOrder
-        .verify(commandResponseWriter, TIMEOUT.times(1))
+    verify(commandResponseWriter, TIMEOUT.times(1)).key(3);
+    verify(commandResponseWriter, TIMEOUT.times(1))
         .intent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
-    inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).recordType(RecordType.EVENT);
-    inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).valueType(ValueType.PROCESS_INSTANCE);
-    inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(anyInt(), anyLong());
+    verify(commandResponseWriter, TIMEOUT.times(1)).recordType(RecordType.EVENT);
+    verify(commandResponseWriter, TIMEOUT.times(1)).valueType(ValueType.PROCESS_INSTANCE);
+    verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(anyInt(), anyLong());
   }
 
   @Test
@@ -517,22 +514,14 @@ public final class StreamProcessorTest {
     final CommandResponseWriter commandResponseWriter =
         streamProcessorRule.getCommandResponseWriter();
 
-    final InOrder inOrder = inOrder(commandResponseWriter);
     // it doesn't send the staged command response
-    inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).key(3);
-    inOrder
-        .verify(commandResponseWriter, TIMEOUT.times(1))
-        .intent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
-    inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).recordType(RecordType.EVENT);
-    inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).valueType(ValueType.PROCESS_INSTANCE);
+    verify(commandResponseWriter, TIMEOUT.times(1)).key(-1);
+    verify(commandResponseWriter, TIMEOUT.times(1)).intent(ProcessInstanceIntent.ACTIVATE_ELEMENT);
+    verify(commandResponseWriter, TIMEOUT.times(1)).recordType(RecordType.COMMAND_REJECTION);
+    verify(commandResponseWriter, TIMEOUT.times(1)).valueType(ValueType.PROCESS_INSTANCE);
     // instead, it sends a rejection response because of the failure
-    inOrder
-        .verify(commandResponseWriter, TIMEOUT.times(1))
-        .recordType(RecordType.COMMAND_REJECTION);
-    inOrder
-        .verify(commandResponseWriter, TIMEOUT.times(1))
-        .rejectionType(RejectionType.PROCESSING_ERROR);
-    inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(anyInt(), anyLong());
+    verify(commandResponseWriter, TIMEOUT.times(1)).rejectionType(RejectionType.PROCESSING_ERROR);
+    verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(anyInt(), anyLong());
   }
 
   @Test

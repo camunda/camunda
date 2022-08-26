@@ -7,17 +7,40 @@
  */
 package io.camunda.zeebe.backup.s3;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.NamedFileSet;
+import io.camunda.zeebe.backup.common.BackupImpl;
+import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupDeletionIncomplete;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReadException;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.MetadataParseException;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.StatusParseException;
+import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 /**
  * {@link BackupStore} for S3. Stores all backups in a given bucket.
@@ -29,9 +52,9 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
  *
  * <ol>
  *   <li>A 'metadata' object, containing {@link Metadata} serialized as JSON, for example
- *       <pre>partitionId/checkpointId/nodeId/metadata</pre>
- *   <li>A 'status' object, containing the {@link BackupStatus}, for example
- *       <pre>partitionId/checkpointId/nodeId/status</pre>
+ *       <pre>partitionId/checkpointId/nodeId/metadata.json</pre>
+ *   <li>A 'status' object, containing the {@link Status}, for example
+ *       <pre>partitionId/checkpointId/nodeId/status.json</pre>
  *   <li>Objects for snapshot files, additionally prefixed with 'snapshot', for example
  *       <pre>partitionId/checkpointId/nodeId/snapshots/snapshot-file-1</pre>
  *   <li>Objects for segment files, additionally prefixed with 'segments', for example
@@ -41,8 +64,9 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 public final class S3BackupStore implements BackupStore {
 
   public static final String SNAPSHOT_PREFIX = "snapshot/";
+  public static final String SEGMENTS_PREFIX = "segments/";
 
-  static final ObjectMapper MAPPER = new ObjectMapper();
+  static final ObjectMapper MAPPER = new ObjectMapper().registerModule(new Jdk8Module());
 
   private final S3BackupConfig config;
   private final S3AsyncClient client;
@@ -54,29 +78,206 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    final var metadata = saveMetadata(backup);
-    final var snapshot = saveSnapshotFiles(backup);
-    return CompletableFuture.allOf(metadata, snapshot);
+    return requireBackupStatus(backup.id(), EnumSet.of(BackupStatusCode.DOES_NOT_EXIST))
+        .thenComposeAsync(id -> setStatus(id, Status.inProgress()))
+        .thenComposeAsync(
+            status -> {
+              final var metadata = saveMetadata(backup);
+              final var snapshot = saveSnapshotFiles(backup);
+              final var segments = saveSegmentFiles(backup);
+              return CompletableFuture.allOf(metadata, snapshot, segments);
+            })
+        .thenComposeAsync(
+            ignored -> requireBackupStatus(backup.id(), EnumSet.of(BackupStatusCode.IN_PROGRESS)))
+        .thenComposeAsync(content -> setStatus(backup.id(), Status.complete()))
+        .exceptionallyComposeAsync(
+            throwable ->
+                setStatus(backup.id(), Status.failed(throwable))
+                    // Mark the returned future as failed.
+                    .thenCompose(status -> CompletableFuture.failedStage(throwable)))
+        // Discard status, it's either COMPLETED or the future is completed exceptionally
+        .thenApply(status -> null);
   }
 
   @Override
   public CompletableFuture<BackupStatus> getStatus(final BackupIdentifier id) {
-    throw new UnsupportedOperationException();
+    return readStatusObject(id)
+        .thenCombine(
+            readMetadataObject(id),
+            (status, metadata) ->
+                (BackupStatus)
+                    new BackupStatusImpl(
+                        id,
+                        Optional.of(metadata.descriptor()),
+                        status.statusCode(),
+                        status.failureReason()))
+        .exceptionally(
+            throwable -> {
+              // throwable is a `CompletionException`, `getCause` to handle the underlying exception
+              if (throwable.getCause() instanceof NoSuchKeyException) {
+                // Couldn't find status or metadata, indicating that the backup doesn't exist
+                return new BackupStatusImpl(
+                    id, Optional.empty(), BackupStatusCode.DOES_NOT_EXIST, Optional.empty());
+              } else if (throwable.getCause() instanceof S3BackupStoreException e) {
+                // Exception was already wrapped, no need to re-wrap
+                throw e;
+              } else {
+                // Something else happened, we don't know the status of the backup
+                throw new BackupReadException("Failed to retrieve backup status", throwable);
+              }
+            });
   }
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
-    throw new UnsupportedOperationException();
+    return requireBackupStatus(id, EnumSet.complementOf(EnumSet.of(BackupStatusCode.IN_PROGRESS)))
+        .thenComposeAsync(this::listBackupObjects)
+        .thenComposeAsync(this::deleteBackupObjects);
   }
 
   @Override
-  public CompletableFuture<Backup> restore(final BackupIdentifier id) {
-    throw new UnsupportedOperationException();
+  public CompletableFuture<Backup> restore(final BackupIdentifier id, Path targetFolder) {
+    final var backupPrefix = objectPrefix(id);
+    return requireBackupStatus(id, EnumSet.of(BackupStatusCode.COMPLETED))
+        .thenComposeAsync(this::readMetadataObject)
+        .thenComposeAsync(
+            metadata ->
+                downloadNamedFileSet(
+                        backupPrefix + SEGMENTS_PREFIX, metadata.segmentFileNames(), targetFolder)
+                    .thenCombineAsync(
+                        downloadNamedFileSet(
+                            backupPrefix + SNAPSHOT_PREFIX,
+                            metadata.snapshotFileNames(),
+                            targetFolder),
+                        (segments, snapshot) ->
+                            new BackupImpl(id, metadata.descriptor(), snapshot, segments)));
+  }
+
+  private CompletableFuture<NamedFileSet> downloadNamedFileSet(
+      final String sourcePrefix, final Set<String> fileNames, Path targetFolder) {
+    final var downloadedFiles = new ConcurrentHashMap<String, Path>();
+    final CompletableFuture<?>[] futures =
+        fileNames.stream()
+            .map(
+                fileName -> {
+                  final var path = targetFolder.resolve(fileName);
+                  return client
+                      .getObject(
+                          req -> req.bucket(config.bucketName()).key(sourcePrefix + fileName), path)
+                      .thenApply(response -> downloadedFiles.put(fileName, path));
+                })
+            .toArray(CompletableFuture[]::new);
+
+    return CompletableFuture.allOf(futures)
+        .thenApply(ignored -> new NamedFileSetImpl(downloadedFiles));
   }
 
   @Override
-  public CompletableFuture<Void> markFailed(final BackupIdentifier id) {
-    throw new UnsupportedOperationException();
+  public CompletableFuture<BackupStatusCode> markFailed(final BackupIdentifier id) {
+    return setStatus(
+        id, new Status(BackupStatusCode.FAILED, Optional.of("Explicitly marked as failed")));
+  }
+
+  private CompletableFuture<BackupIdentifier> requireBackupStatus(
+      BackupIdentifier id, EnumSet<BackupStatusCode> requiredStatus) {
+    return getStatus(id)
+        .thenApplyAsync(
+            status -> {
+              if (!requiredStatus.contains(status.statusCode())) {
+                throw new BackupInInvalidStateException(
+                    "Expected backup to have status "
+                        + requiredStatus
+                        + " but was "
+                        + status.statusCode());
+              }
+              return id;
+            });
+  }
+
+  private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(BackupIdentifier id) {
+    return client
+        .listObjectsV2(req -> req.bucket(config.bucketName()).prefix(objectPrefix(id)))
+        .thenApplyAsync(
+            objects ->
+                objects.contents().stream()
+                    .map(S3Object::key)
+                    .map(key -> ObjectIdentifier.builder().key(key).build())
+                    .toList());
+  }
+
+  private CompletableFuture<Void> deleteBackupObjects(
+      Collection<ObjectIdentifier> objectIdentifiers) {
+    if (objectIdentifiers.isEmpty()) {
+      // Nothing to delete, which we must handle because the delete request would be invalid
+      return CompletableFuture.completedFuture(null);
+    }
+    return client
+        .deleteObjects(
+            req ->
+                req.bucket(config.bucketName())
+                    .delete(delete -> delete.objects(objectIdentifiers).quiet(true)))
+        .thenApplyAsync(
+            response -> {
+              if (!response.errors().isEmpty()) {
+                throw new BackupDeletionIncomplete(
+                    "Not all objects belonging to the backup were deleted successfully: "
+                        + response.errors());
+              }
+              return null;
+            });
+  }
+
+  private CompletableFuture<Status> readStatusObject(BackupIdentifier id) {
+    return client
+        .getObject(
+            req -> req.bucket(config.bucketName()).key(objectPrefix(id) + Status.OBJECT_KEY),
+            AsyncResponseTransformer.toBytes())
+        .thenApply(
+            response -> {
+              try {
+                return MAPPER.readValue(response.asInputStream(), Status.class);
+              } catch (JsonParseException e) {
+                throw new StatusParseException("Failed to parse status object", e);
+              } catch (IOException e) {
+                throw new BackupReadException("Failed to read status object", e);
+              }
+            });
+  }
+
+  private CompletableFuture<Metadata> readMetadataObject(BackupIdentifier id) {
+    return client
+        .getObject(
+            req -> req.bucket(config.bucketName()).key(objectPrefix(id) + Metadata.OBJECT_KEY),
+            AsyncResponseTransformer.toBytes())
+        .thenApply(
+            response -> {
+              try {
+                return MAPPER.readValue(response.asInputStream(), Metadata.class);
+              } catch (JsonParseException e) {
+                throw new MetadataParseException("Failed to parse metadata object", e);
+              } catch (IOException e) {
+                throw new BackupReadException("Failed to read metadata object", e);
+              }
+            });
+  }
+
+  public CompletableFuture<BackupStatusCode> setStatus(BackupIdentifier id, Status status) {
+    final AsyncRequestBody body;
+    try {
+      body = AsyncRequestBody.fromBytes(MAPPER.writeValueAsBytes(status));
+    } catch (JsonProcessingException e) {
+      return CompletableFuture.failedFuture(e);
+    }
+
+    return client
+        .putObject(
+            request ->
+                request
+                    .bucket(config.bucketName())
+                    .key(objectPrefix(id) + Status.OBJECT_KEY)
+                    .build(),
+            body)
+        .thenApply(resp -> status.statusCode());
   }
 
   private CompletableFuture<PutObjectResponse> saveMetadata(Backup backup) {
@@ -102,6 +303,16 @@ public final class S3BackupStore implements BackupStore {
             .map(
                 snapshotFile ->
                     saveNamedFile(prefix, snapshotFile.getKey(), snapshotFile.getValue()))
+            .toList();
+
+    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[] {}));
+  }
+
+  private CompletableFuture<Void> saveSegmentFiles(final Backup backup) {
+    final var prefix = objectPrefix(backup.id()) + SEGMENTS_PREFIX;
+    final var futures =
+        backup.segments().namedFiles().entrySet().stream()
+            .map(segmentFile -> saveNamedFile(prefix, segmentFile.getKey(), segmentFile.getValue()))
             .toList();
 
     return CompletableFuture.allOf(futures.toArray(new CompletableFuture[] {}));

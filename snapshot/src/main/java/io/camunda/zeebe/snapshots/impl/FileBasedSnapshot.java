@@ -13,6 +13,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
+import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.snapshots.SnapshotReservation;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -33,7 +34,8 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   private final Path directory;
   private final Path checksumFile;
   private final long checksum;
-  private final FileBasedSnapshotMetadata metadata;
+  private final FileBasedSnapshotId snapshotId;
+  private final SnapshotMetadata metadata;
   private final Consumer<FileBasedSnapshot> onSnapshotDeleted;
 
   private final Set<FileBasedSnapshotReservation> reservations = new HashSet<>();
@@ -45,27 +47,25 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
       final Path directory,
       final Path checksumFile,
       final long checksum,
-      final FileBasedSnapshotMetadata metadata,
+      final FileBasedSnapshotId snapshotId,
+      final SnapshotMetadata metadata,
       final Consumer<FileBasedSnapshot> onSnapshotDeleted,
       final ActorControl actor) {
     this.directory = directory;
     this.checksumFile = checksumFile;
     this.checksum = checksum;
+    this.snapshotId = snapshotId;
     this.metadata = metadata;
     this.onSnapshotDeleted = onSnapshotDeleted;
     this.actor = actor;
   }
 
-  public FileBasedSnapshotMetadata getMetadata() {
-    return metadata;
+  public FileBasedSnapshotId getSnapshotId() {
+    return snapshotId;
   }
 
   public Path getDirectory() {
     return directory;
-  }
-
-  public Path getChecksumFile() {
-    return checksumFile;
   }
 
   @Override
@@ -75,12 +75,12 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
 
   @Override
   public long getIndex() {
-    return metadata.getIndex();
+    return snapshotId.getIndex();
   }
 
   @Override
   public long getTerm() {
-    return metadata.getTerm();
+    return snapshotId.getTerm();
   }
 
   @Override
@@ -98,18 +98,28 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   @Override
+  public Path getChecksumPath() {
+    return checksumFile;
+  }
+
+  @Override
   public long getCompactionBound() {
     return getIndex();
   }
 
   @Override
   public String getId() {
-    return metadata.getSnapshotIdAsString();
+    return snapshotId.getSnapshotIdAsString();
   }
 
   @Override
   public long getChecksum() {
     return checksum;
+  }
+
+  @Override
+  public SnapshotMetadata getMetadata() {
+    return metadata;
   }
 
   @Override
@@ -160,7 +170,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     int result = getDirectory().hashCode();
     result = 31 * result + checksumFile.hashCode();
     result = 31 * result + (int) (getChecksum() ^ (getChecksum() >>> 32));
-    result = 31 * result + getMetadata().hashCode();
+    result = 31 * result + getSnapshotId().hashCode();
     return result;
   }
 
@@ -184,7 +194,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     if (!checksumFile.equals(that.checksumFile)) {
       return false;
     }
-    return getMetadata().equals(that.getMetadata());
+    return getSnapshotId().equals(that.getSnapshotId());
   }
 
   @Override
@@ -196,6 +206,8 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
         + checksumFile
         + ", checksum="
         + checksum
+        + ", snapshotId="
+        + snapshotId
         + ", metadata="
         + metadata
         + '}';

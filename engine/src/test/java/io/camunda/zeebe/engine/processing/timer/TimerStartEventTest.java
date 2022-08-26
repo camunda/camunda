@@ -1071,7 +1071,7 @@ public final class TimerStartEventTest {
     final long secondDeploymentProcessDefinitionKey = secondDeployment.getProcessDefinitionKey();
 
     // when
-    engine.increaseTime(Duration.ofSeconds(25));
+    engine.increaseTime(Duration.ofSeconds(15));
 
     // then
     assertThat(
@@ -1241,5 +1241,57 @@ public final class TimerStartEventTest {
                 .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
                 .exists())
         .isTrue();
+  }
+
+  @Test
+  public void shouldAvoidTriggeringMultipleTimes() {
+    // given
+    final ZonedDateTime start =
+        ZonedDateTime.ofInstant(Instant.now(), ZoneId.systemDefault()).plusMinutes(30);
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .timerWithCycle(String.format("R3/%s/PT10M", start))
+            .endEvent("end")
+            .done();
+    final var deployedProcess =
+        engine
+            .deployment()
+            .withXmlResource(model)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+    final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
+
+    // when
+    engine.stop();
+    final long engineStoppedTime = engine.getClock().getCurrentTimeInMillis();
+    engine.increaseTime(Duration.ofMinutes(35));
+    RecordingExporter.reset();
+    engine.start();
+
+    // then
+    final Record<TimerRecordValue> firstRecord =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst();
+
+    Assertions.assertThat(firstRecord.getValue())
+        .hasDueDate(start.toInstant().toEpochMilli())
+        .hasTargetElementId("start")
+        .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
+
+    assertThat(firstRecord.getTimestamp()).isGreaterThan(engineStoppedTime);
+
+    final TimerRecordValue secondTimerRecord =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .skip(1)
+            .getFirst()
+            .getValue();
+
+    final long now = engine.getClock().getCurrentTimeInMillis();
+    assertThat(secondTimerRecord.getDueDate()).isGreaterThan(now);
   }
 }

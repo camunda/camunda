@@ -24,8 +24,8 @@ import org.agrona.collections.Int2ObjectHashMap;
  * Loads existing snapshots in memory, cleaning out old and/or invalid snapshots if present.
  *
  * <p>The current load strategy is to lookup all files directly under the {@code
- * SNAPSHOTS_DIRECTORY}, try to extract {@link FileBasedSnapshotMetadata} from them, and if not
- * possible skip them (and print out a warning).
+ * SNAPSHOTS_DIRECTORY}, try to extract {@link FileBasedSnapshotId} from them, and if not possible
+ * skip them (and print out a warning).
  *
  * <p>The metadata extraction is done by parsing the directory name using '%d-%d-%d-%d', where in
  * order we expect: index, term, processed position and exported position.

@@ -20,20 +20,40 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
+import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
+import org.agrona.Strings;
 
 public final class ProcessInstanceModificationProcessor
     implements TypedRecordProcessor<ProcessInstanceModificationRecord> {
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to modify process instance but no process instance found with key '%d'";
+  private static final String ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND =
+      "Expected to modify instance of process '%s' but it contains one or more activate instructions with an element that could not be found: '%s'";
+  private static final String ERROR_MESSAGE_TARGET_ELEMENT_IN_MULTI_INSTANCE_BODY =
+      "Expected to modify instance of process '%s' but it contains one or more activate instructions"
+          + " for elements inside a multi-instance subprocess: '%s'. The activation of elements inside"
+          + " a multi-instance subprocess is not supported.";
+
+  private static final Either<Rejection, Object> VALID = Either.right(null);
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
@@ -44,6 +64,7 @@ public final class ProcessInstanceModificationProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final CatchEventBehavior catchEventBehavior;
   private final ElementActivationBehavior elementActivationBehavior;
+  private final VariableBehavior variableBehavior;
 
   public ProcessInstanceModificationProcessor(
       final Writers writers,
@@ -59,6 +80,7 @@ public final class ProcessInstanceModificationProcessor
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
+    variableBehavior = bpmnBehaviors.variableBehavior();
   }
 
   @Override
@@ -85,6 +107,14 @@ public final class ProcessInstanceModificationProcessor
     final var process =
         processState.getProcessByKey(processInstanceRecord.getProcessDefinitionKey());
 
+    final var validationResult = validateCommand(command, process);
+    if (validationResult.isLeft()) {
+      final var rejection = validationResult.getLeft();
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     value
         .getActivateInstructions()
         .forEach(
@@ -92,7 +122,9 @@ public final class ProcessInstanceModificationProcessor
               final var elementToActivate =
                   process.getProcess().getElementById(instruction.getElementId());
 
-              // todo: reject if elementToActivate could not be found (#9976)
+              executeGlobalVariableInstructions(processInstance, process, instruction);
+              // todo(#9663): execute local variable instructions
+
               elementActivationBehavior.activateElement(processInstanceRecord, elementToActivate);
             });
 
@@ -104,6 +136,103 @@ public final class ProcessInstanceModificationProcessor
 
     responseWriter.writeEventOnCommand(
         eventKey, ProcessInstanceModificationIntent.MODIFIED, value, command);
+  }
+
+  private Either<Rejection, ?> validateCommand(
+      final TypedRecord<ProcessInstanceModificationRecord> command, final DeployedProcess process) {
+    final var value = command.getValue();
+    final var activateInstructions = value.getActivateInstructions();
+
+    return validateElementExists(process, activateInstructions)
+        .flatMap(valid -> validateElementsNotInsideMultiInstance(process, activateInstructions))
+        .map(valid -> VALID);
+  }
+
+  private Either<Rejection, ?> validateElementExists(
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
+    final Set<String> unknownElementIds =
+        activateInstructions.stream()
+            .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .filter(targetElementId -> process.getProcess().getElementById(targetElementId) == null)
+            .collect(Collectors.toSet());
+
+    if (unknownElementIds.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", unknownElementIds));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateElementsNotInsideMultiInstance(
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
+    final Set<String> elementsInsideMultiInstance =
+        activateInstructions.stream()
+            .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .filter(
+                elementId -> isInsideMultiInstanceBody(process, BufferUtil.wrapString(elementId)))
+            .collect(Collectors.toSet());
+
+    if (elementsInsideMultiInstance.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_TARGET_ELEMENT_IN_MULTI_INSTANCE_BODY,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", elementsInsideMultiInstance));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private boolean isInsideMultiInstanceBody(
+      final DeployedProcess process, final DirectBuffer elementId) {
+    final var element = process.getProcess().getElementById(elementId);
+
+    if (element.getFlowScope() == null) {
+      return false;
+    }
+
+    // We can't use element.getFlowScope() here as it return the element instead of the
+    // multi-instance body (e.g. the subprocess)
+    final var flowScope = process.getProcess().getElementById(element.getFlowScope().getId());
+
+    return flowScope.getElementType() == BpmnElementType.MULTI_INSTANCE_BODY
+        || isInsideMultiInstanceBody(process, flowScope.getId());
+  }
+
+  private void executeGlobalVariableInstructions(
+      final ElementInstance processInstance,
+      final DeployedProcess process,
+      final ProcessInstanceModificationActivateInstructionValue activate) {
+    final var scopeKey = processInstance.getKey();
+    activate.getVariableInstructions().stream()
+        .filter(v -> Strings.isEmpty(v.getElementId()))
+        .map(
+            instruction -> {
+              if (instruction instanceof ProcessInstanceModificationVariableInstruction vi) {
+                return vi.getVariablesBuffer();
+              }
+              throw new UnsupportedOperationException(
+                  "Expected variable instruction of type %s, but was %s"
+                      .formatted(
+                          ProcessInstanceModificationActivateInstructionValue.class.getName(),
+                          instruction.getClass().getName()));
+            })
+        .forEach(
+            variableDocument ->
+                variableBehavior.mergeLocalDocument(
+                    scopeKey,
+                    process.getKey(),
+                    processInstance.getKey(),
+                    process.getBpmnProcessId(),
+                    variableDocument));
   }
 
   private void terminateElement(
@@ -126,4 +255,6 @@ public final class ProcessInstanceModificationProcessor
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATED, elementInstanceRecord);
   }
+
+  private record Rejection(RejectionType type, String reason) {}
 }

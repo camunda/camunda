@@ -32,8 +32,8 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -107,8 +107,8 @@ class PartitionTransitionImplTest {
     verify(mockStep2, never()).transitionTo(mockContext, DEFAULT_TERM, DEFAULT_ROLE);
 
     assertThatThrownBy(actualResult::join)
-        .isInstanceOf(CompletionException.class)
-        .getCause()
+        .isInstanceOf(ExecutionException.class)
+        .cause()
         .isSameAs(testException);
   }
 
@@ -330,8 +330,8 @@ class PartitionTransitionImplTest {
     verify(mockStep2, never()).transitionTo(mockContext, secondTerm, secondRole);
 
     assertThatThrownBy(secondTransitionFuture::join)
-        .isInstanceOf(CompletionException.class)
-        .getCause()
+        .isInstanceOf(ExecutionException.class)
+        .cause()
         .isSameAs(testException);
   }
 

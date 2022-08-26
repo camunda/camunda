@@ -24,4 +24,15 @@ public interface TransientSnapshot extends PersistableSnapshot {
    * @return true on success, false otherwise
    */
   ActorFuture<Void> take(Consumer<Path> takeSnapshot);
+
+  /**
+   * A snapshot is only valid if the accompanying logstream has events from processedPosition up to
+   * the last followup event position. The last followUp event position is the position of an event
+   * whose source position >= actual processed position in the state.
+   *
+   * @param followupEventPosition position of the followup event which must be in the logstream to
+   *     ensure that the system can recover from the snapshot and the events in the logstream.
+   * @return transient snapshot.
+   */
+  TransientSnapshot withLastFollowupEventPosition(long followupEventPosition);
 }

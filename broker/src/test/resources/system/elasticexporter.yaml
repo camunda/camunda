@@ -43,5 +43,5 @@ zeebe:
         #     variable: true
         #     variableDocument: true
         #     processInstance: true
-        #     processInstanceCreation: false
+        #     processInstanceCreation: true
         #     processMessageSubscription: false

@@ -23,7 +23,7 @@ cp -rv default/ $namespace
 cd $namespace
 
 # calls OS specific sed inplace function
-sed_inplace "s/default/$namespace/g" Makefile starter.yaml timer.yaml simpleStarter.yaml worker.yaml
+sed_inplace "s/default/$namespace/g" Makefile *.yaml
 
 # get latest updates from zeebe repo
 helm repo add camunda https://helm.camunda.io # skips if already exists

@@ -16,7 +16,10 @@ import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,18 +34,19 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private final Path directory;
   private final ActorControl actor;
   private final FileBasedSnapshotStore snapshotStore;
-  private final FileBasedSnapshotMetadata metadata;
+  private final FileBasedSnapshotId snapshotId;
   private final ActorFuture<Void> takenFuture = new CompletableActorFuture<>();
   private boolean isValid = false;
   private PersistedSnapshot snapshot;
-  private long checksum;
+  private SfvChecksum checksum;
+  private long lastFollowupEventPosition = Long.MAX_VALUE;
 
   FileBasedTransientSnapshot(
-      final FileBasedSnapshotMetadata metadata,
+      final FileBasedSnapshotId snapshotId,
       final Path directory,
       final FileBasedSnapshotStore snapshotStore,
       final ActorControl actor) {
-    this.metadata = metadata;
+    this.snapshotId = snapshotId;
     this.snapshotStore = snapshotStore;
     this.directory = directory;
     this.actor = actor;
@@ -52,6 +56,12 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   public ActorFuture<Void> take(final Consumer<Path> takeSnapshot) {
     actor.run(() -> takeInternal(takeSnapshot));
     return takenFuture;
+  }
+
+  @Override
+  public TransientSnapshot withLastFollowupEventPosition(final long lastFollowupEventPosition) {
+    actor.run(() -> this.lastFollowupEventPosition = lastFollowupEventPosition);
+    return this;
   }
 
   private void takeInternal(final Consumer<Path> takeSnapshot) {
@@ -70,7 +80,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                       directory)));
 
         } else {
-          checksum = SnapshotChecksum.calculate(directory).getCombinedValue();
+          checksum = SnapshotChecksum.calculate(directory);
 
           snapshot = null;
           isValid = true;
@@ -78,7 +88,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
         }
 
       } catch (final Exception exception) {
-        LOGGER.warn("Unexpected exception on taking snapshot ({})", metadata, exception);
+        LOGGER.warn("Unexpected exception on taking snapshot ({})", snapshotId, exception);
         abortInternal();
         takenFuture.completeExceptionally(exception);
       }
@@ -105,7 +115,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
 
   @Override
   public SnapshotId snapshotId() {
-    return metadata;
+    return snapshotId;
   }
 
   @Override
@@ -131,13 +141,37 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     }
 
     try {
-      snapshot = snapshotStore.newSnapshot(metadata, directory, checksum);
+      final var metadata =
+          new FileBasedSnapshotMetadata(
+              FileBasedSnapshotStore.VERSION,
+              snapshotId.getProcessedPosition(),
+              snapshotId.getExportedPosition(),
+              lastFollowupEventPosition);
+      writeMetadataAndUpdateChecksum(metadata);
+      snapshot =
+          snapshotStore.newSnapshot(snapshotId, directory, checksum.getCombinedValue(), metadata);
       future.complete(snapshot);
     } catch (final Exception e) {
       future.completeExceptionally(e);
     }
 
     snapshotStore.removePendingSnapshot(this);
+  }
+
+  private void writeMetadataAndUpdateChecksum(final FileBasedSnapshotMetadata metadata)
+      throws IOException {
+    final var metadataPath = directory.resolve(FileBasedSnapshotStore.METADATA_FILE_NAME);
+    // Write metadata file along with snapshot files
+    try (final var channel =
+            FileChannel.open(
+                metadataPath,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.DSYNC);
+        final var output = Channels.newOutputStream(channel)) {
+      metadata.encode(output);
+      checksum.updateFromFile(metadataPath);
+    }
   }
 
   private void abortInternal() {
@@ -158,10 +192,10 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     return "FileBasedTransientSnapshot{"
         + "directory="
         + directory
+        + ", snapshotId="
+        + snapshotId
         + ", checksum="
         + checksum
-        + ", metadata="
-        + metadata
         + '}';
   }
 }

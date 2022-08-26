@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.api.Task;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
+import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
 import java.time.Duration;
 import java.util.function.BiConsumer;
 
@@ -26,6 +27,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
   private final StreamProcessorContext streamProcessorContext;
   private final AbortableRetryStrategy writeRetryStrategy;
 
+  // todo remove context from CTOR; will be cleaned up after engine abstraction is done
   public ProcessingScheduleServiceImpl(final StreamProcessorContext streamProcessorContext) {
     actorControl = streamProcessorContext.getActor();
     this.streamProcessorContext = streamProcessorContext;
@@ -54,7 +56,16 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
      * this only works because this class is scheduled on the same actor as the
      * stream processor.
      */
-    runAtFixedRate(delay, toRunnable(task));
+    runDelayed(
+        delay,
+        toRunnable(
+            builder -> {
+              try {
+                return task.execute(builder);
+              } finally {
+                runAtFixedRate(delay, task);
+              }
+            }));
   }
 
   private void scheduleOnActor(final Runnable task) {
@@ -63,24 +74,34 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
 
   Runnable toRunnable(final Task task) {
     return () -> {
-      // todo we want so suspend the task execution
-
-      if (streamProcessorContext.isInProcessing()) {
-        if (streamProcessorContext.getAbortCondition().getAsBoolean()) {
-          // it might be that we are closing then we should just stop
-          return;
-        }
-
-        // we want to execute the tasks only if no processing is happening
-        // to make sure that we are not interfering with the processing and that all transaction
-        // changes
-        // are available during our task execution
-        Loggers.PROCESS_PROCESSOR_LOGGER.trace("Processing is currently ongoing, reschedule task.");
-        actorControl.submit(toRunnable(task));
+      if (streamProcessorContext.getAbortCondition().getAsBoolean()) {
+        // it might be that we are closing, then we should just stop
         return;
       }
 
-      final var builder = new DirectTaskResultBuilder(streamProcessorContext);
+      final var currentStreamProcessorPhase = streamProcessorContext.getStreamProcessorPhase();
+      if (currentStreamProcessorPhase != Phase.PROCESSING
+          || streamProcessorContext.isInProcessing()) {
+
+        // We want to execute the scheduled tasks only if the StreamProcessor is in the PROCESSING
+        // PHASE, but no processing is currently happening.
+        //
+        // To make sure that:
+        //
+        //  * we are not running during replay/init phase (the state might not be up-to-date yet)
+        //  * we are not running during suspending
+        //  * we are not interfering with the current ongoing processing,
+        //    such that all transaction changes are available during our task execution
+        Loggers.PROCESS_PROCESSOR_LOGGER.trace(
+            "Not able to execute scheduled task right now. [streamProcessorPhase: {}, inProcessing: {}]",
+            currentStreamProcessorPhase,
+            streamProcessorContext.isInProcessing());
+        actorControl.submit(toRunnable(task));
+        return;
+      }
+      final var logStreamBatchWriter = streamProcessorContext.getLogStreamBatchWriter();
+      final var builder =
+          new DirectTaskResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
       final var result = task.execute(builder);
 
       // we need to retry the writing if the dispatcher return zero or negative position (this means
@@ -91,8 +112,19 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
           writeRetryStrategy.runWithRetry(
               () -> {
                 Loggers.PROCESS_PROCESSOR_LOGGER.trace("Write scheduled TaskResult to dispatcher!");
-                return result.writeRecordsToStream(streamProcessorContext.getLogStreamBatchWriter())
-                    >= 0;
+                result
+                    .getRecordBatch()
+                    .forEach(
+                        entry ->
+                            logStreamBatchWriter
+                                .event()
+                                .key(entry.key())
+                                .metadataWriter(entry.recordMetadata())
+                                .sourceIndex(entry.sourceIndex())
+                                .valueWriter(entry.recordValue())
+                                .done());
+
+                return logStreamBatchWriter.tryWrite() >= 0;
               },
               streamProcessorContext.getAbortCondition());
 

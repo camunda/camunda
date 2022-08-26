@@ -111,7 +111,7 @@ public final class FileBasedSnapshotTest {
 
   private FileBasedSnapshot createSnapshot(final Path snapshotPath, final Path checksumPath)
       throws IOException {
-    final var metadata = new FileBasedSnapshotMetadata(1L, 1L, 1L, 1L);
+    final var metadata = new FileBasedSnapshotId(1L, 1L, 1L, 1L);
 
     FileUtil.ensureDirectoryExists(snapshotPath);
     for (final var entry : SNAPSHOT_FILE_CONTENTS.entrySet()) {
@@ -122,7 +122,7 @@ public final class FileBasedSnapshotTest {
     SnapshotChecksum.persist(checksumPath, SnapshotChecksum.calculate(snapshotPath));
 
     return new FileBasedSnapshot(
-        snapshotPath, checksumPath, 1L, metadata, s -> {}, actor.getActorControl());
+        snapshotPath, checksumPath, 1L, metadata, null, s -> {}, actor.getActorControl());
   }
 
   static class TestActor extends Actor {

@@ -7,30 +7,33 @@
  */
 package io.camunda.zeebe.backup.processing;
 
-import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.PostCommitTask;
+import io.camunda.zeebe.engine.api.ProcessingResponse;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
+import io.camunda.zeebe.engine.api.records.RecordBatch;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 record MockProcessingResult(List<Event> records) implements ProcessingResult {
 
   @Override
-  public long writeRecordsToStream(final LogStreamBatchWriter logStreamBatchWriter) {
-    return 0;
+  public ImmutableRecordBatch getRecordBatch() {
+    return RecordBatch.empty();
   }
 
   @Override
-  public boolean writeResponse(final CommandResponseWriter commandResponseWriter) {
-    return false;
+  public Optional<ProcessingResponse> getProcessingResponse() {
+    return Optional.empty();
   }
 
   @Override
@@ -51,7 +54,7 @@ record MockProcessingResult(List<Event> records) implements ProcessingResult {
     final List<Event> followupRecords = new ArrayList<>();
 
     @Override
-    public ProcessingResultBuilder appendRecord(
+    public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
         final long key,
         final RecordType type,
         final Intent intent,
@@ -61,7 +64,7 @@ record MockProcessingResult(List<Event> records) implements ProcessingResult {
 
       final var record = new Event(intent, type, rejectionType, rejectionReason, key, value);
       followupRecords.add(record);
-      return null;
+      return Either.right(null);
     }
 
     @Override
@@ -101,11 +104,6 @@ record MockProcessingResult(List<Event> records) implements ProcessingResult {
     @Override
     public boolean canWriteEventOfLength(final int eventLength) {
       return false;
-    }
-
-    @Override
-    public int getMaxEventLength() {
-      return 0;
     }
   }
 }

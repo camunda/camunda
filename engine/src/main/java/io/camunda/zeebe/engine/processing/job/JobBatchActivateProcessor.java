@@ -79,7 +79,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     final Either<TooLargeJob, Integer> result = jobBatchCollector.collectJobs(record);
     final var activatedJobCount = result.getOrElse(0);
     result.ifLeft(
-        largeJob -> raiseIncidentJobTooLargeForMessageSize(largeJob.key(), largeJob.record()));
+        largeJob ->
+            raiseIncidentJobTooLargeForMessageSize(
+                largeJob.key(), largeJob.jobRecord(), largeJob.expectedEventLength()));
 
     activateJobBatch(record, value, jobBatchKey, activatedJobCount);
   }
@@ -125,14 +127,15 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     jobMetrics.jobActivated(value.getType(), activatedCount);
   }
 
-  private void raiseIncidentJobTooLargeForMessageSize(final long jobKey, final JobRecord job) {
-    final String messageSize = ByteValue.prettyPrint(stateWriter.getMaxEventLength());
+  private void raiseIncidentJobTooLargeForMessageSize(
+      final long jobKey, final JobRecord job, final int expectedJobRecordSize) {
+    final String jobSize = ByteValue.prettyPrint(expectedJobRecordSize);
     final DirectBuffer incidentMessage =
         wrapString(
             String.format(
-                "The job with key '%s' can not be activated because it is larger than the configured message size (%s). "
+                "The job with key '%s' can not be activated, because with %s it is larger than the configured message size (per default is 4 MB). "
                     + "Try to reduce the size by reducing the number of fetched variables or modifying the variable values.",
-                jobKey, messageSize));
+                jobKey, jobSize));
     final var incidentEvent =
         new IncidentRecord()
             .setErrorType(ErrorType.MESSAGE_SIZE_EXCEEDED)

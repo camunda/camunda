@@ -123,16 +123,4 @@ public class LegacyTypedStreamWriterImpl implements LegacyTypedStreamWriter {
   public boolean canWriteEventOfLength(final int eventLength) {
     return batchWriter.canWriteAdditionalEvent(eventLength);
   }
-
-  /**
-   * This is not actually accurate, as the frame length needs to also be aligned by the same amount
-   * of bytes as the batch. However, this would break concerns here, i.e. the writer here would have
-   * to become Dispatcher aware.
-   *
-   * @return an approximate value of the max fragment length
-   */
-  @Override
-  public int getMaxEventLength() {
-    return batchWriter.getMaxFragmentLength();
-  }
 }

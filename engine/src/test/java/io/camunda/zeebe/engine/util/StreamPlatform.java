@@ -182,6 +182,12 @@ public final class StreamPlatform {
     return buildStreamProcessor(stream, null, true);
   }
 
+  public StreamProcessor startStreamProcessorNotAwaitOpening() {
+    final var logName = getLogName(DEFAULT_PARTITION);
+    final SynchronousLogStream stream = getLogStream(logName);
+    return buildStreamProcessor(stream, null, false);
+  }
+
   public StreamProcessor buildStreamProcessor(
       final SynchronousLogStream stream,
       final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory,
@@ -242,11 +248,22 @@ public final class StreamPlatform {
     return streamProcessor;
   }
 
+  public void pauseProcessing() {
+    pauseProcessing(getLogName(DEFAULT_PARTITION));
+  }
+
+  // todo remove multi partition support - is not necessary for the StreamProcessor tests
+  @Deprecated
   public void pauseProcessing(final String streamName) {
     streamContextMap.get(streamName).streamProcessor.pauseProcessing().join();
     LOG.info("Paused processing for stream {}", streamName);
   }
 
+  public void resumeProcessing() {
+    resumeProcessing(getLogName(DEFAULT_PARTITION));
+  }
+  // todo remove multi partition support - is not necessary for the StreamProcessor tests
+  @Deprecated
   public void resumeProcessing(final String streamName) {
     streamContextMap.get(streamName).streamProcessor.resumeProcessing();
     LOG.info("Resume processing for stream {}", streamName);
