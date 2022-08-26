@@ -10,9 +10,11 @@ package io.camunda.zeebe.streamprocessor;
 import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.TYPE_REGISTRY;
 
 import io.camunda.zeebe.engine.api.PostCommitTask;
+import io.camunda.zeebe.engine.api.ProcessingResponse;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.records.RecordBatch;
+import io.camunda.zeebe.engine.api.records.RecordBatchEntry;
 import io.camunda.zeebe.engine.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -35,24 +37,14 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   private final List<PostCommitTask> postCommitTasks = new ArrayList<>();
 
-  private final StreamProcessorContext context;
   private final LegacyTypedStreamWriter streamWriter;
-  private final DirectTypedResponseWriter responseWriter;
 
-  private boolean hasResponse =
-      true; // TODO figure out why this still needs to be true for tests to pass
-  private final long sourceRecordPosition;
   private final RecordBatch mutableRecordBatch;
+  private ProcessingResponseImpl processingResponse;
 
   DirectProcessingResultBuilder(
-      final StreamProcessorContext context,
-      final long sourceRecordPosition,
-      final RecordBatchSizePredicate predicate) {
-    this.context = context;
-    this.sourceRecordPosition = sourceRecordPosition;
+      final StreamProcessorContext context, final RecordBatchSizePredicate predicate) {
     streamWriter = context.getLogStreamWriter();
-    streamWriter.configureSourceContext(sourceRecordPosition);
-    responseWriter = context.getTypedResponseWriter();
     mutableRecordBatch = new RecordBatch(predicate);
   }
 
@@ -98,17 +90,10 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
       final String rejectionReason,
       final long requestId,
       final int requestStreamId) {
-    hasResponse = true;
-    responseWriter.writeResponse(
-        recordType,
-        key,
-        intent,
-        value,
-        valueType,
-        rejectionType,
-        rejectionReason,
-        requestId,
-        requestStreamId);
+    final var entry =
+        RecordBatchEntry.createEntry(
+            key, -1, recordType, intent, rejectionType, rejectionReason, valueType, value);
+    processingResponse = new ProcessingResponseImpl(entry, requestId, requestStreamId);
     return this;
   }
 
@@ -120,9 +105,6 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   @Override
   public ProcessingResultBuilder reset() {
-    streamWriter.reset();
-    streamWriter.configureSourceContext(sourceRecordPosition);
-    responseWriter.reset();
     postCommitTasks.clear();
     return this;
   }
@@ -135,11 +117,14 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   @Override
   public ProcessingResult build() {
-    return new DirectProcessingResult(context, mutableRecordBatch, postCommitTasks, hasResponse);
+    return new DirectProcessingResult(mutableRecordBatch, processingResponse, postCommitTasks);
   }
 
   @Override
   public boolean canWriteEventOfLength(final int eventLength) {
     return mutableRecordBatch.canAppendRecordOfLength(eventLength);
   }
+
+  record ProcessingResponseImpl(RecordBatchEntry responseValue, long requestId, int requestStreamId)
+      implements ProcessingResponse {}
 }

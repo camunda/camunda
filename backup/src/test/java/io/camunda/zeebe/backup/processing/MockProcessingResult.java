@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.backup.processing;
 
-import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.PostCommitTask;
+import io.camunda.zeebe.engine.api.ProcessingResponse;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 record MockProcessingResult(List<Event> records) implements ProcessingResult {
 
@@ -31,8 +32,8 @@ record MockProcessingResult(List<Event> records) implements ProcessingResult {
   }
 
   @Override
-  public boolean writeResponse(final CommandResponseWriter commandResponseWriter) {
-    return false;
+  public Optional<ProcessingResponse> getProcessingResponse() {
+    return Optional.empty();
   }
 
   @Override

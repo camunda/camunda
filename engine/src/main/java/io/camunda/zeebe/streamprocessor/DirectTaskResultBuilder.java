@@ -19,7 +19,6 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import java.util.Collections;
 
 /**
  * Implementation of {@code TaskResultBuilder} that uses direct access to the stream. This
@@ -29,12 +28,9 @@ import java.util.Collections;
  */
 final class DirectTaskResultBuilder implements TaskResultBuilder {
 
-  private final StreamProcessorContext context;
   private final MutableRecordBatch mutableRecordBatch;
 
-  DirectTaskResultBuilder(
-      final StreamProcessorContext context, final RecordBatchSizePredicate predicate) {
-    this.context = context;
+  DirectTaskResultBuilder(final RecordBatchSizePredicate predicate) {
     mutableRecordBatch = new RecordBatch(predicate);
   }
 
@@ -57,6 +53,6 @@ final class DirectTaskResultBuilder implements TaskResultBuilder {
 
   @Override
   public TaskResult build() {
-    return new DirectProcessingResult(context, mutableRecordBatch, Collections.emptyList(), false);
+    return () -> mutableRecordBatch;
   }
 }

@@ -29,6 +29,7 @@ import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.prometheus.client.Histogram;
@@ -243,8 +244,7 @@ public final class ProcessingStateMachine {
 
       final long position = typedCommand.getPosition();
       final ProcessingResultBuilder processingResultBuilder =
-          new DirectProcessingResultBuilder(
-              context, position, logStreamBatchWriter::canWriteAdditionalEvent);
+          new DirectProcessingResultBuilder(context, logStreamBatchWriter::canWriteAdditionalEvent);
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
@@ -326,7 +326,7 @@ public final class ProcessingStateMachine {
           final long position = typedCommand.getPosition();
           final ProcessingResultBuilder processingResultBuilder =
               new DirectProcessingResultBuilder(
-                  context, position, logStreamBatchWriter::canWriteAdditionalEvent);
+                  context, logStreamBatchWriter::canWriteAdditionalEvent);
           // todo(#10047): replace this reset method by using Buffered Writers
           processingResultBuilder.reset();
 
@@ -412,14 +412,35 @@ public final class ProcessingStateMachine {
             () -> {
               // TODO refactor this into two parallel tasks, which are then combined, and on the
               // completion of which the process continues
-              final boolean responseSent =
-                  currentProcessingResult.writeResponse(context.getCommandResponseWriter());
 
-              if (!responseSent) {
-                return false;
-              } else {
-                return currentProcessingResult.executePostCommitTasks();
+              final var processingResponseOptional =
+                  currentProcessingResult.getProcessingResponse();
+
+              if (processingResponseOptional.isPresent()) {
+                final var processingResponse = processingResponseOptional.get();
+                final var responseWriter = context.getCommandResponseWriter();
+
+                final var responseValue = processingResponse.responseValue();
+                final var recordMetadata = responseValue.recordMetadata();
+                final boolean responseSent =
+                    responseWriter
+                        .intent(recordMetadata.getIntent())
+                        .key(responseValue.key())
+                        .recordType(recordMetadata.getRecordType())
+                        .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
+                        .rejectionType(recordMetadata.getRejectionType())
+                        .partitionId(context.getPartitionId())
+                        .valueType(recordMetadata.getValueType())
+                        .valueWriter(responseValue.recordValue())
+                        .tryWriteResponse(
+                            processingResponse.requestStreamId(), processingResponse.requestId());
+                if (!responseSent) {
+                  return false;
+                } else {
+                  return currentProcessingResult.executePostCommitTasks();
+                }
               }
+              return currentProcessingResult.executePostCommitTasks();
             },
             abortCondition);
 
