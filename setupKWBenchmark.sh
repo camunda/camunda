@@ -45,3 +45,28 @@ make zeebe starter worker
 git add .
 git commit -m "test(benchmark): add $benchmark"
 git push origin medic-cw-benchmarks
+
+cd ..
+#
+# Setup the mixed benchmark with timers, starters and message publishers
+#
+benchmark="$benchmark-mixed"
+./newBenchmark.sh "$benchmark"
+
+cd "$benchmark"
+
+sed_inplace 's/camunda\/zeebe/gcr.io\/zeebe-io\/zeebe/' zeebe-values.yaml
+sed_inplace "s/SNAPSHOT/$benchmark/" zeebe-values.yaml
+sed_inplace "s/starter:SNAPSHOT/starter:$benchmark/" *.yaml
+sed_inplace "s/worker:SNAPSHOT/worker:$benchmark/" worker.yaml
+
+# reduce the load ~ so we roughly reach 200 PI
+sed_inplace "s/rate=100/rate=50/" timer.yaml
+sed_inplace "s/rate=100/rate=50/" publisher.yaml
+sed_inplace "s/rate=200/rate=100/" starter.yaml
+
+make zeebe starter worker timer publisher
+
+git add .
+git commit -m "test(benchmark): add $benchmark"
+git push origin medic-cw-benchmarks
