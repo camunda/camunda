@@ -22,10 +22,10 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
-public class RecordBatchTest {
+class RecordBatchTest {
 
   @Test
-  public void shouldAppendToRecordBatch() {
+  void shouldAppendToRecordBatch() {
     // given
     final var recordBatch = new RecordBatch((count, size) -> true);
     final var processInstanceRecord = Records.processInstance(1);
@@ -73,7 +73,7 @@ public class RecordBatchTest {
   }
 
   @Test
-  public void shouldUseRecordSizePredicate() {
+  void shouldUseRecordSizePredicate() {
     // given
     final AtomicInteger batchEntryCount = new AtomicInteger(-1);
     final AtomicInteger batchSize = new AtomicInteger(-1);
@@ -107,7 +107,7 @@ public class RecordBatchTest {
   }
 
   @Test
-  public void shouldUpdateBatchEntryCountWhenUsingRecordSizePredicate() {
+  void shouldUpdateBatchEntryCountWhenUsingRecordSizePredicate() {
     // given
     final AtomicInteger batchEntryCount = new AtomicInteger(-1);
     final AtomicInteger batchSize = new AtomicInteger(-1);
@@ -150,7 +150,7 @@ public class RecordBatchTest {
   }
 
   @Test
-  public void shouldNotAppendToRecordBatchIfMaxSizeIsReached() {
+  void shouldNotAppendToRecordBatchIfMaxSizeIsReached() {
     // given
     final var recordBatch = new RecordBatch((count, size) -> false);
     final var processInstanceRecord = Records.processInstance(1);
@@ -172,7 +172,7 @@ public class RecordBatchTest {
   }
 
   @Test
-  public void shouldOnlyAddUntilMaxBatchSizeIsReached() {
+  void shouldOnlyAddUntilMaxBatchSizeIsReached() {
     // given
     final var recordBatch = new RecordBatch((count, size) -> count < 2);
     final var processInstanceRecord = Records.processInstance(1);
@@ -204,7 +204,7 @@ public class RecordBatchTest {
   }
 
   @Test
-  public void shouldReturnFalseIfRecordSizeDoesReachSizelimit() {
+  void shouldReturnFalseIfRecordSizeDoesReachSizelimit() {
     // given
     final var recordBatch = new RecordBatch((count, size) -> size < 100);
 
@@ -216,7 +216,7 @@ public class RecordBatchTest {
   }
 
   @Test
-  public void shouldReturnTrueIfRecordSizeDoesntReachSizelimit() {
+  void shouldReturnTrueIfRecordSizeDoesntReachSizelimit() {
     // given
     final var recordBatch = new RecordBatch((count, size) -> size < 100);
 
@@ -228,7 +228,7 @@ public class RecordBatchTest {
   }
 
   @Test
-  public void shouldOnlyReturnTrueUntilMaxBatchSizeIsReached() {
+  void shouldOnlyReturnTrueUntilMaxBatchSizeIsReached() {
     // given
     final var recordBatch = new RecordBatch((count, size) -> size < 300);
     final var processInstanceRecord = Records.processInstance(1);
@@ -251,7 +251,7 @@ public class RecordBatchTest {
   }
 
   @Test
-  public void shouldOnlyReturnTrueUntilMaxCountIsReached() {
+  void shouldOnlyReturnTrueUntilMaxCountIsReached() {
     // given
     final var recordBatch = new RecordBatch((count, size) -> count < 2);
     final var processInstanceRecord = Records.processInstance(1);
