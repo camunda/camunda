@@ -82,10 +82,10 @@ export function duration(timeObject, precision) {
   const time =
     typeof timeObject === 'object'
       ? timeObject.value * timeUnits[timeObject.unit].value
-      : timeObject;
+      : Number(timeObject);
 
   if (time >= 0 && time < 1) {
-    return `${time || 0}ms`;
+    return `${Number(time.toFixed(2)) || 0}ms`;
   }
 
   const timeSegments = [];
@@ -102,11 +102,16 @@ export function duration(timeObject, precision) {
           if (!remainingPrecision || currentUnit.abbreviation === 'ms') {
             number = Math.round(remainingTime / currentUnit.value);
           }
-          timeSegments.push(
-            `${number} ${t(
-              `common.unit.${currentUnit.label}.label${number !== 1 ? '-plural' : ''}`
-            )}`
-          );
+
+          if (number === 0) {
+            remainingPrecision++;
+          } else {
+            timeSegments.push(
+              `${number} ${t(
+                `common.unit.${currentUnit.label}.label${number !== 1 ? '-plural' : ''}`
+              )}`
+            );
+          }
           remainingTime -= number * currentUnit.value;
         }
       } else if (remainingTime >= currentUnit.value) {
@@ -114,7 +119,7 @@ export function duration(timeObject, precision) {
         // allow numbers with ms abreviation to have floating numbers (avoid flooring)
         // e.g 1.2ms => 1.2 ms. On the other hand, 1.2 seconds => 1 seconds 200ms
         if (currentUnit.abbreviation === 'ms') {
-          numberOfUnits = remainingTime / currentUnit.value;
+          numberOfUnits = Number((remainingTime / currentUnit.value).toFixed(2));
         }
         timeSegments.push(numberOfUnits + currentUnit.abbreviation);
 

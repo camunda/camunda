@@ -533,7 +533,6 @@ test('aggregators', async (t) => {
 
   await t.click(e.limitPrecisionSwitch);
   await t.typeText(e.limitPrecisionInput, '2', {replace: true});
-
   await t.click(e.configurationButton);
 
   await t.click(e.aggregationTypeSelect);

@@ -95,6 +95,11 @@ describe('durationFormatter', () => {
     expect(durationFormatter({value: 0.2, unit: 'millis'})).toBe('0.2ms');
   });
 
+  it('should truncate to 2 significant figures for milliseconds', () => {
+    expect(durationFormatter({value: 0.24324234234, unit: 'millis'})).toBe('0.24ms');
+    expect(durationFormatter({value: 1.234343, unit: 'seconds'})).toBe(`1s${nbsp}234.34ms`);
+  });
+
   it('should not floor millisecond durations only', () => {
     expect(durationFormatter({value: 1.3, unit: 'millis'})).toBe('1.3ms');
     expect(durationFormatter({value: 1.2, unit: 'seconds'})).toBe(`1s${nbsp}200ms`);
@@ -110,6 +115,7 @@ describe('durationFormatter', () => {
 
   it('should use a precision', () => {
     expect(durationFormatter(123456789, 2)).toBe(`1 day${nbsp}10 hours`);
+    expect(durationFormatter(29009802502, 3)).toBe(`11 months${nbsp}5 days${nbsp}18 hours`);
     expect(durationFormatter(123456789, 4)).toBe(
       `1 day${nbsp}10 hours${nbsp}17 minutes${nbsp}37 seconds`
     );

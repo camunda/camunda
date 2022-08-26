@@ -31,6 +31,7 @@ export default function KpiResult({kpis, displayTip}) {
   return (
     <div className="KpiResult">
       {kpis?.map(({reportId, reportName, value, unit, target, isBelow, measure}, idx) => {
+        const formatter = formatters[measure];
         return (
           <div key={idx} className="kpi">
             <b className="title">
@@ -46,7 +47,8 @@ export default function KpiResult({kpis, displayTip}) {
                   'reportValue'
                 )}
               >
-                {t('common.value')}: {formatters[measure](value)}
+                {t('common.value')}:{' '}
+                {measure === 'duration' ? formatter(value, 3) : formatter(value)}
               </span>
               <span>
                 {t('report.config.goal.target')}: {target}

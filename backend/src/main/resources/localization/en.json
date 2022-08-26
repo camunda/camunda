@@ -603,7 +603,7 @@
         "enableStackedBars": "Stacked bars"
       },
       "limitPrecision": {
-        "legend": "Limit Precision",
+        "legend": "Custom Precision",
         "numberOf": {
           "digits": "No. of digits",
           "units": "No. of units"

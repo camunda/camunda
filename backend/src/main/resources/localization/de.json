@@ -603,7 +603,7 @@
         "enableStackedBars": "Gestapelte Balken"
       },
       "limitPrecision": {
-        "legend": "Genauigkeit begrenzen",
+        "legend": "Genauigkeit einstellen",
         "numberOf": {
           "digits": "Nachkommastellen",
           "units": "Anzahl der Einheiten"
