@@ -480,14 +480,18 @@ public final class ControllableRaftContexts {
     long nextIndex = firstIndex;
     try (final var reader = s.getLog().openCommittedReader()) {
       while (reader.hasNext()) {
-        assertThat(reader.next().index()).isEqualTo(nextIndex);
+        assertThat(reader.next().index())
+            .describedAs("There is no gap in the log %s", memberId.id())
+            .isEqualTo(nextIndex);
         nextIndex++;
       }
     }
 
     if (firstIndex != 1) {
       final var currentSnapshotIndex = snapshotStores.get(memberId).getCurrentSnapshotIndex();
-      assertThat(currentSnapshotIndex).isGreaterThanOrEqualTo(firstIndex - 1);
+      assertThat(currentSnapshotIndex)
+          .describedAs("The log is compacted in %s. Hence a snapshot must exist.")
+          .isGreaterThanOrEqualTo(firstIndex - 1);
     }
   }
 }
