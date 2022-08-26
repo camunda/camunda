@@ -11,16 +11,7 @@ import {Body} from './styled';
 import {observer} from 'mobx-react';
 import {JSONEditor} from 'modules/components/JSONEditor';
 import {U} from 'ts-toolbelt';
-
-function beautifyJSON(value: string) {
-  try {
-    const parsedValue = JSON.parse(value);
-
-    return JSON.stringify(parsedValue, null, '\t');
-  } catch {
-    return value;
-  }
-}
+import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 
 type EditorFirstParam = Parameters<
   U.NonNullable<React.ComponentProps<typeof JSONEditor>['onMount']>

@@ -7,6 +7,7 @@
 
 import OriginalEditor, {
   useMonaco as originUseMonaco,
+  DiffEditor as OriginalDiffEditor,
 } from '@monaco-editor/react';
 import {editor} from 'monaco-editor';
 
@@ -34,5 +35,14 @@ const useMonaco: typeof originUseMonaco = () => {
   return null;
 };
 
-export {useMonaco};
+const DiffEditor: typeof OriginalDiffEditor = ({original, modified}) => {
+  return (
+    <>
+      <textarea value={original} readOnly />
+      <textarea value={modified} readOnly />
+    </>
+  );
+};
+
+export {useMonaco, DiffEditor};
 export default Editor;

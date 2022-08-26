@@ -26,6 +26,7 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {getProcessName} from 'modules/utils/instance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {ActionButton} from 'modules/components/ActionButton';
+import {VariableModification} from './VariableModification';
 
 type Props = {
   isVisible: boolean;
@@ -212,7 +213,15 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                   },
                 ]}
                 rows={modificationsStore.variableModifications.map(
-                  ({operation, flowNodeName, name, newValue, scopeId, id}) => {
+                  ({
+                    operation,
+                    flowNodeName,
+                    name,
+                    oldValue,
+                    newValue,
+                    scopeId,
+                    id,
+                  }) => {
                     return {
                       id: `${scopeId}${id}`,
                       columns: [
@@ -228,7 +237,14 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                         },
                         {
                           id: 'nameValuePair',
-                          cellContent: `${name}: ${newValue}`,
+                          cellContent: (
+                            <VariableModification
+                              operation={operation}
+                              name={name}
+                              oldValue={oldValue ?? ''}
+                              newValue={newValue}
+                            />
+                          ),
                         },
                         {
                           id: 'delete',

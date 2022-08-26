@@ -7,7 +7,11 @@
 
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {render, screen} from 'modules/testing-library';
+import {
+  render,
+  screen,
+  waitForElementToBeRemoved,
+} from 'modules/testing-library';
 import {createInstance} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {ModificationSummaryModal} from './index';
@@ -219,5 +223,70 @@ describe('Modification Summary Modal', () => {
     await user.click(screen.getByTestId('apply-button'));
 
     expect(mockOnClose).toHaveBeenCalledTimes(2);
+  });
+
+  it('should display variable content details on modal icon click', async () => {
+    const {user} = render(
+      <ModificationSummaryModal isVisible onClose={() => {}} />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
+
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'ADD_VARIABLE',
+        scopeId: 'flow-node-1',
+        flowNodeName: 'flow node 1',
+        id: '1',
+        name: 'test',
+        newValue: '123',
+      },
+    });
+
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'EDIT_VARIABLE',
+        scopeId: 'flow-node-2',
+        flowNodeName: 'flow node 2',
+        id: '1',
+        name: 'anotherVariable',
+        oldValue: '"someOldValue"',
+        newValue: '"someOldValue-edited"',
+      },
+    });
+
+    const [jsonEditorModal, diffEditorModal] = screen.getAllByRole('button', {
+      name: /open json editor modal/i,
+    });
+
+    await user.click(jsonEditorModal!);
+
+    expect(
+      screen.getByRole('heading', {name: /variable "test"/i})
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue('123')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /close/i}));
+    await waitForElementToBeRemoved(() =>
+      screen.getByRole('heading', {name: /variable "test"/i})
+    );
+
+    await user.click(diffEditorModal!);
+
+    expect(
+      screen.getByRole('heading', {name: /variable "anotherVariable"/i})
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue('"someOldValue"')).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue('"someOldValue-edited"')
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /close/i}));
+    await waitForElementToBeRemoved(() =>
+      screen.getByRole('heading', {name: /variable "anotherVariable"/i})
+    );
   });
 });

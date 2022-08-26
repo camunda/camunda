@@ -10,21 +10,7 @@ import {observer} from 'mobx-react-lite';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {useLayoutEffect} from 'react';
 import {EditorStyles} from './styled';
-
-const options: React.ComponentProps<typeof Editor>['options'] = {
-  minimap: {
-    enabled: false,
-  },
-  fontSize: 13,
-  lineHeight: 20,
-  fontFamily:
-    '"IBM Plex Mono", "Droid Sans Mono", "monospace", monospace, "Droid Sans Fallback"',
-  formatOnPaste: true,
-  formatOnType: true,
-  tabSize: 2,
-  wordWrap: 'on',
-  scrollBeyondLastLine: false,
-};
+import {options} from 'modules/utils/editor/options';
 
 type Props = {
   value: string;
