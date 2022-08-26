@@ -430,6 +430,8 @@ public final class ProcessingStateMachine {
                         .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
                         .rejectionType(recordMetadata.getRejectionType())
                         .partitionId(context.getPartitionId())
+                        .valueType(recordMetadata.getValueType())
+                        .valueWriter(responseValue.recordValue())
                         .tryWriteResponse(
                             processingResponse.requestStreamId(), processingResponse.requestId());
                 if (!responseSent) {
