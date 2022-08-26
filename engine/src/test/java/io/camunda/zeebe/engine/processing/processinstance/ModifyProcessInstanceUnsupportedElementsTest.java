@@ -86,18 +86,24 @@ public class ModifyProcessInstanceUnsupportedElementsTest {
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .eventSubProcess(
                     "event_sub_process",
-                    e -> e.startEvent("sub_start", s -> s.timerWithDuration(Duration.ofHours(1))))
+                    e ->
+                        e.startEvent(
+                            "event_sub_start", s -> s.timerWithDuration(Duration.ofHours(1))))
                 .startEvent("root_start")
                 .userTask("A")
+                .subProcess(
+                    "embedded_sub_process",
+                    e -> e.embeddedSubProcess().startEvent("embedded_sub_start").endEvent())
                 .done(),
             instructionBuilder ->
                 instructionBuilder
                     .activateElement("root_start")
-                    .activateElement("sub_start")
+                    .activateElement("event_sub_start")
+                    .activateElement("embedded_sub_start")
                     .activateElement("A"),
             new Rejection(
                 RejectionType.INVALID_ARGUMENT,
-                "'root_start', 'sub_start'",
+                "'root_start', 'event_sub_start', 'embedded_sub_start'",
                 "The activation of elements with type 'START_EVENT' is not supported."
                     + " Supported element types are:")),
         new Scenario(
