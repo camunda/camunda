@@ -50,6 +50,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).succeedsWithin(Duration.ofMillis(100));
+    verify(backupStore).save(any());
   }
 
   @Test
