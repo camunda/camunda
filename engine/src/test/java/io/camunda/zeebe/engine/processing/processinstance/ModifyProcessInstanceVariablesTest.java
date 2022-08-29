@@ -20,10 +20,12 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
+import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -57,7 +59,8 @@ public class ModifyProcessInstanceVariablesTest {
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .modification()
-        .activateElement("B", null, Map.of("x", "variable"))
+        .activateElement("B")
+        .withGlobalVariables(Map.of("x", "variable"))
         .modify();
 
     // then
@@ -102,7 +105,8 @@ public class ModifyProcessInstanceVariablesTest {
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .modification()
-        .activateElement("B", null, Map.of("x", "updated"))
+        .activateElement("B")
+        .withGlobalVariables(Map.of("x", "updated"))
         .modify();
 
     // then
@@ -152,7 +156,8 @@ public class ModifyProcessInstanceVariablesTest {
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .modification()
-        .activateElement("B", null, Map.of("durationVar", "PT1H"))
+        .activateElement("B")
+        .withGlobalVariables(Map.of("durationVar", "PT1H"))
         .modify();
 
     // then
@@ -197,4 +202,120 @@ public class ModifyProcessInstanceVariablesTest {
         .describedAs("Expect timer boundary event subscription opened")
         .isPresent();
   }
+
+  @Test
+  public void shouldCreateLocalVariables() {
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .userTask("A")
+                    .userTask("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("B")
+        .withVariables("B", Map.of("x", "variable"))
+        .modify();
+
+    final Record<ProcessInstanceRecordValue> activatedElement =
+        RecordingExporter.processInstanceRecords()
+            .onlyEvents()
+            .withElementId("B")
+            .withProcessInstanceKey(processInstanceKey)
+            .limit("B", ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .getFirst();
+
+    // then
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that variable is created")
+        .hasName("x")
+        .hasValue("\"variable\"")
+        .hasBpmnProcessId(PROCESS_ID)
+        .hasProcessDefinitionKey(
+            deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasScopeKey(activatedElement.getKey());
+  }
+
+  @Test
+  public void shouldCreateLocalAndGlobalVariables() {
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .userTask("A")
+                    .userTask("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("B")
+        .withVariables("B", Map.of("x", "local"))
+        .withGlobalVariables(Map.of("y", "global"))
+        .modify();
+
+    final Record<ProcessInstanceRecordValue> activatedElement =
+        RecordingExporter.processInstanceRecords()
+            .onlyEvents()
+            .withElementId("B")
+            .withProcessInstanceKey(processInstanceKey)
+            .limit("B", ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .getFirst();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            VariableRecordValue::getName,
+            VariableRecordValue::getValue,
+            VariableRecordValue::getBpmnProcessId,
+            VariableRecordValue::getProcessDefinitionKey,
+            VariableRecordValue::getProcessInstanceKey,
+            VariableRecordValue::getScopeKey)
+        .describedAs("Expect that variable is created in correct scope")
+        .containsExactlyInAnyOrder(
+            Tuple.tuple(
+                "x",
+                "\"local\"",
+                PROCESS_ID,
+                deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
+                processInstanceKey,
+                activatedElement.getKey()),
+            Tuple.tuple(
+                "y",
+                "\"global\"",
+                PROCESS_ID,
+                deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
+                processInstanceKey,
+                processInstanceKey));
+  }
+
+  // TODO testcase for creating variable on subprocess
 }
