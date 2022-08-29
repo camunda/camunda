@@ -51,7 +51,6 @@ import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.Scheduled;
 import io.camunda.zeebe.journal.JournalException;
-import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
@@ -104,11 +103,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
         .thenRun(appender::close)
         .thenRun(this::cancelTimers)
         .thenRun(this::stepDown);
-  }
-
-  @Override
-  protected PersistedSnapshotListener createSnapshotListener() {
-    return null;
   }
 
   @Override

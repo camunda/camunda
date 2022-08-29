@@ -25,6 +25,7 @@ import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.ControllableRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
+import io.atomix.raft.snapshot.InMemorySnapshot;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
@@ -53,14 +54,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.jmock.lib.concurrent.DeterministicScheduler;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Uses a DeterministicScheduler and controllable messaging layer to get a deterministic execution
- * of raft threads. Note:- Currently there is some non-determinism hidden in the raft. Hence the
- * resulting execution is not fully deterministic.
+ * of raft threads.
  */
 public final class ControllableRaftContexts {
+
+  private static final Logger LOG = LoggerFactory.getLogger("TEST");
 
   private final Map<MemberId, ControllableRaftServerProtocol> serverProtocols = new HashMap<>();
   private final Map<MemberId, Queue<Tuple<Runnable, CompletableFuture>>> messageQueue =
@@ -69,9 +72,11 @@ public final class ControllableRaftContexts {
       new HashMap<>();
 
   private Path directory;
+  private Random random;
 
   private final int nodeCount;
   private final Map<MemberId, RaftContext> raftServers = new HashMap<>();
+  private final Map<MemberId, TestSnapshotStore> snapshotStores = new HashMap<>();
   private Duration electionTimeout;
   private Duration hearbeatTimeout;
   private int nextEntry = 0;
@@ -97,6 +102,7 @@ public final class ControllableRaftContexts {
 
   public void setup(final Path directory, final Random random) throws Exception {
     this.directory = directory;
+    this.random = random;
     if (nodeCount > 0) {
       createRaftContexts(nodeCount, random);
     }
@@ -151,6 +157,7 @@ public final class ControllableRaftContexts {
   }
 
   public RaftContext createRaftContext(final MemberId memberId, final Random random) {
+    final RaftStorage storage = createStorage(memberId);
     final var raft =
         new RaftContext(
             memberId.id() + "-partition-1",
@@ -158,7 +165,7 @@ public final class ControllableRaftContexts {
             memberId,
             mock(ClusterMembershipService.class),
             new ControllableRaftServerProtocol(memberId, serverProtocols, messageQueue),
-            createStorage(memberId),
+            storage,
             getRaftThreadContextFactory(memberId),
             () -> random,
             RaftElectionConfig.ofDefaultElection(),
@@ -184,12 +191,14 @@ public final class ControllableRaftContexts {
       final MemberId memberId,
       final Function<RaftStorage.Builder, RaftStorage.Builder> configurator) {
     final var memberDirectory = getMemberDirectory(directory, memberId.toString());
+    final TestSnapshotStore persistedSnapshotStore = new TestSnapshotStore(new AtomicReference<>());
     final RaftStorage.Builder defaults =
         RaftStorage.builder()
             .withDirectory(memberDirectory)
             .withMaxSegmentSize(1024 * 10)
             .withFreeDiskSpace(100)
-            .withSnapshotStore(new TestSnapshotStore(new AtomicReference<>()));
+            .withSnapshotStore(persistedSnapshotStore);
+    snapshotStores.put(memberId, persistedSnapshotStore);
     return configurator.apply(defaults).build();
   }
 
@@ -310,6 +319,33 @@ public final class ControllableRaftContexts {
     }
   }
 
+  public void snapshotAndCompact(final MemberId memberId) {
+    final RaftContext raftContext = raftServers.get(memberId);
+    // Take snapshot at an index between lastSnapshotIndex and current commitIndex
+    final TestSnapshotStore testSnapshotStore = snapshotStores.get(memberId);
+    final var startIndex =
+        Math.max(raftContext.getLog().getFirstIndex(), testSnapshotStore.getCurrentSnapshotIndex());
+    if (startIndex >= raftContext.getCommitIndex()) {
+      // cannot take snapshot
+      return;
+    }
+    final long snapshotIndex = random.nextLong(startIndex, raftContext.getCommitIndex());
+    try (final RaftLogReader reader = raftContext.getLog().openCommittedReader()) {
+      reader.seek(snapshotIndex);
+      final long term = reader.next().term();
+
+      InMemorySnapshot.newPersistedSnapshot(
+          snapshotIndex, term, random.nextInt(1, 10), testSnapshotStore);
+
+      LOG.info(
+          "Snapshot taken at index {}. Current commit index is {}",
+          snapshotIndex,
+          raftContext.getCommitIndex());
+    }
+
+    raftContext.getLog().deleteUntil(snapshotIndex);
+  }
+
   // ----------------------- Verifications -----------------------------
 
   // Verify that committed entries in all logs are equal
@@ -317,28 +353,36 @@ public final class ControllableRaftContexts {
     final var readers =
         raftServers.values().stream()
             .collect(Collectors.toMap(Function.identity(), s -> s.getLog().openCommittedReader()));
-    long index = 0;
-    while (true) {
-      final var entries =
-          readers.keySet().stream()
-              .filter(s -> readers.get(s).hasNext())
-              .collect(Collectors.toMap(s -> s.getName(), s -> readers.get(s).next()));
-      if (entries.size() == 0) {
-        break;
-      }
-      assertThat(entries.values().stream().distinct().count())
-          .withFailMessage(
-              "Expected to find the same entry at a committed index on all nodes, but found %s",
-              entries)
-          .isEqualTo(1);
-      index++;
-    }
-    final var commitIndexOnLeader =
+    long index =
+        raftServers.values().stream()
+                .map(s -> s.getLog().getFirstIndex())
+                .min(Long::compareTo)
+                .orElse(1L)
+            - 1;
+
+    final long commitIndexOnLeader =
         raftServers.values().stream()
             .map(RaftContext::getCommitIndex)
             .max(Long::compareTo)
             .orElseThrow();
-    assertThat(index).isEqualTo(commitIndexOnLeader);
+
+    while (index < commitIndexOnLeader) {
+      final var nextIndex = index + 1;
+      final var entries =
+          readers.keySet().stream()
+              .filter(s -> readers.get(s).hasNext())
+              // only compared not compacted entries
+              .filter(s -> s.getLog().getFirstIndex() <= nextIndex)
+              .collect(Collectors.toMap(RaftContext::getName, s -> readers.get(s).next()));
+
+      assertThat(entries.values().stream().distinct().count())
+          .withFailMessage(
+              "Expected to find the same entry at a committed index on all nodes, but found %s",
+              entries)
+          .isLessThanOrEqualTo(1);
+      index++;
+    }
+
     readers.values().forEach(RaftLogReader::close);
   }
 
@@ -389,17 +433,15 @@ public final class ControllableRaftContexts {
   }
 
   public void assertAllEntriesCommittedAndReplicatedToAll() {
-    raftServers
-        .values()
-        .forEach(
-            s -> {
-              final var lastCommittedEntry = getLastCommittedEntry(s);
-              final var lastUncommittedEntry = getLastUncommittedEntry(s);
+    raftServers.forEach(
+        (memberId, raftServer) -> {
+          final var lastCommittedEntry = getLastCommittedEntry(raftServer);
+          final var lastUncommittedEntry = getLastUncommittedEntry(raftServer);
 
-              assertThat(lastCommittedEntry)
-                  .describedAs("All entries should be committed")
-                  .isEqualTo(lastUncommittedEntry);
-            });
+          assertThat(lastCommittedEntry)
+              .describedAs("All entries should be committed in %s", memberId.id())
+              .isEqualTo(lastUncommittedEntry);
+        });
 
     assertThat(hasReplicatedAllEntries())
         .describedAs("All entries are replicated to all followers")
@@ -423,6 +465,31 @@ public final class ControllableRaftContexts {
         return committedReader.next();
       }
       return null;
+    }
+  }
+
+  public void assertNoGapsInLog() {
+    raftServers.keySet().forEach(this::assertNoGapsInLog);
+  }
+
+  private void assertNoGapsInLog(final MemberId memberId) {
+    final RaftContext s = raftServers.get(memberId);
+    final long firstIndex = s.getLog().getFirstIndex();
+    long nextIndex = firstIndex;
+    try (final var reader = s.getLog().openCommittedReader()) {
+      while (reader.hasNext()) {
+        assertThat(reader.next().index())
+            .describedAs("There is no gap in the log %s", memberId.id())
+            .isEqualTo(nextIndex);
+        nextIndex++;
+      }
+    }
+
+    if (firstIndex != 1) {
+      final var currentSnapshotIndex = snapshotStores.get(memberId).getCurrentSnapshotIndex();
+      assertThat(currentSnapshotIndex)
+          .describedAs("The log is compacted in %s. Hence a snapshot must exist.")
+          .isGreaterThanOrEqualTo(firstIndex - 1);
     }
   }
 }
