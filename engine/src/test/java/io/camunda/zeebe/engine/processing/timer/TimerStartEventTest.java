@@ -30,6 +30,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.stream.Collectors;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -1103,6 +1104,9 @@ public final class TimerStartEventTest {
             secondDeploymentProcessDefinitionKey,
             firstDeploymentProcessDefinitionKey,
             secondDeploymentProcessDefinitionKey);
+
+    // due timers are only checked if the engine is not currently processing #10112
+    Awaitility.await("until the engine is idle again").until(engine::hasReachedEnd);
 
     // when
     engine.increaseTime(Duration.ofSeconds(10));
