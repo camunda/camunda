@@ -32,6 +32,10 @@ import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
@@ -113,6 +117,8 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.MESSAGE_SUBSCRIPTION, this::summarizeMessageSubscription);
     valueLoggers.put(ValueType.PROCESS_INSTANCE, this::summarizeProcessInstance);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_CREATION, this::summarizeProcessInstanceCreation);
+    valueLoggers.put(
+        ValueType.PROCESS_INSTANCE_MODIFICATION, this::summarizeProcessInstanceModification);
     valueLoggers.put(
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION, this::summarizeProcessInstanceSubscription);
     valueLoggers.put(ValueType.VARIABLE, this::summarizeVariable);
@@ -533,6 +539,55 @@ public class CompactRecordLogger {
     }
   }
 
+  private String summarizeProcessInstanceModification(final Record<?> record) {
+    final var value = (ProcessInstanceModificationRecordValue) record.getValue();
+    return new StringBuilder()
+        .append(summarizeActivateInstructions(value.getActivateInstructions()))
+        .append(summarizeTerminateInstructions(value.getTerminateInstructions()))
+        .toString();
+  }
+
+  private String summarizeActivateInstructions(
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
+    if (activateInstructions.isEmpty()) {
+      return "";
+    }
+    return activateInstructions.stream()
+        .map(
+            a ->
+                "activate "
+                    + formatId(a.getElementId())
+                    + " "
+                    + summarizeVariableInstructions(a.getVariableInstructions()))
+        .collect(Collectors.joining("> <", "<", "> "));
+  }
+
+  private String summarizeVariableInstructions(
+      final List<ProcessInstanceModificationVariableInstructionValue> variableInstructions) {
+    if (variableInstructions.isEmpty()) {
+      return "no vars";
+    }
+    final var builder = new StringBuilder().append("with vars ");
+    variableInstructions.forEach(
+        v -> {
+          if (v.getElementId() != null) {
+            builder.append("@").append(formatId(v.getElementId()));
+          }
+          builder.append(v.getVariables());
+        });
+    return builder.toString();
+  }
+
+  private String summarizeTerminateInstructions(
+      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions) {
+    if (terminateInstructions.isEmpty()) {
+      return "";
+    }
+    return terminateInstructions.stream()
+        .map(t -> "terminate [%s]".formatted(shortenKey(t.getElementInstanceKey())))
+        .collect(Collectors.joining("> <", "<", "> "));
+  }
+
   private String summarizeProcessInstanceSubscription(final Record<?> record) {
     final var value = (ProcessMessageSubscriptionRecordValue) record.getValue();
 
@@ -659,10 +714,32 @@ public class CompactRecordLogger {
     return String.format(" of <decision %s[%s]>", formatId(decisionId), formatKey(decisionKey));
   }
 
+  /**
+   * Shortens and formats the key and stores it in the key substitutions, that is printed in the
+   * list of decomposed keys for debugging at the end.
+   *
+   * @param input the key to shorten
+   * @return the shortened key, e.g. {@code "K01"}
+   */
   private String shortenKey(final long input) {
     return substitutions.computeIfAbsent(input, this::formatKey);
   }
 
+  /**
+   * Only formats the key. If you need a shortened key, you probably need {@link #shortenKey(long)}.
+   *
+   * <p>Formats the key to the format `[Pn]Km`, where:
+   *
+   * <ul>
+   *   <li>P: means Partition (only added in case of multiPartition)
+   *   <li>n: replaced with the partition id (only added in case of multiPartition)
+   *   <li>K: means Key
+   *   <li>m: the decoded key in the partition, leftpadded with '0's
+   * </ul>
+   *
+   * @param key the key to format (should be encoded with a partition id)
+   * @return the formatted key
+   */
   private String formatKey(final long key) {
     final var result = new StringBuilder();
 
