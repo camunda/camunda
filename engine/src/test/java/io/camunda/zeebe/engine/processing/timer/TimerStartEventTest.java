@@ -1108,6 +1108,9 @@ public final class TimerStartEventTest {
     // when
     engine.increaseTime(Duration.ofSeconds(10));
 
+    // disable because we'll await with Awaitility
+    RecordingExporter.disableAwaitingIncomingRecords();
+
     // then
     Awaitility.await()
         .untilAsserted(
