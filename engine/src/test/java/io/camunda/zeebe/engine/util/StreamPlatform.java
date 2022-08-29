@@ -33,7 +33,6 @@ import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.streamprocessor.LegacyTypedStreamWriter;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.util.FileUtil;
@@ -51,7 +50,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
@@ -179,19 +177,17 @@ public final class StreamPlatform {
   public StreamProcessor startStreamProcessor() {
     final var logName = getLogName(DEFAULT_PARTITION);
     final SynchronousLogStream stream = getLogStream(logName);
-    return buildStreamProcessor(stream, null, true);
+    return buildStreamProcessor(stream, true);
   }
 
   public StreamProcessor startStreamProcessorNotAwaitOpening() {
     final var logName = getLogName(DEFAULT_PARTITION);
     final SynchronousLogStream stream = getLogStream(logName);
-    return buildStreamProcessor(stream, null, false);
+    return buildStreamProcessor(stream, false);
   }
 
   public StreamProcessor buildStreamProcessor(
-      final SynchronousLogStream stream,
-      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory,
-      final boolean awaitOpening) {
+      final SynchronousLogStream stream, final boolean awaitOpening) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
 
@@ -225,9 +221,6 @@ public final class StreamPlatform {
 
     builder.getLifecycleListeners().add(recoveredAwaiter);
 
-    if (streamWriterFactory != null) {
-      builder.typedStreamWriterFactory(streamWriterFactory);
-    }
     final StreamProcessor streamProcessor = builder.build();
     final var openFuture = streamProcessor.openAsync(false);
 

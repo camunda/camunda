@@ -37,14 +37,10 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   private final List<PostCommitTask> postCommitTasks = new ArrayList<>();
 
-  private final LegacyTypedStreamWriter streamWriter;
-
   private final RecordBatch mutableRecordBatch;
   private ProcessingResponseImpl processingResponse;
 
-  DirectProcessingResultBuilder(
-      final StreamProcessorContext context, final RecordBatchSizePredicate predicate) {
-    streamWriter = context.getLogStreamWriter();
+  DirectProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
     mutableRecordBatch = new RecordBatch(predicate);
   }
 
@@ -75,7 +71,6 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
           String.format("The record value %s is not a UnifiedRecordValue", value));
     }
 
-    streamWriter.appendRecord(key, type, intent, rejectionType, rejectionReason, value);
     return Either.right(this);
   }
 

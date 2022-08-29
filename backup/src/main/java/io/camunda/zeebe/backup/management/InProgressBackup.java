@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 interface InProgressBackup {
@@ -15,6 +16,8 @@ interface InProgressBackup {
   long checkpointId();
 
   long checkpointPosition();
+
+  BackupIdentifier id();
 
   ActorFuture<Void> findValidSnapshot();
 
@@ -25,8 +28,6 @@ interface InProgressBackup {
   ActorFuture<Void> findSegmentFiles();
 
   Backup createBackup();
-
-  void fail(Throwable error);
 
   void close();
 }

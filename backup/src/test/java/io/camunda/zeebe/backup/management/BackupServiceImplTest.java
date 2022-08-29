@@ -37,7 +37,7 @@ class BackupServiceImplTest {
 
   @BeforeEach
   void setup() {
-    backupService = new BackupServiceImpl(0, 1, 1, backupStore);
+    backupService = new BackupServiceImpl(backupStore);
   }
 
   @Test
@@ -50,6 +50,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).succeedsWithin(Duration.ofMillis(100));
+    verify(backupStore).save(any());
   }
 
   @Test
@@ -97,8 +98,7 @@ class BackupServiceImplTest {
         .failsWithin(Duration.ofMillis(1000))
         .withThrowableOfType(ExecutionException.class)
         .withMessageContaining("Expected");
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   @Test
@@ -113,8 +113,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   @Test
@@ -130,8 +129,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   @Test
@@ -144,8 +142,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   @Test
@@ -163,8 +160,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   private ActorFuture<Void> failedFuture() {
@@ -202,5 +198,10 @@ class BackupServiceImplTest {
   private void mockFindSegmentFiles() {
     when(inProgressBackup.findSegmentFiles())
         .thenReturn(concurrencyControl.createCompletedFuture());
+  }
+
+  private void verifyInProgressBackupIsCleanedUpAfterFailure() {
+    verify(backupStore).markFailed(any());
+    verify(inProgressBackup).close();
   }
 }
