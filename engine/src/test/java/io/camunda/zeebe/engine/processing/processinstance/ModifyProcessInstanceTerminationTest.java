@@ -336,10 +336,23 @@ public class ModifyProcessInstanceTerminationTest {
         .modify();
 
     // then
-    assertThatElementIsTerminated(processInstanceKey, "A");
-    assertThatElementIsTerminated(processInstanceKey, "B");
-    assertThatElementIsTerminated(processInstanceKey, "subprocess");
-    assertThatElementIsTerminated(processInstanceKey, PROCESS_ID);
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            r -> r.getValue().getElementId(),
+            Record::getIntent)
+        .describedAs("Expect to terminate the elements and propagate to their flow scopes")
+        .containsSubsequence(
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "subprocess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
 
   @Test
