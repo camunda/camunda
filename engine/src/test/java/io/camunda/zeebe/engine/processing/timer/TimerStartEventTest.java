@@ -1105,21 +1105,26 @@ public final class TimerStartEventTest {
             firstDeploymentProcessDefinitionKey,
             secondDeploymentProcessDefinitionKey);
 
-    // due timers are only checked if the engine is not currently processing #10112
-    Awaitility.await("until the engine is idle again").until(engine::hasReachedEnd);
-
     // when
     engine.increaseTime(Duration.ofSeconds(10));
 
     // then
-    assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(5))
-        .extracting(record -> record.getValue().getProcessDefinitionKey())
-        .containsExactly(
-            firstDeploymentProcessDefinitionKey,
-            secondDeploymentProcessDefinitionKey,
-            firstDeploymentProcessDefinitionKey,
-            secondDeploymentProcessDefinitionKey,
-            secondDeploymentProcessDefinitionKey);
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              // due timers are only checked if the engine is not currently processing #10112
+              // so we may need to move the clock slightly for each check
+              engine.increaseTime(Duration.ofMillis(100));
+              assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(5))
+                  .describedAs("Expect that start_1 triggered twice and start_2 triggered thrice")
+                  .extracting(record -> record.getValue().getProcessDefinitionKey())
+                  .containsExactly(
+                      firstDeploymentProcessDefinitionKey,
+                      secondDeploymentProcessDefinitionKey,
+                      firstDeploymentProcessDefinitionKey,
+                      secondDeploymentProcessDefinitionKey,
+                      secondDeploymentProcessDefinitionKey);
+            });
   }
 
   @Test
