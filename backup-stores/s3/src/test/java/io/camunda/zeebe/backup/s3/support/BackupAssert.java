@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.backup.s3;
+package io.camunda.zeebe.backup.s3.support;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -13,7 +13,7 @@ import io.camunda.zeebe.backup.api.Backup;
 import java.nio.file.Path;
 import org.assertj.core.api.AbstractAssert;
 
-final class BackupAssert extends AbstractAssert<BackupAssert, Backup> {
+public final class BackupAssert extends AbstractAssert<BackupAssert, Backup> {
 
   private BackupAssert(final Backup actual, final Class<?> selfType) {
     super(actual, selfType);

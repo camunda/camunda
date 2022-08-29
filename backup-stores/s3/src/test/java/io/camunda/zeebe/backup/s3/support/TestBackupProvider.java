@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.backup.s3;
+package io.camunda.zeebe.backup.s3.support;
 
 import static org.junit.jupiter.api.Named.named;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -25,7 +25,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 
-final class TestBackupProvider implements ArgumentsProvider {
+public final class TestBackupProvider implements ArgumentsProvider {
 
   @Override
   public Stream<? extends Arguments> provideArguments(final ExtensionContext context)
