@@ -85,7 +85,7 @@ public final class BackupService extends Actor implements BackupManager {
           final InProgressBackupImpl inProgressBackup =
               new InProgressBackupImpl(
                   snapshotStore,
-                  new BackupIdentifierImpl(nodeId, partitionId, checkpointId),
+                  getBackupId(checkpointId),
                   checkpointPosition,
                   numberOfPartitions,
                   actor,
@@ -113,13 +113,16 @@ public final class BackupService extends Actor implements BackupManager {
 
   @Override
   public ActorFuture<BackupStatus> getBackupStatus(final long checkpointId) {
-    return CompletableActorFuture.completedExceptionally(
-        new UnsupportedOperationException("Not implemented"));
+    return internalBackupManager.getBackupStatus(getBackupId(checkpointId), actor);
   }
 
   @Override
   public ActorFuture<Void> deleteBackup(final long checkpointId) {
     return CompletableActorFuture.completedExceptionally(
         new UnsupportedOperationException("Not implemented"));
+  }
+
+  private BackupIdentifierImpl getBackupId(final long checkpointId) {
+    return new BackupIdentifierImpl(nodeId, partitionId, checkpointId);
   }
 }
