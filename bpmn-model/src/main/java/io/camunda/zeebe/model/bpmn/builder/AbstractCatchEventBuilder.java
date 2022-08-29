@@ -31,6 +31,7 @@ import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import java.time.Duration;
 import java.util.function.Consumer;
 
 /**
@@ -152,6 +153,16 @@ public abstract class AbstractCatchEventBuilder<
     element.getEventDefinitions().add(timerEventDefinition);
 
     return myself;
+  }
+
+  /**
+   * Sets an event definition for the timer with a time duration.
+   *
+   * @param timerDuration the time duration of the timer
+   * @return the builder object
+   */
+  public B timerWithDuration(final Duration timerDuration) {
+    return timerWithDuration(timerDuration.toString());
   }
 
   /**
