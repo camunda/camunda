@@ -57,8 +57,8 @@ class BackupServiceImplTest {
     // given
     final InProgressBackup backup1 = mock(InProgressBackup.class);
     final InProgressBackup backup2 = mock(InProgressBackup.class);
-    when(backup1.findValidSnapshot()).thenReturn(concurrencyControl.createFuture());
-    when(backup2.findValidSnapshot()).thenReturn(concurrencyControl.createFuture());
+    when(backup1.findSegmentFiles()).thenReturn(concurrencyControl.createFuture());
+    when(backup2.findSegmentFiles()).thenReturn(concurrencyControl.createFuture());
 
     backupService.takeBackup(backup1, concurrencyControl);
     backupService.takeBackup(backup2, concurrencyControl);
@@ -86,8 +86,8 @@ class BackupServiceImplTest {
   @Test
   void shouldFailBackupWhenNoValidSnapshotFound() {
     // given
-    final var res = failedFuture();
-    when(inProgressBackup.findValidSnapshot()).thenReturn(res);
+    mockFindSegmentFiles();
+    when(inProgressBackup.findValidSnapshot()).thenReturn(failedFuture());
 
     // when
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
@@ -104,6 +104,7 @@ class BackupServiceImplTest {
   @Test
   void shouldFailBackupWhenSnapshotCannotBeReserved() {
     // given
+    mockFindSegmentFiles();
     mockFindValidSnapshot();
     when(inProgressBackup.reserveSnapshot()).thenReturn(failedFuture());
 
@@ -119,6 +120,7 @@ class BackupServiceImplTest {
   @Test
   void shouldFailBackupWhenSnapshotFilesCannotBeCollected() {
     // given
+    mockFindSegmentFiles();
     mockFindValidSnapshot();
     mockReserveSnapshot();
     when(inProgressBackup.findSnapshotFiles()).thenReturn(failedFuture());
@@ -135,9 +137,6 @@ class BackupServiceImplTest {
   @Test
   void shouldFailBackupWhenSegmentFilesCannotBeCollected() {
     // given
-    mockFindValidSnapshot();
-    mockReserveSnapshot();
-    mockFindSnapshotFiles();
     when(inProgressBackup.findSegmentFiles()).thenReturn(failedFuture());
 
     // when

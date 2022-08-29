@@ -41,15 +41,25 @@ class InProgressBackupImplTest {
 
   private static final Path CHECKSUM_PATH = Path.of("snapshot-root/checksum");
   @TempDir Path snapshotDir;
+  @TempDir Path segmentsDirectory;
+
   @Mock PersistedSnapshotStore snapshotStore;
   InProgressBackupImpl inProgressBackup;
   private final TestConcurrencyControl concurrencyControl = new TestConcurrencyControl();
 
   @BeforeEach
-  void setup() {
+  void setup() throws IOException {
     inProgressBackup =
         new InProgressBackupImpl(
-            snapshotStore, new BackupIdentifierImpl(1, 1, 1), 10, 1, concurrencyControl);
+            snapshotStore,
+            new BackupIdentifierImpl(1, 1, 1),
+            10,
+            1,
+            concurrencyControl,
+            segmentsDirectory,
+            path -> path.toString().endsWith(".log"));
+
+    createSegmentFiles();
   }
 
   @Test
@@ -249,6 +259,23 @@ class InProgressBackupImplTest {
     assertThat(backup.snapshot().namedFiles()).isEmpty();
   }
 
+  @Test
+  void shouldCollectSegmentFiles() throws IOException {
+    // given
+    setAvailableSnapshots(Set.of());
+
+    // create segment files
+    final var file1 = segmentsDirectory.resolve("file1.log");
+    final var file2 = segmentsDirectory.resolve("file2.log");
+
+    // when
+    final var backup = collectBackupContents();
+
+    // then
+    assertThat(backup.segments().namedFiles())
+        .containsExactlyInAnyOrderEntriesOf(Map.of("file1.log", file1, "file2.log", file2));
+  }
+
   private void setAvailableSnapshots(final Set<PersistedSnapshot> snapshots) {
     when(snapshotStore.getAvailableSnapshots())
         .thenReturn(TestActorFuture.completedFuture(snapshots));
@@ -292,5 +319,10 @@ class InProgressBackupImplTest {
     lenient()
         .when(snapshot.reserve())
         .thenReturn(TestActorFuture.failedFuture(new RuntimeException("Reservation Failed")));
+  }
+
+  private void createSegmentFiles() throws IOException {
+    Files.createFile(segmentsDirectory.resolve("file1.log"));
+    Files.createFile(segmentsDirectory.resolve("file2.log"));
   }
 }
