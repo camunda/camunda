@@ -200,7 +200,7 @@ public class PassiveRole extends InactiveRole {
                     .withStatus(RaftResponse.Status.ERROR)
                     .withError(
                         RaftError.Type.ILLEGAL_MEMBER_STATE,
-                        "Request chunk is was received out of order")
+                        "Snapshot chunk is received out of order")
                     .build()));
       }
     }
