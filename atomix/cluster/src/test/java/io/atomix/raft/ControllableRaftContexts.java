@@ -329,13 +329,14 @@ public final class ControllableRaftContexts {
       // cannot take snapshot
       return;
     }
-    final long snapshotIndex = random.nextLong(startIndex, raftContext.getCommitIndex());
+    final long snapshotIndex =
+        random.longs(1, startIndex, raftContext.getCommitIndex()).findFirst().orElseThrow();
     try (final RaftLogReader reader = raftContext.getLog().openCommittedReader()) {
       reader.seek(snapshotIndex);
       final long term = reader.next().term();
 
       InMemorySnapshot.newPersistedSnapshot(
-          snapshotIndex, term, random.nextInt(1, 10), testSnapshotStore);
+          snapshotIndex, term, random.nextInt(9) + 1, testSnapshotStore);
 
       LOG.info(
           "Snapshot taken at index {}. Current commit index is {}",
