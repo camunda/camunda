@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -128,9 +129,21 @@ public final class ProcessInstanceModificationProcessor
               elementActivationBehavior.activateElement(processInstanceRecord, elementToActivate);
             });
 
+    final var sideEffectQueue = new SideEffectQueue();
+    sideEffect.accept(sideEffectQueue);
+
     value
         .getTerminateInstructions()
-        .forEach(instruction -> terminateElement(instruction.getElementInstanceKey(), sideEffect));
+        .forEach(
+            instruction -> {
+              // todo: deal with non-existing element instance (#9983)
+              final var elementInstance =
+                  elementInstanceState.getInstance(instruction.getElementInstanceKey());
+              final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
+
+              terminateElement(elementInstance, sideEffectQueue);
+              terminateFlowScopes(flowScopeKey, sideEffectQueue);
+            });
 
     stateWriter.appendFollowUpEvent(eventKey, ProcessInstanceModificationIntent.MODIFIED, value);
 
@@ -236,10 +249,8 @@ public final class ProcessInstanceModificationProcessor
   }
 
   private void terminateElement(
-      final long elementInstanceKey, final Consumer<SideEffectProducer> sideEffect) {
-    // todo: deal with non-existing element instance (#9983)
-
-    final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
+      final ElementInstance elementInstance, final SideEffects sideEffects) {
+    final var elementInstanceKey = elementInstance.getKey();
     final var elementInstanceRecord = elementInstance.getValue();
 
     stateWriter.appendFollowUpEvent(
@@ -248,12 +259,30 @@ public final class ProcessInstanceModificationProcessor
     jobBehavior.cancelJob(elementInstance);
     incidentBehavior.resolveIncidents(elementInstanceKey);
 
-    final var sideEffectQueue = new SideEffectQueue();
-    catchEventBehavior.unsubscribeFromEvents(elementInstanceKey, sideEffectQueue);
-    sideEffect.accept(sideEffectQueue);
+    catchEventBehavior.unsubscribeFromEvents(elementInstanceKey, sideEffects);
 
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATED, elementInstanceRecord);
+  }
+
+  private void terminateFlowScopes(final long elementInstanceKey, final SideEffects sideEffects) {
+    var currentElementInstance = elementInstanceState.getInstance(elementInstanceKey);
+
+    while (canTerminateElementInstance(currentElementInstance)) {
+      final var flowScopeKey = currentElementInstance.getValue().getFlowScopeKey();
+
+      terminateElement(currentElementInstance, sideEffects);
+
+      currentElementInstance = elementInstanceState.getInstance(flowScopeKey);
+    }
+  }
+
+  private boolean canTerminateElementInstance(final ElementInstance elementInstance) {
+    return elementInstance != null
+        // if it has no active element instances
+        && elementInstance.getNumberOfActiveElementInstances() == 0
+        // and no pending element activations (i.e. activate command is written but not processed)
+        && elementInstance.getActiveSequenceFlows() == 0;
   }
 
   private record Rejection(RejectionType type, String reason) {}
