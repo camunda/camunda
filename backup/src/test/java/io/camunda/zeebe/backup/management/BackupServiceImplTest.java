@@ -98,8 +98,7 @@ class BackupServiceImplTest {
         .failsWithin(Duration.ofMillis(1000))
         .withThrowableOfType(ExecutionException.class)
         .withMessageContaining("Expected");
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   @Test
@@ -114,8 +113,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   @Test
@@ -131,8 +129,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   @Test
@@ -145,8 +142,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   @Test
@@ -164,8 +160,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   private ActorFuture<Void> failedFuture() {
@@ -203,5 +198,10 @@ class BackupServiceImplTest {
   private void mockFindSegmentFiles() {
     when(inProgressBackup.findSegmentFiles())
         .thenReturn(concurrencyControl.createCompletedFuture());
+  }
+
+  private void verifyInProgressBackupIsCleanedUpAfterFailure() {
+    verify(backupStore).markFailed(any());
+    verify(inProgressBackup).close();
   }
 }

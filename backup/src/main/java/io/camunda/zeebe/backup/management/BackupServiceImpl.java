@@ -98,7 +98,7 @@ final class BackupServiceImpl {
       final ActorFuture<Void> backupSaved,
       final Throwable error) {
     backupSaved.completeExceptionally(error);
-    inProgressBackup.fail(error);
+    backupStore.markFailed(inProgressBackup.id());
     closeInProgressBackup(inProgressBackup);
   }
 

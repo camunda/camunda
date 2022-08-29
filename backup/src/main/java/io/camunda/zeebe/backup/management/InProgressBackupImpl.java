@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 final class InProgressBackupImpl implements InProgressBackup {
 
-  private static final Logger LOG = LoggerFactory.getLogger(InProgressBackup.class);
+  private static final Logger LOG = LoggerFactory.getLogger(InProgressBackupImpl.class);
 
   private static final String ERROR_MSG_NO_VALID_SNAPSHOT =
       "Cannot find a snapshot that can be included in the backup %d. All available snapshots (%s) have processedPosition or lastFollowupEventPosition > checkpointPosition %d";
@@ -83,6 +83,11 @@ final class InProgressBackupImpl implements InProgressBackup {
   @Override
   public long checkpointPosition() {
     return checkpointPosition;
+  }
+
+  @Override
+  public BackupIdentifier id() {
+    return backupId;
   }
 
   @Override
@@ -206,11 +211,6 @@ final class InProgressBackupImpl implements InProgressBackup {
     final var backupDescriptor =
         new BackupDescriptorImpl(snapshotId, checkpointPosition, numberOfPartitions);
     return new BackupImpl(backupId, backupDescriptor, snapshotFileSet, segmentsFileSet);
-  }
-
-  @Override
-  public void fail(final Throwable error) {
-    // To be implemented
   }
 
   @Override
