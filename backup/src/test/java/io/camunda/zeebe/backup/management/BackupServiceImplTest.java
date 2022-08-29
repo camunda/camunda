@@ -37,7 +37,7 @@ class BackupServiceImplTest {
 
   @BeforeEach
   void setup() {
-    backupService = new BackupServiceImpl(0, 1, 1, backupStore);
+    backupService = new BackupServiceImpl(backupStore);
   }
 
   @Test

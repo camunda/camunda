@@ -16,23 +16,12 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 final class BackupServiceImpl {
-  private final int nodeId;
-  private final int partitionId;
-
-  private final int numberOfPartitions;
-
   private final Set<InProgressBackup> backupsInProgress = new HashSet<>();
   private final BackupStore backupStore;
   private ConcurrencyControl concurrencyControl;
 
-  BackupServiceImpl(
-      final int nodeId,
-      final int partitionId,
-      final int numberOfPartitions,
-      final BackupStore backupStore) {
-    this.nodeId = nodeId;
-    this.partitionId = partitionId;
-    this.numberOfPartitions = numberOfPartitions;
+  BackupServiceImpl(final BackupStore backupStore) {
+
     this.backupStore = backupStore;
   }
 
