@@ -21,6 +21,7 @@ import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -132,7 +133,7 @@ public class Starter extends App {
               client
                   .newPublishMessageCommand()
                   .messageName(starterCfg.getMsgName())
-                  .correlationKey("") // for start-events it is empty
+                  .correlationKey(UUID.randomUUID().toString())
                   .variables(variables)
                   .send());
         } else {
