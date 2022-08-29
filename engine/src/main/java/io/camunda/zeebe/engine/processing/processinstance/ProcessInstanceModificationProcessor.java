@@ -136,9 +136,12 @@ public final class ProcessInstanceModificationProcessor
         .getTerminateInstructions()
         .forEach(
             instruction -> {
-              final var flowScopeKey =
-                  terminateElement(instruction.getElementInstanceKey(), sideEffectQueue);
+              // todo: deal with non-existing element instance (#9983)
+              final var elementInstance =
+                  elementInstanceState.getInstance(instruction.getElementInstanceKey());
+              final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
 
+              terminateElement(elementInstance, sideEffectQueue);
               terminateFlowScopes(flowScopeKey, sideEffectQueue);
             });
 
@@ -245,10 +248,9 @@ public final class ProcessInstanceModificationProcessor
                     variableDocument));
   }
 
-  private long terminateElement(final long elementInstanceKey, final SideEffects sideEffects) {
-    // todo: deal with non-existing element instance (#9983)
-
-    final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
+  private void terminateElement(
+      final ElementInstance elementInstance, final SideEffects sideEffects) {
+    final var elementInstanceKey = elementInstance.getKey();
     final var elementInstanceRecord = elementInstance.getValue();
 
     stateWriter.appendFollowUpEvent(
@@ -261,22 +263,21 @@ public final class ProcessInstanceModificationProcessor
 
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATED, elementInstanceRecord);
-
-    return elementInstanceRecord.getFlowScopeKey();
   }
 
   private void terminateFlowScopes(final long elementInstanceKey, final SideEffects sideEffects) {
-    long currentElementInstanceKey = elementInstanceKey;
+    var currentElementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
-    while (canTerminateElementInstance(currentElementInstanceKey)) {
+    while (canTerminateElementInstance(currentElementInstance)) {
+      final var flowScopeKey = currentElementInstance.getValue().getFlowScopeKey();
 
-      final long flowScopeKey = terminateElement(currentElementInstanceKey, sideEffects);
-      currentElementInstanceKey = flowScopeKey;
+      terminateElement(currentElementInstance, sideEffects);
+
+      currentElementInstance = elementInstanceState.getInstance(flowScopeKey);
     }
   }
 
-  private boolean canTerminateElementInstance(final long key) {
-    final var elementInstance = elementInstanceState.getInstance(key);
+  private boolean canTerminateElementInstance(final ElementInstance elementInstance) {
     return elementInstance != null
         // if it has no active element instances
         && elementInstance.getNumberOfActiveElementInstances() == 0
