@@ -12,6 +12,15 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 
 public interface TypedEventWriter {
 
+  /**
+   * Append a follow up event to the result builder
+   *
+   * @param key the key of the event
+   * @param intent the intent of the event
+   * @param value the record of the event
+   * @throws io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException if the
+   *     appended event doesn't fit into the RecordBatch
+   */
   void appendFollowUpEvent(long key, Intent intent, RecordValue value);
 
   /**

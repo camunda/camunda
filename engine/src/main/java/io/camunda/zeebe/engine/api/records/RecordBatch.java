@@ -99,6 +99,10 @@ public final class RecordBatch implements MutableRecordBatch {
     return recordBatchEntries.spliterator();
   }
 
+  /**
+   * This exception is part of the contract with the engine. The engine may handle this exception
+   * explicitly
+   */
   public static class ExceededBatchRecordSizeException extends RuntimeException {
     public ExceededBatchRecordSizeException(final String message) {
       super(message);
