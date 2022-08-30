@@ -238,7 +238,7 @@ public final class ElementActivationBehavior {
 
       if (subscribedOrFailure.isLeft()) {
         final var message =
-            "expected to subscribe to catch event(s) of '%s' but %s"
+            "Expected to subscribe to catch event(s) of '%s' but %s"
                 .formatted(
                     BufferUtil.bufferAsString(element.getId()),
                     subscribedOrFailure.getLeft().getMessage());

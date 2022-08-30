@@ -167,7 +167,7 @@ public class ModifyProcessInstanceRejectionTest {
         .describedAs("Expect that flow scope could not be created")
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
-            ("expected to subscribe to catch event(s) of 'sp' but failed to evaluate expression "
+            ("Expected to subscribe to catch event(s) of 'sp' but failed to evaluate expression "
                 + "'missingVariable': no variable found for name 'missingVariable'"));
   }
 }
