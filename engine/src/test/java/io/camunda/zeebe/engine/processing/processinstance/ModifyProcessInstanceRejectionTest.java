@@ -91,4 +91,42 @@ public class ModifyProcessInstanceRejectionTest {
                     + " with an element that could not be found: 'B', 'C'")
                 .formatted(PROCESS_ID));
   }
+
+  @Test
+  public void shouldRejectCommandWhenAtLeastOneTerminateElementInstanceKeyIsUnknown() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask("A").endEvent().done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var userTaskActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .terminateElement(userTaskActivated.getKey())
+            .terminateElement(123L)
+            .terminateElement(456L)
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that element instance with key '123' and '456' are not found")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            String.format(
+                "Expected to modify instance of process '%s' but it contains one or more terminate "
+                    + "instructions with an element instance that could not be found: '123', '456'",
+                PROCESS_ID));
+  }
 }
