@@ -1096,20 +1096,27 @@ public final class TimerStartEventTest {
     // when
     engine.increaseTime(Duration.ofSeconds(5));
 
+    // disable because we'll await with Awaitility
+    RecordingExporter.disableAwaitingIncomingRecords();
+
     // then
-    assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(4))
-        .extracting(record -> record.getValue().getProcessDefinitionKey())
-        .containsExactly(
-            firstDeploymentProcessDefinitionKey,
-            secondDeploymentProcessDefinitionKey,
-            firstDeploymentProcessDefinitionKey,
-            secondDeploymentProcessDefinitionKey);
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              // due timers are only checked if the engine is not currently processing #10112
+              // so we may need to move the clock slightly for each check
+              engine.increaseTime(Duration.ofMillis(100));
+              assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(4))
+                  .extracting(record -> record.getValue().getProcessDefinitionKey())
+                  .containsExactly(
+                      firstDeploymentProcessDefinitionKey,
+                      secondDeploymentProcessDefinitionKey,
+                      firstDeploymentProcessDefinitionKey,
+                      secondDeploymentProcessDefinitionKey);
+            });
 
     // when
     engine.increaseTime(Duration.ofSeconds(10));
-
-    // disable because we'll await with Awaitility
-    RecordingExporter.disableAwaitingIncomingRecords();
 
     // then
     Awaitility.await()
