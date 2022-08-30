@@ -64,13 +64,11 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * </ol>
  */
 public final class S3BackupStore implements BackupStore {
-  private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
-
-  public static final String SNAPSHOT_PREFIX = "snapshot/";
-  public static final String SEGMENTS_PREFIX = "segments/";
-
+  static final String SNAPSHOT_PREFIX = "snapshot/";
+  static final String SEGMENTS_PREFIX = "segments/";
   static final ObjectMapper MAPPER = new ObjectMapper().registerModule(new Jdk8Module());
 
+  private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private final S3BackupConfig config;
   private final S3AsyncClient client;
 
@@ -160,6 +158,13 @@ public final class S3BackupStore implements BackupStore {
                             new BackupImpl(id, metadata.descriptor(), snapshot, segments)));
   }
 
+  @Override
+  public CompletableFuture<BackupStatusCode> markFailed(final BackupIdentifier id) {
+    LOG.info("Marking {} as failed", id);
+    return setStatus(
+        id, new Status(BackupStatusCode.FAILED, Optional.of("Explicitly marked as failed")));
+  }
+
   private CompletableFuture<NamedFileSet> downloadNamedFileSet(
       final String sourcePrefix, final Set<String> fileNames, Path targetFolder) {
     LOG.debug(
@@ -179,13 +184,6 @@ public final class S3BackupStore implements BackupStore {
 
     return CompletableFuture.allOf(futures)
         .thenApply(ignored -> new NamedFileSetImpl(downloadedFiles));
-  }
-
-  @Override
-  public CompletableFuture<BackupStatusCode> markFailed(final BackupIdentifier id) {
-    LOG.info("Marking {} as failed", id);
-    return setStatus(
-        id, new Status(BackupStatusCode.FAILED, Optional.of("Explicitly marked as failed")));
   }
 
   private CompletableFuture<BackupIdentifier> requireBackupStatus(
