@@ -48,6 +48,13 @@ public final class RaftOperation {
   }
 
   /** Returns a list of RaftOperation */
+  public static List<RaftOperation> getRaftOperationsWithSnapshot() {
+    final List<RaftOperation> defaultRaftOperation = getDefaultRaftOperations();
+    defaultRaftOperation.add(
+        RaftOperation.of("Take snapshot", ControllableRaftContexts::snapshotAndCompact));
+    return defaultRaftOperation;
+  }
+
   public static List<RaftOperation> getDefaultRaftOperations() {
     final List<RaftOperation> defaultRaftOperation = new ArrayList<>();
     defaultRaftOperation.add(
