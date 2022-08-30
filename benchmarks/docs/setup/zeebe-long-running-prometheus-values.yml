@@ -11,7 +11,7 @@ grafana:
   grafana.ini:
     server:
       # REPLACE THIS WITH THE ACTUAL ROOT URL
-      root_url: "http://localhost:3000"
+      root_url: "http://35.189.240.202/"
     auth.github:
       enabled: true
       allow_sign_up: true
