@@ -170,10 +170,13 @@ public final class ProcessInstanceModificationProcessor
   }
 
   @Override
-  public ProcessingError tryHandleError(final TypedRecord<ProcessInstanceModificationRecord> typedCommand, final Throwable error) {
+  public ProcessingError tryHandleError(
+      final TypedRecord<ProcessInstanceModificationRecord> typedCommand, final Throwable error) {
     if (error instanceof EventSubscriptionException exception) {
-      rejectionWriter.appendRejection(typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      rejectionWriter.appendRejection(
+          typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
     return ProcessingError.UNEXPECTED_ERROR;
