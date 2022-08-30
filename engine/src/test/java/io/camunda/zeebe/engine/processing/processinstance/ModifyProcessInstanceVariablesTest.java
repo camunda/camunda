@@ -20,12 +20,10 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
-import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -64,19 +62,12 @@ public class ModifyProcessInstanceVariablesTest {
         .modify();
 
     // then
-    assertThat(
-            RecordingExporter.variableRecords(VariableIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .getFirst()
-                .getValue())
-        .describedAs("Expect that variable is created")
-        .hasName("x")
-        .hasValue("\"variable\"")
-        .hasBpmnProcessId(PROCESS_ID)
-        .hasProcessDefinitionKey(
-            deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey())
-        .hasProcessInstanceKey(processInstanceKey)
-        .hasScopeKey(processInstanceKey);
+    assertThatVariableCreatedInScope(
+        processInstanceKey,
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
+        processInstanceKey,
+        "x",
+        "\"variable\"");
   }
 
   @Test
@@ -237,19 +228,12 @@ public class ModifyProcessInstanceVariablesTest {
             .getFirst();
 
     // then
-    assertThat(
-            RecordingExporter.variableRecords(VariableIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .getFirst()
-                .getValue())
-        .describedAs("Expect that variable is created")
-        .hasName("x")
-        .hasValue("\"variable\"")
-        .hasBpmnProcessId(PROCESS_ID)
-        .hasProcessDefinitionKey(
-            deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey())
-        .hasProcessInstanceKey(processInstanceKey)
-        .hasScopeKey(activatedElement.getKey());
+    assertThatVariableCreatedInScope(
+        processInstanceKey,
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
+        activatedElement.getKey(),
+        "x",
+        "\"variable\"");
   }
 
   @Test
@@ -287,34 +271,18 @@ public class ModifyProcessInstanceVariablesTest {
             .getFirst();
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.variableRecords(VariableIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(2))
-        .extracting(Record::getValue)
-        .extracting(
-            VariableRecordValue::getName,
-            VariableRecordValue::getValue,
-            VariableRecordValue::getBpmnProcessId,
-            VariableRecordValue::getProcessDefinitionKey,
-            VariableRecordValue::getProcessInstanceKey,
-            VariableRecordValue::getScopeKey)
-        .describedAs("Expect that variable is created in correct scope")
-        .containsExactlyInAnyOrder(
-            Tuple.tuple(
-                "x",
-                "\"local\"",
-                PROCESS_ID,
-                deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
-                processInstanceKey,
-                activatedElement.getKey()),
-            Tuple.tuple(
-                "y",
-                "\"global\"",
-                PROCESS_ID,
-                deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
-                processInstanceKey,
-                processInstanceKey));
+    assertThatVariableCreatedInScope(
+        processInstanceKey,
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
+        activatedElement.getKey(),
+        "x",
+        "\"local\"");
+    assertThatVariableCreatedInScope(
+        processInstanceKey,
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
+        processInstanceKey,
+        "y",
+        "\"global\"");
   }
 
   @Test
@@ -352,19 +320,12 @@ public class ModifyProcessInstanceVariablesTest {
             .getFirst();
 
     // then
-    assertThat(
-            RecordingExporter.variableRecords(VariableIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .getFirst()
-                .getValue())
-        .describedAs("Expect that variable is created")
-        .hasName("x")
-        .hasValue("\"variable\"")
-        .hasBpmnProcessId(PROCESS_ID)
-        .hasProcessDefinitionKey(
-            deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey())
-        .hasProcessInstanceKey(processInstanceKey)
-        .hasScopeKey(activatedElement.getKey());
+    assertThatVariableCreatedInScope(
+        processInstanceKey,
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
+        activatedElement.getKey(),
+        "x",
+        "\"variable\"");
   }
 
   @Test
@@ -407,18 +368,32 @@ public class ModifyProcessInstanceVariablesTest {
             .getFirst();
 
     // then
+    assertThatVariableCreatedInScope(
+        processInstanceKey,
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
+        activatedElement.getKey(),
+        "x",
+        "\"variable\"");
+  }
+
+  private void assertThatVariableCreatedInScope(
+      final long processInstanceKey,
+      final long processDefinitionKey,
+      final long scopeKey,
+      final String name,
+      final String value) {
     assertThat(
             RecordingExporter.variableRecords(VariableIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
+                .withScopeKey(scopeKey)
                 .getFirst()
                 .getValue())
         .describedAs("Expect that variable is created")
-        .hasName("x")
-        .hasValue("\"variable\"")
+        .hasName(name)
+        .hasValue(value)
         .hasBpmnProcessId(PROCESS_ID)
-        .hasProcessDefinitionKey(
-            deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey())
+        .hasProcessDefinitionKey(processDefinitionKey)
         .hasProcessInstanceKey(processInstanceKey)
-        .hasScopeKey(activatedElement.getKey());
+        .hasScopeKey(scopeKey);
   }
 }
