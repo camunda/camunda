@@ -13,7 +13,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -161,6 +163,37 @@ class BackupServiceImplTest {
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
     verifyInProgressBackupIsCleanedUpAfterFailure();
+  }
+
+  @Test
+  void shouldGetBackupStatus() {
+    // given
+    final BackupStatus status = mock(BackupStatus.class);
+    when(backupStore.getStatus(any())).thenReturn(CompletableFuture.completedFuture(status));
+
+    // when
+    final var result =
+        backupService.getBackupStatus(new BackupIdentifierImpl(1, 1, 1), concurrencyControl);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofMillis(100)).isEqualTo(status);
+  }
+
+  @Test
+  void shouldCompleteFutureWhenBackupStatusFailed() {
+    // given
+    when(backupStore.getStatus(any()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")));
+
+    // when
+    final var result =
+        backupService.getBackupStatus(new BackupIdentifierImpl(1, 1, 1), concurrencyControl);
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Expected");
   }
 
   private ActorFuture<Void> failedFuture() {

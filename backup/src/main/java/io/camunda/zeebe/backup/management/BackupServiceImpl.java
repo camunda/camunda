@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.backup.management;
 
+import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -116,5 +119,23 @@ final class BackupServiceImpl {
         nextStep.run();
       }
     };
+  }
+
+  ActorFuture<BackupStatus> getBackupStatus(
+      final BackupIdentifier backupId, final ConcurrencyControl executor) {
+    final var future = new CompletableActorFuture<BackupStatus>();
+    executor.run(
+        () ->
+            backupStore
+                .getStatus(backupId)
+                .whenComplete(
+                    (status, error) -> {
+                      if (error == null) {
+                        future.complete(status);
+                      } else {
+                        future.completeExceptionally(error);
+                      }
+                    }));
+    return future;
   }
 }
