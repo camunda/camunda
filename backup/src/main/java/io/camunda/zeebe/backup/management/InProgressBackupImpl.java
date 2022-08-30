@@ -27,6 +27,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -199,13 +200,12 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   @Override
   public Backup createBackup() {
-    final String snapshotId;
+    final Optional<String> snapshotId;
 
     if (hasSnapshot) {
-      snapshotId = reservedSnapshot.getId();
+      snapshotId = Optional.of(reservedSnapshot.getId());
     } else {
-      // To do : change snapshotId in BackupDescriptor to Optional
-      snapshotId = null;
+      snapshotId = Optional.empty();
     }
 
     final var backupDescriptor =

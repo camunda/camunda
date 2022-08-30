@@ -13,6 +13,7 @@ import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -29,7 +30,7 @@ record Metadata(
     int nodeId,
     long checkpointPosition,
     int numberOfPartitions,
-    String snapshotId,
+    Optional<String> snapshotId,
     Set<String> snapshotFileNames,
     Set<String> segmentFileNames) {
 

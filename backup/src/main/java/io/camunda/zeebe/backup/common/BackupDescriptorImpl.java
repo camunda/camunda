@@ -8,7 +8,8 @@
 package io.camunda.zeebe.backup.common;
 
 import io.camunda.zeebe.backup.api.BackupDescriptor;
+import java.util.Optional;
 
 public record BackupDescriptorImpl(
-    String snapshotId, long checkpointPosition, int numberOfPartitions)
+    Optional<String> snapshotId, long checkpointPosition, int numberOfPartitions)
     implements BackupDescriptor {}
