@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -43,6 +44,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.Strings;
@@ -143,7 +145,7 @@ public final class ProcessInstanceModificationProcessor
               executeGlobalVariableInstructions(processInstance, process, instruction);
               // todo(#9663): execute local variable instructions
 
-              elementActivationBehavior.activateElement(processInstanceRecord, elementToActivate);
+              elementActivationBehavior.activateElement(processInstanceRecord, elementToActivate, (elementId, scopeKey) -> executeLocalVariableInstruction(BufferUtil.bufferAsString(elementId), scopeKey, processInstance, process, instruction));
             });
 
     final var sideEffectQueue = new SideEffectQueue();
@@ -345,6 +347,45 @@ public final class ProcessInstanceModificationProcessor
     final var scopeKey = processInstance.getKey();
     activate.getVariableInstructions().stream()
         .filter(v -> Strings.isEmpty(v.getElementId()))
+        .map(
+            instruction -> {
+              if (instruction instanceof ProcessInstanceModificationVariableInstruction vi) {
+                return vi.getVariablesBuffer();
+              }
+              throw new UnsupportedOperationException(
+                  "Expected variable instruction of type %s, but was %s"
+                      .formatted(
+                          ProcessInstanceModificationActivateInstructionValue.class.getName(),
+                          instruction.getClass().getName()));
+            })
+        .forEach(
+            variableDocument ->
+                variableBehavior.mergeLocalDocument(
+                    scopeKey,
+                    process.getKey(),
+                    processInstance.getKey(),
+                    process.getBpmnProcessId(),
+                    variableDocument));
+  }
+
+  private void executeLocalVariableInstruction(
+      final String elementId,
+      final Long scopeKey,
+      final ElementInstance processInstance,
+      final DeployedProcess process,
+      final ProcessInstanceModificationActivateInstructionValue activate) {
+    final Predicate<ProcessInstanceModificationVariableInstructionValue> filter = instruction -> instruction.getElementId().equals(elementId);
+    executeVariableInstruction(filter, scopeKey, processInstance, process, activate);
+  }
+
+  private void executeVariableInstruction(final Predicate<ProcessInstanceModificationVariableInstructionValue> filter,
+      final Long scopeKey,
+      final ElementInstance processInstance,
+      final DeployedProcess process,
+      final ProcessInstanceModificationActivateInstructionValue activate) {
+    activate.getVariableInstructions()
+        .stream()
+        .filter(filter)
         .map(
             instruction -> {
               if (instruction instanceof ProcessInstanceModificationVariableInstruction vi) {
