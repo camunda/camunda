@@ -57,7 +57,7 @@ public class ModifyProcessInstanceRejectionTest {
   }
 
   @Test
-  public void shouldRejectCommandWhenAtLeastOneElementIdIsUnknown() {
+  public void shouldRejectCommandWhenAtLeastOneActivateElementIdIsUnknown() {
     // given
     ENGINE
         .deployment()
