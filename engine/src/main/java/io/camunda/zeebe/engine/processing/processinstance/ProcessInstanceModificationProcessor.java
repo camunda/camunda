@@ -52,9 +52,9 @@ public final class ProcessInstanceModificationProcessor
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to modify process instance but no process instance found with key '%d'";
-  private static final String ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND =
+  private static final String ERROR_MESSAGE_ACTIVATE_ELEMENT_NOT_FOUND =
       "Expected to modify instance of process '%s' but it contains one or more activate instructions with an element that could not be found: '%s'";
-  private static final String ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED =
+  private static final String ERROR_MESSAGE_ACTIVATE_ELEMENT_UNSUPPORTED =
       "Expected to modify instance of process '%s' but it contains one or more activate instructions"
           + " for elements that are unsupported: '%s'. %s.";
   private static final String ERROR_MESSAGE_TERMINATE_ELEMENT_INSTANCE_NOT_FOUND =
@@ -197,7 +197,7 @@ public final class ProcessInstanceModificationProcessor
 
     final String reason =
         String.format(
-            ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND,
+            ERROR_MESSAGE_ACTIVATE_ELEMENT_NOT_FOUND,
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", unknownElementIds));
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
@@ -232,7 +232,7 @@ public final class ProcessInstanceModificationProcessor
     }
 
     final var reason =
-        ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED.formatted(
+        ERROR_MESSAGE_ACTIVATE_ELEMENT_UNSUPPORTED.formatted(
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", elementIdsConnectedToEventBasedGateway),
             "The activation of events belonging to an event-based gateway is not supported");
@@ -256,7 +256,7 @@ public final class ProcessInstanceModificationProcessor
 
     final String reason =
         String.format(
-            ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED,
+            ERROR_MESSAGE_ACTIVATE_ELEMENT_UNSUPPORTED,
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", elementsInsideMultiInstance),
             "The activation of elements inside a multi-instance subprocess is not supported");
@@ -291,7 +291,7 @@ public final class ProcessInstanceModificationProcessor
             .distinct()
             .collect(Collectors.joining("', '"));
     final var reason =
-        ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED.formatted(
+        ERROR_MESSAGE_ACTIVATE_ELEMENT_UNSUPPORTED.formatted(
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             usedUnsupportedElementIds,
             "The activation of elements with type '%s' is not supported. Supported element types are: %s"
