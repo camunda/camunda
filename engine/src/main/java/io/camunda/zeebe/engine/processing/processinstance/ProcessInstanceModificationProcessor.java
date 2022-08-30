@@ -270,6 +270,7 @@ public final class ProcessInstanceModificationProcessor
     final List<AbstractFlowElement> elementsWithUnsupportedElementType =
         activateInstructions.stream()
             .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .distinct()
             .map(elementId -> process.getProcess().getElementById(elementId))
             .filter(element -> UNSUPPORTED_ELEMENT_TYPES.contains(element.getElementType()))
             .toList();
