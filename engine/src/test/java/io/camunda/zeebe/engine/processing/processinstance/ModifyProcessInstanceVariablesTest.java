@@ -317,5 +317,53 @@ public class ModifyProcessInstanceVariablesTest {
                 processInstanceKey));
   }
 
-  // TODO testcase for creating variable on subprocess
+  @Test
+  public void shouldCreateLocalVariablesInNonExistingFlowscope() {
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .userTask("A")
+                    .subProcess(
+                        "sp", sp -> sp.embeddedSubProcess().startEvent().userTask("B").endEvent())
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("B")
+        .withVariables("sp", Map.of("x", "variable"))
+        .modify();
+
+    final Record<ProcessInstanceRecordValue> activatedElement =
+        RecordingExporter.processInstanceRecords()
+            .onlyEvents()
+            .withElementId("sp")
+            .withProcessInstanceKey(processInstanceKey)
+            .limit("sp", ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .getFirst();
+
+    // then
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that variable is created")
+        .hasName("x")
+        .hasValue("\"variable\"")
+        .hasBpmnProcessId(PROCESS_ID)
+        .hasProcessDefinitionKey(
+            deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasScopeKey(activatedElement.getKey());
+  }
 }
