@@ -18,6 +18,8 @@ assignees: ''
 <!-- * [ ] #<issue-number> -->
 #### Frontend
 <!-- * [ ] #<issue-number> -->
+#### Docs
+<!-- * [ ] #<issue-number> -->
 
 ### Additional Information
 <!-- Dependency, affected components, targeted release -->
