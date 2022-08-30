@@ -87,7 +87,10 @@ public final class ElementActivationBehavior {
 
     final var flowScopeKey =
         activateFlowScopes(
-            processInstanceRecord, processInstanceRecord.getProcessInstanceKey(), flowScopes, createVariablesCallback);
+            processInstanceRecord,
+            processInstanceRecord.getProcessInstanceKey(),
+            flowScopes,
+            createVariablesCallback);
 
     final long elementInstanceKey =
         activateElementByCommand(processInstanceRecord, elementToActivate, flowScopeKey);
@@ -134,15 +137,16 @@ public final class ElementActivationBehavior {
       final long elementInstanceKey =
           activateFlowScope(processInstanceRecord, flowScopeKey, flowScope);
       createVariablesCallback.accept(flowScope.getId(), elementInstanceKey);
-      return activateFlowScopes(processInstanceRecord, elementInstanceKey, flowScopes, createVariablesCallback);
+      return activateFlowScopes(
+          processInstanceRecord, elementInstanceKey, flowScopes, createVariablesCallback);
 
     } else if (elementInstancesOfScope.size() == 1) {
       // there is an active instance of this flow scope
       // - no need to create a new instance; continue with the remaining flow scopes
       final var elementInstance = elementInstancesOfScope.get(0);
       createVariablesCallback.accept(flowScope.getId(), elementInstance.getKey());
-      return activateFlowScopes(processInstanceRecord, elementInstance.getKey(), flowScopes,
-          createVariablesCallback);
+      return activateFlowScopes(
+          processInstanceRecord, elementInstance.getKey(), flowScopes, createVariablesCallback);
 
     } else {
       // todo: deal with multiple flow scopes found without ancestor selection (#10008)

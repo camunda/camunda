@@ -145,7 +145,16 @@ public final class ProcessInstanceModificationProcessor
               executeGlobalVariableInstructions(processInstance, process, instruction);
               // todo(#9663): execute local variable instructions
 
-              elementActivationBehavior.activateElement(processInstanceRecord, elementToActivate, (elementId, scopeKey) -> executeLocalVariableInstruction(BufferUtil.bufferAsString(elementId), scopeKey, processInstance, process, instruction));
+              elementActivationBehavior.activateElement(
+                  processInstanceRecord,
+                  elementToActivate,
+                  (elementId, scopeKey) ->
+                      executeLocalVariableInstruction(
+                          BufferUtil.bufferAsString(elementId),
+                          scopeKey,
+                          processInstance,
+                          process,
+                          instruction));
             });
 
     final var sideEffectQueue = new SideEffectQueue();
@@ -344,8 +353,10 @@ public final class ProcessInstanceModificationProcessor
       final ElementInstance processInstance,
       final DeployedProcess process,
       final ProcessInstanceModificationActivateInstructionValue activate) {
-    final Predicate<ProcessInstanceModificationVariableInstructionValue> filter = instruction -> Strings.isEmpty(instruction.getElementId());
-    executeVariableInstruction(filter, processInstance.getKey(), processInstance, process, activate);
+    final Predicate<ProcessInstanceModificationVariableInstructionValue> filter =
+        instruction -> Strings.isEmpty(instruction.getElementId());
+    executeVariableInstruction(
+        filter, processInstance.getKey(), processInstance, process, activate);
   }
 
   private void executeLocalVariableInstruction(
@@ -354,17 +365,18 @@ public final class ProcessInstanceModificationProcessor
       final ElementInstance processInstance,
       final DeployedProcess process,
       final ProcessInstanceModificationActivateInstructionValue activate) {
-    final Predicate<ProcessInstanceModificationVariableInstructionValue> filter = instruction -> instruction.getElementId().equals(elementId);
+    final Predicate<ProcessInstanceModificationVariableInstructionValue> filter =
+        instruction -> instruction.getElementId().equals(elementId);
     executeVariableInstruction(filter, scopeKey, processInstance, process, activate);
   }
 
-  private void executeVariableInstruction(final Predicate<ProcessInstanceModificationVariableInstructionValue> filter,
+  private void executeVariableInstruction(
+      final Predicate<ProcessInstanceModificationVariableInstructionValue> filter,
       final Long scopeKey,
       final ElementInstance processInstance,
       final DeployedProcess process,
       final ProcessInstanceModificationActivateInstructionValue activate) {
-    activate.getVariableInstructions()
-        .stream()
+    activate.getVariableInstructions().stream()
         .filter(filter)
         .map(
             instruction -> {
