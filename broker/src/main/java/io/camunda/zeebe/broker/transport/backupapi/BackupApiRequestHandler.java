@@ -62,30 +62,23 @@ public final class BackupApiRequestHandler
       final BackupApiRequestReader requestReader,
       final BackupApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
-    return CompletableActorFuture.completed(
-        handle(partitionId, requestReader, responseWriter, errorWriter));
-  }
 
-  private Either<ErrorResponseWriter, BackupApiResponseWriter> handle(
-      final int partitionId,
-      final BackupApiRequestReader requestReader,
-      final BackupApiResponseWriter responseWriter,
-      final ErrorResponseWriter errorWriter) {
-
-    if (requestReader.type() == BackupRequestType.TAKE_BACKUP) {
-      if (!isDiskSpaceAvailable) {
-        return Either.left(errorWriter.outOfDiskSpace(partitionId));
-      }
-      return handleTakeBackupRequest(requestReader, responseWriter, errorWriter);
-    }
-
-    return unknownRequest(errorWriter, requestReader.getMessageDecoder().type());
+    return switch (requestReader.type()) {
+      case TAKE_BACKUP -> CompletableActorFuture.completed(
+          handleTakeBackupRequest(requestReader, responseWriter, errorWriter));
+      default -> CompletableActorFuture.completed(
+          unknownRequest(errorWriter, requestReader.getMessageDecoder().type()));
+    };
   }
 
   private Either<ErrorResponseWriter, BackupApiResponseWriter> handleTakeBackupRequest(
       final BackupApiRequestReader requestReader,
       final BackupApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
+    if (!isDiskSpaceAvailable) {
+      return Either.left(errorWriter.outOfDiskSpace(partitionId));
+    }
+
     final RecordMetadata metadata =
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
