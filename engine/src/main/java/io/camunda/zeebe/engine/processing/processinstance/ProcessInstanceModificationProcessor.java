@@ -215,16 +215,17 @@ public final class ProcessInstanceModificationProcessor
   private static Either<Rejection, ?> validateElementsDoNotBelongToEventBasedGateway(
       final DeployedProcess process,
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
-    final Set<String> elementIdsConnectedToEventBasedGateway =
+    final List<String> elementIdsConnectedToEventBasedGateway =
         activateInstructions.stream()
             .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .distinct()
             .filter(
                 elementId -> {
                   final var element = process.getProcess().getElementById(elementId);
                   return element instanceof ExecutableCatchEventElement event
                       && event.isConnectedToEventBasedGateway();
                 })
-            .collect(Collectors.toSet());
+            .toList();
 
     if (elementIdsConnectedToEventBasedGateway.isEmpty()) {
       return VALID;
@@ -241,12 +242,13 @@ public final class ProcessInstanceModificationProcessor
   private Either<Rejection, ?> validateElementsNotInsideMultiInstance(
       final DeployedProcess process,
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
-    final Set<String> elementsInsideMultiInstance =
+    final List<String> elementsInsideMultiInstance =
         activateInstructions.stream()
             .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .distinct()
             .filter(
                 elementId -> isInsideMultiInstanceBody(process, BufferUtil.wrapString(elementId)))
-            .collect(Collectors.toSet());
+            .toList();
 
     if (elementsInsideMultiInstance.isEmpty()) {
       return VALID;
@@ -316,11 +318,12 @@ public final class ProcessInstanceModificationProcessor
       final ElementInstance processInstance,
       final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions) {
 
-    final Set<Long> unknownElementInstanceKeys =
+    final List<Long> unknownElementInstanceKeys =
         terminateInstructions.stream()
             .map(ProcessInstanceModificationTerminateInstructionValue::getElementInstanceKey)
+            .distinct()
             .filter(instanceKey -> elementInstanceState.getInstance(instanceKey) == null)
-            .collect(Collectors.toSet());
+            .toList();
 
     if (unknownElementInstanceKeys.isEmpty()) {
       return VALID;
