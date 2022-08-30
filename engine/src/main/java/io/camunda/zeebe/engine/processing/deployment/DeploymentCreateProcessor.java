@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment;
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -137,8 +138,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<DeploymentRecord> command, final Throwable error) {
-    if (error instanceof IllegalStateException
-        && error.getMessage().contains("this would exceed the maximum batch size")) {
+    if (error instanceof ExceededBatchRecordSizeException) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, ERROR_DEPLOYMENT_TOO_LARGE_MESSAGE);
       responseWriter.writeRejectionOnCommand(

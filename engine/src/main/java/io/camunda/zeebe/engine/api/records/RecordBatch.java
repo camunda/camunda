@@ -57,7 +57,7 @@ public final class RecordBatch implements MutableRecordBatch {
 
     if (!recordBatchSizePredicate.test(recordBatchEntries.size() + 1, batchSize + entryLength)) {
       return Either.left(
-          new IllegalStateException(
+          new ExceededBatchRecordSizeException(
               "Can't append entry: '"
                   + recordBatchEntry
                   + "' with size: "
@@ -97,5 +97,11 @@ public final class RecordBatch implements MutableRecordBatch {
   @Override
   public Spliterator<ImmutableRecordBatchEntry> spliterator() {
     return recordBatchEntries.spliterator();
+  }
+
+  public static class ExceededBatchRecordSizeException extends RuntimeException {
+    public ExceededBatchRecordSizeException(final String message) {
+      super(message);
+    }
   }
 }
