@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
@@ -56,6 +57,9 @@ public final class ProcessInstanceModificationProcessor
   private static final String ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED =
       "Expected to modify instance of process '%s' but it contains one or more activate instructions"
           + " for elements that are unsupported: '%s'. %s.";
+  private static final String ERROR_MESSAGE_TERMINATE_ELEMENT_INSTANCE_NOT_FOUND =
+      "Expected to modify instance of process '%s' but it contains one or more terminate instructions"
+          + " with an element instance that could not be found: '%s'";
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
@@ -121,7 +125,7 @@ public final class ProcessInstanceModificationProcessor
     final var process =
         processState.getProcessByKey(processInstanceRecord.getProcessDefinitionKey());
 
-    final var validationResult = validateCommand(command, process);
+    final var validationResult = validateCommand(command, process, processInstance);
     if (validationResult.isLeft()) {
       final var rejection = validationResult.getLeft();
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
@@ -165,12 +169,16 @@ public final class ProcessInstanceModificationProcessor
   }
 
   private Either<Rejection, ?> validateCommand(
-      final TypedRecord<ProcessInstanceModificationRecord> command, final DeployedProcess process) {
+      final TypedRecord<ProcessInstanceModificationRecord> command,
+      final DeployedProcess process,
+      final ElementInstance processInstance) {
     final var value = command.getValue();
     final var activateInstructions = value.getActivateInstructions();
+    final var terminateInstructions = value.getTerminateInstructions();
 
     return validateElementExists(process, activateInstructions)
         .flatMap(valid -> validateElementSupported(process, activateInstructions))
+        .flatMap(valid -> validateElementInstanceExists(processInstance, terminateInstructions))
         .map(valid -> VALID);
   }
 
@@ -302,6 +310,30 @@ public final class ProcessInstanceModificationProcessor
 
     return flowScope.getElementType() == BpmnElementType.MULTI_INSTANCE_BODY
         || isInsideMultiInstanceBody(process, flowScope.getId());
+  }
+
+  private Either<Rejection, ?> validateElementInstanceExists(
+      final ElementInstance processInstance,
+      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions) {
+
+    final Set<Long> unknownElementInstanceKeys =
+        terminateInstructions.stream()
+            .map(ProcessInstanceModificationTerminateInstructionValue::getElementInstanceKey)
+            .filter(instanceKey -> elementInstanceState.getInstance(instanceKey) == null)
+            .collect(Collectors.toSet());
+
+    if (unknownElementInstanceKeys.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_TERMINATE_ELEMENT_INSTANCE_NOT_FOUND,
+            processInstance.getValue().getBpmnProcessId(),
+            unknownElementInstanceKeys.stream()
+                .map(Objects::toString)
+                .collect(Collectors.joining("', '")));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
   private void executeGlobalVariableInstructions(
