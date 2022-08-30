@@ -13,8 +13,11 @@ import io.camunda.zeebe.backup.management.BackupService;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.journal.file.SegmentFile;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.nio.file.Path;
+import java.util.function.Predicate;
 
 public final class BackupServiceTransitionStep implements PartitionTransitionStep {
 
@@ -50,12 +53,25 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
   }
 
   private ActorFuture<Void> installBackupManager(final PartitionTransitionContext context) {
+    // Warn: Here we are assuming how and where segment files are stored. Ideally, we can use
+    // SegmentedJournal to collect the segment files. But now SegmentedJournal is build inside Raft
+    // and there is no easy way to expose it outside without breaking the abstraction. A preferred
+    // solution is to build SegmentedJournal outside of Raft and inject it into Raft. This way we
+    // can directly access SegmentedJournal here to find the segment files. But we cannot do that
+    // now because SegmentedJournal requires some information from RaftContext in its builder. Until
+    // we can refactor SegmentedJournal and build it outside of raft, we have to do this in this
+    // hacky way.
+    final Predicate<Path> isSegmentsFile =
+        path ->
+            SegmentFile.isSegmentFile(context.getRaftPartition().name(), path.toFile().getName());
     final BackupService backupManager =
         new BackupService(
             context.getNodeId(),
             context.getPartitionId(),
             context.getBrokerCfg().getCluster().getPartitionsCount(),
-            context.getPersistedSnapshotStore());
+            context.getPersistedSnapshotStore(),
+            isSegmentsFile,
+            context.getRaftPartition().dataDirectory().toPath());
     final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
     context
         .getActorSchedulingService()

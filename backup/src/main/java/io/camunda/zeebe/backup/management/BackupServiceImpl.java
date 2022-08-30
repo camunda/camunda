@@ -16,23 +16,12 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 final class BackupServiceImpl {
-  private final int nodeId;
-  private final int partitionId;
-
-  private final int numberOfPartitions;
-
   private final Set<InProgressBackup> backupsInProgress = new HashSet<>();
   private final BackupStore backupStore;
   private ConcurrencyControl concurrencyControl;
 
-  BackupServiceImpl(
-      final int nodeId,
-      final int partitionId,
-      final int numberOfPartitions,
-      final BackupStore backupStore) {
-    this.nodeId = nodeId;
-    this.partitionId = partitionId;
-    this.numberOfPartitions = numberOfPartitions;
+  BackupServiceImpl(final BackupStore backupStore) {
+
     this.backupStore = backupStore;
   }
 
@@ -46,11 +35,17 @@ final class BackupServiceImpl {
 
     backupsInProgress.add(inProgressBackup);
 
-    final ActorFuture<Void> snapshotFound = inProgressBackup.findValidSnapshot();
+    final ActorFuture<Void> snapshotFound = concurrencyControl.createFuture();
     final ActorFuture<Void> snapshotReserved = concurrencyControl.createFuture();
     final ActorFuture<Void> snapshotFilesCollected = concurrencyControl.createFuture();
-    final ActorFuture<Void> segmentFilesCollected = concurrencyControl.createFuture();
     final ActorFuture<Void> backupSaved = concurrencyControl.createFuture();
+
+    final ActorFuture<Void> segmentFilesCollected = inProgressBackup.findSegmentFiles();
+
+    segmentFilesCollected.onComplete(
+        proceed(
+            snapshotFound::completeExceptionally,
+            () -> inProgressBackup.findValidSnapshot().onComplete(snapshotFound)));
 
     snapshotFound.onComplete(
         proceed(
@@ -63,11 +58,6 @@ final class BackupServiceImpl {
             () -> inProgressBackup.findSnapshotFiles().onComplete(snapshotFilesCollected)));
 
     snapshotFilesCollected.onComplete(
-        proceed(
-            segmentFilesCollected::completeExceptionally,
-            () -> inProgressBackup.findSegmentFiles().onComplete(segmentFilesCollected)));
-
-    segmentFilesCollected.onComplete(
         proceed(
             error -> failBackup(inProgressBackup, backupSaved, error),
             () -> saveBackup(inProgressBackup, backupSaved)));
@@ -108,7 +98,7 @@ final class BackupServiceImpl {
       final ActorFuture<Void> backupSaved,
       final Throwable error) {
     backupSaved.completeExceptionally(error);
-    inProgressBackup.fail(error);
+    backupStore.markFailed(inProgressBackup.id());
     closeInProgressBackup(inProgressBackup);
   }
 

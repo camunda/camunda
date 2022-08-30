@@ -43,7 +43,8 @@ public class RandomizedRaftTest {
   private static final int OPERATION_SIZE = 10000;
   private static final Logger LOG = LoggerFactory.getLogger(RandomizedRaftTest.class);
   private ControllableRaftContexts raftContexts;
-  private List<RaftOperation> operations;
+  private List<RaftOperation> defaultOperations;
+  private List<RaftOperation> operationsWithSnapshot;
   private List<MemberId> raftMembers;
   private Path raftDataDirectory;
 
@@ -55,7 +56,8 @@ public class RandomizedRaftTest {
             .mapToObj(String::valueOf)
             .map(MemberId::from)
             .collect(Collectors.toList());
-    operations = RaftOperation.getDefaultRaftOperations();
+    defaultOperations = RaftOperation.getDefaultRaftOperations();
+    operationsWithSnapshot = RaftOperation.getRaftOperationsWithSnapshot();
     raftMembers = servers;
   }
 
@@ -67,12 +69,48 @@ public class RandomizedRaftTest {
   }
 
   @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
-  void consistencyTest(
+  void consistencyTestWithNoSnapshot(
       @ForAll("raftOperations") final List<RaftOperation> raftOperations,
       @ForAll("raftMembers") final List<MemberId> raftMembers,
       @ForAll("seeds") final long seed)
       throws Exception {
 
+    consistencyTest(raftOperations, raftMembers, seed);
+  }
+
+  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  void consistencyTestWithSnapshot(
+      @ForAll("raftOperationsWithSnapshot") final List<RaftOperation> raftOperations,
+      @ForAll("raftMembers") final List<MemberId> raftMembers,
+      @ForAll("seeds") final long seed)
+      throws Exception {
+
+    consistencyTest(raftOperations, raftMembers, seed);
+  }
+
+  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  void livenessTestWithNoSnapshot(
+      @ForAll("raftOperations") final List<RaftOperation> raftOperations,
+      @ForAll("raftMembers") final List<MemberId> raftMembers,
+      @ForAll("seeds") final long seed)
+      throws Exception {
+
+    livenessTest(raftOperations, raftMembers, seed);
+  }
+
+  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  void livenessTestWithSnapshot(
+      @ForAll("raftOperationsWithSnapshot") final List<RaftOperation> raftOperations,
+      @ForAll("raftMembers") final List<MemberId> raftMembers,
+      @ForAll("seeds") final long seed)
+      throws Exception {
+
+    livenessTest(raftOperations, raftMembers, seed);
+  }
+
+  private void consistencyTest(
+      final List<RaftOperation> raftOperations, final List<MemberId> raftMembers, final long seed)
+      throws Exception {
     setUpRaftNodes(new Random(seed));
 
     int step = 0;
@@ -92,15 +130,12 @@ public class RandomizedRaftTest {
     }
 
     raftContexts.assertAllLogsEqual();
+    raftContexts.assertNoGapsInLog();
   }
 
-  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
-  void livenessTest(
-      @ForAll("raftOperations") final List<RaftOperation> raftOperations,
-      @ForAll("raftMembers") final List<MemberId> raftMembers,
-      @ForAll("seeds") final long seed)
+  private void livenessTest(
+      final List<RaftOperation> raftOperations, final List<MemberId> raftMembers, final long seed)
       throws Exception {
-
     setUpRaftNodes(new Random(seed));
 
     // given - when there are failures such as message loss
@@ -146,11 +181,20 @@ public class RandomizedRaftTest {
     // Verify all entries are replicated and committed in all replicas
     raftContexts.assertAllLogsEqual();
     raftContexts.assertAllEntriesCommittedAndReplicatedToAll();
+    raftContexts.assertNoGapsInLog();
   }
 
+  /** Basic raft operations with out snapshotting, compaction or restart */
   @Provide
   Arbitrary<List<RaftOperation>> raftOperations() {
-    final var operation = Arbitraries.of(operations);
+    final var operation = Arbitraries.of(defaultOperations);
+    return operation.list().ofSize(OPERATION_SIZE);
+  }
+
+  /** Basic raft operation with snapshotting and compaction */
+  @Provide
+  Arbitrary<List<RaftOperation>> raftOperationsWithSnapshot() {
+    final var operation = Arbitraries.of(operationsWithSnapshot);
     return operation.list().ofSize(OPERATION_SIZE);
   }
 

@@ -37,7 +37,7 @@ class BackupServiceImplTest {
 
   @BeforeEach
   void setup() {
-    backupService = new BackupServiceImpl(0, 1, 1, backupStore);
+    backupService = new BackupServiceImpl(backupStore);
   }
 
   @Test
@@ -50,6 +50,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).succeedsWithin(Duration.ofMillis(100));
+    verify(backupStore).save(any());
   }
 
   @Test
@@ -57,8 +58,8 @@ class BackupServiceImplTest {
     // given
     final InProgressBackup backup1 = mock(InProgressBackup.class);
     final InProgressBackup backup2 = mock(InProgressBackup.class);
-    when(backup1.findValidSnapshot()).thenReturn(concurrencyControl.createFuture());
-    when(backup2.findValidSnapshot()).thenReturn(concurrencyControl.createFuture());
+    when(backup1.findSegmentFiles()).thenReturn(concurrencyControl.createFuture());
+    when(backup2.findSegmentFiles()).thenReturn(concurrencyControl.createFuture());
 
     backupService.takeBackup(backup1, concurrencyControl);
     backupService.takeBackup(backup2, concurrencyControl);
@@ -86,8 +87,8 @@ class BackupServiceImplTest {
   @Test
   void shouldFailBackupWhenNoValidSnapshotFound() {
     // given
-    final var res = failedFuture();
-    when(inProgressBackup.findValidSnapshot()).thenReturn(res);
+    mockFindSegmentFiles();
+    when(inProgressBackup.findValidSnapshot()).thenReturn(failedFuture());
 
     // when
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
@@ -97,13 +98,13 @@ class BackupServiceImplTest {
         .failsWithin(Duration.ofMillis(1000))
         .withThrowableOfType(ExecutionException.class)
         .withMessageContaining("Expected");
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   @Test
   void shouldFailBackupWhenSnapshotCannotBeReserved() {
     // given
+    mockFindSegmentFiles();
     mockFindValidSnapshot();
     when(inProgressBackup.reserveSnapshot()).thenReturn(failedFuture());
 
@@ -112,13 +113,13 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   @Test
   void shouldFailBackupWhenSnapshotFilesCannotBeCollected() {
     // given
+    mockFindSegmentFiles();
     mockFindValidSnapshot();
     mockReserveSnapshot();
     when(inProgressBackup.findSnapshotFiles()).thenReturn(failedFuture());
@@ -128,16 +129,12 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   @Test
   void shouldFailBackupWhenSegmentFilesCannotBeCollected() {
     // given
-    mockFindValidSnapshot();
-    mockReserveSnapshot();
-    mockFindSnapshotFiles();
     when(inProgressBackup.findSegmentFiles()).thenReturn(failedFuture());
 
     // when
@@ -145,8 +142,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   @Test
@@ -164,8 +160,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   private ActorFuture<Void> failedFuture() {
@@ -203,5 +198,10 @@ class BackupServiceImplTest {
   private void mockFindSegmentFiles() {
     when(inProgressBackup.findSegmentFiles())
         .thenReturn(concurrencyControl.createCompletedFuture());
+  }
+
+  private void verifyInProgressBackupIsCleanedUpAfterFailure() {
+    verify(backupStore).markFailed(any());
+    verify(inProgressBackup).close();
   }
 }

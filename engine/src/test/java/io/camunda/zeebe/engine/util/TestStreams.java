@@ -43,7 +43,6 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.streamprocessor.LegacyTypedStreamWriter;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
@@ -241,44 +240,23 @@ public final class TestStreams {
       final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
     final SynchronousLogStream stream = getLogStream(log);
     return buildStreamProcessor(
-        stream,
-        zeebeDbFactory,
-        typedRecordProcessorFactory,
-        null,
-        true,
-        streamProcessorListenerOpt);
+        stream, zeebeDbFactory, typedRecordProcessorFactory, true, streamProcessorListenerOpt);
   }
 
   public StreamProcessor startStreamProcessorNotAwaitOpening(
       final String log,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory,
-      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
-    return startStreamProcessorNotAwaitOpening(
-        log, zeebeDbFactory, typedRecordProcessorFactory, null, streamProcessorListenerOpt);
-  }
-
-  public StreamProcessor startStreamProcessorNotAwaitOpening(
-      final String log,
-      final ZeebeDbFactory zeebeDbFactory,
-      final TypedRecordProcessorFactory typedRecordProcessorFactory,
-      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
     final SynchronousLogStream stream = getLogStream(log);
     return buildStreamProcessor(
-        stream,
-        zeebeDbFactory,
-        typedRecordProcessorFactory,
-        streamWriterFactory,
-        false,
-        streamProcessorListenerOpt);
+        stream, zeebeDbFactory, typedRecordProcessorFactory, false, streamProcessorListenerOpt);
   }
 
   public StreamProcessor buildStreamProcessor(
       final SynchronousLogStream stream,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory factory,
-      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory,
       final boolean awaitOpening,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
     final var storage = createRuntimeFolder(stream);
@@ -319,9 +297,6 @@ public final class TestStreams {
             .streamProcessorMode(streamProcessorMode)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
-    if (streamWriterFactory != null) {
-      builder.typedStreamWriterFactory(streamWriterFactory);
-    }
     final StreamProcessor streamProcessor = builder.build();
     final var openFuture = streamProcessor.openAsync(false);
 

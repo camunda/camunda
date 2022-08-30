@@ -111,7 +111,6 @@ public final class ProcessingStateMachine {
   private final RecordMetadata metadata = new RecordMetadata();
   private final ActorControl actor;
   private final LogStreamReader logStreamReader;
-  private final LegacyTypedStreamWriter logStreamWriter;
   private final TransactionContext transactionContext;
   private final RetryStrategy writeRetryStrategy;
   private final RetryStrategy sideEffectsRetryStrategy;
@@ -149,7 +148,6 @@ public final class ProcessingStateMachine {
     actor = context.getActor();
     recordValues = context.getRecordValues();
     logStreamReader = context.getLogStreamReader();
-    logStreamWriter = context.getLogStreamWriter();
     logStreamBatchWriter = context.getLogStreamBatchWriter();
     transactionContext = context.getTransactionContext();
     abortCondition = context.getAbortCondition();
@@ -244,7 +242,7 @@ public final class ProcessingStateMachine {
 
       final long position = typedCommand.getPosition();
       final ProcessingResultBuilder processingResultBuilder =
-          new DirectProcessingResultBuilder(context, logStreamBatchWriter::canWriteAdditionalEvent);
+          new DirectProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
@@ -321,12 +319,8 @@ public final class ProcessingStateMachine {
     zeebeDbTransaction = transactionContext.getCurrentTransaction();
     zeebeDbTransaction.run(
         () -> {
-          final long position = typedCommand.getPosition();
           final ProcessingResultBuilder processingResultBuilder =
-              new DirectProcessingResultBuilder(
-                  context, logStreamBatchWriter::canWriteAdditionalEvent);
-
-          logStreamWriter.configureSourceContext(position);
+              new DirectProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
 
           currentProcessingResult =
               currentProcessor.onProcessingError(
