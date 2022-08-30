@@ -34,6 +34,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -62,6 +64,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * </ol>
  */
 public final class S3BackupStore implements BackupStore {
+  private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
 
   public static final String SNAPSHOT_PREFIX = "snapshot/";
   public static final String SEGMENTS_PREFIX = "segments/";
@@ -78,6 +81,7 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
+    LOG.info("Saving {}", backup.id());
     return requireBackupStatus(backup.id(), EnumSet.of(BackupStatusCode.DOES_NOT_EXIST))
         .thenComposeAsync(id -> setStatus(id, Status.inProgress()))
         .thenComposeAsync(
@@ -101,6 +105,7 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<BackupStatus> getStatus(final BackupIdentifier id) {
+    LOG.info("Querying status of {}", id);
     return readStatusObject(id)
         .thenCombine(
             readMetadataObject(id),
@@ -130,6 +135,7 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
+    LOG.info("Deleting {}", id);
     return requireBackupStatus(id, EnumSet.complementOf(EnumSet.of(BackupStatusCode.IN_PROGRESS)))
         .thenComposeAsync(this::listBackupObjects)
         .thenComposeAsync(this::deleteBackupObjects);
@@ -137,6 +143,7 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Backup> restore(final BackupIdentifier id, Path targetFolder) {
+    LOG.info("Restoring {} to {}", id, targetFolder);
     final var backupPrefix = objectPrefix(id);
     return requireBackupStatus(id, EnumSet.of(BackupStatusCode.COMPLETED))
         .thenComposeAsync(this::readMetadataObject)
@@ -155,6 +162,8 @@ public final class S3BackupStore implements BackupStore {
 
   private CompletableFuture<NamedFileSet> downloadNamedFileSet(
       final String sourcePrefix, final Set<String> fileNames, Path targetFolder) {
+    LOG.debug(
+        "Downloading {} files from prefix {} to {}", fileNames.size(), sourcePrefix, targetFolder);
     final var downloadedFiles = new ConcurrentHashMap<String, Path>();
     final CompletableFuture<?>[] futures =
         fileNames.stream()
@@ -174,12 +183,14 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<BackupStatusCode> markFailed(final BackupIdentifier id) {
+    LOG.info("Marking {} as failed", id);
     return setStatus(
         id, new Status(BackupStatusCode.FAILED, Optional.of("Explicitly marked as failed")));
   }
 
   private CompletableFuture<BackupIdentifier> requireBackupStatus(
       BackupIdentifier id, EnumSet<BackupStatusCode> requiredStatus) {
+    LOG.debug("Testing that status of {} is one of {}", id, requiredStatus);
     return getStatus(id)
         .thenApplyAsync(
             status -> {
@@ -195,6 +206,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(BackupIdentifier id) {
+    LOG.debug("Listing objects of {}", id);
     return client
         .listObjectsV2(req -> req.bucket(config.bucketName()).prefix(objectPrefix(id)))
         .thenApplyAsync(
@@ -207,6 +219,7 @@ public final class S3BackupStore implements BackupStore {
 
   private CompletableFuture<Void> deleteBackupObjects(
       Collection<ObjectIdentifier> objectIdentifiers) {
+    LOG.debug("Deleting {} objects", objectIdentifiers.size());
     if (objectIdentifiers.isEmpty()) {
       // Nothing to delete, which we must handle because the delete request would be invalid
       return CompletableFuture.completedFuture(null);
@@ -228,6 +241,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<Status> readStatusObject(BackupIdentifier id) {
+    LOG.debug("Reading status object of {}", id);
     return client
         .getObject(
             req -> req.bucket(config.bucketName()).key(objectPrefix(id) + Status.OBJECT_KEY),
@@ -245,6 +259,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<Metadata> readMetadataObject(BackupIdentifier id) {
+    LOG.debug("Reading metadata object of {}", id);
     return client
         .getObject(
             req -> req.bucket(config.bucketName()).key(objectPrefix(id) + Metadata.OBJECT_KEY),
@@ -262,6 +277,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   public CompletableFuture<BackupStatusCode> setStatus(BackupIdentifier id, Status status) {
+    LOG.debug("Setting status of {} to {}", id, status);
     final AsyncRequestBody body;
     try {
       body = AsyncRequestBody.fromBytes(MAPPER.writeValueAsBytes(status));
@@ -281,6 +297,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<PutObjectResponse> saveMetadata(Backup backup) {
+    LOG.debug("Saving metadata for {}", backup.id());
     try {
       return client.putObject(
           request ->
@@ -296,6 +313,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<Void> saveSnapshotFiles(Backup backup) {
+    LOG.debug("Saving snapshot files for {}", backup.id());
     final var prefix = objectPrefix(backup.id()) + SNAPSHOT_PREFIX;
 
     final var futures =
@@ -309,6 +327,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<Void> saveSegmentFiles(final Backup backup) {
+    LOG.debug("Saving segment files for {}", backup.id());
     final var prefix = objectPrefix(backup.id()) + SEGMENTS_PREFIX;
     final var futures =
         backup.segments().namedFiles().entrySet().stream()
@@ -320,7 +339,7 @@ public final class S3BackupStore implements BackupStore {
 
   private CompletableFuture<PutObjectResponse> saveNamedFile(
       final String prefix, String fileName, Path filePath) {
-
+    LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
     return client.putObject(
         put -> put.bucket(config.bucketName()).key(prefix + fileName),
         AsyncRequestBody.fromFile(filePath));
