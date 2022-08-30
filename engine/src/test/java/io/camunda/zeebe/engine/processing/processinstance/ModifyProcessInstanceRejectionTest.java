@@ -129,4 +129,45 @@ public class ModifyProcessInstanceRejectionTest {
                     + "instructions with an element instance that could not be found: '123', '456'",
                 PROCESS_ID));
   }
+
+  @Test
+  public void shouldRejectCommandWhenFlowScopeCantBeCreated() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .subProcess(
+                    "sp", sp -> sp.embeddedSubProcess().startEvent().userTask("B").endEvent())
+                .boundaryEvent()
+                .message(m -> m.name("message").zeebeCorrelationKeyExpression("missingVariable"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("B")
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that flow scope could not be created")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("expected to subscribe to catch event(s) of 'sp' but failed to evaluate expression "
+                + "'missingVariable': no variable found for name 'missingVariable'"));
+  }
 }
