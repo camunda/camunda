@@ -344,28 +344,8 @@ public final class ProcessInstanceModificationProcessor
       final ElementInstance processInstance,
       final DeployedProcess process,
       final ProcessInstanceModificationActivateInstructionValue activate) {
-    final var scopeKey = processInstance.getKey();
-    activate.getVariableInstructions().stream()
-        .filter(v -> Strings.isEmpty(v.getElementId()))
-        .map(
-            instruction -> {
-              if (instruction instanceof ProcessInstanceModificationVariableInstruction vi) {
-                return vi.getVariablesBuffer();
-              }
-              throw new UnsupportedOperationException(
-                  "Expected variable instruction of type %s, but was %s"
-                      .formatted(
-                          ProcessInstanceModificationActivateInstructionValue.class.getName(),
-                          instruction.getClass().getName()));
-            })
-        .forEach(
-            variableDocument ->
-                variableBehavior.mergeLocalDocument(
-                    scopeKey,
-                    process.getKey(),
-                    processInstance.getKey(),
-                    process.getBpmnProcessId(),
-                    variableDocument));
+    final Predicate<ProcessInstanceModificationVariableInstructionValue> filter = instruction -> Strings.isEmpty(instruction.getElementId());
+    executeVariableInstruction(filter, processInstance.getKey(), processInstance, process, activate);
   }
 
   private void executeLocalVariableInstruction(
