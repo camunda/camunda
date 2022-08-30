@@ -123,9 +123,28 @@ public final class CreateDeploymentTest {
             .addProcessModel(process, "process.bpmn")
             .send();
 
-    // when
-    assertThatThrownBy(() -> command.join())
+    // then
+    assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Must have exactly one 'zeebe:taskDefinition' extension element");
+  }
+
+  @Test
+  public void shouldRejectDeployIfResourceIsTooLarge() {
+    // when
+    final var command =
+        CLIENT_RULE
+            .getClient()
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("processes/too_large_process.bpmn")
+            .send();
+
+    // then
+    assertThatThrownBy(command::join)
+        .isInstanceOf(ClientException.class)
+        .hasMessageContaining(
+            "Unable to deploy resources as the size exceeds the maximum batch size. Please split "
+                + "the resources into separate deployments, or reduce the size of the deployed "
+                + "resource.");
   }
 }

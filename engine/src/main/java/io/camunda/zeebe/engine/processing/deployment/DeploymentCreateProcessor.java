@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment;
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -48,6 +49,9 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
   private static final String COULD_NOT_CREATE_TIMER_MESSAGE =
       "Expected to create timer for start event, but encountered the following error: %s";
+  private static final String ERROR_DEPLOYMENT_TOO_LARGE_MESSAGE =
+      "Unable to deploy resources as the size exceeds the maximum batch size. Please split the"
+          + " resources into separate deployments, or reduce the size of the deployed resource.";
 
   private final SideEffectQueue sideEffects = new SideEffectQueue();
 
@@ -129,6 +133,19 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
           deploymentTransformer.getRejectionType(),
           deploymentTransformer.getRejectionReason());
     }
+  }
+
+  @Override
+  public ProcessingError tryHandleError(
+      final TypedRecord<DeploymentRecord> command, final Throwable error) {
+    if (error instanceof ExceededBatchRecordSizeException) {
+      rejectionWriter.appendRejection(
+          command, RejectionType.INVALID_ARGUMENT, ERROR_DEPLOYMENT_TOO_LARGE_MESSAGE);
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.INVALID_ARGUMENT, ERROR_DEPLOYMENT_TOO_LARGE_MESSAGE);
+      return ProcessingError.EXPECTED_ERROR;
+    }
+    return ProcessingError.UNEXPECTED_ERROR;
   }
 
   private void createTimerIfTimerStartEvent(

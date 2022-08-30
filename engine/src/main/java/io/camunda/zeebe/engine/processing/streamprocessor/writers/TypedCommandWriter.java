@@ -12,7 +12,24 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 
 /** This interface is supposed to replace TypedCommandWriter */
 public interface TypedCommandWriter {
+
+  /**
+   * Append a new command to the result builder
+   *
+   * @param intent the intent of the command
+   * @param value the record of the command
+   * @throws io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException if the
+   *     appended command doesn't fit into the RecordBatch
+   */
   void appendNewCommand(Intent intent, RecordValue value);
 
+  /**
+   * Append a follow up command to the result builder
+   *
+   * @param intent the intent of the command
+   * @param value the record of the command
+   * @throws io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException if the
+   *     appended command doesn't fit into the RecordBatch
+   */
   void appendFollowUpCommand(long key, Intent intent, RecordValue value);
 }
