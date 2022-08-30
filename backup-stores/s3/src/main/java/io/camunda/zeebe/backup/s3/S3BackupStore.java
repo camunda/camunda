@@ -36,8 +36,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
@@ -72,9 +75,17 @@ public final class S3BackupStore implements BackupStore {
   private final S3BackupConfig config;
   private final S3AsyncClient client;
 
+  public S3BackupStore(final S3BackupConfig config) {
+    this(config, buildClient(config));
+  }
+
   public S3BackupStore(final S3BackupConfig config, final S3AsyncClient client) {
     this.config = config;
     this.client = client;
+  }
+
+  public static String objectPrefix(BackupIdentifier id) {
+    return "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
   }
 
   @Override
@@ -343,7 +354,17 @@ public final class S3BackupStore implements BackupStore {
         AsyncRequestBody.fromFile(filePath));
   }
 
-  public static String objectPrefix(BackupIdentifier id) {
-    return "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
+  private static S3AsyncClient buildClient(S3BackupConfig config) {
+    final var builder = S3AsyncClient.builder();
+    config.region().ifPresent(region -> builder.region(Region.of(region)));
+    config
+        .credentials()
+        .ifPresent(
+            credentials ->
+                builder.credentialsProvider(
+                    StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(
+                            credentials.accessKey(), credentials.secretKey()))));
+    return builder.build();
   }
 }
