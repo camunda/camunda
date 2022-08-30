@@ -87,11 +87,6 @@ record MockProcessingResult(List<Event> records) implements ProcessingResult {
     }
 
     @Override
-    public ProcessingResultBuilder reset() {
-      return null;
-    }
-
-    @Override
     public ProcessingResultBuilder resetPostCommitTasks() {
       return null;
     }
