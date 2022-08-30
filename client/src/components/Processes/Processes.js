@@ -150,8 +150,9 @@ export function Processes({mightFail, user}) {
         <ConfigureProcessModal
           initialConfig={editProcessConfig}
           onClose={() => setEditProcessConfig()}
-          onConfirm={async (newConfig, emailEnabled, ownerName) => {
-            await mightFail(
+          onConfirm={(newConfig, emailEnabled, ownerName) => {
+            setEditProcessConfig();
+            mightFail(
               updateProcess(editProcessConfig.processDefinitionKey, newConfig),
               () => {
                 if (emailEnabled && newConfig.processDigest.enabled) {
@@ -160,7 +161,6 @@ export function Processes({mightFail, user}) {
                     text: t('processes.digestConfigured', {name: ownerName}),
                   });
                 }
-                setEditProcessConfig();
                 loadProcessesList();
               },
               showError
