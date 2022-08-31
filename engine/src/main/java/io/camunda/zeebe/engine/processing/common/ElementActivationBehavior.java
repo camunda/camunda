@@ -135,8 +135,8 @@ public final class ElementActivationBehavior {
       // there is no active instance of this flow scope
       // - create/activate a new instance and continue with the remaining flow scopes
       final long elementInstanceKey =
-          activateFlowScope(processInstanceRecord, flowScopeKey, flowScope);
-      createVariablesCallback.accept(flowScope.getId(), elementInstanceKey);
+          activateFlowScope(
+              processInstanceRecord, flowScopeKey, flowScope, createVariablesCallback);
       return activateFlowScopes(
           processInstanceRecord, elementInstanceKey, flowScopes, createVariablesCallback);
 
@@ -178,7 +178,8 @@ public final class ElementActivationBehavior {
   private long activateFlowScope(
       final ProcessInstanceRecord processInstanceRecord,
       final long flowScopeKey,
-      final ExecutableFlowElement flowScope) {
+      final ExecutableFlowElement flowScope,
+      final BiConsumer<DirectBuffer, Long> createVariablesCallback) {
     final long elementInstanceKey;
     final long elementInstanceFlowScopeKey;
 
@@ -191,6 +192,7 @@ public final class ElementActivationBehavior {
       elementInstanceFlowScopeKey = flowScopeKey;
     }
 
+    createVariablesCallback.accept(flowScope.getId(), elementInstanceKey);
     activateFlowScopeByEvents(
         processInstanceRecord, flowScope, elementInstanceKey, elementInstanceFlowScopeKey);
 
