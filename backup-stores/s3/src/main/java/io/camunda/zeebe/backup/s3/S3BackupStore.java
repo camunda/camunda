@@ -171,10 +171,10 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<BackupStatusCode> markFailed(final BackupIdentifier id) {
+  public CompletableFuture<BackupStatusCode> markFailed(
+      final BackupIdentifier id, final String failureReason) {
     LOG.info("Marking {} as failed", id);
-    return setStatus(
-        id, new Status(BackupStatusCode.FAILED, Optional.of("Explicitly marked as failed")));
+    return setStatus(id, new Status(BackupStatusCode.FAILED, Optional.of(failureReason)));
   }
 
   private CompletableFuture<NamedFileSet> downloadNamedFileSet(

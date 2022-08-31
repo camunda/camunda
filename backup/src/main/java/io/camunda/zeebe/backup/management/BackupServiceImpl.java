@@ -31,7 +31,6 @@ final class BackupServiceImpl {
   private ConcurrencyControl concurrencyControl;
 
   BackupServiceImpl(final BackupStore backupStore) {
-
     this.backupStore = backupStore;
   }
 
@@ -108,7 +107,7 @@ final class BackupServiceImpl {
       final ActorFuture<Void> backupSaved,
       final Throwable error) {
     backupSaved.completeExceptionally(error);
-    backupStore.markFailed(inProgressBackup.id());
+    backupStore.markFailed(inProgressBackup.id(), error.getMessage());
     closeInProgressBackup(inProgressBackup);
   }
 
@@ -174,7 +173,7 @@ final class BackupServiceImpl {
                     "The backup {} initiated by previous leader is still in progress. Marking it as failed.",
                     backupId);
                 backupStore
-                    .markFailed(backupId)
+                    .markFailed(backupId, "Backup is cancelled due to leader change.")
                     .thenAccept(ignore -> LOG.trace("Marked backup {} as failed.", backupId))
                     .exceptionally(
                         failed -> {

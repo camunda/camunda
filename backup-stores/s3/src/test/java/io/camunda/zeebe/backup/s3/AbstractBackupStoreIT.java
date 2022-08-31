@@ -226,7 +226,7 @@ public abstract class AbstractBackupStoreIT {
       getStore().save(backup).join();
 
       // when
-      getStore().markFailed(backup.id()).join();
+      getStore().markFailed(backup.id(), "error").join();
 
       // then
       final var statusObject =
@@ -243,7 +243,7 @@ public abstract class AbstractBackupStoreIT {
       final var readStatus = objectMapper.readValue(statusObject.asByteArray(), Status.class);
 
       assertThat(readStatus.statusCode()).isEqualTo(BackupStatusCode.FAILED);
-      assertThat(readStatus.failureReason()).isNotEmpty();
+      assertThat(readStatus.failureReason()).hasValue("error");
     }
   }
 
@@ -275,14 +275,14 @@ public abstract class AbstractBackupStoreIT {
       getStore().save(backup).join();
 
       // when
-      getStore().markFailed(backup.id()).join();
+      getStore().markFailed(backup.id(), "error").join();
       final var status = getStore().getStatus(backup.id());
 
       // then
       assertThat(status)
           .succeedsWithin(Duration.ofSeconds(10))
           .returns(BackupStatusCode.FAILED, from(BackupStatus::statusCode))
-          .doesNotReturn(Optional.empty(), from(BackupStatus::failureReason))
+          .returns("error", from(s -> s.failureReason().orElseThrow()))
           .returns(backup.id(), from(BackupStatus::id))
           .returns(Optional.of(backup.descriptor()), from(BackupStatus::descriptor));
     }

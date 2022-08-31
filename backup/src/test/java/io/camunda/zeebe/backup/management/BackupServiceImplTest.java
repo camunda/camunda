@@ -228,9 +228,9 @@ class BackupServiceImplTest {
     backupService.failInProgressBackups(1, 10, List.of(1, 2, 3), concurrencyControl);
 
     // then
-    verify(backupStore, timeout(1000)).markFailed(inProgressBackup);
-    verify(backupStore, never()).markFailed(notExistingBackup);
-    verify(backupStore, never()).markFailed(completedBackup);
+    verify(backupStore, timeout(1000)).markFailed(inProgressBackup, any());
+    verify(backupStore, never()).markFailed(notExistingBackup, any());
+    verify(backupStore, never()).markFailed(completedBackup, any());
   }
 
   @Test
@@ -250,7 +250,7 @@ class BackupServiceImplTest {
     backupService.failInProgressBackups(1, 10, List.of(1, 2), concurrencyControl);
 
     // then
-    verify(backupStore, timeout(1000)).markFailed(inProgressBackup);
+    verify(backupStore, timeout(1000)).markFailed(inProgressBackup, any());
   }
 
   private ActorFuture<Void> failedFuture() {
@@ -291,7 +291,7 @@ class BackupServiceImplTest {
   }
 
   private void verifyInProgressBackupIsCleanedUpAfterFailure() {
-    verify(backupStore).markFailed(any());
+    verify(backupStore).markFailed(any(), any());
     verify(inProgressBackup).close();
   }
 }
