@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
@@ -80,6 +81,11 @@ public abstract class AbstractBackupStoreIT {
 
       assertThat(readManifest.descriptor()).isEqualTo(backup.descriptor());
       assertThat(readManifest.id()).isEqualTo(backup.id());
+
+      assertThat(readManifest.created())
+          .isBeforeOrEqualTo(Instant.now())
+          .isBeforeOrEqualTo(readManifest.lastModified());
+      assertThat(readManifest.lastModified()).isBeforeOrEqualTo(Instant.now());
 
       assertThat(readManifest.snapshotFileNames()).isEqualTo(backup.snapshot().names());
       assertThat(readManifest.segmentFileNames()).isEqualTo(backup.segments().names());
@@ -247,6 +253,22 @@ public abstract class AbstractBackupStoreIT {
 
       assertThat(readManifest.statusCode()).isEqualTo(BackupStatusCode.FAILED);
       assertThat(readManifest.failureReason()).hasValue("error");
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TestBackupProvider.class)
+    void markingAsFailedUpdatesTimestamp(final Backup backup) {
+      // given
+      getStore().save(backup).join();
+      final var initialTimestamp =
+          getStore().getStatus(backup.id()).join().lastModified().orElseThrow();
+
+      // when
+      getStore().markFailed(backup.id(), "failed for testing").join();
+
+      // then
+      assertThat(getStore().getStatus(backup.id()).join().lastModified().orElseThrow())
+          .isAfter(initialTimestamp);
     }
   }
 
