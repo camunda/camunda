@@ -22,7 +22,7 @@ public record Status(BackupStatusCode statusCode, Optional<String> failureReason
 
   public static final String OBJECT_KEY = "status.json";
 
-  public Status(BackupStatusCode status) {
+  public Status(final BackupStatusCode status) {
     this(status, Optional.empty());
   }
 
@@ -34,7 +34,7 @@ public record Status(BackupStatusCode statusCode, Optional<String> failureReason
     return new Status(BackupStatusCode.COMPLETED);
   }
 
-  public static Status failed(Throwable throwable) {
+  public static Status failed(final Throwable throwable) {
     final var writer = new StringWriter();
     throwable.printStackTrace(new PrintWriter(writer));
     return new Status(BackupStatusCode.FAILED, Optional.of(writer.toString()));

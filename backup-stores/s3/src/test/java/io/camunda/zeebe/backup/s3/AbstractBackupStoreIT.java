@@ -54,13 +54,13 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void savingBackupIsSuccessful(Backup backup) {
+    void savingBackupIsSuccessful(final Backup backup) {
       assertThat(getStore().save(backup)).succeedsWithin(Duration.ofSeconds(10));
     }
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void savesMetadata(Backup backup) throws IOException {
+    void savesMetadata(final Backup backup) throws IOException {
       // when
       getStore().save(backup).join();
 
@@ -87,7 +87,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void snapshotFilesExist(Backup backup) {
+    void snapshotFilesExist(final Backup backup) {
       // given
       final var prefix = S3BackupStore.objectPrefix(backup.id()) + S3BackupStore.SNAPSHOT_PREFIX;
 
@@ -109,7 +109,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void segmentFilesExist(Backup backup) {
+    void segmentFilesExist(final Backup backup) {
       // given
       final var prefix = S3BackupStore.objectPrefix(backup.id()) + S3BackupStore.SEGMENTS_PREFIX;
 
@@ -131,7 +131,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void bucketContainsExpectedObjectsOnly(Backup backup) {
+    void bucketContainsExpectedObjectsOnly(final Backup backup) {
       // given
       final var prefix = S3BackupStore.objectPrefix(backup.id());
 
@@ -166,7 +166,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void backupFailsIfBackupAlreadyExists(Backup backup) {
+    void backupFailsIfBackupAlreadyExists(final Backup backup) {
       // when
       getStore().save(backup).join();
 
@@ -179,7 +179,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void backupFailsIfFilesAreMissing(Backup backup) throws IOException {
+    void backupFailsIfFilesAreMissing(final Backup backup) throws IOException {
       // when
       final var deletedFile = backup.segments().files().stream().findFirst().orElseThrow();
       Files.delete(deletedFile);
@@ -198,7 +198,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void backupIsMarkedAsCompleted(Backup backup) throws IOException {
+    void backupIsMarkedAsCompleted(final Backup backup) throws IOException {
       // when
       getStore().save(backup).join();
 
@@ -221,7 +221,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void backupCanBeMarkedAsFailed(Backup backup) throws IOException {
+    void backupCanBeMarkedAsFailed(final Backup backup) throws IOException {
       // given
       getStore().save(backup).join();
 
@@ -252,7 +252,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void canGetStatus(Backup backup) {
+    void canGetStatus(final Backup backup) {
       // given
       getStore().save(backup).join();
 
@@ -270,7 +270,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void statusIsFailedAfterMarkingAsFailed(Backup backup) {
+    void statusIsFailedAfterMarkingAsFailed(final Backup backup) {
       // given
       getStore().save(backup).join();
 
@@ -289,7 +289,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void statusQueryFailsIfStatusIsCorrupt(Backup backup) {
+    void statusQueryFailsIfStatusIsCorrupt(final Backup backup) {
       // given
       getStore().save(backup).join();
 
@@ -312,7 +312,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void statusQueryFailsIfMetadataIsCorrupt(Backup backup) {
+    void statusQueryFailsIfMetadataIsCorrupt(final Backup backup) {
       // given
       getStore().save(backup).join();
 
@@ -349,7 +349,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void allBackupObjectsAreDeleted(Backup backup) {
+    void allBackupObjectsAreDeleted(final Backup backup) {
       // given
       getStore().save(backup).join();
 
@@ -378,7 +378,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void deletingPartialBackupSucceeds(Backup backup) {
+    void deletingPartialBackupSucceeds(final Backup backup) {
       // given
       getStore().save(backup).join();
 
@@ -397,7 +397,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void deletingInProgressBackupFails(Backup backup) {
+    void deletingInProgressBackupFails(final Backup backup) {
       // given
       getStore().save(backup).join();
 
@@ -418,7 +418,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void restoreIsSuccessful(Backup backup, @TempDir Path targetDir) {
+    void restoreIsSuccessful(final Backup backup, @TempDir final Path targetDir) {
       // given
       getStore().save(backup).join();
 
@@ -431,7 +431,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void restoredBackupHasSameContents(Backup originalBackup, @TempDir Path targetDir) {
+    void restoredBackupHasSameContents(final Backup originalBackup, @TempDir final Path targetDir) {
       // given
       getStore().save(originalBackup).join();
 

@@ -19,12 +19,12 @@ public final class BackupAssert extends AbstractAssert<BackupAssert, Backup> {
     super(actual, selfType);
   }
 
-  public static BackupAssert assertThatBackup(Backup actual) {
+  public static BackupAssert assertThatBackup(final Backup actual) {
     return new BackupAssert(actual, BackupAssert.class);
   }
 
   @SuppressWarnings("UnusedReturnValue")
-  public BackupAssert hasSameContentsAs(Backup expected) {
+  public BackupAssert hasSameContentsAs(final Backup expected) {
     assertThat(actual.id()).isEqualTo(expected.id());
     assertThat(actual.descriptor()).isEqualTo(expected.descriptor());
     assertThat(actual.snapshot().names()).isEqualTo(expected.snapshot().names());
@@ -39,7 +39,7 @@ public final class BackupAssert extends AbstractAssert<BackupAssert, Backup> {
   }
 
   @SuppressWarnings("UnusedReturnValue")
-  public BackupAssert residesInPath(Path expectedPath) {
+  public BackupAssert residesInPath(final Path expectedPath) {
     NamedFileSetAssert.assertThatNamedFileSet(actual.snapshot()).residesInPath(expectedPath);
     NamedFileSetAssert.assertThatNamedFileSet(actual.segments()).residesInPath(expectedPath);
     return this;

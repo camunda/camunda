@@ -19,12 +19,12 @@ final class NamedFileSetAssert extends AbstractAssert<NamedFileSetAssert, NamedF
     super(namedFileSet, selfType);
   }
 
-  public static NamedFileSetAssert assertThatNamedFileSet(NamedFileSet actual) {
+  public static NamedFileSetAssert assertThatNamedFileSet(final NamedFileSet actual) {
     return new NamedFileSetAssert(actual, NamedFileSetAssert.class);
   }
 
   @SuppressWarnings("UnusedReturnValue")
-  public NamedFileSetAssert hasSameContentsAs(NamedFileSet expected) {
+  public NamedFileSetAssert hasSameContentsAs(final NamedFileSet expected) {
     for (final var expectedEntry : expected.namedFiles().entrySet()) {
       final var expectedName = expectedEntry.getKey();
       final var expectedPath = expectedEntry.getValue();
@@ -38,7 +38,7 @@ final class NamedFileSetAssert extends AbstractAssert<NamedFileSetAssert, NamedF
   }
 
   @SuppressWarnings("UnusedReturnValue")
-  public NamedFileSetAssert residesInPath(Path expectedPath) {
+  public NamedFileSetAssert residesInPath(final Path expectedPath) {
     assertThat(actual.files())
         .allSatisfy(
             actualPath -> {
