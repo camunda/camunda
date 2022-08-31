@@ -31,7 +31,7 @@
     "react-router-dom": "6.3.0",
     "react-textarea-autosize": "8.3.4",
     "react-transition-group": "4.4.5",
-    "sass": "1.54.5",
+    "sass": "1.54.7",
     "styled-components": "5.3.5"
   },
   "scripts": {
@@ -71,7 +71,7 @@
     "@types/mixpanel-browser": "2.38.0",
     "@types/node": "16.11.56",
     "@types/node-fetch": "2.6.2",
-    "@types/react": "18.0.17",
+    "@types/react": "18.0.18",
     "@types/react-dom": "18.0.6",
     "@types/react-transition-group": "4.4.5",
     "@types/styled-components": "5.1.26",
@@ -80,7 +80,7 @@
     "glob": "8.0.3",
     "http-proxy-middleware": "2.0.6",
     "husky": "8.0.1",
-    "jest-styled-components": "7.1.0",
+    "jest-styled-components": "7.1.1",
     "lint-staged": "13.0.3",
     "monaco-editor": "0.34.0",
     "msw": "0.42.1",
