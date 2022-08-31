@@ -47,13 +47,10 @@ usable.
 
 ## Internals
 
-A backup consists of 2 objects used for managing the backup and the objects
-containing the backup data itself.
-All object keys are prefixed by `partitionId/checkpointId/nodeId` which uniquely identifies a
-backup:
+A backup consists of following objects prefixed by `partitionId/checkpointId/nodeId/` :
 
 * `metadata.json`: A _metadata_ object, containing metadata serialized as JSON
 * `status.json`: A _status_ object, containing the current status serialized as JSON
-* `snapshots/*` Objects for _snapshot files_, additionally prefixed with 'snapshot'
-* `segments/*` Objects for _segment files_, additionally prefixed with 'segments'
+* `snapshots/*` Objects for _snapshot files_'
+* `segments/*` Objects for _segment files_
 
