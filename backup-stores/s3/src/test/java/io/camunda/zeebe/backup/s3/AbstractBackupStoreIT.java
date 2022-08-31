@@ -11,14 +11,12 @@ import static io.camunda.zeebe.backup.s3.support.BackupAssert.assertThatBackup;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
-import io.camunda.zeebe.backup.s3.S3BackupStoreException.MetadataParseException;
-import io.camunda.zeebe.backup.s3.S3BackupStoreException.StatusParseException;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.ManifestParseException;
 import io.camunda.zeebe.backup.s3.support.TestBackupProvider;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -60,29 +58,31 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void savesMetadata(final Backup backup) throws IOException {
+    void savesManifest(final Backup backup) throws IOException {
       // when
       getStore().save(backup).join();
 
       // then
-      final var metadataObject =
+      final var manifestObject =
           getClient()
               .getObject(
                   GetObjectRequest.builder()
                       .bucket(getConfig().bucketName())
-                      .key(S3BackupStore.objectPrefix(backup.id()) + Metadata.OBJECT_KEY)
+                      .key(
+                          S3BackupStore.objectPrefix(backup.id())
+                              + S3BackupStore.MANIFEST_OBJECT_KEY)
                       .build(),
                   AsyncResponseTransformer.toBytes())
               .join();
 
-      final var readMetadata =
-          S3BackupStore.MAPPER.readValue(metadataObject.asByteArray(), Metadata.class);
+      final var readManifest =
+          S3BackupStore.MAPPER.readValue(manifestObject.asByteArray(), Manifest.class);
 
-      assertThat(readMetadata.descriptor()).isEqualTo(backup.descriptor());
-      assertThat(readMetadata.id()).isEqualTo(backup.id());
+      assertThat(readManifest.descriptor()).isEqualTo(backup.descriptor());
+      assertThat(readManifest.id()).isEqualTo(backup.id());
 
-      assertThat(readMetadata.snapshotFileNames()).isEqualTo(backup.snapshot().names());
-      assertThat(readMetadata.segmentFileNames()).isEqualTo(backup.segments().names());
+      assertThat(readManifest.snapshotFileNames()).isEqualTo(backup.snapshot().names());
+      assertThat(readManifest.segmentFileNames()).isEqualTo(backup.segments().names());
     }
 
     @ParameterizedTest
@@ -135,8 +135,7 @@ public abstract class AbstractBackupStoreIT {
       // given
       final var prefix = S3BackupStore.objectPrefix(backup.id());
 
-      final var metadata = prefix + Metadata.OBJECT_KEY;
-      final var status = prefix + Status.OBJECT_KEY;
+      final var manifest = prefix + S3BackupStore.MANIFEST_OBJECT_KEY;
       final var snapshotObjects =
           backup.snapshot().names().stream()
               .map(name -> prefix + S3BackupStore.SNAPSHOT_PREFIX + name);
@@ -145,7 +144,7 @@ public abstract class AbstractBackupStoreIT {
               .map(name -> prefix + S3BackupStore.SEGMENTS_PREFIX + name);
 
       final var contentObjects = Stream.concat(snapshotObjects, segmentObjects);
-      final var managementObjects = Stream.of(metadata, status);
+      final var managementObjects = Stream.of(manifest);
       final var expectedObjects = Stream.concat(managementObjects, contentObjects).toList();
 
       // when
@@ -203,20 +202,22 @@ public abstract class AbstractBackupStoreIT {
       getStore().save(backup).join();
 
       // then
-      final var statusObject =
+      final var manifestObject =
           getClient()
               .getObject(
                   GetObjectRequest.builder()
                       .bucket(getConfig().bucketName())
-                      .key(S3BackupStore.objectPrefix(backup.id()) + Status.OBJECT_KEY)
+                      .key(
+                          S3BackupStore.objectPrefix(backup.id())
+                              + S3BackupStore.MANIFEST_OBJECT_KEY)
                       .build(),
                   AsyncResponseTransformer.toBytes())
               .join();
 
-      final var objectMapper = new ObjectMapper();
-      final var readStatus = objectMapper.readValue(statusObject.asByteArray(), Status.class);
+      final var manifest =
+          S3BackupStore.MAPPER.readValue(manifestObject.asByteArray(), Manifest.class);
 
-      assertThat(readStatus.statusCode()).isEqualTo(BackupStatusCode.COMPLETED);
+      assertThat(manifest.statusCode()).isEqualTo(BackupStatusCode.COMPLETED);
     }
 
     @ParameterizedTest
@@ -229,21 +230,23 @@ public abstract class AbstractBackupStoreIT {
       getStore().markFailed(backup.id(), "error").join();
 
       // then
-      final var statusObject =
+      final var manifestObject =
           getClient()
               .getObject(
                   GetObjectRequest.builder()
                       .bucket(getConfig().bucketName())
-                      .key(S3BackupStore.objectPrefix(backup.id()) + Status.OBJECT_KEY)
+                      .key(
+                          S3BackupStore.objectPrefix(backup.id())
+                              + S3BackupStore.MANIFEST_OBJECT_KEY)
                       .build(),
                   AsyncResponseTransformer.toBytes())
               .join();
 
       final var objectMapper = S3BackupStore.MAPPER;
-      final var readStatus = objectMapper.readValue(statusObject.asByteArray(), Status.class);
+      final var readManifest = objectMapper.readValue(manifestObject.asByteArray(), Manifest.class);
 
-      assertThat(readStatus.statusCode()).isEqualTo(BackupStatusCode.FAILED);
-      assertThat(readStatus.failureReason()).hasValue("error");
+      assertThat(readManifest.statusCode()).isEqualTo(BackupStatusCode.FAILED);
+      assertThat(readManifest.failureReason()).hasValue("error");
     }
   }
 
@@ -289,7 +292,7 @@ public abstract class AbstractBackupStoreIT {
 
     @ParameterizedTest
     @ArgumentsSource(TestBackupProvider.class)
-    void statusQueryFailsIfStatusIsCorrupt(final Backup backup) {
+    void statusQueryFailsIfManifestIsCorrupt(final Backup backup) {
       // given
       getStore().save(backup).join();
 
@@ -298,7 +301,9 @@ public abstract class AbstractBackupStoreIT {
           .putObject(
               req ->
                   req.bucket(getConfig().bucketName())
-                      .key(S3BackupStore.objectPrefix(backup.id()) + Status.OBJECT_KEY),
+                      .key(
+                          S3BackupStore.objectPrefix(backup.id())
+                              + S3BackupStore.MANIFEST_OBJECT_KEY),
               AsyncRequestBody.fromString("{s"))
           .join();
 
@@ -307,30 +312,7 @@ public abstract class AbstractBackupStoreIT {
       assertThat(status)
           .failsWithin(Duration.ofSeconds(10))
           .withThrowableOfType(Throwable.class)
-          .withCauseInstanceOf(StatusParseException.class);
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(TestBackupProvider.class)
-    void statusQueryFailsIfMetadataIsCorrupt(final Backup backup) {
-      // given
-      getStore().save(backup).join();
-
-      // when
-      getClient()
-          .putObject(
-              req ->
-                  req.bucket(getConfig().bucketName())
-                      .key(S3BackupStore.objectPrefix(backup.id()) + Metadata.OBJECT_KEY),
-              AsyncRequestBody.fromString("{s"))
-          .join();
-
-      // then
-      final var status = getStore().getStatus(backup.id());
-      assertThat(status)
-          .failsWithin(Duration.ofSeconds(10))
-          .withThrowableOfType(Throwable.class)
-          .withCauseInstanceOf(MetadataParseException.class);
+          .withCauseInstanceOf(ManifestParseException.class);
     }
 
     @Test
@@ -388,7 +370,9 @@ public abstract class AbstractBackupStoreIT {
               delete ->
                   delete
                       .bucket(getConfig().bucketName())
-                      .key(S3BackupStore.objectPrefix(backup.id()) + Status.OBJECT_KEY))
+                      .key(
+                          S3BackupStore.objectPrefix(backup.id())
+                              + S3BackupStore.MANIFEST_OBJECT_KEY))
           .join();
 
       // then
@@ -402,7 +386,11 @@ public abstract class AbstractBackupStoreIT {
       getStore().save(backup).join();
 
       // when
-      getStore().setStatus(backup.id(), new Status(BackupStatusCode.IN_PROGRESS)).join();
+      getStore()
+          .writeManifestObject(
+              Manifest.fromNewBackup(backup).withStatus(BackupStatusCode.IN_PROGRESS))
+          .join();
+
       final var delete = getStore().delete(backup.id());
 
       // then

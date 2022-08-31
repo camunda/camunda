@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
@@ -23,8 +24,7 @@ import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupDeletionIncomplete;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReadException;
-import io.camunda.zeebe.backup.s3.S3BackupStoreException.MetadataParseException;
-import io.camunda.zeebe.backup.s3.S3BackupStoreException.StatusParseException;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.ManifestParseException;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -57,10 +57,8 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * <p>Each backup contains:
  *
  * <ol>
- *   <li>A 'metadata' object, containing {@link Metadata} serialized as JSON, for example
- *       <pre>partitionId/checkpointId/nodeId/metadata.json</pre>
- *   <li>A 'status' object, containing the {@link Status}, for example
- *       <pre>partitionId/checkpointId/nodeId/status.json</pre>
+ *   <li>A 'manifest' object, containing {@link Manifest} serialized as JSON, for example
+ *       <pre>partitionId/checkpointId/nodeId/manifest.json</pre>
  *   <li>Objects for snapshot files, additionally prefixed with 'snapshot', for example
  *       <pre>partitionId/checkpointId/nodeId/snapshots/snapshot-file-1</pre>
  *   <li>Objects for segment files, additionally prefixed with 'segments', for example
@@ -68,10 +66,11 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * </ol>
  */
 public final class S3BackupStore implements BackupStore {
+  static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new Jdk8Module()).registerModule(new JavaTimeModule());
   static final String SNAPSHOT_PREFIX = "snapshot/";
   static final String SEGMENTS_PREFIX = "segments/";
-  static final ObjectMapper MAPPER = new ObjectMapper().registerModule(new Jdk8Module());
-
+  static final String MANIFEST_OBJECT_KEY = "manifest.json";
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private final S3BackupConfig config;
   private final S3AsyncClient client;
@@ -92,42 +91,34 @@ public final class S3BackupStore implements BackupStore {
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
     LOG.info("Saving {}", backup.id());
+    final var manifest = Manifest.fromNewBackup(backup);
     return requireBackupStatus(backup.id(), EnumSet.of(BackupStatusCode.DOES_NOT_EXIST))
-        .thenComposeAsync(id -> setStatus(id, Status.inProgress()))
+        .thenComposeAsync(
+            id -> writeManifestObject(manifest.withStatus(BackupStatusCode.IN_PROGRESS)))
         .thenComposeAsync(
             status -> {
-              final var metadata = saveMetadata(backup);
               final var snapshot = saveSnapshotFiles(backup);
               final var segments = saveSegmentFiles(backup);
-              return CompletableFuture.allOf(metadata, snapshot, segments);
+              return CompletableFuture.allOf(snapshot, segments);
             })
         .thenComposeAsync(
             ignored -> requireBackupStatus(backup.id(), EnumSet.of(BackupStatusCode.IN_PROGRESS)))
-        .thenComposeAsync(content -> setStatus(backup.id(), Status.complete()))
+        .thenComposeAsync(
+            content -> writeManifestObject(manifest.withStatus(BackupStatusCode.COMPLETED)))
         .exceptionallyComposeAsync(
             throwable ->
-                setStatus(backup.id(), Status.failed(throwable))
+                writeManifestObject(manifest.withFailedStatus(throwable))
                     // Mark the returned future as failed.
                     .thenCompose(status -> CompletableFuture.failedStage(throwable)))
         // Discard status, it's either COMPLETED or the future is completed exceptionally
-        .thenApply(status -> null);
+        .thenApply(ignored -> null);
   }
 
   @Override
   public CompletableFuture<BackupStatus> getStatus(final BackupIdentifier id) {
     LOG.info("Querying status of {}", id);
-    return readStatusObject(id)
-        .thenCombine(
-            readMetadataObject(id),
-            (status, metadata) ->
-                (BackupStatus)
-                    new BackupStatusImpl(
-                        id,
-                        Optional.of(metadata.descriptor()),
-                        status.statusCode(),
-                        status.failureReason(),
-                        Optional.of(metadata.created()),
-                        Optional.of(metadata.lastModified())))
+    return readManifestObject(id)
+        .thenApply(Manifest::toStatus)
         .exceptionally(
             throwable -> {
               // throwable is a `CompletionException`, `getCause` to handle the underlying exception
@@ -163,25 +154,27 @@ public final class S3BackupStore implements BackupStore {
     LOG.info("Restoring {} to {}", id, targetFolder);
     final var backupPrefix = objectPrefix(id);
     return requireBackupStatus(id, EnumSet.of(BackupStatusCode.COMPLETED))
-        .thenComposeAsync(this::readMetadataObject)
+        .thenComposeAsync(this::readManifestObject)
         .thenComposeAsync(
-            metadata ->
+            manifest ->
                 downloadNamedFileSet(
-                        backupPrefix + SEGMENTS_PREFIX, metadata.segmentFileNames(), targetFolder)
+                        backupPrefix + SEGMENTS_PREFIX, manifest.segmentFileNames(), targetFolder)
                     .thenCombineAsync(
                         downloadNamedFileSet(
                             backupPrefix + SNAPSHOT_PREFIX,
-                            metadata.snapshotFileNames(),
+                            manifest.snapshotFileNames(),
                             targetFolder),
                         (segments, snapshot) ->
-                            new BackupImpl(id, metadata.descriptor(), snapshot, segments)));
+                            new BackupImpl(id, manifest.descriptor(), snapshot, segments)));
   }
 
   @Override
   public CompletableFuture<BackupStatusCode> markFailed(
       final BackupIdentifier id, final String failureReason) {
     LOG.info("Marking {} as failed", id);
-    return setStatus(id, new Status(BackupStatusCode.FAILED, Optional.of(failureReason)));
+    return readManifestObject(id)
+        .thenComposeAsync(manifest -> writeManifestObject(manifest.withFailedStatus(failureReason)))
+        .thenApply(Manifest::statusCode);
   }
 
   private CompletableFuture<NamedFileSet> downloadNamedFileSet(
@@ -257,48 +250,29 @@ public final class S3BackupStore implements BackupStore {
             });
   }
 
-  private CompletableFuture<Status> readStatusObject(final BackupIdentifier id) {
-    LOG.debug("Reading status object of {}", id);
+  private CompletableFuture<Manifest> readManifestObject(final BackupIdentifier id) {
+    LOG.debug("Reading manifest object of {}", id);
     return client
         .getObject(
-            req -> req.bucket(config.bucketName()).key(objectPrefix(id) + Status.OBJECT_KEY),
+            req -> req.bucket(config.bucketName()).key(objectPrefix(id) + MANIFEST_OBJECT_KEY),
             AsyncResponseTransformer.toBytes())
         .thenApply(
             response -> {
               try {
-                return MAPPER.readValue(response.asInputStream(), Status.class);
+                return MAPPER.readValue(response.asInputStream(), Manifest.class);
               } catch (final JsonParseException e) {
-                throw new StatusParseException("Failed to parse status object", e);
+                throw new ManifestParseException("Failed to parse manifest object", e);
               } catch (final IOException e) {
-                throw new BackupReadException("Failed to read status object", e);
+                throw new BackupReadException("Failed to read manifest object", e);
               }
             });
   }
 
-  private CompletableFuture<Metadata> readMetadataObject(final BackupIdentifier id) {
-    LOG.debug("Reading metadata object of {}", id);
-    return client
-        .getObject(
-            req -> req.bucket(config.bucketName()).key(objectPrefix(id) + Metadata.OBJECT_KEY),
-            AsyncResponseTransformer.toBytes())
-        .thenApply(
-            response -> {
-              try {
-                return MAPPER.readValue(response.asInputStream(), Metadata.class);
-              } catch (final JsonParseException e) {
-                throw new MetadataParseException("Failed to parse metadata object", e);
-              } catch (final IOException e) {
-                throw new BackupReadException("Failed to read metadata object", e);
-              }
-            });
-  }
-
-  public CompletableFuture<BackupStatusCode> setStatus(
-      final BackupIdentifier id, final Status status) {
-    LOG.debug("Setting status of {} to {}", id, status);
+  CompletableFuture<Manifest> writeManifestObject(final Manifest manifest) {
+    LOG.debug("Updating manifest of {} to {}", manifest.id(), manifest);
     final AsyncRequestBody body;
     try {
-      body = AsyncRequestBody.fromBytes(MAPPER.writeValueAsBytes(status));
+      body = AsyncRequestBody.fromBytes(MAPPER.writeValueAsBytes(manifest));
     } catch (final JsonProcessingException e) {
       return CompletableFuture.failedFuture(e);
     }
@@ -308,26 +282,10 @@ public final class S3BackupStore implements BackupStore {
             request ->
                 request
                     .bucket(config.bucketName())
-                    .key(objectPrefix(id) + Status.OBJECT_KEY)
+                    .key(objectPrefix(manifest.id()) + MANIFEST_OBJECT_KEY)
                     .build(),
             body)
-        .thenApply(resp -> status.statusCode());
-  }
-
-  private CompletableFuture<PutObjectResponse> saveMetadata(final Backup backup) {
-    LOG.debug("Saving metadata for {}", backup.id());
-    try {
-      return client.putObject(
-          request ->
-              request
-                  .bucket(config.bucketName())
-                  .key(objectPrefix(backup.id()) + Metadata.OBJECT_KEY)
-                  .contentType("application/json")
-                  .build(),
-          AsyncRequestBody.fromBytes(MAPPER.writeValueAsBytes(Metadata.of(backup))));
-    } catch (final JsonProcessingException e) {
-      return CompletableFuture.failedFuture(e);
-    }
+        .thenApply(resp -> manifest);
   }
 
   private CompletableFuture<Void> saveSnapshotFiles(final Backup backup) {
