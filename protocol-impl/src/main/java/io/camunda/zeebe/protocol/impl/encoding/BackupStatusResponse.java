@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.protocol.impl.encoding;
 
+import static org.agrona.collections.ArrayUtil.EMPTY_BYTE_ARRAY;
+
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.management.BackupStatusResponseDecoder;
 import io.camunda.zeebe.protocol.management.BackupStatusResponseEncoder;
@@ -14,6 +16,7 @@ import io.camunda.zeebe.protocol.management.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderEncoder;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.io.UnsupportedEncodingException;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -32,8 +35,10 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
 
   private long checkpointPosition = BackupStatusResponseEncoder.checkpointPositionNullValue();
   private int numberOfPartitions = BackupStatusResponseEncoder.numberOfPartitionsNullValue();
-  private String snapshotId = null;
-  private String failureReason = null;
+  private String snapshotId = "";
+  private byte[] encodedSnapshotId = EMPTY_BYTE_ARRAY;
+  private String failureReason = "";
+  private byte[] encodedFailureReason = EMPTY_BYTE_ARRAY;
 
   public long getBackupId() {
     return backupId;
@@ -95,6 +100,8 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
 
   public BackupStatusResponse setSnapshotId(final String snapshotId) {
     this.snapshotId = snapshotId;
+    encodedSnapshotId =
+        encodeString(snapshotId, BackupStatusResponseEncoder.snapshotIdCharacterEncoding());
     return this;
   }
 
@@ -104,6 +111,8 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
 
   public BackupStatusResponse setFailureReason(final String failureReason) {
     this.failureReason = failureReason;
+    encodedFailureReason =
+        encodeString(failureReason, BackupStatusResponseEncoder.failureReasonCharacterEncoding());
     return this;
   }
 
@@ -117,13 +126,35 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
     brokerId = bodyDecoder.brokerId();
     checkpointPosition = bodyDecoder.checkpointPosition();
     numberOfPartitions = bodyDecoder.numberOfPartitions();
-    snapshotId = bodyDecoder.snapshotId();
-    failureReason = bodyDecoder.failureReason();
+
+    encodedSnapshotId = new byte[bodyDecoder.snapshotIdLength()];
+    bodyDecoder.getSnapshotId(encodedSnapshotId, 0, encodedSnapshotId.length);
+    snapshotId =
+        decodeString(encodedSnapshotId, BackupStatusResponseDecoder.snapshotIdCharacterEncoding());
+
+    encodedFailureReason = new byte[bodyDecoder.failureReasonLength()];
+    bodyDecoder.getFailureReason(encodedFailureReason, 0, encodedFailureReason.length);
+    failureReason =
+        decodeString(
+            encodedFailureReason, BackupStatusResponseDecoder.failureReasonCharacterEncoding());
+  }
+
+  private String decodeString(final byte[] encodedSnapshotId, final String charsetName) {
+    try {
+      return new String(encodedSnapshotId, charsetName);
+    } catch (final UnsupportedEncodingException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
   public int getLength() {
-    return 0;
+    return headerEncoder.encodedLength()
+        + bodyEncoder.sbeBlockLength()
+        + BackupStatusResponseEncoder.snapshotIdHeaderLength()
+        + encodedSnapshotId.length
+        + BackupStatusResponseEncoder.failureReasonHeaderLength()
+        + encodedFailureReason.length;
   }
 
   @Override
@@ -137,7 +168,15 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
         .checkpointPosition(checkpointPosition)
         .numberOfPartitions(numberOfPartitions)
         .status(status)
-        .snapshotId(snapshotId)
-        .failureReason(failureReason);
+        .putSnapshotId(encodedSnapshotId, 0, encodedSnapshotId.length)
+        .putFailureReason(encodedFailureReason, 0, encodedFailureReason.length);
+  }
+
+  private byte[] encodeString(final String value, final String charsetName) {
+    try {
+      return (null == value || value.isEmpty()) ? EMPTY_BYTE_ARRAY : value.getBytes(charsetName);
+    } catch (final UnsupportedEncodingException e) {
+      throw new RuntimeException(e);
+    }
   }
 }
