@@ -210,13 +210,28 @@ class BackupServiceImplTest {
     final var completedBackup = new BackupIdentifierImpl(3, 1, 10);
     final var inProgressStatus =
         new BackupStatusImpl(
-            inProgressBackup, Optional.empty(), BackupStatusCode.IN_PROGRESS, Optional.empty());
+            inProgressBackup,
+            Optional.empty(),
+            BackupStatusCode.IN_PROGRESS,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
     final var notExistingStatus =
         new BackupStatusImpl(
-            notExistingBackup, Optional.empty(), BackupStatusCode.DOES_NOT_EXIST, Optional.empty());
+            notExistingBackup,
+            Optional.empty(),
+            BackupStatusCode.DOES_NOT_EXIST,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
     final var completedStatus =
         new BackupStatusImpl(
-            completedBackup, Optional.empty(), BackupStatusCode.COMPLETED, Optional.empty());
+            completedBackup,
+            Optional.empty(),
+            BackupStatusCode.COMPLETED,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
     when(backupStore.getStatus(inProgressBackup))
         .thenReturn(CompletableFuture.completedFuture(inProgressStatus));
     when(backupStore.getStatus(notExistingBackup))
@@ -241,7 +256,12 @@ class BackupServiceImplTest {
     final var backupFailsToQuery = new BackupIdentifierImpl(2, 1, 10);
     final var inProgressStatus =
         new BackupStatusImpl(
-            inProgressBackup, Optional.empty(), BackupStatusCode.IN_PROGRESS, Optional.empty());
+            inProgressBackup,
+            Optional.empty(),
+            BackupStatusCode.IN_PROGRESS,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
     when(backupStore.getStatus(inProgressBackup))
         .thenReturn(CompletableFuture.completedFuture(inProgressStatus));
     when(backupStore.getStatus(backupFailsToQuery))

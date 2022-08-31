@@ -13,6 +13,7 @@ import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
 
@@ -32,12 +33,15 @@ record Metadata(
     int numberOfPartitions,
     Optional<String> snapshotId,
     String brokerVersion,
+    Instant created,
+    Instant lastModified,
     Set<String> snapshotFileNames,
     Set<String> segmentFileNames) {
 
   static final String OBJECT_KEY = "metadata.json";
 
   static Metadata of(final Backup backup) {
+    final var now = Instant.now();
     return new Metadata(
         backup.id().checkpointId(),
         backup.id().partitionId(),
@@ -46,6 +50,8 @@ record Metadata(
         backup.descriptor().numberOfPartitions(),
         backup.descriptor().snapshotId(),
         backup.descriptor().brokerVersion(),
+        now,
+        now,
         backup.snapshot().names(),
         backup.segments().names());
   }

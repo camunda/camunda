@@ -125,14 +125,21 @@ public final class S3BackupStore implements BackupStore {
                         id,
                         Optional.of(metadata.descriptor()),
                         status.statusCode(),
-                        status.failureReason()))
+                        status.failureReason(),
+                        Optional.of(metadata.created()),
+                        Optional.of(metadata.lastModified())))
         .exceptionally(
             throwable -> {
               // throwable is a `CompletionException`, `getCause` to handle the underlying exception
               if (throwable.getCause() instanceof NoSuchKeyException) {
                 // Couldn't find status or metadata, indicating that the backup doesn't exist
                 return new BackupStatusImpl(
-                    id, Optional.empty(), BackupStatusCode.DOES_NOT_EXIST, Optional.empty());
+                    id,
+                    Optional.empty(),
+                    BackupStatusCode.DOES_NOT_EXIST,
+                    Optional.empty(),
+                    Optional.empty(),
+                    Optional.empty());
               } else if (throwable.getCause() instanceof S3BackupStoreException e) {
                 // Exception was already wrapped, no need to re-wrap
                 throw e;
