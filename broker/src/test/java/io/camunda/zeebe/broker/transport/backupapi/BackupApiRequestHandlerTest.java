@@ -78,11 +78,7 @@ final class BackupApiRequestHandlerTest {
         new BackupRequest().setType(BackupRequestType.NULL_VAL).setPartitionId(1).setBackupId(10);
 
     // when
-    final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);
-    request.write(requestBuffer, 0);
-
-    handler.onRequest(serverOutput, 1, 1, requestBuffer, 0, request.getLength());
-    scheduler.workUntilDone();
+    handleRequest(request);
 
     // then
     assertThat(responseFuture)
@@ -104,10 +100,7 @@ final class BackupApiRequestHandlerTest {
             .setBackupId(10);
 
     // when
-    final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);
-    request.write(requestBuffer, 0);
-    handler.onRequest(serverOutput, 1, 1, requestBuffer, 0, request.getLength());
-    scheduler.workUntilDone();
+    handleRequest(request);
 
     // then
     verify(logStreamRecordWriter, times(1)).tryWrite();
@@ -126,11 +119,7 @@ final class BackupApiRequestHandlerTest {
     scheduler.workUntilDone();
 
     // when
-    final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);
-    request.write(requestBuffer, 0);
-
-    handler.onRequest(serverOutput, 1, 1, requestBuffer, 0, request.getLength());
-    scheduler.workUntilDone();
+    handleRequest(request);
 
     // then
     assertThat(responseFuture)
@@ -157,11 +146,7 @@ final class BackupApiRequestHandlerTest {
     scheduler.workUntilDone();
 
     // when
-    final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);
-    request.write(requestBuffer, 0);
-
-    handler.onRequest(serverOutput, 1, 1, requestBuffer, 0, request.getLength());
-    scheduler.workUntilDone();
+    handleRequest(request);
 
     // then
     assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100));
@@ -180,7 +165,7 @@ final class BackupApiRequestHandlerTest {
     final BackupStatus status =
         new BackupStatusImpl(
             new BackupIdentifierImpl(1, 1, checkpointId),
-            Optional.of(new BackupDescriptorImpl("s-id", 100, 3)),
+            Optional.of(new BackupDescriptorImpl(Optional.of("s-id"), 100, 3)),
             io.camunda.zeebe.backup.api.BackupStatusCode.COMPLETED,
             Optional.empty());
 
@@ -188,11 +173,7 @@ final class BackupApiRequestHandlerTest {
         .thenReturn(CompletableActorFuture.completed(status));
 
     // when
-    final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);
-    request.write(requestBuffer, 0);
-
-    handler.onRequest(serverOutput, 1, 1, requestBuffer, 0, request.getLength());
-    scheduler.workUntilDone();
+    handleRequest(request);
 
     // then
     assertThat(responseFuture)
@@ -230,11 +211,7 @@ final class BackupApiRequestHandlerTest {
         .thenReturn(CompletableActorFuture.completed(status));
 
     // when
-    final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);
-    request.write(requestBuffer, 0);
-
-    handler.onRequest(serverOutput, 1, 1, requestBuffer, 0, request.getLength());
-    scheduler.workUntilDone();
+    handleRequest(request);
 
     // then
     assertThat(responseFuture)
@@ -270,11 +247,7 @@ final class BackupApiRequestHandlerTest {
             CompletableActorFuture.completedExceptionally(new RuntimeException("Expected")));
 
     // when
-    final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);
-    request.write(requestBuffer, 0);
-
-    handler.onRequest(serverOutput, 1, 1, requestBuffer, 0, request.getLength());
-    scheduler.workUntilDone();
+    handleRequest(request);
 
     // then
     assertThat(responseFuture)
@@ -283,6 +256,14 @@ final class BackupApiRequestHandlerTest {
         .extracting(Either::getLeft)
         .extracting(ErrorResponse::getErrorCode)
         .isEqualTo(ErrorCode.INTERNAL_ERROR);
+  }
+
+  private void handleRequest(final BackupRequest request) {
+    final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);
+    request.write(requestBuffer, 0);
+
+    handler.onRequest(serverOutput, 1, 1, requestBuffer, 0, request.getLength());
+    scheduler.workUntilDone();
   }
 
   private ServerOutput createServerOutput() {
