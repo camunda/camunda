@@ -15,4 +15,13 @@ public record BackupDescriptorImpl(
     long checkpointPosition,
     int numberOfPartitions,
     String brokerVersion)
-    implements BackupDescriptor {}
+    implements BackupDescriptor {
+
+  public static BackupDescriptorImpl from(final BackupDescriptor descriptor) {
+    return new BackupDescriptorImpl(
+        descriptor.snapshotId(),
+        descriptor.checkpointPosition(),
+        descriptor.numberOfPartitions(),
+        descriptor.brokerVersion());
+  }
+}
