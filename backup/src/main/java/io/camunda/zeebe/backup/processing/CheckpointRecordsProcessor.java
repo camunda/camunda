@@ -14,20 +14,24 @@ import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
+import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.RecordProcessorContext;
+import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.time.Duration;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Process and replays records related to Checkpoint. */
-public final class CheckpointRecordsProcessor implements RecordProcessor {
+public final class CheckpointRecordsProcessor
+    implements RecordProcessor, StreamProcessorLifecycleAware {
 
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointRecordsProcessor.class);
 
@@ -62,6 +66,8 @@ public final class CheckpointRecordsProcessor implements RecordProcessor {
       checkpointListeners.forEach(
           listener -> listener.onNewCheckpointCreated(checkpointState.getCheckpointId()));
     }
+
+    recordProcessorContext.addLifecycleListeners(List.of(this));
   }
 
   @Override
@@ -125,5 +131,13 @@ public final class CheckpointRecordsProcessor implements RecordProcessor {
             }
           });
     }
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    // After a leader change, the new leader will not continue taking the backup initiated by
+    // previous leader. So mark them as failed, so that the users do not wait forever for it to be
+    // completed.
+    backupManager.failInProgressBackup(checkpointState.getCheckpointId());
   }
 }
