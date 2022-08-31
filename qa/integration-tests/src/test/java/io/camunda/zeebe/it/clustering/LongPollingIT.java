@@ -13,11 +13,14 @@ import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.process.test.assertions.BpmnAssert;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.qa.util.actuator.LoggersActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
-import io.camunda.zeebe.test.util.record.JobBatchRecordStream;
+import io.camunda.zeebe.test.util.record.RecordStream;
 import io.zeebe.containers.ZeebeGatewayNode;
 import io.zeebe.containers.ZeebePort;
 import io.zeebe.containers.cluster.ZeebeCluster;
@@ -28,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.StreamSupport;
 import org.agrona.CloseHelper;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -115,9 +119,12 @@ final class LongPollingIT {
       // then - ensure that we tried to activate before the job was created, and that we activated
       // it AGAIN after it was created, without the client sending a new request
       engine.waitForIdleState(Duration.ofSeconds(30));
-      assertThat(records().withIntent(JobBatchIntent.ACTIVATE).limit(2))
+      assertThat(records())
           .as("long polling should trigger a second ACTIVATE command without the client doing so")
-          .hasSize(2);
+          .extracting(Record::getValueType, Record::getIntent)
+          .containsSubsequence(
+              Tuple.tuple(ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE),
+              Tuple.tuple(ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE));
       assertThat((CompletionStage<ActivateJobsResponse>) jobs)
           .succeedsWithin(30, TimeUnit.SECONDS)
           .extracting(ActivateJobsResponse::getJobs)
@@ -126,9 +133,11 @@ final class LongPollingIT {
     }
   }
 
-  private JobBatchRecordStream records() {
-    return new JobBatchRecordStream(
-        StreamSupport.stream(BpmnAssert.getRecordStream().jobBatchRecords().spliterator(), false));
+  @SuppressWarnings("unchecked")
+  private RecordStream records() {
+    return new RecordStream(
+        StreamSupport.stream(BpmnAssert.getRecordStream().records().spliterator(), false)
+            .map(r -> (Record<RecordValue>) r));
   }
 
   private void configureGateway(final ZeebeGatewayNode<?> gateway) {
