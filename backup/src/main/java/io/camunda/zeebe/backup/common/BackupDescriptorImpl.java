@@ -11,5 +11,8 @@ import io.camunda.zeebe.backup.api.BackupDescriptor;
 import java.util.Optional;
 
 public record BackupDescriptorImpl(
-    Optional<String> snapshotId, long checkpointPosition, int numberOfPartitions)
+    Optional<String> snapshotId,
+    long checkpointPosition,
+    int numberOfPartitions,
+    String brokerVersion)
     implements BackupDescriptor {}

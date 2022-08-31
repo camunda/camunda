@@ -165,7 +165,7 @@ final class BackupApiRequestHandlerTest {
     final BackupStatus status =
         new BackupStatusImpl(
             new BackupIdentifierImpl(1, 1, checkpointId),
-            Optional.of(new BackupDescriptorImpl(Optional.of("s-id"), 100, 3)),
+            Optional.of(new BackupDescriptorImpl(Optional.of("s-id"), 100, 3, "test")),
             io.camunda.zeebe.backup.api.BackupStatusCode.COMPLETED,
             Optional.empty());
 

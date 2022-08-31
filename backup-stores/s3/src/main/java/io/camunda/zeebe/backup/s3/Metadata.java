@@ -31,6 +31,7 @@ record Metadata(
     long checkpointPosition,
     int numberOfPartitions,
     Optional<String> snapshotId,
+    String brokerVersion,
     Set<String> snapshotFileNames,
     Set<String> segmentFileNames) {
 
@@ -44,6 +45,7 @@ record Metadata(
         backup.descriptor().checkpointPosition(),
         backup.descriptor().numberOfPartitions(),
         backup.descriptor().snapshotId(),
+        backup.descriptor().brokerVersion(),
         backup.snapshot().names(),
         backup.segments().names());
   }
@@ -53,6 +55,7 @@ record Metadata(
   }
 
   BackupDescriptor descriptor() {
-    return new BackupDescriptorImpl(snapshotId, checkpointPosition, numberOfPartitions);
+    return new BackupDescriptorImpl(
+        snapshotId, checkpointPosition, numberOfPartitions, brokerVersion);
   }
 }

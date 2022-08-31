@@ -20,6 +20,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotReservation;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -209,7 +210,8 @@ final class InProgressBackupImpl implements InProgressBackup {
     }
 
     final var backupDescriptor =
-        new BackupDescriptorImpl(snapshotId, checkpointPosition, numberOfPartitions);
+        new BackupDescriptorImpl(
+            snapshotId, checkpointPosition, numberOfPartitions, VersionUtil.getVersion());
     return new BackupImpl(backupId, backupDescriptor, snapshotFileSet, segmentsFileSet);
   }
 
