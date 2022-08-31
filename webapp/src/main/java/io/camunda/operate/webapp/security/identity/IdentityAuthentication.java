@@ -102,7 +102,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
         getIdentity().authentication().verifyToken(this.tokens.getAccessToken());
     final UserDetails userDetails = accessToken.getUserDetails();
     id = userDetails.getId();
-    name = userDetails.getName().orElse("");
+    retrieveName(userDetails);
     permissions = accessToken.getPermissions();
     if (!getPermissions().contains(Permission.READ)) {
       throw new InsufficientAuthenticationException("No read permissions");
@@ -112,6 +112,13 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
     if (!hasExpired()) {
       setAuthenticated(true);
     }
+  }
+
+  private void retrieveName(final UserDetails userDetails) {
+    // Fallback is username e.g 'homer' otherwise empty string.
+    final String username = userDetails.getUsername().orElse("");
+    // Get display name like 'Homer Simpson' otherwise username e.g. 'homer'
+    name = userDetails.getName().orElse(username);
   }
 
   private void renewAccessToken() throws Exception {
