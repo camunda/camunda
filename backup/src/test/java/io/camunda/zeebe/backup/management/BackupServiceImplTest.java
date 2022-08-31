@@ -228,9 +228,10 @@ class BackupServiceImplTest {
     backupService.failInProgressBackups(1, 10, List.of(1, 2, 3), concurrencyControl);
 
     // then
-    verify(backupStore, timeout(1000)).markFailed(inProgressBackup, any());
-    verify(backupStore, never()).markFailed(notExistingBackup, any());
-    verify(backupStore, never()).markFailed(completedBackup, any());
+    final var expectedFailureReason = "Backup is cancelled due to leader change.";
+    verify(backupStore, timeout(1000)).markFailed(inProgressBackup, expectedFailureReason);
+    verify(backupStore, never()).markFailed(notExistingBackup, expectedFailureReason);
+    verify(backupStore, never()).markFailed(completedBackup, expectedFailureReason);
   }
 
   @Test
@@ -250,7 +251,8 @@ class BackupServiceImplTest {
     backupService.failInProgressBackups(1, 10, List.of(1, 2), concurrencyControl);
 
     // then
-    verify(backupStore, timeout(1000)).markFailed(inProgressBackup, any());
+    verify(backupStore, timeout(1000))
+        .markFailed(inProgressBackup, "Backup is cancelled due to leader change.");
   }
 
   private ActorFuture<Void> failedFuture() {
