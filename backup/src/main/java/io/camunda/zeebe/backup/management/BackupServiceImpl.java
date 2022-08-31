@@ -169,7 +169,7 @@ final class BackupServiceImpl {
         .thenAccept(
             status -> {
               if (status.statusCode() == BackupStatusCode.IN_PROGRESS) {
-                LOG.debug(
+                LOG.info(
                     "The backup {} initiated by previous leader is still in progress. Marking it as failed.",
                     backupId);
                 backupStore
@@ -177,14 +177,14 @@ final class BackupServiceImpl {
                     .thenAccept(ignore -> LOG.trace("Marked backup {} as failed.", backupId))
                     .exceptionally(
                         failed -> {
-                          LOG.debug("Failed to mark backup {} as failed", backupId, failed);
+                          LOG.warn("Failed to mark backup {} as failed", backupId, failed);
                           return null;
                         });
               }
             })
         .exceptionally(
             error -> {
-              LOG.debug("Failed to retrieve status of backup {}", backupId);
+              LOG.warn("Failed to retrieve status of backup {}", backupId);
               return null;
             });
   }
