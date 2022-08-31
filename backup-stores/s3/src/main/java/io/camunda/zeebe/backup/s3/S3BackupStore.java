@@ -26,6 +26,7 @@ import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReadException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.MetadataParseException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.StatusParseException;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -356,6 +357,7 @@ public final class S3BackupStore implements BackupStore {
 
   private static S3AsyncClient buildClient(S3BackupConfig config) {
     final var builder = S3AsyncClient.builder();
+    config.endpoint().ifPresent(endpoint -> builder.endpointOverride(URI.create(endpoint)));
     config.region().ifPresent(region -> builder.region(Region.of(region)));
     config
         .credentials()
