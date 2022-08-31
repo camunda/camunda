@@ -350,6 +350,14 @@ public class ModifyProcessInstanceVariablesTest {
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
+    final Record<ProcessInstanceRecordValue> activatedElement =
+        RecordingExporter.processInstanceRecords()
+            .onlyEvents()
+            .withElementId("sp")
+            .withProcessInstanceKey(processInstanceKey)
+            .limit("sp", ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .getFirst();
+
     // when
     ENGINE
         .processInstance()
@@ -357,6 +365,67 @@ public class ModifyProcessInstanceVariablesTest {
         .modification()
         .activateElement("B")
         .withVariables("sp", Map.of("x", "variable"))
+        .modify();
+
+    // then
+    assertThatVariableCreatedInScope(
+        processInstanceKey,
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
+        activatedElement.getKey(),
+        "x",
+        "\"variable\"");
+  }
+
+  @Test
+  public void shouldCreateVariablesBeforeEventSubscriptions() {
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .userTask("A")
+                    .subProcess(
+                        "sp",
+                        sp ->
+                            sp.embeddedSubProcess()
+                                .eventSubProcess(
+                                    "event-subprocess",
+                                    eventSubProcess ->
+                                        eventSubProcess
+                                            .startEvent()
+                                            .message(
+                                                m ->
+                                                    m.name("event-subprocess-start")
+                                                        .zeebeCorrelationKeyExpression("local"))
+                                            .userTask("B")
+                                            .endEvent())
+                                .startEvent()
+                                .userTask("C")
+                                .endEvent())
+                    .boundaryEvent()
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("global"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    RecordingExporter.processInstanceRecords()
+        .onlyEvents()
+        .withElementId("A")
+        .withProcessInstanceKey(processInstanceKey)
+        .limit("A", ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .getFirst();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("C")
+        .withVariables("sp", Map.of("local", "local"))
+        .withGlobalVariables(Map.of("global", "global"))
         .modify();
 
     final Record<ProcessInstanceRecordValue> activatedElement =
@@ -372,8 +441,14 @@ public class ModifyProcessInstanceVariablesTest {
         processInstanceKey,
         deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
         activatedElement.getKey(),
-        "x",
-        "\"variable\"");
+        "local",
+        "\"local\"");
+    assertThatVariableCreatedInScope(
+        processInstanceKey,
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
+        processInstanceKey,
+        "global",
+        "\"global\"");
   }
 
   private void assertThatVariableCreatedInScope(
