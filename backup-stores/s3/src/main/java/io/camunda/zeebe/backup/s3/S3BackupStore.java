@@ -85,7 +85,7 @@ public final class S3BackupStore implements BackupStore {
     this.client = client;
   }
 
-  public static String objectPrefix(BackupIdentifier id) {
+  public static String objectPrefix(final BackupIdentifier id) {
     return "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
   }
 
@@ -152,7 +152,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Backup> restore(final BackupIdentifier id, Path targetFolder) {
+  public CompletableFuture<Backup> restore(final BackupIdentifier id, final Path targetFolder) {
     LOG.info("Restoring {} to {}", id, targetFolder);
     final var backupPrefix = objectPrefix(id);
     return requireBackupStatus(id, EnumSet.of(BackupStatusCode.COMPLETED))
@@ -178,7 +178,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<NamedFileSet> downloadNamedFileSet(
-      final String sourcePrefix, final Set<String> fileNames, Path targetFolder) {
+      final String sourcePrefix, final Set<String> fileNames, final Path targetFolder) {
     LOG.debug(
         "Downloading {} files from prefix {} to {}", fileNames.size(), sourcePrefix, targetFolder);
     final var downloadedFiles = new ConcurrentHashMap<String, Path>();
@@ -199,7 +199,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<BackupIdentifier> requireBackupStatus(
-      BackupIdentifier id, EnumSet<BackupStatusCode> requiredStatus) {
+      final BackupIdentifier id, final EnumSet<BackupStatusCode> requiredStatus) {
     LOG.debug("Testing that status of {} is one of {}", id, requiredStatus);
     return getStatus(id)
         .thenApplyAsync(
@@ -215,7 +215,7 @@ public final class S3BackupStore implements BackupStore {
             });
   }
 
-  private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(BackupIdentifier id) {
+  private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final BackupIdentifier id) {
     LOG.debug("Listing objects of {}", id);
     return client
         .listObjectsV2(req -> req.bucket(config.bucketName()).prefix(objectPrefix(id)))
@@ -228,7 +228,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<Void> deleteBackupObjects(
-      Collection<ObjectIdentifier> objectIdentifiers) {
+      final Collection<ObjectIdentifier> objectIdentifiers) {
     LOG.debug("Deleting {} objects", objectIdentifiers.size());
     if (objectIdentifiers.isEmpty()) {
       // Nothing to delete, which we must handle because the delete request would be invalid
@@ -250,7 +250,7 @@ public final class S3BackupStore implements BackupStore {
             });
   }
 
-  private CompletableFuture<Status> readStatusObject(BackupIdentifier id) {
+  private CompletableFuture<Status> readStatusObject(final BackupIdentifier id) {
     LOG.debug("Reading status object of {}", id);
     return client
         .getObject(
@@ -260,15 +260,15 @@ public final class S3BackupStore implements BackupStore {
             response -> {
               try {
                 return MAPPER.readValue(response.asInputStream(), Status.class);
-              } catch (JsonParseException e) {
+              } catch (final JsonParseException e) {
                 throw new StatusParseException("Failed to parse status object", e);
-              } catch (IOException e) {
+              } catch (final IOException e) {
                 throw new BackupReadException("Failed to read status object", e);
               }
             });
   }
 
-  private CompletableFuture<Metadata> readMetadataObject(BackupIdentifier id) {
+  private CompletableFuture<Metadata> readMetadataObject(final BackupIdentifier id) {
     LOG.debug("Reading metadata object of {}", id);
     return client
         .getObject(
@@ -278,20 +278,21 @@ public final class S3BackupStore implements BackupStore {
             response -> {
               try {
                 return MAPPER.readValue(response.asInputStream(), Metadata.class);
-              } catch (JsonParseException e) {
+              } catch (final JsonParseException e) {
                 throw new MetadataParseException("Failed to parse metadata object", e);
-              } catch (IOException e) {
+              } catch (final IOException e) {
                 throw new BackupReadException("Failed to read metadata object", e);
               }
             });
   }
 
-  public CompletableFuture<BackupStatusCode> setStatus(BackupIdentifier id, Status status) {
+  public CompletableFuture<BackupStatusCode> setStatus(
+      final BackupIdentifier id, final Status status) {
     LOG.debug("Setting status of {} to {}", id, status);
     final AsyncRequestBody body;
     try {
       body = AsyncRequestBody.fromBytes(MAPPER.writeValueAsBytes(status));
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       return CompletableFuture.failedFuture(e);
     }
 
@@ -306,7 +307,7 @@ public final class S3BackupStore implements BackupStore {
         .thenApply(resp -> status.statusCode());
   }
 
-  private CompletableFuture<PutObjectResponse> saveMetadata(Backup backup) {
+  private CompletableFuture<PutObjectResponse> saveMetadata(final Backup backup) {
     LOG.debug("Saving metadata for {}", backup.id());
     try {
       return client.putObject(
@@ -317,12 +318,12 @@ public final class S3BackupStore implements BackupStore {
                   .contentType("application/json")
                   .build(),
           AsyncRequestBody.fromBytes(MAPPER.writeValueAsBytes(Metadata.of(backup))));
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       return CompletableFuture.failedFuture(e);
     }
   }
 
-  private CompletableFuture<Void> saveSnapshotFiles(Backup backup) {
+  private CompletableFuture<Void> saveSnapshotFiles(final Backup backup) {
     LOG.debug("Saving snapshot files for {}", backup.id());
     final var prefix = objectPrefix(backup.id()) + SNAPSHOT_PREFIX;
 
@@ -348,14 +349,14 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<PutObjectResponse> saveNamedFile(
-      final String prefix, String fileName, Path filePath) {
+      final String prefix, final String fileName, final Path filePath) {
     LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
     return client.putObject(
         put -> put.bucket(config.bucketName()).key(prefix + fileName),
         AsyncRequestBody.fromFile(filePath));
   }
 
-  private static S3AsyncClient buildClient(S3BackupConfig config) {
+  private static S3AsyncClient buildClient(final S3BackupConfig config) {
     final var builder = S3AsyncClient.builder();
     config.endpoint().ifPresent(endpoint -> builder.endpointOverride(URI.create(endpoint)));
     config.region().ifPresent(region -> builder.region(Region.of(region)));

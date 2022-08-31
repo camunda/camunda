@@ -36,7 +36,7 @@ record Metadata(
 
   static final String OBJECT_KEY = "metadata.json";
 
-  static Metadata of(Backup backup) {
+  static Metadata of(final Backup backup) {
     return new Metadata(
         backup.id().checkpointId(),
         backup.id().partitionId(),
