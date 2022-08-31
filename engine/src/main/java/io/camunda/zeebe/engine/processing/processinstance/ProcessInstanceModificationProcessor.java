@@ -35,7 +35,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -44,7 +43,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.Strings;
@@ -142,12 +140,11 @@ public final class ProcessInstanceModificationProcessor
               final var elementToActivate =
                   process.getProcess().getElementById(instruction.getElementId());
 
-              executeGlobalVariableInstructions(processInstance, process, instruction);
               elementActivationBehavior.activateElement(
                   processInstanceRecord,
                   elementToActivate,
                   (elementId, scopeKey) ->
-                      executeLocalVariableInstruction(
+                      executeVariableInstruction(
                           BufferUtil.bufferAsString(elementId),
                           scopeKey,
                           processInstance,
@@ -347,35 +344,18 @@ public final class ProcessInstanceModificationProcessor
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
-  private void executeGlobalVariableInstructions(
-      final ElementInstance processInstance,
-      final DeployedProcess process,
-      final ProcessInstanceModificationActivateInstructionValue activate) {
-    final Predicate<ProcessInstanceModificationVariableInstructionValue> filter =
-        instruction -> Strings.isEmpty(instruction.getElementId());
-    executeVariableInstruction(
-        filter, processInstance.getKey(), processInstance, process, activate);
-  }
-
-  private void executeLocalVariableInstruction(
+  public void executeVariableInstruction(
       final String elementId,
       final Long scopeKey,
       final ElementInstance processInstance,
       final DeployedProcess process,
       final ProcessInstanceModificationActivateInstructionValue activate) {
-    final Predicate<ProcessInstanceModificationVariableInstructionValue> filter =
-        instruction -> instruction.getElementId().equals(elementId);
-    executeVariableInstruction(filter, scopeKey, processInstance, process, activate);
-  }
-
-  private void executeVariableInstruction(
-      final Predicate<ProcessInstanceModificationVariableInstructionValue> filter,
-      final Long scopeKey,
-      final ElementInstance processInstance,
-      final DeployedProcess process,
-      final ProcessInstanceModificationActivateInstructionValue activate) {
     activate.getVariableInstructions().stream()
-        .filter(filter)
+        .filter(
+            instruction ->
+                instruction.getElementId().equals(elementId)
+                    || (Strings.isEmpty(instruction.getElementId())
+                        && elementId.equals(processInstance.getValue().getElementId())))
         .map(
             instruction -> {
               if (instruction instanceof ProcessInstanceModificationVariableInstruction vi) {
