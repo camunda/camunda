@@ -12,6 +12,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
@@ -45,13 +46,15 @@ final class BackupApiRequestHandlerTest {
   @Mock(answer = Answers.RETURNS_SELF)
   LogStreamRecordWriter logStreamRecordWriter;
 
+  @Mock BackupManager backupManager;
+
   BackupApiRequestHandler handler;
   private ServerOutput serverOutput;
   private CompletableFuture<Either<ErrorResponse, AdminResponse>> responseFuture;
 
   @BeforeEach
   void setup() {
-    handler = new BackupApiRequestHandler(transport, logStreamRecordWriter, 1);
+    handler = new BackupApiRequestHandler(transport, logStreamRecordWriter, backupManager, 1);
     scheduler.submitActor(handler);
     scheduler.workUntilDone();
 
