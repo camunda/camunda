@@ -143,8 +143,6 @@ public final class ProcessInstanceModificationProcessor
                   process.getProcess().getElementById(instruction.getElementId());
 
               executeGlobalVariableInstructions(processInstance, process, instruction);
-              // todo(#9663): execute local variable instructions
-
               elementActivationBehavior.activateElement(
                   processInstanceRecord,
                   elementToActivate,
