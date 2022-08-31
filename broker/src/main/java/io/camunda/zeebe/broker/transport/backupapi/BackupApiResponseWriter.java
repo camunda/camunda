@@ -8,18 +8,25 @@
 package io.camunda.zeebe.broker.transport.backupapi;
 
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
-import io.camunda.zeebe.protocol.management.BackupResponseEncoder;
+import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
+import io.camunda.zeebe.protocol.management.BackupStatusResponseEncoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderEncoder;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.ServerResponseImpl;
 import org.agrona.MutableDirectBuffer;
 
 public final class BackupApiResponseWriter implements ResponseWriter {
-  private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-  private final BackupResponseEncoder responseEncoder = new BackupResponseEncoder();
   private final ServerResponseImpl response = new ServerResponseImpl();
 
   private boolean hasResponse = true;
+
+  private BackupStatusResponse status;
+
+  public BackupApiResponseWriter withStatus(final BackupStatusResponse response) {
+    status = response;
+    hasResponse = true;
+    return this;
+  }
 
   public BackupApiResponseWriter noResponse() {
     hasResponse = false;
@@ -47,19 +54,15 @@ public final class BackupApiResponseWriter implements ResponseWriter {
 
   @Override
   public int getLength() {
-    return MessageHeaderEncoder.ENCODED_LENGTH + BackupResponseEncoder.BLOCK_LENGTH;
+    if (hasResponse) {
+      return MessageHeaderEncoder.ENCODED_LENGTH + BackupStatusResponseEncoder.BLOCK_LENGTH;
+    } else {
+      return 0;
+    }
   }
 
   @Override
   public void write(final MutableDirectBuffer buffer, final int offset) {
-    headerEncoder.wrap(buffer, offset);
-
-    headerEncoder
-        .blockLength(responseEncoder.sbeBlockLength())
-        .templateId(responseEncoder.sbeTemplateId())
-        .schemaId(responseEncoder.sbeSchemaId())
-        .version(responseEncoder.sbeSchemaVersion());
-
-    responseEncoder.wrap(buffer, offset + headerEncoder.encodedLength());
+    status.write(buffer, offset);
   }
 }
