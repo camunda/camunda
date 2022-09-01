@@ -20,6 +20,10 @@ public class NoopBackupManager implements BackupManager {
   private static final Logger LOG = LoggerFactory.getLogger(NoopBackupManager.class);
   private final String errorMessage;
 
+  /**
+   * @param errorMessage reason for installing NoopBackupManager. All operations will fail with this
+   *     message.
+   */
   public NoopBackupManager(final String errorMessage) {
     this.errorMessage = errorMessage;
   }

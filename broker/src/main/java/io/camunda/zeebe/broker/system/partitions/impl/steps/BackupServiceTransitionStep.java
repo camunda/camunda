@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.management.BackupService;
+import io.camunda.zeebe.backup.management.NoopBackupManager;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
@@ -43,15 +44,41 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
   @Override
   public ActorFuture<Void> transitionTo(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
-    if (targetRole != Role.INACTIVE) {
-      return installBackupManager(context);
+    final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
+    if (targetRole == Role.INACTIVE) {
+      return context.getConcurrencyControl().createCompletedFuture();
     }
-    return CompletableActorFuture.completed(null);
+    final ActorFuture<Void> backupManagerInstalled =
+        targetRole == Role.LEADER
+            ? installBackupManager(context)
+            : installNoopBackupManager(
+                context, "Broker is in follower role. Backup operations cannot be executed.");
+
+    backupManagerInstalled.onComplete(
+        (ignore, error) -> {
+          if (error == null) {
+            installCheckpointProcessor(context, context.getBackupManager());
+            installed.complete(null);
+          } else {
+            installed.completeExceptionally(error);
+          }
+        });
+
+    return installed;
   }
 
   @Override
   public String getName() {
     return "BackupManager";
+  }
+
+  private static ActorFuture<Void> installNoopBackupManager(
+      final PartitionTransitionContext context, final String reasonForNoop) {
+    final ActorFuture<Void> backupManagerInstalled;
+    final var backupManager = new NoopBackupManager(reasonForNoop);
+    context.setBackupManager(backupManager);
+    backupManagerInstalled = context.getConcurrencyControl().createCompletedFuture();
+    return backupManagerInstalled;
   }
 
   private ActorFuture<Void> installBackupManager(final PartitionTransitionContext context) {
@@ -75,23 +102,16 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
             context.getPersistedSnapshotStore(),
             isSegmentsFile,
             context.getRaftPartition().dataDirectory().toPath());
-    final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
-    context
-        .getActorSchedulingService()
-        .submitActor(backupManager)
-        .onComplete(
-            (ignore, error) -> {
-              if (error == null) {
-                context.setBackupManager(backupManager);
-                final CheckpointRecordsProcessor checkpointRecordsProcessor =
-                    new CheckpointRecordsProcessor(backupManager);
-                context.setCheckpointProcessor(checkpointRecordsProcessor);
-                installed.complete(null);
-              } else {
-                installed.completeExceptionally(error);
-              }
-            });
-    return installed;
+
+    return context.getActorSchedulingService().submitActor(backupManager);
+  }
+
+  private static void installCheckpointProcessor(
+      final PartitionTransitionContext context, final BackupManager backupManager) {
+    context.setBackupManager(backupManager);
+    final CheckpointRecordsProcessor checkpointRecordsProcessor =
+        new CheckpointRecordsProcessor(backupManager);
+    context.setCheckpointProcessor(checkpointRecordsProcessor);
   }
 
   // Brokers which are members of this partition's replication group
