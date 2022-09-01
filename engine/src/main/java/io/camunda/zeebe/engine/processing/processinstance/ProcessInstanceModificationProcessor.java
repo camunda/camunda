@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
+import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -172,6 +173,19 @@ public final class ProcessInstanceModificationProcessor
 
     responseWriter.writeEventOnCommand(
         eventKey, ProcessInstanceModificationIntent.MODIFIED, value, command);
+  }
+
+  @Override
+  public ProcessingError tryHandleError(
+      final TypedRecord<ProcessInstanceModificationRecord> typedCommand, final Throwable error) {
+    if (error instanceof EventSubscriptionException exception) {
+      rejectionWriter.appendRejection(
+          typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
+    return ProcessingError.UNEXPECTED_ERROR;
   }
 
   private Either<Rejection, ?> validateCommand(

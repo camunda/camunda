@@ -190,7 +190,7 @@ public class CreateProcessInstanceRejectionTest {
         .hasIntent(ProcessInstanceCreationIntent.CREATE)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
-            "expected to subscribe to catch event(s) of 'subprocess' but failed to evaluate "
+            "Expected to subscribe to catch event(s) of 'subprocess' but failed to evaluate "
                 + "expression 'unknown_var': no variable found for name 'unknown_var'");
 
     Assertions.assertThat(
