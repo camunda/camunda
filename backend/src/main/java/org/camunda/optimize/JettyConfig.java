@@ -37,8 +37,10 @@ import org.springframework.core.env.Environment;
 import javax.servlet.DispatcherType;
 import java.net.URL;
 import java.util.EnumSet;
+import java.util.Optional;
 
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATUS_WEBSOCKET_PATH;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.CONTEXT_PATH;
 import static org.eclipse.jetty.servlet.ServletContextHandler.getServletContextHandler;
 
 @Configuration
@@ -56,11 +58,14 @@ public class JettyConfig {
 
   @Bean
   public ServletWebServerFactory servletContainer() {
-    JettyServletWebServerFactory jetty = new JettyServletWebServerFactory(getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY));
+    JettyServletWebServerFactory jetty = getContextPath()
+      .map(contextPath -> new JettyServletWebServerFactory(contextPath, getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY)))
+      .orElseGet(() -> new JettyServletWebServerFactory(getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY)));
     String host = configurationService.getContainerHost();
     jetty.addServerCustomizers(server -> server.addConnector(
-      initHttpsConnector(configurationService, host, configurationService.getContainerKeystorePassword(),
-                         configurationService.getContainerKeystoreLocation(), server
+      initHttpsConnector(
+        configurationService, host, configurationService.getContainerKeystorePassword(),
+        configurationService.getContainerKeystoreLocation(), server
       )
     ));
     return jetty;
@@ -130,6 +135,15 @@ public class JettyConfig {
         configurationService.getContainerHttpPort().orElse(8090);
     }
     return Integer.parseInt(portProperty);
+  }
+
+  public Optional<String> getContextPath() {
+    // If the property is set by env var (the case when starting a new Optimize in ITs), this takes precedence over config
+    Optional<String> contextPath = Optional.ofNullable(environment.getProperty(CONTEXT_PATH));
+    if (contextPath.isEmpty()) {
+      return configurationService.getContextPath();
+    }
+    return contextPath;
   }
 
   private void addStaticResources(ServletContextHandler servletContextHandler) {

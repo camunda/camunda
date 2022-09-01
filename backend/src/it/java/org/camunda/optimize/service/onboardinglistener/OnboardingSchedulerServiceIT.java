@@ -24,7 +24,6 @@ import org.camunda.optimize.service.util.configuration.EmailSecurityProtocol;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -35,6 +34,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.importing.CustomerOnboadingDataImportIT.CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME;
 import static org.camunda.optimize.service.importing.CustomerOnboadingDataImportIT.CUSTOMER_ONBOARDING_PROCESS_INSTANCES;
 import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.EMAIL_SUBJECT;
@@ -46,8 +46,8 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
 
   private ConfigurationService configurationService;
   private GreenMail greenMail;
+
   @RegisterExtension
-  @Order(1)
   private final LogCapturer logCapturer = LogCapturer.create()
     .captureForType(OnboardingNotificationService.class);
 
@@ -127,7 +127,7 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
 
     // Then
-   assertThat(processTriggeredOnboarding).containsExactly(processKey);
+    assertThat(processTriggeredOnboarding).containsExactly(processKey);
 
     // First instance was completed and notified, now let's start with the 2nd instance
     // Clear our result array to check whether something new will be written on it
@@ -144,7 +144,7 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     // Make sure our function was not triggered
     assertThat(processTriggeredOnboarding).isEmpty();
   }
-  
+
   @Test
   public void eachProcessGetsItsOwnTriggerNotification() {
     // Given
@@ -259,7 +259,8 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     final ProcessDefinitionEngineDto processOne = deployAndStartSimpleServiceTaskProcess(processKey1);
     final ProcessDefinitionEngineDto processTwo = deployAndStartSimpleServiceTaskProcess(processKey2);
     importAllEngineEntitiesFromScratch();
-    restartOnboardingSchedulingService(onboardingSchedulerService); // Reinitialize the service to simulate the first start when Optimize is booted
+    restartOnboardingSchedulingService(onboardingSchedulerService); // Reinitialize the service to simulate the first start
+    // when Optimize is booted
     onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
     onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
 
@@ -327,11 +328,14 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     assertThat(emails).hasSize(1);
 
     //Remove all empty spaces and new lines for content comparison
-    String expectedEmailText = String.format("You have completed your first process instance for the %s process!",
-                                             processKey).replaceAll("[\\n\t ]", "");
+    String expectedEmailText = String.format(
+      "You have completed your first process instance for the %s process!",
+      processKey
+    ).replaceAll("[\\n\t ]", "");
     String expectedMagicLink = String.format(MAGIC_LINK_TEMPLATE, "", processKey, processKey).replaceAll("[\\n\t ]", "");
     String expectedGreeting = String.format("Hi %s %s,", kermitUser.getProfile().getFirstName(),
-                                            kermitUser.getProfile().getLastName()).replaceAll("[\\n\t ]", "");
+                                            kermitUser.getProfile().getLastName()
+    ).replaceAll("[\\n\t ]", "");
     String emailBodyWithoutEmptySpaces = GreenMailUtil.getBody(emails[0]).replaceAll("[\\n\r\t ]", "");
     assertThat(emailBodyWithoutEmptySpaces)
       .contains(expectedEmailText)
@@ -340,6 +344,37 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     assertThat(emails[0].getSubject()).isEqualTo(EMAIL_SUBJECT);
     assertThat(emails[0].getAllRecipients()).hasSize(1);
     assertThat(emails[0].getRecipients(Message.RecipientType.TO)[0]).hasToString(kermitUser.getProfile().getEmail());
+  }
+
+  @SneakyThrows
+  @Test
+  public void emailNotificationIsSentWithCorrectLinkWhenCustomContextPathApplied() {
+    try {
+      // given
+      final String customContextPath = "/customContextPath";
+      embeddedOptimizeExtension.getConfigurationService().setContextPath(customContextPath);
+      setupEmailAlerting(false, null, null, NONE);
+      initGreenMail(ServerSetup.PROTOCOL_SMTP);
+      final String processKey = "lets_spam";
+      final OnboardingSchedulerService onboardingSchedulerService =
+        embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
+      restartOnboardingSchedulingService(onboardingSchedulerService);
+      deployAndStartSimpleServiceTaskProcess(processKey);
+
+      // When
+      importAllEngineEntitiesFromScratch();
+      processOverviewClient.setInitialProcessOwner(processKey, DEFAULT_USERNAME);
+      onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+
+      // then
+      MimeMessage[] emails = greenMail.getReceivedMessages();
+      assertThat(emails).hasSize(1);
+      String expectedMagicLink = customContextPath + "/#" + String.format(MAGIC_LINK_TEMPLATE, "", processKey, processKey)
+        .replaceAll("[\\n\t ]", "");
+      assertThat(GreenMailUtil.getBody(emails[0]).replaceAll("[\\n\r\t ]", "")).contains(expectedMagicLink);
+    } finally {
+      embeddedOptimizeExtension.getConfigurationService().setContextPath(null);
+    }
   }
 
   @Test
@@ -360,8 +395,11 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).isEmpty();
-    logCapturer.assertContains(String.format("No overview for Process definition %s could be found, therefore not able to determine a valid" +
-                                               " owner. No onboarding email will be sent.", processKey));
+    logCapturer.assertContains(String.format(
+      "No overview for Process definition %s could be found, therefore not able to determine a valid" +
+        " owner. No onboarding email will be sent.",
+      processKey
+    ));
 
   }
 

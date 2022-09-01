@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.net.URI;
 
 import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.ACTUATOR_ENDPOINT;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 import static org.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
@@ -44,7 +45,6 @@ import static org.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
 import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static org.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.ACTUATOR_ENDPOINT;
 import static org.camunda.optimize.rest.constants.RestConstants.PROMETHEUS_ENDPOINT;
 import static org.camunda.optimize.rest.security.platform.PlatformWebSecurityConfigurerAdapter.DEEP_SUB_PATH_ANY;
 
@@ -93,9 +93,13 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
         // Identity callback request handling is public
         .antMatchers(createApiPath(AUTHENTICATION_PATH + CALLBACK)).permitAll()
         // public share resources
-        .antMatchers(EXTERNAL_SUB_PATH + "/", EXTERNAL_SUB_PATH + "/index*",
-                   EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**", EXTERNAL_SUB_PATH + "/*.js",
-                   EXTERNAL_SUB_PATH + "/*.ico").permitAll()
+        .antMatchers(
+          EXTERNAL_SUB_PATH + "/",
+          EXTERNAL_SUB_PATH + "/index*",
+          EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**",
+          EXTERNAL_SUB_PATH + "/*.js",
+          EXTERNAL_SUB_PATH + "/*.ico")
+      .permitAll()
         // public share related resources (API)
         .antMatchers(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)).permitAll()
         // common public api resources
@@ -144,8 +148,8 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
   private IdentityConfiguration identityConfiguration() {
     final CCSMAuthConfiguration ccsmAuthConfig = getCcsmAuthConfiguration();
     return new IdentityConfiguration(
-        ccsmAuthConfig.getIssuerUrl(), ccsmAuthConfig.getIssuerBackendUrl(),
-        ccsmAuthConfig.getClientId(), ccsmAuthConfig.getClientSecret(), ccsmAuthConfig.getAudience()
+      ccsmAuthConfig.getIssuerUrl(), ccsmAuthConfig.getIssuerBackendUrl(),
+      ccsmAuthConfig.getClientId(), ccsmAuthConfig.getClientSecret(), ccsmAuthConfig.getAudience()
     );
   }
 

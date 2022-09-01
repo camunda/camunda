@@ -91,6 +91,7 @@ public class ConfigurationServiceConstants {
 
   public static final String ENGINE_DATE_FORMAT = "$.serialization.engineDateFormat";
   public static final String CONTAINER_HOST = "$.container.host";
+  public static final String CONTAINER_CONTEXT_PATH = "$.container.contextPath";
   public static final String CONTAINER_KEYSTORE_PASSWORD = "$.container.keystore.password";
   public static final String CONTAINER_KEYSTORE_LOCATION = "$.container.keystore.location";
   public static final String CONTAINER_HTTPS_PORT = "$.container.ports.https";

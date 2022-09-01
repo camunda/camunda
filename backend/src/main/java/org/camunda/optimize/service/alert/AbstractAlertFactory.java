@@ -35,12 +35,10 @@ public abstract class AbstractAlertFactory<T extends Job> {
   }
 
   private long durationInMs(AlertInterval checkInterval) {
-    ChronoUnit parsedUnit = unitOf(checkInterval.getUnit().name());
-    long millis = Duration.between(
-        OffsetDateTime.now(),
-        OffsetDateTime.now().plus(checkInterval.getValue(), parsedUnit)
+    return Duration.between(
+      OffsetDateTime.now(),
+      OffsetDateTime.now().plus(checkInterval.getValue(), unitOf(checkInterval.getUnit().name()))
     ).toMillis();
-    return millis;
   }
 
   private ChronoUnit unitOf(String unit) {
@@ -51,27 +49,25 @@ public abstract class AbstractAlertFactory<T extends Job> {
     SimpleTrigger trigger = null;
     if (getInterval(alert) != null) {
       OffsetDateTime startFuture = OffsetDateTime.now()
-          .plus(
-              getInterval(alert).getValue(),
-              unitOf(getInterval(alert).getUnit().name())
-          );
+        .plus(
+          getInterval(alert).getValue(),
+          unitOf(getInterval(alert).getUnit().name())
+        );
 
       trigger = newTrigger()
-          .withIdentity(getTriggerName(alert), getTriggerGroup())
-          .startAt(new Date(startFuture.toInstant().toEpochMilli()))
-          .withSchedule(simpleSchedule()
-              .withIntervalInMilliseconds(durationInMs(getInterval(alert)))
-              .repeatForever()
-          )
-          .forJob(jobDetail)
-          .build();
+        .withIdentity(getTriggerName(alert), getTriggerGroup())
+        .startAt(new Date(startFuture.toInstant().toEpochMilli()))
+        .withSchedule(simpleSchedule()
+                        .withIntervalInMilliseconds(durationInMs(getInterval(alert)))
+                        .repeatForever()
+        )
+        .forJob(jobDetail)
+        .build();
     }
-
     return trigger;
   }
 
   public JobDetail createJobDetails(AlertDefinitionDto alert) {
-
     JobDetailFactoryBean jobDetailFactoryBean = new JobDetailFactoryBean();
     jobDetailFactoryBean.setJobClass(getJobClass());
     jobDetailFactoryBean.setDurability(true);
@@ -94,8 +90,8 @@ public abstract class AbstractAlertFactory<T extends Job> {
 
   protected JobKey getJobKey(AlertDefinitionDto alert) {
     return new JobKey(
-        this.getJobName(alert),
-        this.getJobGroup()
+      this.getJobName(alert),
+      this.getJobGroup()
     );
   }
 

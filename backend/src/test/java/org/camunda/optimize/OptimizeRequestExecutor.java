@@ -153,6 +153,7 @@ public class OptimizeRequestExecutor {
   @Getter
   private final WebTarget defaultWebTarget;
 
+  @Getter
   private WebTarget webTarget;
 
   private final String defaultUser;

@@ -261,13 +261,12 @@ public class DigestService implements ConfigurationReloadable {
       Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
       String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
       Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
-      return httpPrefix + configurationService.getContainerHost() + ":" + port;
+      return httpPrefix + configurationService.getContainerHost() + ":" + port + configurationService.getContextPath().orElse("");
     }
   }
 
-
   private String getOptimizeProcessPageLink() {
-    return getOptimizeUrl() + "#/processes";
+    return getOptimizeUrl() + "/#/processes";
   }
 
   private String getReportViewLink(final String reportId, final String collectionId) {

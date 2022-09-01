@@ -61,13 +61,14 @@ public class OnboardingDashboardCreationServiceIT extends AbstractIT {
     assertThat(data.getScope().get(0)).isEqualTo(expectedScope);
     CollectionRoleRequestDto expectedRole = new CollectionRoleRequestDto(
       new IdentityDto(DEFAULT_USERNAME, IdentityType.USER),
-      RoleType.MANAGER);
+      RoleType.MANAGER
+    );
     assertThat(data.getRoles().size()).isEqualTo(1);
     assertThat(data.getRoles().get(0)).isEqualTo(expectedRole);
   }
 
   @Test
-  public void whenADashboardAndCollectionAlreadyExistthenAddUserAsEditor() {
+  public void whenADashboardAndCollectionAlreadyExistThenAddUserAsEditor() {
     // given
     final String processKey = "most_potatoes_are_yellow";
     createDashboardAndCollectionAsDemoUser(processKey);
@@ -80,7 +81,7 @@ public class OnboardingDashboardCreationServiceIT extends AbstractIT {
     // Simulate a call from Spiderman now
     entitiesClient.getEntityNamesAsUser(processKey, processKey, null, null, SPIDERMAN_USER, SPIDERMAN_USER);
     final CollectionDefinitionRestDto collectionForProcessDefinition = collectionClient.getCollectionById(processKey);
-    
+
     // then
     assertThat(collectionForProcessDefinition).isNotNull();
     assertThat(collectionForProcessDefinition.getOwner()).isEqualTo(DEFAULT_FULLNAME);
@@ -197,7 +198,8 @@ public class OnboardingDashboardCreationServiceIT extends AbstractIT {
     assertThat(data.getScope().get(0)).isEqualTo(expectedScope);
     CollectionRoleRequestDto expectedRole = new CollectionRoleRequestDto(
       new IdentityDto(DEFAULT_USERNAME, IdentityType.USER),
-      RoleType.MANAGER);
+      RoleType.MANAGER
+    );
     assertThat(data.getRoles().size()).isEqualTo(1);
     assertThat(data.getRoles().get(0)).isEqualTo(expectedRole);
   }
@@ -246,14 +248,12 @@ public class OnboardingDashboardCreationServiceIT extends AbstractIT {
     onboardingDashboardCreationService.createNewDashboardForProcess(DEFAULT_USERNAME, processKey);
   }
 
-  private ProcessDefinitionEngineDto deployAndStartSimpleServiceTaskProcess(final String definitionKey) {
+  private void deployAndStartSimpleServiceTaskProcess(final String definitionKey) {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess(definitionKey);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    return processDefinition;
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(String definitionKey) {
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(
-      definitionKey));
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(definitionKey));
   }
 }

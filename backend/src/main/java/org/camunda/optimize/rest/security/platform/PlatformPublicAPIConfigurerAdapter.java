@@ -67,9 +67,11 @@ public class PlatformPublicAPIConfigurerAdapter extends AbstractPublicAPIConfigu
     http
       .requestMatchers()
       // Public APIs allowed in platform
-      .antMatchers(PUBLIC_API_PATH,
-                   createApiPath(INGESTION_PATH, EVENT_BATCH_SUB_PATH),
-                   createApiPath(INGESTION_PATH, VARIABLE_SUB_PATH))
+      .antMatchers(
+        PUBLIC_API_PATH,
+        createApiPath(INGESTION_PATH, EVENT_BATCH_SUB_PATH),
+        createApiPath(INGESTION_PATH, VARIABLE_SUB_PATH)
+      )
       .and()
       // since these calls will not be used in a browser, we can disable csrf
       .csrf().disable()

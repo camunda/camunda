@@ -223,6 +223,30 @@ public class ProcessDigestNotificationIT extends AbstractIT {
   }
 
   @Test
+  public void emailContainsCorrectLinksUsingCustomContextPath() {
+    // given
+    try {
+      final String customContextPath = "/customContextPath";
+      embeddedOptimizeExtension.getConfigurationService().setContextPath(customContextPath);
+      engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
+      final String reportId = createKpiReport("KPI Report 1");
+      importAllEngineEntitiesFromScratch();
+      runKpiSchedulerAndRefreshIndices();
+      processOverviewClient.updateProcess(
+        DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+
+      // then email contains report and process page links
+      assertThat(greenMail.waitForIncomingEmail(100, 1)).isTrue();
+      assertThat(readEmailHtmlContent(greenMail.getReceivedMessages()[0]))
+        .containsIgnoringWhitespaces(
+          customContextPath + "/#/report/" + reportId + "?utm_medium=email&utm_source=digest")
+        .containsIgnoringWhitespaces(customContextPath + "/#/processes");
+    } finally {
+      embeddedOptimizeExtension.getConfigurationService().setContextPath(null);
+    }
+  }
+
+  @Test
   public void latestDigestKpiResultsAreUpdated() throws InterruptedException {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));

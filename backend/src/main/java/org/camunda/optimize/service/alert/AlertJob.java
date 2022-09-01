@@ -70,8 +70,9 @@ public class AlertJob implements Job {
             + "] from Elasticsearch. Report does not exist."
         ));
       final ReportEvaluationInfo reportEvaluationInfo = ReportEvaluationInfo.builder(reportDefinition).build();
-      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final SingleReportEvaluationResult<Double> evaluationResult = (SingleReportEvaluationResult<Double>)
-        reportEvaluator.evaluateReport(reportEvaluationInfo).getEvaluationResult();
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final SingleReportEvaluationResult<Double> evaluationResult =
+        (SingleReportEvaluationResult<Double>)
+          reportEvaluator.evaluateReport(reportEvaluationInfo).getEvaluationResult();
       final Double reportResult = evaluationResult.getFirstCommandResult().getFirstMeasureData();
 
       if (thresholdExceeded(alert, reportResult)) {
@@ -237,10 +238,8 @@ public class AlertJob implements Job {
       Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
       String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
       Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
-      return httpPrefix + configurationService.getContainerHost() + ":" + port + createReportViewLinkPath(
-        alert,
-        notificationType
-      );
+      return httpPrefix + configurationService.getContainerHost() + ":" + port + configurationService.getContextPath()
+        .orElse("") + createReportViewLinkPath(alert, notificationType);
     }
   }
 

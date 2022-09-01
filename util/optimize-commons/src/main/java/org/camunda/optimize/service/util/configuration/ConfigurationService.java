@@ -151,6 +151,7 @@ public class ConfigurationService {
   private String pluginDirectory;
 
   private String containerHost;
+  private String contextPath;
   private String containerKeystorePassword;
   private String containerKeystoreLocation;
   private Integer containerHttpsPort;
@@ -717,6 +718,13 @@ public class ConfigurationService {
       containerHost = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_HOST);
     }
     return containerHost;
+  }
+
+  public Optional<String> getContextPath() {
+    if (contextPath == null) {
+      contextPath = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_CONTEXT_PATH);
+    }
+    return Optional.ofNullable(contextPath);
   }
 
   public String getContainerKeystorePassword() {

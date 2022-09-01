@@ -72,13 +72,11 @@ public class OnboardingNotificationService {
             generateMagicLinkForProcess(processKey)
           )
         );
-      }
-      else {
+      } else {
         log.warn(String.format("No user found for owner user ID %s of process %s, therefore no onboarding email will " +
                                  "be sent.", ownerId, processKey));
       }
-    }
-    else {
+    } else {
       log.warn(String.format("No overview for Process definition %s could be found, therefore not able to determine a valid" +
                                " owner. No onboarding email will be sent.", processKey));
     }
@@ -102,7 +100,8 @@ public class OnboardingNotificationService {
       Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
       String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
       Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
-      rootUrl =  httpPrefix + configurationService.getContainerHost() + ":" + port;
+      rootUrl = httpPrefix + configurationService.getContainerHost()
+        + ":" + port + configurationService.getContextPath().orElse("");
     }
     rootUrl += "/#";
     return String.format(MAGIC_LINK_TEMPLATE, rootUrl, processKey, processKey) + APP_CUE_DASHBOARD_SUFFIX;

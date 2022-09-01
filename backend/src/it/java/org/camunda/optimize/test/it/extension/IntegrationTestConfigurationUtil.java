@@ -70,11 +70,15 @@ public class IntegrationTestConfigurationUtil {
   }
 
   public static String getEmbeddedOptimizeEndpoint(ApplicationContext applicationContext) {
-    return "http://localhost:" + applicationContext.getBean(JettyConfig.class).getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY);
+    return "http://localhost:" + applicationContext.getBean(JettyConfig.class)
+      .getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY)
+      + applicationContext.getBean(JettyConfig.class).getContextPath().orElse("");
   }
 
   public static String getSecuredEmbeddedOptimizeEndpoint(ApplicationContext applicationContext) {
-    return "https://localhost:" + applicationContext.getBean(JettyConfig.class).getPort(EnvironmentPropertiesConstants.HTTPS_PORT_KEY);
+    return "https://localhost:" + applicationContext.getBean(JettyConfig.class)
+      .getPort(EnvironmentPropertiesConstants.HTTPS_PORT_KEY)
+      + applicationContext.getBean(JettyConfig.class).getContextPath().orElse("");
   }
 
   public static String getEmbeddedOptimizeRestApiEndpoint(ApplicationContext applicationContext) {

@@ -90,6 +90,8 @@ container:
   # A host name or IP address, to identify a specific network interface on
   # which to listen.
   host: ${CONTAINER_HOST:localhost}
+  # Allows you to specify a custom context path. If set, must start with a leading '/'
+  contextPath: ${CAMUNDA_OPTIMIZE_CONTEXT_PATH:null}
   ports:
     # A port number that will be used by Optimize to process HTTP connections.
     # If set to null, ~ or left empty, http connections won't be accepted.

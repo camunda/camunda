@@ -204,7 +204,6 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
   @Test
   public void testAccessUrlInAlertNotification() throws Exception {
     // given
-
     final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
 
@@ -212,7 +211,6 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     final String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
     setEmailConfiguration();
     embeddedOptimizeExtension.getConfigurationService().setContainerAccessUrlValue("http://test.de:8090");
-
 
     // when
     AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
@@ -234,6 +232,43 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
         collectionId,
         reportId
       ));
+  }
+
+  @Test
+  public void testCustomContextPathInAlertNotification() throws Exception {
+    // given
+    try {
+      final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
+      importAllEngineEntitiesFromScratch();
+
+      final String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
+      final String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
+      setEmailConfiguration();
+      embeddedOptimizeExtension.getConfigurationService().setContextPath("/customContextPath");
+
+      // when
+      AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
+      alertClient.createAlert(simpleAlert);
+
+      assertThat(greenMail.waitForIncomingEmail(3000, 1)).isTrue();
+
+      // then
+      MimeMessage[] emails = greenMail.getReceivedMessages();
+      assertThat(emails).hasSize(1);
+      String branding = embeddedOptimizeExtension.getConfigurationService().getNotificationEmailCompanyBranding();
+      assertThat(emails[0].getSubject()).isEqualTo(
+        "[" + branding + "-Optimize] - Report status");
+      String content = emails[0].getContent().toString();
+      assertThat(content)
+        .contains(branding)
+        .contains(String.format(
+          "/customContextPath/#/collection/%s/report/%s?utm_source=alert_new_triggered&utm_medium=email",
+          collectionId,
+          reportId
+        ));
+    } finally {
+      embeddedOptimizeExtension.getConfigurationService().setContextPath(null);
+    }
   }
 
   @Test
