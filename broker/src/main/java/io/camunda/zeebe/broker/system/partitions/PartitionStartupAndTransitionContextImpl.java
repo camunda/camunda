@@ -332,6 +332,11 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public void setBackupStore(final BackupStore backupStore) {
+    this.backupStore = backupStore;
+  }
+
+  @Override
   public boolean shouldProcess() {
     return partitionProcessingState.shouldProcess();
   }

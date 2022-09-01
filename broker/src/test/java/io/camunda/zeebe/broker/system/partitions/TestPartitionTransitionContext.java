@@ -250,6 +250,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     return backupStore;
   }
 
+  @Override
   public void setBackupStore(final BackupStore backupStore) {
     this.backupStore = backupStore;
   }

@@ -126,4 +126,6 @@ public interface PartitionTransitionContext extends PartitionContext {
   void setCheckpointProcessor(CheckpointRecordsProcessor checkpointRecordsProcessor);
 
   BackupStore getBackupStore();
+
+  void setBackupStore(BackupStore backupStore);
 }
