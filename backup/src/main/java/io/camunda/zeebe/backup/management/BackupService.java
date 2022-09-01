@@ -16,6 +16,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,11 +32,13 @@ public final class BackupService extends Actor implements BackupManager {
   private final PersistedSnapshotStore snapshotStore;
   private final Path segmentsDirectory;
   private final Predicate<Path> isSegmentsFile;
+  private List<Integer> partitionMembers;
 
   public BackupService(
       final int nodeId,
       final int partitionId,
       final int numberOfPartitions,
+      final List<Integer> partitionMembers,
       final PersistedSnapshotStore snapshotStore,
       final Predicate<Path> isSegmentsFile,
       final Path segmentsDirectory) {
@@ -48,6 +51,7 @@ public final class BackupService extends Actor implements BackupManager {
         snapshotStore,
         segmentsDirectory,
         isSegmentsFile);
+    this.partitionMembers = partitionMembers;
   }
 
   public BackupService(
@@ -120,6 +124,12 @@ public final class BackupService extends Actor implements BackupManager {
   public ActorFuture<Void> deleteBackup(final long checkpointId) {
     return CompletableActorFuture.completedExceptionally(
         new UnsupportedOperationException("Not implemented"));
+  }
+
+  @Override
+  public void failInProgressBackup(final long lastCheckpointId) {
+    internalBackupManager.failInProgressBackups(
+        partitionId, lastCheckpointId, partitionMembers, actor);
   }
 
   private BackupIdentifierImpl getBackupId(final long checkpointId) {

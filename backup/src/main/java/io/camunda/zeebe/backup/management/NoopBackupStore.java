@@ -45,7 +45,8 @@ final class NoopBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<BackupStatusCode> markFailed(final BackupIdentifier id) {
+  public CompletableFuture<BackupStatusCode> markFailed(
+      final BackupIdentifier id, final String failureReason) {
     return CompletableFuture.completedFuture(null);
   }
 }

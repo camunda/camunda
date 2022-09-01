@@ -10,16 +10,22 @@ package io.camunda.zeebe.backup.management;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
@@ -196,6 +202,59 @@ class BackupServiceImplTest {
         .withMessageContaining("Expected");
   }
 
+  @Test
+  void shouldMarkInProgressBackupsAsFailed() {
+    // given
+    final var inProgressBackup = new BackupIdentifierImpl(1, 1, 10);
+    final var notExistingBackup = new BackupIdentifierImpl(2, 1, 10);
+    final var completedBackup = new BackupIdentifierImpl(3, 1, 10);
+    final var inProgressStatus =
+        new BackupStatusImpl(
+            inProgressBackup, Optional.empty(), BackupStatusCode.IN_PROGRESS, Optional.empty());
+    final var notExistingStatus =
+        new BackupStatusImpl(
+            notExistingBackup, Optional.empty(), BackupStatusCode.DOES_NOT_EXIST, Optional.empty());
+    final var completedStatus =
+        new BackupStatusImpl(
+            completedBackup, Optional.empty(), BackupStatusCode.COMPLETED, Optional.empty());
+    when(backupStore.getStatus(inProgressBackup))
+        .thenReturn(CompletableFuture.completedFuture(inProgressStatus));
+    when(backupStore.getStatus(notExistingBackup))
+        .thenReturn(CompletableFuture.completedFuture(notExistingStatus));
+    when(backupStore.getStatus(completedBackup))
+        .thenReturn(CompletableFuture.completedFuture(completedStatus));
+
+    // when
+    backupService.failInProgressBackups(1, 10, List.of(1, 2, 3), concurrencyControl);
+
+    // then
+    final var expectedFailureReason = "Backup is cancelled due to leader change.";
+    verify(backupStore, timeout(1000)).markFailed(inProgressBackup, expectedFailureReason);
+    verify(backupStore, never()).markFailed(notExistingBackup, expectedFailureReason);
+    verify(backupStore, never()).markFailed(completedBackup, expectedFailureReason);
+  }
+
+  @Test
+  void shouldMarkRemainingBackupsAsFailedWhenThrowsError() {
+    // given
+    final var inProgressBackup = new BackupIdentifierImpl(1, 1, 10);
+    final var backupFailsToQuery = new BackupIdentifierImpl(2, 1, 10);
+    final var inProgressStatus =
+        new BackupStatusImpl(
+            inProgressBackup, Optional.empty(), BackupStatusCode.IN_PROGRESS, Optional.empty());
+    when(backupStore.getStatus(inProgressBackup))
+        .thenReturn(CompletableFuture.completedFuture(inProgressStatus));
+    when(backupStore.getStatus(backupFailsToQuery))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")));
+
+    // when
+    backupService.failInProgressBackups(1, 10, List.of(1, 2), concurrencyControl);
+
+    // then
+    verify(backupStore, timeout(1000))
+        .markFailed(inProgressBackup, "Backup is cancelled due to leader change.");
+  }
+
   private ActorFuture<Void> failedFuture() {
     final ActorFuture<Void> future = concurrencyControl.createFuture();
     future.completeExceptionally(new RuntimeException("Expected"));
@@ -234,7 +293,7 @@ class BackupServiceImplTest {
   }
 
   private void verifyInProgressBackupIsCleanedUpAfterFailure() {
-    verify(backupStore).markFailed(any());
+    verify(backupStore).markFailed(any(), any());
     verify(inProgressBackup).close();
   }
 }
