@@ -20,16 +20,17 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldInstallService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.util.health.HealthMonitor;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.MethodSource;
 
 class LogStreamPartitionTransitionStepTest {
   final TestPartitionTransitionContext transitionContext = new TestPartitionTransitionContext();
@@ -57,7 +58,7 @@ class LogStreamPartitionTransitionStepTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideTransitionsThatShouldCloseExistingLogStream")
+  @ArgumentsSource(TransitionsThatShouldCloseService.class)
   void shouldCloseExistingLogStream(final Role currentRole, final Role targetRole) {
     // given
     initializeContext(currentRole);
@@ -71,7 +72,7 @@ class LogStreamPartitionTransitionStepTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideTransitionsThatShouldInstallLogStream")
+  @ArgumentsSource(TransitionsThatShouldInstallService.class)
   void shouldInstallLogStream(final Role currentRole, final Role targetRole) {
     // given
     initializeContext(currentRole);
@@ -86,7 +87,7 @@ class LogStreamPartitionTransitionStepTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideTransitionsThatShouldDoNothing")
+  @ArgumentsSource(TransitionsThatShouldDoNothing.class)
   void shoulNotReInstallLogStorage(final Role currentRole, final Role targetRole) {
     // given
     initializeContext(currentRole);
@@ -115,37 +116,6 @@ class LogStreamPartitionTransitionStepTest {
     assertThat(transitionContext.getStreamProcessor()).isNull();
     verify(logStreamFromPrevRole).closeAsync();
     verify(logStreamBuilder, never()).buildAsync();
-  }
-
-  private static Stream<Arguments> provideTransitionsThatShouldCloseExistingLogStream() {
-    return Stream.of(
-        Arguments.of(Role.FOLLOWER, Role.LEADER),
-        Arguments.of(Role.CANDIDATE, Role.LEADER),
-        Arguments.of(Role.LEADER, Role.FOLLOWER),
-        Arguments.of(Role.LEADER, Role.INACTIVE),
-        Arguments.of(Role.FOLLOWER, Role.INACTIVE),
-        Arguments.of(Role.CANDIDATE, Role.INACTIVE));
-  }
-
-  private static Stream<Arguments> provideTransitionsThatShouldInstallLogStream() {
-    return Stream.of(
-        Arguments.of(null, Role.FOLLOWER),
-        Arguments.of(null, Role.LEADER),
-        Arguments.of(null, Role.CANDIDATE),
-        Arguments.of(Role.FOLLOWER, Role.LEADER),
-        Arguments.of(Role.CANDIDATE, Role.LEADER),
-        Arguments.of(Role.LEADER, Role.FOLLOWER),
-        Arguments.of(Role.LEADER, Role.CANDIDATE),
-        Arguments.of(Role.INACTIVE, Role.FOLLOWER),
-        Arguments.of(Role.INACTIVE, Role.LEADER),
-        Arguments.of(Role.INACTIVE, Role.CANDIDATE));
-  }
-
-  private static Stream<Arguments> provideTransitionsThatShouldDoNothing() {
-    return Stream.of(
-        Arguments.of(Role.CANDIDATE, Role.FOLLOWER),
-        Arguments.of(Role.FOLLOWER, Role.CANDIDATE),
-        Arguments.of(null, Role.INACTIVE));
   }
 
   private void initializeContext(final Role currentRole) {

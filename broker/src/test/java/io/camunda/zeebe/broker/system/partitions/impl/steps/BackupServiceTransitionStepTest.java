@@ -22,16 +22,17 @@ import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldInstallService;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.nio.file.Path;
 import java.util.Set;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -81,7 +82,7 @@ class BackupServiceTransitionStepTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideTransitionThatShouldCloseService")
+  @ArgumentsSource(TransitionsThatShouldCloseService.class)
   void shouldCloseExistingService(final Role currentRole, final Role targetRole) {
     // given
     transitionContext.setCurrentRole(currentRole);
@@ -100,7 +101,7 @@ class BackupServiceTransitionStepTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideTransitionsThatShouldInstallService")
+  @ArgumentsSource(TransitionsThatShouldInstallService.class)
   void shouldReInstallService(final Role currentRole, final Role targetRole) {
     // given
     transitionContext.setCurrentRole(currentRole);
@@ -122,7 +123,7 @@ class BackupServiceTransitionStepTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideTransitionsThatShouldDoNothing")
+  @ArgumentsSource(TransitionsThatShouldDoNothing.class)
   void shouldNotReInstallService(final Role currentRole, final Role targetRole) {
     // given
     transitionContext.setCurrentRole(currentRole);
@@ -172,37 +173,6 @@ class BackupServiceTransitionStepTest {
     assertThat(transitionContext.getCheckpointProcessor())
         .isNotNull()
         .isNotEqualTo(recordsProcessorPreviousRole);
-  }
-
-  private static Stream<Arguments> provideTransitionThatShouldCloseService() {
-    return Stream.of(
-        Arguments.of(Role.FOLLOWER, Role.LEADER),
-        Arguments.of(Role.CANDIDATE, Role.LEADER),
-        Arguments.of(Role.LEADER, Role.FOLLOWER),
-        Arguments.of(Role.LEADER, Role.INACTIVE),
-        Arguments.of(Role.FOLLOWER, Role.INACTIVE),
-        Arguments.of(Role.CANDIDATE, Role.INACTIVE));
-  }
-
-  private static Stream<Arguments> provideTransitionsThatShouldInstallService() {
-    return Stream.of(
-        Arguments.of(null, Role.FOLLOWER),
-        Arguments.of(null, Role.LEADER),
-        Arguments.of(null, Role.CANDIDATE),
-        Arguments.of(Role.FOLLOWER, Role.LEADER),
-        Arguments.of(Role.CANDIDATE, Role.LEADER),
-        Arguments.of(Role.LEADER, Role.FOLLOWER),
-        Arguments.of(Role.LEADER, Role.CANDIDATE),
-        Arguments.of(Role.INACTIVE, Role.FOLLOWER),
-        Arguments.of(Role.INACTIVE, Role.LEADER),
-        Arguments.of(Role.INACTIVE, Role.CANDIDATE));
-  }
-
-  private static Stream<Arguments> provideTransitionsThatShouldDoNothing() {
-    return Stream.of(
-        Arguments.of(Role.CANDIDATE, Role.FOLLOWER),
-        Arguments.of(Role.FOLLOWER, Role.CANDIDATE),
-        Arguments.of(null, Role.INACTIVE));
   }
 
   private void transitionTo(final Role role) {
