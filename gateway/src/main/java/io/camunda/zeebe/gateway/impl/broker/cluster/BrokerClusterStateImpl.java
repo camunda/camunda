@@ -8,9 +8,10 @@
 package io.camunda.zeebe.gateway.impl.broker.cluster;
 
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import org.agrona.collections.Int2IntHashMap;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.IntArrayList;
@@ -19,8 +20,8 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
 
   private final Int2IntHashMap partitionLeaders;
   private final Int2ObjectHashMap<Long> partitionLeaderTerms;
-  private final Int2ObjectHashMap<List<Integer>> partitionFollowers;
-  private final Int2ObjectHashMap<List<Integer>> partitionInactiveNodes;
+  private final Int2ObjectHashMap<Set<Integer>> partitionFollowers;
+  private final Int2ObjectHashMap<Set<Integer>> partitionInactiveNodes;
   private final Int2ObjectHashMap<Int2ObjectHashMap<PartitionHealthStatus>>
       partitionsHealthPerBroker;
   private final Int2ObjectHashMap<String> brokerAddresses;
@@ -69,11 +70,11 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
     if (partitionLeaderTerms.getOrDefault(partitionId, -1L) <= term) {
       partitionLeaders.put(partitionId, leaderId);
       partitionLeaderTerms.put(partitionId, Long.valueOf(term));
-      final List<Integer> followers = partitionFollowers.get(partitionId);
+      final Set<Integer> followers = partitionFollowers.get(partitionId);
       if (followers != null) {
         followers.removeIf(follower -> follower == leaderId);
       }
-      final List<Integer> inactives = partitionInactiveNodes.get(partitionId);
+      final Set<Integer> inactives = partitionInactiveNodes.get(partitionId);
       if (inactives != null) {
         inactives.removeIf(inactive -> inactive == leaderId);
       }
@@ -88,20 +89,20 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
   }
 
   public void addPartitionFollower(final int partitionId, final int followerId) {
-    partitionFollowers.computeIfAbsent(partitionId, ArrayList::new).add(followerId);
+    partitionFollowers.computeIfAbsent(partitionId, HashSet::new).add(followerId);
     partitionLeaders.remove(partitionId, followerId);
-    final List<Integer> inactives = partitionInactiveNodes.get(partitionId);
+    final Set<Integer> inactives = partitionInactiveNodes.get(partitionId);
     if (inactives != null) {
-      inactives.removeIf(inactive -> inactive == followerId);
+      inactives.remove(followerId);
     }
   }
 
   public void addPartitionInactive(final int partitionId, final int brokerId) {
-    partitionInactiveNodes.computeIfAbsent(partitionId, ArrayList::new).add(brokerId);
+    partitionInactiveNodes.computeIfAbsent(partitionId, HashSet::new).add(brokerId);
     partitionLeaders.remove(partitionId, brokerId);
-    final List<Integer> followers = partitionFollowers.get(partitionId);
+    final Set<Integer> followers = partitionFollowers.get(partitionId);
     if (followers != null) {
-      followers.removeIf(follower -> follower == brokerId);
+      followers.remove(brokerId);
     }
   }
 
@@ -136,13 +137,13 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
           if (partitionLeaders.get(partitionId) == brokerId) {
             partitionLeaders.remove(partitionId);
           }
-          final List<Integer> followers = partitionFollowers.get(partitionId);
+          final Set<Integer> followers = partitionFollowers.get(partitionId);
           if (followers != null) {
-            followers.remove(Integer.valueOf(brokerId));
+            followers.remove(brokerId);
           }
-          final List<Integer> inactive = partitionInactiveNodes.get(partitionId);
+          final Set<Integer> inactive = partitionInactiveNodes.get(partitionId);
           if (inactive != null) {
-            inactive.removeIf(id -> id == brokerId);
+            inactive.remove(brokerId);
           }
         });
   }
@@ -180,12 +181,12 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
   }
 
   @Override
-  public List<Integer> getFollowersForPartition(final int partition) {
+  public Set<Integer> getFollowersForPartition(final int partition) {
     return partitionFollowers.get(partition);
   }
 
   @Override
-  public List<Integer> getInactiveNodesForPartition(final int partition) {
+  public Set<Integer> getInactiveNodesForPartition(final int partition) {
     return partitionInactiveNodes.get(partition);
   }
 
@@ -227,6 +228,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
     return brokerVersions.get(brokerId);
   }
 
+  @Override
   public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partitionId) {
     final var brokerHealthyPartitions = partitionsHealthPerBroker.get(brokerId);
 

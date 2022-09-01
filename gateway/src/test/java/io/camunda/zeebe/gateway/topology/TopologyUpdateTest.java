@@ -201,6 +201,62 @@ public final class TopologyUpdateTest {
   }
 
   @Test
+  public void shouldUpdateTopologyMetadataWhileNotDuplicatingFollower() {
+    // given
+    final int brokerId = 0;
+    final int partition = 0;
+    final BrokerInfo broker = createBroker(brokerId);
+    broker.setPartitionHealthy(partition);
+    broker.setFollowerForPartition(partition);
+    topologyManager.event(createMemberAddedEvent(broker));
+    waitUntil(() -> topologyManager.getTopology() != null);
+    assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
+        .isEqualTo(PartitionHealthStatus.HEALTHY);
+    assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
+        .containsExactly(brokerId);
+
+    // when
+    broker.setPartitionUnhealthy(partition);
+    topologyManager.event(createMemberUpdateEvent(broker));
+    waitUntil(
+        () ->
+            topologyManager.getTopology().getPartitionHealth(brokerId, partition)
+                == PartitionHealthStatus.UNHEALTHY);
+
+    // then
+    assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
+        .containsExactly(brokerId);
+  }
+
+  @Test
+  public void shouldUpdateTopologyMetadataWhileNotDuplicatingInactiveNodes() {
+    // given
+    final int brokerId = 0;
+    final int partition = 0;
+    final BrokerInfo broker = createBroker(brokerId);
+    broker.setPartitionHealthy(partition);
+    broker.setInactiveForPartition(partition);
+    topologyManager.event(createMemberAddedEvent(broker));
+    waitUntil(() -> topologyManager.getTopology() != null);
+    assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
+        .isEqualTo(PartitionHealthStatus.HEALTHY);
+    assertThat(topologyManager.getTopology().getInactiveNodesForPartition(partition))
+        .containsExactly(brokerId);
+
+    // when
+    broker.setPartitionUnhealthy(partition);
+    topologyManager.event(createMemberUpdateEvent(broker));
+    waitUntil(
+        () ->
+            topologyManager.getTopology().getPartitionHealth(brokerId, partition)
+                == PartitionHealthStatus.UNHEALTHY);
+
+    // then
+    assertThat(topologyManager.getTopology().getInactiveNodesForPartition(partition))
+        .containsExactly(brokerId);
+  }
+
+  @Test
   public void shouldUpdateTopologyOnLeaderRemoval() {
     // given
     final BrokerInfo broker = createBroker(0).setLeaderForPartition(1, 1);
