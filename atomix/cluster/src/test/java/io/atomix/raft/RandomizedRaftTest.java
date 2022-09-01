@@ -45,6 +45,9 @@ public class RandomizedRaftTest {
   private ControllableRaftContexts raftContexts;
   private List<RaftOperation> defaultOperations;
   private List<RaftOperation> operationsWithSnapshot;
+  private List<RaftOperation> operationsWithRestarts;
+  private List<RaftOperation> operationsWithSnapshotsAndRestarts;
+
   private List<MemberId> raftMembers;
   private Path raftDataDirectory;
 
@@ -58,6 +61,8 @@ public class RandomizedRaftTest {
             .collect(Collectors.toList());
     defaultOperations = RaftOperation.getDefaultRaftOperations();
     operationsWithSnapshot = RaftOperation.getRaftOperationsWithSnapshot();
+    operationsWithRestarts = RaftOperation.getRaftOperationsWithRestarts();
+    operationsWithSnapshotsAndRestarts = RaftOperation.getRaftOperationsWithSnapshotsAndRestarts();
     raftMembers = servers;
   }
 
@@ -86,6 +91,44 @@ public class RandomizedRaftTest {
       throws Exception {
 
     consistencyTest(raftOperations, raftMembers, seed);
+  }
+
+  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  void consistencyTestWithRestarts(
+      @ForAll("raftOperationsWithRestarts") final List<RaftOperation> raftOperations,
+      @ForAll("raftMembers") final List<MemberId> raftMembers,
+      @ForAll("seeds") final long seed)
+      throws Exception {
+
+    consistencyTest(raftOperations, raftMembers, seed);
+  }
+
+  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  void consistencyTestWithSnapshotsAndRestarts(
+      @ForAll("raftOperationsWithSnapshotsAndRestarts") final List<RaftOperation> raftOperations,
+      @ForAll("raftMembers") final List<MemberId> raftMembers,
+      @ForAll("seeds") final long seed)
+      throws Exception {
+
+    consistencyTest(raftOperations, raftMembers, seed);
+  }
+
+  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  void livenessTestWithRestarts(
+      @ForAll("raftOperationsWithRestarts") final List<RaftOperation> raftOperations,
+      @ForAll("raftMembers") final List<MemberId> raftMembers,
+      @ForAll("seeds") final long seed)
+      throws Exception {
+    livenessTest(raftOperations, raftMembers, seed);
+  }
+
+  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  void livenessTestWithRestartsAndSnapshots(
+      @ForAll("raftOperationsWithSnapshotsAndRestarts") final List<RaftOperation> raftOperations,
+      @ForAll("raftMembers") final List<MemberId> raftMembers,
+      @ForAll("seeds") final long seed)
+      throws Exception {
+    livenessTest(raftOperations, raftMembers, seed);
   }
 
   @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
@@ -196,6 +239,16 @@ public class RandomizedRaftTest {
   Arbitrary<List<RaftOperation>> raftOperationsWithSnapshot() {
     final var operation = Arbitraries.of(operationsWithSnapshot);
     return operation.list().ofSize(OPERATION_SIZE);
+  }
+
+  @Provide
+  Arbitrary<List<RaftOperation>> raftOperationsWithRestarts() {
+    return Arbitraries.of(operationsWithRestarts).list().ofSize(OPERATION_SIZE);
+  }
+
+  @Provide
+  Arbitrary<List<RaftOperation>> raftOperationsWithSnapshotsAndRestarts() {
+    return Arbitraries.of(operationsWithSnapshotsAndRestarts).list().ofSize(OPERATION_SIZE);
   }
 
   @Provide
