@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
+import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -23,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -378,6 +381,21 @@ public class ModifyProcessInstanceVariablesTest {
 
   @Test
   public void shouldCreateVariablesBeforeEventSubscriptions() {
+    final Consumer<EventSubProcessBuilder> eventSubProcess =
+        esp ->
+            esp.startEvent()
+                .message(
+                    m -> m.name("event-subprocess-start").zeebeCorrelationKeyExpression("local"))
+                .userTask("B")
+                .endEvent();
+    final Consumer<SubProcessBuilder> subprocess =
+        sp ->
+            sp.embeddedSubProcess()
+                .eventSubProcess("event-subprocess", eventSubProcess)
+                .startEvent()
+                .userTask("C")
+                .endEvent();
+
     final var deployment =
         ENGINE
             .deployment()
@@ -385,24 +403,7 @@ public class ModifyProcessInstanceVariablesTest {
                 Bpmn.createExecutableProcess(PROCESS_ID)
                     .startEvent()
                     .userTask("A")
-                    .subProcess(
-                        "sp",
-                        sp ->
-                            sp.embeddedSubProcess()
-                                .eventSubProcess(
-                                    "event-subprocess",
-                                    eventSubProcess ->
-                                        eventSubProcess
-                                            .startEvent()
-                                            .message(
-                                                m ->
-                                                    m.name("event-subprocess-start")
-                                                        .zeebeCorrelationKeyExpression("local"))
-                                            .userTask("B")
-                                            .endEvent())
-                                .startEvent()
-                                .userTask("C")
-                                .endEvent())
+                    .subProcess("sp", subprocess)
                     .boundaryEvent()
                     .message(m -> m.name("message").zeebeCorrelationKeyExpression("global"))
                     .endEvent()
