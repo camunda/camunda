@@ -355,7 +355,7 @@ public final class ProcessInstanceModificationProcessor
             instruction ->
                 instruction.getElementId().equals(elementId)
                     || (Strings.isEmpty(instruction.getElementId())
-                        && elementId.equals(processInstance.getValue().getElementId())))
+                        && elementId.equals(processInstance.getValue().getBpmnProcessId())))
         .map(
             instruction -> {
               if (instruction instanceof ProcessInstanceModificationVariableInstruction vi) {
