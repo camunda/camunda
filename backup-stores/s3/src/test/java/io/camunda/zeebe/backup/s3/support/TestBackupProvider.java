@@ -45,7 +45,7 @@ public final class TestBackupProvider implements ArgumentsProvider {
 
     return new BackupImpl(
         new BackupIdentifierImpl(1, 2, 3),
-        new BackupDescriptorImpl(Optional.empty(), 4, 5),
+        new BackupDescriptorImpl(Optional.empty(), 4, 5, "test"),
         new NamedFileSetImpl(Map.of()),
         new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)));
   }
@@ -66,7 +66,7 @@ public final class TestBackupProvider implements ArgumentsProvider {
 
     return new BackupImpl(
         new BackupIdentifierImpl(1, 2, 3),
-        new BackupDescriptorImpl(Optional.of("test-snapshot-id"), 4, 5),
+        new BackupDescriptorImpl(Optional.of("test-snapshot-id"), 4, 5, "test"),
         new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)),
         new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)));
   }

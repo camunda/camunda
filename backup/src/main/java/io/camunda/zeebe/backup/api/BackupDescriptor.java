@@ -32,4 +32,15 @@ public interface BackupDescriptor {
    * @return number of partitions at the time backup is taken.
    */
   int numberOfPartitions();
+
+  /**
+   * Describes the version of the broker that took the backup. This may be a semver version (for
+   * example '8.1.0') or an arbitrary string (for example 'dev').
+   *
+   * <p>Including the version might be useful for backwards compatability, for example to restore
+   * backups of an old broker.
+   *
+   * @return The version of the broker that took the backup.
+   */
+  String brokerVersion();
 }
