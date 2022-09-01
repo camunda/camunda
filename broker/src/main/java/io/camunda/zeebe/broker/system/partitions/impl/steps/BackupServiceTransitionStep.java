@@ -28,12 +28,15 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
   public ActorFuture<Void> prepareTransition(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     final BackupManager backupManager = context.getBackupManager();
-    if (backupManager != null) {
+    if (backupManager != null
+        && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
+            || targetRole == Role.INACTIVE)) {
       final var closeFuture = backupManager.closeAsync();
       closeFuture.onComplete(
           (ignore, error) -> {
             if (error == null) {
               context.setBackupManager(null);
+              context.setCheckpointProcessor(null);
             }
           });
       return closeFuture;
@@ -45,33 +48,37 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
   public ActorFuture<Void> transitionTo(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
-    if (targetRole == Role.INACTIVE) {
-      return context.getConcurrencyControl().createCompletedFuture();
-    }
-    final ActorFuture<Void> backupManagerInstalled;
-    if (targetRole == Role.LEADER && context.getBackupStore() != null) {
-      backupManagerInstalled = installBackupManager(context);
-    } else if (targetRole == Role.FOLLOWER || targetRole == Role.CANDIDATE) {
-      backupManagerInstalled =
-          installNoopBackupManager(
-              context, "Broker is in follower role. Backup operations cannot be executed.");
-    } else {
-      backupManagerInstalled =
-          installNoopBackupManager(
-              context, "No BackupStore is configured. Backup operations cannot be executed.");
+
+    if (shouldInstallOnTransition(targetRole, context.getCurrentRole())
+        || (context.getBackupManager() == null && targetRole != Role.INACTIVE)) {
+
+      final ActorFuture<Void> backupManagerInstalled;
+      if (targetRole == Role.LEADER && context.getBackupStore() != null) {
+        backupManagerInstalled = installBackupManager(context);
+      } else if (targetRole == Role.FOLLOWER || targetRole == Role.CANDIDATE) {
+        backupManagerInstalled =
+            installNoopBackupManager(
+                context, "Broker is in follower role. Backup operations cannot be executed.");
+      } else {
+        backupManagerInstalled =
+            installNoopBackupManager(
+                context, "No BackupStore is configured. Backup operations cannot be executed.");
+      }
+
+      backupManagerInstalled.onComplete(
+          (ignore, error) -> {
+            if (error == null) {
+              installCheckpointProcessor(context, context.getBackupManager());
+              installed.complete(null);
+            } else {
+              installed.completeExceptionally(error);
+            }
+          });
+
+      return installed;
     }
 
-    backupManagerInstalled.onComplete(
-        (ignore, error) -> {
-          if (error == null) {
-            installCheckpointProcessor(context, context.getBackupManager());
-            installed.complete(null);
-          } else {
-            installed.completeExceptionally(error);
-          }
-        });
-
-    return installed;
+    return context.getConcurrencyControl().createCompletedFuture();
   }
 
   @Override
@@ -111,7 +118,20 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
             context.getRaftPartition().dataDirectory().toPath(),
             isSegmentsFile);
 
-    return context.getActorSchedulingService().submitActor(backupManager);
+    final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
+    context
+        .getActorSchedulingService()
+        .submitActor(backupManager)
+        .onComplete(
+            (ignore, error) -> {
+              if (error == null) {
+                context.setBackupManager(backupManager);
+                installed.complete(null);
+              } else {
+                installed.completeExceptionally(error);
+              }
+            });
+    return installed;
   }
 
   private static void installCheckpointProcessor(
@@ -128,5 +148,11 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
         .map(MemberId::id)
         .map(Integer::parseInt)
         .toList();
+  }
+
+  private boolean shouldInstallOnTransition(final Role newRole, final Role currentRole) {
+    return newRole == Role.LEADER
+        || (newRole == Role.FOLLOWER && currentRole != Role.CANDIDATE)
+        || (newRole == Role.CANDIDATE && currentRole != Role.FOLLOWER);
   }
 }
