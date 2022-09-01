@@ -23,8 +23,10 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
@@ -620,6 +622,54 @@ public class ModifyProcessInstanceTest {
 
     verifyThatElementIsCompleted(processInstanceKey, "event-subprocess-1");
     verifyThatElementIsCompleted(processInstanceKey, "event-subprocess-2");
+  }
+
+  @Test
+  public void shouldSetVariablesFromMultipleInstructions() {
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .parallelGateway()
+                .userTask("A")
+                .moveToLastGateway()
+                .userTask("B")
+                .moveToLastGateway()
+                .userTask("C")
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("A")
+        .withGlobalVariables(Map.of("foo", 1))
+        .withGlobalVariables(Map.of("bar", 2))
+        .activateElement("B")
+        .withGlobalVariables(Map.of("baz", 3))
+        .withGlobalVariables(Map.of("fizz", 4))
+        .withGlobalVariables(Map.of("buzz", 5))
+        .activateElement("C")
+        .withGlobalVariables(Map.of("foo", "updated"))
+        .withGlobalVariables(Map.of("bar", true))
+        .modify();
+
+    Assertions.assertThat(RecordingExporter.variableRecords().onlyEvents().limit(7))
+        .extracting(Record::getValue)
+        .extracting(VariableRecordValue::getName, VariableRecordValue::getValue)
+        .containsExactlyInAnyOrder(
+            tuple("foo", "1"),
+            tuple("bar", "2"),
+            tuple("baz", "3"),
+            tuple("fizz", "4"),
+            tuple("buzz", "5"),
+            tuple("foo", "\"updated\""),
+            tuple("bar", "true"));
   }
 
   private static void verifyThatRootElementIsActivated(
