@@ -5,7 +5,7 @@
   "homepage": ".",
   "dependencies": {
     "@bpmn-io/dmn-migrate": "^0.4.3",
-    "@ibm/plex": "^6.0.2",
+    "@ibm/plex": "^6.1.0",
     "bpmn-js": "9.4.0",
     "bpmn-js-disable-collapsed-subprocess": "^0.1.5",
     "chart.js": "^3.9.1",
