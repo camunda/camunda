@@ -184,8 +184,7 @@ public class LicenseManager {
                  "found. Please enter a valid license key!  If you already have \n" +
                  "a valid key you can have a look here, how to add it to Optimize:\n" +
                  "\n" +
-                 "https://docs.camunda.org/optimize/" + Version.getMajorAndMinor(Version.VERSION) + "/user-guide" +
-                 "/license/ \n" +
+                 "https://docs.camunda.io/docs/next/self-managed/optimize-deployment/configuration/optimize-license/ \n" +
                  "\n" +
                  "In case you don't have a valid license, feel free to contact us at:\n" +
                  "\n" +
