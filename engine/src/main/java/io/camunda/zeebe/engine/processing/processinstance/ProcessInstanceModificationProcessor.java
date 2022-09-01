@@ -125,7 +125,7 @@ public final class ProcessInstanceModificationProcessor
     final var process =
         processState.getProcessByKey(processInstanceRecord.getProcessDefinitionKey());
 
-    final var validationResult = validateCommand(command, process, processInstance);
+    final var validationResult = validateCommand(command, process);
     if (validationResult.isLeft()) {
       final var rejection = validationResult.getLeft();
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
@@ -169,16 +169,14 @@ public final class ProcessInstanceModificationProcessor
   }
 
   private Either<Rejection, ?> validateCommand(
-      final TypedRecord<ProcessInstanceModificationRecord> command,
-      final DeployedProcess process,
-      final ElementInstance processInstance) {
+      final TypedRecord<ProcessInstanceModificationRecord> command, final DeployedProcess process) {
     final var value = command.getValue();
     final var activateInstructions = value.getActivateInstructions();
     final var terminateInstructions = value.getTerminateInstructions();
 
     return validateElementExists(process, activateInstructions)
         .flatMap(valid -> validateElementSupported(process, activateInstructions))
-        .flatMap(valid -> validateElementInstanceExists(processInstance, terminateInstructions))
+        .flatMap(valid -> validateElementInstanceExists(process, terminateInstructions))
         .map(valid -> VALID);
   }
 
@@ -316,7 +314,7 @@ public final class ProcessInstanceModificationProcessor
   }
 
   private Either<Rejection, ?> validateElementInstanceExists(
-      final ElementInstance processInstance,
+      final DeployedProcess process,
       final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions) {
 
     final List<Long> unknownElementInstanceKeys =
@@ -333,7 +331,7 @@ public final class ProcessInstanceModificationProcessor
     final String reason =
         String.format(
             ERROR_MESSAGE_TERMINATE_ELEMENT_INSTANCE_NOT_FOUND,
-            processInstance.getValue().getBpmnProcessId(),
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
             unknownElementInstanceKeys.stream()
                 .map(Objects::toString)
                 .collect(Collectors.joining("', '")));
