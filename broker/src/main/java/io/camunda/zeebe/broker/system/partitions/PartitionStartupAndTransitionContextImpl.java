@@ -11,6 +11,7 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
@@ -97,6 +98,8 @@ public class PartitionStartupAndTransitionContextImpl
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private final TopologyManager topologyManager;
+
+  private BackupStore backupStore;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -321,6 +324,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setCheckpointProcessor(final CheckpointRecordsProcessor checkpointRecordsProcessor) {
     this.checkpointRecordsProcessor = checkpointRecordsProcessor;
+  }
+
+  @Override
+  public BackupStore getBackupStore() {
+    return backupStore;
   }
 
   @Override

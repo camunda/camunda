@@ -48,11 +48,18 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
     if (targetRole == Role.INACTIVE) {
       return context.getConcurrencyControl().createCompletedFuture();
     }
-    final ActorFuture<Void> backupManagerInstalled =
-        targetRole == Role.LEADER
-            ? installBackupManager(context)
-            : installNoopBackupManager(
-                context, "Broker is in follower role. Backup operations cannot be executed.");
+    final ActorFuture<Void> backupManagerInstalled;
+    if (targetRole == Role.LEADER && context.getBackupStore() != null) {
+      backupManagerInstalled = installBackupManager(context);
+    } else if (targetRole == Role.FOLLOWER || targetRole == Role.CANDIDATE) {
+      backupManagerInstalled =
+          installNoopBackupManager(
+              context, "Broker is in follower role. Backup operations cannot be executed.");
+    } else {
+      backupManagerInstalled =
+          installNoopBackupManager(
+              context, "No BackupStore is configured. Backup operations cannot be executed.");
+    }
 
     backupManagerInstalled.onComplete(
         (ignore, error) -> {
@@ -99,9 +106,10 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
             context.getPartitionId(),
             context.getBrokerCfg().getCluster().getPartitionsCount(),
             getPartitionMembers(context),
+            context.getBackupStore(),
             context.getPersistedSnapshotStore(),
-            isSegmentsFile,
-            context.getRaftPartition().dataDirectory().toPath());
+            context.getRaftPartition().dataDirectory().toPath(),
+            isSegmentsFile);
 
     return context.getActorSchedulingService().submitActor(backupManager);
   }

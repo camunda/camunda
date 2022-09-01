@@ -32,32 +32,13 @@ public final class BackupService extends Actor implements BackupManager {
   private final PersistedSnapshotStore snapshotStore;
   private final Path segmentsDirectory;
   private final Predicate<Path> isSegmentsFile;
-  private List<Integer> partitionMembers;
+  private final List<Integer> partitionMembers;
 
   public BackupService(
       final int nodeId,
       final int partitionId,
       final int numberOfPartitions,
       final List<Integer> partitionMembers,
-      final PersistedSnapshotStore snapshotStore,
-      final Predicate<Path> isSegmentsFile,
-      final Path segmentsDirectory) {
-    // Use a noop backup store until a proper backup store is available
-    this(
-        nodeId,
-        partitionId,
-        numberOfPartitions,
-        NoopBackupStore.INSTANCE,
-        snapshotStore,
-        segmentsDirectory,
-        isSegmentsFile);
-    this.partitionMembers = partitionMembers;
-  }
-
-  public BackupService(
-      final int nodeId,
-      final int partitionId,
-      final int numberOfPartitions,
       final BackupStore backupStore,
       final PersistedSnapshotStore snapshotStore,
       final Path segmentsDirectory,
@@ -65,6 +46,7 @@ public final class BackupService extends Actor implements BackupManager {
     this.nodeId = nodeId;
     this.partitionId = partitionId;
     this.numberOfPartitions = numberOfPartitions;
+    this.partitionMembers = partitionMembers;
     this.snapshotStore = snapshotStore;
     this.segmentsDirectory = segmentsDirectory;
     this.isSegmentsFile = isSegmentsFile;
