@@ -16,11 +16,13 @@ import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -429,19 +431,20 @@ public class ModifyProcessInstanceVariablesTest {
         .withGlobalVariables(Map.of("global", "global"))
         .modify();
 
-    final Record<ProcessInstanceRecordValue> activatedElement =
+    final long subProcessKey =
         RecordingExporter.processInstanceRecords()
             .onlyEvents()
             .withElementId("sp")
             .withProcessInstanceKey(processInstanceKey)
             .limit("sp", ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .getFirst();
+            .getFirst()
+            .getKey();
 
     // then
     assertThatVariableCreatedInScope(
         processInstanceKey,
         deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey(),
-        activatedElement.getKey(),
+        subProcessKey,
         "local",
         "\"local\"");
     assertThatVariableCreatedInScope(
@@ -450,6 +453,14 @@ public class ModifyProcessInstanceVariablesTest {
         processInstanceKey,
         "global",
         "\"global\"");
+    Assertions.assertThat(RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+            .limit(2L))
+        .extracting(Record::getValue)
+        .extracting(MessageSubscriptionRecordValue::getCorrelationKey, MessageSubscriptionRecordValue::getElementInstanceKey)
+        .containsExactlyInAnyOrder(
+            tuple("global", subProcessKey),
+            tuple("local", subProcessKey));
   }
 
   private void assertThatVariableCreatedInScope(
