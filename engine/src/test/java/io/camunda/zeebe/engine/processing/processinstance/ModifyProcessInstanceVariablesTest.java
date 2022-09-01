@@ -453,14 +453,15 @@ public class ModifyProcessInstanceVariablesTest {
         processInstanceKey,
         "global",
         "\"global\"");
-    Assertions.assertThat(RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-            .limit(2L))
+    Assertions.assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2L))
         .extracting(Record::getValue)
-        .extracting(MessageSubscriptionRecordValue::getCorrelationKey, MessageSubscriptionRecordValue::getElementInstanceKey)
-        .containsExactlyInAnyOrder(
-            tuple("global", subProcessKey),
-            tuple("local", subProcessKey));
+        .extracting(
+            MessageSubscriptionRecordValue::getCorrelationKey,
+            MessageSubscriptionRecordValue::getElementInstanceKey)
+        .containsExactlyInAnyOrder(tuple("global", subProcessKey), tuple("local", subProcessKey));
   }
 
   private void assertThatVariableCreatedInScope(
