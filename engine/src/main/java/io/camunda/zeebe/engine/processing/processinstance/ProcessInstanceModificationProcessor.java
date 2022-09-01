@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
@@ -51,11 +52,14 @@ public final class ProcessInstanceModificationProcessor
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to modify process instance but no process instance found with key '%d'";
-  private static final String ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND =
+  private static final String ERROR_MESSAGE_ACTIVATE_ELEMENT_NOT_FOUND =
       "Expected to modify instance of process '%s' but it contains one or more activate instructions with an element that could not be found: '%s'";
-  private static final String ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED =
+  private static final String ERROR_MESSAGE_ACTIVATE_ELEMENT_UNSUPPORTED =
       "Expected to modify instance of process '%s' but it contains one or more activate instructions"
           + " for elements that are unsupported: '%s'. %s.";
+  private static final String ERROR_MESSAGE_TERMINATE_ELEMENT_INSTANCE_NOT_FOUND =
+      "Expected to modify instance of process '%s' but it contains one or more terminate instructions"
+          + " with an element instance that could not be found: '%s'";
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
@@ -168,9 +172,11 @@ public final class ProcessInstanceModificationProcessor
       final TypedRecord<ProcessInstanceModificationRecord> command, final DeployedProcess process) {
     final var value = command.getValue();
     final var activateInstructions = value.getActivateInstructions();
+    final var terminateInstructions = value.getTerminateInstructions();
 
     return validateElementExists(process, activateInstructions)
         .flatMap(valid -> validateElementSupported(process, activateInstructions))
+        .flatMap(valid -> validateElementInstanceExists(process, terminateInstructions))
         .map(valid -> VALID);
   }
 
@@ -189,7 +195,7 @@ public final class ProcessInstanceModificationProcessor
 
     final String reason =
         String.format(
-            ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND,
+            ERROR_MESSAGE_ACTIVATE_ELEMENT_NOT_FOUND,
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", unknownElementIds));
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
@@ -207,23 +213,24 @@ public final class ProcessInstanceModificationProcessor
   private static Either<Rejection, ?> validateElementsDoNotBelongToEventBasedGateway(
       final DeployedProcess process,
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
-    final Set<String> elementIdsConnectedToEventBasedGateway =
+    final List<String> elementIdsConnectedToEventBasedGateway =
         activateInstructions.stream()
             .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .distinct()
             .filter(
                 elementId -> {
                   final var element = process.getProcess().getElementById(elementId);
                   return element instanceof ExecutableCatchEventElement event
                       && event.isConnectedToEventBasedGateway();
                 })
-            .collect(Collectors.toSet());
+            .toList();
 
     if (elementIdsConnectedToEventBasedGateway.isEmpty()) {
       return VALID;
     }
 
     final var reason =
-        ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED.formatted(
+        ERROR_MESSAGE_ACTIVATE_ELEMENT_UNSUPPORTED.formatted(
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", elementIdsConnectedToEventBasedGateway),
             "The activation of events belonging to an event-based gateway is not supported");
@@ -233,12 +240,13 @@ public final class ProcessInstanceModificationProcessor
   private Either<Rejection, ?> validateElementsNotInsideMultiInstance(
       final DeployedProcess process,
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
-    final Set<String> elementsInsideMultiInstance =
+    final List<String> elementsInsideMultiInstance =
         activateInstructions.stream()
             .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .distinct()
             .filter(
                 elementId -> isInsideMultiInstanceBody(process, BufferUtil.wrapString(elementId)))
-            .collect(Collectors.toSet());
+            .toList();
 
     if (elementsInsideMultiInstance.isEmpty()) {
       return VALID;
@@ -246,7 +254,7 @@ public final class ProcessInstanceModificationProcessor
 
     final String reason =
         String.format(
-            ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED,
+            ERROR_MESSAGE_ACTIVATE_ELEMENT_UNSUPPORTED,
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", elementsInsideMultiInstance),
             "The activation of elements inside a multi-instance subprocess is not supported");
@@ -260,6 +268,7 @@ public final class ProcessInstanceModificationProcessor
     final List<AbstractFlowElement> elementsWithUnsupportedElementType =
         activateInstructions.stream()
             .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .distinct()
             .map(elementId -> process.getProcess().getElementById(elementId))
             .filter(element -> UNSUPPORTED_ELEMENT_TYPES.contains(element.getElementType()))
             .toList();
@@ -280,7 +289,7 @@ public final class ProcessInstanceModificationProcessor
             .distinct()
             .collect(Collectors.joining("', '"));
     final var reason =
-        ERROR_MESSAGE_TARGET_ELEMENT_UNSUPPORTED.formatted(
+        ERROR_MESSAGE_ACTIVATE_ELEMENT_UNSUPPORTED.formatted(
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             usedUnsupportedElementIds,
             "The activation of elements with type '%s' is not supported. Supported element types are: %s"
@@ -302,6 +311,31 @@ public final class ProcessInstanceModificationProcessor
 
     return flowScope.getElementType() == BpmnElementType.MULTI_INSTANCE_BODY
         || isInsideMultiInstanceBody(process, flowScope.getId());
+  }
+
+  private Either<Rejection, ?> validateElementInstanceExists(
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions) {
+
+    final List<Long> unknownElementInstanceKeys =
+        terminateInstructions.stream()
+            .map(ProcessInstanceModificationTerminateInstructionValue::getElementInstanceKey)
+            .distinct()
+            .filter(instanceKey -> elementInstanceState.getInstance(instanceKey) == null)
+            .toList();
+
+    if (unknownElementInstanceKeys.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_TERMINATE_ELEMENT_INSTANCE_NOT_FOUND,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            unknownElementInstanceKeys.stream()
+                .map(Objects::toString)
+                .collect(Collectors.joining("', '")));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
   private void executeGlobalVariableInstructions(
