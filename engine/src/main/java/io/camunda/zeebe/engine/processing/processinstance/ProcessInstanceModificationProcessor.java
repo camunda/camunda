@@ -140,10 +140,16 @@ public final class ProcessInstanceModificationProcessor
               final var elementToActivate =
                   process.getProcess().getElementById(instruction.getElementId());
 
-              executeGlobalVariableInstructions(processInstance, process, instruction);
-              // todo(#9663): execute local variable instructions
-
-              elementActivationBehavior.activateElement(processInstanceRecord, elementToActivate);
+              elementActivationBehavior.activateElement(
+                  processInstanceRecord,
+                  elementToActivate,
+                  (elementId, scopeKey) ->
+                      executeVariableInstruction(
+                          BufferUtil.bufferAsString(elementId),
+                          scopeKey,
+                          processInstance,
+                          process,
+                          instruction));
             });
 
     final var sideEffectQueue = new SideEffectQueue();
@@ -338,13 +344,18 @@ public final class ProcessInstanceModificationProcessor
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
-  private void executeGlobalVariableInstructions(
+  public void executeVariableInstruction(
+      final String elementId,
+      final Long scopeKey,
       final ElementInstance processInstance,
       final DeployedProcess process,
       final ProcessInstanceModificationActivateInstructionValue activate) {
-    final var scopeKey = processInstance.getKey();
     activate.getVariableInstructions().stream()
-        .filter(v -> Strings.isEmpty(v.getElementId()))
+        .filter(
+            instruction ->
+                instruction.getElementId().equals(elementId)
+                    || (Strings.isEmpty(instruction.getElementId())
+                        && elementId.equals(processInstance.getValue().getBpmnProcessId())))
         .map(
             instruction -> {
               if (instruction instanceof ProcessInstanceModificationVariableInstruction vi) {

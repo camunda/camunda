@@ -28,10 +28,11 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceClient {
@@ -268,85 +269,39 @@ public final class ProcessInstanceClient {
     private final StreamProcessorRule environmentRule;
     private final long processInstanceKey;
     private final ProcessInstanceModificationRecord record;
+    private final List<ProcessInstanceModificationActivateInstruction> activateInstructions;
 
     public ProcessInstanceModificationClient(
         final StreamProcessorRule environmentRule, final long processInstanceKey) {
       this.environmentRule = environmentRule;
       this.processInstanceKey = processInstanceKey;
       record = new ProcessInstanceModificationRecord();
+      activateInstructions = new ArrayList<>();
+    }
+
+    private ProcessInstanceModificationClient(
+        final StreamProcessorRule environmentRule,
+        final long processInstanceKey,
+        final ProcessInstanceModificationRecord record,
+        final List<ProcessInstanceModificationActivateInstruction> activateInstructions) {
+      this.environmentRule = environmentRule;
+      this.processInstanceKey = processInstanceKey;
+      this.record = record;
+      this.activateInstructions = activateInstructions;
     }
 
     /**
      * Add an activate element instruction.
      *
      * @param elementId the id of the element to activate
-     * @return this client builder for chaining
+     * @return this ActivationInstruction builder for chaining
      */
-    public ProcessInstanceModificationClient activateElement(final String elementId) {
-      record.addActivateInstruction(
-          new ProcessInstanceModificationActivateInstruction().setElementId(elementId));
-      return this;
-    }
-
-    /**
-     * Add an activate element instruction, with variables.
-     *
-     * <p>The variables will be set locally on the defined {@code variablesScopeId}, or globally if
-     * the {@code variablesScopeId} is {@code null}.
-     *
-     * @param elementId the id of the element to activate
-     * @param variablesScopeId the element id to use as variable scope for the provided variables
-     * @param variables the variables to set locally
-     * @return this client builder for chaining
-     */
-    public ProcessInstanceModificationClient activateElement(
-        final String elementId, @Nullable final String variablesScopeId, final String variables) {
-      return activateElement(elementId, variablesScopeId, MsgPackUtil.asMsgPack(variables));
-    }
-
-    /**
-     * Add an activate element instruction, with variables.
-     *
-     * <p>The variables will be set locally on the defined {@code variablesScopeId}, or globally if
-     * the {@code variablesScopeId} is {@code null}.
-     *
-     * @param elementId the id of the element to activate
-     * @param variablesScopeId the element id to use as variable scope for the provided variables
-     * @param variables the variables to set locally
-     * @return this client builder for chaining
-     */
-    public ProcessInstanceModificationClient activateElement(
-        final String elementId,
-        @Nullable final String variablesScopeId,
-        final Map<String, Object> variables) {
-      return activateElement(elementId, variablesScopeId, MsgPackUtil.asMsgPack(variables));
-    }
-
-    /**
-     * Add an activate element instruction, with variables.
-     *
-     * <p>The variables will be set locally on the defined {@code variablesScopeId}, or globally if
-     * the {@code variablesScopeId} is {@code null}.
-     *
-     * @param elementId the id of the element to activate
-     * @param variablesScopeId the element id to use as variable scope for the provided variables
-     * @param variables the variables to set locally
-     * @return this client builder for chaining
-     */
-    public ProcessInstanceModificationClient activateElement(
-        final String elementId,
-        @Nullable final String variablesScopeId,
-        final DirectBuffer variables) {
-      final var variableInstruction = new ProcessInstanceModificationVariableInstruction();
-      if (variablesScopeId != null) {
-        variableInstruction.setElementId(variablesScopeId);
-      }
-      variableInstruction.setVariables(variables);
-      record.addActivateInstruction(
-          new ProcessInstanceModificationActivateInstruction()
-              .setElementId(elementId)
-              .addVariableInstruction(variableInstruction));
-      return this;
+    public ActivationInstructionBuilder activateElement(final String elementId) {
+      final var activateInstruction =
+          new ProcessInstanceModificationActivateInstruction().setElementId(elementId);
+      activateInstructions.add(activateInstruction);
+      return new ActivationInstructionBuilder(
+          environmentRule, processInstanceKey, record, activateInstructions, activateInstruction);
     }
 
     public ProcessInstanceModificationClient terminateElement(final long elementInstanceKey) {
@@ -363,6 +318,7 @@ public final class ProcessInstanceClient {
 
     public Record<ProcessInstanceModificationRecordValue> modify() {
       record.setProcessInstanceKey(processInstanceKey);
+      activateInstructions.forEach(record::addActivateInstruction);
 
       final var position =
           environmentRule.writeCommand(
@@ -372,6 +328,95 @@ public final class ProcessInstanceClient {
         return expectation.apply(processInstanceKey);
       } else {
         return expectation.apply(position);
+      }
+    }
+
+    public static class ActivationInstructionBuilder extends ProcessInstanceModificationClient {
+
+      private final ProcessInstanceModificationActivateInstruction activateInstruction;
+
+      public ActivationInstructionBuilder(
+          final StreamProcessorRule environmentRule,
+          final long processInstanceKey,
+          final ProcessInstanceModificationRecord record,
+          final List<ProcessInstanceModificationActivateInstruction> activateInstructions,
+          final ProcessInstanceModificationActivateInstruction activateInstruction) {
+        super(environmentRule, processInstanceKey, record, activateInstructions);
+        this.activateInstruction = activateInstruction;
+      }
+
+      /**
+       * Add global variables to the activate instruction
+       *
+       * @param variables the variables to set
+       * @return this client builder for chaining
+       */
+      public ActivationInstructionBuilder withGlobalVariables(final String variables) {
+        return withGlobalVariables(MsgPackUtil.asMsgPack(variables));
+      }
+
+      /**
+       * Add global variables to the activate instruction
+       *
+       * @param variables the variables to set
+       * @return this client builder for chaining
+       */
+      public ActivationInstructionBuilder withGlobalVariables(final Map<String, Object> variables) {
+        return withGlobalVariables(MsgPackUtil.asMsgPack(variables));
+      }
+
+      /**
+       * Add global variables to the activate instruction
+       *
+       * @param variables the variables to set
+       * @return this client builder for chaining
+       */
+      public ActivationInstructionBuilder withGlobalVariables(final DirectBuffer variables) {
+        final var variableInstruction =
+            new ProcessInstanceModificationVariableInstruction().setVariables(variables);
+        activateInstruction.addVariableInstruction(variableInstruction);
+        return this;
+      }
+
+      /**
+       * Add variables to the activate instruction
+       *
+       * @param variablesScopeId the element id to use as variable scope for the provided variables
+       * @param variables the variables to set locally
+       * @return this client builder for chaining
+       */
+      public ActivationInstructionBuilder withVariables(
+          final String variablesScopeId, final String variables) {
+        return withVariables(variablesScopeId, MsgPackUtil.asMsgPack(variables));
+      }
+
+      /**
+       * Add variables to the activate instruction
+       *
+       * @param variablesScopeId the element id to use as variable scope for the provided variables
+       * @param variables the variables to set locally
+       * @return this client builder for chaining
+       */
+      public ActivationInstructionBuilder withVariables(
+          final String variablesScopeId, final Map<String, Object> variables) {
+        return withVariables(variablesScopeId, MsgPackUtil.asMsgPack(variables));
+      }
+
+      /**
+       * Add variables to the activate instruction
+       *
+       * @param variablesScopeId the element id to use as variable scope for the provided variables
+       * @param variables the variables to set locally
+       * @return this client builder for chaining
+       */
+      public ActivationInstructionBuilder withVariables(
+          final String variablesScopeId, final DirectBuffer variables) {
+        final var variableInstruction =
+            new ProcessInstanceModificationVariableInstruction()
+                .setElementId(variablesScopeId)
+                .setVariables(variables);
+        activateInstruction.addVariableInstruction(variableInstruction);
+        return this;
       }
     }
   }
