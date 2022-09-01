@@ -192,9 +192,12 @@ public final class ElementActivationBehavior {
       elementInstanceFlowScopeKey = flowScopeKey;
     }
 
-    createVariablesCallback.accept(flowScope.getId(), elementInstanceKey);
     activateFlowScopeByEvents(
-        processInstanceRecord, flowScope, elementInstanceKey, elementInstanceFlowScopeKey);
+        processInstanceRecord,
+        flowScope,
+        elementInstanceKey,
+        elementInstanceFlowScopeKey,
+        createVariablesCallback);
 
     return elementInstanceKey;
   }
@@ -203,12 +206,14 @@ public final class ElementActivationBehavior {
       final ProcessInstanceRecord processInstanceRecord,
       final ExecutableFlowElement element,
       final long elementInstanceKey,
-      final long flowScopeKey) {
+      final long flowScopeKey,
+      final BiConsumer<DirectBuffer, Long> createVariablesCallback) {
 
     final var elementRecord = createElementRecord(processInstanceRecord, element, flowScopeKey);
 
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, elementRecord);
+    createVariablesCallback.accept(element.getId(), elementInstanceKey);
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, elementRecord);
 
