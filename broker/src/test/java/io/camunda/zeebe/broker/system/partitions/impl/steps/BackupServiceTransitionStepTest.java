@@ -12,12 +12,20 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.management.NoopBackupManager;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import java.nio.file.Path;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,12 +45,30 @@ class BackupServiceTransitionStepTest {
   @Mock BackupManager backupManagerPreviousRole;
   @Mock CheckpointRecordsProcessor recordsProcessorPreviousRole;
   @Mock ActorSchedulingService actorSchedulingService;
+  @Mock BackupStore backupStore;
+
+  @Mock BrokerCfg brokerCfg;
+
+  @Mock ClusterCfg clusterCfg;
+
+  @Mock RaftPartition raftPartition;
   BackupServiceTransitionStep step;
 
   @BeforeEach
   void setup() {
     transitionContext.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
     transitionContext.setActorSchedulingService(actorSchedulingService);
+    transitionContext.setBackupStore(backupStore);
+    transitionContext.setBrokerCfg(brokerCfg);
+    transitionContext.setRaftPartition(raftPartition);
+
+    lenient().when(brokerCfg.getCluster()).thenReturn(clusterCfg);
+    lenient().when(clusterCfg.getPartitionsCount()).thenReturn(3);
+    lenient()
+        .when(raftPartition.members())
+        .thenReturn(Set.of(MemberId.from("1"), MemberId.from("2")));
+    lenient().when(raftPartition.dataDirectory()).thenReturn(Path.of("/tmp/zeebe").toFile());
+
     lenient()
         .when(actorSchedulingService.submitActor(any()))
         .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
@@ -113,6 +139,39 @@ class BackupServiceTransitionStepTest {
     // then
     assertThat(transitionContext.getBackupManager()).isEqualTo(existingBackupManager);
     assertThat(transitionContext.getCheckpointProcessor()).isEqualTo(existingRecordsProcessor);
+  }
+
+  void shouldInstallNoopBackupManagerWhenFollower() {
+    // given
+    transitionContext.setCurrentRole(Role.LEADER);
+    transitionContext.setBackupManager(backupManagerPreviousRole);
+    transitionContext.setCheckpointProcessor(recordsProcessorPreviousRole);
+
+    // when
+    transitionTo(Role.FOLLOWER);
+
+    // then
+    assertThat(transitionContext.getBackupManager()).isInstanceOf(NoopBackupManager.class);
+    assertThat(transitionContext.getCheckpointProcessor())
+        .isNotNull()
+        .isNotEqualTo(recordsProcessorPreviousRole);
+  }
+
+  void shouldInstallNoopBackupManagerWhenNoBackupStore() {
+    // given
+    transitionContext.setCurrentRole(Role.FOLLOWER);
+    transitionContext.setBackupManager(backupManagerPreviousRole);
+    transitionContext.setCheckpointProcessor(recordsProcessorPreviousRole);
+    transitionContext.setBackupStore(null);
+
+    // when
+    transitionTo(Role.LEADER);
+
+    // then
+    assertThat(transitionContext.getBackupManager()).isInstanceOf(NoopBackupManager.class);
+    assertThat(transitionContext.getCheckpointProcessor())
+        .isNotNull()
+        .isNotEqualTo(recordsProcessorPreviousRole);
   }
 
   private static Stream<Arguments> provideTransitionThatShouldCloseService() {
