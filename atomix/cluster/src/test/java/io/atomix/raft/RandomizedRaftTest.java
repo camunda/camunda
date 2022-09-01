@@ -63,7 +63,7 @@ public class RandomizedRaftTest {
 
   @AfterTry
   public void shutDownRaftNodes() throws IOException {
-    raftContexts.shudown();
+    raftContexts.shutdown();
     FileUtil.deleteFolder(raftDataDirectory);
     raftDataDirectory = null;
   }
@@ -184,7 +184,7 @@ public class RandomizedRaftTest {
     raftContexts.assertNoGapsInLog();
   }
 
-  /** Basic raft operations with out snapshotting, compaction or restart */
+  /** Basic raft operations without snapshotting, compaction or restart */
   @Provide
   Arbitrary<List<RaftOperation>> raftOperations() {
     final var operation = Arbitraries.of(defaultOperations);

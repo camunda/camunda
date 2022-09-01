@@ -46,16 +46,16 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   private Function<AppendRequest, CompletableFuture<AppendResponse>> appendHandler;
   private final Map<MemberId, ControllableRaftServerProtocol> servers;
   // Incoming messages to each member
-  private final Map<MemberId, Queue<Tuple<Runnable, CompletableFuture>>> messageQueue;
+  private final Map<MemberId, Queue<Tuple<Runnable, CompletableFuture<?>>>> messageQueue;
   private final MemberId localMemberId;
-  private final Map<CompletableFuture, Long> timeoutQueue = new HashMap<>();
+  private final Map<CompletableFuture<?>, Long> timeoutQueue = new HashMap<>();
   private long currentTime = 0;
   private final long requestTimeoutMillis = Duration.ofSeconds(5).toMillis();
 
   public ControllableRaftServerProtocol(
       final MemberId memberId,
       final Map<MemberId, ControllableRaftServerProtocol> servers,
-      final Map<MemberId, Queue<Tuple<Runnable, CompletableFuture>>> messageQueue) {
+      final Map<MemberId, Queue<Tuple<Runnable, CompletableFuture<?>>>> messageQueue) {
     this.servers = servers;
     this.messageQueue = messageQueue;
     localMemberId = memberId;
@@ -66,7 +66,7 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   public void receiveNextMessage() {
     final var rcvQueue = messageQueue.get(localMemberId);
     if (!rcvQueue.isEmpty()) {
-      final Tuple<Runnable, CompletableFuture> message = rcvQueue.poll();
+      final Tuple<Runnable, CompletableFuture<?>> message = rcvQueue.poll();
       message.getLeft().run();
       timeoutQueue.remove(message.getRight());
     }
@@ -75,7 +75,7 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   public void receiveAll() {
     final var rcvQueue = messageQueue.get(localMemberId);
     while (!rcvQueue.isEmpty()) {
-      final Tuple<Runnable, CompletableFuture> message = rcvQueue.poll();
+      final Tuple<Runnable, CompletableFuture<?>> message = rcvQueue.poll();
       message.getLeft().run();
       timeoutQueue.remove(message.getRight());
     }
@@ -105,13 +105,13 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   private void send(
       final MemberId memberId,
       final Runnable requestHandler,
-      final CompletableFuture responseFuture) {
-    final var message = new Tuple<>(requestHandler, responseFuture);
+      final CompletableFuture<?> responseFuture) {
+    final var message = new Tuple<Runnable, CompletableFuture<?>>(requestHandler, responseFuture);
     messageQueue.computeIfAbsent(memberId, m -> new LinkedList<>()).add(message);
     addTimeOut(responseFuture);
   }
 
-  private void addTimeOut(final CompletableFuture responseFuture) {
+  private void addTimeOut(final CompletableFuture<?> responseFuture) {
     if (responseFuture != null) {
       timeoutQueue.put(responseFuture, currentTime + requestTimeoutMillis);
     }
@@ -125,7 +125,7 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
       final var entry = iter.next();
       final Long deadline = entry.getValue();
       if (currentTime >= deadline) {
-        final CompletableFuture messageFuture = entry.getKey();
+        final CompletableFuture<?> messageFuture = entry.getKey();
         if (!messageFuture.isDone()) {
           messageFuture.completeExceptionally(new TimeoutException());
         }

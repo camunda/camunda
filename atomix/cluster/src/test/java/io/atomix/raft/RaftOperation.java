@@ -58,20 +58,13 @@ public final class RaftOperation {
   public static List<RaftOperation> getDefaultRaftOperations() {
     final List<RaftOperation> defaultRaftOperation = new ArrayList<>();
     defaultRaftOperation.add(
-        RaftOperation.of(
-            "Run next task", (raftContexts, memberId) -> raftContexts.runNextTask(memberId)));
+        RaftOperation.of("Run next task", ControllableRaftContexts::runNextTask));
     defaultRaftOperation.add(
-        RaftOperation.of(
-            "Receive next message",
-            (raftContexts, memberId) -> raftContexts.processNextMessage(memberId)));
+        RaftOperation.of("Receive next message", ControllableRaftContexts::processNextMessage));
     defaultRaftOperation.add(
-        RaftOperation.of(
-            "Tick electionTimeout",
-            (raftContexts, memberId) -> raftContexts.tickElectionTimeout(memberId)));
+        RaftOperation.of("Tick electionTimeout", ControllableRaftContexts::tickElectionTimeout));
     defaultRaftOperation.add(
-        RaftOperation.of(
-            "Tick heartbeatTimeout",
-            (raftContexts, memberId) -> raftContexts.tickHeartbeatTimeout(memberId)));
+        RaftOperation.of("Tick heartbeatTimeout", ControllableRaftContexts::tickHeartbeatTimeout));
     defaultRaftOperation.add(
         RaftOperation.of(
             "Tick 50ms", (raftContexts, m) -> raftContexts.tick(m, Duration.ofMillis(50))));
