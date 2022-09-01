@@ -17,6 +17,10 @@ import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.ManifestParseException;
+import io.camunda.zeebe.backup.s3.manifest.CompletedBackupManifest;
+import io.camunda.zeebe.backup.s3.manifest.FailedBackupManifest;
+import io.camunda.zeebe.backup.s3.manifest.Manifest;
+import io.camunda.zeebe.backup.s3.manifest.ValidBackupManifest;
 import io.camunda.zeebe.backup.s3.support.TestBackupProvider;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -77,15 +81,16 @@ public abstract class AbstractBackupStoreIT {
               .join();
 
       final var readManifest =
-          S3BackupStore.MAPPER.readValue(manifestObject.asByteArray(), Manifest.class);
+          S3BackupStore.MAPPER.readValue(
+              manifestObject.asByteArray(), CompletedBackupManifest.class);
 
       assertThat(readManifest.descriptor()).isEqualTo(backup.descriptor());
       assertThat(readManifest.id()).isEqualTo(backup.id());
 
-      assertThat(readManifest.created())
+      assertThat(readManifest.createdAt())
           .isBeforeOrEqualTo(Instant.now())
-          .isBeforeOrEqualTo(readManifest.lastModified());
-      assertThat(readManifest.lastModified()).isBeforeOrEqualTo(Instant.now());
+          .isBeforeOrEqualTo(readManifest.modifiedAt());
+      assertThat(readManifest.modifiedAt()).isBeforeOrEqualTo(Instant.now());
 
       assertThat(readManifest.snapshotFileNames()).isEqualTo(backup.snapshot().names());
       assertThat(readManifest.segmentFileNames()).isEqualTo(backup.segments().names());
@@ -221,7 +226,7 @@ public abstract class AbstractBackupStoreIT {
               .join();
 
       final var manifest =
-          S3BackupStore.MAPPER.readValue(manifestObject.asByteArray(), Manifest.class);
+          S3BackupStore.MAPPER.readValue(manifestObject.asByteArray(), ValidBackupManifest.class);
 
       assertThat(manifest.statusCode()).isEqualTo(BackupStatusCode.COMPLETED);
     }
@@ -249,10 +254,11 @@ public abstract class AbstractBackupStoreIT {
               .join();
 
       final var objectMapper = S3BackupStore.MAPPER;
-      final var readManifest = objectMapper.readValue(manifestObject.asByteArray(), Manifest.class);
+      final var readManifest =
+          objectMapper.readValue(manifestObject.asByteArray(), FailedBackupManifest.class);
 
       assertThat(readManifest.statusCode()).isEqualTo(BackupStatusCode.FAILED);
-      assertThat(readManifest.failureReason()).hasValue("error");
+      assertThat(readManifest.failureReason()).isEqualTo("error");
     }
 
     @ParameterizedTest
@@ -409,8 +415,7 @@ public abstract class AbstractBackupStoreIT {
 
       // when
       getStore()
-          .writeManifestObject(
-              Manifest.fromNewBackup(backup).withStatus(BackupStatusCode.IN_PROGRESS))
+          .updateManifestObject(backup.id(), manifest -> Manifest.fromNewBackup(backup))
           .join();
 
       final var delete = getStore().delete(backup.id());

@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.backup.s3;
 
+import io.camunda.zeebe.backup.api.BackupStatusCode;
+import io.camunda.zeebe.backup.s3.manifest.Manifest;
+
 public abstract sealed class S3BackupStoreException extends RuntimeException {
 
   private S3BackupStoreException(final String message, final Throwable cause) {
@@ -40,6 +43,13 @@ public abstract sealed class S3BackupStoreException extends RuntimeException {
   public static final class BackupInInvalidStateException extends S3BackupStoreException {
     public BackupInInvalidStateException(final String message) {
       super(message, null);
+    }
+
+    public BackupInInvalidStateException(
+        final Manifest manifest, final BackupStatusCode expectedStatus) {
+      this(
+          "Expected %s to be %s but was %s"
+              .formatted(manifest.id(), expectedStatus, manifest.statusCode()));
     }
   }
 

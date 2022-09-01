@@ -18,23 +18,26 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.NamedFileSet;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
-import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupDeletionIncomplete;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReadException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.ManifestParseException;
+import io.camunda.zeebe.backup.s3.manifest.InProgressBackupManifest;
+import io.camunda.zeebe.backup.s3.manifest.Manifest;
+import io.camunda.zeebe.backup.s3.manifest.NoBackupManifest;
+import io.camunda.zeebe.backup.s3.manifest.ValidBackupManifest;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -91,10 +94,8 @@ public final class S3BackupStore implements BackupStore {
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
     LOG.info("Saving {}", backup.id());
-    final var manifest = Manifest.fromNewBackup(backup);
-    return requireBackupStatus(backup.id(), EnumSet.of(BackupStatusCode.DOES_NOT_EXIST))
-        .thenComposeAsync(
-            id -> writeManifestObject(manifest.withStatus(BackupStatusCode.IN_PROGRESS)))
+    return updateManifestObject(
+            backup.id(), Manifest::expectNoBackup, manifest -> manifest.asInProgress(backup))
         .thenComposeAsync(
             status -> {
               final var snapshot = saveSnapshotFiles(backup);
@@ -102,12 +103,12 @@ public final class S3BackupStore implements BackupStore {
               return CompletableFuture.allOf(snapshot, segments);
             })
         .thenComposeAsync(
-            ignored -> requireBackupStatus(backup.id(), EnumSet.of(BackupStatusCode.IN_PROGRESS)))
-        .thenComposeAsync(
-            content -> writeManifestObject(manifest.withStatus(BackupStatusCode.COMPLETED)))
+            ignored ->
+                updateManifestObject(
+                    backup.id(), Manifest::expectInProgress, InProgressBackupManifest::asCompleted))
         .exceptionallyComposeAsync(
             throwable ->
-                writeManifestObject(manifest.withFailedStatus(throwable))
+                updateManifestObject(backup.id(), manifest -> manifest.asFailed(throwable))
                     // Mark the returned future as failed.
                     .thenCompose(status -> CompletableFuture.failedStage(throwable)))
         // Discard status, it's either COMPLETED or the future is completed exceptionally
@@ -117,34 +118,23 @@ public final class S3BackupStore implements BackupStore {
   @Override
   public CompletableFuture<BackupStatus> getStatus(final BackupIdentifier id) {
     LOG.info("Querying status of {}", id);
-    return readManifestObject(id)
-        .thenApply(Manifest::toStatus)
-        .exceptionally(
-            throwable -> {
-              // throwable is a `CompletionException`, `getCause` to handle the underlying exception
-              if (throwable.getCause() instanceof NoSuchKeyException) {
-                // Couldn't find status or metadata, indicating that the backup doesn't exist
-                return new BackupStatusImpl(
-                    id,
-                    Optional.empty(),
-                    BackupStatusCode.DOES_NOT_EXIST,
-                    Optional.empty(),
-                    Optional.empty(),
-                    Optional.empty());
-              } else if (throwable.getCause() instanceof S3BackupStoreException e) {
-                // Exception was already wrapped, no need to re-wrap
-                throw e;
-              } else {
-                // Something else happened, we don't know the status of the backup
-                throw new BackupReadException("Failed to retrieve backup status", throwable);
-              }
-            });
+    return readManifestObject(id).thenApply(Manifest::toStatus);
   }
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
     LOG.info("Deleting {}", id);
-    return requireBackupStatus(id, EnumSet.complementOf(EnumSet.of(BackupStatusCode.IN_PROGRESS)))
+    return readManifestObject(id)
+        .thenApply(
+            manifest -> {
+              if (manifest.statusCode() == BackupStatusCode.IN_PROGRESS) {
+                throw new BackupInInvalidStateException(
+                    "Can't delete in-progress backup %s, must be marked as failed first"
+                        .formatted(manifest.id()));
+              } else {
+                return manifest.id();
+              }
+            })
         .thenComposeAsync(this::listBackupObjects)
         .thenComposeAsync(this::deleteBackupObjects);
   }
@@ -153,8 +143,8 @@ public final class S3BackupStore implements BackupStore {
   public CompletableFuture<Backup> restore(final BackupIdentifier id, final Path targetFolder) {
     LOG.info("Restoring {} to {}", id, targetFolder);
     final var backupPrefix = objectPrefix(id);
-    return requireBackupStatus(id, EnumSet.of(BackupStatusCode.COMPLETED))
-        .thenComposeAsync(this::readManifestObject)
+    return readManifestObject(id)
+        .thenApply(Manifest::expectCompleted)
         .thenComposeAsync(
             manifest ->
                 downloadNamedFileSet(
@@ -172,8 +162,7 @@ public final class S3BackupStore implements BackupStore {
   public CompletableFuture<BackupStatusCode> markFailed(
       final BackupIdentifier id, final String failureReason) {
     LOG.info("Marking {} as failed", id);
-    return readManifestObject(id)
-        .thenComposeAsync(manifest -> writeManifestObject(manifest.withFailedStatus(failureReason)))
+    return updateManifestObject(id, manifest -> manifest.asFailed(failureReason))
         .thenApply(Manifest::statusCode);
   }
 
@@ -196,23 +185,6 @@ public final class S3BackupStore implements BackupStore {
 
     return CompletableFuture.allOf(futures)
         .thenApply(ignored -> new NamedFileSetImpl(downloadedFiles));
-  }
-
-  private CompletableFuture<BackupIdentifier> requireBackupStatus(
-      final BackupIdentifier id, final EnumSet<BackupStatusCode> requiredStatus) {
-    LOG.debug("Testing that status of {} is one of {}", id, requiredStatus);
-    return getStatus(id)
-        .thenApplyAsync(
-            status -> {
-              if (!requiredStatus.contains(status.statusCode())) {
-                throw new BackupInInvalidStateException(
-                    "Expected backup to have status "
-                        + requiredStatus
-                        + " but was "
-                        + status.statusCode());
-              }
-              return id;
-            });
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final BackupIdentifier id) {
@@ -259,16 +231,43 @@ public final class S3BackupStore implements BackupStore {
         .thenApply(
             response -> {
               try {
-                return MAPPER.readValue(response.asInputStream(), Manifest.class);
+                return (Manifest)
+                    MAPPER.readValue(response.asInputStream(), ValidBackupManifest.class);
               } catch (final JsonParseException e) {
                 throw new ManifestParseException("Failed to parse manifest object", e);
               } catch (final IOException e) {
                 throw new BackupReadException("Failed to read manifest object", e);
               }
+            })
+        .exceptionally(
+            throwable -> {
+              // throwable is a `CompletionException`, `getCause` to handle the underlying exception
+              if (throwable.getCause() instanceof NoSuchKeyException) {
+                LOG.debug("Found no manifest for backup {}", id);
+                return new NoBackupManifest(BackupIdentifierImpl.from(id));
+              } else if (throwable.getCause() instanceof S3BackupStoreException e) {
+                // Exception was already wrapped, no need to re-wrap
+                throw e;
+              } else {
+                throw new BackupReadException(
+                    "Failed to read manifest of %s".formatted(id), throwable);
+              }
             });
   }
 
-  CompletableFuture<Manifest> writeManifestObject(final Manifest manifest) {
+  <T> CompletableFuture<ValidBackupManifest> updateManifestObject(
+      final BackupIdentifier id,
+      final Function<Manifest, T> typeExpectation,
+      final Function<T, ValidBackupManifest> update) {
+    return updateManifestObject(id, manifest -> update.apply(typeExpectation.apply(manifest)));
+  }
+
+  CompletableFuture<ValidBackupManifest> updateManifestObject(
+      final BackupIdentifier id, final Function<Manifest, ValidBackupManifest> update) {
+    return readManifestObject(id).thenApply(update).thenComposeAsync(this::writeManifestObject);
+  }
+
+  CompletableFuture<ValidBackupManifest> writeManifestObject(final ValidBackupManifest manifest) {
     LOG.debug("Updating manifest of {} to {}", manifest.id(), manifest);
     final AsyncRequestBody body;
     try {
