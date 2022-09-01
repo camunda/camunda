@@ -276,6 +276,17 @@ public abstract class AbstractBackupStoreIT {
       assertThat(getStore().getStatus(backup.id()).join().lastModified().orElseThrow())
           .isAfter(initialTimestamp);
     }
+
+    @Test
+    void canMarkNonExistingBackupAsFailed() {
+      // when
+      final var id = new BackupIdentifierImpl(1, 1, 1);
+      getStore().markFailed(id, "preemptively marked as failed").join();
+
+      // then
+      assertThat(getStore().getStatus(id).join())
+          .returns(BackupStatusCode.FAILED, from(BackupStatus::statusCode));
+    }
   }
 
   @Nested
