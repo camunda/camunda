@@ -221,6 +221,9 @@ public class RandomizedRaftTest {
       raftContexts.runUntilDone();
     }
 
+    // All member are be ready
+    raftContexts.assertAllMembersAreReady();
+
     // Verify all entries are replicated and committed in all replicas
     raftContexts.assertAllLogsEqual();
     raftContexts.assertAllEntriesCommittedAndReplicatedToAll();

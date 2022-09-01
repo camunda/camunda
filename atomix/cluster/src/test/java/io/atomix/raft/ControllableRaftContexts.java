@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.impl.RaftContext.State;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.ControllableRaftServerProtocol;
@@ -504,5 +505,9 @@ public final class ControllableRaftContexts {
           .describedAs("The log is compacted in %s. Hence a snapshot must exist.")
           .isGreaterThanOrEqualTo(firstIndex - 1);
     }
+  }
+
+  public void assertAllMembersAreReady() {
+    raftServers.values().forEach(raft -> assertThat(raft.getState()).isEqualTo(State.READY));
   }
 }
