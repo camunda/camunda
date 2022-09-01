@@ -152,12 +152,19 @@ public final class ControllableRaftContexts {
   private void createRaftContexts(final int nodeCount, final Random random) {
     for (int i = 0; i < nodeCount; i++) {
       final var memberId = MemberId.from(String.valueOf(i));
-      raftServers.put(memberId, createRaftContext(memberId, random));
+      final var snapshotStore = new TestSnapshotStore(new AtomicReference<>());
+      snapshotStores.put(memberId, snapshotStore);
+      raftServers.put(
+          memberId,
+          createRaftContext(
+              memberId,
+              random,
+              createStorage(memberId, cfg -> cfg.withSnapshotStore(snapshotStore))));
     }
   }
 
-  public RaftContext createRaftContext(final MemberId memberId, final Random random) {
-    final RaftStorage storage = createStorage(memberId);
+  public RaftContext createRaftContext(
+      final MemberId memberId, final Random random, final RaftStorage storage) {
     final var raft =
         new RaftContext(
             memberId.id() + "-partition-1",
@@ -183,22 +190,15 @@ public final class ControllableRaftContexts {
                     DeterministicSingleThreadContext.createContext());
   }
 
-  private RaftStorage createStorage(final MemberId memberId) {
-    return createStorage(memberId, Function.identity());
-  }
-
   private RaftStorage createStorage(
       final MemberId memberId,
       final Function<RaftStorage.Builder, RaftStorage.Builder> configurator) {
     final var memberDirectory = getMemberDirectory(directory, memberId.toString());
-    final TestSnapshotStore persistedSnapshotStore = new TestSnapshotStore(new AtomicReference<>());
     final RaftStorage.Builder defaults =
         RaftStorage.builder()
             .withDirectory(memberDirectory)
             .withMaxSegmentSize(1024 * 10)
-            .withFreeDiskSpace(100)
-            .withSnapshotStore(persistedSnapshotStore);
-    snapshotStores.put(memberId, persistedSnapshotStore);
+            .withFreeDiskSpace(100);
     return configurator.apply(defaults).build();
   }
 
@@ -344,6 +344,19 @@ public final class ControllableRaftContexts {
     }
 
     raftContext.getLog().deleteUntil(snapshotIndex);
+  }
+
+  public void restart(final MemberId memberId) {
+    raftServers.get(memberId).close();
+    deterministicExecutors.remove(memberId).close();
+    final var newContext =
+        createRaftContext(
+            memberId,
+            random,
+            createStorage(memberId, cfg -> cfg.withSnapshotStore(snapshotStores.get(memberId))));
+    newContext.getCluster().bootstrap(raftServers.keySet());
+
+    raftServers.put(memberId, newContext);
   }
 
   // ----------------------- Verifications -----------------------------
