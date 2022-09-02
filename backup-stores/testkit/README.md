@@ -63,7 +63,7 @@ public final class GcsBackupStoreIntegrationTest implements BackupStoreTestKit {
 ```
 
 The testkit requires a clean state for each test, so let's make sure that we use a new GCS bucket
-every for every test:
+for every test:
 
 ```java
 import io.camunda.zeebe.backup.api.BackupStore;
