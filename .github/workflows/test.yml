@@ -48,7 +48,7 @@ jobs:
           mvn -B -T2 --no-snapshot-updates
           -D junitThreadCount=12
           -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -D failsafe.rerunFailingTestsCount=0 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests
           -pl !:zeebe-elasticsearch-exporter
           verify
