@@ -41,7 +41,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 @Execution(ExecutionMode.CONCURRENT)
-public abstract class AbstractBackupStoreIT {
+public abstract class S3BackupStoreTestTemplate {
 
   protected abstract S3AsyncClient getClient();
 

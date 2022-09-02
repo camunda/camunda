@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.backup.s3.impl;
 
-import io.camunda.zeebe.backup.s3.AbstractBackupStoreIT;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
+import io.camunda.zeebe.backup.s3.S3BackupStoreTestTemplate;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +25,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 
 @Testcontainers
-final class LocalstackBackupStoreIT extends AbstractBackupStoreIT {
+final class LocalstackBackupStoreIT extends S3BackupStoreTestTemplate {
 
   @Container
   private static final LocalStackContainer S3 =

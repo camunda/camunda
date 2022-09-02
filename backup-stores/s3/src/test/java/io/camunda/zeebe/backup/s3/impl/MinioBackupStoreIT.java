@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.backup.s3.impl;
 
-import io.camunda.zeebe.backup.s3.AbstractBackupStoreIT;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
+import io.camunda.zeebe.backup.s3.S3BackupStoreTestTemplate;
 import java.net.URI;
 import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -27,7 +27,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 
 @Testcontainers
-final class MinioBackupStoreIT extends AbstractBackupStoreIT {
+final class MinioBackupStoreIT extends S3BackupStoreTestTemplate {
   public static final String ACCESS_KEY = "letmein";
   public static final String SECRET_KEY = "letmein1234";
   public static final int DEFAULT_PORT = 9000;
