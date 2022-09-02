@@ -343,7 +343,7 @@ public final class ControllableRaftContexts {
           raftContext.getCommitIndex());
     }
 
-    raftContext.getLog().deleteUntil(snapshotIndex);
+    raftContext.getThreadContext().execute(() -> raftContext.getLog().deleteUntil(snapshotIndex));
   }
 
   // ----------------------- Verifications -----------------------------
