@@ -53,18 +53,17 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
         || (context.getBackupManager() == null && targetRole != Role.INACTIVE)) {
 
       final ActorFuture<Void> backupManagerInstalled;
-      if (targetRole == Role.LEADER && context.getBackupStore() != null) {
-        backupManagerInstalled = installBackupManager(context);
-      } else if (targetRole == Role.FOLLOWER || targetRole == Role.CANDIDATE) {
-        backupManagerInstalled =
-            installNoopBackupManager(
-                context, "Broker is in follower role. Backup operations cannot be executed.");
-      } else {
+      if (context.getBackupStore() == null) {
         backupManagerInstalled =
             installNoopBackupManager(
                 context, "No BackupStore is configured. Backup operations cannot be executed.");
+      } else if (targetRole == Role.LEADER) {
+        backupManagerInstalled = installBackupManager(context);
+      } else {
+        backupManagerInstalled =
+            installNoopBackupManager(
+                context, "Broker is in follower role. Backup operations cannot be executed.");
       }
-
       backupManagerInstalled.onComplete(
           (ignore, error) -> {
             if (error == null) {
