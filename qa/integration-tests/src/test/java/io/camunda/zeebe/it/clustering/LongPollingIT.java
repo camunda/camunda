@@ -34,7 +34,7 @@ import org.agrona.CloseHelper;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.event.Level;
 import org.testcontainers.containers.Network;
@@ -76,7 +76,7 @@ final class LongPollingIT {
   }
 
   // regression test of https://github.com/camunda/zeebe/issues/9658
-  @Test
+  @RepeatedTest(100)
   void shouldActivateAndCompleteJobsInTime() throws InterruptedException, TimeoutException {
     // given
     final var process =
