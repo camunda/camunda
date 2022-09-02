@@ -25,6 +25,7 @@ import java.time.Instant;
 public sealed interface ValidBackupManifest extends Manifest
     permits InProgressBackupManifest, CompletedBackupManifest, FailedBackupManifest {
 
+  @Override
   BackupIdentifier id();
 
   Instant createdAt();

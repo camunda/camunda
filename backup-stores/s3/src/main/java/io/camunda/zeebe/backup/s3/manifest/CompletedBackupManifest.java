@@ -41,6 +41,7 @@ public record CompletedBackupManifest(
         Optional.of(modifiedAt));
   }
 
+  @Override
   public FailedBackupManifest asFailed(final String failureReason) {
     return new FailedBackupManifest(
         id,
