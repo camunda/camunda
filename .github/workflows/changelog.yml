@@ -4,17 +4,17 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version'
+        description: "Version"
         required: true
-        default: ''
+        default: ""
       commit:
-        description: 'From commit'
+        description: "From commit"
         required: true
-        default: ''
+        default: ""
       branch:
-        description: 'Branch (if blank default branch will be used):'
+        description: "Branch (if blank default branch will be used):"
         required: false
-        default: ''
+        default: ""
 
 jobs:
   create_draft_release:
