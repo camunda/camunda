@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.api;
 
+import java.time.Instant;
 import java.util.Optional;
 
 /** Represents the status of a backup. */
@@ -18,4 +19,8 @@ public interface BackupStatus {
   BackupStatusCode statusCode();
 
   Optional<String> failureReason();
+
+  Optional<Instant> created();
+
+  Optional<Instant> lastModified();
 }

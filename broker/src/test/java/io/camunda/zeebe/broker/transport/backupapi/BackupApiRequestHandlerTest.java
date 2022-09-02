@@ -167,6 +167,8 @@ final class BackupApiRequestHandlerTest {
             new BackupIdentifierImpl(1, 1, checkpointId),
             Optional.of(new BackupDescriptorImpl(Optional.of("s-id"), 100, 3, "test")),
             io.camunda.zeebe.backup.api.BackupStatusCode.COMPLETED,
+            Optional.empty(),
+            Optional.empty(),
             Optional.empty());
 
     when(backupManager.getBackupStatus(checkpointId))
@@ -205,7 +207,9 @@ final class BackupApiRequestHandlerTest {
             new BackupIdentifierImpl(1, 1, checkpointId),
             Optional.empty(),
             io.camunda.zeebe.backup.api.BackupStatusCode.FAILED,
-            Optional.of("Expected"));
+            Optional.of("Expected"),
+            Optional.empty(),
+            Optional.empty());
 
     when(backupManager.getBackupStatus(checkpointId))
         .thenReturn(CompletableActorFuture.completed(status));

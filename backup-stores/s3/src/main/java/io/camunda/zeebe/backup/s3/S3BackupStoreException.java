@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.backup.s3;
 
+import io.camunda.zeebe.backup.api.BackupStatusCode;
+import io.camunda.zeebe.backup.s3.manifest.Manifest;
+
 public abstract sealed class S3BackupStoreException extends RuntimeException {
 
   private S3BackupStoreException(final String message, final Throwable cause) {
@@ -14,21 +17,11 @@ public abstract sealed class S3BackupStoreException extends RuntimeException {
   }
 
   /**
-   * Thrown when the {@link Status} object exists but can't be parsed. This is unlikely to be
+   * Thrown when the {@link Manifest} object exists but can't be parsed. This is unlikely to be
    * recoverable and indicates a corrupted backup.
    */
-  public static final class StatusParseException extends S3BackupStoreException {
-    public StatusParseException(final String message, final Throwable cause) {
-      super(message, cause);
-    }
-  }
-
-  /**
-   * Thrown when the {@link Metadata} object exists but can't be parsed. This is unlikely to be
-   * recoverable and indicates a corrupted backup.
-   */
-  public static final class MetadataParseException extends S3BackupStoreException {
-    public MetadataParseException(final String message, final Throwable cause) {
+  public static final class ManifestParseException extends S3BackupStoreException {
+    public ManifestParseException(final String message, final Throwable cause) {
       super(message, cause);
     }
   }
@@ -50,6 +43,13 @@ public abstract sealed class S3BackupStoreException extends RuntimeException {
   public static final class BackupInInvalidStateException extends S3BackupStoreException {
     public BackupInInvalidStateException(final String message) {
       super(message, null);
+    }
+
+    public BackupInInvalidStateException(
+        final Manifest manifest, final BackupStatusCode expectedStatus) {
+      this(
+          "Expected %s to be %s but was %s"
+              .formatted(manifest.id(), expectedStatus, manifest.statusCode()));
     }
   }
 

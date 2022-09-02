@@ -49,8 +49,8 @@ usable.
 
 A backup consists of following objects prefixed by `partitionId/checkpointId/nodeId/` :
 
-* `metadata.json`: A _metadata_ object, containing metadata serialized as JSON
-* `status.json`: A _status_ object, containing the current status serialized as JSON
+* `manifest.json`: A _manifest_ object, containing metadata and status information serialized as
+  JSON
 * `snapshots/*` Objects for _snapshot files_'
 * `segments/*` Objects for _segment files_
 

@@ -10,4 +10,9 @@ package io.camunda.zeebe.backup.common;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 
 public record BackupIdentifierImpl(int nodeId, int partitionId, long checkpointId)
-    implements BackupIdentifier {}
+    implements BackupIdentifier {
+
+  public static BackupIdentifierImpl from(final BackupIdentifier id) {
+    return new BackupIdentifierImpl(id.nodeId(), id.partitionId(), id.checkpointId());
+  }
+}
