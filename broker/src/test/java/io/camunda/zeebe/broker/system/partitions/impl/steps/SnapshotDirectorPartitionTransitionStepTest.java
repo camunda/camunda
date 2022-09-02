@@ -19,16 +19,17 @@ import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldInstallService;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.MethodSource;
 
 class SnapshotDirectorPartitionTransitionStepTest {
 
@@ -61,7 +62,7 @@ class SnapshotDirectorPartitionTransitionStepTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideTransitionsThatShouldCloseExistingSnapshotDirector")
+  @ArgumentsSource(TransitionsThatShouldCloseService.class)
   void shouldCloseExistingSnapshotDirector(final Role currentRole, final Role targetRole) {
     // given
     initializeContext(currentRole);
@@ -75,7 +76,7 @@ class SnapshotDirectorPartitionTransitionStepTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideTransitionsThatShouldInstallSnapshotDirector")
+  @ArgumentsSource(TransitionsThatShouldInstallService.class)
   void shouldReInstallSnapshotDirector(final Role currentRole, final Role targetRole) {
     // given
     initializeContext(currentRole);
@@ -91,7 +92,7 @@ class SnapshotDirectorPartitionTransitionStepTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideTransitionsThatShouldDoNothing")
+  @ArgumentsSource(TransitionsThatShouldDoNothing.class)
   void shouldNotReInstallSnapshotDirector(final Role currentRole, final Role targetRole) {
     // given
     initializeContext(currentRole);
@@ -117,37 +118,6 @@ class SnapshotDirectorPartitionTransitionStepTest {
 
     // then
     assertThat(transitionContext.getSnapshotDirector()).isNull();
-  }
-
-  private static Stream<Arguments> provideTransitionsThatShouldCloseExistingSnapshotDirector() {
-    return Stream.of(
-        Arguments.of(Role.FOLLOWER, Role.LEADER),
-        Arguments.of(Role.CANDIDATE, Role.LEADER),
-        Arguments.of(Role.LEADER, Role.FOLLOWER),
-        Arguments.of(Role.LEADER, Role.INACTIVE),
-        Arguments.of(Role.FOLLOWER, Role.INACTIVE),
-        Arguments.of(Role.CANDIDATE, Role.INACTIVE));
-  }
-
-  private static Stream<Arguments> provideTransitionsThatShouldInstallSnapshotDirector() {
-    return Stream.of(
-        Arguments.of(null, Role.FOLLOWER),
-        Arguments.of(null, Role.LEADER),
-        Arguments.of(null, Role.CANDIDATE),
-        Arguments.of(Role.FOLLOWER, Role.LEADER),
-        Arguments.of(Role.CANDIDATE, Role.LEADER),
-        Arguments.of(Role.LEADER, Role.FOLLOWER),
-        Arguments.of(Role.LEADER, Role.CANDIDATE),
-        Arguments.of(Role.INACTIVE, Role.FOLLOWER),
-        Arguments.of(Role.INACTIVE, Role.LEADER),
-        Arguments.of(Role.INACTIVE, Role.CANDIDATE));
-  }
-
-  private static Stream<Arguments> provideTransitionsThatShouldDoNothing() {
-    return Stream.of(
-        Arguments.of(Role.CANDIDATE, Role.FOLLOWER),
-        Arguments.of(Role.FOLLOWER, Role.CANDIDATE),
-        Arguments.of(null, Role.INACTIVE));
   }
 
   private void initializeContext(final Role currentRole) {
