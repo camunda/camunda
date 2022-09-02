@@ -1,0 +1,33 @@
+name: Update Browserlist DB
+on:
+  schedule:
+    - cron: "0 10 * * MON"
+
+jobs:
+  update:
+    name: "Update"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          cache: "yarn"
+          cache-dependency-path: client/yarn.lock
+      - run: npx update-browserslist-db@latest --yes
+        name: Update DB
+      - run: |
+          echo "::set-output name=is-changed::$(git diff --exit-code)";
+        name: Verify if files changed
+        id: changed-files
+      - if: ${{ steps.changed-files.outputs.is-changed }}
+        name: Commit and push changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m "chore: Update Browserlist DB"
+          git push
