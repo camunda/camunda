@@ -37,6 +37,11 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   @Override
   S3BackupStore getStore();
 
+  @Override
+  default Class<? extends Exception> getBackupInInvalidStateExceptionClass() {
+    return BackupInInvalidStateException.class;
+  }
+
   @ParameterizedTest
   @ArgumentsSource(TestBackupProvider.class)
   default void savesManifest(final Backup backup) throws IOException {

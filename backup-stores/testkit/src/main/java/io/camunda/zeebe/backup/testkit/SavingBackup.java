@@ -21,6 +21,8 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 public interface SavingBackup {
   BackupStore getStore();
 
+  Class<? extends Exception> getBackupInInvalidStateExceptionClass();
+
   @ParameterizedTest
   @ArgumentsSource(TestBackupProvider.class)
   default void savingBackupIsSuccessful(final Backup backup) {
@@ -34,10 +36,10 @@ public interface SavingBackup {
     getStore().save(backup).join();
 
     // then
-    Assertions.assertThat(getStore().save(backup)).failsWithin(Duration.ofSeconds(10));
-    // TODO
-    //  .withThrowableOfType(Throwable.class);
-    //  .withRootCauseInstanceOf(BackupInInvalidStateException.class);
+    Assertions.assertThat(getStore().save(backup))
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(Throwable.class)
+        .withRootCauseInstanceOf(getBackupInInvalidStateExceptionClass());
   }
 
   @ParameterizedTest
