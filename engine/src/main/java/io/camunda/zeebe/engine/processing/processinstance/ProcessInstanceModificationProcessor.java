@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
@@ -61,6 +62,9 @@ public final class ProcessInstanceModificationProcessor
   private static final String ERROR_MESSAGE_TERMINATE_ELEMENT_INSTANCE_NOT_FOUND =
       "Expected to modify instance of process '%s' but it contains one or more terminate instructions"
           + " with an element instance that could not be found: '%s'";
+  private static final String ERROR_COMMAND_TOO_LARGE =
+      "Unable to modify process instance with key '%d' as the size exceeds the maximum batch size."
+          + " Please reduce the size by splitting the modification into multiple commands.";
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
@@ -183,6 +187,16 @@ public final class ProcessInstanceModificationProcessor
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       responseWriter.writeRejectionOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    } else if (error instanceof ExceededBatchRecordSizeException) {
+      rejectionWriter.appendRejection(
+          typedCommand,
+          RejectionType.INVALID_ARGUMENT,
+          ERROR_COMMAND_TOO_LARGE.formatted(typedCommand.getValue().getProcessInstanceKey()));
+      responseWriter.writeRejectionOnCommand(
+          typedCommand,
+          RejectionType.INVALID_ARGUMENT,
+          ERROR_COMMAND_TOO_LARGE.formatted(typedCommand.getValue().getProcessInstanceKey()));
       return ProcessingError.EXPECTED_ERROR;
     }
     return ProcessingError.UNEXPECTED_ERROR;
