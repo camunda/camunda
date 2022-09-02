@@ -44,7 +44,7 @@ public record InProgressBackupManifest(
         snapshotFileNames,
         segmentFileNames,
         createdAt,
-        modifiedAt);
+        Instant.now());
   }
 
   @Override
