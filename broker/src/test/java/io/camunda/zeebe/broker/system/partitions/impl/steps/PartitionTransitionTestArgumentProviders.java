@@ -13,9 +13,9 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 
-public class PartitionTransitionTestArgumentProviders {
+public final class PartitionTransitionTestArgumentProviders {
 
-  static class TransitionsThatShouldCloseService implements ArgumentsProvider {
+  static final class TransitionsThatShouldCloseService implements ArgumentsProvider {
 
     @Override
     public Stream<? extends Arguments> provideArguments(final ExtensionContext extensionContext)
@@ -24,13 +24,14 @@ public class PartitionTransitionTestArgumentProviders {
           Arguments.of(Role.FOLLOWER, Role.LEADER),
           Arguments.of(Role.CANDIDATE, Role.LEADER),
           Arguments.of(Role.LEADER, Role.FOLLOWER),
+          Arguments.of(Role.LEADER, Role.CANDIDATE),
           Arguments.of(Role.LEADER, Role.INACTIVE),
           Arguments.of(Role.FOLLOWER, Role.INACTIVE),
           Arguments.of(Role.CANDIDATE, Role.INACTIVE));
     }
   }
 
-  static class TransitionsThatShouldInstallService implements ArgumentsProvider {
+  static final class TransitionsThatShouldInstallService implements ArgumentsProvider {
 
     @Override
     public Stream<? extends Arguments> provideArguments(final ExtensionContext extensionContext)
@@ -49,7 +50,7 @@ public class PartitionTransitionTestArgumentProviders {
     }
   }
 
-  static class TransitionsThatShouldDoNothing implements ArgumentsProvider {
+  static final class TransitionsThatShouldDoNothing implements ArgumentsProvider {
 
     @Override
     public Stream<? extends Arguments> provideArguments(final ExtensionContext extensionContext)

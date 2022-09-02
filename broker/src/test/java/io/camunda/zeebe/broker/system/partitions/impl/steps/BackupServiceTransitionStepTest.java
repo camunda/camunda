@@ -30,6 +30,7 @@ import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.nio.file.Path;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -85,11 +86,7 @@ class BackupServiceTransitionStepTest {
   @ArgumentsSource(TransitionsThatShouldCloseService.class)
   void shouldCloseExistingService(final Role currentRole, final Role targetRole) {
     // given
-    transitionContext.setCurrentRole(currentRole);
-    if (currentRole != null && currentRole != Role.INACTIVE) {
-      transitionContext.setBackupManager(backupManagerPreviousRole);
-      transitionContext.setCheckpointProcessor(recordsProcessorPreviousRole);
-    }
+    setUpCurrentRole(currentRole);
 
     // when
     step.prepareTransition(transitionContext, 1, targetRole).join();
@@ -104,11 +101,7 @@ class BackupServiceTransitionStepTest {
   @ArgumentsSource(TransitionsThatShouldInstallService.class)
   void shouldReInstallService(final Role currentRole, final Role targetRole) {
     // given
-    transitionContext.setCurrentRole(currentRole);
-    if (currentRole != null && currentRole != Role.INACTIVE) {
-      transitionContext.setBackupManager(backupManagerPreviousRole);
-      transitionContext.setCheckpointProcessor(recordsProcessorPreviousRole);
-    }
+    setUpCurrentRole(currentRole);
 
     // when
     transitionTo(targetRole);
@@ -126,11 +119,7 @@ class BackupServiceTransitionStepTest {
   @ArgumentsSource(TransitionsThatShouldDoNothing.class)
   void shouldNotReInstallService(final Role currentRole, final Role targetRole) {
     // given
-    transitionContext.setCurrentRole(currentRole);
-    if (currentRole != null && currentRole != Role.INACTIVE) {
-      transitionContext.setBackupManager(backupManagerPreviousRole);
-      transitionContext.setCheckpointProcessor(recordsProcessorPreviousRole);
-    }
+    setUpCurrentRole(currentRole);
     final var existingBackupManager = transitionContext.getBackupManager();
     final var existingRecordsProcessor = transitionContext.getCheckpointProcessor();
 
@@ -142,11 +131,10 @@ class BackupServiceTransitionStepTest {
     assertThat(transitionContext.getCheckpointProcessor()).isEqualTo(existingRecordsProcessor);
   }
 
+  @Test
   void shouldInstallNoopBackupManagerWhenFollower() {
     // given
-    transitionContext.setCurrentRole(Role.LEADER);
-    transitionContext.setBackupManager(backupManagerPreviousRole);
-    transitionContext.setCheckpointProcessor(recordsProcessorPreviousRole);
+    setUpCurrentRole(Role.LEADER);
 
     // when
     transitionTo(Role.FOLLOWER);
@@ -158,11 +146,10 @@ class BackupServiceTransitionStepTest {
         .isNotEqualTo(recordsProcessorPreviousRole);
   }
 
+  @Test
   void shouldInstallNoopBackupManagerWhenNoBackupStore() {
     // given
-    transitionContext.setCurrentRole(Role.FOLLOWER);
-    transitionContext.setBackupManager(backupManagerPreviousRole);
-    transitionContext.setCheckpointProcessor(recordsProcessorPreviousRole);
+    setUpCurrentRole(Role.FOLLOWER);
     transitionContext.setBackupStore(null);
 
     // when
@@ -179,5 +166,13 @@ class BackupServiceTransitionStepTest {
     step.prepareTransition(transitionContext, 1, role).join();
     step.transitionTo(transitionContext, 1, role).join();
     transitionContext.setCurrentRole(role);
+  }
+
+  private void setUpCurrentRole(final Role currentRole) {
+    transitionContext.setCurrentRole(currentRole);
+    if (currentRole != null && currentRole != Role.INACTIVE) {
+      transitionContext.setBackupManager(backupManagerPreviousRole);
+      transitionContext.setCheckpointProcessor(recordsProcessorPreviousRole);
+    }
   }
 }
