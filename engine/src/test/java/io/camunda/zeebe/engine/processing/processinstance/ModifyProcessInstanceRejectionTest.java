@@ -16,6 +16,8 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.ByteValue;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -25,6 +27,7 @@ public class ModifyProcessInstanceRejectionTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
+  private static final long MAX_MESSAGE_SIZE = ByteValue.ofMegabytes(4);
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -169,5 +172,43 @@ public class ModifyProcessInstanceRejectionTest {
         .hasRejectionReason(
             ("Expected to subscribe to catch event(s) of 'sp' but failed to evaluate expression "
                 + "'missingVariable': no variable found for name 'missingVariable'"));
+  }
+
+  @Test
+  public void shouldRejectCommandWhenItExceedsMaxMessageSize() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask("A").endEvent().done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("A")
+            .withGlobalVariables(
+                // Create a variable with a size of the max message size, minus 1 kB, in order to
+                // save some space for the rest of the message.
+                Map.of("x", "x".repeat((int) (MAX_MESSAGE_SIZE - ByteValue.ofKilobytes(1)))))
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that message batch size too large")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Unable to modify process instance with key '%d' as the size exceeds the maximum batch "
+                    + "size. Please reduce the size by splitting the modification into multiple commands.")
+                .formatted(processInstanceKey));
   }
 }
