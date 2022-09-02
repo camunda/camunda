@@ -5,11 +5,8 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.backup.s3.impl;
+package io.camunda.zeebe.backup.s3;
 
-import io.camunda.zeebe.backup.s3.AbstractBackupStoreIT;
-import io.camunda.zeebe.backup.s3.S3BackupConfig;
-import io.camunda.zeebe.backup.s3.S3BackupStore;
 import java.net.URI;
 import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -27,7 +24,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 
 @Testcontainers
-final class MinioBackupStoreIT extends AbstractBackupStoreIT {
+final class MinioBackupStoreIT implements S3BackupStoreTests {
   public static final String ACCESS_KEY = "letmein";
   public static final String SECRET_KEY = "letmein1234";
   public static final int DEFAULT_PORT = 9000;
@@ -71,17 +68,17 @@ final class MinioBackupStoreIT extends AbstractBackupStoreIT {
   }
 
   @Override
-  protected S3AsyncClient getClient() {
+  public S3AsyncClient getClient() {
     return client;
   }
 
   @Override
-  protected S3BackupConfig getConfig() {
+  public S3BackupConfig getConfig() {
     return config;
   }
 
   @Override
-  protected S3BackupStore getStore() {
+  public S3BackupStore getStore() {
     return store;
   }
 }
