@@ -88,10 +88,10 @@
   "home": {
     "createBtn": {
       "default": "Create New",
-      "collection": "New Collection",
-      "dashboard": "New Dashboard",
+      "collection": "Collection",
+      "dashboard": "Dashboard",
       "report": {
-        "default": "New Report",
+        "default": "Report",
         "process": "Process Report",
         "combined": "Combined Process Report",
         "decision": "Decision Report"
@@ -1085,19 +1085,20 @@
         }
       },
       "types": {
-        "instanceState": "Process Instance State",
+        "instanceState": "Instance State",
         "date": "Instance Date",
         "assignee": "Assignee",
         "candidateGroup": "Candidate Group",
         "instanceStartDate": "Start Date",
         "instanceEndDate": "End Date",
-        "duration": "Duration",
         "instance": "Process instance",
-        "instanceDuration": "Process Instance Duration",
+        "duration": "Duration",
+        "instanceDuration": "Instance Duration",
+        "processInstanceDuration": "Process Instance Duration",
         "flowNodeDuration": "Flow Node Duration",
         "variable": "Variable",
         "multipleVariable": "Variable",
-        "flowNode": "Flow Node",
+        "flowNode": "Flow Node Execution",
         "evaluationDateTime": "Evaluation Date Time",
         "inputVariable": "Input Variable",
         "outputVariable": "Output Variable",
@@ -1247,6 +1248,10 @@
         "instance": "Filter Process Instances",
         "view": "Filter Flow Nodes",
         "decision": "Filter Decision Evaluations"
+      },
+      "dropdownInfo": {
+        "instance": "Return Instances filtered by...",
+        "view": "Return Flow Node Data filtered by..."
       },
       "allVisible": {
         "instance": "All instances visible",

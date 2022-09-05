@@ -109,7 +109,7 @@ export class NodeFilter extends React.Component {
       >
         <Modal.Header>
           {t('common.filter.modalHeader', {
-            type: t(`common.filter.types.flowNode`),
+            type: t('common.filter.types.flowNode'),
           })}
         </Modal.Header>
         <Modal.Content className="modalContent">

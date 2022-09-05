@@ -11,6 +11,8 @@ import {Dropdown} from 'components';
 import {t} from 'translation';
 import {getOptimizeProfile} from 'config';
 
+import './ViewFilters.scss';
+
 export default function ViewFilters({openNewFilterModal, processDefinitionIsNotSelected}) {
   const [optimizeProfile, setOptimizeProfile] = useState();
 
@@ -26,6 +28,7 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
       id="ControlPanel__filters"
       className="ViewFilters Filter__dropdown"
     >
+      <div className="dropdownInfo">{t('common.filter.dropdownInfo.view')}</div>
       <Dropdown.Option onClick={openNewFilterModal('flowNodeStatus')}>
         {t('common.filter.types.flowNodeStatus')}
       </Dropdown.Option>
@@ -40,14 +43,14 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
           {t('common.filter.types.instanceEndDate')}
         </Dropdown.Option>
       </Dropdown.Submenu>
-      <Dropdown.Option onClick={openNewFilterModal('incident')}>
-        {t('common.filter.types.incident')}
-      </Dropdown.Option>
       <Dropdown.Option
         disabled={processDefinitionIsNotSelected}
         onClick={openNewFilterModal('flowNodeDuration')}
       >
-        {t('common.filter.types.duration')}
+        {t('common.filter.types.flowNodeDuration')}
+      </Dropdown.Option>
+      <Dropdown.Option onClick={openNewFilterModal('incident')}>
+        {t('common.filter.types.incident')}
       </Dropdown.Option>
       {optimizeProfile === 'platform' && (
         <>

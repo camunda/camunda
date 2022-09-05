@@ -88,10 +88,10 @@
   "home": {
     "createBtn": {
       "default": "Neu erstellen",
-      "collection": "Neue Sammlung",
-      "dashboard": "Neues Dashboard",
+      "collection": "Sammlung",
+      "dashboard": "Dashboard",
       "report": {
-        "default": "Neuer Bericht",
+        "default": "Bericht",
         "process": "Prozessbericht",
         "combined": "Kombinierter Prozessbericht",
         "decision": "Entscheidungsbericht"
@@ -1091,13 +1091,14 @@
         "candidateGroup": "Potenzielle Gruppe",
         "instanceStartDate": "Startdatum",
         "instanceEndDate": "Enddatum",
-        "duration": "Dauer",
         "instance": "Prozessinstanz",
-        "instanceDuration": "Dauer der Prozessinstanz",
+        "duration": "Dauer",
+        "instanceDuration": "Instanzdauer",
+        "processInstanceDuration": "Dauer der Prozessinstanz",
         "flowNodeDuration": "Prozessknoten Dauer",
         "variable": "Variable",
         "multipleVariable": "Variable",
-        "flowNode": "Prozessknoten",
+        "flowNode": "Prozessknoten Ausführung",
         "evaluationDateTime": "Evaluierungszeitpunkt",
         "inputVariable": "Eingangsvariable",
         "outputVariable": "Ausgabevariable",
@@ -1247,6 +1248,10 @@
         "instance": "Prozessinstanzen filtern",
         "view": "Prozessknoten-Daten filtern",
         "decision": "Entscheidungsevaluierungen filtern"
+      },
+      "dropdownInfo": {
+        "instance": "Rückgabe Instanzen gefiltert nach...",
+        "view": "Rückgabe von Prozessknoten-Daten gefiltert nach..."
       },
       "allVisible": {
         "instance": "Alle Instanzen sichtbar",

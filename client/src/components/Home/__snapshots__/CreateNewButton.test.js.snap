@@ -8,13 +8,13 @@ exports[`should match snapshot 1`] = `
   primary={true}
 >
   <ForwardRef(DropdownOption)>
-    New Collection
+    Collection
   </ForwardRef(DropdownOption)>
   <ForwardRef(DropdownOption)>
-    New Dashboard
+    Dashboard
   </ForwardRef(DropdownOption)>
   <Submenu
-    label="New Report"
+    label="Report"
   >
     <ForwardRef(DropdownOption)>
       Process Report

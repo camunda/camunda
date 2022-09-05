@@ -280,7 +280,9 @@ export default class FilterList extends React.Component {
                 this.props.deleteFilter(filter);
               }}
             >
-              <span className="parameterName">{t('common.filter.types.instanceDuration')}</span>
+              <span className="parameterName">
+                {t('common.filter.types.processInstanceDuration')}
+              </span>
               <span className="filterText">
                 {operator === '<' && this.createOperator(t('common.filter.list.operators.less'))}
                 {operator === '>' && this.createOperator(t('common.filter.list.operators.more'))}
