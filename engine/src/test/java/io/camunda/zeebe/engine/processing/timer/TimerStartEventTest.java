@@ -30,6 +30,8 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.stream.Collectors;
+import org.awaitility.Awaitility;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -88,6 +90,11 @@ public final class TimerStartEventTest {
     final ProcessBuilder builder = Bpmn.createExecutableProcess("process_4");
     builder.startEvent("start_4").timerWithCycle("R/PT2S").endEvent("end_4");
     return builder.startEvent("start_4_2").timerWithCycle("R/PT3S").endEvent("end_4_2").done();
+  }
+
+  @Before
+  public void controlTheClock() {
+    engine.getClock().pinCurrentTime();
   }
 
   @Test
@@ -1089,27 +1096,45 @@ public final class TimerStartEventTest {
     // when
     engine.increaseTime(Duration.ofSeconds(5));
 
+    // disable because we'll await with Awaitility
+    RecordingExporter.disableAwaitingIncomingRecords();
+
     // then
-    assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(4))
-        .extracting(record -> record.getValue().getProcessDefinitionKey())
-        .containsExactly(
-            firstDeploymentProcessDefinitionKey,
-            secondDeploymentProcessDefinitionKey,
-            firstDeploymentProcessDefinitionKey,
-            secondDeploymentProcessDefinitionKey);
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              // due timers are only checked if the engine is not currently processing #10112
+              // so we may need to move the clock slightly for each check
+              engine.increaseTime(Duration.ofMillis(100));
+              assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(4))
+                  .extracting(record -> record.getValue().getProcessDefinitionKey())
+                  .containsExactly(
+                      firstDeploymentProcessDefinitionKey,
+                      secondDeploymentProcessDefinitionKey,
+                      firstDeploymentProcessDefinitionKey,
+                      secondDeploymentProcessDefinitionKey);
+            });
 
     // when
     engine.increaseTime(Duration.ofSeconds(10));
 
     // then
-    assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(5))
-        .extracting(record -> record.getValue().getProcessDefinitionKey())
-        .containsExactly(
-            firstDeploymentProcessDefinitionKey,
-            secondDeploymentProcessDefinitionKey,
-            firstDeploymentProcessDefinitionKey,
-            secondDeploymentProcessDefinitionKey,
-            secondDeploymentProcessDefinitionKey);
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              // due timers are only checked if the engine is not currently processing #10112
+              // so we may need to move the clock slightly for each check
+              engine.increaseTime(Duration.ofMillis(100));
+              assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(5))
+                  .describedAs("Expect that start_1 triggered twice and start_2 triggered thrice")
+                  .extracting(record -> record.getValue().getProcessDefinitionKey())
+                  .containsExactly(
+                      firstDeploymentProcessDefinitionKey,
+                      secondDeploymentProcessDefinitionKey,
+                      firstDeploymentProcessDefinitionKey,
+                      secondDeploymentProcessDefinitionKey,
+                      secondDeploymentProcessDefinitionKey);
+            });
   }
 
   @Test

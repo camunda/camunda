@@ -42,4 +42,6 @@ public interface BackupManager {
 
   /** Close Backup manager */
   ActorFuture<Void> closeAsync();
+
+  void failInProgressBackup(long lastCheckpointId);
 }

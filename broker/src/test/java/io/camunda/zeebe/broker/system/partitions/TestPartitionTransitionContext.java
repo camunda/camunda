@@ -11,6 +11,7 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
@@ -66,6 +67,9 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private AtomixServerTransport gatewayBrokerTransport;
   private BackupApiRequestHandler backupApiRequestHandler;
+  private BackupManager backupManager;
+  private CheckpointRecordsProcessor checkpointRecordsProcessor;
+  private BackupStore backupStore;
 
   @Override
   public int getPartitionId() {
@@ -223,19 +227,33 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public BackupManager getBackupManager() {
-    return null;
+    return backupManager;
   }
 
   @Override
-  public void setBackupManager(final BackupManager backupManager) {}
+  public void setBackupManager(final BackupManager backupManager) {
+    this.backupManager = backupManager;
+  }
 
   @Override
   public CheckpointRecordsProcessor getCheckpointProcessor() {
-    return null;
+    return checkpointRecordsProcessor;
   }
 
   @Override
-  public void setCheckpointProcessor(final CheckpointRecordsProcessor checkpointRecordsProcessor) {}
+  public void setCheckpointProcessor(final CheckpointRecordsProcessor checkpointRecordsProcessor) {
+    this.checkpointRecordsProcessor = checkpointRecordsProcessor;
+  }
+
+  @Override
+  public BackupStore getBackupStore() {
+    return backupStore;
+  }
+
+  @Override
+  public void setBackupStore(final BackupStore backupStore) {
+    this.backupStore = backupStore;
+  }
 
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {
     this.gatewayBrokerTransport = gatewayBrokerTransport;

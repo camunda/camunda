@@ -8,14 +8,19 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
+import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
+import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -32,9 +37,12 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -46,13 +54,28 @@ public final class ProcessInstanceModificationProcessor
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to modify process instance but no process instance found with key '%d'";
-  private static final String ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND =
+  private static final String ERROR_MESSAGE_ACTIVATE_ELEMENT_NOT_FOUND =
       "Expected to modify instance of process '%s' but it contains one or more activate instructions with an element that could not be found: '%s'";
-  private static final String ERROR_MESSAGE_TARGET_ELEMENT_IN_MULTI_INSTANCE_BODY =
+  private static final String ERROR_MESSAGE_ACTIVATE_ELEMENT_UNSUPPORTED =
       "Expected to modify instance of process '%s' but it contains one or more activate instructions"
-          + " for elements inside a multi-instance subprocess: '%s'. The activation of elements inside"
-          + " a multi-instance subprocess is not supported.";
+          + " for elements that are unsupported: '%s'. %s.";
+  private static final String ERROR_MESSAGE_TERMINATE_ELEMENT_INSTANCE_NOT_FOUND =
+      "Expected to modify instance of process '%s' but it contains one or more terminate instructions"
+          + " with an element instance that could not be found: '%s'";
+  private static final String ERROR_COMMAND_TOO_LARGE =
+      "Unable to modify process instance with key '%d' as the size exceeds the maximum batch size."
+          + " Please reduce the size by splitting the modification into multiple commands.";
 
+  private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
+      Set.of(
+          BpmnElementType.UNSPECIFIED,
+          BpmnElementType.START_EVENT,
+          BpmnElementType.SEQUENCE_FLOW,
+          BpmnElementType.BOUNDARY_EVENT);
+  private static final Set<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
+      Arrays.stream(BpmnElementType.values())
+          .filter(elementType -> !UNSUPPORTED_ELEMENT_TYPES.contains(elementType))
+          .collect(Collectors.toSet());
   private static final Either<Rejection, Object> VALID = Either.right(null);
 
   private final StateWriter stateWriter;
@@ -122,15 +145,33 @@ public final class ProcessInstanceModificationProcessor
               final var elementToActivate =
                   process.getProcess().getElementById(instruction.getElementId());
 
-              executeGlobalVariableInstructions(processInstance, process, instruction);
-              // todo(#9663): execute local variable instructions
-
-              elementActivationBehavior.activateElement(processInstanceRecord, elementToActivate);
+              elementActivationBehavior.activateElement(
+                  processInstanceRecord,
+                  elementToActivate,
+                  (elementId, scopeKey) ->
+                      executeVariableInstruction(
+                          BufferUtil.bufferAsString(elementId),
+                          scopeKey,
+                          processInstance,
+                          process,
+                          instruction));
             });
+
+    final var sideEffectQueue = new SideEffectQueue();
+    sideEffect.accept(sideEffectQueue);
 
     value
         .getTerminateInstructions()
-        .forEach(instruction -> terminateElement(instruction.getElementInstanceKey(), sideEffect));
+        .forEach(
+            instruction -> {
+              // todo: deal with non-existing element instance (#9983)
+              final var elementInstance =
+                  elementInstanceState.getInstance(instruction.getElementInstanceKey());
+              final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
+
+              terminateElement(elementInstance, sideEffectQueue);
+              terminateFlowScopes(flowScopeKey, sideEffectQueue);
+            });
 
     stateWriter.appendFollowUpEvent(eventKey, ProcessInstanceModificationIntent.MODIFIED, value);
 
@@ -138,13 +179,38 @@ public final class ProcessInstanceModificationProcessor
         eventKey, ProcessInstanceModificationIntent.MODIFIED, value, command);
   }
 
+  @Override
+  public ProcessingError tryHandleError(
+      final TypedRecord<ProcessInstanceModificationRecord> typedCommand, final Throwable error) {
+    if (error instanceof EventSubscriptionException exception) {
+      rejectionWriter.appendRejection(
+          typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    } else if (error instanceof ExceededBatchRecordSizeException) {
+      rejectionWriter.appendRejection(
+          typedCommand,
+          RejectionType.INVALID_ARGUMENT,
+          ERROR_COMMAND_TOO_LARGE.formatted(typedCommand.getValue().getProcessInstanceKey()));
+      responseWriter.writeRejectionOnCommand(
+          typedCommand,
+          RejectionType.INVALID_ARGUMENT,
+          ERROR_COMMAND_TOO_LARGE.formatted(typedCommand.getValue().getProcessInstanceKey()));
+      return ProcessingError.EXPECTED_ERROR;
+    }
+    return ProcessingError.UNEXPECTED_ERROR;
+  }
+
   private Either<Rejection, ?> validateCommand(
       final TypedRecord<ProcessInstanceModificationRecord> command, final DeployedProcess process) {
     final var value = command.getValue();
     final var activateInstructions = value.getActivateInstructions();
+    final var terminateInstructions = value.getTerminateInstructions();
 
     return validateElementExists(process, activateInstructions)
-        .flatMap(valid -> validateElementsNotInsideMultiInstance(process, activateInstructions))
+        .flatMap(valid -> validateElementSupported(process, activateInstructions))
+        .flatMap(valid -> validateElementInstanceExists(process, terminateInstructions))
         .map(valid -> VALID);
   }
 
@@ -163,21 +229,58 @@ public final class ProcessInstanceModificationProcessor
 
     final String reason =
         String.format(
-            ERROR_MESSAGE_TARGET_ELEMENT_NOT_FOUND,
+            ERROR_MESSAGE_ACTIVATE_ELEMENT_NOT_FOUND,
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", unknownElementIds));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateElementSupported(
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
+    return validateElementsDoNotBelongToEventBasedGateway(process, activateInstructions)
+        .flatMap(valid -> validateElementsNotInsideMultiInstance(process, activateInstructions))
+        .flatMap(valid -> validateElementsHaveSupportedType(process, activateInstructions))
+        .map(valid -> VALID);
+  }
+
+  private static Either<Rejection, ?> validateElementsDoNotBelongToEventBasedGateway(
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
+    final List<String> elementIdsConnectedToEventBasedGateway =
+        activateInstructions.stream()
+            .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .distinct()
+            .filter(
+                elementId -> {
+                  final var element = process.getProcess().getElementById(elementId);
+                  return element instanceof ExecutableCatchEventElement event
+                      && event.isConnectedToEventBasedGateway();
+                })
+            .toList();
+
+    if (elementIdsConnectedToEventBasedGateway.isEmpty()) {
+      return VALID;
+    }
+
+    final var reason =
+        ERROR_MESSAGE_ACTIVATE_ELEMENT_UNSUPPORTED.formatted(
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", elementIdsConnectedToEventBasedGateway),
+            "The activation of events belonging to an event-based gateway is not supported");
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
   private Either<Rejection, ?> validateElementsNotInsideMultiInstance(
       final DeployedProcess process,
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
-    final Set<String> elementsInsideMultiInstance =
+    final List<String> elementsInsideMultiInstance =
         activateInstructions.stream()
             .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .distinct()
             .filter(
                 elementId -> isInsideMultiInstanceBody(process, BufferUtil.wrapString(elementId)))
-            .collect(Collectors.toSet());
+            .toList();
 
     if (elementsInsideMultiInstance.isEmpty()) {
       return VALID;
@@ -185,9 +288,46 @@ public final class ProcessInstanceModificationProcessor
 
     final String reason =
         String.format(
-            ERROR_MESSAGE_TARGET_ELEMENT_IN_MULTI_INSTANCE_BODY,
+            ERROR_MESSAGE_ACTIVATE_ELEMENT_UNSUPPORTED,
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
-            String.join("', '", elementsInsideMultiInstance));
+            String.join("', '", elementsInsideMultiInstance),
+            "The activation of elements inside a multi-instance subprocess is not supported");
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateElementsHaveSupportedType(
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
+
+    final List<AbstractFlowElement> elementsWithUnsupportedElementType =
+        activateInstructions.stream()
+            .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .distinct()
+            .map(elementId -> process.getProcess().getElementById(elementId))
+            .filter(element -> UNSUPPORTED_ELEMENT_TYPES.contains(element.getElementType()))
+            .toList();
+
+    if (elementsWithUnsupportedElementType.isEmpty()) {
+      return VALID;
+    }
+
+    final String usedUnsupportedElementIds =
+        elementsWithUnsupportedElementType.stream()
+            .map(AbstractFlowElement::getId)
+            .map(BufferUtil::bufferAsString)
+            .collect(Collectors.joining("', '"));
+    final String usedUnsupportedElementTypes =
+        elementsWithUnsupportedElementType.stream()
+            .map(AbstractFlowElement::getElementType)
+            .map(Objects::toString)
+            .distinct()
+            .collect(Collectors.joining("', '"));
+    final var reason =
+        ERROR_MESSAGE_ACTIVATE_ELEMENT_UNSUPPORTED.formatted(
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            usedUnsupportedElementIds,
+            "The activation of elements with type '%s' is not supported. Supported element types are: %s"
+                .formatted(usedUnsupportedElementTypes, SUPPORTED_ELEMENT_TYPES));
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
@@ -207,13 +347,43 @@ public final class ProcessInstanceModificationProcessor
         || isInsideMultiInstanceBody(process, flowScope.getId());
   }
 
-  private void executeGlobalVariableInstructions(
+  private Either<Rejection, ?> validateElementInstanceExists(
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions) {
+
+    final List<Long> unknownElementInstanceKeys =
+        terminateInstructions.stream()
+            .map(ProcessInstanceModificationTerminateInstructionValue::getElementInstanceKey)
+            .distinct()
+            .filter(instanceKey -> elementInstanceState.getInstance(instanceKey) == null)
+            .toList();
+
+    if (unknownElementInstanceKeys.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_TERMINATE_ELEMENT_INSTANCE_NOT_FOUND,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            unknownElementInstanceKeys.stream()
+                .map(Objects::toString)
+                .collect(Collectors.joining("', '")));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  public void executeVariableInstruction(
+      final String elementId,
+      final Long scopeKey,
       final ElementInstance processInstance,
       final DeployedProcess process,
       final ProcessInstanceModificationActivateInstructionValue activate) {
-    final var scopeKey = processInstance.getKey();
     activate.getVariableInstructions().stream()
-        .filter(v -> Strings.isEmpty(v.getElementId()))
+        .filter(
+            instruction ->
+                instruction.getElementId().equals(elementId)
+                    || (Strings.isEmpty(instruction.getElementId())
+                        && elementId.equals(processInstance.getValue().getBpmnProcessId())))
         .map(
             instruction -> {
               if (instruction instanceof ProcessInstanceModificationVariableInstruction vi) {
@@ -236,10 +406,8 @@ public final class ProcessInstanceModificationProcessor
   }
 
   private void terminateElement(
-      final long elementInstanceKey, final Consumer<SideEffectProducer> sideEffect) {
-    // todo: deal with non-existing element instance (#9983)
-
-    final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
+      final ElementInstance elementInstance, final SideEffects sideEffects) {
+    final var elementInstanceKey = elementInstance.getKey();
     final var elementInstanceRecord = elementInstance.getValue();
 
     stateWriter.appendFollowUpEvent(
@@ -248,12 +416,30 @@ public final class ProcessInstanceModificationProcessor
     jobBehavior.cancelJob(elementInstance);
     incidentBehavior.resolveIncidents(elementInstanceKey);
 
-    final var sideEffectQueue = new SideEffectQueue();
-    catchEventBehavior.unsubscribeFromEvents(elementInstanceKey, sideEffectQueue);
-    sideEffect.accept(sideEffectQueue);
+    catchEventBehavior.unsubscribeFromEvents(elementInstanceKey, sideEffects);
 
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATED, elementInstanceRecord);
+  }
+
+  private void terminateFlowScopes(final long elementInstanceKey, final SideEffects sideEffects) {
+    var currentElementInstance = elementInstanceState.getInstance(elementInstanceKey);
+
+    while (canTerminateElementInstance(currentElementInstance)) {
+      final var flowScopeKey = currentElementInstance.getValue().getFlowScopeKey();
+
+      terminateElement(currentElementInstance, sideEffects);
+
+      currentElementInstance = elementInstanceState.getInstance(flowScopeKey);
+    }
+  }
+
+  private boolean canTerminateElementInstance(final ElementInstance elementInstance) {
+    return elementInstance != null
+        // if it has no active element instances
+        && elementInstance.getNumberOfActiveElementInstances() == 0
+        // and no pending element activations (i.e. activate command is written but not processed)
+        && elementInstance.getActiveSequenceFlows() == 0;
   }
 
   private record Rejection(RejectionType type, String reason) {}

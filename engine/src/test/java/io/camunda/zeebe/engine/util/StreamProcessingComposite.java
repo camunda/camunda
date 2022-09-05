@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorCo
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -23,13 +22,11 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.streamprocessor.LegacyTypedStreamWriter;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import java.util.function.Function;
 
 public class StreamProcessingComposite {
 
@@ -131,25 +128,6 @@ public class StreamProcessingComposite {
 
               return factory.createProcessors(processingContext);
             }),
-            Optional.empty());
-
-    lastProcessedPositionState = result.getStreamProcessorDbState().getLastProcessedPositionState();
-    return result;
-  }
-
-  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
-      final int partitionId,
-      final TypedRecordProcessorFactory factory,
-      final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> streamWriterFactory) {
-    final var result =
-        streams.startStreamProcessorNotAwaitOpening(
-            getLogName(partitionId),
-            zeebeDbFactory,
-            (processingContext -> {
-              zeebeState = processingContext.getZeebeState();
-              return factory.createProcessors(processingContext);
-            }),
-            streamWriterFactory,
             Optional.empty());
 
     lastProcessedPositionState = result.getStreamProcessorDbState().getLastProcessedPositionState();

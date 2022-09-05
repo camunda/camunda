@@ -73,6 +73,18 @@ public final class RecordingExporter implements Exporter {
     RecordingExporter.maximumWaitTime = maximumWaitTime;
   }
 
+  /**
+   * Disables the default awaiting behavior of the recording exporter by setting the wait time to 0.
+   *
+   * <p>By default, the RecordingExporter awaits incoming records until all expected records are
+   * retrieved (the expectation is controlled with limit), or a maximumWaitTime is surpassed. The
+   * wait time can also be controlled with {@link #setMaximumWaitTime(long)} and is reset along with
+   * the recorded records by {@link #reset()}.
+   */
+  public static void disableAwaitingIncomingRecords() {
+    setMaximumWaitTime(0);
+  }
+
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
@@ -110,7 +122,7 @@ public final class RecordingExporter implements Exporter {
   protected static <T extends RecordValue> Stream<Record<T>> records(
       final ValueType valueType, final Class<T> valueClass) {
     final Spliterator<Record<?>> spliterator =
-        Spliterators.spliteratorUnknownSize(new RecordIterator(), Spliterator.ORDERED);
+        Spliterators.spliteratorUnknownSize(new AwaitingRecordIterator(), Spliterator.ORDERED);
     return StreamSupport.stream(spliterator, false)
         .filter(r -> r.getValueType() == valueType)
         .map(r -> (Record<T>) r);
@@ -118,7 +130,7 @@ public final class RecordingExporter implements Exporter {
 
   public static RecordStream records() {
     final Spliterator<Record<? extends RecordValue>> spliterator =
-        Spliterators.spliteratorUnknownSize(new RecordIterator(), Spliterator.ORDERED);
+        Spliterators.spliteratorUnknownSize(new AwaitingRecordIterator(), Spliterator.ORDERED);
     return new RecordStream(
         StreamSupport.stream(spliterator, false).map(r -> (Record<RecordValue>) r));
   }
@@ -276,7 +288,7 @@ public final class RecordingExporter implements Exporter {
         records(ValueType.DECISION_EVALUATION, DecisionEvaluationRecordValue.class));
   }
 
-  public static class RecordIterator implements Iterator<Record<?>> {
+  public static class AwaitingRecordIterator implements Iterator<Record<?>> {
 
     private int nextIndex = 0;
 

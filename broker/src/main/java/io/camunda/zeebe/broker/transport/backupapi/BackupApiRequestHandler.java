@@ -7,14 +7,19 @@
  */
 package io.camunda.zeebe.broker.transport.backupapi;
 
+import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
+import io.camunda.zeebe.protocol.management.BackupStatusCode;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
@@ -32,16 +37,19 @@ public final class BackupApiRequestHandler
     implements DiskSpaceUsageListener {
   private boolean isDiskSpaceAvailable = true;
   private final LogStreamRecordWriter logStreamRecordWriter;
+  private final BackupManager backupManager;
   private final AtomixServerTransport transport;
   private final int partitionId;
 
   public BackupApiRequestHandler(
       final AtomixServerTransport transport,
       final LogStreamRecordWriter logStreamRecordWriter,
+      final BackupManager backupManager,
       final int partitionId) {
     super(BackupApiRequestReader::new, BackupApiResponseWriter::new);
     this.logStreamRecordWriter = logStreamRecordWriter;
     this.transport = transport;
+    this.backupManager = backupManager;
     this.partitionId = partitionId;
     transport.unsubscribe(partitionId, RequestType.BACKUP);
     transport.subscribe(partitionId, RequestType.BACKUP, this);
@@ -62,30 +70,24 @@ public final class BackupApiRequestHandler
       final BackupApiRequestReader requestReader,
       final BackupApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
-    return CompletableActorFuture.completed(
-        handle(partitionId, requestReader, responseWriter, errorWriter));
-  }
 
-  private Either<ErrorResponseWriter, BackupApiResponseWriter> handle(
-      final int partitionId,
-      final BackupApiRequestReader requestReader,
-      final BackupApiResponseWriter responseWriter,
-      final ErrorResponseWriter errorWriter) {
-
-    if (requestReader.type() == BackupRequestType.TAKE_BACKUP) {
-      if (!isDiskSpaceAvailable) {
-        return Either.left(errorWriter.outOfDiskSpace(partitionId));
-      }
-      return handleTakeBackupRequest(requestReader, responseWriter, errorWriter);
-    }
-
-    return unknownRequest(errorWriter, requestReader.getMessageDecoder().type());
+    return switch (requestReader.type()) {
+      case TAKE_BACKUP -> CompletableActorFuture.completed(
+          handleTakeBackupRequest(requestReader, responseWriter, errorWriter));
+      case QUERY_STATUS -> handleQueryStatusHandler(requestReader, responseWriter, errorWriter);
+      default -> CompletableActorFuture.completed(
+          unknownRequest(errorWriter, requestReader.getMessageDecoder().type()));
+    };
   }
 
   private Either<ErrorResponseWriter, BackupApiResponseWriter> handleTakeBackupRequest(
       final BackupApiRequestReader requestReader,
       final BackupApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
+    if (!isDiskSpaceAvailable) {
+      return Either.left(errorWriter.outOfDiskSpace(partitionId));
+    }
+
     final RecordMetadata metadata =
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
@@ -105,6 +107,48 @@ public final class BackupApiRequestHandler
     }
   }
 
+  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
+      handleQueryStatusHandler(
+          final BackupApiRequestReader requestReader,
+          final BackupApiResponseWriter responseWriter,
+          final ErrorResponseWriter errorWriter) {
+    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
+        new CompletableActorFuture<>();
+    final var backupId = requestReader.backupId();
+    backupManager
+        .getBackupStatus(backupId)
+        .onComplete(
+            (status, error) -> {
+              if (error == null) {
+                final BackupStatusResponse response = buildResponse(status);
+                result.complete(Either.right(responseWriter.withStatus(response)));
+              } else {
+                errorWriter.errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(error.getMessage());
+                result.complete(Either.left(errorWriter));
+              }
+            });
+    return result;
+  }
+
+  private BackupStatusResponse buildResponse(final BackupStatus status) {
+    final var response =
+        new BackupStatusResponse()
+            .setBackupId(status.id().checkpointId())
+            .setBrokerId(status.id().nodeId())
+            .setPartitionId(status.id().partitionId())
+            .setStatus(encodeStatusCode(status.statusCode()));
+    status
+        .descriptor()
+        .ifPresent(
+            backupDescriptor ->
+                response
+                    .setCheckpointPosition(backupDescriptor.checkpointPosition())
+                    .setSnapshotId(backupDescriptor.snapshotId().orElse(""))
+                    .setNumberOfPartitions(backupDescriptor.numberOfPartitions()));
+    status.failureReason().ifPresent(response::setFailureReason);
+    return response;
+  }
+
   private Either<ErrorResponseWriter, BackupApiResponseWriter> unknownRequest(
       final ErrorResponseWriter errorWriter, final BackupRequestType type) {
     errorWriter.unsupportedMessage(type, AdminRequestType.values());
@@ -119,5 +163,15 @@ public final class BackupApiRequestHandler
   @Override
   public void onDiskSpaceAvailable() {
     actor.submit(() -> isDiskSpaceAvailable = true);
+  }
+
+  private BackupStatusCode encodeStatusCode(
+      final io.camunda.zeebe.backup.api.BackupStatusCode statusCode) {
+    return switch (statusCode) {
+      case DOES_NOT_EXIST -> BackupStatusCode.DOES_NOT_EXIST;
+      case IN_PROGRESS -> BackupStatusCode.IN_PROGRESS;
+      case COMPLETED -> BackupStatusCode.COMPLETED;
+      case FAILED -> BackupStatusCode.FAILED;
+    };
   }
 }

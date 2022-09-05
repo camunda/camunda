@@ -10,14 +10,22 @@ package io.camunda.zeebe.backup.management;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +45,7 @@ class BackupServiceImplTest {
 
   @BeforeEach
   void setup() {
-    backupService = new BackupServiceImpl(0, 1, 1, backupStore);
+    backupService = new BackupServiceImpl(backupStore);
   }
 
   @Test
@@ -50,6 +58,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).succeedsWithin(Duration.ofMillis(100));
+    verify(backupStore).save(any());
   }
 
   @Test
@@ -57,8 +66,8 @@ class BackupServiceImplTest {
     // given
     final InProgressBackup backup1 = mock(InProgressBackup.class);
     final InProgressBackup backup2 = mock(InProgressBackup.class);
-    when(backup1.findValidSnapshot()).thenReturn(concurrencyControl.createFuture());
-    when(backup2.findValidSnapshot()).thenReturn(concurrencyControl.createFuture());
+    when(backup1.findSegmentFiles()).thenReturn(concurrencyControl.createFuture());
+    when(backup2.findSegmentFiles()).thenReturn(concurrencyControl.createFuture());
 
     backupService.takeBackup(backup1, concurrencyControl);
     backupService.takeBackup(backup2, concurrencyControl);
@@ -86,8 +95,8 @@ class BackupServiceImplTest {
   @Test
   void shouldFailBackupWhenNoValidSnapshotFound() {
     // given
-    final var res = failedFuture();
-    when(inProgressBackup.findValidSnapshot()).thenReturn(res);
+    mockFindSegmentFiles();
+    when(inProgressBackup.findValidSnapshot()).thenReturn(failedFuture());
 
     // when
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
@@ -97,13 +106,13 @@ class BackupServiceImplTest {
         .failsWithin(Duration.ofMillis(1000))
         .withThrowableOfType(ExecutionException.class)
         .withMessageContaining("Expected");
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   @Test
   void shouldFailBackupWhenSnapshotCannotBeReserved() {
     // given
+    mockFindSegmentFiles();
     mockFindValidSnapshot();
     when(inProgressBackup.reserveSnapshot()).thenReturn(failedFuture());
 
@@ -112,13 +121,13 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   @Test
   void shouldFailBackupWhenSnapshotFilesCannotBeCollected() {
     // given
+    mockFindSegmentFiles();
     mockFindValidSnapshot();
     mockReserveSnapshot();
     when(inProgressBackup.findSnapshotFiles()).thenReturn(failedFuture());
@@ -128,16 +137,12 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   @Test
   void shouldFailBackupWhenSegmentFilesCannotBeCollected() {
     // given
-    mockFindValidSnapshot();
-    mockReserveSnapshot();
-    mockFindSnapshotFiles();
     when(inProgressBackup.findSegmentFiles()).thenReturn(failedFuture());
 
     // when
@@ -145,8 +150,7 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
   }
 
   @Test
@@ -164,8 +168,111 @@ class BackupServiceImplTest {
 
     // then
     assertThat(result).failsWithin(Duration.ofMillis(100));
-    verify(inProgressBackup).fail(any());
-    verify(inProgressBackup).close();
+    verifyInProgressBackupIsCleanedUpAfterFailure();
+  }
+
+  @Test
+  void shouldGetBackupStatus() {
+    // given
+    final BackupStatus status = mock(BackupStatus.class);
+    when(backupStore.getStatus(any())).thenReturn(CompletableFuture.completedFuture(status));
+
+    // when
+    final var result =
+        backupService.getBackupStatus(new BackupIdentifierImpl(1, 1, 1), concurrencyControl);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofMillis(100)).isEqualTo(status);
+  }
+
+  @Test
+  void shouldCompleteFutureWhenBackupStatusFailed() {
+    // given
+    when(backupStore.getStatus(any()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")));
+
+    // when
+    final var result =
+        backupService.getBackupStatus(new BackupIdentifierImpl(1, 1, 1), concurrencyControl);
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Expected");
+  }
+
+  @Test
+  void shouldMarkInProgressBackupsAsFailed() {
+    // given
+    final var inProgressBackup = new BackupIdentifierImpl(1, 1, 10);
+    final var notExistingBackup = new BackupIdentifierImpl(2, 1, 10);
+    final var completedBackup = new BackupIdentifierImpl(3, 1, 10);
+    final var inProgressStatus =
+        new BackupStatusImpl(
+            inProgressBackup,
+            Optional.empty(),
+            BackupStatusCode.IN_PROGRESS,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var notExistingStatus =
+        new BackupStatusImpl(
+            notExistingBackup,
+            Optional.empty(),
+            BackupStatusCode.DOES_NOT_EXIST,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var completedStatus =
+        new BackupStatusImpl(
+            completedBackup,
+            Optional.empty(),
+            BackupStatusCode.COMPLETED,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    when(backupStore.getStatus(inProgressBackup))
+        .thenReturn(CompletableFuture.completedFuture(inProgressStatus));
+    when(backupStore.getStatus(notExistingBackup))
+        .thenReturn(CompletableFuture.completedFuture(notExistingStatus));
+    when(backupStore.getStatus(completedBackup))
+        .thenReturn(CompletableFuture.completedFuture(completedStatus));
+
+    // when
+    backupService.failInProgressBackups(1, 10, List.of(1, 2, 3), concurrencyControl);
+
+    // then
+    final var expectedFailureReason = "Backup is cancelled due to leader change.";
+    verify(backupStore, timeout(1000)).markFailed(inProgressBackup, expectedFailureReason);
+    verify(backupStore, never()).markFailed(notExistingBackup, expectedFailureReason);
+    verify(backupStore, never()).markFailed(completedBackup, expectedFailureReason);
+  }
+
+  @Test
+  void shouldMarkRemainingBackupsAsFailedWhenThrowsError() {
+    // given
+    final var inProgressBackup = new BackupIdentifierImpl(1, 1, 10);
+    final var backupFailsToQuery = new BackupIdentifierImpl(2, 1, 10);
+    final var inProgressStatus =
+        new BackupStatusImpl(
+            inProgressBackup,
+            Optional.empty(),
+            BackupStatusCode.IN_PROGRESS,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    when(backupStore.getStatus(inProgressBackup))
+        .thenReturn(CompletableFuture.completedFuture(inProgressStatus));
+    when(backupStore.getStatus(backupFailsToQuery))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")));
+
+    // when
+    backupService.failInProgressBackups(1, 10, List.of(1, 2), concurrencyControl);
+
+    // then
+    verify(backupStore, timeout(1000))
+        .markFailed(inProgressBackup, "Backup is cancelled due to leader change.");
   }
 
   private ActorFuture<Void> failedFuture() {
@@ -203,5 +310,10 @@ class BackupServiceImplTest {
   private void mockFindSegmentFiles() {
     when(inProgressBackup.findSegmentFiles())
         .thenReturn(concurrencyControl.createCompletedFuture());
+  }
+
+  private void verifyInProgressBackupIsCleanedUpAfterFailure() {
+    verify(backupStore).markFailed(any(), any());
+    verify(inProgressBackup).close();
   }
 }

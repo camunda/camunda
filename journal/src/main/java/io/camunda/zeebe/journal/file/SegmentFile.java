@@ -26,7 +26,7 @@ import java.nio.file.Path;
  *
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
-final class SegmentFile {
+public final class SegmentFile {
 
   private static int deletedFileIndex = 0;
   private static final char PART_SEPARATOR = '-';

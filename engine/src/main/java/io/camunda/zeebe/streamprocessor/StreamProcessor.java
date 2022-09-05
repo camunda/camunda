@@ -108,7 +108,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private volatile long lastTickTime;
   private boolean shouldProcess = true;
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
-  private final Function<LogStreamBatchWriter, LegacyTypedStreamWriter> typedStreamWriterFactory;
 
   private final List<RecordProcessor> recordProcessors = new ArrayList<>();
   private StreamProcessorDbState streamProcessorDbState;
@@ -116,7 +115,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
     lifecycleAwareListeners = processorBuilder.getLifecycleListeners();
-    typedStreamWriterFactory = processorBuilder.getTypedStreamWriterFactory();
     zeebeDb = processorBuilder.getZeebeDb();
 
     eventApplierFactory = processorBuilder.getEventApplierFactory();
@@ -271,8 +269,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       final LastProcessingPositions lastProcessingPositions) {
 
     if (errorOnReceivingWriter == null) {
-      streamProcessorContext.logStreamWriter(typedStreamWriterFactory.apply(batchWriter));
-
       streamProcessorContext.logStreamBatchWriter(batchWriter);
 
       streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);

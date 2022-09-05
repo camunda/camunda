@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_19exoz2" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.2.0">
-  <bpmn:process id="benchmark" name="One task process" isExecutable="true">
+  <bpmn:process id="msg_one_task" name="One task process" isExecutable="true">
     <bpmn:serviceTask id="task" name="task">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="benchmark-task" />

@@ -48,23 +48,36 @@ public final class RaftOperation {
   }
 
   /** Returns a list of RaftOperation */
+  public static List<RaftOperation> getRaftOperationsWithSnapshot() {
+    final List<RaftOperation> defaultRaftOperation = getDefaultRaftOperations();
+    defaultRaftOperation.add(
+        RaftOperation.of("Take snapshot", ControllableRaftContexts::snapshotAndCompact));
+    return defaultRaftOperation;
+  }
+
+  public static List<RaftOperation> getRaftOperationsWithRestarts() {
+    final List<RaftOperation> defaultRaftOperation = getDefaultRaftOperations();
+    defaultRaftOperation.add(RaftOperation.of("Restart member", ControllableRaftContexts::restart));
+    return defaultRaftOperation;
+  }
+
+  public static List<RaftOperation> getRaftOperationsWithSnapshotsAndRestarts() {
+    final List<RaftOperation> operationsWithSnapshot = getRaftOperationsWithSnapshot();
+    operationsWithSnapshot.add(
+        RaftOperation.of("Restart member", ControllableRaftContexts::restart));
+    return operationsWithSnapshot;
+  }
+
   public static List<RaftOperation> getDefaultRaftOperations() {
     final List<RaftOperation> defaultRaftOperation = new ArrayList<>();
     defaultRaftOperation.add(
-        RaftOperation.of(
-            "Run next task", (raftContexts, memberId) -> raftContexts.runNextTask(memberId)));
+        RaftOperation.of("Run next task", ControllableRaftContexts::runNextTask));
     defaultRaftOperation.add(
-        RaftOperation.of(
-            "Receive next message",
-            (raftContexts, memberId) -> raftContexts.processNextMessage(memberId)));
+        RaftOperation.of("Receive next message", ControllableRaftContexts::processNextMessage));
     defaultRaftOperation.add(
-        RaftOperation.of(
-            "Tick electionTimeout",
-            (raftContexts, memberId) -> raftContexts.tickElectionTimeout(memberId)));
+        RaftOperation.of("Tick electionTimeout", ControllableRaftContexts::tickElectionTimeout));
     defaultRaftOperation.add(
-        RaftOperation.of(
-            "Tick heartbeatTimeout",
-            (raftContexts, memberId) -> raftContexts.tickHeartbeatTimeout(memberId)));
+        RaftOperation.of("Tick heartbeatTimeout", ControllableRaftContexts::tickHeartbeatTimeout));
     defaultRaftOperation.add(
         RaftOperation.of(
             "Tick 50ms", (raftContexts, m) -> raftContexts.tick(m, Duration.ofMillis(50))));

@@ -63,9 +63,4 @@ public final class Writers {
   public TypedResponseWriter response() {
     return responseWriter;
   }
-
-  /** Resets written records, response and post commit tasks */
-  public void reset() {
-    resultBuilderSupplier.get().reset();
-  }
 }

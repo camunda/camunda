@@ -11,11 +11,14 @@ import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
+import java.time.Instant;
 import java.util.Optional;
 
 public record BackupStatusImpl(
     BackupIdentifier id,
     Optional<BackupDescriptor> descriptor,
     BackupStatusCode statusCode,
-    Optional<String> failureReason)
+    Optional<String> failureReason,
+    Optional<Instant> created,
+    Optional<Instant> lastModified)
     implements BackupStatus {}

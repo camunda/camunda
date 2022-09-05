@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.api;
 
+import java.util.Optional;
+
 /**
  * Additional information about the backup that might be required for restoring or querying the
  * status
@@ -15,7 +17,7 @@ public interface BackupDescriptor {
   /**
    * @return id of the snapshot included in the backup
    */
-  String snapshotId();
+  Optional<String> snapshotId();
 
   /**
    * @return the checkpoint position of the checkpoint included in the backup
@@ -30,4 +32,15 @@ public interface BackupDescriptor {
    * @return number of partitions at the time backup is taken.
    */
   int numberOfPartitions();
+
+  /**
+   * Describes the version of the broker that took the backup. This may be a semver version (for
+   * example '8.1.0') or an arbitrary string (for example 'dev').
+   *
+   * <p>Including the version might be useful for backwards compatability, for example to restore
+   * backups of an old broker.
+   *
+   * @return The version of the broker that took the backup.
+   */
+  String brokerVersion();
 }

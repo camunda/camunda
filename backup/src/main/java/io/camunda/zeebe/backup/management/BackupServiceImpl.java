@@ -7,32 +7,30 @@
  */
 package io.camunda.zeebe.backup.management;
 
+import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class BackupServiceImpl {
-  private final int nodeId;
-  private final int partitionId;
-
-  private final int numberOfPartitions;
-
+  private static final Logger LOG = LoggerFactory.getLogger(BackupServiceImpl.class);
   private final Set<InProgressBackup> backupsInProgress = new HashSet<>();
   private final BackupStore backupStore;
   private ConcurrencyControl concurrencyControl;
 
-  BackupServiceImpl(
-      final int nodeId,
-      final int partitionId,
-      final int numberOfPartitions,
-      final BackupStore backupStore) {
-    this.nodeId = nodeId;
-    this.partitionId = partitionId;
-    this.numberOfPartitions = numberOfPartitions;
+  BackupServiceImpl(final BackupStore backupStore) {
     this.backupStore = backupStore;
   }
 
@@ -46,11 +44,17 @@ final class BackupServiceImpl {
 
     backupsInProgress.add(inProgressBackup);
 
-    final ActorFuture<Void> snapshotFound = inProgressBackup.findValidSnapshot();
+    final ActorFuture<Void> snapshotFound = concurrencyControl.createFuture();
     final ActorFuture<Void> snapshotReserved = concurrencyControl.createFuture();
     final ActorFuture<Void> snapshotFilesCollected = concurrencyControl.createFuture();
-    final ActorFuture<Void> segmentFilesCollected = concurrencyControl.createFuture();
     final ActorFuture<Void> backupSaved = concurrencyControl.createFuture();
+
+    final ActorFuture<Void> segmentFilesCollected = inProgressBackup.findSegmentFiles();
+
+    segmentFilesCollected.onComplete(
+        proceed(
+            snapshotFound::completeExceptionally,
+            () -> inProgressBackup.findValidSnapshot().onComplete(snapshotFound)));
 
     snapshotFound.onComplete(
         proceed(
@@ -63,11 +67,6 @@ final class BackupServiceImpl {
             () -> inProgressBackup.findSnapshotFiles().onComplete(snapshotFilesCollected)));
 
     snapshotFilesCollected.onComplete(
-        proceed(
-            segmentFilesCollected::completeExceptionally,
-            () -> inProgressBackup.findSegmentFiles().onComplete(segmentFilesCollected)));
-
-    segmentFilesCollected.onComplete(
         proceed(
             error -> failBackup(inProgressBackup, backupSaved, error),
             () -> saveBackup(inProgressBackup, backupSaved)));
@@ -108,7 +107,7 @@ final class BackupServiceImpl {
       final ActorFuture<Void> backupSaved,
       final Throwable error) {
     backupSaved.completeExceptionally(error);
-    inProgressBackup.fail(error);
+    backupStore.markFailed(inProgressBackup.id(), error.getMessage());
     closeInProgressBackup(inProgressBackup);
   }
 
@@ -126,5 +125,67 @@ final class BackupServiceImpl {
         nextStep.run();
       }
     };
+  }
+
+  ActorFuture<BackupStatus> getBackupStatus(
+      final BackupIdentifier backupId, final ConcurrencyControl executor) {
+    final var future = new CompletableActorFuture<BackupStatus>();
+    executor.run(
+        () ->
+            backupStore
+                .getStatus(backupId)
+                .whenComplete(
+                    (status, error) -> {
+                      if (error == null) {
+                        future.complete(status);
+                      } else {
+                        future.completeExceptionally(error);
+                      }
+                    }));
+    return future;
+  }
+
+  void failInProgressBackups(
+      final int partitionId,
+      final long lastCheckpointId,
+      final Collection<Integer> brokers,
+      final ConcurrencyControl executor) {
+    if (lastCheckpointId != CheckpointState.NO_CHECKPOINT) {
+      executor.run(
+          () -> {
+            final var backupIds =
+                brokers.stream()
+                    .map(b -> new BackupIdentifierImpl(b, partitionId, lastCheckpointId))
+                    .toList();
+            // Fail backups initiated by previous leaders
+            backupIds.forEach(this::failInProgressBackup);
+          });
+    }
+  }
+
+  private void failInProgressBackup(final BackupIdentifier backupId) {
+    backupStore
+        .getStatus(backupId)
+        .thenAccept(
+            status -> {
+              if (status.statusCode() == BackupStatusCode.IN_PROGRESS) {
+                LOG.info(
+                    "The backup {} initiated by previous leader is still in progress. Marking it as failed.",
+                    backupId);
+                backupStore
+                    .markFailed(backupId, "Backup is cancelled due to leader change.")
+                    .thenAccept(ignore -> LOG.trace("Marked backup {} as failed.", backupId))
+                    .exceptionally(
+                        failed -> {
+                          LOG.warn("Failed to mark backup {} as failed", backupId, failed);
+                          return null;
+                        });
+              }
+            })
+        .exceptionally(
+            error -> {
+              LOG.warn("Failed to retrieve status of backup {}", backupId);
+              return null;
+            });
   }
 }

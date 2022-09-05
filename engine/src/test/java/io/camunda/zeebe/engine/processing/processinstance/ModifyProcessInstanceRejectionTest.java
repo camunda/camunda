@@ -16,6 +16,8 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.ByteValue;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -25,6 +27,7 @@ public class ModifyProcessInstanceRejectionTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
+  private static final long MAX_MESSAGE_SIZE = ByteValue.ofMegabytes(4);
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -57,7 +60,7 @@ public class ModifyProcessInstanceRejectionTest {
   }
 
   @Test
-  public void shouldRejectCommandWhenAtLeastOneElementIdIsUnknown() {
+  public void shouldRejectCommandWhenAtLeastOneActivateElementIdIsUnknown() {
     // given
     ENGINE
         .deployment()
@@ -93,7 +96,45 @@ public class ModifyProcessInstanceRejectionTest {
   }
 
   @Test
-  public void shouldRejectCommandWhenAtLeastOneElementIsInsideMultiInstance() {
+  public void shouldRejectCommandWhenAtLeastOneTerminateElementInstanceKeyIsUnknown() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask("A").endEvent().done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var userTaskActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .terminateElement(userTaskActivated.getKey())
+            .terminateElement(123L)
+            .terminateElement(456L)
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that element instance with key '123' and '456' are not found")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            String.format(
+                "Expected to modify instance of process '%s' but it contains one or more terminate "
+                    + "instructions with an element instance that could not be found: '123', '456'",
+                PROCESS_ID));
+  }
+
+  @Test
+  public void shouldRejectCommandWhenFlowScopeCantBeCreated() {
     // given
     ENGINE
         .deployment()
@@ -102,10 +143,9 @@ public class ModifyProcessInstanceRejectionTest {
                 .startEvent()
                 .userTask("A")
                 .subProcess(
-                    "subprocess",
-                    s -> s.embeddedSubProcess().startEvent().manualTask("B").manualTask("C").done())
-                .multiInstance(m -> m.zeebeInputCollectionExpression("[1,2,3]"))
-                .manualTask("D")
+                    "sp", sp -> sp.embeddedSubProcess().startEvent().userTask("B").endEvent())
+                .boundaryEvent()
+                .message(m -> m.name("message").zeebeCorrelationKeyExpression("missingVariable"))
                 .endEvent()
                 .done())
         .deploy();
@@ -122,19 +162,53 @@ public class ModifyProcessInstanceRejectionTest {
             .withInstanceKey(processInstanceKey)
             .modification()
             .activateElement("B")
-            .activateElement("C")
-            .activateElement("D")
             .expectRejection()
             .modify();
 
     // then
     assertThat(rejection)
-        .describedAs("Expect that elements with ids 'B' and 'C' are inside multi-instance")
+        .describedAs("Expect that flow scope could not be created")
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
-            ("Expected to modify instance of process '%s' but it contains one or more activate"
-                    + " instructions for elements inside a multi-instance subprocess: 'B', 'C'."
-                    + " The activation of elements inside a multi-instance subprocess is not supported.")
-                .formatted(PROCESS_ID));
+            ("Expected to subscribe to catch event(s) of 'sp' but failed to evaluate expression "
+                + "'missingVariable': no variable found for name 'missingVariable'"));
+  }
+
+  @Test
+  public void shouldRejectCommandWhenItExceedsMaxMessageSize() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask("A").endEvent().done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("A")
+            .withGlobalVariables(
+                // Create a variable with a size of the max message size, minus 1 kB, in order to
+                // save some space for the rest of the message.
+                Map.of("x", "x".repeat((int) (MAX_MESSAGE_SIZE - ByteValue.ofKilobytes(1)))))
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that message batch size too large")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Unable to modify process instance with key '%d' as the size exceeds the maximum batch "
+                    + "size. Please reduce the size by splitting the modification into multiple commands.")
+                .formatted(processInstanceKey));
   }
 }

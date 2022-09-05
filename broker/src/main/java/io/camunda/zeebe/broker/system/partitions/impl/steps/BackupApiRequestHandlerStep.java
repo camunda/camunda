@@ -66,7 +66,10 @@ public final class BackupApiRequestHandlerStep implements PartitionTransitionSte
       final LogStreamRecordWriter logStreamRecordWriter) {
     final var requestHandler =
         new BackupApiRequestHandler(
-            context.getGatewayBrokerTransport(), logStreamRecordWriter, context.getPartitionId());
+            context.getGatewayBrokerTransport(),
+            logStreamRecordWriter,
+            context.getBackupManager(),
+            context.getPartitionId());
     context.getActorSchedulingService().submitActor(requestHandler).onComplete(installed);
     installed.onComplete(
         (ignore, error) -> {

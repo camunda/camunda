@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotReservation;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,14 +28,16 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 final class InProgressBackupImpl implements InProgressBackup {
 
-  private static final Logger LOG = LoggerFactory.getLogger(InProgressBackup.class);
+  private static final Logger LOG = LoggerFactory.getLogger(InProgressBackupImpl.class);
 
   private static final String ERROR_MSG_NO_VALID_SNAPSHOT =
       "Cannot find a snapshot that can be included in the backup %d. All available snapshots (%s) have processedPosition or lastFollowupEventPosition > checkpointPosition %d";
@@ -44,24 +48,33 @@ final class InProgressBackupImpl implements InProgressBackup {
   private final int numberOfPartitions;
   private final ConcurrencyControl concurrencyControl;
 
+  private final Path segmentsDirectory;
+
+  private final Predicate<Path> isSegmentsFile;
+
   // Snapshot related data
   private boolean hasSnapshot = true;
   private Set<PersistedSnapshot> availableValidSnapshots;
   private SnapshotReservation snapshotReservation;
   private PersistedSnapshot reservedSnapshot;
-  private NamedFileSetImpl snapshotFileSet;
+  private NamedFileSet snapshotFileSet;
+  private NamedFileSet segmentsFileSet;
 
   InProgressBackupImpl(
       final PersistedSnapshotStore snapshotStore,
       final BackupIdentifier backupId,
       final long checkpointPosition,
       final int numberOfPartitions,
-      final ConcurrencyControl concurrencyControl) {
+      final ConcurrencyControl concurrencyControl,
+      final Path segmentsDirectory,
+      final Predicate<Path> isSegmentsFile) {
     this.snapshotStore = snapshotStore;
     this.backupId = backupId;
     this.checkpointPosition = checkpointPosition;
     this.numberOfPartitions = numberOfPartitions;
     this.concurrencyControl = concurrencyControl;
+    this.segmentsDirectory = segmentsDirectory;
+    this.isSegmentsFile = isSegmentsFile;
   }
 
   @Override
@@ -72,6 +85,11 @@ final class InProgressBackupImpl implements InProgressBackup {
   @Override
   public long checkpointPosition() {
     return checkpointPosition;
+  }
+
+  @Override
+  public BackupIdentifier id() {
+    return backupId;
   }
 
   @Override
@@ -157,28 +175,44 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   @Override
   public ActorFuture<Void> findSegmentFiles() {
-    return concurrencyControl.createCompletedFuture();
+    final ActorFuture<Void> filesCollected = concurrencyControl.createFuture();
+    try (final var stream = Files.list(segmentsDirectory)) {
+      final var fileSet =
+          stream
+              .filter(isSegmentsFile)
+              .collect(
+                  Collectors.toMap(
+                      path -> segmentsDirectory.relativize(path).toString(), path -> path));
+
+      if (fileSet.isEmpty()) {
+        filesCollected.completeExceptionally(
+            new IllegalStateException("Segments must not be empty"));
+        return filesCollected;
+      }
+
+      segmentsFileSet = new NamedFileSetImpl(fileSet);
+      filesCollected.complete(null);
+    } catch (final IOException e) {
+      filesCollected.completeExceptionally(e);
+    }
+
+    return filesCollected;
   }
 
   @Override
   public Backup createBackup() {
-    final String snapshotId;
+    final Optional<String> snapshotId;
 
     if (hasSnapshot) {
-      snapshotId = reservedSnapshot.getId();
+      snapshotId = Optional.of(reservedSnapshot.getId());
     } else {
-      // To do : change snapshotId in BackupDescriptor to Optional
-      snapshotId = null;
+      snapshotId = Optional.empty();
     }
 
     final var backupDescriptor =
-        new BackupDescriptorImpl(snapshotId, checkpointPosition, numberOfPartitions);
-    return new BackupImpl(backupId, backupDescriptor, snapshotFileSet, null);
-  }
-
-  @Override
-  public void fail(final Throwable error) {
-    // To be implemented
+        new BackupDescriptorImpl(
+            snapshotId, checkpointPosition, numberOfPartitions, VersionUtil.getVersion());
+    return new BackupImpl(backupId, backupDescriptor, snapshotFileSet, segmentsFileSet);
   }
 
   @Override

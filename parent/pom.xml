@@ -40,7 +40,7 @@
     <version.awaitility>4.2.0</version.awaitility>
     <version.bouncycastle>1.70</version.bouncycastle>
     <version.camunda>7.17.0</version.camunda>
-    <version.checkstyle>10.3.2</version.checkstyle>
+    <version.checkstyle>10.3.3</version.checkstyle>
     <version.commons-lang>3.12.0</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
@@ -67,7 +67,7 @@
     <version.mockito>4.7.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.3</version.msgpack>
-    <version.netty>4.1.79.Final</version.netty>
+    <version.netty>4.1.80.Final</version.netty>
     <version.objenesis>3.3</version.objenesis>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.21.5</version.protobuf>
@@ -119,7 +119,7 @@
     <plugin.version.build-helper>3.3.0</plugin.version.build-helper>
     <plugin.version.checkstyle>3.2.0</plugin.version.checkstyle>
     <plugin.version.compiler>3.10.1</plugin.version.compiler>
-    <plugin.version.dependency-analyzer>1.12.0</plugin.version.dependency-analyzer>
+    <plugin.version.dependency-analyzer>1.13.0</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.3.0</plugin.version.dependency>
     <plugin.version.enforcer>3.1.0</plugin.version.enforcer>
     <plugin.version.exec>3.1.0</plugin.version.exec>
@@ -353,6 +353,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-backup</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-backup-testkit</artifactId>
         <version>${project.version}</version>
       </dependency>
 

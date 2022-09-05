@@ -22,7 +22,8 @@ public interface ProcessingResultBuilder {
    * Appends a record to the result
    *
    * @return returns itself for method chaining
-   * @throws RuntimeException if to appended record doesn't fit into the RecordBatch
+   * @throws io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException if the
+   *     appended record doesn't fit into the RecordBatch
    */
   default ProcessingResultBuilder appendRecord(
       final long key,
@@ -84,14 +85,6 @@ public interface ProcessingResultBuilder {
    * @return returns itself for method chaining
    */
   ProcessingResultBuilder appendPostCommitTask(PostCommitTask task);
-
-  /**
-   * Resets the processing result build to its initial states (removes all follow-up records, the
-   * response and post-commit tasks.
-   *
-   * @return returns itself for method chaining
-   */
-  ProcessingResultBuilder reset();
 
   /**
    * Resets itself with the post commit tasks reset

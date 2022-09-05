@@ -40,7 +40,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private ActorControl actor;
   private LogStream logStream;
   private LogStreamReader logStreamReader;
-  private LegacyTypedStreamWriter logStreamWriter;
   private RecordValues recordValues;
   private ZeebeDbState zeebeState;
   private TransactionContext transactionContext;
@@ -87,10 +86,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   @Override
   public int getPartitionId() {
     return getLogStream().getPartitionId();
-  }
-
-  public LegacyTypedStreamWriter getLogStreamWriter() {
-    return logStreamWriter;
   }
 
   public MutableLastProcessedPositionState getLastProcessedPositionState() {
@@ -152,11 +147,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public StreamProcessorContext abortCondition(final BooleanSupplier abortCondition) {
     this.abortCondition = abortCondition;
-    return this;
-  }
-
-  public StreamProcessorContext logStreamWriter(final LegacyTypedStreamWriter logStreamWriter) {
-    this.logStreamWriter = logStreamWriter;
     return this;
   }
 
