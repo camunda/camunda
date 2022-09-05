@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.backup.s3.support;
+package io.camunda.zeebe.backup.testkit.support;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,10 +40,7 @@ final class NamedFileSetAssert extends AbstractAssert<NamedFileSetAssert, NamedF
   @SuppressWarnings("UnusedReturnValue")
   public NamedFileSetAssert residesInPath(final Path expectedPath) {
     assertThat(actual.files())
-        .allSatisfy(
-            actualPath -> {
-              assertThat(actualPath).hasParent(expectedPath);
-            });
+        .allSatisfy(actualPath -> assertThat(actualPath).hasParent(expectedPath));
     return this;
   }
 }
