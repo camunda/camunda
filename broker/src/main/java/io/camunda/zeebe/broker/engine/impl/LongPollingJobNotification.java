@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.engine.impl;
 
 import io.atomix.cluster.messaging.ClusterEventService;
+import io.camunda.zeebe.gateway.Loggers;
 
 public final class LongPollingJobNotification {
   private static final String TOPIC = "jobsAvailable";
@@ -18,6 +19,7 @@ public final class LongPollingJobNotification {
   }
 
   public void onJobsAvailable(final String jobType) {
+    Loggers.LONG_POLLING.trace("Sending notification for {}", jobType);
     eventService.broadcast(TOPIC, jobType);
   }
 }
