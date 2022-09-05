@@ -31,7 +31,8 @@ import org.springframework.test.context.junit4.SpringRunner;
     classes = {TestApplication.class, OAuth2WebConfigurer.class,
         TestElasticsearchSchemaManager.class},
     properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-        OperateProperties.PREFIX + ".archiver.rolloverEnabled = false"}
+        OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+        "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"}
 )
 public class ProbesTestIT{
 

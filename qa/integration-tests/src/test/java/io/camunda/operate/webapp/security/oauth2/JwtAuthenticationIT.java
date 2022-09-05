@@ -44,7 +44,8 @@ import org.springframework.test.context.junit4.SpringRunner;
         // OAuth2WebConfigurer.SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI +
         // "=https://weblogin.cloud.ultrawombat.com/"
         OAuth2WebConfigurer.SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI
-            + "=http://dummy-issuer/"
+            + "=http://dummy-issuer/",
+        "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestExecutionListeners(

@@ -44,7 +44,8 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @SpringBootTest(
   classes = {TestApplication.class},
   properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-    OperateProperties.PREFIX + ".archiver.rolloverEnabled = false"})
+    OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+    "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
 @WebAppConfiguration
 @TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 @WithMockUser(DEFAULT_USER)

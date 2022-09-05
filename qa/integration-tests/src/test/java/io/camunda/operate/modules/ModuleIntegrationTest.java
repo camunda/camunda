@@ -19,7 +19,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = { ModulesTestApplication.class },
     properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false"})
+      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+        "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
 public abstract class ModuleIntegrationTest {
 
   @Autowired

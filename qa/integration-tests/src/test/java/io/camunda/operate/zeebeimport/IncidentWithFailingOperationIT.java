@@ -44,7 +44,8 @@ import static org.mockito.Mockito.*;
     properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
         OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
         //configure webhook to notify about the incidents
-        OperateProperties.PREFIX + ".alert.webhook = http://somepath"})
+        OperateProperties.PREFIX + ".alert.webhook = http://somepath",
+        "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
 public class IncidentWithFailingOperationIT extends OperateZeebeIntegrationTest {
 
   @Autowired

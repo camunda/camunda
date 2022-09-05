@@ -23,12 +23,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 
   properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      "spring.main.allow-bean-definition-overriding=true"})
+      "spring.main.allow-bean-definition-overriding=true",
+      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
 public class ZeebeImportIdempotencyIT extends ZeebeImportIT {
 
   @Autowired
   private ZeebeImportIdempotencyTestConfig.CustomElasticsearchBulkProcessor elasticsearchBulkProcessor;
-  
+
   @Override
   protected void processImportTypeAndWait(ImportValueType importValueType, Predicate<Object[]> waitTill, Object... arguments) {
     elasticsearchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);

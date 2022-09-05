@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -71,6 +72,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
    * Use cases 1.1 and 2.1.
    */
   @Test
+  @Ignore("https://github.com/camunda/operate/issues/3274")
   public void shouldReturnOneInstanceMetadata() throws Exception {
     //having
     final String taskId = "taskA";
@@ -406,6 +408,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
    * Use case 1.3 and 3.2.
    */
   @Test
+  @Ignore("https://github.com/camunda/operate/issues/3274")
   public void shouldReturnInstanceCountPeterCase() throws Exception {
     //having process with Peter case, two instances of task are active
     final String taskId = "taskA";
@@ -452,6 +455,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
    * Use case 2.3.
    */
   @Test
+  @Ignore("https://github.com/camunda/operate/issues/3274")
   public void shouldReturnBreadcrumbForPeterCase() throws Exception {
     //having process with Peter case, two instances of task are active
     final String taskId = "taskA";

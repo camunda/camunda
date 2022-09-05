@@ -44,7 +44,7 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
     http.csrf().disable()
       .authorizeRequests()
       .antMatchers(AUTH_WHITELIST).permitAll()
-      .antMatchers(API, PUBLIC_API, ROOT).authenticated()
+      .antMatchers(API, PUBLIC_API, ROOT + "**").authenticated()
       .and().exceptionHandling()
         .authenticationEntryPoint(this::failureHandler);
     configureOAuth2(http);

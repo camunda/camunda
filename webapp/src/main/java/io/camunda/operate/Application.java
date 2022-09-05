@@ -88,7 +88,8 @@ public class Application {
   private static Map<String, Object> getWebProperties() {
     return Map.of(
         "server.servlet.session.cookie.name","OPERATE-SESSION",
-        SPRING_THYMELEAF_PREFIX_KEY, SPRING_THYMELEAF_PREFIX_VALUE);
+        SPRING_THYMELEAF_PREFIX_KEY, SPRING_THYMELEAF_PREFIX_VALUE,
+        "spring.mvc.pathmatch.matching-strategy", "ANT_PATH_MATCHER");
   }
 
   public static Map<String, Object> getManagementProperties() {

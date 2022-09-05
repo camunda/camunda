@@ -36,9 +36,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest( classes = {
-    TestApplication.class,
-})
+@SpringBootTest(classes = { TestApplication.class },
+    properties = {"spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER" })
 @WithMockUser(username = AuthorizationIT.USER)
 public class AuthorizationIT {
 

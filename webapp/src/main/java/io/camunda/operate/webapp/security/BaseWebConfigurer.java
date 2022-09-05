@@ -6,20 +6,12 @@
  */
 package io.camunda.operate.webapp.security;
 
-import static io.camunda.operate.webapp.security.OperateURIs.API;
-import static io.camunda.operate.webapp.security.OperateURIs.AUTH_WHITELIST;
-import static io.camunda.operate.webapp.security.OperateURIs.COOKIE_JSESSIONID;
-import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
-import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
-import static io.camunda.operate.webapp.security.OperateURIs.PUBLIC_API;
-import static io.camunda.operate.webapp.security.OperateURIs.REQUESTED_URL;
-import static io.camunda.operate.webapp.security.OperateURIs.RESPONSE_CHARACTER_ENCODING;
+import static io.camunda.operate.webapp.security.OperateURIs.*;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import java.io.IOException;
 import java.io.PrintWriter;
 import javax.json.Json;
@@ -77,8 +69,8 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
 
   protected void failureHandler(HttpServletRequest request, HttpServletResponse response,
       AuthenticationException ex) throws IOException {
-    String requestedUrl = request.getRequestURI();
-    if (requestedUrl.contains("api") || requestedUrl.contains("/v1/")) {
+    String requestedUrl = request.getRequestURI().substring(request.getContextPath().length());
+    if (requestedUrl.contains("/api/") || requestedUrl.contains("/v1/")) {
       sendError(request,response, ex);
     } else {
       storeRequestedUrlAndRedirectToLogin(request, response, requestedUrl);
@@ -90,7 +82,7 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
     if(request.getQueryString() !=null && !request.getQueryString().isEmpty()) {
       requestedUrl = requestedUrl + "?" + request.getQueryString();
     }
-    logger.debug("Try to access protected resource {}. Save it for later redirect", requestedUrl);
+    logger.warn("Try to access protected resource {}. Save it for later redirect", requestedUrl);
     request.getSession(true).setAttribute(REQUESTED_URL, requestedUrl);
     response.sendRedirect(request.getContextPath() + LOGIN_RESOURCE);
   }

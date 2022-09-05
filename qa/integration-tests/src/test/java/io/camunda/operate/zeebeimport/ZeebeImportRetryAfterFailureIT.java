@@ -20,7 +20,8 @@ import org.springframework.boot.test.context.SpringBootTest;
   classes = {RetryAfterFailureTestConfig.class, TestApplication.class},
   properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      "spring.main.allow-bean-definition-overriding=true"})
+      "spring.main.allow-bean-definition-overriding=true",
+      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
 public class ZeebeImportRetryAfterFailureIT extends ZeebeImportIT {
 
   @Autowired

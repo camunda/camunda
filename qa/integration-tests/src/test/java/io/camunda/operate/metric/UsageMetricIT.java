@@ -37,7 +37,8 @@ import static org.mockito.Mockito.when;
     properties = {
         OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
         OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-        "management.endpoints.web.exposure.include = usage-metrics"
+        "management.endpoints.web.exposure.include = usage-metrics",
+        "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
 @TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 @WithMockUser(DEFAULT_USER)

@@ -39,7 +39,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
         OperateProperties.PREFIX + ".userId = " + ElasticSearchUserDetailsServiceIT.TEST_USER_ID,
         OperateProperties.PREFIX + ".displayName = User 1",
-        OperateProperties.PREFIX + ".password = " + ElasticSearchUserDetailsServiceIT.TEST_PASSWORD
+        OperateProperties.PREFIX + ".password = " + ElasticSearchUserDetailsServiceIT.TEST_PASSWORD,
+        "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
 public class ElasticSearchUserDetailsServiceIT extends OperateIntegrationTest {
 

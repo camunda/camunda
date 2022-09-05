@@ -21,7 +21,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.AuthenticationException;
@@ -31,7 +30,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.client.RestTemplate;
 
 @Controller
 @Profile(SSO_AUTH_PROFILE)
@@ -65,6 +63,7 @@ public class SSOController {
 
   private void handleAuth0Exception(final Auth0ServiceException ase,
       final HttpServletRequest req, final HttpServletResponse res) throws IOException {
+    logger.error("Error in authentication callback: ", ase);
     Throwable cause = ase.getCause();
     if(cause!=null) {
       if(cause instanceof InsufficientAuthenticationException){
@@ -83,7 +82,7 @@ public class SSOController {
   private void redirectToPage(final HttpServletRequest req, final HttpServletResponse res) throws IOException {
     Object originalRequestUrl = req.getSession().getAttribute(REQUESTED_URL);
     if (originalRequestUrl != null) {
-        res.sendRedirect(originalRequestUrl.toString());
+        res.sendRedirect(req.getContextPath() + originalRequestUrl);
     } else {
         res.sendRedirect(ROOT);
     }

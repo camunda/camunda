@@ -35,7 +35,10 @@ public final class OperateURIs {
        "/swagger-resources/**",
        "/swagger-ui.html",
        "/documentation",
+      "/actuator/**",
        LOGIN_RESOURCE,
+       SSO_CALLBACK_URI,
+       NO_PERMISSION,
        LOGOUT_RESOURCE
    };
 
