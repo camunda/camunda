@@ -173,7 +173,7 @@ public class ImportSeveralVersionsIT extends OperateIntegrationTest {
     currentRun++;
     try {
       execute.run();
-    } catch (Exception ex) {
+    } catch (Exception | AssertionError ex) {
       if (currentRun > retryTimes) {
         throw ex;
       } else {

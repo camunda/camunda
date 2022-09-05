@@ -44,14 +44,14 @@ public class ElasticsearchTask {
   }
 
   private void checkForErrors(final Map<String, Object> taskStatus) {
-    if (!taskStatus.isEmpty() && taskStatus.containsKey(ERROR)) {
+    if (taskStatus!= null && !taskStatus.isEmpty() && taskStatus.containsKey(ERROR)) {
       final Map<String, String> taskError = (Map<String, String>) taskStatus.get(ERROR);
       throw new OperateRuntimeException(taskError.get(REASON));
     }
   }
 
   private void checkForFailures(final Map<String, Object> taskStatus) {
-    if (!taskStatus.isEmpty() && taskStatus.containsKey(RESPONSE)) {
+    if (taskStatus!= null && !taskStatus.isEmpty() && taskStatus.containsKey(RESPONSE)) {
       final Map<String, Object> taskResponse = (Map<String, Object>) taskStatus.get(RESPONSE);
       if(taskResponse.containsKey(FAILURES)){
           final List<Map<String,Object>> failures = (List<Map<String,Object>>) taskResponse.get(FAILURES);

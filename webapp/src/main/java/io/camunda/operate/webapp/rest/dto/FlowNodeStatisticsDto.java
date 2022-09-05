@@ -107,4 +107,9 @@ public class FlowNodeStatisticsDto {
     result = 31 * result + (completed != null ? completed.hashCode() : 0);
     return result;
   }
+
+  @Override public String toString() {
+    return "FlowNodeStatisticsDto{" + "activityId='" + activityId + '\'' + ", active=" + active + ", canceled="
+        + canceled + ", incidents=" + incidents + ", completed=" + completed + '}';
+  }
 }

@@ -57,7 +57,8 @@ public abstract class AbstractTestFixture implements TestFixture {
         .waitingFor(new HttpWaitStrategy()
             .forPort(8080)
             .forPath("/actuator/health")
-            .withReadTimeout(Duration.ofSeconds(120)));
+            .withReadTimeout(Duration.ofSeconds(120)))
+        .withStartupTimeout(Duration.ofSeconds(120));
     applyConfiguration(operateContainer, testContext.getInternalElsHost(),
         testContext.getInternalElsPort(), testContext.getInternalZeebeContactPoint());
     operateContainer.start();

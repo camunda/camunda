@@ -11,8 +11,7 @@ import static io.camunda.operate.schema.templates.IncidentTemplate.PROCESS_INSTA
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
@@ -61,9 +60,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConditionalOnProperty(prefix = OperateProperties.PREFIX, name = "webappEnabled", havingValue = "true", matchIfMissing = true)
 public class ElasticsearchChecks {
-
-  public static QueryBuilder NOT_PENDING_INCIDENT_QUERY = termQuery(IncidentTemplate.PENDING,
-      false);
 
   @Autowired
   private RestHighLevelClient esClient;
@@ -334,12 +330,49 @@ public class ElasticsearchChecks {
       }
     };
   }
+  @Bean(name = "flowNodesInAnyInstanceAreActiveCheck")
+  public Predicate<Object[]> getFlowNodesInAnyInstanceAreActiveCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(2);
+      assertThat(objects[0]).isInstanceOf(String.class);
+      assertThat(objects[1]).isInstanceOf(Integer.class);
+      String flowNodeId = (String) objects[0];
+      Integer instancesCount = (Integer) objects[1];
+      try {
+        List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances();
+        final List<FlowNodeInstanceEntity> flowNodes = flowNodeInstances.stream()
+            .filter(a -> a.getFlowNodeId().equals(flowNodeId))
+            .collect(Collectors.toList());
+        if (flowNodes.size() == 0) {
+          return false;
+        } else {
+          return
+              flowNodes.stream().filter(fn -> fn.getState().equals(FlowNodeState.ACTIVE)).count()
+                  >= instancesCount;
+        }
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
 
   public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey) {
     final TermQueryBuilder processInstanceKeyQuery = termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
         .source(new SearchSourceBuilder()
             .query(constantScoreQuery(processInstanceKeyQuery))
+            .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
+    try {
+      return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances() {
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
+        .source(new SearchSourceBuilder()
+            .query(matchAllQuery())
             .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
     try {
       return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
@@ -486,7 +519,7 @@ public class ElasticsearchChecks {
   public long getActiveIncidentsCount() {
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate)
         .source(new SearchSourceBuilder()
-            .query(joinWithAnd(ACTIVE_INCIDENT_QUERY, NOT_PENDING_INCIDENT_QUERY)));
+            .query(ACTIVE_INCIDENT_QUERY));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value;
@@ -498,7 +531,7 @@ public class ElasticsearchChecks {
   public long getActiveIncidentsCount(Long processInstanceKey) {
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate)
         .source(new SearchSourceBuilder()
-            .query(joinWithAnd(ACTIVE_INCIDENT_QUERY, NOT_PENDING_INCIDENT_QUERY,
+            .query(joinWithAnd(ACTIVE_INCIDENT_QUERY,
                 termQuery(PROCESS_INSTANCE_KEY, processInstanceKey))));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);

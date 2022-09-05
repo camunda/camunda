@@ -142,6 +142,10 @@ public class OperateTester {
   private Predicate<Object[]> flowNodesAreActiveCheck;
 
   @Autowired
+  @Qualifier("flowNodesInAnyInstanceAreActiveCheck")
+  private Predicate<Object[]> flowNodesInAnyInstanceAreActiveCheck;
+
+  @Autowired
   @Qualifier("flowNodeIsCompletedCheck")
   private Predicate<Object[]> flowNodeIsCompletedCheck;
 
@@ -317,6 +321,11 @@ public class OperateTester {
 
   public OperateTester flowNodesAreActive(String activityId, int count) {
     elasticsearchTestRule.processAllRecordsAndWait(flowNodesAreActiveCheck, processInstanceKey, activityId, count);
+    return this;
+  }
+
+  public OperateTester flowNodesInAnyInstanceAreActive(String activityId, int count) {
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodesInAnyInstanceAreActiveCheck, activityId, count);
     return this;
   }
 

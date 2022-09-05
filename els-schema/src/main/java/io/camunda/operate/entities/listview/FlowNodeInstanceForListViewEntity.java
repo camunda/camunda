@@ -11,16 +11,21 @@ import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.OperateZeebeEntity;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNodeInstanceForListViewEntity> {
 
   private Long processInstanceKey;
   private String activityId;
   private FlowNodeState activityState;
   private FlowNodeType activityType;
-  private Long incidentKey;
+  private List<Long> incidentKeys = new ArrayList<>();
   private String errorMessage;
-  private Long incidentJobKey;
   private boolean incident;
+
+  private boolean pendingIncident;
 
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
 
@@ -56,12 +61,18 @@ public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNo
     this.activityType = activityType;
   }
 
-  public Long getIncidentKey() {
-    return incidentKey;
+  public List<Long> getIncidentKeys() {
+    return incidentKeys;
   }
 
-  public void setIncidentKey(Long incidentKey) {
-    this.incidentKey = incidentKey;
+  public FlowNodeInstanceForListViewEntity setIncidentKeys(List<Long> incidentKeys) {
+    this.incidentKeys = incidentKeys;
+    return this;
+  }
+
+  public FlowNodeInstanceForListViewEntity addIncidentKey(Long incidentKey) {
+    this.incidentKeys.add(incidentKey);
+    return this;
   }
 
   public String getErrorMessage() {
@@ -70,14 +81,6 @@ public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNo
 
   public void setErrorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
-  }
-
-  public Long getIncidentJobKey() {
-    return incidentJobKey;
-  }
-
-  public void setIncidentJobKey(Long incidentJobKey) {
-    this.incidentJobKey = incidentJobKey;
   }
 
   public boolean isIncident() {
@@ -89,6 +92,15 @@ public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNo
     return this;
   }
 
+  public boolean isPendingIncident() {
+    return pendingIncident;
+  }
+
+  public FlowNodeInstanceForListViewEntity setPendingIncident(boolean pendingIncident) {
+    this.pendingIncident = pendingIncident;
+    return this;
+  }
+
   public ListViewJoinRelation getJoinRelation() {
     return joinRelation;
   }
@@ -97,45 +109,22 @@ public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNo
     this.joinRelation = joinRelation;
   }
 
-  @Override
-  public boolean equals(Object o) {
+  @Override public boolean equals(Object o) {
     if (this == o)
       return true;
     if (o == null || getClass() != o.getClass())
       return false;
     if (!super.equals(o))
       return false;
-
     FlowNodeInstanceForListViewEntity that = (FlowNodeInstanceForListViewEntity) o;
-
-    if (processInstanceKey != null ? !processInstanceKey.equals(that.processInstanceKey) : that.processInstanceKey != null)
-      return false;
-    if (activityId != null ? !activityId.equals(that.activityId) : that.activityId != null)
-      return false;
-    if (activityState != that.activityState)
-      return false;
-    if (activityType != that.activityType)
-      return false;
-    if (incidentKey != null ? !incidentKey.equals(that.incidentKey) : that.incidentKey != null)
-      return false;
-    if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
-      return false;
-    if (incidentJobKey != null ? !incidentJobKey.equals(that.incidentJobKey) : that.incidentJobKey != null)
-      return false;
-    return joinRelation != null ? joinRelation.equals(that.joinRelation) : that.joinRelation == null;
+    return incident == that.incident && pendingIncident == that.pendingIncident && Objects.equals(processInstanceKey,
+        that.processInstanceKey) && Objects.equals(activityId, that.activityId) && activityState == that.activityState
+        && activityType == that.activityType && Objects.equals(incidentKeys, that.incidentKeys) && Objects.equals(
+        errorMessage, that.errorMessage) && Objects.equals(joinRelation, that.joinRelation);
   }
 
-  @Override
-  public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (processInstanceKey != null ? processInstanceKey.hashCode() : 0);
-    result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
-    result = 31 * result + (activityState != null ? activityState.hashCode() : 0);
-    result = 31 * result + (activityType != null ? activityType.hashCode() : 0);
-    result = 31 * result + (incidentKey != null ? incidentKey.hashCode() : 0);
-    result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
-    result = 31 * result + (incidentJobKey != null ? incidentJobKey.hashCode() : 0);
-    result = 31 * result + (joinRelation != null ? joinRelation.hashCode() : 0);
-    return result;
+  @Override public int hashCode() {
+    return Objects.hash(super.hashCode(), processInstanceKey, activityId, activityState, activityType, incidentKeys,
+        errorMessage, incident, pendingIncident, joinRelation);
   }
 }

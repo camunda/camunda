@@ -31,10 +31,8 @@ public class ListViewTemplate extends AbstractTemplateDescriptor {
   public static final String ACTIVITY_STATE = "activityState";
   public static final String ACTIVITY_TYPE = "activityType";
 
-  @Deprecated
-  public static final String INCIDENT_KEY = "incidentKey";
-  @Deprecated
-  public static final String INCIDENT_JOB_KEY = "incidentJobKey";
+  public static final String PENDING_INCIDENT = "pendingIncident";
+  public static final String INCIDENT_KEYS = "incidentKeys";
   public static final String ERROR_MSG = "errorMessage";
 
   //used both for process instance and flow node instance
@@ -58,7 +56,7 @@ public class ListViewTemplate extends AbstractTemplateDescriptor {
 
   @Override
   public String getVersion() {
-     return "1.3.0";
+     return "8.1.0";
   }
 
 }

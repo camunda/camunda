@@ -146,9 +146,9 @@ public abstract class TestUtil {
       FlowNodeInstanceForListViewEntity activityInstanceForListViewEntity, String errorMsg, Long incidentKey) {
     activityInstanceForListViewEntity.setIncident(true);
     if (incidentKey != null) {
-      activityInstanceForListViewEntity.setIncidentKey(incidentKey);
+      activityInstanceForListViewEntity.addIncidentKey(incidentKey);
     } else {
-      activityInstanceForListViewEntity.setIncidentKey((long)random.nextInt());
+      activityInstanceForListViewEntity.addIncidentKey((long)random.nextInt());
     }
     if (errorMsg != null) {
       activityInstanceForListViewEntity.setErrorMessage(errorMsg);

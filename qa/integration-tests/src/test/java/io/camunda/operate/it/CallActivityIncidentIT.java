@@ -97,7 +97,7 @@ public class CallActivityIncidentIT extends OperateZeebeIntegrationTest {
         .waitUntil()
         .incidentsInAnyInstanceAreActive(2)
         .and()
-        .resolveIncident()        //one of two incidents is resolved
+        .resolveIncident()        //incident for TASK_ID_2 is resolved
         .waitUntil()
         .incidentsInAnyInstanceAreActive(1);
 
@@ -105,15 +105,15 @@ public class CallActivityIncidentIT extends OperateZeebeIntegrationTest {
         .startProcessInstance(PARENT_PROCESS_ID, null)
         .waitUntil()
         .conditionIsMet(processInstancesAreStartedByProcessId, calledProcessDefinitionKey, 2)
-        .flowNodeIsActive(TASK_ID)
-        .flowNodeIsActive(TASK_ID_2)
+        .flowNodesInAnyInstanceAreActive(TASK_ID, 1)
+        .flowNodesInAnyInstanceAreActive(TASK_ID_2, 2)
         .getProcessInstanceKey();
     tester
         .startProcessInstance(PARENT_PROCESS_ID, null)
         .and().waitUntil()
         .conditionIsMet(processInstancesAreStartedByProcessId, calledProcessDefinitionKey, 3)
-        .flowNodeIsActive(TASK_ID)
-        .flowNodeIsActive(TASK_ID_2);
+        .flowNodesInAnyInstanceAreActive(TASK_ID, 2)
+        .flowNodesInAnyInstanceAreActive(TASK_ID_2, 3);
   }
 
   /**
@@ -183,7 +183,7 @@ public class CallActivityIncidentIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testFlowNodeStated() throws Exception {
+  public void testFlowNodeStates() throws Exception {
     Map<String, FlowNodeStateDto> flowNodeStates = getFlowNodeStateDtos(
         String.valueOf(incidentProcessInstanceKey));
     assertThat(flowNodeStates).hasSize(2);

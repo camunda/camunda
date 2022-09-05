@@ -8,20 +8,14 @@ package io.camunda.operate.zeebeimport.post;
 
 import static io.camunda.operate.entities.IncidentState.ACTIVE;
 import static io.camunda.operate.entities.IncidentState.RESOLVED;
+import static io.camunda.operate.schema.templates.IncidentTemplate.*;
 import static io.camunda.operate.schema.templates.IncidentTemplate.KEY;
 import static io.camunda.operate.schema.templates.IncidentTemplate.STATE;
 import static io.camunda.operate.schema.templates.IncidentTemplate.TREE_PATH;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.*;
+import static io.camunda.operate.schema.templates.ListViewTemplate.ID;
 import static io.camunda.operate.schema.templates.TemplateDescriptor.PARTITION_ID;
-import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
-import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
-import static io.camunda.operate.util.ElasticsearchUtil.getIndexNames;
-import static io.camunda.operate.util.ElasticsearchUtil.getIndexNamesAsList;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.operate.util.ElasticsearchUtil.mapSearchHits;
-import static io.camunda.operate.util.ElasticsearchUtil.scrollFieldToList;
-import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
+import static io.camunda.operate.util.ElasticsearchUtil.*;
 import static java.time.temporal.ChronoUnit.MILLIS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
@@ -53,8 +47,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -65,7 +59,8 @@ import org.elasticsearch.client.indices.AnalyzeResponse;
 import org.elasticsearch.client.indices.AnalyzeResponse.AnalyzeToken;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,14 +108,15 @@ public class IncidentPostImportAction implements PostImportAction {
   private List<IncidentEntity> processPendingIncidents() {
 
     //we have two bulk requests:
-    // 1. update process instances and flow node instances
-    // 2. update incident itself and set pending to false
+    // 1. update process instances, flow node instances and incident
+    // 2. update pendingIncident flag for flow node instance in list-view index
     // in case 1st has failed we won't execute the 2nd -> will be retried with next run
     BulkRequest bulkProcessAndFlowNodeInstanceUpdate = new BulkRequest();
-    BulkRequest bulkIncidentUpdate = new BulkRequest();
+    BulkRequest bulkPendingIncidentUpdate = new BulkRequest();
 
     Map<String, String> incidentIndices = new ConcurrentHashMap<>();
-    List<IncidentEntity> incidents = getPendingIncidents(incidentIndices);
+    Map<String, String> listViewFlowNodeIndices = new ConcurrentHashMap<>();
+    List<IncidentEntity> incidents = getPendingIncidents(incidentIndices, listViewFlowNodeIndices);
     if (logger.isDebugEnabled() && !incidents.isEmpty()) {
       logger.debug("Processing pending incidents: " + incidents);
     }
@@ -138,9 +134,10 @@ public class IncidentPostImportAction implements PostImportAction {
 
           //extract all process instance ids and flow node instance ids from tree path
           final String treePath = processInstanceTreePaths.get(incident.getProcessInstanceKey());
+          String flowNodeInstanceId = String.valueOf(incident.getFlowNodeInstanceKey());
           final String incidentTreePath = new TreePath(treePath)
               .appendFlowNode(incident.getFlowNodeId())
-              .appendFlowNodeInstance(String.valueOf(incident.getFlowNodeInstanceKey())).toString();
+              .appendFlowNodeInstance(flowNodeInstanceId).toString();
 
           List<String> piIds = new TreePath(treePath).extractProcessInstanceIds();
           Set<String> piIdsWithIncidents = new HashSet<>();
@@ -165,15 +162,17 @@ public class IncidentPostImportAction implements PostImportAction {
           final List<String> fniIds = new TreePath(incidentTreePath).extractFlowNodeInstanceIds();
           updateFlowNodeInstancesState(incident.getState(), fniIds, flowNodeInstanceIndices,
               flowNodeInstanceInListViewIndices, fniIdsWithIncidents, bulkProcessAndFlowNodeInstanceUpdate);
-
           updateIncidents(incident.getId(), incidentIndices.get(incident.getId()),
-              incident.getState(), incidentTreePath, bulkIncidentUpdate);
+              incident.getState(), incidentTreePath, bulkProcessAndFlowNodeInstanceUpdate);
+
+          updatePendingIncidentState(flowNodeInstanceId, listViewFlowNodeIndices.get(flowNodeInstanceId),
+              incident.getId(), bulkPendingIncidentUpdate);
         }
       }
 
       if (!bulkProcessAndFlowNodeInstanceUpdate.requests().isEmpty()) {
         ElasticsearchUtil.processBulkRequest(esClient, bulkProcessAndFlowNodeInstanceUpdate);
-        ElasticsearchUtil.processBulkRequest(esClient, bulkIncidentUpdate);
+        ElasticsearchUtil.processBulkRequest(esClient, bulkPendingIncidentUpdate);
         ThreadUtil.sleepFor(1000L);
       }
       if (logger.isDebugEnabled() && !incidents.isEmpty()) {
@@ -188,22 +187,41 @@ public class IncidentPostImportAction implements PostImportAction {
     return incidents;
   }
 
-  private List<IncidentEntity> getPendingIncidents(final Map<String, String> incidentIndices) {
+  private List<IncidentEntity> getPendingIncidents(final Map<String, String> incidentIndices,
+      final Map<String, String> listViewFlowNodeIndices) {
+    //query pending incident keys from list-view index
     QueryBuilder partitionQ = termQuery(PARTITION_ID, partitionId);
     //first partition will also process older data with partitionId = 0
     if (partitionId == 1) {
       partitionQ = termsQuery(PARTITION_ID, "0", String.valueOf(partitionId));
     }
-    final SearchRequest request = ElasticsearchUtil.createSearchRequest(incidentTemplate).source(
+    final SearchRequest listViewRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate).source(
         new SearchSourceBuilder().query(
-            joinWithAnd(
-                termQuery(IncidentTemplate.PENDING, true),
-                partitionQ
+                joinWithAnd(
+                    termQuery(ListViewTemplate.PENDING_INCIDENT, true),
+                    partitionQ
+                    )
             )
-        )
-            .sort(IncidentTemplate.KEY)
+            .sort(ID)
             .size(operateProperties.getZeebeElasticsearch().getBatchSize())
     );
+    final List<String> flowNodeInstanceIds = new ArrayList<>();
+    try {
+      final SearchResponse response = esClient.search(listViewRequest, RequestOptions.DEFAULT);
+      flowNodeInstanceIds.addAll(mapSearchHits(response.getHits().getHits(), sh -> {
+        listViewFlowNodeIndices.put(sh.getId(), sh.getIndex());
+        return sh.getId();
+      }));
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while processing pending incidents: %s",
+          e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+
+    final SearchRequest request = ElasticsearchUtil.createSearchRequest(incidentTemplate).source(
+        new SearchSourceBuilder().query(
+                joinWithAnd(termsQuery(FLOW_NODE_INSTANCE_KEY, flowNodeInstanceIds), termQuery(PENDING, true)))
+            .sort(KEY).size(operateProperties.getZeebeElasticsearch().getBatchSize()));
     List<IncidentEntity> incidents = new ArrayList<>();
     final SearchResponse response;
     try {
@@ -344,7 +362,7 @@ public class IncidentPostImportAction implements PostImportAction {
     if (state.equals(ACTIVE)) {
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(IncidentTemplate.PENDING, false);
-      updateFields.put(IncidentTemplate.TREE_PATH, incidentTreePath);
+      updateFields.put(TREE_PATH, incidentTreePath);
       bulkUpdateRequest.add(new UpdateRequest(index, incidentId)
           .doc(updateFields)
           .retryOnConflict(UPDATE_RETRY_COUNT));
@@ -356,7 +374,30 @@ public class IncidentPostImportAction implements PostImportAction {
           .doc(updateFields)
           .retryOnConflict(UPDATE_RETRY_COUNT));
     }
+  }
 
+  private void updatePendingIncidentState(final String flowNodeInstanceId, final String index, final String incidentId,
+      final BulkRequest bulkUpdateRequest) {
+    bulkUpdateRequest.add(new UpdateRequest(index, flowNodeInstanceId)
+        .script(getUpdatePendingIncidentScript(incidentId))
+        .retryOnConflict(UPDATE_RETRY_COUNT));
+  }
+
+  private Script getUpdatePendingIncidentScript(final String incidentId) {
+    final Map<String, Object> paramsMap = Map.of(
+        "incidentId", Long.valueOf(incidentId));
+    final String script =
+              "if (ctx._source.containsKey(\"" + INCIDENT_KEYS + "\")) {"
+            + "  for (int i=ctx._source." + INCIDENT_KEYS + ".length-1; i>=0; i--) {"
+            + "     if (ctx._source." + INCIDENT_KEYS + "[i] == params.incidentId) {"
+            + "        ctx._source." + INCIDENT_KEYS + ".remove(i);"
+            + "     }"
+            + "  }"
+            + "  if (ctx._source." + INCIDENT_KEYS + ".length == 0) {"
+            + "    ctx._source." + PENDING_INCIDENT + " = false;"
+            + "  } "
+            + "}";
+    return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, paramsMap);
   }
 
   private boolean instanceExists(final Long key, final Set<Long> idSet) {
