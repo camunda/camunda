@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.topology;
 
 import static io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState.NODE_ID_NULL;
-import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.ClusterMembershipEvent;
@@ -51,151 +50,241 @@ public final class TopologyUpdateTest {
 
   @Test
   public void shouldUpdateTopologyOnBrokerAdd() {
-    final BrokerInfo broker = createBroker(0);
+    // given
+    final int brokerId = 1;
+    final int partition = 1;
+    final BrokerInfo broker = createBroker(brokerId);
     topologyManager.event(createMemberAddedEvent(broker));
-    waitUntil(() -> topologyManager.getTopology() != null);
-    assertThat(topologyManager.getTopology().getFollowersForPartition(1)).isNull();
+    Awaitility.given()
+        // topology is eventually available
+        .ignoreException(NullPointerException.class)
+        .await("the partition has no followers")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
+                    .isNull());
 
-    final BrokerInfo brokerUpdated = createBroker(0);
-    brokerUpdated.setFollowerForPartition(1);
+    // when
+    final BrokerInfo brokerUpdated = createBroker(brokerId);
+    brokerUpdated.setFollowerForPartition(partition);
     topologyManager.event(createMemberUpdateEvent(brokerUpdated));
-    waitUntil(() -> topologyManager.getTopology().getFollowersForPartition(1) != null);
-    assertThat(topologyManager.getTopology().getFollowersForPartition(1).contains(0)).isTrue();
-    assertThat(topologyManager.getTopology().getBrokerVersion(0)).isEqualTo(broker.getVersion());
+
+    // then
+    Awaitility.await("the partition has the expected follower")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
+                    .containsExactly(brokerId));
+    assertThat(topologyManager.getTopology().getBrokerVersion(brokerId))
+        .isEqualTo(broker.getVersion());
   }
 
   @Test
   public void shouldAddBrokerOnTopologyEvenOnNotReceivedEvent() {
     // given
-    final BrokerInfo broker = createBroker(0);
-    broker.setFollowerForPartition(1);
+    final int brokerId = 0;
+    final int partition = 1;
+    final BrokerInfo broker = createBroker(brokerId);
+    broker.setFollowerForPartition(partition);
     createMemberAddedEvent(broker);
 
     // when
     actorClock.addTime(Duration.ofSeconds(10));
 
     // then
-    waitUntil(() -> topologyManager.getTopology() != null);
-    assertThat(topologyManager.getTopology().getFollowersForPartition(1).contains(0)).isTrue();
+    Awaitility.given()
+        // topology is eventually available
+        .ignoreException(NullPointerException.class)
+        .await("the partition has the expected follower")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
+                    .containsExactly(brokerId));
   }
 
   @Test
   public void shouldUpdateBrokerOnTopologyEvenOnNotReceivedEvent() {
     // given
-    final BrokerInfo broker = createBroker(0);
+    final int brokerId = 0;
+    final int partition = 1;
+    final BrokerInfo broker = createBroker(brokerId);
     topologyManager.event(createMemberAddedEvent(broker));
-    waitUntil(() -> topologyManager.getTopology() != null);
-    assertThat(topologyManager.getTopology().getFollowersForPartition(1)).isNull();
+    Awaitility.given()
+        // topology is eventually available
+        .ignoreException(NullPointerException.class)
+        .await("the partition has no follower")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
+                    .isNull());
 
     // when
-    final BrokerInfo brokerUpdate = createBroker(0);
-    brokerUpdate.setFollowerForPartition(1);
+    final BrokerInfo brokerUpdate = createBroker(brokerId);
+    brokerUpdate.setFollowerForPartition(partition);
     createMemberUpdateEvent(brokerUpdate);
     actorClock.addTime(Duration.ofSeconds(10));
 
     // then
-    waitUntil(() -> topologyManager.getTopology().getFollowersForPartition(1) != null);
-    assertThat(topologyManager.getTopology().getFollowersForPartition(1).contains(0)).isTrue();
+    Awaitility.await("the partition has the expected follower")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
+                    .containsExactly(brokerId));
   }
 
   @Test
   public void shouldUpdateTopologyOnBrokerRemove() {
-    final BrokerInfo broker = createBroker(0);
+    // given
+    final int brokerId = 0;
+    final int partition = 1;
+    final BrokerInfo broker = createBroker(brokerId);
     topologyManager.event(createMemberAddedEvent(broker));
-    final BrokerInfo brokerUpdated = createBroker(0);
-    brokerUpdated.setFollowerForPartition(1);
+    final BrokerInfo brokerUpdated = createBroker(brokerId);
+    brokerUpdated.setFollowerForPartition(partition);
     topologyManager.event(createMemberUpdateEvent(brokerUpdated));
-    waitUntil(() -> topologyManager.getTopology() != null);
+    Awaitility.given()
+        // topology is eventually available
+        .ignoreException(NullPointerException.class)
+        .await("the topology has brokers")
+        .untilAsserted(() -> assertThat(topologyManager.getTopology().getBrokers()).isNotEmpty());
 
+    // when
     topologyManager.event(createMemberRemoveEvent(brokerUpdated));
-    waitUntil(() -> topologyManager.getTopology().getBrokers().isEmpty());
 
+    // then
+    Awaitility.await("the topology has no brokers anymore")
+        .untilAsserted(() -> assertThat(topologyManager.getTopology().getBrokers()).isEmpty());
+
+    // when
     topologyManager.event(createMemberAddedEvent(broker));
-    waitUntil(() -> !topologyManager.getTopology().getBrokers().isEmpty());
+    Awaitility.await("the topology has brokers")
+        .untilAsserted(() -> assertThat(topologyManager.getTopology().getBrokers()).isNotEmpty());
 
-    assertThat(topologyManager.getTopology().getFollowersForPartition(1)).doesNotContain(0);
-    assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isEqualTo(NODE_ID_NULL);
+    assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
+        .doesNotContain(brokerId);
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
+        .isEqualTo(NODE_ID_NULL);
   }
 
   @Test
   public void shouldUpdateLeaderWithNewTerm() {
     // given
+    final int partition = 1;
     final int oldLeaderId = 0;
     final BrokerInfo oldLeader = createBroker(oldLeaderId);
-    oldLeader.setLeaderForPartition(1, 1);
+    oldLeader.setLeaderForPartition(partition, 1);
     topologyManager.event(createMemberAddedEvent(oldLeader));
-    waitUntil(() -> topologyManager.getTopology() != null);
-    assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isEqualTo(oldLeaderId);
+    Awaitility.given()
+        // topology is eventually available
+        .ignoreException(NullPointerException.class)
+        .await("the topology has the old leader")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
+                    .isEqualTo(oldLeaderId));
 
     // when
     final int newLeaderId = 1;
     final BrokerInfo newLeader = createBroker(newLeaderId);
-    newLeader.setLeaderForPartition(1, 2);
+    newLeader.setLeaderForPartition(partition, 2);
     topologyManager.event(createMemberAddedEvent(newLeader));
 
     // then
-    waitUntil(() -> topologyManager.getTopology().getBrokers().contains(newLeaderId));
-    assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isEqualTo(newLeaderId);
+    Awaitility.await("the new broker is in the topology")
+        .untilAsserted(
+            () -> assertThat(topologyManager.getTopology().getBrokers()).contains(newLeaderId));
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
+        .isEqualTo(newLeaderId);
   }
 
   @Test
-  public void shouldNotUpdateLeaderWhenPreviousTerm() {
+  public void shouldNotUpdateLeaderWhenFromPreviousTerm() {
     // given
+    final int partition = 1;
     final int newLeaderId = 1;
     final BrokerInfo newLeader = createBroker(newLeaderId);
-    newLeader.setLeaderForPartition(1, 2);
+    newLeader.setLeaderForPartition(partition, 2);
     topologyManager.event(createMemberAddedEvent(newLeader));
-    waitUntil(() -> topologyManager.getTopology() != null);
-    assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isEqualTo(newLeaderId);
+    Awaitility.given()
+        // topology is eventually available
+        .ignoreException(NullPointerException.class)
+        .await("the topology has the new leader")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
+                    .isEqualTo(newLeaderId));
 
     // when
     final int oldLeaderId = 0;
     final BrokerInfo oldLeader = createBroker(oldLeaderId);
-    oldLeader.setLeaderForPartition(1, 1);
+    oldLeader.setLeaderForPartition(partition, 1);
     topologyManager.event(createMemberAddedEvent(oldLeader));
 
     // then
-    waitUntil(() -> topologyManager.getTopology().getBrokers().contains(oldLeaderId));
-    assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isEqualTo(newLeaderId);
+    Awaitility.await("the old broker is in the topology")
+        .untilAsserted(
+            () -> assertThat(topologyManager.getTopology().getBrokers()).contains(oldLeaderId));
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
+        .isEqualTo(newLeaderId);
   }
 
   @Test
   public void shouldUpdateTopologyOnBrokerRemoveAndDirectlyRejoin() {
     // given
+    final int partition = 1;
     final int leaderId = 1;
     final BrokerInfo leader = createBroker(leaderId);
-    leader.setLeaderForPartition(1, 1);
+    leader.setLeaderForPartition(partition, 1);
     topologyManager.event(createMemberAddedEvent(leader));
-    waitUntil(() -> topologyManager.getTopology() != null);
+    Awaitility.given()
+        // topology is eventually available
+        .ignoreException(NullPointerException.class)
+        .await("the topology exists")
+        .untilAsserted(() -> assertThat(topologyManager.getTopology()).isNotNull());
 
     // when
     topologyManager.event(createMemberRemoveEvent(leader));
-    waitUntil(() -> topologyManager.getTopology().getBrokers().isEmpty());
+    Awaitility.await("the topology has no brokers")
+        .untilAsserted(() -> assertThat(topologyManager.getTopology().getBrokers()).isEmpty());
     topologyManager.event(createMemberAddedEvent(leader));
 
     // then
-    waitUntil(() -> topologyManager.getTopology().getBrokers().contains(leaderId));
-    assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isEqualTo(leaderId);
+    Awaitility.await("the broker has rejoined the tropology")
+        .untilAsserted(
+            () -> assertThat(topologyManager.getTopology().getBrokers()).containsExactly(leaderId));
+    assertThat(topologyManager.getTopology().getLeaderForPartition(partition)).isEqualTo(leaderId);
   }
 
   @Test
   public void shouldUpdateTopologyOnPartitionHealth() {
+    // given
     final int brokerId = 0;
     final int partition = 0;
     final BrokerInfo broker = createBroker(brokerId);
     broker.setPartitionHealthy(partition);
     topologyManager.event(createMemberAddedEvent(broker));
-    waitUntil(() -> topologyManager.getTopology() != null);
-    assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
-        .isEqualTo(PartitionHealthStatus.HEALTHY);
+    Awaitility.given()
+        // topology is eventually available
+        .ignoreException(NullPointerException.class)
+        .await("partition is detected as healthy")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
+                    .as("partition %d is healthy on broker %d", partition, brokerId)
+                    .isEqualTo(PartitionHealthStatus.HEALTHY));
 
+    // when
     final BrokerInfo updatedBroker = createBroker(0);
     updatedBroker.setPartitionUnhealthy(partition);
     topologyManager.event(createMemberUpdateEvent(updatedBroker));
-    waitUntil(
-        () ->
-            topologyManager.getTopology().getPartitionHealth(brokerId, partition)
-                == PartitionHealthStatus.UNHEALTHY);
+    Awaitility.await("partition is detected as unhealthy")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
+                    .as("partition %d is unhealthy on broker %d", partition, brokerId)
+                    .isEqualTo(PartitionHealthStatus.UNHEALTHY));
+
+    // then
     assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
         .isEqualTo(PartitionHealthStatus.UNHEALTHY);
   }
@@ -208,20 +297,29 @@ public final class TopologyUpdateTest {
     final BrokerInfo broker = createBroker(brokerId);
     broker.setPartitionHealthy(partition);
     broker.setFollowerForPartition(partition);
+
     topologyManager.event(createMemberAddedEvent(broker));
-    waitUntil(() -> topologyManager.getTopology() != null);
-    assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
-        .isEqualTo(PartitionHealthStatus.HEALTHY);
+    Awaitility.given()
+        // topology is eventually available
+        .ignoreException(NullPointerException.class)
+        .await("partition is detected as healthy")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
+                    .as("partition %d is healthy on broker %d", partition, brokerId)
+                    .isEqualTo(PartitionHealthStatus.HEALTHY));
     assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
         .containsExactly(brokerId);
 
     // when
     broker.setPartitionUnhealthy(partition);
     topologyManager.event(createMemberUpdateEvent(broker));
-    waitUntil(
-        () ->
-            topologyManager.getTopology().getPartitionHealth(brokerId, partition)
-                == PartitionHealthStatus.UNHEALTHY);
+    Awaitility.await("partition is detected as unhealthy")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
+                    .as("partition %d is unhealthy on broker %d", partition, brokerId)
+                    .isEqualTo(PartitionHealthStatus.UNHEALTHY));
 
     // then
     assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
@@ -237,19 +335,27 @@ public final class TopologyUpdateTest {
     broker.setPartitionHealthy(partition);
     broker.setInactiveForPartition(partition);
     topologyManager.event(createMemberAddedEvent(broker));
-    waitUntil(() -> topologyManager.getTopology() != null);
-    assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
-        .isEqualTo(PartitionHealthStatus.HEALTHY);
+    Awaitility.given()
+        // topology is eventually available
+        .ignoreException(NullPointerException.class)
+        .await("partition is detected as healthy")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
+                    .as("partition %d is healthy on broker %d", partition, brokerId)
+                    .isEqualTo(PartitionHealthStatus.HEALTHY));
     assertThat(topologyManager.getTopology().getInactiveNodesForPartition(partition))
         .containsExactly(brokerId);
 
     // when
     broker.setPartitionUnhealthy(partition);
     topologyManager.event(createMemberUpdateEvent(broker));
-    waitUntil(
-        () ->
-            topologyManager.getTopology().getPartitionHealth(brokerId, partition)
-                == PartitionHealthStatus.UNHEALTHY);
+    Awaitility.await("partition is detected as unhealthy")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getPartitionHealth(brokerId, partition))
+                    .as("partition %d is unhealthy on broker %d", partition, brokerId)
+                    .isEqualTo(PartitionHealthStatus.UNHEALTHY));
 
     // then
     assertThat(topologyManager.getTopology().getInactiveNodesForPartition(partition))
@@ -259,17 +365,24 @@ public final class TopologyUpdateTest {
   @Test
   public void shouldUpdateTopologyOnLeaderRemoval() {
     // given
-    final BrokerInfo broker = createBroker(0).setLeaderForPartition(1, 1);
+    final int partition = 1;
+    final int brokerId = 0;
+    final BrokerInfo broker = createBroker(brokerId).setLeaderForPartition(partition, partition);
 
     // when
     topologyManager.event(createMemberUpdateEvent(broker));
-    Awaitility.await("broker 0 is leader of partition 1")
+    Awaitility.given()
+        // topology is eventually available
+        .ignoreException(NullPointerException.class)
+        .await("broker 0 is leader of partition 1")
         .atMost(Duration.ofSeconds(5))
         .pollInterval(Duration.ofMillis(100))
         .untilAsserted(
-            () -> assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isZero());
+            () ->
+                assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
+                    .isZero());
 
-    broker.setFollowerForPartition(1);
+    broker.setFollowerForPartition(partition);
     topologyManager.event(createMemberUpdateEvent(broker));
 
     // then
@@ -278,9 +391,9 @@ public final class TopologyUpdateTest {
         .pollInterval(Duration.ofMillis(100))
         .untilAsserted(
             () -> {
-              assertThat(topologyManager.getTopology().getFollowersForPartition(1))
-                  .containsExactlyInAnyOrder(0);
-              assertThat(topologyManager.getTopology().getLeaderForPartition(1))
+              assertThat(topologyManager.getTopology().getFollowersForPartition(partition))
+                  .containsExactlyInAnyOrder(brokerId);
+              assertThat(topologyManager.getTopology().getLeaderForPartition(partition))
                   .isEqualTo(NODE_ID_NULL);
             });
   }
@@ -295,7 +408,11 @@ public final class TopologyUpdateTest {
     topologyManager.event(createMemberAddedEvent(broker));
 
     // when
-    Awaitility.waitAtMost(Duration.ofSeconds(5))
+    Awaitility.given()
+        // topology is eventually available
+        .ignoreException(NullPointerException.class)
+        .await("broker 0 is leader of partition 0")
+        .atMost(Duration.ofSeconds(5))
         .pollInterval(Duration.ofMillis(100))
         .untilAsserted(
             () -> {
@@ -308,7 +425,8 @@ public final class TopologyUpdateTest {
     topologyManager.event(createMemberUpdateEvent(broker));
 
     // then
-    Awaitility.waitAtMost(Duration.ofSeconds(5))
+    Awaitility.await("broker 0 is inactive for partition 0")
+        .atMost(Duration.ofSeconds(5))
         .pollInterval(Duration.ofMillis(100))
         .untilAsserted(
             () -> {
