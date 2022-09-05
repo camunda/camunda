@@ -45,7 +45,7 @@ export function getUser(t, userHandle) {
 
 export async function createNewReport(t) {
   await t.click('.CreateNewButton');
-  await t.click(Selector('.Submenu').withText('New Report'));
+  await t.click(Selector('.Submenu').withText('Report'));
   await t.click(Selector('.Submenu .DropdownOption').withText('Process Report'));
   await t.click(Selector('.Button').withText('Blank report'));
   await t.click(Selector('.Modal .primary.confirm.Button'));
@@ -132,7 +132,7 @@ export async function gotoOverview(t) {
 
 export async function createNewDashboard(t) {
   await t.click('.CreateNewButton');
-  await t.click(Selector('.DropdownOption').withText('New Dashboard'));
+  await t.click(Selector('.DropdownOption').withText('Dashboard'));
   await t.click(Selector('.Button').withText('Blank Dashboard'));
   await t.click(Homepage.modalConfirmbutton);
 }

@@ -8,6 +8,8 @@
 import React from 'react';
 import {shallow, mount} from 'enzyme';
 
+import {Icon} from 'components';
+
 import Submenu from './Submenu';
 import DropdownOption from './DropdownOption';
 import {findLetterOption} from './service';
@@ -160,6 +162,34 @@ it('should invoke onClose when closing the submenu', () => {
   const node = shallow(<Submenu onClose={spy} open />);
 
   node.setProps({open: false});
+
+  expect(spy).toHaveBeenCalled();
+});
+
+it('should open the submenu to left if specified', () => {
+  jest.spyOn(document.activeElement, 'parentNode', 'get').mockReturnValueOnce({
+    closest: () => ({focus: jest.fn()}),
+  });
+  const spy = jest.fn();
+  const node = shallow(
+    <Submenu label="my label" forceToggle={spy} open openToLeft>
+      <DropdownOption>foo</DropdownOption>
+    </Submenu>
+  );
+
+  expect(node.prop('className').includes('leftCheckMark')).toBe(true);
+  expect(node.find(Icon).prop('type')).toBe('left');
+
+  node.simulate('keyDown', {key: 'ArrowLeft'});
+  expect(spy).toHaveBeenCalled();
+  spy.mockClear();
+
+  const container = node.find('.childrenContainer');
+  container.simulate('keyDown', {
+    key: 'ArrowRight',
+    stopPropagation: jest.fn(),
+    preventDefault: jest.fn(),
+  });
 
   expect(spy).toHaveBeenCalled();
 });

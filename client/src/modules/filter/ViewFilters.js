@@ -35,6 +35,7 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
       <Dropdown.Submenu
         disabled={processDefinitionIsNotSelected}
         label={t('common.filter.types.flowNodeDate')}
+        openToLeft
       >
         <Dropdown.Option onClick={openNewFilterModal('flowNodeStartDate')}>
           {t('common.filter.types.instanceStartDate')}

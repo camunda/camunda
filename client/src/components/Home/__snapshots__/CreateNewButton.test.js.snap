@@ -15,6 +15,7 @@ exports[`should match snapshot 1`] = `
   </ForwardRef(DropdownOption)>
   <Submenu
     label="Report"
+    openToLeft={true}
   >
     <ForwardRef(DropdownOption)>
       Process Report

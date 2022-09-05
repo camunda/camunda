@@ -32,7 +32,7 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
       <Dropdown.Option onClick={openNewFilterModal('instanceState')}>
         {t('common.filter.types.instanceState')}
       </Dropdown.Option>
-      <Dropdown.Submenu label={t('common.filter.types.date')}>
+      <Dropdown.Submenu label={t('common.filter.types.date')} openToLeft>
         <Dropdown.Option onClick={openNewFilterModal('instanceStartDate')}>
           {t('common.filter.types.instanceStartDate')}
         </Dropdown.Option>
@@ -43,6 +43,7 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
       <Dropdown.Submenu
         disabled={processDefinitionIsNotSelected}
         label={t('common.filter.types.flowNodeDate')}
+        openToLeft
       >
         <Dropdown.Option onClick={openNewFilterModal('flowNodeStartDate')}>
           {t('common.filter.types.instanceStartDate')}

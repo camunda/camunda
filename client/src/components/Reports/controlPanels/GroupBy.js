@@ -61,6 +61,7 @@ export default function GroupBy({type, report, onChange, variables}) {
             label={label()}
             disabled={!enabled(report) || !variables || !variables[key]?.length}
             onClose={() => setSearchQuery('')}
+            openToLeft
           >
             <div className="searchContainer">
               <Icon className="searchIcon" type="search" />
@@ -98,7 +99,7 @@ export default function GroupBy({type, report, onChange, variables}) {
         );
       } else if (['startDate', 'endDate', 'runningDate', 'evaluationDate'].includes(key)) {
         return (
-          <Select.Submenu key={key} label={label()} disabled={!enabled(report)}>
+          <Select.Submenu key={key} label={label()} disabled={!enabled(report)} openToLeft>
             <Select.Option value={key + '_automatic'}>
               {t('report.groupBy.automatic')}
             </Select.Option>

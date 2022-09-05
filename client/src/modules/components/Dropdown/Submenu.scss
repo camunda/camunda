@@ -9,6 +9,11 @@
 .Submenu {
   padding-right: 26px;
 
+  &.leftCheckMark > .Icon.checkMark {
+    position: absolute;
+    right: 0;
+  }
+
   &.open {
     background-color: var(--blue-darken-55);
     color: var(--white);
@@ -16,11 +21,15 @@
     transition: none;
   }
 
-  .Icon.rightIcon {
+  .Icon.submenuArrow {
     display: inline-block;
     position: absolute;
     right: 6px;
     margin-right: 0;
+
+    &.left {
+      left: 3px;
+    }
   }
 
   .childrenContainer {
