@@ -76,7 +76,7 @@ final class LongPollingIT {
   }
 
   // regression test of https://github.com/camunda/zeebe/issues/9658
-  @RepeatedTest(100)
+  @RepeatedTest(20)
   void shouldActivateAndCompleteJobsInTime() throws InterruptedException, TimeoutException {
     // given
     final var process =
