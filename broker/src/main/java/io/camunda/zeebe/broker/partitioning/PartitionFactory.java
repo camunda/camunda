@@ -71,10 +71,10 @@ final class PartitionFactory {
       List.of(
           new LogStoragePartitionTransitionStep(),
           new LogStreamPartitionTransitionStep(),
-          new InterPartitionCommandServiceStep(),
           new ZeebeDbPartitionTransitionStep(),
           new QueryServicePartitionTransitionStep(),
           new BackupServiceTransitionStep(),
+          new InterPartitionCommandServiceStep(),
           new StreamProcessorTransitionStep(),
           new SnapshotDirectorPartitionTransitionStep(),
           new ExporterDirectorPartitionTransitionStep(),

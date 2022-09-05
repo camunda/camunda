@@ -105,6 +105,7 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
                       writer);
               context.getActorSchedulingService().submitActor(receiver);
               context.setPartitionCommandReceiver(receiver);
+              context.getCheckpointProcessor().addCheckpointListener(receiver);
               future.complete(null);
             });
     return future;
@@ -122,6 +123,7 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
           if (error == null) {
             context.setPartitionCommandSender(sender);
             context.getTopologyManager().addTopologyPartitionListener(sender);
+            context.getCheckpointProcessor().addCheckpointListener(sender);
             future.complete(null);
           } else {
             future.completeExceptionally(error);
