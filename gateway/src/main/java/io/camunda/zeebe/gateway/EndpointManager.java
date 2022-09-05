@@ -53,7 +53,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRespo
 import io.camunda.zeebe.util.VersionUtil;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 public final class EndpointManager {
@@ -129,8 +129,8 @@ public final class EndpointManager {
       final BrokerClusterState topology,
       final Partition.Builder partitionBuilder) {
     final int partitionLeader = topology.getLeaderForPartition(partitionId);
-    final List<Integer> partitionFollowers = topology.getFollowersForPartition(partitionId);
-    final List<Integer> partitionInactives = topology.getInactiveNodesForPartition(partitionId);
+    final Set<Integer> partitionFollowers = topology.getFollowersForPartition(partitionId);
+    final Set<Integer> partitionInactives = topology.getInactiveNodesForPartition(partitionId);
 
     if (partitionLeader == brokerId) {
       partitionBuilder.setRole(PartitionBrokerRole.LEADER);
