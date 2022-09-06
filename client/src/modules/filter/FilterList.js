@@ -44,27 +44,6 @@ const stateFilters = [...instanceStateFilters, ...flowNodeStateFilters, ...incid
 export default class FilterList extends React.Component {
   createOperator = (name) => <span> {name} </span>;
 
-  getProcessVariableName = (name, type, variableExists) => {
-    if (variableExists) {
-      const variable =
-        this.props.variables?.find(
-          (variable) => variable.name === name && variable.type === type
-        ) || {};
-
-      return variable.label || variable.name;
-    }
-
-    return t('report.missingVariable');
-  };
-
-  getDecisionVariableName = (variableId, type, variableExists) => {
-    if (variableExists) {
-      const {name, id} = this.props.variables?.[type].find(({id}) => id === variableId) || {};
-      return name || id;
-    }
-    return t('report.missingVariable');
-  };
-
   appliedToSnippet = ({appliedTo}) => {
     if (!this.props.definitions || this.props.definitions.length <= 1 || !appliedTo) {
       return null;
@@ -141,7 +120,7 @@ export default class FilterList extends React.Component {
                   <ActionItem
                     type={getFilterLevelText(filter.filterLevel)}
                     warning={warning}
-                    onEdit={!warning ? this.props.openEditFilterModal(filter) : undefined}
+                    onEdit={this.props.openEditFilterModal(filter)}
                     onClick={(evt) => {
                       evt.stopPropagation();
                       this.props.deleteFilter(filter);
@@ -168,253 +147,254 @@ export default class FilterList extends React.Component {
             />
           </li>
         );
-      } else {
-        if (filter.type.toLowerCase().includes('variable')) {
-          const definitionIsValid = checkDefinition(definitions, filter.appliedTo[0]);
-          const filters = filter.type === 'multipleVariable' ? filter.data?.data : [filter.data];
-          const variableExists = filters.every(({name, type}) =>
-            checkVariableExistence(filter.type, name, type, this.props.variables)
+      } else if (filter.type.toLowerCase().includes('variable')) {
+        const definitionIsValid = checkDefinition(definitions, filter.appliedTo[0]);
+        const filterVariables =
+          filter.type === 'multipleVariable' ? filter.data?.data : [filter.data];
+
+        const variablesLoaded = isDecisionVariable(filter.type)
+          ? this.props.variables?.[filter.type]
+          : this.props.variables;
+
+        const areVariablesMissing =
+          variablesLoaded &&
+          !filterVariables.every(({name, type}) =>
+            variableExists(name, type, filter.type, this.props.variables)
           );
 
-          let warning;
-          if (!definitionIsValid) {
-            warning = t('common.filter.list.invalidDefinition');
-          } else if (!variableExists) {
-            warning = t('report.nonExistingVariable');
-          }
-          list.push(
-            <li key={i} className="listItem">
-              <ActionItem
-                type={getFilterLevelText(filter.filterLevel)}
-                warning={warning}
-                onEdit={!warning ? this.props.openEditFilterModal(filter) : undefined}
-                onClick={(evt) => {
-                  evt.stopPropagation();
-                  this.props.deleteFilter(filter);
-                }}
-              >
-                {filters.map(({name, type, data}, idx) => {
-                  const variableName = isDecisionVariable(filter.type)
-                    ? this.getDecisionVariableName(name, filter.type, variableExists)
-                    : this.getProcessVariableName(name, type, variableExists);
-
-                  return (
-                    <div key={idx}>
-                      {type === 'Date' ? (
-                        <DateFilterPreview
-                          filterType="variable"
-                          variableName={variableName}
-                          filter={data}
-                        />
-                      ) : (
-                        <VariablePreview
-                          type={filter.type}
-                          variableName={variableName}
-                          filter={data}
-                        />
-                      )}
-
-                      {filters[idx + 1] && (
-                        <div className="OrOperator">{t('common.filter.variableModal.or')}</div>
-                      )}
-                    </div>
-                  );
-                })}
-                {this.appliedToSnippet(filter)}
-              </ActionItem>
-            </li>
-          );
-        } else if (
-          ['executedFlowNodes', 'executingFlowNodes', 'canceledFlowNodes'].includes(filter.type)
-        ) {
-          list.push(
-            <FlowNodeResolver
-              key={i}
-              definition={this.props.definitions.find(
-                ({identifier}) => identifier === filter.appliedTo[0]
-              )}
-              render={(flowNodeNames) => {
-                const {values, operator} = filter.data;
-
-                const allFlowNodesExist = checkAllFlowNodesExist(flowNodeNames, values);
-                const selectedNodes = values.map((id) => ({name: flowNodeNames?.[id], id}));
-                const definitionIsValid = checkDefinition(definitions, filter.appliedTo[0]);
-
-                let warning;
-                if (!definitionIsValid) {
-                  warning = t('common.filter.list.invalidDefinition');
-                } else if (!allFlowNodesExist) {
-                  warning = t('report.nonExistingFlowNode');
-                }
+        let warning;
+        if (!definitionIsValid) {
+          warning = t('common.filter.list.invalidDefinition');
+        } else if (areVariablesMissing) {
+          warning = t('report.nonExistingVariable');
+        }
+        list.push(
+          <li key={i} className="listItem">
+            <ActionItem
+              type={getFilterLevelText(filter.filterLevel)}
+              warning={warning}
+              onEdit={this.props.openEditFilterModal(filter)}
+              onClick={(evt) => {
+                evt.stopPropagation();
+                this.props.deleteFilter(filter);
+              }}
+            >
+              {filterVariables.map(({name, type, data}, idx) => {
+                const variableLabel = areVariablesMissing
+                  ? t('report.missingVariable')
+                  : getVariableLabel(name, type, filter.type, this.props.variables);
 
                 return (
-                  <li className="listItem">
-                    <ActionItem
-                      type={getFilterLevelText(filter.filterLevel)}
-                      warning={warning}
-                      onEdit={!warning ? this.props.openEditFilterModal(filter) : undefined}
-                      onClick={(evt) => {
-                        evt.stopPropagation();
-                        this.props.deleteFilter(filter);
-                      }}
-                    >
-                      {filter.filterLevel === 'view' ? (
-                        <>
-                          <span className="parameterName">
-                            {t('common.filter.types.flowNodeSelection')}
-                          </span>
-                          <b className="filterText">
-                            {selectedNodes.length} {t('common.filter.excludedFlowNodes')}
-                          </b>
-                        </>
-                      ) : (
-                        <NodeListPreview
-                          nodes={selectedNodes}
-                          operator={operator}
-                          type={filter.type}
-                        />
-                      )}
-                      {this.appliedToSnippet(filter)}
-                    </ActionItem>
-                  </li>
-                );
-              }}
-            />
-          );
-        } else if (filter.type === 'processInstanceDuration') {
-          const {unit, value, operator} = filter.data;
+                  <div key={idx}>
+                    {type === 'Date' ? (
+                      <DateFilterPreview
+                        filterType="variable"
+                        variableName={variableLabel}
+                        filter={data}
+                      />
+                    ) : (
+                      <VariablePreview
+                        type={filter.type}
+                        variableName={variableLabel}
+                        filter={data}
+                      />
+                    )}
 
-          list.push(
-            <li key={i} className="listItem">
-              <ActionItem
-                type={getFilterLevelText(filter.filterLevel)}
-                onEdit={this.props.openEditFilterModal(filter)}
-                onClick={(evt) => {
-                  evt.stopPropagation();
-                  this.props.deleteFilter(filter);
-                }}
-              >
-                <span className="parameterName">{t('common.filter.types.instanceDuration')}</span>
-                <span className="filterText">
-                  {operator === '<' && this.createOperator(t('common.filter.list.operators.less'))}
-                  {operator === '>' && this.createOperator(t('common.filter.list.operators.more'))}
-                  <b>
-                    {value.toString()}{' '}
-                    {t(`common.unit.${unit.slice(0, -1)}.label${value !== 1 ? '-plural' : ''}`)}
-                  </b>
-                </span>
-                {this.appliedToSnippet(filter)}
-              </ActionItem>
-            </li>
-          );
-        } else if (filter.type === 'flowNodeDuration') {
-          list.push(
-            <FlowNodeResolver
-              key={i}
-              definition={this.props.definitions.find(
-                ({identifier}) => identifier === filter.appliedTo[0]
-              )}
-              render={(flowNodeNames) => {
-                const filters = filter.data;
-                const definitionIsValid = checkDefinition(definitions, filter.appliedTo[0]);
-                const allFlowNodesExist = checkAllFlowNodesExist(
-                  flowNodeNames,
-                  Object.keys(filters)
-                );
-
-                let warning;
-                if (!definitionIsValid) {
-                  warning = t('common.filter.list.invalidDefinition');
-                } else if (!allFlowNodesExist) {
-                  warning = t('report.nonExistingFlowNode');
-                }
-
-                const filterValues = (
-                  <div className="filterValues">
-                    {Object.keys(filters).map((key, i) => {
-                      const {value, unit, operator} = filters[key];
-                      return (
-                        <div key={key} className="flowNode">
-                          {i !== 0 && <span>{t('common.filter.list.operators.or')} </span>}
-                          <b>{flowNodeNames?.[key] || key}</b>
-                          {operator === '<' &&
-                            this.createOperator(t('common.filter.list.operators.less'))}
-                          {operator === '>' &&
-                            this.createOperator(t('common.filter.list.operators.more'))}
-                          <b>
-                            {value.toString()}{' '}
-                            {t(
-                              `common.unit.${unit.slice(0, -1)}.label${
-                                value !== 1 ? '-plural' : ''
-                              }`
-                            )}
-                          </b>
-                        </div>
-                      );
-                    })}
+                    {filterVariables[idx + 1] && (
+                      <div className="OrOperator">{t('common.filter.variableModal.or')}</div>
+                    )}
                   </div>
                 );
+              })}
+              {this.appliedToSnippet(filter)}
+            </ActionItem>
+          </li>
+        );
+      } else if (
+        ['executedFlowNodes', 'executingFlowNodes', 'canceledFlowNodes'].includes(filter.type)
+      ) {
+        list.push(
+          <FlowNodeResolver
+            key={i}
+            definition={this.props.definitions.find(
+              ({identifier}) => identifier === filter.appliedTo[0]
+            )}
+            render={(flowNodeNames) => {
+              const {values, operator} = filter.data;
 
-                return (
-                  <li className="listItem">
-                    <ActionItem
-                      type={getFilterLevelText(filter.filterLevel)}
-                      warning={warning}
-                      onEdit={!warning ? this.props.openEditFilterModal(filter) : undefined}
-                      onClick={(evt) => {
-                        evt.stopPropagation();
-                        this.props.deleteFilter(filter);
-                      }}
-                    >
-                      <span className="parameterName">
-                        {t('common.filter.types.flowNodeDuration')}
-                      </span>
-                      <span className="filterText">{filterValues}</span>
-                      {this.appliedToSnippet(filter)}
-                    </ActionItem>
-                  </li>
-                );
+              const allFlowNodesExist = checkAllFlowNodesExist(flowNodeNames, values);
+              const selectedNodes = values.map((id) => ({name: flowNodeNames?.[id], id}));
+              const definitionIsValid = checkDefinition(definitions, filter.appliedTo[0]);
+
+              let warning;
+              if (!definitionIsValid) {
+                warning = t('common.filter.list.invalidDefinition');
+              } else if (!allFlowNodesExist) {
+                warning = t('report.nonExistingFlowNode');
+              }
+
+              return (
+                <li className="listItem">
+                  <ActionItem
+                    type={getFilterLevelText(filter.filterLevel)}
+                    warning={warning}
+                    onEdit={this.props.openEditFilterModal(filter)}
+                    onClick={(evt) => {
+                      evt.stopPropagation();
+                      this.props.deleteFilter(filter);
+                    }}
+                  >
+                    {filter.filterLevel === 'view' ? (
+                      <>
+                        <span className="parameterName">
+                          {t('common.filter.types.flowNodeSelection')}
+                        </span>
+                        <b className="filterText">
+                          {selectedNodes.length} {t('common.filter.excludedFlowNodes')}
+                        </b>
+                      </>
+                    ) : (
+                      <NodeListPreview
+                        nodes={selectedNodes}
+                        operator={operator}
+                        type={filter.type}
+                      />
+                    )}
+                    {this.appliedToSnippet(filter)}
+                  </ActionItem>
+                </li>
+              );
+            }}
+          />
+        );
+      } else if (filter.type === 'processInstanceDuration') {
+        const {unit, value, operator} = filter.data;
+
+        list.push(
+          <li key={i} className="listItem">
+            <ActionItem
+              type={getFilterLevelText(filter.filterLevel)}
+              onEdit={this.props.openEditFilterModal(filter)}
+              onClick={(evt) => {
+                evt.stopPropagation();
+                this.props.deleteFilter(filter);
               }}
-            />
-          );
-        } else if (stateFilters.includes(filter.type)) {
-          list.push(
-            <li key={i} className="listItem">
-              <ActionItem
-                type={getFilterLevelText(filter.filterLevel)}
-                onClick={(evt) => {
-                  evt.stopPropagation();
-                  this.props.deleteFilter(filter);
-                }}
-              >
-                <span className="parameterName">{getStateFilterParameterName(filter)}</span>
-                <span
-                  className="filterText"
-                  dangerouslySetInnerHTML={{__html: getStateFilterFilterText(filter)}}
-                />
-                {this.appliedToSnippet(filter)}
-              </ActionItem>
-            </li>
-          );
-        } else if (['assignee', 'candidateGroup'].includes(filter.type)) {
-          const definitionIsValid = checkDefinition(definitions, filter.appliedTo[0]);
-          list.push(
-            <li key={i} className="listItem">
-              <ActionItem
-                type={getFilterLevelText(filter.filterLevel)}
-                warning={!definitionIsValid && t('common.filter.list.invalidDefinition')}
-                onEdit={definitionIsValid ? this.props.openEditFilterModal(filter) : undefined}
-                onClick={(evt) => {
-                  evt.stopPropagation();
-                  this.props.deleteFilter(filter);
-                }}
-              >
-                <AssigneeFilterPreview filter={filter} />
-                {this.appliedToSnippet(filter)}
-              </ActionItem>
-            </li>
-          );
-        }
+            >
+              <span className="parameterName">{t('common.filter.types.instanceDuration')}</span>
+              <span className="filterText">
+                {operator === '<' && this.createOperator(t('common.filter.list.operators.less'))}
+                {operator === '>' && this.createOperator(t('common.filter.list.operators.more'))}
+                <b>
+                  {value.toString()}{' '}
+                  {t(`common.unit.${unit.slice(0, -1)}.label${value !== 1 ? '-plural' : ''}`)}
+                </b>
+              </span>
+              {this.appliedToSnippet(filter)}
+            </ActionItem>
+          </li>
+        );
+      } else if (filter.type === 'flowNodeDuration') {
+        list.push(
+          <FlowNodeResolver
+            key={i}
+            definition={this.props.definitions.find(
+              ({identifier}) => identifier === filter.appliedTo[0]
+            )}
+            render={(flowNodeNames) => {
+              const filters = filter.data;
+              const definitionIsValid = checkDefinition(definitions, filter.appliedTo[0]);
+              const allFlowNodesExist = checkAllFlowNodesExist(flowNodeNames, Object.keys(filters));
+
+              let warning;
+              if (!definitionIsValid) {
+                warning = t('common.filter.list.invalidDefinition');
+              } else if (!allFlowNodesExist) {
+                warning = t('report.nonExistingFlowNode');
+              }
+
+              const filterValues = (
+                <div className="filterValues">
+                  {Object.keys(filters).map((key, i) => {
+                    const {value, unit, operator} = filters[key];
+                    return (
+                      <div key={key} className="flowNode">
+                        {i !== 0 && <span>{t('common.filter.list.operators.or')} </span>}
+                        <b>{flowNodeNames?.[key] || key}</b>
+                        {operator === '<' &&
+                          this.createOperator(t('common.filter.list.operators.less'))}
+                        {operator === '>' &&
+                          this.createOperator(t('common.filter.list.operators.more'))}
+                        <b>
+                          {value.toString()}{' '}
+                          {t(
+                            `common.unit.${unit.slice(0, -1)}.label${value !== 1 ? '-plural' : ''}`
+                          )}
+                        </b>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+
+              return (
+                <li className="listItem">
+                  <ActionItem
+                    type={getFilterLevelText(filter.filterLevel)}
+                    warning={warning}
+                    onEdit={this.props.openEditFilterModal(filter)}
+                    onClick={(evt) => {
+                      evt.stopPropagation();
+                      this.props.deleteFilter(filter);
+                    }}
+                  >
+                    <span className="parameterName">
+                      {t('common.filter.types.flowNodeDuration')}
+                    </span>
+                    <span className="filterText">{filterValues}</span>
+                    {this.appliedToSnippet(filter)}
+                  </ActionItem>
+                </li>
+              );
+            }}
+          />
+        );
+      } else if (stateFilters.includes(filter.type)) {
+        list.push(
+          <li key={i} className="listItem">
+            <ActionItem
+              type={getFilterLevelText(filter.filterLevel)}
+              onClick={(evt) => {
+                evt.stopPropagation();
+                this.props.deleteFilter(filter);
+              }}
+            >
+              <span className="parameterName">{getStateFilterParameterName(filter)}</span>
+              <span
+                className="filterText"
+                dangerouslySetInnerHTML={{__html: getStateFilterFilterText(filter)}}
+              />
+              {this.appliedToSnippet(filter)}
+            </ActionItem>
+          </li>
+        );
+      } else if (['assignee', 'candidateGroup'].includes(filter.type)) {
+        const definitionIsValid = checkDefinition(definitions, filter.appliedTo[0]);
+        list.push(
+          <li key={i} className="listItem">
+            <ActionItem
+              type={getFilterLevelText(filter.filterLevel)}
+              warning={!definitionIsValid && t('common.filter.list.invalidDefinition')}
+              onEdit={this.props.openEditFilterModal(filter)}
+              onClick={(evt) => {
+                evt.stopPropagation();
+                this.props.deleteFilter(filter);
+              }}
+            >
+              <AssigneeFilterPreview filter={filter} />
+              {this.appliedToSnippet(filter)}
+            </ActionItem>
+          </li>
+        );
       }
     }
 
@@ -431,18 +411,36 @@ function isDecisionVariable(type) {
   return ['inputVariable', 'outputVariable'].includes(type);
 }
 
-function checkVariableExistence(filterType, variableNameOrId, variableType, variables) {
-  if (!variables || (isDecisionVariable(filterType) && !variables[filterType])) {
-    return true;
-  }
+function getVariableLabel(nameOrId, type, filterType, variables) {
+  return isDecisionVariable(filterType)
+    ? getDecisionVariableLabel(nameOrId, filterType, variables)
+    : getProcessVariableLabel(nameOrId, type, variables);
+}
 
-  if (isDecisionVariable(filterType)) {
-    return variables[filterType].some((variable) => variable.id === variableNameOrId);
-  }
+function variableExists(nameOrId, type, filterType, variables) {
+  return isDecisionVariable(filterType)
+    ? decisionVariableExists(nameOrId, filterType, variables)
+    : processVariablesExists(nameOrId, type, variables);
+}
 
-  return variables.some(
-    (variable) => variable.name === variableNameOrId && variable.type === variableType
-  );
+function getProcessVariableLabel(name, type, variables) {
+  const {label} =
+    variables?.find((variable) => variable.name === name && variable.type === type) || {};
+
+  return label || name;
+}
+
+function getDecisionVariableLabel(id, type, variables) {
+  const {name} = variables?.[type]?.find((variable) => variable.id === id) || {};
+  return name || id;
+}
+
+function decisionVariableExists(variableId, filterType, variables) {
+  return variables?.[filterType]?.some((variable) => variable.id === variableId);
+}
+
+function processVariablesExists(name, type, variables) {
+  return variables?.some((variable) => variable.name === name && variable.type === type);
 }
 
 function checkAllFlowNodesExist(availableFlowNodeNames, flowNodeIds) {

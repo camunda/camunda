@@ -18,7 +18,7 @@ export default function ActionItem({onClick, type, warning, onEdit, ...props}) {
       <div className="header">
         {type && <div className="type">{type}</div>}
         <div className="buttons">
-          {onEdit && (
+          {!warning && onEdit && (
             <Button onClick={onEdit} icon>
               <Icon size="15" type="edit-small" />
             </Button>
