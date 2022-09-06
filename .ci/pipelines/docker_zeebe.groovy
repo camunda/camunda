@@ -67,8 +67,8 @@ spec:
         IMAGE = "camunda/zeebe"
         TAG = docker_tag("${params.VERSION}")
         REVISION = "${params.REVISION}"
-        DATE = "${param.DATE}"
-        VERIFY = "${param.VERIFY}"
+        DATE = "${params.DATE}"
+        VERIFY = "${params.VERIFY}"
     }
 
     stages {
