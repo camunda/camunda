@@ -5,25 +5,17 @@
  */
 package org.camunda.optimize.upgrade.migrate38to39;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.CountProgressDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.DurationProgressDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetDto;
-import org.camunda.optimize.service.es.schema.index.ProcessGoalIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.util.SuppressionConstants;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.util.Map;
@@ -32,8 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class MigrateReportKPIConfigurationIT extends AbstractUpgrade38IT {
-
-  public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
 
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   @Test
@@ -88,9 +78,8 @@ public class MigrateReportKPIConfigurationIT extends AbstractUpgrade38IT {
       });
   }
 
-  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   @Test
-  public void goalProcessIndexGetsDelete() {
+  public void goalProcessIndexGetsDeleted() {
     // given
     executeBulk("steps/3.8/report/38-process-goal-index-data.json");
 
@@ -98,10 +87,10 @@ public class MigrateReportKPIConfigurationIT extends AbstractUpgrade38IT {
     performUpgrade();
 
     // then
-    assertThat(indexExists(ProcessGoalIndex.LOWERCASE)).isFalse();
+    assertThat(indexExists("process-goals")).isFalse();
   }
 
-  public boolean indexExists(final String indexOrAliasName) {
+  private boolean indexExists(final String indexOrAliasName) {
     final GetIndexRequest request = new GetIndexRequest(indexOrAliasName);
     try {
       return prefixAwareClient.exists(request);

@@ -5,10 +5,12 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
+import org.camunda.optimize.service.es.schema.index.ProcessGoalIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessOverviewIndex;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 
 public class Upgrade39Preview1To39PlanFactory implements UpgradePlanFactory {
@@ -22,6 +24,7 @@ public class Upgrade39Preview1To39PlanFactory implements UpgradePlanFactory {
         "ctx._source.lastKpiEvaluationResults = new HashMap();\n" +
           "ctx._source.digest.remove(\"checkInterval\");"
       ))
+      .addUpgradeStep(new DeleteIndexIfExistsStep(new ProcessGoalIndex()))
       .build();
   }
 

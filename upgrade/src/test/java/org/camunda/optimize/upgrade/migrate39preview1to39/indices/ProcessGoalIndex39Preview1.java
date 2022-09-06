@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.upgrade.migrate39preview1to39.indices;
 
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
@@ -16,8 +16,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_DOUBLE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
 
-// TODO Delete this index class after 3.9.0 - https://jira.camunda.com/browse/OPT-6445
-public class ProcessGoalIndex extends DefaultIndexMappingCreator {
+public class ProcessGoalIndex39Preview1 extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 1;
 

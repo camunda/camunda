@@ -7,6 +7,7 @@ package org.camunda.optimize.upgrade.migrate39preview1to39;
 
 import org.camunda.optimize.service.es.schema.index.ProcessOverviewIndex39preview1;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
+import org.camunda.optimize.upgrade.migrate39preview1to39.indices.ProcessGoalIndex39Preview1;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,12 +20,14 @@ public class AbstractUpgrade39preview1IT extends AbstractUpgradeIT {
   protected static final String TO_VERSION = "3.9.0";
 
   protected static final ProcessOverviewIndex39preview1 PROCESS_OVERVIEW_INDEX = new ProcessOverviewIndex39preview1();
+  protected static final ProcessGoalIndex39Preview1 PROCESS_GOALS_INDEX = new ProcessGoalIndex39Preview1();
 
   @BeforeEach
   protected void setUp() throws Exception {
     super.setUp();
     initSchema(List.of(
-      PROCESS_OVERVIEW_INDEX
+      PROCESS_OVERVIEW_INDEX,
+      PROCESS_GOALS_INDEX
     ));
     setMetadataVersion(FROM_VERSION);
   }
