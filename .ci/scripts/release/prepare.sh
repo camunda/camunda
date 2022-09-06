@@ -1,8 +1,6 @@
 #!/bin/bash -xue
 
 # update apt repositories and install missing utilities
-# add GitHub packages Debian repository for gh
-
 apt update
 apt install -y gpg
 
