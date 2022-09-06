@@ -10,6 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -22,12 +25,25 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AccountsUserAccessTokenProvider {
 
+  private Optional<String> retrieveServiceTokenFromFramework() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication != null) {
+      return Optional.ofNullable(((JwtAuthenticationToken) authentication).getToken().getTokenValue());
+    }
+    return Optional.empty();
+  }
+
   public Optional<String> getCurrentUsersAccessToken() {
-    return Optional.ofNullable(RequestContextHolder.getRequestAttributes())
+    Optional<String> accessToken = Optional.ofNullable(RequestContextHolder.getRequestAttributes())
       .filter(ServletRequestAttributes.class::isInstance)
       .map(ServletRequestAttributes.class::cast)
       .map(ServletRequestAttributes::getRequest)
       .flatMap(AuthCookieService::getServiceAccessToken);
+    // In case we don't have a cookie to extract the service token from, we try to retrieve it directly from the
+    // framework
+    if (accessToken.isEmpty()) {
+      accessToken = retrieveServiceTokenFromFramework();
+    }
+    return accessToken;
   }
-
 }
