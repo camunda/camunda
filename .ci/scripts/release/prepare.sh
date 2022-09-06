@@ -9,6 +9,8 @@ apt install -y gpg git
 curl -L https://github.com/cli/cli/releases/download/v2.14.7/gh_2.14.7_linux_amd64.deb --output /tmp/gh.deb
 dpkg -i /tmp/gh.deb
 
+git config --global --add safe.directory /home/jenkins/agent/workspace/zeebe-release
+
 # remove origin and use GitHub App (reflected on filesystem and globally active)
 git remote remove origin
 git remote add origin "https://${GITHUB_TOKEN_USR}:${GITHUB_TOKEN_PSW}@github.com/camunda/zeebe.git"
