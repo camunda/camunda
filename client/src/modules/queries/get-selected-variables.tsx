@@ -106,8 +106,36 @@ function useSelectedVariables(
   };
 }
 
+const mockGetDynamicFormsVariables = (taskId = '0') => ({
+  request: {
+    query: GET_SELECTED_VARIABLES,
+    variables: {
+      taskId,
+      variableNames: ['radio_field', 'radio_field_options'],
+    },
+  },
+  result: {
+    data: {
+      variables: [
+        {
+          name: 'radio_field',
+          value: '"radio_value_1"',
+          __typename: 'Variable',
+        },
+        {
+          name: 'radio_field_options',
+          value:
+            '[{"label":"Radio label 1","value":"radio_value_1"},{"label":"Radio label 2","value":"radio_value_2"}]',
+          __typename: 'Variable',
+        },
+      ],
+    },
+  },
+});
+
 export {
   useSelectedVariables,
   mockGetSelectedVariables,
   mockGetSelectedVariablesEmptyVariables,
+  mockGetDynamicFormsVariables,
 };

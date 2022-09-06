@@ -14,7 +14,11 @@ import {
   GetCurrentUser,
   GET_CURRENT_USER,
 } from 'modules/queries/get-current-user';
-import {createForm, Form as FormJSViewer} from '@bpmn-io/form-js';
+import {
+  createForm,
+  Form as FormJSViewer,
+  getSchemaVariables,
+} from '@bpmn-io/form-js';
 import '@bpmn-io/form-js/dist/assets/form-js.css';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
 import {Button} from 'modules/components/Button';
@@ -43,13 +47,7 @@ function extractVariablesFromFormSchema(
   }
 
   try {
-    const parsedSchema = JSON.parse(schema);
-
-    return Array.isArray(parsedSchema.components)
-      ? parsedSchema.components
-          .filter(({type}: any) => !['button', 'text'].includes(type))
-          .map(({key}: any) => key)
-      : [];
+    return getSchemaVariables(JSON.parse(schema ?? '{}'));
   } catch {
     return [];
   }

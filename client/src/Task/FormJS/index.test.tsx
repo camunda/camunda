@@ -12,10 +12,11 @@ import {
   unclaimedTaskWithForm,
 } from 'modules/mock-schema/mocks/task';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
-import {mockGetForm} from 'modules/queries/get-form';
+import {mockGetDynamicForm, mockGetForm} from 'modules/queries/get-form';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {FormJS} from './index';
 import {
+  mockGetDynamicFormsVariables,
   mockGetSelectedVariables,
   mockGetSelectedVariablesEmptyVariables,
 } from 'modules/queries/get-selected-variables';
@@ -367,5 +368,54 @@ describe('<FormJS />', () => {
         ]),
       ),
     );
+  });
+
+  it('should render a prefilled form', async () => {
+    mockServer.use(
+      graphql.query('GetForm', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetDynamicForm.result.data));
+      }),
+      graphql.query('GetSelectedVariables', async (req, res, ctx) => {
+        const body = await req.json();
+
+        if (
+          areArraysEqual(
+            mockGetDynamicFormsVariables().request.variables.variableNames,
+            body?.variables?.variableNames,
+          )
+        ) {
+          return res.once(ctx.data(mockGetDynamicFormsVariables().result.data));
+        }
+
+        return res.once(
+          ctx.errors([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+        );
+      }),
+    );
+
+    render(
+      <FormJS
+        id="form-0"
+        processDefinitionId="process"
+        task={claimedTaskWithForm()}
+        onSubmit={() => Promise.resolve()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(await screen.findByLabelText(/radio label 1/i)).toBeChecked();
+    expect(screen.getByLabelText(/radio label 2/i)).toBeInTheDocument();
+    expect(screen.getByText(/radio field/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /complete task/i,
+      }),
+    ).toBeInTheDocument();
   });
 });

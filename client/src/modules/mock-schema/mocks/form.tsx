@@ -66,4 +66,31 @@ const invalidForm: Form = {
   `,
 };
 
-export {form, invalidForm};
+const dynamicForm: Form = {
+  __typename: 'Form',
+  id: 'camunda-forms:bpmn:form-0',
+  processDefinitionId: 'process',
+  schema: JSON.stringify({
+    components: [
+      {
+        values: [],
+        label: 'Radio Field',
+        type: 'radio',
+        id: 'radio_field',
+        key: 'radio_field',
+        valuesKey: 'radio_field_options',
+      },
+    ],
+    type: 'default',
+    id: 'form_test',
+    executionPlatform: 'Camunda Cloud',
+    executionPlatformVersion: '8.0.0',
+    exporter: {
+      name: 'Camunda Modeler',
+      version: '5.3.0-nightly.20220831',
+    },
+    schemaVersion: 4,
+  }),
+};
+
+export {form, invalidForm, dynamicForm};
