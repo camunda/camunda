@@ -4,14 +4,11 @@
 # add GitHub packages Debian repository for gh
 
 apt update
-apt install -y gpg git
+apt install -y gpg
 
 # install using apt fails due to https://github.com/cli/cli/issues/6175 Workaround is to get it from git release
 curl -L https://github.com/cli/cli/releases/download/v2.14.7/gh_2.14.7_linux_amd64.deb --output /tmp/gh.deb
 dpkg -i /tmp/gh.deb
-
-# Have to set the safe directory otherwise git commands fails with fatal: detected dubious ownership in repository at '/home/jenkins/agent/workspace/zeebe-release'
-git config --global --add safe.directory /home/jenkins/agent/workspace/zeebe-release
 
 # remove origin and use GitHub App (reflected on filesystem and globally active)
 git remote remove origin
