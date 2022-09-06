@@ -6,8 +6,8 @@
 apt update
 apt install -y gpg git
 
-curl -L https://github.com/cli/cli/releases/download/v2.14.7/gh_2.14.7_linux_amd64.deb --output gh.deb
-dpkg -i gh.deb
+curl -L https://github.com/cli/cli/releases/download/v2.14.7/gh_2.14.7_linux_amd64.deb --output /tmp/gh.deb
+dpkg -i /tmp/gh.deb
 
 # remove origin and use GitHub App (reflected on filesystem and globally active)
 git remote remove origin
