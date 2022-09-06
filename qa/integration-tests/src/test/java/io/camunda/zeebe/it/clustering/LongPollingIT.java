@@ -65,8 +65,8 @@ final class LongPollingIT {
   @BeforeEach
   void beforeEach() {
     // set log level for long polling to trace to have more debugging info when the test fails
-    for (final var gateway : cluster.getGateways().values()) {
-      LoggersActuator.of(gateway).set(Loggers.LONG_POLLING.getName(), Level.TRACE);
+    for (final var node : cluster.getNodes().values()) {
+      LoggersActuator.of(node).set(Loggers.LONG_POLLING.getName(), Level.TRACE);
     }
   }
 
