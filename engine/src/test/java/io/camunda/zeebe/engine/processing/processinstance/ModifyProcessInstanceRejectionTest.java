@@ -256,4 +256,50 @@ public class ModifyProcessInstanceRejectionTest {
                     + "instructions with a scope element id that could not be found: 'C', 'D'",
                 PROCESS_ID));
   }
+
+  @Test
+  public void shouldRejectCommandWhenVariableScopeIsNotFlowScope() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .userTask("B")
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("B")
+            .withVariables(PROCESS_ID, Map.of("var", "process"))
+            .withVariables("A", Map.of("var", "A"))
+            .activateElement("A")
+            .withVariables("B", Map.of("var", "B"))
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that variable scopes with ids 'A' and 'B' are no flow scopes")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            String.format(
+                "Expected to modify instance of process '%s' but it contains one or more variable "
+                    + "instructions with a scope element that doesn't belong the element's flow scope: 'A', 'B'. "
+                    + "These variables should be set before or after the modification.",
+                PROCESS_ID));
+  }
 }
