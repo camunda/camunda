@@ -64,7 +64,7 @@ public final class ProcessInstanceModificationVariableInstruction extends Object
   }
 
   public void copy(final ProcessInstanceModificationVariableInstruction object) {
-    setVariables(object.getVariablesBuffer());
+    setVariables(BufferUtil.cloneBuffer(object.getVariablesBuffer()));
     setElementId(object.getElementId());
   }
 
