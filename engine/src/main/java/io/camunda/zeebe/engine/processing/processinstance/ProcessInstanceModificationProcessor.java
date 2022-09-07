@@ -71,13 +71,15 @@ public final class ProcessInstanceModificationProcessor
           + " Please reduce the size by splitting the modification into multiple commands.";
 
   private static final String ERROR_MESSAGE_VARIABLE_SCOPE_NOT_FOUND =
-      "Expected to modify instance of process '%s' but it contains one or more variable instructions"
-          + " with a scope element id that could not be found: '%s'";
+      """
+      Expected to modify instance of process '%s' but it contains one or more variable instructions \
+      with a scope element id that could not be found: '%s'""";
 
   private static final String ERROR_MESSAGE_VARIABLE_SCOPE_NOT_FLOW_SCOPE =
-      "Expected to modify instance of process '%s' but it contains one or more variable instructions"
-          + " with a scope element that doesn't belong the element's flow scope: '%s'. "
-          + "These variables should be set before or after the modification.";
+      """
+      Expected to modify instance of process '%s' but it contains one or more variable instructions \
+      with a scope element that doesn't belong the element's flow scope: '%s'. \
+      These variables should be set before or after the modification.""";
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
