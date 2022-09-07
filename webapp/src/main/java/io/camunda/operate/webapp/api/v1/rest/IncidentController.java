@@ -26,6 +26,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +63,7 @@ public class IncidentController extends ErrorController implements SearchControl
 
   @Operation(
       summary = "Search incidents",
+      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie")},
       responses = {
           @ApiResponse(
               description = "Success",
@@ -128,6 +130,7 @@ public class IncidentController extends ErrorController implements SearchControl
 
   @Operation(
       summary = "Get incident by key",
+      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie")},
       responses = {
           @ApiResponse(
               description = "Success",

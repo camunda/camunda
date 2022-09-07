@@ -25,6 +25,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +54,7 @@ public class ProcessInstanceController extends ErrorController implements Search
 
   @Operation(
       summary = "Search process instances",
+      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie")},
       responses = {
           @ApiResponse(
               description = "Success",
@@ -107,6 +109,7 @@ public class ProcessInstanceController extends ErrorController implements Search
 
   @Operation(
       summary = "Get process instance by key",
+      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie") },
       responses = {
           @ApiResponse(
               description = "Success",
@@ -135,6 +138,7 @@ public class ProcessInstanceController extends ErrorController implements Search
 
   @Operation(
       summary = "Delete process instance and all dependant data by key",
+      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie") },
       responses = {
           @ApiResponse(
               description = "Success",

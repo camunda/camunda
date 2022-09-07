@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +55,7 @@ public class ProcessDefinitionController extends ErrorController
 
   @Operation(
       summary = "Search process definitions",
+      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie")},
       responses = {
           @ApiResponse(
               description = "Success",
@@ -110,6 +112,7 @@ public class ProcessDefinitionController extends ErrorController
 
   @Operation(
       summary = "Get process definition by key",
+      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie")},
       tags = {"Process"},
       responses = {
           @ApiResponse(
@@ -139,6 +142,7 @@ public class ProcessDefinitionController extends ErrorController
 
   @Operation(
       summary = "Get process definition as XML by key",
+      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie")},
       tags = {"Process"},
       responses = {
           @ApiResponse(

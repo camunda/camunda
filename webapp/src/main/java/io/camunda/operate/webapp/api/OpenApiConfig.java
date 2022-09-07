@@ -6,9 +6,12 @@
  */
 package io.camunda.operate.webapp.api;
 
+import io.camunda.operate.webapp.security.OperateURIs;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springdoc.core.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,7 +31,19 @@ public class OpenApiConfig {
   private GroupedOpenApi apiDefinitionFor(final String version) {
     return GroupedOpenApi.builder()
         .group(version)
-        .addOpenApiCustomiser(openApi -> openApi.info(getPublicAPIInfo()))
+        .addOpenApiCustomiser(openApi ->
+            openApi.info(getPublicAPIInfo())
+                .getComponents()
+                  .addSecuritySchemes("cookie",
+                        new SecurityScheme()
+                            .type(SecurityScheme.Type.APIKEY)
+                            .in(SecurityScheme.In.COOKIE)
+                            .name(OperateURIs.COOKIE_JSESSIONID))
+                    .addSecuritySchemes("bearer-key",
+                        new SecurityScheme()
+                            .type(SecurityScheme.Type.HTTP)
+                            .scheme("bearer")
+                            .bearerFormat("JWT")))
         .packagesToScan("io.camunda.operate.webapp.api."+version)
         .pathsToMatch("/" + version + "/**")
         .build();

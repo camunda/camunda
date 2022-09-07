@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -49,6 +50,7 @@ public class VariableController extends ErrorController implements SearchControl
 
   @Operation(
       summary = "Search variables for process instances",
+      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie") },
       responses = {
           @ApiResponse(
               description = "Success",
@@ -103,6 +105,7 @@ public class VariableController extends ErrorController implements SearchControl
 
   @Operation(
       summary = "Get variable by key",
+      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie") },
       responses = {
           @ApiResponse(
               description = "Success",
