@@ -12,6 +12,11 @@ import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
 
 import * as Styled from './styled';
 
+type ChildProps = {
+  onStateChange: (changes: unknown) => void;
+  placement: 'top' | 'bottom';
+};
+
 type Props = {
   label: React.ReactNode;
   placement?: 'top' | 'bottom';
@@ -20,7 +25,9 @@ type Props = {
   onOpen?: (...args: any[]) => any;
   className?: string;
   calculateWidth?: (...args: any[]) => any;
-  children?: React.ReactNode;
+  children?:
+    | React.ReactElement<ChildProps>
+    | (React.ReactElement<ChildProps> | false)[];
 };
 
 type State = {
@@ -94,10 +101,9 @@ export default class Dropdown extends React.Component<Props, State> {
   };
 
   renderChildrenWithProps = () =>
-    React.Children.map(this.props.children, (child, index) => {
+    React.Children.map(this.props.children, (child) => {
       return (
-        child != null &&
-        // @ts-expect-error ts-migrate(2769) FIXME: Type 'string' is not assignable to type 'ReactElem... Remove this comment to see the full error message
+        React.isValidElement(child) &&
         React.cloneElement(child, {
           onStateChange: this.handleStateChange,
           placement: this.props.placement,

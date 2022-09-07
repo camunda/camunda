@@ -17,7 +17,7 @@ import {
   FlowNodeInstance,
 } from 'modules/stores/flowNodeInstance';
 import {Bar} from './Bar';
-import {Foldable} from './Foldable';
+import {Foldable, Details, Summary} from './Foldable';
 import {Li, NodeDetails, NodeStateIcon, Ul} from './styled';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {tracking} from 'modules/tracking';
@@ -105,7 +105,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
           }
         >
           {metaData !== undefined && (
-            <Foldable.Summary
+            <Summary
               ref={rowRef}
               data-testid={flowNodeInstance.id}
               onSelection={() => {
@@ -136,10 +136,10 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
                 isBold={isFoldable || metaData.type.elementType === 'PROCESS'}
                 hasTopBorder={treeDepth > 1}
               />
-            </Foldable.Summary>
+            </Summary>
           )}
           {hasVisibleChildNodes && (
-            <Foldable.Details>
+            <Details>
               <InfiniteScroller
                 onVerticalScrollEndReach={handleEndReach}
                 onVerticalScrollStartReach={async (scrollDown) => {
@@ -176,7 +176,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
                   )}
                 </Ul>
               </InfiniteScroller>
-            </Foldable.Details>
+            </Details>
           )}
         </Foldable>
       </Li>

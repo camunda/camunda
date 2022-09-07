@@ -5,16 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {
-  useRef,
-  useEffect,
-  useLayoutEffect,
-  useState,
-  isValidElement,
-} from 'react';
+import React, {useRef, useEffect, useLayoutEffect, useState} from 'react';
 import {BpmnJS, OnFlowNodeSelection, OverlayData} from 'modules/bpmn-js/BpmnJS';
 import DiagramControls from './DiagramControls';
 import {Diagram as StyledDiagram, DiagramCanvas} from './styled';
+
+type SelectedFlowNodeOverlayProps = {
+  selectedFlowNodeRef: SVGElement;
+  diagramCanvasRef: React.Ref<Element>;
+};
 
 type Props = {
   xml: string;
@@ -23,7 +22,9 @@ type Props = {
   onFlowNodeSelection?: OnFlowNodeSelection;
   overlaysData?: OverlayData[];
   children?: React.ReactNode;
-  selectedFlowNodeOverlay?: React.ReactNode;
+  selectedFlowNodeOverlay?:
+    | React.ReactElement<SelectedFlowNodeOverlayProps>
+    | false;
   highlightedSequenceFlows?: string[];
 };
 
@@ -103,7 +104,7 @@ const Diagram: React.FC<Props> = ({
         </>
       )}
       {!isViewboxChanging &&
-        isValidElement(selectedFlowNodeOverlay) &&
+        React.isValidElement(selectedFlowNodeOverlay) &&
         React.cloneElement(selectedFlowNodeOverlay, {
           selectedFlowNodeRef: viewer.selectedFlowNode,
           diagramCanvasRef,

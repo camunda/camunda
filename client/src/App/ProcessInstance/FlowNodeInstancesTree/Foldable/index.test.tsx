@@ -10,7 +10,7 @@ import {render, screen} from 'modules/testing-library';
 import noop from 'lodash/noop';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
-import {Foldable} from './index';
+import {Foldable, Summary, Details} from './index';
 
 describe('<Foldable />', () => {
   it('should show the unfoldable content', () => {
@@ -18,14 +18,14 @@ describe('<Foldable />', () => {
 
     render(
       <Foldable isFoldable={false} isFolded={false}>
-        <Foldable.Summary
+        <Summary
           onSelection={noop}
           isSelected={false}
           isLastChild={false}
           nodeName="node-name"
         >
           {mockContent}
-        </Foldable.Summary>
+        </Summary>
       </Foldable>,
       {wrapper: ThemeProvider}
     );
@@ -39,14 +39,14 @@ describe('<Foldable />', () => {
 
     const {user} = render(
       <Foldable isFoldable={false} isFolded={false}>
-        <Foldable.Summary
+        <Summary
           onSelection={mockOnSelection}
           isSelected={false}
           isLastChild={false}
           nodeName="node-name"
         >
           {mockContent}
-        </Foldable.Summary>
+        </Summary>
       </Foldable>,
       {wrapper: ThemeProvider}
     );
@@ -63,15 +63,15 @@ describe('<Foldable />', () => {
 
     render(
       <Foldable isFoldable={true} isFolded={false}>
-        <Foldable.Summary
+        <Summary
           onSelection={noop}
           isSelected={false}
           isLastChild={false}
           nodeName={mockNodeName}
         >
           {mockContent}
-        </Foldable.Summary>
-        <Foldable.Details>{mockDetails}</Foldable.Details>
+        </Summary>
+        <Details>{mockDetails}</Details>
       </Foldable>,
       {wrapper: ThemeProvider}
     );
@@ -86,15 +86,15 @@ describe('<Foldable />', () => {
 
     render(
       <Foldable isFoldable={true} isFolded={false}>
-        <Foldable.Summary
+        <Summary
           onSelection={noop}
           isSelected={false}
           isLastChild={false}
           nodeName="node-name"
         >
           {mockContent}
-        </Foldable.Summary>
-        <Foldable.Details>{mockDetails}</Foldable.Details>
+        </Summary>
+        <Details>{mockDetails}</Details>
       </Foldable>,
       {wrapper: ThemeProvider}
     );

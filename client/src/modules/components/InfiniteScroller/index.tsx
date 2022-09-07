@@ -8,8 +8,12 @@
 import React, {useCallback, useRef} from 'react';
 import {logger} from 'modules/logger';
 
+type ChildProps = {
+  ref: React.Ref<Element>;
+};
+
 type Props = {
-  children?: React.ReactNode;
+  children: React.ReactElement<ChildProps>;
   onVerticalScrollStartReach?: (scrollUp: (distance: number) => void) => void;
   onVerticalScrollEndReach?: (scrollDown: (distance: number) => void) => void;
   scrollableContainerRef: React.RefObject<HTMLElement>;

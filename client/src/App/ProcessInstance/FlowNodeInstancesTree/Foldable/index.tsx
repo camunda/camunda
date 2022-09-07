@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {Children, cloneElement, isValidElement} from 'react';
+import React from 'react';
 
 import {
   SummaryContainer,
@@ -14,25 +14,33 @@ import {
   SummaryLabel,
 } from './styled';
 
-type Props = {
-  children?: React.ReactNode;
+type ChildProps = {
   isFoldable: boolean;
   isFolded: boolean;
   onToggle?: () => void;
 };
 
-const Foldable = ({
+type FoldableProps = {
+  children?:
+    | (React.ReactElement<ChildProps> | false)[]
+    | React.ReactElement<ChildProps>;
+} & ChildProps;
+
+const Foldable: React.FC<FoldableProps> = ({
   children,
   isFoldable,
   onToggle,
   isFolded,
-  ...props
-}: Props) => {
+}) => {
   return (
     <>
-      {Children.map(children, (child) => {
-        if (isValidElement(child)) {
-          return cloneElement(child, {isFoldable, isFolded, onToggle});
+      {React.Children.map(children, (child) => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(child, {
+            isFoldable,
+            isFolded,
+            onToggle,
+          });
         } else {
           return null;
         }
@@ -107,7 +115,4 @@ const Details: React.FC<DetailsProps> = ({isFolded, children}) => {
   return <>{isFolded ? null : children}</>;
 };
 
-Foldable.Summary = Summary;
-Foldable.Details = Details;
-
-export {Foldable};
+export {Foldable, Summary, Details};
