@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.io.File;
@@ -63,7 +64,10 @@ public final class SimpleBrokerStartTest {
     final var brokerCfg = new BrokerCfg();
     assignSocketAddresses(brokerCfg);
     final var systemContext =
-        new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
+        new SystemContext(
+            brokerCfg,
+            newTemporaryFolder.getAbsolutePath(),
+            ActorScheduler.newActorScheduler().build());
     systemContext.getScheduler().start();
 
     final var leaderLatch = new CountDownLatch(1);
