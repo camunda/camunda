@@ -94,7 +94,7 @@ public class DefaultClusterEventService
         .forEach(
             memberId -> {
               if ("jobsAvailable".equals(topic)) {
-                LOGGER.info("Sending jobs available notification to {}", memberId);
+                LOGGER.warn("Sending jobs available notification to {}", memberId);
               }
 
               final Member member = membershipService.getMember(memberId);
