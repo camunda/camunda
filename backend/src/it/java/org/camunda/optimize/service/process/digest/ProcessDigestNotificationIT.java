@@ -78,7 +78,7 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     assertThat(greenMail.waitForIncomingEmail(10, 1)).isTrue();
     greenMail.reset();
     // and one after 1 second from the scheduler
-    assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
+    assertThat(greenMail.waitForIncomingEmail(2000, 1)).isTrue();
   }
 
   @Test
