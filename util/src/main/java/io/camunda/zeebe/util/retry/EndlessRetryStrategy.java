@@ -26,7 +26,7 @@ public final class EndlessRetryStrategy implements RetryStrategy {
 
   public EndlessRetryStrategy(final ActorControl actor) {
     this.actor = actor;
-    retryMechanism = new ActorRetryMechanism(actor);
+    retryMechanism = new ActorRetryMechanism();
   }
 
   @Override
@@ -50,13 +50,13 @@ public final class EndlessRetryStrategy implements RetryStrategy {
     try {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
-        actor.submit(this::run);
+        actor.run(this::run);
       }
     } catch (final Exception exception) {
       if (terminateCondition.getAsBoolean()) {
         currentFuture.complete(false);
       } else {
-        actor.submit(this::run);
+        actor.run(this::run);
         LOG.error(
             "Caught exception {} with message {}, will retry...",
             exception.getClass(),
