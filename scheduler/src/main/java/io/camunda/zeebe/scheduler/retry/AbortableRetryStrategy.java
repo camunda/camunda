@@ -21,7 +21,7 @@ public final class AbortableRetryStrategy implements RetryStrategy {
 
   public AbortableRetryStrategy(final ActorControl actor) {
     this.actor = actor;
-    retryMechanism = new ActorRetryMechanism(actor);
+    retryMechanism = new ActorRetryMechanism();
   }
 
   @Override
@@ -44,7 +44,7 @@ public final class AbortableRetryStrategy implements RetryStrategy {
     try {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
-        actor.submit(this::run);
+        actor.run(this::run);
       }
     } catch (final Exception exception) {
       currentFuture.completeExceptionally(exception);

@@ -23,7 +23,7 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
 
   public RecoverableRetryStrategy(final ActorControl actor) {
     this.actor = actor;
-    retryMechanism = new ActorRetryMechanism(actor);
+    retryMechanism = new ActorRetryMechanism();
   }
 
   @Override
@@ -47,11 +47,11 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
     try {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
-        actor.submit(this::run);
+        actor.run(this::run);
       }
     } catch (final RecoverableException ex) {
       if (!terminateCondition.getAsBoolean()) {
-        actor.submit(this::run);
+        actor.run(this::run);
       }
     } catch (final Exception exception) {
       currentFuture.completeExceptionally(exception);

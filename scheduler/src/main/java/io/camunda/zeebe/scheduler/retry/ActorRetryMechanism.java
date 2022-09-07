@@ -7,21 +7,13 @@
  */
 package io.camunda.zeebe.scheduler.retry;
 
-import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.function.BooleanSupplier;
 
 public final class ActorRetryMechanism {
-
-  private final ActorControl actor;
-
   private OperationToRetry currentCallable;
   private BooleanSupplier currentTerminateCondition;
   private ActorFuture<Boolean> currentFuture;
-
-  public ActorRetryMechanism(final ActorControl actor) {
-    this.actor = actor;
-  }
 
   void wrap(
       final OperationToRetry callable,
