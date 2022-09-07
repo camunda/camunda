@@ -14,7 +14,9 @@ import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import java.lang.reflect.Constructor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -114,6 +116,25 @@ public final class RetryStrategyTest {
     assertThat(resultFuture.isDone()).isTrue();
     assertThat(resultFuture.isCompletedExceptionally()).isTrue();
     assertThat(resultFuture.getException()).isExactlyInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  public void shouldNotInterleaveRetry() {
+    // given
+    final AtomicReference<ActorFuture<Boolean>> firstFuture = new AtomicReference<>();
+    final AtomicBoolean retryToggle = new AtomicBoolean();
+    final AtomicReference<ActorFuture<Boolean>> secondFuture = new AtomicReference<>();
+
+    // when
+    actorControl.run(
+        () -> firstFuture.set(retryStrategy.runWithRetry(() -> retryToggle.getAndSet(true))));
+    actorControl.run(() -> secondFuture.set(retryStrategy.runWithRetry(() -> true)));
+
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(firstFuture.get()).isDone().isNotEqualTo(secondFuture.get());
+    assertThat(secondFuture.get()).isDone();
   }
 
   private static final class ControllableActor extends Actor {
