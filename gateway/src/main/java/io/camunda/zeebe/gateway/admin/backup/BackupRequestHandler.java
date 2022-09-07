@@ -12,9 +12,8 @@ import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.IntStream;
 
-public class BackupRequestHandler implements BackupApi {
+public final class BackupRequestHandler implements BackupApi {
 
   final BrokerClient brokerClient;
   final BrokerTopologyManager topologyManager;
@@ -28,23 +27,35 @@ public class BackupRequestHandler implements BackupApi {
   public CompletableFuture<Long> takeBackup(final long backupId) {
     final BrokerClusterState topology = topologyManager.getTopology();
     if (topology == null) {
-      return CompletableFuture.failedFuture(new NoTopologyAvailableException());
+      return CompletableFuture.failedFuture(
+          backupFailed(backupId, new NoTopologyAvailableException()));
     }
 
-    final int partitionsCount = topology.getPartitionsCount();
+    final int expectedPartitionCount = topology.getPartitionsCount();
+    final int knownPartitions = topology.getPartitions().size();
+    if (expectedPartitionCount != knownPartitions) {
+      return CompletableFuture.failedFuture(
+          backupFailed(
+              backupId,
+              new IncompleteTopologyException(
+                  "Expected to send request to all %d partitions, but found only %d partitions in topology."
+                      .formatted(expectedPartitionCount, knownPartitions))));
+    }
 
     final var backupTriggered =
-        IntStream.rangeClosed(1, partitionsCount)
-            .mapToObj(partitionId -> getRequestForPartition(backupId, partitionId))
+        topology.getPartitions().stream()
+            .map(partitionId -> getRequestForPartition(backupId, partitionId))
             .map(brokerClient::sendRequestWithRetry)
             .toArray(CompletableFuture[]::new);
 
     return CompletableFuture.allOf(backupTriggered)
         .thenApply(ignore -> backupId)
         .exceptionallyCompose(
-            error ->
-                CompletableFuture.failedFuture(
-                    new BackupFailedException(backupId, error.getCause())));
+            error -> CompletableFuture.failedFuture(backupFailed(backupId, error.getCause())));
+  }
+
+  private static BackupFailedException backupFailed(final long backupId, final Throwable error) {
+    return new BackupFailedException(backupId, error);
   }
 
   private static BrokerBackupRequest getRequestForPartition(

@@ -26,10 +26,10 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 /** Wraps the request and response for "Take Backup" sent between gateway and broker */
-public class BrokerBackupRequest extends BrokerRequest<CheckpointRecord> {
+public final class BrokerBackupRequest extends BrokerRequest<CheckpointRecord> {
 
-  protected final BackupRequest request = new BackupRequest();
-  protected final ExecuteCommandResponse response = new ExecuteCommandResponse();
+  final BackupRequest request = new BackupRequest();
+  final ExecuteCommandResponse response = new ExecuteCommandResponse();
 
   public BrokerBackupRequest() {
     super(BackupRequestEncoder.SCHEMA_ID, BackupRequestEncoder.TEMPLATE_ID);
