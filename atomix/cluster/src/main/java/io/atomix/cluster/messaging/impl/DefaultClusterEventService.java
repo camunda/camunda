@@ -93,6 +93,10 @@ public class DefaultClusterEventService
     getSubscriberNodes(topic)
         .forEach(
             memberId -> {
+              if ("jobsAvailable".equals(topic)) {
+                LOGGER.info("Sending jobs available notification to {}", memberId);
+              }
+
               final Member member = membershipService.getMember(memberId);
               if (member != null && member.isReachable()) {
                 messagingService.sendAsync(member.address(), topic, payload);
