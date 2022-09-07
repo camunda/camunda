@@ -37,6 +37,7 @@ public class OpenApiConfig {
   private Info getPublicAPIInfo() {
     return new Info()
         .title("Operate Public API")
+        .version("1.0.0")
         .description("To access active and completed process instances in Operate for monitoring and troubleshooting")
         .contact(new Contact()
             .url("https://www.camunda.com"))
