@@ -9,14 +9,13 @@ package io.camunda.zeebe.broker;
 
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.shared.ActorClockConfiguration;
+import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
@@ -48,10 +47,9 @@ public class StandaloneBroker
   private final BrokerCfg configuration;
   private final Environment springEnvironment;
   private final SpringBrokerBridge springBrokerBridge;
-  private final ActorClockConfiguration clockConfig;
+  private final ActorScheduler actorScheduler;
 
-  private String tempFolder;
-  private SystemContext systemContext;
+  private Path tempFolder;
   private Broker broker;
 
   @Autowired
@@ -59,11 +57,11 @@ public class StandaloneBroker
       final BrokerCfg configuration,
       final Environment springEnvironment,
       final SpringBrokerBridge springBrokerBridge,
-      final ActorClockConfiguration clockConfig) {
+      final ActorScheduler actorScheduler) {
     this.configuration = configuration;
     this.springEnvironment = springEnvironment;
     this.springBrokerBridge = springBrokerBridge;
-    this.clockConfig = clockConfig;
+    this.actorScheduler = actorScheduler;
   }
 
   public static void main(final String[] args) {
@@ -82,24 +80,35 @@ public class StandaloneBroker
   }
 
   @Override
-  public void run(final String... args) {
-    if (shouldUseTemporaryFolder()) {
-      LOG.info("Launching broker in temporary folder.");
-      systemContext = createSystemContextInTempDirectory();
-    } else {
-      systemContext = createSystemContextInBaseDirectory();
-    }
+  public void run(final String... args) throws IOException {
+    final Path workingDirectory = resolveWorkingDirectory();
+    final SystemContext systemContext =
+        new SystemContext(configuration, workingDirectory.toString(), actorScheduler);
 
-    systemContext.getScheduler().start();
+    actorScheduler.start();
     broker = new Broker(systemContext, springBrokerBridge);
     broker.start();
+  }
+
+  private Path resolveWorkingDirectory() throws IOException {
+    final Path workingDirectory;
+    if (shouldUseTemporaryFolder()) {
+      LOG.debug(
+          "Starting broker with a temporary directory; it will be deleted on graceful shutdown");
+      tempFolder = Files.createTempDirectory("zeebe").toAbsolutePath().normalize();
+      workingDirectory = tempFolder;
+    } else {
+      workingDirectory = Path.of(System.getProperty("basedir", ".")).toAbsolutePath().normalize();
+    }
+
+    return workingDirectory;
   }
 
   @Override
   public void onApplicationEvent(final ContextClosedEvent event) {
     try {
       broker.close();
-      systemContext.getScheduler().stop().get();
+      actorScheduler.stop().get();
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       LOG.warn("Shutdown interrupted, most likely harmless", e);
@@ -116,28 +125,10 @@ public class StandaloneBroker
         Profiles.of(Profile.DEVELOPMENT.getId(), Profile.TEST.getId()));
   }
 
-  private SystemContext createSystemContextInBaseDirectory() {
-    String basePath = System.getProperty("basedir");
-
-    if (basePath == null) {
-      basePath = Paths.get(".").toAbsolutePath().normalize().toString();
-    }
-    return new SystemContext(configuration, basePath, clockConfig.getClock());
-  }
-
-  private SystemContext createSystemContextInTempDirectory() {
-    try {
-      tempFolder = Files.createTempDirectory("zeebe").toAbsolutePath().normalize().toString();
-      return new SystemContext(configuration, tempFolder, clockConfig.getClock());
-    } catch (final IOException e) {
-      throw new UncheckedIOException("Could not create system context", e);
-    }
-  }
-
   private void deleteTempDirectory() {
     if (tempFolder != null) {
       try {
-        FileUtil.deleteFolder(tempFolder);
+        FileUtil.deleteFolderIfExists(tempFolder);
       } catch (final IOException e) {
         LOG.error("Failed to delete temporary folder {}", tempFolder, e);
       }
