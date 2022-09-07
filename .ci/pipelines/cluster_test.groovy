@@ -119,6 +119,10 @@ pipeline {
     }
     always {
       container('gcloud') {
+        sh ('''#!/bin/bash -ex
+               kubectl -n \${NAMESPACE} logs elasticsearch-0 -c elasticsearch > elasticsearch.log
+               ''')
+        archiveArtifacts artifacts: 'elasticsearch.log', onlyIfSuccessful: false
         sh("bash .ci/podSpecs/clusterTests/kill.sh \"${NAMESPACE}\"")
       }
       retriggerBuildIfDisconnected()

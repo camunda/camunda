@@ -45,6 +45,18 @@ spec:
         capabilities:
           add: ["IPC_LOCK", "SYS_RESOURCE"]
   containers:
+  - name: gcloud
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    imagePullPolicy: Always
+    command: ["cat"]
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}
     command: ["cat"]
@@ -196,12 +208,20 @@ pipeline {
               yaml integrationTestPodSpec(env.CAMBPM_7_15_VERSION, env.ES_VERSION)
             }
           }
+          environment {
+            LABEL = "optimize-ci-build-it-7.15_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
           steps {
             integrationTestSteps('7.15')
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud'){
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_cambpm715.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_cambpm715.log', onlyIfSuccessful: false
             }
           }
         }
@@ -214,12 +234,20 @@ pipeline {
               yaml integrationTestPodSpec(env.CAMBPM_7_16_VERSION, env.ES_VERSION)
             }
           }
+          environment {
+            LABEL = "optimize-ci-build-it-7.16_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
           steps {
             integrationTestSteps('7.16')
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud'){
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_cambpm716.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_cambpm716.log', onlyIfSuccessful: false
             }
           }
         }
@@ -232,12 +260,20 @@ pipeline {
               yaml integrationTestPodSpec(env.CAMBPM_7_17_VERSION, env.ES_VERSION)
             }
           }
+          environment {
+            LABEL = "optimize-ci-build-it-7.17_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
           steps {
             integrationTestSteps('7.17')
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud'){
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_cambpm717.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_cambpm717.log', onlyIfSuccessful: false
             }
           }
         }
@@ -250,12 +286,20 @@ pipeline {
               yaml integrationTestPodSpec(env.CAMBPM_SNAPSHOT_VERSION, env.ES_VERSION)
             }
           }
+          environment {
+            LABEL = "optimize-ci-build-it-engine-snapshot_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          }
           steps {
             integrationTestSteps('snapshot')
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud'){
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9200 > elasticsearch_snapshot.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_snapshot.log', onlyIfSuccessful: false
             }
           }
         }

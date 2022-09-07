@@ -45,6 +45,18 @@ spec:
       securityContext:
         privileged: true
   containers:
+  - name: gcloud
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    imagePullPolicy: Always
+    command: ["cat"]
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
   - name: maven
     image: ${mavenImage}
     command: ["cat"]
@@ -196,9 +208,19 @@ pipeline {
       }
       environment {
         SONARCLOUD_TOKEN = credentials('sonarcloud-token')
+        LABEL = "optimize-ci-sonarqube_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
       }
       steps {
         integrationTestSteps()
+      }
+      post {
+        always {
+          container('gcloud'){
+            sh 'apt-get install kubectl'
+            sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch.log'
+          }
+          archiveArtifacts artifacts: 'elasticsearch.log', onlyIfSuccessful: false
+        }
       }
     }
   }

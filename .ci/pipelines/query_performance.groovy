@@ -234,6 +234,9 @@ pipeline {
           yaml queryPerformanceConfig(env.ES_VERSION, env.CAMBPM_VERSION)
         }
       }
+      environment {
+        LABEL = "optimize-ci-build-${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+      }
       stages {
         stage('Build') {
           steps {
@@ -276,12 +279,12 @@ pipeline {
             always {
               container('maven') {
                 sh 'curl localhost:9200/_cat/indices?v'
-                sh ('''#!/bin/bash -ex
-                  cp -R --parents /ssd-storage/es-logs .
-                  chown -R 10000:1000 ./ssd-storage
-                ''')
-                archiveArtifacts artifacts: 'ssd-storage/es-logs/*', onlyIfSuccessful: false
                 junit testResults: 'qa/query-performance-tests/target/surefire-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
+              }
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch.log'
+                archiveArtifacts artifacts: 'elasticsearch.log', onlyIfSuccessful: false
               }
             }
           }

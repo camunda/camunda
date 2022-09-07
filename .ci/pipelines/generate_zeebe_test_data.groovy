@@ -59,6 +59,18 @@ spec:
         name: ci-service-account
         readOnly: true
   containers:
+    - name: gcloud
+      image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+      imagePullPolicy: Always
+      command: ["cat"]
+      tty: true
+      resources:
+        limits:
+          cpu: 1
+          memory: 512Mi
+        requests:
+          cpu: 1
+          memory: 512Mi
     - name: maven
       image:  ${MAVEN_DOCKER_IMAGE()}
       command: ["cat"]
@@ -161,6 +173,7 @@ pipeline {
     NEXUS = credentials("camunda-nexus")
     REGISTRY = credentials('repository-camunda-cloud')
     NAMESPACE = "optimize-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+    LABEL = "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
   }
 
   options {
@@ -223,6 +236,11 @@ pipeline {
       sendEmailNotification()
     }
     always {
+      container('gcloud'){
+        sh 'apt-get install kubectl'
+        sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch.log'
+      }
+      archiveArtifacts artifacts: 'elasticsearch.log', onlyIfSuccessful: false
       retriggerBuildIfDisconnected()
     }
   }

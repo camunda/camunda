@@ -422,6 +422,9 @@ pipeline {
           yaml smoketestPodSpec(params, env.CAMBPM_VERSION, env.ES_VERSION)
         }
       }
+      environment {
+        LABEL = "optimize-ci-build_smoke_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+      }
       steps {
         container('maven') {
           sh("""#!/bin/bash -eux
@@ -432,6 +435,15 @@ pipeline {
           echo Smoke testing if Optimize Frontend resources are accessible
           curl -q -f http://localhost:8090/index.html | grep -q html
           """)
+        }
+      }
+      post {
+        always {
+          container('gcloud') {
+            sh 'apt-get install kubectl'
+            sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch.log'
+            archiveArtifacts artifacts: 'elasticsearch.log', onlyIfSuccessful: false
+          }
         }
       }
     }

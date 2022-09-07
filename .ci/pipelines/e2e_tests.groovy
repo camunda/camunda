@@ -222,6 +222,9 @@ pipeline {
           yaml e2eTestConfig("${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
         }
       }
+      environment {
+        LABEL = "optimize-ci-build_e2etests_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+      }
       stages {
         stage('Build') {
           steps {
@@ -252,6 +255,11 @@ pipeline {
           post {
             always {
               archiveArtifacts artifacts: 'client/build/*.log'
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch.log'
+                archiveArtifacts artifacts: 'elasticsearch.log', onlyIfSuccessful: false
+              }
             }
           }
         }
