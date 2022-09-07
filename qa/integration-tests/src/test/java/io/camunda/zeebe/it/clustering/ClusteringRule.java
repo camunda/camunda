@@ -27,6 +27,7 @@ import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.broker.ActorSchedulerConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -286,7 +287,10 @@ public final class ClusteringRule extends ExternalResource {
     final File brokerBase = getBrokerBase(nodeId);
     final BrokerCfg brokerCfg = getBrokerCfg(nodeId);
     final var systemContext =
-        new SystemContext(brokerCfg, brokerBase.getAbsolutePath(), controlledClock);
+        new SystemContext(
+            brokerCfg,
+            brokerBase.getAbsolutePath(),
+            new ActorSchedulerConfiguration(brokerCfg, controlledClock).getScheduler());
     systemContexts.put(nodeId, systemContext);
 
     systemContext.getScheduler().start();
