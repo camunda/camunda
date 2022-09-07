@@ -14,20 +14,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.entities.*;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
-import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.schema.templates.VariableTemplate;
+import io.camunda.operate.schema.templates.*;
 import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
@@ -78,6 +70,9 @@ public class ElasticsearchChecks {
 
   @Autowired
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+
+  @Autowired
+  private EventTemplate eventTemplate;
 
   @Autowired
   private VariableTemplate variableTemplate;
@@ -183,6 +178,21 @@ public class ElasticsearchChecks {
       } catch (NotFoundException ex) {
         return false;
       }
+    };
+  }
+
+  @Bean(name = "eventIsImportedCheck")
+  public Predicate<Object[]> getEventIsImportedCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(2);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
+      Long processInstanceKey = (Long) objects[0];
+      String jobType = (String) objects[1];
+      List<EventEntity> events = getAllEvents(processInstanceKey);
+      return events.stream().filter(
+          e -> e.getMetadata() != null && e.getMetadata().getJobType() != null && e.getMetadata().getJobType()
+              .equals(jobType)).count() > 0;
     };
   }
 
@@ -364,6 +374,18 @@ public class ElasticsearchChecks {
             .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
     try {
       return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public List<EventEntity> getAllEvents(Long processInstanceKey) {
+    final TermQueryBuilder processInstanceKeyQuery = termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(eventTemplate)
+        .source(new SearchSourceBuilder()
+            .query(constantScoreQuery(processInstanceKeyQuery)));
+    try {
+      return scroll(searchRequest, EventEntity.class, objectMapper, esClient);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

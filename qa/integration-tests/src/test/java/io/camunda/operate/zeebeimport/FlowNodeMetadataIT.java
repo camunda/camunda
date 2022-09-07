@@ -72,7 +72,6 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
    * Use cases 1.1 and 2.1.
    */
   @Test
-  @Ignore("https://github.com/camunda/operate/issues/3274")
   public void shouldReturnOneInstanceMetadata() throws Exception {
     //having
     final String taskId = "taskA";
@@ -90,6 +89,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .and()
         .waitUntil()
         .flowNodeIsActive(taskId)
+        .eventIsImported(jobType)
         .getProcessInstanceKey();
 
     //when 1.1
@@ -150,6 +150,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .completeTask(jobType)
         .waitUntil()
         .processInstanceIsFinished()
+        .eventIsImported(jobType)
         .getProcessInstanceKey();
 
     resetZeebeTime();
@@ -408,7 +409,6 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
    * Use case 1.3 and 3.2.
    */
   @Test
-  @Ignore("https://github.com/camunda/operate/issues/3274")
   public void shouldReturnInstanceCountPeterCase() throws Exception {
     //having process with Peter case, two instances of task are active
     final String taskId = "taskA";
@@ -455,7 +455,6 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
    * Use case 2.3.
    */
   @Test
-  @Ignore("https://github.com/camunda/operate/issues/3274")
   public void shouldReturnBreadcrumbForPeterCase() throws Exception {
     //having process with Peter case, two instances of task are active
     final String taskId = "taskA";
@@ -476,6 +475,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .startProcessInstance(processId).waitUntil().processInstanceIsStarted()
         .and().waitUntil()
         .flowNodesAreActive(taskId, 2)
+        .eventIsImported(jobType)
         .getProcessInstanceKey();
     final List<FlowNodeInstanceDto> flowNodeInstances = tester.getFlowNodeInstanceOneListFromRest(
         String.valueOf(processInstanceKey));

@@ -138,6 +138,10 @@ public class OperateTester {
   private Predicate<Object[]> flowNodeIsActiveCheck;
 
   @Autowired
+  @Qualifier("eventIsImportedCheck")
+  private Predicate<Object[]> eventIsImportedCheck;
+
+  @Autowired
   @Qualifier("flowNodesAreActiveCheck")
   private Predicate<Object[]> flowNodesAreActiveCheck;
 
@@ -316,6 +320,11 @@ public class OperateTester {
 
   public OperateTester flowNodeIsActive(String activityId) {
     elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, activityId);
+    return this;
+  }
+
+  public OperateTester eventIsImported(String jobType) {
+    elasticsearchTestRule.processAllRecordsAndWait(eventIsImportedCheck, processInstanceKey, jobType);
     return this;
   }
 
@@ -580,5 +589,4 @@ public class OperateTester {
         .andExpect(content().contentTypeCompatibleWith(mockMvcTestRule.getContentType()))
         .andReturn();
   }
-
 }
