@@ -6,7 +6,9 @@
  */
 
 import {makeAutoObservable} from 'mobx';
+import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
+import {isFlowNodeMultiInstance} from './utils/isFlowNodeMultiInstance';
 
 type FlowNodeModificationPayload =
   | {
@@ -25,6 +27,7 @@ type FlowNodeModificationPayload =
       flowNode: {id: string; name: string};
       affectedTokenCount: number;
       targetFlowNode: {id: string; name: string};
+      scopeIds: string[];
     };
 
 type VariableModificationPayload = {
@@ -84,6 +87,13 @@ class Modifications {
       targetFlowNodeId !== undefined &&
       this.state.sourceFlowNodeIdForMoveOperation !== null
     ) {
+      const affectedTokenCount = 2; //  TODO: This can only be set when instance counts are known #2926
+      const newScopeCount = isFlowNodeMultiInstance(
+        this.state.sourceFlowNodeIdForMoveOperation
+      )
+        ? 1
+        : affectedTokenCount;
+
       modificationsStore.addModification({
         type: 'token',
         payload: {
@@ -100,7 +110,10 @@ class Modifications {
               targetFlowNodeId
             ),
           },
-          affectedTokenCount: 2, //  TODO: This can only be set when instance counts are known #2926
+          affectedTokenCount,
+          scopeIds: Array.from({
+            length: newScopeCount,
+          }).map(() => generateUniqueID()),
         },
       });
     } else {
@@ -207,10 +220,9 @@ class Modifications {
         modificationsByFlowNode[flowNode.id]!.cancelledTokens =
           affectedTokenCount;
 
-        const isSourceFlowNodeMultiInstance =
-          processInstanceDetailsDiagramStore.state.nodeMetaDataMap?.[
-            flowNode.id
-          ]?.type.isMultiInstance ?? false;
+        const isSourceFlowNodeMultiInstance = isFlowNodeMultiInstance(
+          flowNode.id
+        );
 
         modificationsByFlowNode[payload.targetFlowNode.id]!.newTokens =
           isSourceFlowNodeMultiInstance ? 1 : affectedTokenCount;

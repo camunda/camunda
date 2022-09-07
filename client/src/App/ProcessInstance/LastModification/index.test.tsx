@@ -70,6 +70,7 @@ describe('LastModification', () => {
         flowNode: {id: '3', name: 'flowNode3'},
         targetFlowNode: {id: '4', name: 'flowNode4'},
         affectedTokenCount: 2,
+        scopeIds: [generateUniqueID(), generateUniqueID()],
       },
     });
 

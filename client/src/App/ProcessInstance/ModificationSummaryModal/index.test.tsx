@@ -145,6 +145,7 @@ describe('Modification Summary Modal', () => {
         flowNode: {id: 'flow-node-1', name: 'flow node 1'},
         targetFlowNode: {id: 'flow-node-2', name: 'flow node 2'},
         affectedTokenCount: 3,
+        scopeIds: ['1'],
       },
     });
 
@@ -193,6 +194,7 @@ describe('Modification Summary Modal', () => {
         flowNode: {id: 'flow-node-1', name: 'flow node 1'},
         targetFlowNode: {id: 'flow-node-2', name: 'flow node 2'},
         affectedTokenCount: 3,
+        scopeIds: ['1'],
       },
     });
 

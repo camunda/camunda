@@ -30,6 +30,7 @@ describe('stores/modifications', () => {
 
   it('should add/remove flow node modifications', async () => {
     const uniqueID = generateUniqueID();
+    const uniqueIDForMove = generateUniqueID();
     expect(modificationsStore.state.modifications).toEqual([]);
     modificationsStore.addModification({
       type: 'token',
@@ -60,6 +61,7 @@ describe('stores/modifications', () => {
         flowNode: {id: '3', name: 'flow-node-3'},
         targetFlowNode: {id: '4', name: 'flow-node-4'},
         affectedTokenCount: 2,
+        scopeIds: [uniqueIDForMove],
       },
     });
 
@@ -82,6 +84,7 @@ describe('stores/modifications', () => {
         flowNode: {id: '3', name: 'flow-node-3'},
         targetFlowNode: {id: '4', name: 'flow-node-4'},
         affectedTokenCount: 2,
+        scopeIds: [uniqueIDForMove],
       },
     ]);
 
@@ -126,6 +129,7 @@ describe('stores/modifications', () => {
         flowNode: {id: '3', name: 'flow-node-3'},
         targetFlowNode: {id: '4', name: 'flow-node-4'},
         affectedTokenCount: 2,
+        scopeIds: [uniqueIDForMove],
       },
     ]);
   });
@@ -279,6 +283,7 @@ describe('stores/modifications', () => {
         flowNode: {id: 'flowNode3', name: 'flow-node-3'},
         targetFlowNode: {id: 'flowNode4', name: 'flow-node-4'},
         affectedTokenCount: 3,
+        scopeIds: ['1', '2', '3'],
       },
     });
 
@@ -299,6 +304,7 @@ describe('stores/modifications', () => {
         flowNode: {id: 'flowNode5', name: 'flow-node-5'},
         targetFlowNode: {id: 'flowNode6', name: 'flow-node-6'},
         affectedTokenCount: 2,
+        scopeIds: ['4', '5'],
       },
     });
 
@@ -370,6 +376,7 @@ describe('stores/modifications', () => {
         flowNode: {id: 'flowNode2', name: 'flow-node-2'},
         targetFlowNode: {id: 'flowNode3', name: 'flow-node-3'},
         affectedTokenCount: 1,
+        scopeIds: ['1'],
       },
     });
     expect(
