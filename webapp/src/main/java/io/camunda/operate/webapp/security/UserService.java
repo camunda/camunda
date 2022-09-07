@@ -7,15 +7,23 @@
 package io.camunda.operate.webapp.security;
 
 import io.camunda.operate.webapp.rest.dto.UserDto;
+import io.camunda.operate.webapp.rest.exception.UserNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 public interface UserService<T extends Authentication> {
-
+    Logger logger = LoggerFactory.getLogger(UserService.class);
   default UserDto getCurrentUser() {
     SecurityContext context = SecurityContextHolder.getContext();
-    return createUserDtoFrom((T) context.getAuthentication());
+    try{
+        return createUserDtoFrom((T) context.getAuthentication());
+    }catch (ClassCastException e){
+        logger.error(String.format("Couldn't get matching authentication for %s. Throw UserNotFound exception.", context.getAuthentication()), e);
+        throw new UserNotFoundException("Couldn't get authentication for user.");
+    }
   }
 
   UserDto createUserDtoFrom(T authentication);
