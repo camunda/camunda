@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.qa.util.actuator.LoggersActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.test.util.record.CompactRecordLogger;
 import io.camunda.zeebe.test.util.record.RecordStream;
 import io.zeebe.containers.ZeebeGatewayNode;
 import io.zeebe.containers.ZeebePort;
@@ -29,6 +30,7 @@ import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.agrona.CloseHelper;
 import org.assertj.core.groups.Tuple;
@@ -119,6 +121,11 @@ final class LongPollingIT {
       // then - ensure that we tried to activate before the job was created, and that we activated
       // it AGAIN after it was created, without the client sending a new request
       engine.waitForIdleState(Duration.ofSeconds(30));
+
+      Loggers.LONG_POLLING.error("Checking if we have two job batch activate commands...");
+      Loggers.LONG_POLLING.error("Printing log entirely: ");
+      new CompactRecordLogger(records().collect(Collectors.toList()));
+
       assertThat(records())
           .as("long polling should trigger a second ACTIVATE command without the client doing so")
           .extracting(Record::getValueType, Record::getIntent)

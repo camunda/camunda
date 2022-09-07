@@ -260,9 +260,6 @@ public class CompactRecordLogger {
   }
 
   private String summarizeTimestamp(final Record<?> record) {
-    if (!hasTimerEvents) {
-      return "";
-    }
     final var timestampWithoutMillis =
         ZonedDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneId.systemDefault())
             .withNano(0);
