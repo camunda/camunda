@@ -14,7 +14,6 @@ import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import java.lang.reflect.Constructor;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
@@ -122,19 +121,38 @@ public final class RetryStrategyTest {
   public void shouldNotInterleaveRetry() {
     // given
     final AtomicReference<ActorFuture<Boolean>> firstFuture = new AtomicReference<>();
-    final AtomicBoolean retryToggle = new AtomicBoolean();
     final AtomicReference<ActorFuture<Boolean>> secondFuture = new AtomicReference<>();
 
+    final AtomicInteger executionAttempt = new AtomicInteger(0);
+    final AtomicInteger firstResult = new AtomicInteger();
+    final AtomicInteger secondResult = new AtomicInteger();
+
     // when
+    final var retryCounts = 5;
     actorControl.run(
-        () -> firstFuture.set(retryStrategy.runWithRetry(() -> retryToggle.getAndSet(true))));
-    actorControl.run(() -> secondFuture.set(retryStrategy.runWithRetry(() -> true)));
+        () ->
+            firstFuture.set(
+                retryStrategy.runWithRetry(
+                    () -> {
+                      firstResult.set(executionAttempt.getAndIncrement());
+                      return executionAttempt.get() >= retryCounts;
+                    })));
+    actorControl.run(
+        () ->
+            secondFuture.set(
+                retryStrategy.runWithRetry(
+                    () -> {
+                      secondResult.set(executionAttempt.getAndIncrement());
+                      return true;
+                    })));
 
     schedulerRule.workUntilDone();
 
     // then
     assertThat(firstFuture.get()).isDone().isNotEqualTo(secondFuture.get());
     assertThat(secondFuture.get()).isDone();
+    assertThat(firstResult).hasValue(retryCounts - 1);
+    assertThat(secondResult).hasValue(retryCounts);
   }
 
   private static final class ControllableActor extends Actor {
