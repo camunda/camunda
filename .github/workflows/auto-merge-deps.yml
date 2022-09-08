@@ -39,6 +39,7 @@ jobs:
     permissions:
       contents: read
       checks: read
+      pull-requests: read
     steps:
     - id: await-tests
       uses: 'lewagon/wait-on-check-action@v1.1.2'
@@ -48,6 +49,7 @@ jobs:
         wait-interval: 30
         check-regexp: '(Test summary)|(Java checks)|(Go linting)|(Docker checks)|(CodeQL)'
         allowed-conclusions: success,skipped
+        verbose: true
 
   dependabot:
     runs-on: ubuntu-latest
