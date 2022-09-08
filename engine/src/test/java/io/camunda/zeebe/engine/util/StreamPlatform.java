@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
+import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
@@ -36,6 +37,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
@@ -152,7 +154,22 @@ public final class StreamPlatform {
 
     final Iterable<LoggedEvent> iterable = () -> reader;
 
-    return StreamSupport.stream(iterable.spliterator(), false);
+    // copy to allow for collecting, which is what AssertJ does under the hood when using stream
+    // assertions
+    return StreamSupport.stream(iterable.spliterator(), false)
+        .map(
+            event -> {
+              final var copyableEvent = (LoggedEventImpl) event;
+              final var copiedBuffer =
+                  BufferUtil.cloneBuffer(
+                      copyableEvent.getBuffer(),
+                      copyableEvent.getFragmentOffset(),
+                      copyableEvent.getLength());
+              final var copy = new LoggedEventImpl();
+              copy.wrap(copiedBuffer, 0);
+
+              return copy;
+            });
   }
 
   public Path createRuntimeFolder(final SynchronousLogStream stream) {
