@@ -1,0 +1,65 @@
+# This workflow will auto merge a PR authored by dependabot[bot]. It runs only on open PRs ready for
+# review.
+#
+# It will merge the PR only if: it is authored by dependabot[bot], is a patch semantic update, and
+# all CI checks are successful (ignoring the soon-to-be-removed Jenkins check).
+#
+# The workflow is divided into multiple sequential jobs to allow giving only minimal permissions to
+# the GitHub token passed around.
+name: Dependabot auto-merge updates
+on:
+  pull_request:
+    types:
+      - ready_for_review
+      - opened
+      - reopened
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - id: metadata
+        uses: dependabot/fetch-metadata@v1.1.1
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+    outputs:
+      update-type: ${{ steps.metadata.outputs.update-type }}
+
+  await-checks:
+    runs-on: ubuntu-latest
+    needs:
+      - metadata
+    if: ${{ jobs.metadata.outputs.update-type == 'version-update:semver-patch' }}
+    permissions:
+      contents: read
+      checks: read
+    steps:
+    - id: await-tests
+      uses: 'lewagon/wait-on-check-action@v1.1.2'
+      with:
+        ref: ${{ github.ref }}
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        wait-interval: 30
+        check-regexp: '(Test summary)|(Java checks)|(Go linting)|(Docker checks)|(CodeQL)'
+        allowed-conclusions: success,skipped
+
+  dependabot:
+    runs-on: ubuntu-latest
+    needs:
+      - await-checks
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - id: metadata
+        uses: dependabot/fetch-metadata@v1.1.1
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - run: gh pr review "${PR_ID}" --approve --comment -b "bors merge"
+        env:
+          PR_ID: ${{github.event.pull_request.number}}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
