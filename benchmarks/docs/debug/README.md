@@ -7,6 +7,7 @@ In order to have visibility into what's going at runtime, there are some techniq
 - [Debugging](#debugging)
   - [Debugger](#debugger)
   - [Logging](#logging)
+  - [Ephemeral Container](#ephemeral-container-for-a-debugging-shell)
   - [Thread dump](#thread-dump)
   - [Heap dump](#heap-dump)
   - [Remote JMX](#remote-jmx)
@@ -67,6 +68,19 @@ curl 'http://localhost:9600/actuator/loggers/io.atomix' -i -X POST -H 'Content-T
 ```
 
 Alternatively, you can execute the above command directly on the broker pod if `curl` command is available.
+
+## Ephemeral container for a debugging shell
+
+In case you need to make use of debug tooling on the actual pod it's recommended
+to make use of [ephemeral containers](https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/#uses-for-ephemeral-containers).
+
+To get a shell with a jdk on a node you can use the following command:
+
+> You need to replace `<broker-0>` with the pod name you want to profile below.
+>
+> ```sh
+> kubectl debug -it -c debugger --image=eclipse-temurin:17-jdk-focal --target=zeebe <broker-0> -- /bin/bash
+> ```
 
 ## Thread dump
 
@@ -146,30 +160,48 @@ JAVA_TOOL_OPTIONS=-XX:+PrintFlagsFinal -XX:+HeapDumpOnOutOfMemoryError -XX:MinRA
 
 ## async-profiler
 
-Run the profile script `profile.sh` in the following way to profile a node with async profiler.
+To run async profiling you would first have to download the async profiler preferably via an
+[ephemeral container](#ephemeral-container-for-a-debugging-shell) shell.
 
-> You can replace `broker-0` with whatever pod name you want to profile below.
-
-```sh
-kubectl exec -it broker-0 bash -- < profile.sh
-```
-
-To get the resulting flamegraph you have to copy it from the pod.
-Checkout the name of the generated file via.
+For profiling to work, the profiler lib `libasyncProfiler.so` needs to be accessible via the file system of the zeebe process though.
+In order to put it there you need to determine the pid of the zeebe jvm, in this example it is `8`.
 
 ```sh
-kubectl exec broker-0 ls /tmp/profiler/
+root@pod:# jps
+8 StandaloneBroker
+910 Jps
 ```
 
-Then you can copy it via:
+You can then setup the async-profiler with these commands:
 
-```sh
-kubectl cp broker-0:/tmp/profiler/flamegraph-2019-03-27_12-42-33.svg .
-```
+> You need to replace `<pid>` with the process id of the java process you want to profile
+>
+> ```sh
+> ln -s /proc/<pid>/root /zeebe-root && \
+> mkdir /async-profiler && curl -sSL https://github.com/jvm-profiling-tools/async-profiler/releases/download/v2.8.3/async-profiler-2.8.3-linux-x64.tar.gz | tar xzv -C /async-profiler --strip-components 1 && \
+> mkdir -p /zeebe-root/async-profiler/build && cp /async-profiler/build/libasyncProfiler.so /zeebe-root/async-profiler/build/libasyncProfiler.so
+> ```
+
+Run the profile script `profiler.sh` in the following way to profile a node with the async profiler for 30 seconds.
+For more options see [Profiler Options](https://github.com/jvm-profiling-tools/async-profiler#profiler-options).
+
+> You need to replace `<pid>` with the process id of the java process you want to profile
+>
+> ```sh
+> /async-profiler/profiler.sh -d 30 -f /tmp/flamegraph.html <pid>
+> ```
+
+To get the resulting flamegraph you have to copy it from the pod via:
+
+> You need to replace `<broker-0>` with the pod name you want to profile below.
+>
+> ```sh
+> kubectl cp <broker-0>:/tmp/flamegraph.html .
+> ```
 
 ## JMX Profiling
 
-To profile with `JConsole` or `VisualVM`, or any tool which uses JMX, [enable remote JMX](#remote_jmx).
+To profile with `JConsole` or `VisualVM`, or any tool which uses JMX, [enable remote JMX](#remote-jmx).
 
 Once done, you can port-forward the desired port's JMX port to your localhost, and use `JConsole` or `VisualVM` to monitor your JVM, get a thread dump, etc.
 
