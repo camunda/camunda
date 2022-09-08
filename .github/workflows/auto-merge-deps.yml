@@ -59,7 +59,6 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - run: gh pr review "${PR_ID}" --approve --comment -b "would merge this baby"
+      - run: gh pr review ${{ github.event.pull_request.number }} --approve -b "would merge this baby"
         env:
-          PR_ID: ${{github.event.pull_request.number}}
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
