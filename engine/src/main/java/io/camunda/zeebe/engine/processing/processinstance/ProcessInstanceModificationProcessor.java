@@ -78,7 +78,7 @@ public final class ProcessInstanceModificationProcessor
   private static final String ERROR_MESSAGE_VARIABLE_SCOPE_NOT_FLOW_SCOPE =
       """
       Expected to modify instance of process '%s' but it contains one or more variable instructions \
-      with a scope element that doesn't belong the element's flow scope: '%s'. \
+      with a scope element that doesn't belong to the element's flow scope: '%s'. \
       These variables should be set before or after the modification.""";
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =

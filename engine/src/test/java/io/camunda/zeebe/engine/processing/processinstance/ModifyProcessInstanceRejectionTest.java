@@ -300,7 +300,7 @@ public class ModifyProcessInstanceRejectionTest {
             String.format(
                 """
                 Expected to modify instance of process '%s' but it contains one or more variable instructions \
-                with a scope element that doesn't belong the element's flow scope: 'A', 'B'. \
+                with a scope element that doesn't belong to the element's flow scope: 'A', 'B'. \
                 These variables should be set before or after the modification.""",
                 PROCESS_ID));
   }
