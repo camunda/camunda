@@ -44,7 +44,7 @@ jobs:
     - id: await-tests
       uses: 'lewagon/wait-on-check-action@v1.1.2'
       with:
-        ref: ${{ github.sha }}
+        ref: ${{ github.event.pull_request.head.sha }}
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         wait-interval: 30
         check-regexp: '(Test summary)|(Java checks)|(Go linting)|(Docker checks)|(CodeQL)'
