@@ -44,26 +44,21 @@ jobs:
     - id: await-tests
       uses: 'lewagon/wait-on-check-action@v1.1.2'
       with:
-        ref: ${{ github.ref }}
+        ref: ${{ github.sha }}
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         wait-interval: 30
         check-regexp: '(Test summary)|(Java checks)|(Go linting)|(Docker checks)|(CodeQL)'
         allowed-conclusions: success,skipped
         verbose: true
 
-  dependabot:
+  merge:
     runs-on: ubuntu-latest
     needs:
       - await-checks
     permissions:
       contents: read
       pull-requests: write
-
     steps:
-      - id: metadata
-        uses: dependabot/fetch-metadata@v1.1.1
-        with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
       - run: gh pr review "${PR_ID}" --approve --comment -b "would merge this baby"
         env:
           PR_ID: ${{github.event.pull_request.number}}
