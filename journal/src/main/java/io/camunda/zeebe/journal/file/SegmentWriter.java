@@ -17,6 +17,7 @@
 package io.camunda.zeebe.journal.file;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
+import io.camunda.zeebe.journal.JournalException.InvalidASqn;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.JournalException.SegmentFull;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import io.camunda.zeebe.util.Either;
 import java.nio.BufferUnderflowException;
 import java.nio.MappedByteBuffer;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -81,17 +83,45 @@ final class SegmentWriter {
     }
   }
 
-  Either<SegmentFull, JournalRecord> append(final long asqn, final DirectBuffer data) {
-    // Store the entry index.
-    final long recordIndex = getNextIndex();
+  Either<SegmentFull, JournalRecord> append(final JournalRecord record) {
+    return append(record.index(), record.asqn(), record.data(), record.checksum());
+  }
 
-    // TODO: Should reject append if the asqn is not greater than the previous record
+  Either<SegmentFull, JournalRecord> append(final long asqn, final DirectBuffer data) {
+    return append(getNextIndex(), asqn, data, null);
+  }
+
+  private Either<SegmentFull, JournalRecord> append(
+      final Long entryIndex,
+      final long asqn,
+      final DirectBuffer data,
+      final Long expectedChecksum) {
+    final long nextIndex = getNextIndex();
+
+    // If the entry's index is not the expected next index in the segment, fail the append.
+    if (entryIndex != nextIndex) {
+      throw new InvalidIndex(
+          String.format(
+              "The record index is not sequential. Expected the next index to be %d, but the record to append has index %d",
+              nextIndex, entryIndex));
+    }
+
+    if (asqn != SegmentedJournal.ASQN_IGNORE
+        && Optional.ofNullable(lastEntry)
+            .map(JournalRecord::asqn)
+            .filter(lastAsqn -> asqn <= lastAsqn)
+            .isPresent()) {
+      throw new InvalidASqn(
+          String.format(
+              "The record asqn is not big enough. Expected the next asqn to be bigger than %d, but the record to append has %d",
+              lastEntry.asqn(), asqn));
+    }
 
     final int startPosition = buffer.position();
     final int frameLength = FrameUtil.getLength();
     final int metadataLength = serializer.getMetadataLength();
 
-    final RecordData indexedRecord = new RecordData(recordIndex, asqn, data);
+    final RecordData indexedRecord = new RecordData(entryIndex, asqn, data);
 
     final var writeResult =
         writeRecord(startPosition + frameLength + metadataLength, indexedRecord);
@@ -99,11 +129,20 @@ final class SegmentWriter {
       buffer.position(startPosition);
       return Either.left(writeResult.getLeft());
     }
+
     final int recordLength = writeResult.get();
 
     final long checksum =
         checksumGenerator.compute(
             buffer, startPosition + frameLength + metadataLength, recordLength);
+
+    if (expectedChecksum != null && expectedChecksum != checksum) {
+      buffer.position(startPosition);
+      throw new InvalidChecksum(
+          String.format(
+              "Failed to append record. Checksum %d does not match the expected %d.",
+              checksum, expectedChecksum));
+    }
 
     writeMetadata(startPosition, frameLength, recordLength, checksum);
     updateLastWrittenEntry(startPosition, frameLength, metadataLength);
@@ -111,49 +150,6 @@ final class SegmentWriter {
 
     buffer.position(startPosition + frameLength + metadataLength + recordLength);
     return Either.right(lastEntry);
-  }
-
-  Either<SegmentFull, Void> append(final JournalRecord record) {
-    final long nextIndex = getNextIndex();
-
-    // If the entry's index is not the expected next index in the segment, fail the append.
-    if (record.index() != nextIndex) {
-      throw new InvalidIndex(
-          String.format(
-              "The record index is not sequential. Expected the next index to be %d, but the record to append has index %d",
-              nextIndex, record.index()));
-    }
-
-    final int startPosition = buffer.position();
-    final int frameLength = FrameUtil.getLength();
-    final int metadataLength = serializer.getMetadataLength();
-
-    final RecordData indexedRecord = new RecordData(record.index(), record.asqn(), record.data());
-
-    final var writeResult =
-        writeRecord(startPosition + frameLength + metadataLength, indexedRecord);
-    if (writeResult.isLeft()) {
-      buffer.position(startPosition);
-      return Either.left(writeResult.getLeft());
-    }
-
-    final int recordLength = writeResult.get();
-    final long checksum =
-        checksumGenerator.compute(
-            buffer, startPosition + frameLength + metadataLength, recordLength);
-
-    if (record.checksum() != checksum) {
-      buffer.position(startPosition);
-      throw new InvalidChecksum(
-          String.format("Failed to append record %s. Checksum does not match", record));
-    }
-
-    writeMetadata(startPosition, frameLength, recordLength, checksum);
-    updateLastWrittenEntry(startPosition, frameLength, metadataLength);
-    FrameUtil.writeVersion(buffer, startPosition);
-
-    buffer.position(startPosition + frameLength + metadataLength + recordLength);
-    return Either.right(null);
   }
 
   private void updateLastWrittenEntry(

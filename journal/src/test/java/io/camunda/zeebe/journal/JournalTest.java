@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.journal;
 
+import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.journal.JournalException.InvalidASqn;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.file.LogCorrupter;
@@ -386,7 +388,7 @@ final class JournalTest {
             .withJournalIndexDensity(5)
             .build();
     journal.append(1, data);
-    final var record = journal.append(1, data);
+    final var record = journal.append(2, data);
 
     // when/then
     assertThatThrownBy(() -> receiverJournal.append(record)).isInstanceOf(InvalidIndex.class);
@@ -399,6 +401,25 @@ final class JournalTest {
 
     // when/then
     assertThatThrownBy(() -> journal.append(record)).isInstanceOf(InvalidIndex.class);
+  }
+
+  @Test
+  void shouldNotAppendRecordWithTooLowASqn() {
+    // given
+    journal.append(1, data);
+
+    // when/then
+    assertThatThrownBy(() -> journal.append(0, data)).isInstanceOf(InvalidASqn.class);
+    assertThatThrownBy(() -> journal.append(1, data)).isInstanceOf(InvalidASqn.class);
+  }
+
+  @Test
+  void shouldAppendRecordWithASqnToIgnore() {
+    // given
+    journal.append(1, data);
+
+    // when/then
+    journal.append(ASQN_IGNORE, data);
   }
 
   @Test
