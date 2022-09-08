@@ -33,8 +33,8 @@ jobs:
 
   await-checks:
     runs-on: ubuntu-latest
-    needs:
-      - metadata
+#    needs:
+#      - metadata
 #    if: ${{ jobs.metadata.outputs.update-type == 'version-update:semver-patch' }}
     permissions:
       contents: read
