@@ -54,9 +54,6 @@ public class SequenceFlowValidator implements ModelElementValidator<SequenceFlow
             out -> {
               if (gateway.getDefault() != element) {
                 validationResultCollector.addError(0, "Must have a condition");
-              } else {
-                validationResultCollector.addError(
-                    0, "Must have a condition even if it's marked as the default flow");
               }
             });
       }
