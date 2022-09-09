@@ -8,6 +8,7 @@
 package io.camunda.zeebe.journal.record;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
+import io.camunda.zeebe.journal.RecordDataWriter;
 import io.camunda.zeebe.journal.file.MessageHeaderDecoder;
 import io.camunda.zeebe.journal.file.MessageHeaderEncoder;
 import io.camunda.zeebe.journal.file.RecordDataDecoder;
@@ -32,24 +33,33 @@ public final class SBESerializer implements JournalRecordSerializer {
 
   @Override
   public Either<BufferOverflowException, Integer> writeData(
-      final RecordData record, final MutableDirectBuffer buffer, final int offset) {
-    if (offset + getSerializedLength(record) > buffer.capacity()) {
+      final long index,
+      final long asqn,
+      final RecordDataWriter recordDataWriter,
+      final MutableDirectBuffer writeBuffer,
+      final int offset) {
+    final int entryLength = recordDataWriter.getRecordLength();
+    final int serializedLength = getSerializedLength(entryLength);
+    if (offset + serializedLength > writeBuffer.capacity()) {
       return Either.left(new BufferOverflowException());
     }
 
     headerEncoder
-        .wrap(buffer, offset)
+        .wrap(writeBuffer, offset)
         .blockLength(recordEncoder.sbeBlockLength())
         .templateId(recordEncoder.sbeTemplateId())
         .schemaId(recordEncoder.sbeSchemaId())
         .version(recordEncoder.sbeSchemaVersion());
 
-    recordEncoder.wrap(buffer, offset + headerEncoder.encodedLength());
+    recordEncoder.wrap(writeBuffer, offset + headerEncoder.encodedLength());
 
-    recordEncoder
-        .index(record.index())
-        .asqn(record.asqn())
-        .putData(record.data(), 0, record.data().capacity());
+    recordEncoder.index(index).asqn(asqn);
+    final int headerLength = RecordDataEncoder.dataHeaderLength();
+    final int limit = recordEncoder.limit();
+    recordEncoder.limit(limit + headerLength + entryLength);
+    writeBuffer.putInt(limit, entryLength, java.nio.ByteOrder.LITTLE_ENDIAN);
+    recordDataWriter.write(writeBuffer, limit + headerLength);
+
     final var writtenBytes = headerEncoder.encodedLength() + recordEncoder.encodedLength();
     return Either.right(writtenBytes);
   }
@@ -121,10 +131,10 @@ public final class SBESerializer implements JournalRecordSerializer {
         && headerDecoder.templateId() == metadataDecoder.sbeTemplateId());
   }
 
-  private int getSerializedLength(final RecordData record) {
+  private int getSerializedLength(final int entryLength) {
     return headerEncoder.encodedLength()
         + recordEncoder.sbeBlockLength()
         + RecordDataEncoder.dataHeaderLength()
-        + record.data().capacity();
+        + entryLength;
   }
 }

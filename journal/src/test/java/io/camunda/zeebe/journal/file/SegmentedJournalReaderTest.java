@@ -18,6 +18,8 @@ package io.camunda.zeebe.journal.file;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.journal.JournalReader;
+import io.camunda.zeebe.journal.RecordDataWriter;
+import io.camunda.zeebe.journal.record.DirectCopyRecordDataWriter;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import java.nio.ByteBuffer;
@@ -35,7 +37,8 @@ class SegmentedJournalReaderTest {
 
   @TempDir Path directory;
 
-  private final DirectBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
+  private final UnsafeBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
+  private final RecordDataWriter recordDataWriter = new DirectCopyRecordDataWriter(data);
 
   private JournalReader reader;
   private SegmentedJournal journal;
@@ -58,7 +61,7 @@ class SegmentedJournalReaderTest {
   void shouldReadAfterCompact() {
     // given
     for (int i = 1; i <= ENTRIES_PER_SEGMENT * 5; i++) {
-      assertThat(journal.append(i, data).index()).isEqualTo(i);
+      assertThat(journal.append(i, recordDataWriter).index()).isEqualTo(i);
     }
     assertThat(reader.hasNext()).isTrue();
 
@@ -78,7 +81,7 @@ class SegmentedJournalReaderTest {
     long asqn = 1;
 
     for (int i = 1; i <= ENTRIES_PER_SEGMENT * 2; i++) {
-      journal.append(asqn++, data).index();
+      journal.append(asqn++, recordDataWriter).index();
     }
 
     for (int i = 1; i < ENTRIES_PER_SEGMENT * 2; i++) {
@@ -96,7 +99,7 @@ class SegmentedJournalReaderTest {
     // given
 
     for (int i = 1; i <= ENTRIES_PER_SEGMENT * 2; i++) {
-      journal.append(i, data).index();
+      journal.append(i, recordDataWriter).index();
     }
 
     for (int i = 1; i <= ENTRIES_PER_SEGMENT * 2; i++) {
@@ -112,7 +115,7 @@ class SegmentedJournalReaderTest {
   @Test
   void shouldNotReadWhenAccessingDeletedSegment() {
     // given
-    journal.append(data);
+    journal.append(recordDataWriter);
     final var reader = journal.openReader();
 
     // when
@@ -125,11 +128,11 @@ class SegmentedJournalReaderTest {
   @Test
   void shouldReadAfterReset() {
     // given
-    journal.append(data);
+    journal.append(recordDataWriter);
     final var reader = journal.openReader();
     final int resetIndex = 100;
     journal.reset(resetIndex);
-    journal.append(data);
+    journal.append(recordDataWriter);
 
     // when
     reader.seekToFirst();

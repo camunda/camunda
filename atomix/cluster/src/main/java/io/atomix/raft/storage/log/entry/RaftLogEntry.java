@@ -17,6 +17,7 @@
 package io.atomix.raft.storage.log.entry;
 
 import io.atomix.raft.storage.log.RaftLog;
+import java.util.Optional;
 
 /** Stores a state change in a {@link RaftLog}. */
 public record RaftLogEntry(long term, RaftEntry entry) {
@@ -42,5 +43,13 @@ public record RaftLogEntry(long term, RaftEntry entry) {
 
   public InitialEntry getInitialEntry() {
     return (InitialEntry) entry;
+  }
+
+  public Optional<Long> getLowestAsqn() {
+    if (isApplicationEntry()) {
+      return Optional.of(getApplicationEntry().lowestPosition());
+    } else {
+      return Optional.empty();
+    }
   }
 }

@@ -11,10 +11,10 @@ import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.journal.file.SegmentedJournal;
+import io.camunda.zeebe.journal.record.DirectCopyRecordDataWriter;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +24,8 @@ final class JournalReaderTest {
 
   private static final int ENTRIES = 4;
 
-  private final DirectBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
+  private final UnsafeBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
+  private final RecordDataWriter recordDataWriter = new DirectCopyRecordDataWriter(data);
   private JournalReader reader;
   private SegmentedJournal journal;
 
@@ -41,7 +42,7 @@ final class JournalReaderTest {
   void shouldSeek() {
     // given
     for (int i = 1; i <= ENTRIES; i++) {
-      journal.append(i, data).index();
+      journal.append(i, recordDataWriter).index();
     }
 
     // when
@@ -61,7 +62,7 @@ final class JournalReaderTest {
   void shouldSeekToFirst() {
     // given
     for (int i = 1; i <= ENTRIES; i++) {
-      journal.append(i, data).index();
+      journal.append(i, recordDataWriter).index();
     }
     reader.next(); // move reader before seekToFirst
     reader.next();
@@ -80,7 +81,7 @@ final class JournalReaderTest {
   void shouldSeekToLast() {
     // given
     for (int i = 1; i <= ENTRIES; i++) {
-      journal.append(i, data).index();
+      journal.append(i, recordDataWriter).index();
     }
 
     // when
@@ -98,7 +99,7 @@ final class JournalReaderTest {
   void shouldNotReadIfSeekIsHigherThanLast() {
     // given
     for (int i = 1; i <= ENTRIES; i++) {
-      journal.append(i, data).index();
+      journal.append(i, recordDataWriter).index();
     }
 
     // when
@@ -113,13 +114,13 @@ final class JournalReaderTest {
   void shouldReadAppendedDataAfterSeek() {
     // given
     for (int i = 0; i < ENTRIES; i++) {
-      journal.append(data).index();
+      journal.append(recordDataWriter).index();
     }
 
     // when
     final long nextIndex = reader.seek(99L);
     assertThat(reader.hasNext()).isFalse();
-    journal.append(data);
+    journal.append(recordDataWriter);
 
     // then
     assertThat(nextIndex).isEqualTo(journal.getLastIndex());
@@ -131,7 +132,7 @@ final class JournalReaderTest {
     // given that all records with index i will have an asqn of startAsqn + i
     final long startAsqn = 10;
     for (int i = 0; i < ENTRIES; i++) {
-      assertThat(journal.append(startAsqn + i, data)).isNotNull();
+      assertThat(journal.append(startAsqn + i, recordDataWriter)).isNotNull();
     }
     assertThat(reader.hasNext()).isTrue();
 
@@ -150,8 +151,8 @@ final class JournalReaderTest {
   @Test
   void shouldSeekToHighestAsqnLowerThanProvidedAsqn() {
     // given
-    final var expectedRecord = journal.append(1, data);
-    journal.append(5, data);
+    final var expectedRecord = journal.append(1, recordDataWriter);
+    journal.append(5, recordDataWriter);
 
     // when
     final long nextIndex = reader.seekToAsqn(4);
@@ -165,11 +166,11 @@ final class JournalReaderTest {
   @Test
   void shouldSeekToHighestAsqnWithinBoundIndex() {
     // given
-    final var firstIndex = journal.append(1, data).index();
-    final var secondIndex = journal.append(4, data).index();
-    final var thirdIndex = journal.append(data).index();
-    final var fourthIndex = journal.append(5, data).index();
-    journal.append(data).index();
+    final var firstIndex = journal.append(1, recordDataWriter).index();
+    final var secondIndex = journal.append(4, recordDataWriter).index();
+    final var thirdIndex = journal.append(recordDataWriter).index();
+    final var fourthIndex = journal.append(5, recordDataWriter).index();
+    journal.append(recordDataWriter).index();
 
     // when - then
     assertThat(reader.seekToAsqn(5, firstIndex)).isEqualTo(firstIndex);
@@ -191,8 +192,8 @@ final class JournalReaderTest {
   @Test
   void shouldSeekToLastAsqn() {
     // given
-    final var expectedRecord = journal.append(5, data);
-    journal.append(data);
+    final var expectedRecord = journal.append(5, recordDataWriter);
+    journal.append(recordDataWriter);
 
     // when - then
     assertThat(reader.seekToAsqn(Long.MAX_VALUE)).isEqualTo(expectedRecord.index());
@@ -202,9 +203,9 @@ final class JournalReaderTest {
   @Test
   void shouldSeekToHighestLowerAsqnSkippingRecordsWithNoAsqn() {
     // given
-    final var expectedRecord = journal.append(1, data);
-    journal.append(data);
-    journal.append(5, data);
+    final var expectedRecord = journal.append(1, recordDataWriter);
+    journal.append(recordDataWriter);
+    journal.append(5, recordDataWriter);
 
     // when
     final long nextIndex = reader.seekToAsqn(3);
@@ -218,8 +219,8 @@ final class JournalReaderTest {
   @Test
   void shouldSeekToFirstWhenAllAsqnIsHigher() {
     // given
-    final var expectedRecord = journal.append(data);
-    journal.append(5, data);
+    final var expectedRecord = journal.append(recordDataWriter);
+    journal.append(5, recordDataWriter);
 
     // when
     final long nextIndex = reader.seekToAsqn(1);
@@ -235,7 +236,7 @@ final class JournalReaderTest {
   void shouldSeekToFirstIfLowerThanFirst() {
     // given
     for (int i = 1; i <= ENTRIES; i++) {
-      journal.append(i, data).index();
+      journal.append(i, recordDataWriter).index();
     }
 
     // when
@@ -255,7 +256,7 @@ final class JournalReaderTest {
     // given
     long lastIndex = -1;
     for (int i = 1; i <= ENTRIES; i++) {
-      lastIndex = journal.append(i, data).index();
+      lastIndex = journal.append(i, recordDataWriter).index();
     }
 
     // when
@@ -272,9 +273,9 @@ final class JournalReaderTest {
   @Test
   void shouldSeekAfterCompact() {
     // given
-    journal.append(1, data).index();
-    journal.append(2, data).index();
-    journal.append(3, data).index();
+    journal.append(1, recordDataWriter).index();
+    journal.append(2, recordDataWriter).index();
+    journal.append(3, recordDataWriter).index();
 
     // when
     journal.deleteUntil(3);
@@ -294,7 +295,7 @@ final class JournalReaderTest {
     long asqn = 1;
     JournalRecord lastRecordWritten = null;
     for (int i = 1; i <= ENTRIES; i++) {
-      final JournalRecord record = journal.append(asqn++, data);
+      final JournalRecord record = journal.append(asqn++, recordDataWriter);
       assertThat(record.index()).isEqualTo(i);
       lastRecordWritten = record;
     }
@@ -332,7 +333,7 @@ final class JournalReaderTest {
   void shouldSeekToFirstWhenNoRecordsWithValidAsqnExists() {
     // given
     for (int i = 0; i < ENTRIES; i++) {
-      journal.append(data);
+      journal.append(recordDataWriter);
     }
 
     // when

@@ -38,6 +38,20 @@ public class RaftEntrySBESerializerTest {
   final MutableDirectBuffer buffer = new ExpandableArrayBuffer();
 
   @Test
+  public void shouldCalculateActualApplicationEntrySize() {
+    // given
+    final byte[] data = "Test".getBytes();
+    final ApplicationEntry applicationEntry = new ApplicationEntry(1, 2, new UnsafeBuffer(data));
+
+    // when
+    final int writtenBytes = serializer.writeApplicationEntry(5, applicationEntry, buffer, 0);
+
+    // then
+    assertThat(serializer.getApplicationEntrySerializedLength(applicationEntry))
+        .isEqualTo(writtenBytes);
+  }
+
+  @Test
   public void shouldWriteApplicationEntry() {
     // given
     final byte[] data = "Test".getBytes();
@@ -82,6 +96,18 @@ public class RaftEntrySBESerializerTest {
   }
 
   @Test
+  public void shouldCalculateActualInitialEntrySize() {
+    // given
+    final InitialEntry initialEntry = new InitialEntry();
+
+    // when
+    final int writtenBytes = serializer.writeInitialEntry(5, initialEntry, buffer, 0);
+
+    // then
+    assertThat(serializer.getInitialEntrySerializedLength()).isEqualTo(writtenBytes);
+  }
+
+  @Test
   public void shouldWriteInitialEntry() {
     // given
     final InitialEntry initialEntryWritten = new InitialEntry();
@@ -109,6 +135,27 @@ public class RaftEntrySBESerializerTest {
 
     assertThat(raftLogEntryRead.isInitialEntry()).isTrue();
     assertThat(raftLogEntryExpected).isEqualTo(raftLogEntryRead);
+  }
+
+  @Test
+  public void shouldCalculateActualConfigurationEntrySize() {
+    // given
+    final Set<RaftMember> members =
+        Set.of(
+            new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.ofEpochMilli(123456L)),
+            new DefaultRaftMember(
+                MemberId.from("222"), Type.PASSIVE, Instant.ofEpochMilli(123457L)),
+            new DefaultRaftMember(MemberId.from(""), Type.PASSIVE, Instant.ofEpochMilli(123457L)),
+            new DefaultRaftMember(
+                MemberId.from("hello1"), Type.PROMOTABLE, Instant.ofEpochMilli(123458L)));
+    final ConfigurationEntry configurationEntry = new ConfigurationEntry(1234L, members);
+
+    // when
+    final int writtenBytes = serializer.writeConfigurationEntry(5, configurationEntry, buffer, 0);
+
+    // then
+    assertThat(serializer.getConfigurationEntrySerializedLength(configurationEntry))
+        .isEqualTo(writtenBytes);
   }
 
   @Test

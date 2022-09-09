@@ -17,30 +17,30 @@ package io.camunda.zeebe.journal;
 
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
-import org.agrona.DirectBuffer;
 
 public interface Journal extends AutoCloseable {
 
   /**
-   * Appends a new {@link JournalRecord} that contains the given data. asqn refers to Application
-   * Sequence Number. It is a sequence number provided by the application. The given asqn must be
-   * positive and, it must be greater than the asqn of the previous record.
+   * Appends a new {@link JournalRecord} that contains the data to be written by the
+   * recordDataWriter. Use this for records that do not have a specific applicationSqNum. Examples
+   * for such record is raft record that indicates a leader change.
    *
-   * @param asqn A sequence number provided by the application.
-   * @param data The data to be appended
+   * @param recordDataWriter a writer that outputs the data of the record
    * @return the journal record that was appended
    */
-  JournalRecord append(long asqn, DirectBuffer data);
+  JournalRecord append(RecordDataWriter recordDataWriter);
 
   /**
-   * Appends a new {@link JournalRecord} that contains the given data. The asqn of this record could
-   * not be used to seek. Use this for records that do not have a specific applicationSqNum.
-   * Examples for such record is raft record that indicates a leader change.
+   * Appends a new {@link JournalRecord} that contains the data to be written by the
+   * recordDataWriter. asqn refers to Application Sequence Number. It is a sequence number provided
+   * by the application. The given asqn must be positive and, it must be greater than the asqn of
+   * the previous record.
    *
-   * @param data The data to be appended
+   * @param asqn A sequence number provided by the application.
+   * @param recordDataWriter a writer that outputs the data of the record
    * @return the journal record that was appended
    */
-  JournalRecord append(DirectBuffer data);
+  JournalRecord append(long asqn, RecordDataWriter recordDataWriter);
 
   /**
    * Appends a {@link JournalRecord}. If the index of the record is not the next expected index, the
@@ -71,7 +71,7 @@ public interface Journal extends AutoCloseable {
 
   /**
    * Delete all records in the journal and reset the next index to nextIndex. The following calls to
-   * {@link Journal#append(long, DirectBuffer)} will append at index nextIndex.
+   * {@link Journal#append(long, RecordDataWriter)} will append at index nextIndex.
    *
    * <p>After this operation, all readers must be reset explicitly. The readers that are not reset
    * will return false for {@link JournalReader#hasNext()}, cannot read any record.

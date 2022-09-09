@@ -24,17 +24,17 @@ import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.JournalException.SegmentFull;
 import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.RecordDataWriter;
+import io.camunda.zeebe.journal.record.DirectCopyRecordDataWriter;
 import io.camunda.zeebe.journal.record.JournalRecordReaderUtil;
 import io.camunda.zeebe.journal.record.JournalRecordSerializer;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
-import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.RecordMetadata;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import io.camunda.zeebe.util.Either;
 import java.nio.BufferUnderflowException;
 import java.nio.MappedByteBuffer;
-import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -94,17 +94,22 @@ final class SegmentWriter {
   }
 
   Either<SegmentFull, JournalRecord> append(final JournalRecord record) {
-    return append(record.index(), record.asqn(), record.data(), record.checksum());
+    return append(
+        record.index(),
+        record.asqn(),
+        new DirectCopyRecordDataWriter(record.data()),
+        record.checksum());
   }
 
-  Either<SegmentFull, JournalRecord> append(final long asqn, final DirectBuffer data) {
-    return append(getNextIndex(), asqn, data, null);
+  Either<SegmentFull, JournalRecord> append(
+      final long asqn, final RecordDataWriter recordDataWriter) {
+    return append(getNextIndex(), asqn, recordDataWriter, null);
   }
 
   private Either<SegmentFull, JournalRecord> append(
       final Long entryIndex,
       final long asqn,
-      final DirectBuffer data,
+      final RecordDataWriter recordDataWriter,
       final Long expectedChecksum) {
     final long nextIndex = getNextIndex();
 
@@ -127,10 +132,9 @@ final class SegmentWriter {
     final int frameLength = FrameUtil.getLength();
     final int metadataLength = serializer.getMetadataLength();
 
-    final RecordData indexedRecord = new RecordData(entryIndex, asqn, data);
-
     final var writeResult =
-        writeRecord(startPosition + frameLength + metadataLength, indexedRecord);
+        writeRecord(
+            getNextIndex(), asqn, startPosition + frameLength + metadataLength, recordDataWriter);
     if (writeResult.isLeft()) {
       buffer.position(startPosition);
       return Either.left(writeResult.getLeft());
@@ -178,8 +182,12 @@ final class SegmentWriter {
   }
 
   private Either<SegmentFull, Integer> writeRecord(
-      final int offset, final RecordData indexedRecord) {
-    final var recordLength = serializer.writeData(indexedRecord, writeBuffer, offset);
+      final long index,
+      final long asqn,
+      final int offset,
+      final RecordDataWriter recordDataWriter) {
+    final var recordLength =
+        serializer.writeData(index, asqn, recordDataWriter, writeBuffer, offset);
     if (recordLength.isLeft()) {
       return Either.left(new SegmentFull("Not enough space to write record"));
     }

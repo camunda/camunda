@@ -18,11 +18,57 @@ package io.atomix.raft.storage.serializer;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
+import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.camunda.zeebe.journal.RecordDataWriter;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 public interface RaftEntrySerializer {
+
+  default RecordDataWriter createRecordDataWriter(final long term, final RaftEntry entry) {
+    if (entry instanceof final ApplicationEntry applicationEntry) {
+      return new FunctionalRecordDataWriter(
+          () -> getApplicationEntrySerializedLength(applicationEntry),
+          (buffer, offset) -> writeApplicationEntry(term, applicationEntry, buffer, offset));
+    } else if (entry instanceof final ConfigurationEntry configurationEntry) {
+      return new FunctionalRecordDataWriter(
+          () -> getConfigurationEntrySerializedLength(configurationEntry),
+          (buffer, offset) -> writeConfigurationEntry(term, configurationEntry, buffer, offset));
+    } else if (entry instanceof final InitialEntry initialEntry) {
+      return new FunctionalRecordDataWriter(
+          this::getInitialEntrySerializedLength,
+          (buffer, offset) -> writeInitialEntry(term, initialEntry, buffer, offset));
+    } else {
+      throw new IllegalArgumentException(
+          String.format("Unsupported raft entry type: %s.", entry.getClass()));
+    }
+  }
+
+  /**
+   * Determines the length in bytes of a serialized application entry.
+   *
+   * @param entry to determine the length in bytes for
+   * @return the length in bytes when the entry gets serialized
+   */
+  int getApplicationEntrySerializedLength(ApplicationEntry entry);
+
+  /**
+   * Determines the length in bytes of a serialized initial entry.
+   *
+   * @return the length in bytes of a serialized initial entry
+   */
+  int getInitialEntrySerializedLength();
+
+  /**
+   * Determines the length in bytes of a serialized configuration entry.
+   *
+   * @param entry to determine the length in bytes for
+   * @return the length in bytes when the entry gets serialized
+   */
+  int getConfigurationEntrySerializedLength(ConfigurationEntry entry);
 
   /**
    * Writes the term and entry into given buffer at the given offset
@@ -51,7 +97,7 @@ public interface RaftEntrySerializer {
    * Writes the term and entry into given buffer at the given offset
    *
    * @param term the term of the entry
-   * @param entry the ApplicationEntry to write
+   * @param entry the ConfigurationEntry to write
    * @param buffer the buffer to write to
    * @param offset the offset in the buffer at which the term and entry will be written
    * @return the number of bytes written
@@ -62,8 +108,30 @@ public interface RaftEntrySerializer {
   /**
    * Read the raft log entry from the buffer
    *
-   * @param buffer
+   * @param buffer to read the raft log entry from
    * @return RaftLogEntry
    */
   RaftLogEntry readRaftLogEntry(DirectBuffer buffer);
+
+  class FunctionalRecordDataWriter implements RecordDataWriter {
+    private final Supplier<Integer> getRecordLengthFunction;
+    private final BiFunction<MutableDirectBuffer, Integer, Integer> writeFunction;
+
+    public FunctionalRecordDataWriter(
+        final Supplier<Integer> getRecordLengthFunction,
+        final BiFunction<MutableDirectBuffer, Integer, Integer> writeFunction) {
+      this.getRecordLengthFunction = getRecordLengthFunction;
+      this.writeFunction = writeFunction;
+    }
+
+    @Override
+    public int getRecordLength() {
+      return getRecordLengthFunction.get();
+    }
+
+    @Override
+    public int write(final MutableDirectBuffer writeBuffer, final int offset) {
+      return writeFunction.apply(writeBuffer, offset);
+    }
+  }
 }

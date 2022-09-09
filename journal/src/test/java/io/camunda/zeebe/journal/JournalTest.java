@@ -17,6 +17,7 @@ import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.file.LogCorrupter;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
+import io.camunda.zeebe.journal.record.DirectCopyRecordDataWriter;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.RecordMetadata;
@@ -40,8 +41,11 @@ final class JournalTest {
   @TempDir Path directory;
 
   private byte[] entry;
-  private final DirectBuffer data = new UnsafeBuffer();
+  private final UnsafeBuffer data = new UnsafeBuffer();
+  private final RecordDataWriter recordDataWriter = new DirectCopyRecordDataWriter(data);
   private final DirectBuffer dataOther = new UnsafeBuffer();
+  private final DirectCopyRecordDataWriter otherRecordDataWriter =
+      new DirectCopyRecordDataWriter(dataOther);
   private Journal journal;
 
   @BeforeEach
@@ -64,7 +68,7 @@ final class JournalTest {
   @Test
   void shouldNotBeEmpty() {
     // given
-    journal.append(1, data);
+    journal.append(1, recordDataWriter);
 
     // when-then
     assertThat(journal.isEmpty()).isFalse();
@@ -73,7 +77,7 @@ final class JournalTest {
   @Test
   void shouldAppendData() {
     // when
-    final var recordAppended = journal.append(1, data);
+    final var recordAppended = journal.append(1, recordDataWriter);
 
     // then
     assertThat(recordAppended.index()).isEqualTo(1);
@@ -83,7 +87,7 @@ final class JournalTest {
   @Test
   void shouldReadRecord() {
     // given
-    final var recordAppended = journal.append(1, data);
+    final var recordAppended = journal.append(1, recordDataWriter);
 
     // when
     final var reader = journal.openReader();
@@ -96,8 +100,8 @@ final class JournalTest {
   @Test
   void shouldAppendMultipleData() {
     // when
-    final var firstRecord = journal.append(10, data);
-    final var secondRecord = journal.append(20, dataOther);
+    final var firstRecord = journal.append(10, recordDataWriter);
+    final var secondRecord = journal.append(20, otherRecordDataWriter);
 
     // then
     assertThat(firstRecord.index()).isEqualTo(1);
@@ -110,8 +114,8 @@ final class JournalTest {
   @Test
   void shouldReadMultipleRecord() {
     // given
-    final var firstRecord = journal.append(1, data);
-    final var secondRecord = journal.append(20, dataOther);
+    final var firstRecord = journal.append(1, recordDataWriter);
+    final var secondRecord = journal.append(20, otherRecordDataWriter);
 
     // when
     final var reader = journal.openReader();
@@ -127,7 +131,7 @@ final class JournalTest {
   void shouldAppendAndReadMultipleRecordsInOrder() {
     // when
     for (int i = 0; i < 10; i++) {
-      final var recordAppended = journal.append(i + 10, data);
+      final var recordAppended = journal.append(i + 10, recordDataWriter);
       assertThat(recordAppended.index()).isEqualTo(i + 1);
     }
 
@@ -153,7 +157,7 @@ final class JournalTest {
       data.wrap(entry);
 
       // when
-      final var recordAppended = journal.append(i + 10, data);
+      final var recordAppended = journal.append(i + 10, recordDataWriter);
       assertThat(recordAppended.index()).isEqualTo(i + 1);
 
       // then
@@ -172,8 +176,8 @@ final class JournalTest {
     // given
     long asqn = 1;
     assertThat(journal.getLastIndex()).isEqualTo(0);
-    journal.append(asqn++, data);
-    journal.append(asqn++, data);
+    journal.append(asqn++, recordDataWriter);
+    journal.append(asqn++, recordDataWriter);
 
     // when
     journal.reset(2);
@@ -181,7 +185,7 @@ final class JournalTest {
     // then
     assertThat(journal.isEmpty()).isTrue();
     assertThat(journal.getLastIndex()).isEqualTo(1);
-    final var record = journal.append(asqn, data);
+    final var record = journal.append(asqn, recordDataWriter);
     assertThat(record.index()).isEqualTo(2);
   }
 
@@ -191,14 +195,14 @@ final class JournalTest {
     final var reader = journal.openReader();
     long asqn = 1;
     assertThat(journal.getLastIndex()).isEqualTo(0);
-    journal.append(asqn++, data);
-    journal.append(asqn++, data);
+    journal.append(asqn++, recordDataWriter);
+    journal.append(asqn++, recordDataWriter);
     final var record1 = reader.next();
     assertThat(record1.index()).isEqualTo(1);
 
     // when
     journal.reset(2);
-    journal.append(asqn, data);
+    journal.append(asqn, recordDataWriter);
 
     // then
     assertThat(reader.hasNext()).isFalse();
@@ -209,9 +213,9 @@ final class JournalTest {
     // given
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
-    journal.append(1, data);
-    journal.append(2, data);
-    journal.append(3, data);
+    journal.append(1, recordDataWriter);
+    journal.append(2, recordDataWriter);
+    journal.append(3, recordDataWriter);
     final var record1 = reader.next();
     assertThat(record1.index()).isEqualTo(1);
 
@@ -220,7 +224,7 @@ final class JournalTest {
 
     // then
     assertThat(journal.getLastIndex()).isEqualTo(1);
-    final var record = journal.append(4, data);
+    final var record = journal.append(4, recordDataWriter);
     assertThat(record.index()).isEqualTo(2);
     assertThat(record.asqn()).isEqualTo(4);
     assertThat(reader.hasNext()).isTrue();
@@ -234,9 +238,9 @@ final class JournalTest {
     // given
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
-    journal.append(1, data);
-    journal.append(2, data);
-    journal.append(3, data);
+    journal.append(1, recordDataWriter);
+    journal.append(2, recordDataWriter);
+    journal.append(3, recordDataWriter);
     final var record1 = reader.next();
     assertThat(record1.index()).isEqualTo(1);
 
@@ -260,7 +264,7 @@ final class JournalTest {
 
     int writerIndex;
     for (writerIndex = 1; writerIndex <= totalWrites; writerIndex++) {
-      final var record = journal.append(asqn++, data);
+      final var record = journal.append(asqn++, recordDataWriter);
       assertThat(record.index()).isEqualTo(writerIndex);
       written.put(writerIndex, record);
     }
@@ -276,7 +280,7 @@ final class JournalTest {
     journal.deleteAfter(truncateIndex);
 
     for (writerIndex = truncateIndex + 1; writerIndex <= totalWrites; writerIndex++) {
-      final var record = journal.append(asqn++, data);
+      final var record = journal.append(asqn++, recordDataWriter);
       assertThat(record.index()).isEqualTo(writerIndex);
       written.put(writerIndex, record);
     }
@@ -294,9 +298,9 @@ final class JournalTest {
     // given
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
-    journal.append(1, data);
-    journal.append(2, data);
-    journal.append(3, data);
+    journal.append(1, recordDataWriter);
+    journal.append(2, recordDataWriter);
+    journal.append(3, recordDataWriter);
     reader.next();
     reader.next();
     assertThat(reader.hasNext()).isTrue();
@@ -314,9 +318,9 @@ final class JournalTest {
     // given
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
-    journal.append(1, data);
-    journal.append(2, data);
-    journal.append(3, data);
+    journal.append(1, recordDataWriter);
+    journal.append(2, recordDataWriter);
+    journal.append(3, recordDataWriter);
     reader.next();
     reader.next();
     assertThat(reader.hasNext()).isTrue();
@@ -334,9 +338,9 @@ final class JournalTest {
     // given
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
-    journal.append(1, data);
-    journal.append(2, data);
-    journal.append(3, data);
+    journal.append(1, recordDataWriter);
+    journal.append(2, recordDataWriter);
+    journal.append(3, recordDataWriter);
     reader.next();
     assertThat(reader.hasNext()).isTrue();
 
@@ -357,7 +361,7 @@ final class JournalTest {
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .build();
-    final var expected = journal.append(10, data);
+    final var expected = journal.append(10, recordDataWriter);
 
     // when
     receiverJournal.append(expected);
@@ -372,8 +376,8 @@ final class JournalTest {
   @Test
   void shouldNotAppendRecordWithAlreadyAppendedIndex() {
     // given
-    final var record = journal.append(1, data);
-    journal.append(data);
+    final var record = journal.append(1, recordDataWriter);
+    journal.append(recordDataWriter);
 
     // when/then
     assertThatThrownBy(() -> journal.append(record)).isInstanceOf(InvalidIndex.class);
@@ -387,8 +391,8 @@ final class JournalTest {
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .build();
-    journal.append(1, data);
-    final var record = journal.append(2, data);
+    journal.append(1, recordDataWriter);
+    final var record = journal.append(2, recordDataWriter);
 
     // when/then
     assertThatThrownBy(() -> receiverJournal.append(record)).isInstanceOf(InvalidIndex.class);
@@ -397,7 +401,7 @@ final class JournalTest {
   @Test
   void shouldNotAppendLastRecord() {
     // given
-    final var record = journal.append(1, data);
+    final var record = journal.append(1, recordDataWriter);
 
     // when/then
     assertThatThrownBy(() -> journal.append(record)).isInstanceOf(InvalidIndex.class);
@@ -406,10 +410,10 @@ final class JournalTest {
   @Test
   void shouldAppendRecordWithASqnToIgnore() {
     // given
-    journal.append(1, data);
+    journal.append(1, recordDataWriter);
 
     // when/then
-    journal.append(ASQN_IGNORE, data);
+    journal.append(ASQN_IGNORE, recordDataWriter);
   }
 
   @Test
@@ -420,7 +424,7 @@ final class JournalTest {
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
             .build();
-    final var record = journal.append(1, data);
+    final var record = journal.append(1, recordDataWriter);
 
     // when
     final var invalidChecksumRecord =
@@ -434,31 +438,31 @@ final class JournalTest {
   @Test
   void shouldNotAppendRecordWithTooLowASqn() {
     // given
-    journal.append(1, data);
+    journal.append(1, recordDataWriter);
 
     // when/then
-    assertThatThrownBy(() -> journal.append(0, data)).isInstanceOf(InvalidASqn.class);
-    assertThatThrownBy(() -> journal.append(1, data)).isInstanceOf(InvalidASqn.class);
+    assertThatThrownBy(() -> journal.append(0, recordDataWriter)).isInstanceOf(InvalidASqn.class);
+    assertThatThrownBy(() -> journal.append(1, recordDataWriter)).isInstanceOf(InvalidASqn.class);
   }
 
   @Test
   void shouldNotAppendRecordWithTooLowASqnIfPreviousRecordIsIgnoreASqn() {
     // given
-    journal.append(1, data);
+    journal.append(1, recordDataWriter);
 
     // when
-    journal.append(ASQN_IGNORE, data);
+    journal.append(ASQN_IGNORE, recordDataWriter);
 
     // then
-    assertThatThrownBy(() -> journal.append(0, data)).isInstanceOf(InvalidASqn.class);
-    assertThatThrownBy(() -> journal.append(1, data)).isInstanceOf(InvalidASqn.class);
+    assertThatThrownBy(() -> journal.append(0, recordDataWriter)).isInstanceOf(InvalidASqn.class);
+    assertThatThrownBy(() -> journal.append(1, recordDataWriter)).isInstanceOf(InvalidASqn.class);
   }
 
   @Test
   void shouldReturnFirstIndex() {
     // when
-    final long firstIndex = journal.append(data).index();
-    journal.append(data);
+    final long firstIndex = journal.append(recordDataWriter).index();
+    journal.append(recordDataWriter);
 
     // then
     assertThat(journal.getFirstIndex()).isEqualTo(firstIndex);
@@ -467,8 +471,8 @@ final class JournalTest {
   @Test
   void shouldReturnLastIndex() {
     // when
-    journal.append(data);
-    final long lastIndex = journal.append(data).index();
+    journal.append(recordDataWriter);
+    final long lastIndex = journal.append(recordDataWriter).index();
 
     // then
     assertThat(journal.getLastIndex()).isEqualTo(lastIndex);
@@ -485,8 +489,8 @@ final class JournalTest {
   @Test
   void shouldReopenJournalWithExistingRecords() throws Exception {
     // given
-    journal.append(data);
-    journal.append(data);
+    journal.append(recordDataWriter);
+    journal.append(recordDataWriter);
     final long lastIndexBeforeClose = journal.getLastIndex();
     assertThat(lastIndexBeforeClose).isEqualTo(2);
     journal.close();
@@ -502,7 +506,7 @@ final class JournalTest {
   @Test
   void shouldReadReopenedJournal() throws Exception {
     // given
-    final var appendedRecord = copyRecord(journal.append(data));
+    final var appendedRecord = copyRecord(journal.append(recordDataWriter));
     journal.close();
 
     // when
@@ -518,12 +522,12 @@ final class JournalTest {
   @Test
   void shouldWriteToReopenedJournalAtNextIndex() throws Exception {
     // given
-    final var firstRecord = copyRecord(journal.append(data));
+    final var firstRecord = copyRecord(journal.append(recordDataWriter));
     journal.close();
 
     // when
     journal = openJournal();
-    final var secondRecord = journal.append(data);
+    final var secondRecord = journal.append(recordDataWriter);
 
     // then
     assertThat(secondRecord.index()).isEqualTo(2);
@@ -540,13 +544,13 @@ final class JournalTest {
   @Test
   void shouldNotReadDeletedEntries() {
     // given
-    final var firstRecord = journal.append(data);
-    journal.append(data);
-    journal.append(data);
+    final var firstRecord = journal.append(recordDataWriter);
+    journal.append(recordDataWriter);
+    journal.append(recordDataWriter);
 
     // when
     journal.deleteAfter(firstRecord.index());
-    final var newSecondRecord = journal.append(data);
+    final var newSecondRecord = journal.append(recordDataWriter);
 
     // then
     final JournalReader reader = journal.openReader();
@@ -565,15 +569,15 @@ final class JournalTest {
   void shouldInvalidateAllEntries() throws Exception {
     // given
     data.wrap("000".getBytes(StandardCharsets.UTF_8));
-    final var firstRecord = copyRecord(journal.append(data));
+    final var firstRecord = copyRecord(journal.append(recordDataWriter));
 
-    journal.append(data);
-    journal.append(data);
+    journal.append(recordDataWriter);
+    journal.append(recordDataWriter);
 
     // when
     journal.deleteAfter(firstRecord.index());
     data.wrap("111".getBytes(StandardCharsets.UTF_8));
-    final var secondRecord = copyRecord(journal.append(data));
+    final var secondRecord = copyRecord(journal.append(recordDataWriter));
 
     journal.close();
     journal = openJournal();
@@ -589,8 +593,8 @@ final class JournalTest {
   void shouldDetectCorruptedEntry() throws Exception {
     // given
     data.wrap("000".getBytes(StandardCharsets.UTF_8));
-    journal.append(data);
-    final var secondRecord = copyRecord(journal.append(data));
+    journal.append(recordDataWriter);
+    final var secondRecord = copyRecord(journal.append(recordDataWriter));
     final File dataFile = Objects.requireNonNull(directory.toFile().listFiles())[0];
     final File log = Objects.requireNonNull(dataFile.listFiles())[0];
 
@@ -608,8 +612,8 @@ final class JournalTest {
   void shouldDeletePartiallyWrittenEntry() throws Exception {
     // given
     data.wrap("000".getBytes(StandardCharsets.UTF_8));
-    final var firstRecord = copyRecord(journal.append(data));
-    final var secondRecord = copyRecord(journal.append(data));
+    final var firstRecord = copyRecord(journal.append(recordDataWriter));
+    final var secondRecord = copyRecord(journal.append(recordDataWriter));
     final File dataFile = Objects.requireNonNull(directory.toFile().listFiles())[0];
     final File log = Objects.requireNonNull(dataFile.listFiles())[0];
 
@@ -618,7 +622,7 @@ final class JournalTest {
     assertThat(LogCorrupter.corruptRecord(log, secondRecord.index())).isTrue();
     journal = openJournal(b -> b.withLastWrittenIndex(firstRecord.index()));
     data.wrap("111".getBytes(StandardCharsets.UTF_8));
-    final var lastRecord = journal.append(data);
+    final var lastRecord = journal.append(recordDataWriter);
     final var reader = journal.openReader();
 
     // then

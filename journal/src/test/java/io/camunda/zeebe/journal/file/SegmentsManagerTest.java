@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
+import io.camunda.zeebe.journal.RecordDataWriter;
+import io.camunda.zeebe.journal.record.DirectCopyRecordDataWriter;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import java.io.File;
@@ -30,7 +32,8 @@ class SegmentsManagerTest {
 
   @TempDir Path directory;
   private final int journalIndexDensity = 1;
-  private final DirectBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
+  private final UnsafeBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
+  private final RecordDataWriter recordDataWriter = new DirectCopyRecordDataWriter(data);
   private final int entrySize = getSerializedSize(data);
 
   @Test
@@ -58,7 +61,7 @@ class SegmentsManagerTest {
   void shouldDetectCorruptionAtDescriptorWithAckedEntries() throws Exception {
     // given
     final var journal = openJournal(1);
-    final long index = journal.append(data).index();
+    final long index = journal.append(recordDataWriter).index();
 
     journal.close();
     final File dataFile = directory.resolve("data").toFile();
@@ -75,8 +78,8 @@ class SegmentsManagerTest {
   void shouldNotThrowExceptionWhenCorruptionAtNotAckEntries() throws Exception {
     // given
     final var journal = openJournal(1);
-    final var index = journal.append(data).index();
-    journal.append(data);
+    final var index = journal.append(recordDataWriter).index();
+    journal.append(recordDataWriter);
 
     journal.close();
     final File dataFile = directory.resolve("data").toFile();
