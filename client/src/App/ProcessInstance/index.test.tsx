@@ -29,6 +29,12 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {IS_MODIFICATION_MODE_ENABLED} from 'modules/feature-flags';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {variablesStore} from 'modules/stores/variables';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
+import {incidentsStore} from 'modules/stores/incidents';
+import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -49,6 +55,15 @@ type Props = {
 };
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
+
+const clearPollingStates = () => {
+  variablesStore.isPollRequestRunning = false;
+  sequenceFlowsStore.isPollRequestRunning = false;
+  processInstanceDetailsStore.isPollRequestRunning = false;
+  incidentsStore.isPollRequestRunning = false;
+  flowNodeStatesStore.isPollRequestRunning = false;
+  flowNodeInstanceStore.isPollRequestRunning = false;
+};
 
 function getWrapper(initialPath: string = '/processes/4294980768') {
   const Wrapper: React.FC<Props> = ({children}) => {
@@ -100,6 +115,13 @@ describe('Instance', () => {
               hasActiveOperation: false,
             },
           ])
+        )
+      ),
+      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
+        res(
+          ctx.json({
+            count: 2,
+          })
         )
       )
     );
@@ -527,6 +549,193 @@ describe('Instance', () => {
       ).not.toBeInTheDocument();
       expect(await screen.findByTestId('badge-minus-icon')).toBeInTheDocument();
       expect(screen.getByTestId('badge-plus-icon')).toBeInTheDocument();
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    }
+  );
+
+  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
+    'should stop polling during the modification mode',
+    async () => {
+      jest.useFakeTimers();
+
+      const handlePollingVariablesSpy = jest.spyOn(
+        variablesStore,
+        'handlePolling'
+      );
+      const handlePollingSequenceFlowsSpy = jest.spyOn(
+        sequenceFlowsStore,
+        'handlePolling'
+      );
+
+      const handlePollingInstanceDetailsSpy = jest.spyOn(
+        processInstanceDetailsStore,
+        'handlePolling'
+      );
+
+      const handlePollingIncidentsSpy = jest.spyOn(
+        incidentsStore,
+        'handlePolling'
+      );
+      const handlePollingFlowNodeStatesSpy = jest.spyOn(
+        flowNodeStatesStore,
+        'handlePolling'
+      );
+
+      const handlePollingFlowNodeInstanceSpy = jest.spyOn(
+        flowNodeInstanceStore,
+        'pollInstances'
+      );
+
+      mockServer.use(
+        rest.get('/api/process-instances/:id', (_, res, ctx) =>
+          res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
+        )
+      );
+
+      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+      await waitForElementToBeRemoved(
+        screen.getByTestId('instance-header-skeleton')
+      );
+
+      storeStateLocally({
+        [`hideModificationHelperModal`]: true,
+      });
+
+      expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(0);
+      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
+      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
+      expect(handlePollingFlowNodeStatesSpy).toHaveBeenCalledTimes(0);
+      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
+
+      clearPollingStates();
+      jest.runOnlyPendingTimers();
+      expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
+      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
+      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
+      expect(handlePollingFlowNodeStatesSpy).toHaveBeenCalledTimes(1);
+      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+
+      await waitFor(() => {
+        expect(variablesStore.state.status).toBe('fetched');
+        expect(processInstanceDetailsStore.state.status).toBe('fetched');
+        expect(flowNodeStatesStore.state.status).toBe('fetched');
+        expect(flowNodeInstanceStore.state.status).toBe('fetched');
+      });
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /modify instance/i,
+        })
+      );
+
+      clearPollingStates();
+      jest.runOnlyPendingTimers();
+
+      expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
+      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
+      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
+      expect(handlePollingFlowNodeStatesSpy).toHaveBeenCalledTimes(1);
+      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+
+      clearPollingStates();
+      jest.runOnlyPendingTimers();
+
+      expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
+      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
+      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
+      expect(handlePollingFlowNodeStatesSpy).toHaveBeenCalledTimes(1);
+      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+
+      await user.click(screen.getByTestId('discard-all-button'));
+      await user.click(screen.getByTestId('discard-button'));
+
+      clearPollingStates();
+      jest.runOnlyPendingTimers();
+
+      await waitFor(() => {
+        expect(variablesStore.state.status).toBe('fetched');
+        expect(processInstanceDetailsStore.state.status).toBe('fetched');
+        expect(flowNodeStatesStore.state.status).toBe('fetched');
+        expect(flowNodeInstanceStore.state.status).toBe('fetched');
+      });
+
+      expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(2);
+      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(2);
+      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(2);
+      expect(handlePollingFlowNodeStatesSpy).toHaveBeenCalledTimes(2);
+      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(2);
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(2);
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    }
+  );
+
+  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
+    'should not trigger polling for variables when scope id changed',
+    async () => {
+      jest.useFakeTimers();
+
+      const handlePollingVariablesSpy = jest.spyOn(
+        variablesStore,
+        'handlePolling'
+      );
+
+      mockServer.use(
+        rest.get('/api/process-instances/:id', (_, res, ctx) =>
+          res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
+        )
+      );
+
+      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+      await waitForElementToBeRemoved(
+        screen.getByTestId('instance-header-skeleton')
+      );
+
+      storeStateLocally({
+        [`hideModificationHelperModal`]: true,
+      });
+
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
+
+      clearPollingStates();
+      jest.runOnlyPendingTimers();
+
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /modify instance/i,
+        })
+      );
+
+      clearPollingStates();
+      jest.runOnlyPendingTimers();
+
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+
+      clearPollingStates();
+      jest.runOnlyPendingTimers();
+
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'test',
+        flowNodeInstanceId: 'test-id',
+      });
+
+      clearPollingStates();
+      jest.runOnlyPendingTimers();
+
+      await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
 
       jest.clearAllTimers();
       jest.useRealTimers();

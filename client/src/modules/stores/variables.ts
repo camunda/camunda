@@ -123,7 +123,10 @@ class Variables extends NetworkReconnectionHandler {
         isInstanceRunning(processInstanceDetailsStore.state.processInstance) &&
         this.scopeId !== null
       ) {
-        if (this.intervalId === null) {
+        if (
+          this.intervalId === null &&
+          !modificationsStore.isModificationModeEnabled
+        ) {
           this.startPolling(instanceId);
         }
       } else {
@@ -608,7 +611,7 @@ class Variables extends NetworkReconnectionHandler {
   };
 
   startPolling = async (instanceId: string | null) => {
-    if (instanceId !== null && this.intervalId === null) {
+    if (instanceId !== null) {
       this.intervalId = setInterval(() => {
         if (!this.isPollRequestRunning) {
           this.handlePolling(instanceId);

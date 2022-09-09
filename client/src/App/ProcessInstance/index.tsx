@@ -15,7 +15,7 @@ import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {when} from 'mobx';
+import {reaction, when} from 'mobx';
 import {useProcessInstancePageParams} from './useProcessInstancePageParams';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {useNotifications} from 'modules/notifications';
@@ -43,6 +43,10 @@ import {CmButton} from '@camunda-cloud/common-ui-react';
 import {LastModification} from './LastModification';
 import {ModificationSummaryModal} from './ModificationSummaryModal';
 import {ModificationLoadingOverlay} from './ModificationLoadingOverlay';
+import {variablesStore} from 'modules/stores/variables';
+import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
+import {incidentsStore} from 'modules/stores/incidents';
+import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -67,6 +71,33 @@ const ProcessInstance: React.FC = observer(() => {
   useEffect(() => {
     setClientHeight(containerRef?.current?.clientHeight ?? 0);
   }, []);
+
+  useEffect(() => {
+    const disposer = reaction(
+      () => modificationsStore.isModificationModeEnabled,
+      (isModificationModeEnabled) => {
+        if (isModificationModeEnabled) {
+          variablesStore.stopPolling();
+          sequenceFlowsStore.stopPolling();
+          processInstanceDetailsStore.stopPolling();
+          incidentsStore.stopPolling();
+          flowNodeStatesStore.stopPolling();
+          flowNodeInstanceStore.stopPolling();
+        } else {
+          variablesStore.startPolling(processInstanceId);
+          sequenceFlowsStore.startPolling(processInstanceId);
+          processInstanceDetailsStore.startPolling(processInstanceId);
+          incidentsStore.startPolling(processInstanceId);
+          flowNodeStatesStore.startPolling(processInstanceId);
+          flowNodeInstanceStore.startPolling();
+        }
+      }
+    );
+
+    return () => {
+      disposer();
+    };
+  }, [processInstanceId]);
 
   useEffect(() => {
     const {
