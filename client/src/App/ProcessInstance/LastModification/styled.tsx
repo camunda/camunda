@@ -30,7 +30,7 @@ const Container = styled.div`
 const Button = styled(LinkButton)`
   text-decoration: none;
   font-weight: 500;
-  padding-left: 15px;
+  margin-left: 15px;
 `;
 
 const ModificationDetail = styled.div`
