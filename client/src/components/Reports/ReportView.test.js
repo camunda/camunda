@@ -12,7 +12,7 @@ import {Deleter, ReportRenderer, InstanceCount, DownloadButton, AlertsDropdown} 
 import {checkDeleteConflict} from 'services';
 import {getOptimizeProfile} from 'config';
 
-import ReportView from './ReportView';
+import {ReportView} from './ReportView';
 
 jest.mock('config', () => ({
   isSharingEnabled: jest.fn().mockReturnValue(true),

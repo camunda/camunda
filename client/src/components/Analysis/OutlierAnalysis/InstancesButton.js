@@ -11,7 +11,7 @@ import {Icon, DownloadButton} from 'components';
 import {loadRawData, formatters} from 'services';
 import {t} from 'translation';
 
-export function InstancesButton({id, name, config, value, totalCount}) {
+export function InstancesButton({id, name, config, value, totalCount, user}) {
   return (
     <DownloadButton
       retriever={loadRawData({
@@ -32,6 +32,7 @@ export function InstancesButton({id, name, config, value, totalCount}) {
         '.csv'
       }
       totalCount={totalCount}
+      user={user}
     >
       <Icon size="14" type="save" />
       {t('common.instanceIds')}

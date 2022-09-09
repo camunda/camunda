@@ -79,7 +79,7 @@ it('should pass the error to report view and edit mode if evaluation fails', asy
   const node = shallow(<Report {...props} mightFail={mightFail} />);
   await node.instance().loadReport();
 
-  expect(node.find('ReportView').prop('error')).toEqual(testError);
+  expect(node.find(ReportView).prop('error')).toEqual(testError);
 });
 
 it('should initially evaluate the report', () => {

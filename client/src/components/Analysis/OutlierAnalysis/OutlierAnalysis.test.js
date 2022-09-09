@@ -12,6 +12,7 @@ import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
 
 import {loadNodesOutliers, loadDurationData} from './service';
 import {OutlierAnalysis} from './OutlierAnalysis';
+import OutlierDetailsModal from './OutlierDetailsModal';
 import InstancesButton from './InstancesButton';
 
 jest.mock('./service', () => {
@@ -113,7 +114,7 @@ it('display load chart data and display details modal when loadChartData is call
   await node.instance().loadChartData('nodeKey', nodeData);
 
   expect(loadDurationData).toHaveBeenCalled();
-  expect(node.find('OutlierDetailsModal')).toExist();
+  expect(node.find(OutlierDetailsModal)).toExist();
 
   expect(node.state().selectedNode).toEqual({
     name: 'nodeName',

@@ -127,15 +127,14 @@ export class OutlierAnalysis extends React.Component {
           })}
         </p>
         <Button onClick={() => this.loadChartData(id, nodeData)}>{t('common.viewDetails')}</Button>
-        {this.props.user?.authorizations.includes('csv_export') && (
-          <InstancesButton
-            id={id}
-            name={flowNodeNames[id]}
-            value={boundValue}
-            config={config}
-            totalCount={totalCount}
-          />
-        )}
+        <InstancesButton
+          id={id}
+          name={flowNodeNames[id]}
+          value={boundValue}
+          config={config}
+          totalCount={totalCount}
+          user={this.props.user}
+        />
       </div>
     );
   };
