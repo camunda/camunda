@@ -14,6 +14,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {ModificationDropdown} from './';
 import {createInstance} from 'modules/testUtils';
 import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
+import {mockProcessWithEventBasedGateway} from 'modules/mocks/mockProcessWithEventBasedGateway';
 import {MemoryRouter} from 'react-router-dom';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {PROCESS_INSTANCE_ID} from 'modules/mocks/metadata';
@@ -44,6 +45,19 @@ const renderPopover = () => {
   );
 };
 
+const initializeStores = () => {
+  flowNodeSelectionStore.init();
+  flowNodeStatesStore.init('processId');
+  processInstanceDetailsDiagramStore.init();
+  processInstanceDetailsStore.setProcessInstance(
+    createInstance({
+      id: PROCESS_INSTANCE_ID,
+      state: 'ACTIVE',
+      processId: 'processId',
+    })
+  );
+};
+
 describe('Modification Dropdown', () => {
   beforeEach(() => {
     mockServer.use(
@@ -68,17 +82,6 @@ describe('Modification Dropdown', () => {
           )
       )
     );
-
-    flowNodeSelectionStore.init();
-    flowNodeStatesStore.init('processId');
-    processInstanceDetailsDiagramStore.init();
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-        processId: 'processId',
-      })
-    );
   });
 
   afterEach(() => {
@@ -89,6 +92,7 @@ describe('Modification Dropdown', () => {
   });
 
   it('should not render dropdown when no flow node is selected', async () => {
+    initializeStores();
     renderPopover();
 
     await waitFor(() =>
@@ -137,6 +141,7 @@ describe('Modification Dropdown', () => {
   });
 
   it('should not render dropdown when moving token', async () => {
+    initializeStores();
     const {user} = renderPopover();
 
     await waitFor(() =>
@@ -158,6 +163,7 @@ describe('Modification Dropdown', () => {
   });
 
   it('should only render add option for completed flow nodes', async () => {
+    initializeStores();
     renderPopover();
 
     await waitFor(() =>
@@ -178,6 +184,7 @@ describe('Modification Dropdown', () => {
   });
 
   it('should only render move and cancel options for boundary events', async () => {
+    initializeStores();
     renderPopover();
 
     await waitFor(() =>
@@ -198,6 +205,7 @@ describe('Modification Dropdown', () => {
   });
 
   it('should render unsupported flow node type for non modifiable flow nodes', async () => {
+    initializeStores();
     renderPopover();
 
     await waitFor(() =>
@@ -218,5 +226,81 @@ describe('Modification Dropdown', () => {
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
+  });
+
+  it('should not support add modification for events attached to event based gateway', async () => {
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessWithEventBasedGateway))
+      ),
+      rest.get(
+        '/api/process-instances/:processId/flow-node-states',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              message_intermediate_catch_non_selectable: 'INCIDENT',
+              message_intermediate_catch_selectable: 'ACTIVE',
+              timer_intermediate_catch_non_selectable: 'ACTIVE',
+              message_intermediate_throw_selectable: 'ACTIVE',
+              timer_intermediate_catch_selectable: 'INCIDENT',
+            })
+          )
+      )
+    );
+
+    initializeStores();
+    renderPopover();
+
+    await waitFor(() =>
+      expect(
+        processInstanceDetailsDiagramStore.state.diagramModel
+      ).not.toBeNull()
+    );
+    modificationsStore.enableModificationMode();
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'message_intermediate_catch_non_selectable',
+    });
+
+    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
+    expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
+    expect(screen.getByText(/Move/)).toBeInTheDocument();
+    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'message_intermediate_catch_selectable',
+    });
+
+    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
+    expect(screen.getByText(/Add/)).toBeInTheDocument();
+    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+    expect(screen.getByText(/Move/)).toBeInTheDocument();
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'timer_intermediate_catch_non_selectable',
+    });
+
+    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
+    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+    expect(screen.getByText(/Move/)).toBeInTheDocument();
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'message_intermediate_throw_selectable',
+    });
+
+    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
+    expect(screen.getByText(/Add/)).toBeInTheDocument();
+    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+    expect(screen.getByText(/Move/)).toBeInTheDocument();
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'timer_intermediate_catch_selectable',
+    });
+
+    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
+    expect(screen.getByText(/Add/)).toBeInTheDocument();
+    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+    expect(screen.getByText(/Move/)).toBeInTheDocument();
   });
 });

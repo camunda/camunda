@@ -29,6 +29,7 @@ import {NON_APPENDABLE_FLOW_NODES} from 'modules/constants';
 import {modificationsStore} from './modifications';
 import {flowNodeStatesStore} from './flowNodeStates';
 import {BpmnElement, BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {isAttachedToAnEventBasedGateway} from 'modules/bpmn-js/isAttachedToAnEventBasedGateway';
 
 type FlowNodeMetaData = {
   name: string;
@@ -174,6 +175,8 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
           ['ACTIVE', 'INCIDENT'].includes(flowNodeState),
         isAppendable: !NON_APPENDABLE_FLOW_NODES.includes(flowNode.$type),
         hasMultiInstanceParent: isWithinMultiInstance(flowNode),
+        isAttachedToAnEventBasedGateway:
+          isAttachedToAnEventBasedGateway(flowNode),
       };
     });
   }
@@ -181,7 +184,10 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
   get appendableFlowNodes() {
     return this.flowNodes
       .filter(
-        (flowNode) => !flowNode.hasMultiInstanceParent && flowNode.isAppendable
+        (flowNode) =>
+          !flowNode.hasMultiInstanceParent &&
+          !flowNode.isAttachedToAnEventBasedGateway &&
+          flowNode.isAppendable
       )
       .map(({id}) => id);
   }

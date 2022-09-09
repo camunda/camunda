@@ -310,7 +310,10 @@ describe('stores/processInstanceDiagram', () => {
       'multi-instance-subprocess',
       'gateway-1',
       'gateway-2',
+      'Event_1o1ply5',
       'service-task-7',
+      'message-intermediate',
+      'timer-intermediate',
       'user-task-1',
       'end-event',
       'service-task-2',
@@ -318,6 +321,7 @@ describe('stores/processInstanceDiagram', () => {
       'service-task-4',
       'service-task-5',
       'service-task-6',
+      'intermediate-throw',
     ]);
 
     expect(processInstanceDetailsDiagramStore.cancellableFlowNodes).toEqual([
@@ -331,7 +335,10 @@ describe('stores/processInstanceDiagram', () => {
       'multi-instance-subprocess',
       'gateway-1',
       'gateway-2',
+      'Event_1o1ply5',
       'service-task-7',
+      'message-intermediate',
+      'timer-intermediate',
       'user-task-1',
       'end-event',
       'service-task-2',
@@ -339,6 +346,7 @@ describe('stores/processInstanceDiagram', () => {
       'service-task-4',
       'service-task-5',
       'service-task-6',
+      'intermediate-throw',
       'message-boundary',
     ]);
 
@@ -351,11 +359,7 @@ describe('stores/processInstanceDiagram', () => {
       'non-interrupt-timer-boundary',
       'non-interrupt-message-boundary',
       'timer-boundary',
-      'Event_1o1ply5',
-      'message-intermediate',
-      'timer-intermediate',
       'boundary-event',
-      'intermediate-throw',
     ]);
 
     modificationsStore.startMovingToken('service-task-1');
@@ -371,11 +375,7 @@ describe('stores/processInstanceDiagram', () => {
       'non-interrupt-timer-boundary',
       'non-interrupt-message-boundary',
       'timer-boundary',
-      'Event_1o1ply5',
-      'message-intermediate',
-      'timer-intermediate',
       'boundary-event',
-      'intermediate-throw',
     ]);
   });
 });

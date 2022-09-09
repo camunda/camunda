@@ -54,12 +54,7 @@ const ACTIVE_OPERATION_STATES = [
   OPERATION_STATE.SENT,
 ];
 
-const NON_APPENDABLE_FLOW_NODES = [
-  'bpmn:StartEvent',
-  'bpmn:BoundaryEvent',
-  'bpmn:IntermediateThrowEvent',
-  'bpmn:IntermediateCatchEvent',
-];
+const NON_APPENDABLE_FLOW_NODES = ['bpmn:StartEvent', 'bpmn:BoundaryEvent'];
 
 const FLOWNODE_TYPE_HANDLE = {
   'bpmn:StartEvent': TYPE.EVENT_START,

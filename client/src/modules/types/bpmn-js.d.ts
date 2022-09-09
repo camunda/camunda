@@ -15,6 +15,8 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     name: string;
     $type: string;
     $parent?: BusinessObject;
+    sourceRef?: BusinessObject;
+    incoming?: BusinessObject[];
     loopCharacteristics?: {$type: string};
     extensionElements?: {
       values: {
