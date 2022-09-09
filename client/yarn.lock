@@ -2570,10 +2570,15 @@
     "@types/node" "*"
     form-data "^3.0.0"
 
-"@types/node@*", "@types/node@16.11.56", "@types/node@>=12.12.47", "@types/node@>=13.7.0":
+"@types/node@*", "@types/node@>=12.12.47", "@types/node@>=13.7.0":
   version "16.11.56"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-16.11.56.tgz#dcbb617669481e158e0f1c6204d1c768cd675901"
   integrity sha512-aFcUkv7EddxxOa/9f74DINReQ/celqH8DiB3fRYgVDM2Xm5QJL8sl80QKuAnGvwAsMn+H3IFA6WCrQh1CY7m1A==
+
+"@types/node@16.11.58":
+  version "16.11.58"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.11.58.tgz#0a3698dee3492617a8d5fe7998d18d7520b63026"
+  integrity sha512-uMVxJ111wpHzkx/vshZFb6Qni3BOMnlWLq7q9jrwej7Yw/KvjsEbpxCCxw+hLKxexFMc8YmpG8J9tnEe/rKsIg==
 
 "@types/node@^12.20.10":
   version "12.20.21"
@@ -3832,7 +3837,23 @@ bowser@^2.8.1:
   resolved "https://registry.yarnpkg.com/bowser/-/bowser-2.11.0.tgz#5ca3c35757a7aa5771500c70a73a9f91ef420a8f"
   integrity sha512-AlcaJBi/pqqJBIQ8U9Mcpc9i8Aqxn88Skv5d+xBX006BY5u8N3mGLHa5Lgppa7L/HfwgwLgZ6NYs+Ag6uUmJRA==
 
-bpmn-js@9.4.0, bpmn-js@^9.0.3:
+bpmn-js@9.4.1:
+  version "9.4.1"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-9.4.1.tgz#f81af00a63f15ffb365037973be8bce72e18eb69"
+  integrity sha512-uid1EctbT0c3dO5+Ghm9Qu8EQCSVjZS1Ff7z9qQ0ZoxRWayvbWaHUYSVdKlzXZi7911Pe7rkSqCuXpQ68ouPRw==
+  dependencies:
+    bpmn-moddle "^7.1.3"
+    css.escape "^1.5.1"
+    diagram-js "^8.9.0"
+    diagram-js-direct-editing "^1.7.0"
+    ids "^1.0.0"
+    inherits-browser "0.0.1"
+    min-dash "^3.5.2"
+    min-dom "^3.2.1"
+    object-refs "^0.3.0"
+    tiny-svg "^2.2.4"
+
+bpmn-js@^9.0.3:
   version "9.4.0"
   resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-9.4.0.tgz#3f0898fc811a6dfd913293743c1570d1437deffc"
   integrity sha512-7dusZBYCFognA0TmspWaKZ47UjFhyRT+//hMdyLtPCKY1M0uAPXHoFv73MohlsEa7a75h0q6zjCj5W0/RHBwvg==
@@ -9978,17 +9999,17 @@ mobx-react-lite@^3.4.0:
   resolved "https://registry.yarnpkg.com/mobx-react-lite/-/mobx-react-lite-3.4.0.tgz#d59156a96889cdadad751e5e4dab95f28926dfff"
   integrity sha512-bRuZp3C0itgLKHu/VNxi66DN/XVkQG7xtoBVWxpvC5FhAqbOCP21+nPhULjnzEqd7xBMybp6KwytdUpZKEgpIQ==
 
-mobx-react@7.5.2:
-  version "7.5.2"
-  resolved "https://registry.yarnpkg.com/mobx-react/-/mobx-react-7.5.2.tgz#362d6dc7271698caf3b56229c3c68fb0b30e682e"
-  integrity sha512-NP44ONwSqTy+3KlD7y9k7xbsuGD+8mgUj3IeI65SbxF1IOB42/j9TbosgUEDn//CCuU6OmQ7k9oiu9eSpRBHnw==
+mobx-react@7.5.3:
+  version "7.5.3"
+  resolved "https://registry.yarnpkg.com/mobx-react/-/mobx-react-7.5.3.tgz#74b1c148d2f2a1affab3153ea570ab52c7eff70c"
+  integrity sha512-+ltotliKt4Bjn3d8taZH/VFAcRUbaASvsM8/QSvmHXcZ++RZwaFtjl9JkIosy1byaJGEDS3EFFx2InRm2VaSUw==
   dependencies:
     mobx-react-lite "^3.4.0"
 
-mobx@6.6.1:
-  version "6.6.1"
-  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.6.1.tgz#70ee6aa82f25aeb7e7d522bd621207434e509318"
-  integrity sha512-7su3UZv5JF+ohLr2opabjbUAERfXstMY+wiBtey8yNAPoB8H187RaQXuhFjNkH8aE4iHbDWnhDFZw0+5ic4nGQ==
+mobx@6.6.2:
+  version "6.6.2"
+  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.6.2.tgz#9d9102a0e337e3fc09cb2d8ca0c6f00b61270d5a"
+  integrity sha512-IOpS0bf3+hXIhDIy+CmlNMBfFpAbHS0aVHcNC+xH/TFYEKIIVDKNYRh9eKlXuVfJ1iRKAp0cRVmO145CyJAMVQ==
 
 moddle-xml@^9.0.5, moddle-xml@^9.0.6:
   version "9.0.6"
@@ -12872,10 +12893,10 @@ sass-loader@^10.0.5:
     schema-utils "^3.0.0"
     semver "^7.3.2"
 
-sass@1.54.7:
-  version "1.54.7"
-  resolved "https://registry.yarnpkg.com/sass/-/sass-1.54.7.tgz#a93fb1690472b161fab8f4ab34a66a0f3000c478"
-  integrity sha512-3q7MQz7sCpVG6TLhUfZwGOcd2/sm2ghYN2JEdRjNiW04ILdvahdo9GuAs+bxsxZ3hDCKv+wUT5w0iFWGU0CxlA==
+sass@1.54.9:
+  version "1.54.9"
+  resolved "https://registry.yarnpkg.com/sass/-/sass-1.54.9.tgz#b05f14ed572869218d1a76961de60cd647221762"
+  integrity sha512-xb1hjASzEH+0L0WI9oFjqhRi51t/gagWnxLiwUNMltA0Ab6jIDkAacgKiGYKM9Jhy109osM7woEEai6SXeJo5Q==
   dependencies:
     chokidar ">=3.0.0 <4.0.0"
     immutable "^4.0.0"
@@ -14522,10 +14543,10 @@ typescript@4.7.4:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.7.4.tgz#1a88596d1cf47d59507a1bcdfb5b9dfe4d488235"
   integrity sha512-C0WQT0gezHuw6AdY1M2jxUO83Rjf0HP7Sk1DtXj6j1EwkQNZrHAg2XPWlq62oqEhYvONq5pkC2Y9oPljWToLmQ==
 
-typescript@4.8.2:
-  version "4.8.2"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.8.2.tgz#e3b33d5ccfb5914e4eeab6699cf208adee3fd790"
-  integrity sha512-C0I1UsrrDHo2fYI5oaCGbSejwX4ch+9Y5jTQELvovfmFkK3HHSZJB8MSJcWLmCUBzQBchCrZ9rMRV6GuNrvGtw==
+typescript@4.8.3:
+  version "4.8.3"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.8.3.tgz#d59344522c4bc464a65a730ac695007fdb66dd88"
+  integrity sha512-goMHfm00nWPa8UvR/CPSvykqf6dVV8x/dp0c5mFTMTIu0u0FlGWRioyy7Nn0PGAdHxpJZnuO/ut+PpQ8UiHAig==
 
 unbox-primitive@^1.0.1:
   version "1.0.1"
@@ -15510,10 +15531,10 @@ yocto-queue@^0.1.0:
   resolved "https://registry.yarnpkg.com/yocto-queue/-/yocto-queue-0.1.0.tgz#0294eb3dee05028d31ee1a5fa2c556a6aaf10a1b"
   integrity sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==
 
-zeebe-node@8.0.1:
-  version "8.0.1"
-  resolved "https://registry.yarnpkg.com/zeebe-node/-/zeebe-node-8.0.1.tgz#ad98d1673621e63dee66c58fd3eb27470dab0155"
-  integrity sha512-67Ow0246twQ6rO7oNf39iptAx7TQ91EBnw3Cc5f+vYNY8kFnsFHf8CwWWcfWgN+EPnVZzAQ+wITHjZiZcmIleQ==
+zeebe-node@8.0.3:
+  version "8.0.3"
+  resolved "https://registry.yarnpkg.com/zeebe-node/-/zeebe-node-8.0.3.tgz#56f355172104f1831751d71484b6f0a41bc34c43"
+  integrity sha512-/5bxH0vZUIKLE5TVktcoVEvQIqKCGQWQ9i9ghJJ+UL99046kEInldnmQzqnBL3BKnUFxTjzpl0eCsRpRpdc/hA==
   dependencies:
     "@grpc/grpc-js" "^1.6.7"
     "@grpc/proto-loader" "^0.6.12"
