@@ -15,9 +15,11 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import io.camunda.zeebe.journal.JournalException.InvalidASqn;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
@@ -34,6 +36,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -650,6 +653,79 @@ class SegmentedJournalTest {
 
     // then
     PosixPathAssert.assertThat(firstSegment).hasRealSizeLessThan(segmentSize);
+  }
+
+  @Test
+  void shouldValidateAsqnBeforeCreatingNewSegment() {
+    // given
+    // one entry fits but not two
+    final SegmentedJournal journal = openJournal(1.5f);
+    journal.append(1, data);
+
+    // when/then
+    Assertions.assertThatThrownBy(() -> journal.append(1, data)).isInstanceOf(InvalidASqn.class);
+    assertThat(journal.getFirstSegment()).isEqualTo(journal.getLastSegment());
+  }
+
+  @Test
+  void shouldValidateAsqnWhenWritingToNewSegment() {
+    // given
+    // one entry fits but not two
+    final SegmentedJournal journal = openJournal(1.5f);
+    journal.append(1, data);
+
+    // when
+    // force creation of new segment with an asqn ignore entry
+    journal.append(ASQN_IGNORE, data);
+
+    // then
+    // validation of the asqn should fail on the new segment as well
+    Assertions.assertThatThrownBy(() -> journal.append(1, data)).isInstanceOf(InvalidASqn.class);
+
+    assertThat(journal.getFirstSegment()).isNotEqualTo(journal.getLastSegment());
+  }
+
+  @Test
+  void shouldValidateAsqnWhenWritingAfterRestartOnSameSegment() {
+    // given
+    // one entry fits but not two
+    final float entriesPerSegment = 5;
+    SegmentedJournal journal = openJournal(entriesPerSegment);
+
+    journal.append(1, data);
+
+    // when
+    journal.close();
+    journal = openJournal(entriesPerSegment);
+
+    // then
+    final SegmentedJournal finalJournal = journal;
+    Assertions.assertThatThrownBy(() -> finalJournal.append(1, data))
+        .isInstanceOf(InvalidASqn.class);
+
+    assertThat(journal.getFirstSegment()).isEqualTo(journal.getLastSegment());
+  }
+
+  @Test
+  void shouldValidateAsqnWhenWritingAfterRestartOnNewSegmentWithOnlyAsqnIgnoreRecord() {
+    // given
+    // one entry fits but not two
+    final float entriesPerSegment = 1.5f;
+    final SegmentedJournal journal = openJournal(entriesPerSegment);
+
+    journal.append(1, data);
+
+    // when
+    // force creation of new segment with an asqn ignore entry
+    journal.append(ASQN_IGNORE, data);
+    journal.close();
+    final SegmentedJournal reopenedJournal = openJournal(entriesPerSegment);
+
+    // then
+    Assertions.assertThatThrownBy(() -> reopenedJournal.append(1, data))
+        .isInstanceOf(InvalidASqn.class);
+
+    assertThat(reopenedJournal.getFirstSegment()).isNotEqualTo(reopenedJournal.getLastSegment());
   }
 
   private SegmentedJournal openJournal(final float entriesPerSegment) {

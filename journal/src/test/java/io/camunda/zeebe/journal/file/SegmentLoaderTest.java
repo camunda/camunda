@@ -34,7 +34,7 @@ final class SegmentLoaderTest {
     // this can happen if we crashed in the middle of creating the new segment
     Files.writeString(segmentFile, "foo");
     segmentLoader.createSegment(
-        segmentFile, descriptor, lastWrittenIndex, new SparseJournalIndex(1));
+        segmentFile, descriptor, lastWrittenIndex, 0, new SparseJournalIndex(1));
 
     // then
     PosixPathAssert.assertThat(segmentFile).hasRealSize(segmentSize);
