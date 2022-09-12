@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
+import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior.ActivatedElementKeys;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
@@ -153,24 +154,27 @@ public final class ProcessInstanceModificationProcessor
       return;
     }
 
-    value
-        .getActivateInstructions()
-        .forEach(
-            instruction -> {
-              final var elementToActivate =
-                  process.getProcess().getElementById(instruction.getElementId());
+    final var requiredKeysForActivation =
+        value.getActivateInstructions().stream()
+            .flatMap(
+                instruction -> {
+                  final var elementToActivate =
+                      process.getProcess().getElementById(instruction.getElementId());
 
-              elementActivationBehavior.activateElement(
-                  processInstanceRecord,
-                  elementToActivate,
-                  (elementId, scopeKey) ->
-                      executeVariableInstruction(
-                          BufferUtil.bufferAsString(elementId),
-                          scopeKey,
-                          processInstance,
-                          process,
-                          instruction));
-            });
+                  final ActivatedElementKeys activatedElementKeys =
+                      elementActivationBehavior.activateElement(
+                          processInstanceRecord,
+                          elementToActivate,
+                          (elementId, scopeKey) ->
+                              executeVariableInstruction(
+                                  BufferUtil.bufferAsString(elementId),
+                                  scopeKey,
+                                  processInstance,
+                                  process,
+                                  instruction));
+                  return activatedElementKeys.getFlowScopeKeys().stream();
+                })
+            .collect(Collectors.toSet());
 
     final var sideEffectQueue = new SideEffectQueue();
     sideEffect.accept(sideEffectQueue);
@@ -184,7 +188,7 @@ public final class ProcessInstanceModificationProcessor
               final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
 
               terminateElement(elementInstance, sideEffectQueue);
-              terminateFlowScopes(flowScopeKey, sideEffectQueue);
+              terminateFlowScopes(flowScopeKey, sideEffectQueue, requiredKeysForActivation);
             });
 
     stateWriter.appendFollowUpEvent(eventKey, ProcessInstanceModificationIntent.MODIFIED, value);
@@ -512,10 +516,13 @@ public final class ProcessInstanceModificationProcessor
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATED, elementInstanceRecord);
   }
 
-  private void terminateFlowScopes(final long elementInstanceKey, final SideEffects sideEffects) {
+  private void terminateFlowScopes(
+      final long elementInstanceKey,
+      final SideEffects sideEffects,
+      final Set<Long> requiredKeysForActivation) {
     var currentElementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
-    while (canTerminateElementInstance(currentElementInstance)) {
+    while (canTerminateElementInstance(currentElementInstance, requiredKeysForActivation)) {
       final var flowScopeKey = currentElementInstance.getValue().getFlowScopeKey();
 
       terminateElement(currentElementInstance, sideEffects);
@@ -524,12 +531,15 @@ public final class ProcessInstanceModificationProcessor
     }
   }
 
-  private boolean canTerminateElementInstance(final ElementInstance elementInstance) {
+  private boolean canTerminateElementInstance(
+      final ElementInstance elementInstance, final Set<Long> requiredKeysForActivation) {
     return elementInstance != null
         // if it has no active element instances
         && elementInstance.getNumberOfActiveElementInstances() == 0
         // and no pending element activations (i.e. activate command is written but not processed)
-        && elementInstance.getActiveSequenceFlows() == 0;
+        && elementInstance.getActiveSequenceFlows() == 0
+        // no activate instruction requires this element instance
+        && !requiredKeysForActivation.contains(elementInstance.getKey());
   }
 
   private record Rejection(RejectionType type, String reason) {}

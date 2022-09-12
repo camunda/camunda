@@ -26,8 +26,10 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
 
@@ -61,9 +63,9 @@ public final class ElementActivationBehavior {
    *
    * @param processInstanceRecord the record of the process instance
    * @param elementToActivate The element to activate
-   * @return The key of the activated element instance
+   * @return The key of the activated element instance and the keys of all it's flow scopes
    */
-  public long activateElement(
+  public ActivatedElementKeys activateElement(
       final ProcessInstanceRecord processInstanceRecord,
       final AbstractFlowElement elementToActivate) {
     return activateElement(processInstanceRecord, elementToActivate, (empty, function) -> {});
@@ -77,29 +79,32 @@ public final class ElementActivationBehavior {
    * @param processInstanceRecord the record of the process instance
    * @param elementToActivate The element to activate
    * @param createVariablesCallback Callback to create variables at a given scope
-   * @return The key of the activated element instance
+   * @return The key of the activated element instance and the keys of all it's flow scopes
    */
-  public long activateElement(
+  public ActivatedElementKeys activateElement(
       final ProcessInstanceRecord processInstanceRecord,
       final AbstractFlowElement elementToActivate,
       final BiConsumer<DirectBuffer, Long> createVariablesCallback) {
-    final var flowScopes = collectFlowScopesOfElement(elementToActivate);
+    final var activatedElementKeys = new ActivatedElementKeys();
 
+    final var flowScopes = collectFlowScopesOfElement(elementToActivate);
     final var flowScopeKey =
         activateFlowScopes(
             processInstanceRecord,
             processInstanceRecord.getProcessInstanceKey(),
             flowScopes,
-            createVariablesCallback);
+            createVariablesCallback,
+            activatedElementKeys);
 
     final long elementInstanceKey =
         activateElementByCommand(processInstanceRecord, elementToActivate, flowScopeKey);
     createVariablesCallback.accept(elementToActivate.getId(), elementInstanceKey);
+    activatedElementKeys.setElementInstanceKey(elementInstanceKey);
 
     // applying the side effects is part of creating the event subscriptions
     sideEffectQueue.flush();
 
-    return elementInstanceKey;
+    return activatedElementKeys;
   }
 
   private Deque<ExecutableFlowElement> collectFlowScopesOfElement(
@@ -121,7 +126,8 @@ public final class ElementActivationBehavior {
       final ProcessInstanceRecord processInstanceRecord,
       final long flowScopeKey,
       final Deque<ExecutableFlowElement> flowScopes,
-      final BiConsumer<DirectBuffer, Long> createVariablesCallback) {
+      final BiConsumer<DirectBuffer, Long> createVariablesCallback,
+      final ActivatedElementKeys activatedElementKeys) {
 
     if (flowScopes.isEmpty()) {
       return flowScopeKey;
@@ -137,16 +143,26 @@ public final class ElementActivationBehavior {
       final long elementInstanceKey =
           activateFlowScope(
               processInstanceRecord, flowScopeKey, flowScope, createVariablesCallback);
+      activatedElementKeys.addFlowScopeKey(elementInstanceKey);
       return activateFlowScopes(
-          processInstanceRecord, elementInstanceKey, flowScopes, createVariablesCallback);
+          processInstanceRecord,
+          elementInstanceKey,
+          flowScopes,
+          createVariablesCallback,
+          activatedElementKeys);
 
     } else if (elementInstancesOfScope.size() == 1) {
       // there is an active instance of this flow scope
       // - no need to create a new instance; continue with the remaining flow scopes
       final var elementInstance = elementInstancesOfScope.get(0);
       createVariablesCallback.accept(flowScope.getId(), elementInstance.getKey());
+      activatedElementKeys.addFlowScopeKey(elementInstance.getKey());
       return activateFlowScopes(
-          processInstanceRecord, elementInstance.getKey(), flowScopes, createVariablesCallback);
+          processInstanceRecord,
+          elementInstance.getKey(),
+          flowScopes,
+          createVariablesCallback,
+          activatedElementKeys);
 
     } else {
       // todo: deal with multiple flow scopes found without ancestor selection (#10008)
@@ -278,6 +294,27 @@ public final class ElementActivationBehavior {
                     subscribedOrFailure.getLeft().getMessage());
         throw new EventSubscriptionException(message);
       }
+    }
+  }
+
+  public static class ActivatedElementKeys {
+    private final Set<Long> flowScopeKeys = new HashSet<>();
+    private Long elementInstanceKey;
+
+    private void addFlowScopeKey(final Long flowScopeKey) {
+      flowScopeKeys.add(flowScopeKey);
+    }
+
+    public Long getElementInstanceKey() {
+      return elementInstanceKey;
+    }
+
+    private void setElementInstanceKey(final Long elementInstanceKey) {
+      this.elementInstanceKey = elementInstanceKey;
+    }
+
+    public Set<Long> getFlowScopeKeys() {
+      return flowScopeKeys;
     }
   }
 }
