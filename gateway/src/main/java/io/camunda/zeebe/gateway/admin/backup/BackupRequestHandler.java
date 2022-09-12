@@ -14,7 +14,6 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
-import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -32,69 +31,57 @@ public final class BackupRequestHandler implements BackupApi {
 
   @Override
   public CompletionStage<Long> takeBackup(final long backupId) {
-    final Either<Throwable, Boolean> topologyComplete = checkTopologyComplete();
-    if (topologyComplete.isLeft()) {
-      return CompletableFuture.failedFuture(
-          operationFailed("take", backupId, topologyComplete.getLeft()));
-    }
-
-    final var backupTriggered =
-        topologyManager.getTopology().getPartitions().stream()
-            .map(partitionId -> getBackupRequestForPartition(backupId, partitionId))
-            .map(brokerClient::sendRequestWithRetry)
-            .toArray(CompletableFuture[]::new);
-
-    return CompletableFuture.allOf(backupTriggered)
-        .thenApply(ignore -> backupId)
+    return checkTopologyComplete()
+        .thenCompose(
+            topology ->
+                CompletableFuture.allOf(
+                        topology.getPartitions().stream()
+                            .map(partitionId -> getBackupRequestForPartition(backupId, partitionId))
+                            .map(brokerClient::sendRequestWithRetry)
+                            .toArray(CompletableFuture[]::new))
+                    .thenApply(ignore -> backupId))
         .exceptionallyCompose(
             error ->
                 CompletableFuture.failedFuture(
-                    operationFailed("take", backupId, error.getCause())));
+                    new BackupOperationFailedException("take", backupId, error.getCause())));
   }
 
   @Override
   public CompletionStage<BackupStatus> getStatus(final long backupId) {
-    final Either<Throwable, Boolean> topologyComplete = checkTopologyComplete();
-    if (topologyComplete.isLeft()) {
-      return CompletableFuture.failedFuture(
-          operationFailed("query", backupId, topologyComplete.getLeft()));
-    }
+    return checkTopologyComplete()
+        .thenCompose(
+            topology -> {
+              final var statusesReceived =
+                  topology.getPartitions().stream()
+                      .map(partitionId -> getStatusQueryForPartition(backupId, partitionId))
+                      .map(brokerClient::sendRequestWithRetry)
+                      .toList();
 
-    final var statusesReceived =
-        topologyManager.getTopology().getPartitions().stream()
-            .map(partitionId -> getStatusQueryForPartition(backupId, partitionId))
-            .map(brokerClient::sendRequestWithRetry)
-            .toList();
-
-    return CompletableFuture.allOf(statusesReceived.toArray(CompletableFuture[]::new))
-        .thenApply(ignore -> aggregatePartitionStatus(backupId, statusesReceived))
+              return CompletableFuture.allOf(statusesReceived.toArray(CompletableFuture[]::new))
+                  .thenApply(ignore -> aggregatePartitionStatus(backupId, statusesReceived));
+            })
         .exceptionallyCompose(
             error ->
                 CompletableFuture.failedFuture(
-                    operationFailed("query", backupId, error.getCause())));
+                    new BackupOperationFailedException("query", backupId, error.getCause())));
   }
 
-  private Either<Throwable, Boolean> checkTopologyComplete() {
+  private CompletionStage<BrokerClusterState> checkTopologyComplete() {
     final BrokerClusterState topology = topologyManager.getTopology();
     if (topology == null) {
-      return Either.left(new NoTopologyAvailableException());
+      return CompletableFuture.failedFuture(new NoTopologyAvailableException());
     }
 
     final int expectedPartitionCount = topology.getPartitionsCount();
     final int knownPartitions = topology.getPartitions().size();
     if (expectedPartitionCount != knownPartitions) {
-      return Either.left(
+      return CompletableFuture.failedFuture(
           new IncompleteTopologyException(
               "Expected to send request to all %d partitions, but found only %d partitions in topology."
                   .formatted(expectedPartitionCount, knownPartitions)));
     }
 
-    return Either.right(true);
-  }
-
-  private static BackupOperationFailedException operationFailed(
-      final String operation, final long backupId, final Throwable error) {
-    return new BackupOperationFailedException(operation, backupId, error);
+    return CompletableFuture.completedFuture(topology);
   }
 
   private BackupStatus aggregatePartitionStatus(
@@ -134,14 +121,12 @@ public final class BackupRequestHandler implements BackupApi {
         .toString();
   }
 
-  private static Optional<BackupStatusCode> getAggregatedStatus(
+  private Optional<BackupStatusCode> getAggregatedStatus(
       final List<PartitionBackupStatus> partitionStatuses) {
-    return partitionStatuses.stream()
-        .map(PartitionBackupStatus::status)
-        .reduce(BackupRequestHandler::combine);
+    return partitionStatuses.stream().map(PartitionBackupStatus::status).reduce(this::combine);
   }
 
-  private static BackupStatusCode combine(final BackupStatusCode x, final BackupStatusCode y) {
+  private BackupStatusCode combine(final BackupStatusCode x, final BackupStatusCode y) {
     // Failed > DoesNotExist > InProgress > Completed
 
     if (x == BackupStatusCode.FAILED || y == BackupStatusCode.FAILED) {
