@@ -14,10 +14,12 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.ByteValue;
 import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,6 +28,10 @@ import org.junit.rules.TestWatcher;
 public class ModifyProcessInstanceRejectionTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  @ClassRule
+  public static final BrokerClassRuleHelper CLASS_RULE_HELPER = new BrokerClassRuleHelper();
+
   private static final String PROCESS_ID = "process";
   private static final long MAX_MESSAGE_SIZE = ByteValue.ofMegabytes(4);
 
@@ -302,6 +308,73 @@ public class ModifyProcessInstanceRejectionTest {
                 Expected to modify instance of process '%s' but it contains one or more variable \
                 instructions with a scope element that doesn't belong to the activating element's \
                 flow scope. These variables should be set before or after the modification.""",
+                PROCESS_ID));
+  }
+
+  @Test
+  public void shouldRejectCommandWhenMoreThanOneAncestor() {
+    // given
+    final String correlationKey = CLASS_RULE_HELPER.getCorrelationValue();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .eventSubProcess(
+                    "event-subprocess",
+                    eventSubprocess ->
+                        eventSubprocess
+                            .startEvent()
+                            .interrupting(false)
+                            .message(m -> m.name("start").zeebeCorrelationKeyExpression("key"))
+                            .userTask("B")
+                            .userTask("C")
+                            .endEvent())
+                .startEvent()
+                .userTask("A")
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", correlationKey)
+            .create();
+
+    ENGINE.message().withName("start").withCorrelationKey(correlationKey).publish();
+    ENGINE.message().withName("start").withCorrelationKey(correlationKey).publish();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("B")
+                .limit(2)
+                .count())
+        .describedAs("Assuming that two event subprocesses are active")
+        .isEqualTo(2);
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("C")
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that the flow scope can have only one instance")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            String.format(
+                """
+                Expected to modify instance of process '%s' but it contains one or more activate \
+                instructions for an element that has a flow scope with more than one active \
+                instances. Can't decide in which instance of the flow scope the element should be \
+                activated.""",
                 PROCESS_ID));
   }
 }
