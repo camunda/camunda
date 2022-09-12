@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 public final class BackupRequestHandler implements BackupApi {
 
@@ -115,10 +116,9 @@ public final class BackupRequestHandler implements BackupApi {
         .map(
             p -> {
               final var reason = p.failureReason().orElse("Unknown reason");
-              return "Backup on partition %d failed due to %s.".formatted(p.partitionId(), reason);
+              return "Backup on partition %d failed due to %s. ".formatted(p.partitionId(), reason);
             })
-        .toList()
-        .toString();
+        .collect(Collectors.joining());
   }
 
   private Optional<BackupStatusCode> getAggregatedStatus(
