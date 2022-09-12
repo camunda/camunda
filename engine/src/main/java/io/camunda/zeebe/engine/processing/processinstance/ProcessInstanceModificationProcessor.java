@@ -179,7 +179,6 @@ public final class ProcessInstanceModificationProcessor
         .getTerminateInstructions()
         .forEach(
             instruction -> {
-              // todo: deal with non-existing element instance (#9983)
               final var elementInstance =
                   elementInstanceState.getInstance(instruction.getElementInstanceKey());
               final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
