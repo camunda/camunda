@@ -65,6 +65,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
+        with:
+          go: false
       - run: mvn -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
   docker-checks:
     name: Docker checks
