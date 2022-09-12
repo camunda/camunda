@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
+import io.camunda.zeebe.engine.processing.common.MultipleFlowScopeInstancesFoundException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -80,6 +81,12 @@ public final class ProcessInstanceModificationProcessor
       Expected to modify instance of process '%s' but it contains one or more variable instructions \
       with a scope element that doesn't belong to the activating element's flow scope. \
       These variables should be set before or after the modification.""";
+
+  private static final String ERROR_MESSAGE_MORE_THAN_ONE_FLOW_SCOPE_INSTANCE =
+      """
+      Expected to modify instance of process '%s' but it contains one or more activate instructions \
+      for an element that has a flow scope with more than one active instances. Can't decide in \
+      which instance of the flow scope the element should be activated.""";
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
@@ -203,6 +210,16 @@ public final class ProcessInstanceModificationProcessor
       responseWriter.writeRejectionOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
+
+    } else if (error instanceof MultipleFlowScopeInstancesFoundException exception) {
+      final var rejectionReason =
+          ERROR_MESSAGE_MORE_THAN_ONE_FLOW_SCOPE_INSTANCE.formatted(exception.getBpmnProcessId());
+      rejectionWriter.appendRejection(
+          typedCommand, RejectionType.INVALID_ARGUMENT, rejectionReason);
+      responseWriter.writeRejectionOnCommand(
+          typedCommand, RejectionType.INVALID_ARGUMENT, rejectionReason);
+      return ProcessingError.EXPECTED_ERROR;
+
     } else if (error instanceof ExceededBatchRecordSizeException) {
       rejectionWriter.appendRejection(
           typedCommand,
