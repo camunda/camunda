@@ -33,7 +33,8 @@ public final class BackupRequestHandler implements BackupApi {
   public CompletableFuture<Long> takeBackup(final long backupId) {
     final Either<Throwable, Boolean> topologyComplete = checkTopologyComplete();
     if (topologyComplete.isLeft()) {
-      return CompletableFuture.failedFuture(backupFailed(backupId, topologyComplete.getLeft()));
+      return CompletableFuture.failedFuture(
+          operationFailed("take", backupId, topologyComplete.getLeft()));
     }
 
     final var backupTriggered =
@@ -45,14 +46,17 @@ public final class BackupRequestHandler implements BackupApi {
     return CompletableFuture.allOf(backupTriggered)
         .thenApply(ignore -> backupId)
         .exceptionallyCompose(
-            error -> CompletableFuture.failedFuture(backupFailed(backupId, error.getCause())));
+            error ->
+                CompletableFuture.failedFuture(
+                    operationFailed("query", backupId, error.getCause())));
   }
 
   @Override
   public CompletableFuture<BackupStatus> getStatus(final long backupId) {
     final Either<Throwable, Boolean> topologyComplete = checkTopologyComplete();
     if (topologyComplete.isLeft()) {
-      return CompletableFuture.failedFuture(backupFailed(backupId, topologyComplete.getLeft()));
+      return CompletableFuture.failedFuture(
+          operationFailed("query", backupId, topologyComplete.getLeft()));
     }
 
     final var statusesReceived =
@@ -85,8 +89,9 @@ public final class BackupRequestHandler implements BackupApi {
     return Either.right(true);
   }
 
-  private static BackupFailedException backupFailed(final long backupId, final Throwable error) {
-    return new BackupFailedException(backupId, error);
+  private static BackupOperationFailedException operationFailed(
+      final String operation, final long backupId, final Throwable error) {
+    return new BackupOperationFailedException(operation, backupId, error);
   }
 
   private BackupStatus aggregatePartitionStatus(

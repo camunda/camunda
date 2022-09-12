@@ -51,6 +51,6 @@ public class BackupRequestHandlerTest extends GatewayTest {
     assertThat(future)
         .failsWithin(Duration.ofMillis(500))
         .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(BackupFailedException.class);
+        .withCauseInstanceOf(BackupOperationFailedException.class);
   }
 }
