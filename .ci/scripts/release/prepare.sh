@@ -1,12 +1,12 @@
 #!/bin/bash -xue
 
 # update apt repositories and install missing utilities
-# add GitHub packages Debian repository for gh
-curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | \
-      tee /etc/apt/sources.list.d/github-cli.list > /dev/null
 apt update
-apt install -y gpg gh
+apt install -y gpg
+
+# install using apt fails due to https://github.com/cli/cli/issues/6175 Workaround is to get it from git release
+curl -L https://github.com/cli/cli/releases/download/v2.14.7/gh_2.14.7_linux_amd64.deb --output /tmp/gh.deb
+dpkg -i /tmp/gh.deb
 
 # remove origin and use GitHub App (reflected on filesystem and globally active)
 git remote remove origin
