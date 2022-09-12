@@ -20,4 +20,13 @@ public interface BackupApi {
    * @return the backupId
    */
   CompletableFuture<Long> takeBackup(long backupId);
+
+  /**
+   * Returns the status of the backup. The future fails if the request was not processed by at least
+   * one partition.
+   *
+   * @param backupId
+   * @return the status of the backup
+   */
+  CompletableFuture<BackupStatus> getStatus(long backupId);
 }
