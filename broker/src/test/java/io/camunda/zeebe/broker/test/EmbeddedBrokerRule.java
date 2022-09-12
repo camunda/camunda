@@ -25,6 +25,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -222,9 +223,17 @@ public final class EmbeddedBrokerRule extends ExternalResource {
         throw new RuntimeException("Unable to open configuration", e);
       }
     }
-    systemContext =
-        new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
-    systemContext.getScheduler().start();
+
+    final var scheduler =
+        ActorScheduler.newActorScheduler()
+            .setCpuBoundActorThreadCount(brokerCfg.getThreads().getCpuThreadCount())
+            .setIoBoundActorThreadCount(brokerCfg.getThreads().getIoThreadCount())
+            .setMetricsEnabled(brokerCfg.getExperimental().getFeatures().isEnableActorMetrics())
+            .setActorClock(controlledActorClock)
+            .build();
+
+    systemContext = new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), scheduler);
+    scheduler.start();
 
     final var additionalListeners = new ArrayList<>(Arrays.asList(listeners));
     final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());

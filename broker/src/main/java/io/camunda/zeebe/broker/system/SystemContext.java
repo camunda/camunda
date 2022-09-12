@@ -15,11 +15,9 @@ import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
-import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,15 +43,16 @@ public final class SystemContext {
 
   private final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
-  private ActorScheduler scheduler;
+  private final ActorScheduler scheduler;
 
-  public SystemContext(final BrokerCfg brokerCfg, final String basePath, final ActorClock clock) {
+  public SystemContext(
+      final BrokerCfg brokerCfg, final String basePath, final ActorScheduler scheduler) {
     this.brokerCfg = brokerCfg;
-
-    initSystemContext(clock, basePath);
+    this.scheduler = scheduler;
+    initSystemContext(basePath);
   }
 
-  private void initSystemContext(final ActorClock clock, final String basePath) {
+  private void initSystemContext(final String basePath) {
     LOG.debug("Initializing system with base path {}", basePath);
 
     brokerCfg.init(basePath);
@@ -63,7 +62,6 @@ public final class SystemContext {
     final String brokerId = String.format("Broker-%d", cluster.getNodeId());
 
     diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
-    scheduler = initScheduler(clock, brokerId);
   }
 
   private void validateConfiguration() {
@@ -256,22 +254,6 @@ public final class SystemContext {
                   + "readable file, but it does not",
               privateKeyPath));
     }
-  }
-
-  private ActorScheduler initScheduler(final ActorClock clock, final String brokerId) {
-    final ThreadsCfg cfg = brokerCfg.getThreads();
-
-    final int cpuThreads = cfg.getCpuThreadCount();
-    final int ioThreads = cfg.getIoThreadCount();
-    final boolean metricsEnabled = brokerCfg.getExperimental().getFeatures().isEnableActorMetrics();
-
-    return ActorScheduler.newActorScheduler()
-        .setActorClock(clock)
-        .setCpuBoundActorThreadCount(cpuThreads)
-        .setIoBoundActorThreadCount(ioThreads)
-        .setMetricsEnabled(metricsEnabled)
-        .setSchedulerName(brokerId)
-        .build();
   }
 
   public ActorScheduler getScheduler() {
