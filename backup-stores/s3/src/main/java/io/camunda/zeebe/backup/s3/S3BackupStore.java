@@ -166,6 +166,12 @@ public final class S3BackupStore implements BackupStore {
         .thenApply(Manifest::statusCode);
   }
 
+  @Override
+  public CompletableFuture<Void> closeAsync() {
+    client.close();
+    return CompletableFuture.completedFuture(null);
+  }
+
   private CompletableFuture<NamedFileSet> downloadNamedFileSet(
       final String sourcePrefix, final Set<String> fileNames, final Path targetFolder) {
     LOG.debug(

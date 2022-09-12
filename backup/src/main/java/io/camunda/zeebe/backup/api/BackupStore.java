@@ -30,4 +30,6 @@ public interface BackupStore {
    * failed. This method can be used if we want to explicitly mark a partial backup as failed.
    */
   CompletableFuture<BackupStatusCode> markFailed(BackupIdentifier id, final String failureReason);
+
+  CompletableFuture<Void> closeAsync();
 }
