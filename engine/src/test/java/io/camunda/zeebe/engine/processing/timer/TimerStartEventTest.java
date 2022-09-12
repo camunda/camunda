@@ -31,7 +31,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -90,11 +89,6 @@ public final class TimerStartEventTest {
     final ProcessBuilder builder = Bpmn.createExecutableProcess("process_4");
     builder.startEvent("start_4").timerWithCycle("R/PT2S").endEvent("end_4");
     return builder.startEvent("start_4_2").timerWithCycle("R/PT3S").endEvent("end_4_2").done();
-  }
-
-  @Before
-  public void controlTheClock() {
-    engine.getClock().pinCurrentTime();
   }
 
   @Test

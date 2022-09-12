@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import static java.util.function.Predicate.not;
+
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -17,6 +19,7 @@ import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
@@ -38,6 +41,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
@@ -65,6 +69,17 @@ public final class ProcessInstanceModificationProcessor
   private static final String ERROR_COMMAND_TOO_LARGE =
       "Unable to modify process instance with key '%d' as the size exceeds the maximum batch size."
           + " Please reduce the size by splitting the modification into multiple commands.";
+
+  private static final String ERROR_MESSAGE_VARIABLE_SCOPE_NOT_FOUND =
+      """
+      Expected to modify instance of process '%s' but it contains one or more variable instructions \
+      with a scope element id that could not be found: '%s'""";
+
+  private static final String ERROR_MESSAGE_VARIABLE_SCOPE_NOT_FLOW_SCOPE =
+      """
+      Expected to modify instance of process '%s' but it contains one or more variable instructions \
+      with a scope element that doesn't belong to the activating element's flow scope. \
+      These variables should be set before or after the modification.""";
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
@@ -211,6 +226,8 @@ public final class ProcessInstanceModificationProcessor
     return validateElementExists(process, activateInstructions)
         .flatMap(valid -> validateElementSupported(process, activateInstructions))
         .flatMap(valid -> validateElementInstanceExists(process, terminateInstructions))
+        .flatMap(valid -> validateVariableScopeExists(process, activateInstructions))
+        .flatMap(valid -> validateVariableScopeIsFlowScope(process, activateInstructions))
         .map(valid -> VALID);
   }
 
@@ -370,6 +387,80 @@ public final class ProcessInstanceModificationProcessor
                 .map(Objects::toString)
                 .collect(Collectors.joining("', '")));
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateVariableScopeExists(
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
+
+    final var unknownScopeElementIds =
+        activateInstructions.stream()
+            .flatMap(instruction -> instruction.getVariableInstructions().stream())
+            .map(ProcessInstanceModificationVariableInstructionValue::getElementId)
+            // ignore instructions of global variables (i.e. empty scope id)
+            .filter(not(String::isEmpty))
+            // filter scope ids that doesn't exist in the process
+            .filter(scopeElementId -> process.getProcess().getElementById(scopeElementId) == null)
+            .collect(Collectors.toSet());
+
+    if (unknownScopeElementIds.isEmpty()) {
+      return VALID;
+    }
+
+    final var reason =
+        ERROR_MESSAGE_VARIABLE_SCOPE_NOT_FOUND.formatted(
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", unknownScopeElementIds));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateVariableScopeIsFlowScope(
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
+
+    final var nonFlowScopeIds =
+        activateInstructions.stream()
+            .flatMap(
+                instruction -> {
+                  final var elementId = instruction.getElementId();
+                  final var elementToActivate = process.getProcess().getElementById(elementId);
+
+                  return instruction.getVariableInstructions().stream()
+                      .map(ProcessInstanceModificationVariableInstructionValue::getElementId)
+                      // ignore instructions of global variables (i.e. empty scope id)
+                      .filter(not(String::isEmpty))
+                      // ignore instructions of the activation element
+                      .filter(not(elementId::equals))
+                      // filter element ids that are not a flow scope of the element
+                      .filter(
+                          scopeElementId ->
+                              !isFlowScopeOfElement(elementToActivate, scopeElementId));
+                })
+            .collect(Collectors.toSet());
+
+    if (nonFlowScopeIds.isEmpty()) {
+      return VALID;
+    }
+
+    final var reason =
+        ERROR_MESSAGE_VARIABLE_SCOPE_NOT_FLOW_SCOPE.formatted(
+            BufferUtil.bufferAsString(process.getBpmnProcessId()));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private boolean isFlowScopeOfElement(
+      final ExecutableFlowElement element, final String targetElementId) {
+    // iterate over the flow scopes of the element until reaching the given element id
+    var flowScope = element.getFlowScope();
+    while (flowScope != null) {
+      final String flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
+      if (flowScopeId.equals(targetElementId)) {
+        return true;
+      }
+      flowScope = flowScope.getFlowScope();
+    }
+
+    return false;
   }
 
   public void executeVariableInstruction(

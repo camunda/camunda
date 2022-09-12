@@ -1,4 +1,3 @@
-ARG APP_ENV=prod
 # Override this based on the architecture; this is currently pointing to amd64
 ARG BASE_SHA="fce37e5146419a158c2199c6089fa39b92445fb2e66dc0331f8591891239ea3b"
 
@@ -23,30 +22,19 @@ COPY docker/utils/startup.sh ${TMP_DIR}/bin/startup.sh
 RUN chmod +x -R ${TMP_DIR}/bin/ && \
     chmod 0775 ${TMP_DIR} ${TMP_DIR}/data
 
-# Building prod image
-FROM eclipse-temurin:17-jre-focal@sha256:${BASE_SHA} as prod
+# Building application image
+# hadolint ignore=DL3006
+FROM eclipse-temurin:17-jre-focal@sha256:${BASE_SHA} as app
 
 # leave unset to use the default value at the top of the file
 ARG BASE_SHA
-
-LABEL org.opencontainers.image.base.digest="${BASE_SHA}"
-LABEL org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:17-jre-focal"
-
-# Building dev image
-FROM eclipse-temurin:17-jdk-focal as dev
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN echo "running DEV pre-install commands" && \
-    curl -sSL https://github.com/jvm-profiling-tools/async-profiler/releases/download/v1.7.1/async-profiler-1.7.1-linux-x64.tar.gz | tar xzv
-
-# Building application image
-# hadolint ignore=DL3006
-FROM ${APP_ENV} as app
-
 ARG VERSION=""
 ARG DATE=""
 ARG REVISION=""
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
+LABEL org.opencontainers.image.base.digest="${BASE_SHA}"
+LABEL org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:17-jre-focal"
 LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="zeebe@camunda.com"
 LABEL org.opencontainers.image.url="https://zeebe.io"
