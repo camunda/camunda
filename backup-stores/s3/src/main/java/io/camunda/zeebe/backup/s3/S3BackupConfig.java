@@ -37,8 +37,25 @@ public record S3BackupConfig(
    * @see S3BackupConfig#S3BackupConfig(String bucketName, Optional endpoint, Optional region,
    *     Optional credentials)
    */
-  public S3BackupConfig(String bucketName) {
+  public S3BackupConfig(final String bucketName) {
     this(bucketName, Optional.empty(), Optional.empty(), Optional.empty());
+  }
+
+  public static S3BackupConfig from(
+      final String bucketName,
+      final String endpoint,
+      final String region,
+      final String accessKey,
+      final String secretKey) {
+    Credentials credentials = null;
+    if (accessKey != null && secretKey != null) {
+      credentials = new Credentials(accessKey, secretKey);
+    }
+    return new S3BackupConfig(
+        bucketName,
+        Optional.ofNullable(endpoint),
+        Optional.ofNullable(region),
+        Optional.ofNullable(credentials));
   }
 
   record Credentials(String accessKey, String secretKey) {
