@@ -14,6 +14,11 @@ import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 
+import java.time.Duration;
+
+import static org.camunda.optimize.dto.optimize.query.report.single.ViewProperty.DURATION;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit.mapToChronoUnit;
+
 @Data
 @FieldNameConstants
 @AllArgsConstructor
@@ -32,10 +37,18 @@ public class KpiResultDto {
 
   @JsonIgnore
   public boolean isTargetMet() {
+    final double doubleValue = Double.parseDouble(value);
+    final double doubleTarget = Double.parseDouble(target);
     if (isBelow) {
-      return Double.parseDouble(value) <= Double.parseDouble(target);
+      return DURATION.equals(measure)
+        ? Duration.ofMillis((long) doubleValue)
+        .compareTo(Duration.of((long) doubleTarget, mapToChronoUnit(unit))) <= 0
+        : doubleValue <= doubleTarget;
     } else {
-      return Double.parseDouble(value) >= Double.parseDouble(target);
+      return DURATION.equals(measure)
+        ? Duration.ofMillis((long) doubleValue)
+        .compareTo(Duration.of((long) doubleTarget, mapToChronoUnit(unit))) >= 0
+        : doubleValue >= doubleTarget;
     }
   }
 
