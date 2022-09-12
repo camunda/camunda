@@ -48,7 +48,7 @@ public final class BackupRequestHandler implements BackupApi {
         .exceptionallyCompose(
             error ->
                 CompletableFuture.failedFuture(
-                    operationFailed("query", backupId, error.getCause())));
+                    operationFailed("take", backupId, error.getCause())));
   }
 
   @Override
@@ -65,10 +65,12 @@ public final class BackupRequestHandler implements BackupApi {
             .map(brokerClient::sendRequestWithRetry)
             .toList();
 
-    CompletableFuture.allOf(statusesReceived.toArray(CompletableFuture[]::new))
-        .thenApply(ignore -> aggregatePartitionStatus(backupId, statusesReceived));
-
-    return null;
+    return CompletableFuture.allOf(statusesReceived.toArray(CompletableFuture[]::new))
+        .thenApply(ignore -> aggregatePartitionStatus(backupId, statusesReceived))
+        .exceptionallyCompose(
+            error ->
+                CompletableFuture.failedFuture(
+                    operationFailed("query", backupId, error.getCause())));
   }
 
   private Either<Throwable, Boolean> checkTopologyComplete() {
