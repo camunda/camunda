@@ -16,6 +16,8 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
+
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException.InvalidASqn;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
@@ -32,7 +34,6 @@ import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import io.camunda.zeebe.util.Either;
 import java.nio.BufferUnderflowException;
 import java.nio.MappedByteBuffer;
-import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -44,6 +45,7 @@ final class SegmentWriter {
   private final Segment segment;
   private final JournalIndex index;
   private final long firstIndex;
+  private long lastAsqn;
   private JournalRecord lastEntry;
   private boolean isOpen = true;
   private final JournalRecordReaderUtil recordUtil;
@@ -106,15 +108,11 @@ final class SegmentWriter {
               nextIndex, entryIndex));
     }
 
-    if (asqn != SegmentedJournal.ASQN_IGNORE
-        && Optional.ofNullable(lastEntry)
-            .map(JournalRecord::asqn)
-            .filter(lastAsqn -> asqn <= lastAsqn)
-            .isPresent()) {
+    if (asqn != SegmentedJournal.ASQN_IGNORE && asqn <= lastAsqn) {
       throw new InvalidASqn(
           String.format(
               "The record asqn is not big enough. Expected the next asqn to be bigger than %d, but the record to append has %d",
-              lastEntry.asqn(), asqn));
+              lastAsqn, asqn));
     }
 
     final int startPosition = buffer.position();
@@ -157,6 +155,7 @@ final class SegmentWriter {
     final var metadata = serializer.readMetadata(writeBuffer, startPosition + frameLength);
     final var data = serializer.readData(writeBuffer, startPosition + frameLength + metadataLength);
     lastEntry = new PersistedJournalRecord(metadata, data);
+    lastAsqn = lastEntry.asqn() != ASQN_IGNORE ? lastEntry.asqn() : lastAsqn;
     index.index(lastEntry, startPosition);
   }
 

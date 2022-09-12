@@ -404,16 +404,6 @@ final class JournalTest {
   }
 
   @Test
-  void shouldNotAppendRecordWithTooLowASqn() {
-    // given
-    journal.append(1, data);
-
-    // when/then
-    assertThatThrownBy(() -> journal.append(0, data)).isInstanceOf(InvalidASqn.class);
-    assertThatThrownBy(() -> journal.append(1, data)).isInstanceOf(InvalidASqn.class);
-  }
-
-  @Test
   void shouldAppendRecordWithASqnToIgnore() {
     // given
     journal.append(1, data);
@@ -439,6 +429,29 @@ final class JournalTest {
     // then
     assertThatThrownBy(() -> receiverJournal.append(invalidChecksumRecord))
         .isInstanceOf(InvalidChecksum.class);
+  }
+
+  @Test
+  void shouldNotAppendRecordWithTooLowASqn() {
+    // given
+    journal.append(1, data);
+
+    // when/then
+    assertThatThrownBy(() -> journal.append(0, data)).isInstanceOf(InvalidASqn.class);
+    assertThatThrownBy(() -> journal.append(1, data)).isInstanceOf(InvalidASqn.class);
+  }
+
+  @Test
+  void shouldNotAppendRecordWithTooLowASqnIfPreviousRecordIsIgnoreASqn() {
+    // given
+    journal.append(1, data);
+
+    // when
+    journal.append(ASQN_IGNORE, data);
+
+    // then
+    assertThatThrownBy(() -> journal.append(0, data)).isInstanceOf(InvalidASqn.class);
+    assertThatThrownBy(() -> journal.append(1, data)).isInstanceOf(InvalidASqn.class);
   }
 
   @Test
