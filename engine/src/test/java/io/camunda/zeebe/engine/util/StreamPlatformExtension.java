@@ -12,11 +12,13 @@ import static org.junit.platform.commons.util.ReflectionUtils.makeAccessible;
 
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.util.FileUtil;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
+import org.agrona.CloseHelper;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
@@ -67,6 +69,20 @@ public class StreamPlatformExtension implements BeforeEachCallback {
                 ExceptionUtils.throwAsUncheckedException(t);
               }
             });
+    ReflectionUtils.findFields(
+            testClass,
+            field ->
+                ReflectionUtils.isNotStatic(field)
+                    && ActorClock.class.isAssignableFrom(field.getType()),
+            HierarchyTraversalMode.TOP_DOWN)
+        .forEach(
+            field -> {
+              try {
+                makeAccessible(field).set(testInstance, lookupOrCreate(extensionContext).clock);
+              } catch (final Throwable t) {
+                ExceptionUtils.throwAsUncheckedException(t);
+              }
+            });
   }
 
   private static final class StreamProcessorTestContext implements CloseableResource {
@@ -106,9 +122,8 @@ public class StreamPlatformExtension implements BeforeEachCallback {
     @Override
     public void close() throws Exception {
       Collections.reverse(closables);
-      for (final var closeable : closables) {
-        closeable.close();
-      }
+      CloseHelper.quietCloseAll(closables);
+      closables.clear();
     }
   }
 }
