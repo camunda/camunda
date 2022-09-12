@@ -11,13 +11,13 @@ import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import java.util.Optional;
 
-public record PartitionBackupStatus(
+record PartitionBackupStatus(
     int partitionId,
     BackupStatusCode status,
     Optional<PartitionBackupDescriptor> description,
     Optional<String> failureReason) {
 
-  public static PartitionBackupStatus from(final BackupStatusResponse response) {
+  static PartitionBackupStatus from(final BackupStatusResponse response) {
 
     final var status = response.getStatus();
     return switch (status) {
