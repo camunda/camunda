@@ -73,6 +73,7 @@ public class RawProcessDataResultDtoMapper {
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionId(),
       processInstanceDto.getProcessInstanceId(),
+      processInstanceDto.getIncidents().size(),
       processInstanceDto.getIncidents()
         .stream()
         .filter(incidentDto -> incidentDto.getIncidentStatus() == IncidentStatus.OPEN)

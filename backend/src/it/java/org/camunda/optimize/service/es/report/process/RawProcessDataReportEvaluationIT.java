@@ -87,7 +87,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     deployAndStartSimpleProcess();
-
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -502,8 +501,9 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     importAllEngineEntitiesFromScratch();
 
     // when
+    ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
-      createReportAndReturnEvaluationResult(processInstance);
+      evaluateRawReportWithDefaultPagination(reportData);
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
 
     // then
@@ -699,6 +699,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     importAllEngineEntitiesFromScratch();
 
     // when
+    ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
       createReportAndReturnEvaluationResult(processInstance);
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
@@ -850,6 +851,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     importAllEngineEntitiesFromScratch();
 
     // when
+    ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
       createReportAndReturnEvaluationResult(processInstance);
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
@@ -1141,7 +1143,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  public void openIncidentCountAppearsOnRawDataReport() {
+  public void openIncidentCountAndTotalIncidentCountAppearsOnRawDataReport() {
     // given
     String definitionKey = "definitionKey";
     String definitionVersion = "1";
