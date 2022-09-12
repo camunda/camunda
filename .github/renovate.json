@@ -1,0 +1,6 @@
+{
+  "extends": ["config:base", ":rebaseStalePrs"],
+  "includePaths": [".github/**", ".ci/**"],
+  "commitMessagePrefix": "chore(deps):",
+  "branchPrefix": "renovate/"
+}
