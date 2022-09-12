@@ -40,7 +40,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = {Application.class})
+@SpringBootTest(classes = {Application.class},
+    properties = {"spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
 public class BatchOperationPerformanceTest {
 
   private static final Logger logger = LoggerFactory.getLogger(BatchOperationPerformanceTest.class);

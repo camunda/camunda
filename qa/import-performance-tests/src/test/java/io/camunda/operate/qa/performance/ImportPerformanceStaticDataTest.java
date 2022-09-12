@@ -56,7 +56,8 @@ public class ImportPerformanceStaticDataTest {
         .profiles(OperateProfileService.AUTH_PROFILE).application();
     application.setDefaultProperties(Map.of("camunda.operate.importer.threadsCount", 5,
         "camunda.operate.importer.queueSize", 7,
-        "camunda.operate.importer.readerThreadsCount", 5));
+        "camunda.operate.importer.readerThreadsCount", 5,
+        "spring.mvc.pathmatch.matching-strategy", "ANT_PATH_MATCHER"));
     applicationContext = application.run();
     operateProperties = applicationContext.getBean(OperateProperties.class);
   }
