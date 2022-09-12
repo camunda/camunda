@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.qa.util.actuator.LoggersActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.test.util.record.CompactRecordLogger;
 import io.camunda.zeebe.test.util.record.RecordStream;
 import io.zeebe.containers.ZeebeGatewayNode;
@@ -37,7 +38,9 @@ import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.TestWatcher;
 import org.slf4j.event.Level;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
@@ -58,7 +61,11 @@ final class LongPollingIT {
 
   @SuppressWarnings("unused")
   @RegisterExtension
-  final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(cluster::getNodes);
+  private final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(cluster::getNodes);
+
+  @SuppressWarnings("unused")
+  @RegisterExtension
+  private final Watcher watcher = new Watcher();
 
   @Container
   private final ContainerEngine engine =
@@ -77,8 +84,8 @@ final class LongPollingIT {
     CloseHelper.quietCloseAll(network);
   }
 
-  // regression test of https://github.com/camunda/zeebe/issues/9658
   @RepeatedTest(20)
+  @RegressionTest("https://github.com/camunda/zeebe/issues/9658")
   void shouldActivateAndCompleteJobsInTime() throws InterruptedException, TimeoutException {
     // given
     final var process =
@@ -121,10 +128,8 @@ final class LongPollingIT {
       // then - ensure that we tried to activate before the job was created, and that we activated
       // it AGAIN after it was created, without the client sending a new request
       engine.waitForIdleState(Duration.ofSeconds(30));
-
       Loggers.LONG_POLLING.error("Checking if we have two job batch activate commands...");
-      Loggers.LONG_POLLING.error("Printing log entirely: ");
-      new CompactRecordLogger(records().collect(Collectors.toList()));
+
 
       assertThat(records())
           .as("long polling should trigger a second ACTIVATE command without the client doing so")
@@ -152,5 +157,14 @@ final class LongPollingIT {
         .withEnv("ZEEBE_GATEWAY_LONGPOLLING_ENABLED", "true")
         // https://github.com/camunda-community-hub/zeebe-test-container/issues/332
         .addExposedPort(ZeebePort.MONITORING.getPort());
+  }
+
+  private final class Watcher implements TestWatcher {
+
+    @Override
+    public void testFailed(final ExtensionContext context, final Throwable cause) {
+      Loggers.LONG_POLLING.error("Printing log entirely: ");
+      new CompactRecordLogger(records().collect(Collectors.toList()));
+    }
   }
 }
