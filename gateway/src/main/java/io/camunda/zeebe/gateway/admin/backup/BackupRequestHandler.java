@@ -18,6 +18,7 @@ import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public final class BackupRequestHandler implements BackupApi {
 
@@ -30,7 +31,7 @@ public final class BackupRequestHandler implements BackupApi {
   }
 
   @Override
-  public CompletableFuture<Long> takeBackup(final long backupId) {
+  public CompletionStage<Long> takeBackup(final long backupId) {
     final Either<Throwable, Boolean> topologyComplete = checkTopologyComplete();
     if (topologyComplete.isLeft()) {
       return CompletableFuture.failedFuture(
@@ -52,7 +53,7 @@ public final class BackupRequestHandler implements BackupApi {
   }
 
   @Override
-  public CompletableFuture<BackupStatus> getStatus(final long backupId) {
+  public CompletionStage<BackupStatus> getStatus(final long backupId) {
     final Either<Throwable, Boolean> topologyComplete = checkTopologyComplete();
     if (topologyComplete.isLeft()) {
       return CompletableFuture.failedFuture(

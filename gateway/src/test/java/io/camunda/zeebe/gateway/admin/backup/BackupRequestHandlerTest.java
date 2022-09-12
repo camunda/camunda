@@ -69,7 +69,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
         .succeedsWithin(Duration.ofMillis(500))
         .returns(BackupStatusCode.COMPLETED, BackupStatus::status);
 
-    final var status = future.join();
+    final var status = future.toCompletableFuture().join();
     assertThat(status.partitions())
         .hasSize(brokerClient.getTopologyManager().getTopology().getPartitionsCount());
   }
@@ -89,7 +89,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
         .succeedsWithin(Duration.ofMillis(500))
         .returns(BackupStatusCode.IN_PROGRESS, BackupStatus::status);
 
-    final var status = future.join();
+    final var status = future.toCompletableFuture().join();
     assertThat(status.partitions())
         .hasSize(brokerClient.getTopologyManager().getTopology().getPartitionsCount());
   }
@@ -109,7 +109,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
         .succeedsWithin(Duration.ofMillis(500))
         .returns(BackupStatusCode.FAILED, BackupStatus::status);
 
-    final var status = future.join();
+    final var status = future.toCompletableFuture().join();
     assertThat(status.failureReason().orElseThrow()).contains("FAILED");
     assertThat(status.partitions())
         .hasSize(brokerClient.getTopologyManager().getTopology().getPartitionsCount());
@@ -130,7 +130,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
         .succeedsWithin(Duration.ofMillis(500))
         .returns(BackupStatusCode.DOES_NOT_EXIST, BackupStatus::status);
 
-    final var status = future.join();
+    final var status = future.toCompletableFuture().join();
     assertThat(status.partitions())
         .hasSize(brokerClient.getTopologyManager().getTopology().getPartitionsCount());
   }
