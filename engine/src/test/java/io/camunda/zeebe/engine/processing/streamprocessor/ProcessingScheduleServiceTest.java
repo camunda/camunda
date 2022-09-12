@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
@@ -235,6 +236,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @RegressionTest("https://github.com/camunda/zeebe/issues/10240")
+  @Disabled("Flaky test due to https://github.com/camunda/zeebe/issues/10306; enable once fixed")
   void shouldPreserveOrderingOfWritesEvenWithRetries() {
     // given
     final var dummyProcessorSpy = spy(dummyProcessor);
