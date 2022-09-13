@@ -76,7 +76,7 @@
     <version.rocksdbjni>7.5.3</version.rocksdbjni>
     <version.sbe>1.26.0</version.sbe>
     <version.scala>2.13.8</version.scala>
-    <version.slf4j>1.7.36</version.slf4j>
+    <version.slf4j>2.0.0</version.slf4j>
     <version.snakeyaml>1.32</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
     <version.wiremock>2.33.2</version.wiremock>
