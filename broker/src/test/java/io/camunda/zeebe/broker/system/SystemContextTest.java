@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg.NodeCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
@@ -393,6 +394,18 @@ final class SystemContextTest {
         .hasMessage(
             "Expected to have a valid certificate chain path for network security, but none "
                 + "configured");
+  }
+
+  @Test
+  void shouldThrowExceptionWhenS3BucketIsNotProvided() throws CertificateException {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getData().getBackup().setStore(BackupStoreType.S3);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("bucketName must not be empty");
   }
 
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {
