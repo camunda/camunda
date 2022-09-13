@@ -591,7 +591,14 @@ public class ModifyProcessInstanceTerminationTest {
                     eventSubprocess
                         .startEvent()
                         .message(m -> m.name("start").zeebeCorrelationKeyExpression("key"))
-                        .userTask("B")
+                        .subProcess(
+                            "subprocess",
+                            subprocess ->
+                                subprocess
+                                    .embeddedSubProcess()
+                                    .startEvent()
+                                    .userTask("B")
+                                    .endEvent())
                         .endEvent())
             .startEvent()
             .userTask("A")
@@ -640,8 +647,16 @@ public class ModifyProcessInstanceTerminationTest {
                 BpmnElementType.EVENT_SUB_PROCESS,
                 "event-subprocess",
                 ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "subprocess",
+                ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "subprocess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(
                 BpmnElementType.EVENT_SUB_PROCESS,
                 "event-subprocess",
