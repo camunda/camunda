@@ -169,6 +169,11 @@ public final class SystemContext {
   }
 
   private void validateBackupCfg(final BackupStoreCfg backup) {
+    if (backup.getStore() == BackupStoreType.NONE) {
+      LOG.warn("No backup store is configured. Backups will not be taken");
+      return;
+    }
+
     if (backup.getStore() == BackupStoreType.S3) {
       final var s3Config = backup.getS3();
       if (s3Config.getBucketName() == null || s3Config.getBucketName().isEmpty()) {
