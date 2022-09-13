@@ -149,10 +149,9 @@ public final class ElementActivationBehavior {
           processInstanceRecord, elementInstance.getKey(), flowScopes, createVariablesCallback);
 
     } else {
-      // todo: deal with multiple flow scopes found without ancestor selection (#10008)
       final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
-      throw new UnsupportedOperationException(
-          "Found more than one flow scope instance with id '%s'.".formatted(flowScopeId));
+      throw new MultipleFlowScopeInstancesFoundException(
+          flowScopeId, processInstanceRecord.getBpmnProcessId());
     }
   }
 
