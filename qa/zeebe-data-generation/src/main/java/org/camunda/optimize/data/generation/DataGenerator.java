@@ -40,8 +40,8 @@ public class DataGenerator {
   private final ZeebeClient zeebeClient;
 
   private final ThreadPoolTaskExecutor dataGeneratorTaskExecutor;
-  private Integer instanceCount;
-  private Integer definitionCount;
+  private final Integer instanceCount;
+  private final Integer definitionCount;
 
   public DataGenerator(final ZeebeClient zeebeClient,
                        @Qualifier("dataGeneratorThreadPoolExecutor") final ThreadPoolTaskExecutor dataGeneratorTaskExecutor,
@@ -136,9 +136,9 @@ public class DataGenerator {
   private void deployProcess(final String processId) {
     log.info("Deploying process with ID [{}]", processId);
     try {
-      DeployResourceCommandStep1 deployProcessCommandStep1 = zeebeClient.newDeployResourceCommand();
-      deployProcessCommandStep1.addProcessModel(createModel(processId), processId + ".bpmn");
-      ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployProcessCommandStep1)
+      DeployResourceCommandStep1 deployResourceCommandStep1 = zeebeClient.newDeployResourceCommand();
+      deployResourceCommandStep1.addProcessModel(createModel(processId), processId + ".bpmn");
+      ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployResourceCommandStep1)
         .send()
         .join(2, TimeUnit.SECONDS);
     } catch (Exception e) {

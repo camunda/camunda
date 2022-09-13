@@ -9,8 +9,7 @@ import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
 import {isEmailEnabled} from 'config';
-import {Input, Select, UserTypeahead} from 'components';
-import {numberParser} from 'services';
+import {UserTypeahead} from 'components';
 
 import {ConfigureProcessModal} from './ConfigureProcessModal';
 
@@ -24,7 +23,7 @@ jest.mock('services', () => ({
   numberParser: {isPositiveInt: jest.fn().mockReturnValue(true)},
 }));
 
-const digest = {enabled: false, checkInterval: {value: 1, unit: 'week'}};
+const digest = {enabled: false};
 const props = {
   initialConfig: {
     owner: {id: null, name: null},
@@ -54,9 +53,6 @@ it('should invoke the onConfirm with the updated config', async () => {
     .simulate('change', [{id: 'USER:test', identity: {id: 'test', name: 'testName'}}]);
 
   node.find('Switch').simulate('change', {target: {checked: true}});
-  node.find(Input).simulate('change', {target: {value: 2}});
-  node.find(Select).simulate('change', 'months');
-
   node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith(
@@ -64,10 +60,6 @@ it('should invoke the onConfirm with the updated config', async () => {
       ownerId: 'test',
       processDigest: {
         enabled: true,
-        checkInterval: {
-          value: 2,
-          unit: 'months',
-        },
       },
     },
     true,
@@ -108,15 +100,4 @@ it('should show warning that email is not configured', async () => {
   const node = shallow(<ConfigureProcessModal {...props} />);
 
   expect(node.find('MessageBox').exists()).toBe(true);
-});
-
-it('should disable the confirm button if invalid interval value is provided', async () => {
-  numberParser.isPositiveInt.mockReturnValue(false);
-  const node = shallow(
-    <ConfigureProcessModal initialConfig={{owner: {id: 'test', name: 'testName'}, digest}} />
-  );
-
-  node.find('Switch').simulate('change', {target: {checked: true}});
-
-  expect(node.find('.confirm').prop('disabled')).toBe(true);
 });

@@ -14,8 +14,6 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
-import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
@@ -104,7 +102,7 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
     final List<ProcessOverviewResponseDto> processes = processOverviewClient.getProcessOverviews(null);
 
     // then
-    assertThat(processes).hasSize(0);
+    assertThat(processes).isEmpty();
   }
 
   @Test
@@ -265,10 +263,10 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
 
     // then
     assertThat(overviews).filteredOn(process -> process.getProcessDefinitionKey()
-        .equals(FIRST_PROCESS_DEFINITION_KEY))
+      .equals(FIRST_PROCESS_DEFINITION_KEY))
       .singleElement()
       .satisfies(process -> assertThat(process.getLinkToDashboard()).isEqualTo(
-        String.format(MAGIC_LINK_TEMPLATE, FIRST_PROCESS_DEFINITION_KEY, FIRST_PROCESS_DEFINITION_KEY)
+        String.format(MAGIC_LINK_TEMPLATE, "", FIRST_PROCESS_DEFINITION_KEY, FIRST_PROCESS_DEFINITION_KEY)
           + APP_CUE_DASHBOARD_SUFFIX));
   }
 
@@ -289,11 +287,11 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
 
     // then
     assertThat(overviews).filteredOn(process -> process.getProcessDefinitionKey()
-        .equals(SECOND_PROCESS_DEFINITION_KEY))
+      .equals(SECOND_PROCESS_DEFINITION_KEY))
       .singleElement()
       .satisfies(process -> assertThat(process.getLinkToDashboard()).isEqualTo(
         // No suffix
-        String.format(MAGIC_LINK_TEMPLATE, SECOND_PROCESS_DEFINITION_KEY, SECOND_PROCESS_DEFINITION_KEY)));
+        String.format(MAGIC_LINK_TEMPLATE, "", SECOND_PROCESS_DEFINITION_KEY, SECOND_PROCESS_DEFINITION_KEY)));
   }
 
   @Test
@@ -311,12 +309,12 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
     processOverviewClient.updateProcess(
       FIRST_PROCESS_DEFINITION_KEY,
       DEFAULT_USERNAME,
-      new ProcessDigestRequestDto(new AlertInterval(1, AlertIntervalUnit.WEEKS), false)
+      new ProcessDigestRequestDto(false)
     );
     processOverviewClient.updateProcess(
       "anotherProcess",
       "kermit",
-      new ProcessDigestRequestDto(new AlertInterval(1, AlertIntervalUnit.WEEKS), false)
+      new ProcessDigestRequestDto(false)
     );
 
     // when
@@ -328,12 +326,11 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
       .containsExactlyInAnyOrder(
         Tuple.tuple(
           FIRST_PROCESS_DEFINITION_KEY,
-          new ProcessDigestResponseDto(new AlertInterval(1, AlertIntervalUnit.WEEKS), false
-          )
+          new ProcessDigestResponseDto(false)
         ),
         Tuple.tuple(
           "anotherProcess",
-          new ProcessDigestResponseDto(new AlertInterval(1, AlertIntervalUnit.WEEKS), false)
+          new ProcessDigestResponseDto(false)
         )
       );
   }

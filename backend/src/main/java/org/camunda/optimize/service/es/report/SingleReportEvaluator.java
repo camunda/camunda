@@ -118,7 +118,7 @@ public class SingleReportEvaluator {
     PaginationDto completePagination;
     if (reportEvaluationContext.isCsvExport()) {
       offset = 0;
-      limit = Optional.ofNullable(configurationService.getExportCsvLimit()).orElse(DEFAULT_RECORD_LIMIT);
+      limit = Optional.ofNullable(configurationService.getCsvConfiguration().getExportCsvLimit()).orElse(DEFAULT_RECORD_LIMIT);
     } else {
       offset = reportEvaluationContext.getPagination()
         .filter(pag -> pag.getOffset() != null)

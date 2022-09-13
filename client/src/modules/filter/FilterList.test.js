@@ -76,14 +76,7 @@ it('should use the variables prop to resolve variable names', () => {
   const data = [
     {
       type: 'inputVariable',
-      data: {
-        name: 'notANameButAnId',
-        type: 'String',
-        data: {
-          operator: 'in',
-          values: ['varValue'],
-        },
-      },
+      data: {name: 'notANameButAnId', type: 'String'},
       appliedTo: ['definition'],
     },
   ];
@@ -102,6 +95,12 @@ it('should use the variables prop to resolve variable names', () => {
 
   node.setProps({
     variables: {inputVariable: [{id: 'notANameButAnId', name: null, type: 'String'}]},
+  });
+
+  expect(node.find('VariablePreview').prop('variableName')).toBe('notANameButAnId');
+
+  node.setProps({
+    variables: null,
   });
 
   expect(node.find('VariablePreview').prop('variableName')).toBe('notANameButAnId');
@@ -132,7 +131,22 @@ it('should disable editing and pass a warning to variablePreview if variable doe
   const actionItem = node.find('ActionItem');
 
   expect(actionItem.prop('warning')).toBe('Variable does not exist');
-  expect(actionItem.prop('onEdit')).toEqual(undefined);
+});
+
+it('should show variable id if variables are not loaded yet', () => {
+  const variableName = 'notANameButAnId';
+  const data = [
+    {
+      type: 'multipleVariable',
+      data: {data: [{name: variableName, data: {}}]},
+      appliedTo: ['definition'],
+    },
+  ];
+
+  const node = shallow(<FilterList {...props} data={data} variables={null} />);
+
+  const variablePreview = node.find('ActionItem').find('VariablePreview');
+  expect(variablePreview.prop('variableName')).toBe(variableName);
 });
 
 it('should use the DateFilterPreview component for date variables and variable preview for other types', () => {

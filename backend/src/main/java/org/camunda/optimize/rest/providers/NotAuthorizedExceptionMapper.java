@@ -8,6 +8,7 @@ package org.camunda.optimize.rest.providers;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.service.LocalizationService;
+import org.camunda.optimize.service.security.AuthCookieService;
 
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.core.Context;
@@ -21,10 +22,13 @@ import javax.ws.rs.ext.Provider;
 public class NotAuthorizedExceptionMapper implements ExceptionMapper<NotAuthorizedException> {
 
   private final LocalizationService localizationService;
+  private final AuthCookieService cookieService;
   private static final String NOT_AUTHORIZED_ERROR_CODE = "notAuthorizedError";
 
-  public NotAuthorizedExceptionMapper(@Context final LocalizationService localizationService) {
+  public NotAuthorizedExceptionMapper(@Context final LocalizationService localizationService,
+                                      @Context final AuthCookieService cookieService) {
     this.localizationService = localizationService;
+    this.cookieService = cookieService;
   }
 
   @Override
@@ -34,6 +38,7 @@ public class NotAuthorizedExceptionMapper implements ExceptionMapper<NotAuthoriz
     return Response
       .status(Response.Status.UNAUTHORIZED)
       .type(MediaType.APPLICATION_JSON_TYPE)
+      .cookie(cookieService.createDeleteOptimizeAuthCookie(true))
       .entity(getErrorResponseDto(notAuthorizedException)).build();
   }
 

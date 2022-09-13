@@ -19,6 +19,7 @@ import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -74,6 +75,7 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
     assertThat(getMetadataVersion()).isEqualTo(Version.VERSION);
   }
 
+  @Disabled("Disabled until fixed with OPT-6298")
   @Test
   public void upgradeSucceedsOnSchemaVersionOfPreviousPatchVersion() {
     // given
@@ -215,7 +217,7 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
     assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan))
       // then the logged message includes all of the task error fields
       .isInstanceOf(UpgradeRuntimeException.class)
-      .getCause()
+      .cause()
       .hasMessageContainingAll(
         Arrays.stream(TaskResponse.Error.class.getDeclaredFields())
           .filter(field -> field.isAnnotationPresent(JsonProperty.class))

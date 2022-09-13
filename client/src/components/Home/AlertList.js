@@ -123,7 +123,17 @@ export default withErrorHandling(
                 </Button>
               )
             }
-            empty={t('alert.notCreated')}
+            empty={
+              <>
+                {t('alert.notCreated')}
+                {readOnly && (
+                  <>
+                    <br />
+                    {t('alert.contactManager')}
+                  </>
+                )}
+              </>
+            }
             isLoading={isLoading}
             columns={[
               t('common.name'),
@@ -131,7 +141,7 @@ export default withErrorHandling(
               t('common.condition'),
               t('alert.recipient'),
             ]}
-            bulkActions={[<BulkDeleter type="delete" deleteEntities={removeAlerts} />]}
+            bulkActions={!readOnly && [<BulkDeleter type="delete" deleteEntities={removeAlerts} />]}
             onChange={this.loadAlerts}
             data={
               !isLoading &&

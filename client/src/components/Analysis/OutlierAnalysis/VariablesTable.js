@@ -7,11 +7,14 @@
 
 import React from 'react';
 import {Table, Icon, NoDataNotice, LoadingIndicator, DownloadButton} from 'components';
-import {loadCommonOutliersVariables, getInstancesDownloadUrl} from './service';
+import {withUser} from 'HOC';
 import {t} from 'translation';
+
+import {loadCommonOutliersVariables, getInstancesDownloadUrl} from './service';
+
 import './VariablesTable.scss';
 
-export default class VariablesTable extends React.Component {
+export class VariablesTable extends React.Component {
   state = {
     data: null,
   };
@@ -43,6 +46,7 @@ export default class VariablesTable extends React.Component {
           })}
           fileName={`${row.variableName}_Outliers.csv`}
           totalCount={this.props.totalCount}
+          user={this.props.user}
         >
           <Icon type="save" />
           {t('common.instanceIds')}
@@ -88,3 +92,5 @@ export default class VariablesTable extends React.Component {
     );
   }
 }
+
+export default withUser(VariablesTable);

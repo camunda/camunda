@@ -8,10 +8,16 @@ package org.camunda.optimize.service.onboardinglistener;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.GreenMailUtil;
 import com.icegreen.greenmail.util.ServerSetup;
+import io.github.netmikey.logunit.api.LogCapturer;
+import lombok.SneakyThrows;
 import org.awaitility.Awaitility;
 import org.awaitility.Durations;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.rest.engine.dto.EngineUserDto;
+import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
+import org.camunda.optimize.rest.engine.dto.UserProfileDto;
+import org.camunda.optimize.service.importing.CustomerOnboardingDataImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.EmailSecurityProtocol;
@@ -19,20 +25,31 @@ import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
+import javax.mail.Message;
 import javax.mail.internet.MimeMessage;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.service.importing.CustomerOnboadingDataImportIT.CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME;
+import static org.camunda.optimize.service.importing.CustomerOnboadingDataImportIT.CUSTOMER_ONBOARDING_PROCESS_INSTANCES;
+import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.EMAIL_SUBJECT;
 import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.MAGIC_LINK_TEMPLATE;
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
 public class OnboardingSchedulerServiceIT extends AbstractIT {
 
   private ConfigurationService configurationService;
   private GreenMail greenMail;
+
+  @RegisterExtension
+  private final LogCapturer logCapturer = LogCapturer.create()
+    .captureForType(OnboardingNotificationService.class);
 
   @BeforeEach
   public void init() {
@@ -110,7 +127,7 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
 
     // Then
-   assertThat(processTriggeredOnboarding).containsExactly(processKey);
+    assertThat(processTriggeredOnboarding).containsExactly(processKey);
 
     // First instance was completed and notified, now let's start with the 2nd instance
     // Clear our result array to check whether something new will be written on it
@@ -127,7 +144,7 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     // Make sure our function was not triggered
     assertThat(processTriggeredOnboarding).isEmpty();
   }
-  
+
   @Test
   public void eachProcessGetsItsOwnTriggerNotification() {
     // Given
@@ -242,7 +259,8 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     final ProcessDefinitionEngineDto processOne = deployAndStartSimpleServiceTaskProcess(processKey1);
     final ProcessDefinitionEngineDto processTwo = deployAndStartSimpleServiceTaskProcess(processKey2);
     importAllEngineEntitiesFromScratch();
-    restartOnboardingSchedulingService(onboardingSchedulerService); // Reinitialize the service to simulate the first start when Optimize is booted
+    restartOnboardingSchedulingService(onboardingSchedulerService); // Reinitialize the service to simulate the first start
+    // when Optimize is booted
     onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
     onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
 
@@ -283,8 +301,84 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     assertThat(processTriggeredOnboarding).isEmpty();
   }
 
+  @SneakyThrows
   @Test
   public void emailNotificationIsSentCorrectly() {
+    // given
+    setupEmailAlerting(false, null, null, NONE);
+    initGreenMail(ServerSetup.PROTOCOL_SMTP);
+    final String processKey = "lets_spam";
+    final OnboardingSchedulerService onboardingSchedulerService =
+      embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
+    restartOnboardingSchedulingService(onboardingSchedulerService);
+    deployAndStartSimpleServiceTaskProcess(processKey);
+    EngineUserDto kermitUser = createKermitUserDtoWithEmail("to@localhost.com");
+    kermitUser.getProfile().setFirstName("Baked");
+    kermitUser.getProfile().setLastName("Potato");
+    engineIntegrationExtension.addUser(kermitUser);
+    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
+
+    // When
+    importAllEngineEntitiesFromScratch();
+    processOverviewClient.setInitialProcessOwner(processKey, KERMIT_USER);
+    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+
+    // then
+    MimeMessage[] emails = greenMail.getReceivedMessages();
+    assertThat(emails).hasSize(1);
+
+    //Remove all empty spaces and new lines for content comparison
+    String expectedEmailText = String.format(
+      "You have completed your first process instance for the %s process!",
+      processKey
+    ).replaceAll("[\\n\t ]", "");
+    String expectedMagicLink = String.format(MAGIC_LINK_TEMPLATE, "", processKey, processKey).replaceAll("[\\n\t ]", "");
+    String expectedGreeting = String.format("Hi %s %s,", kermitUser.getProfile().getFirstName(),
+                                            kermitUser.getProfile().getLastName()
+    ).replaceAll("[\\n\t ]", "");
+    String emailBodyWithoutEmptySpaces = GreenMailUtil.getBody(emails[0]).replaceAll("[\\n\r\t ]", "");
+    assertThat(emailBodyWithoutEmptySpaces)
+      .contains(expectedEmailText)
+      .contains(expectedMagicLink)
+      .contains(expectedGreeting);
+    assertThat(emails[0].getSubject()).isEqualTo(EMAIL_SUBJECT);
+    assertThat(emails[0].getAllRecipients()).hasSize(1);
+    assertThat(emails[0].getRecipients(Message.RecipientType.TO)[0]).hasToString(kermitUser.getProfile().getEmail());
+  }
+
+  @SneakyThrows
+  @Test
+  public void emailNotificationIsSentWithCorrectLinkWhenCustomContextPathApplied() {
+    try {
+      // given
+      final String customContextPath = "/customContextPath";
+      embeddedOptimizeExtension.getConfigurationService().setContextPath(customContextPath);
+      setupEmailAlerting(false, null, null, NONE);
+      initGreenMail(ServerSetup.PROTOCOL_SMTP);
+      final String processKey = "lets_spam";
+      final OnboardingSchedulerService onboardingSchedulerService =
+        embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
+      restartOnboardingSchedulingService(onboardingSchedulerService);
+      deployAndStartSimpleServiceTaskProcess(processKey);
+
+      // When
+      importAllEngineEntitiesFromScratch();
+      processOverviewClient.setInitialProcessOwner(processKey, DEFAULT_USERNAME);
+      onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+
+      // then
+      MimeMessage[] emails = greenMail.getReceivedMessages();
+      assertThat(emails).hasSize(1);
+      String expectedMagicLink = customContextPath + "/#" + String.format(MAGIC_LINK_TEMPLATE, "", processKey, processKey)
+        .replaceAll("[\\n\t ]", "");
+      assertThat(GreenMailUtil.getBody(emails[0]).replaceAll("[\\n\r\t ]", "")).contains(expectedMagicLink);
+    } finally {
+      embeddedOptimizeExtension.getConfigurationService().setContextPath(null);
+    }
+  }
+
+  @Test
+  public void emailNotificationDoesNotSendForOwnerlessProcesses() {
     // given
     setupEmailAlerting(false, null, null, NONE);
     initGreenMail(ServerSetup.PROTOCOL_SMTP);
@@ -300,10 +394,34 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(emails).hasSize(1);
-    String expectedEmailBody = String.format(OnboardingNotificationService.EMAIL_BODY_TEMPLATE, processKey,
-                                             String.format(MAGIC_LINK_TEMPLATE, processKey, processKey));
-    assertThat(GreenMailUtil.getBody(emails[0])).isEqualTo(expectedEmailBody);
+    assertThat(emails).isEmpty();
+    logCapturer.assertContains(String.format(
+      "No overview for Process definition %s could be found, therefore not able to determine a valid" +
+        " owner. No onboarding email will be sent.",
+      processKey
+    ));
+
+  }
+
+  @Test
+  public void demoOnboardingDataDoesNotTriggerNotifications() {
+    // Given
+    final OnboardingSchedulerService onboardingSchedulerService =
+      embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
+    Set<String> processTriggeredOnboarding = new HashSet<>();
+
+
+    // When
+    restartOnboardingSchedulingService(onboardingSchedulerService);
+    importOnboardingData();
+    // It is crucial that the next statement comes after the import of onboarding data, because during that import the
+    // configuration is reloaded and therefore the notification Handler gets reset
+    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
+    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+
+    // Then
+    // No onboarding was triggered
+    assertThat(processTriggeredOnboarding).isEmpty();
   }
 
   private void setupEmailAlerting(boolean authenticationEnabled, String username, String password,
@@ -351,5 +469,27 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     greenMail = new GreenMail(new ServerSetup(4444, null, protocol));
     greenMail.start();
     greenMail.setUser("from@localhost.com", "demo", "demo");
+  }
+
+  private void importOnboardingData() {
+    embeddedOptimizeExtension.getConfigurationService().setCustomerOnboardingImport(true);
+    embeddedOptimizeExtension.reloadConfiguration();
+    addDataToOptimize(CUSTOMER_ONBOARDING_PROCESS_INSTANCES, CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+  }
+
+  private void addDataToOptimize(final String processInstanceFile, final String processDefinitionFile) {
+    CustomerOnboardingDataImportService customerOnboardingDataImportService =
+      embeddedOptimizeExtension.getBean(CustomerOnboardingDataImportService.class);
+    customerOnboardingDataImportService.importData(processInstanceFile, processDefinitionFile, 1);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
+  private EngineUserDto createKermitUserDtoWithEmail(final String email) {
+    final UserProfileDto kermitProfile = UserProfileDto.builder()
+      .id(KERMIT_USER)
+      .email(email)
+      .build();
+    return new EngineUserDto(kermitProfile, new UserCredentialsDto(KERMIT_USER));
   }
 }

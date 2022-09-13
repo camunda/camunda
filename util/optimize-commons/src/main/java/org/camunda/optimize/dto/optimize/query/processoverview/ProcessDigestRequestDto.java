@@ -9,14 +9,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProcessDigestRequestDto {
 
-  private AlertInterval checkInterval;
   @JsonProperty("enabled")
   private boolean enabled;
 

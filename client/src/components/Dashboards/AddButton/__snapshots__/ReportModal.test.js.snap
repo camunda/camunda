@@ -2,7 +2,6 @@
 
 exports[`should render a Typeahead element with the available reports as options 1`] = `
 <Typeahead
-  disabled={false}
   noValuesMessage="No reports have been created"
   onChange={[Function]}
   onClose={[Function]}
@@ -10,6 +9,18 @@ exports[`should render a Typeahead element with the available reports as options
   onSearch={[Function]}
   placeholder="Select a Report"
 >
+  <ForwardRef(DropdownOption)
+    key="newReport"
+    label="+ New Report from a template"
+    value="newReport"
+  >
+    <Icon
+      type="plus"
+    />
+    <b>
+      New Report from a template
+    </b>
+  </ForwardRef(DropdownOption)>
   <ForwardRef(DropdownOption)
     key="a"
     value="a"

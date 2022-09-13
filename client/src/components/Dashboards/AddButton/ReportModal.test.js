@@ -89,12 +89,6 @@ it('should call the callback when adding a report', () => {
   });
 });
 
-it('should disable typeahead if no reports created yet', async () => {
-  const node = await shallow(<ReportModal {...props} />);
-
-  expect(node.find('Typeahead')).toBeDisabled();
-});
-
 it('should show a loading message while loading available reports', () => {
   const node = shallow(<ReportModal {...props} />);
 
@@ -104,7 +98,7 @@ it('should show a loading message while loading available reports', () => {
 it('should contain an Add External Source field', () => {
   const node = shallow(<ReportModal {...props} />);
 
-  expect(node.find(Tabs.Tab).at(1).prop('title')).toBe('Add External Source');
+  expect(node.find(Tabs.Tab).at(1).prop('title')).toBe('External URL');
 });
 
 it('should hide the typeahead when external mode is enabled', () => {

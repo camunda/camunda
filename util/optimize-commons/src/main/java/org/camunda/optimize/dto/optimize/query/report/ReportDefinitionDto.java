@@ -48,7 +48,7 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
   }
 
   @Override
-  public EntityResponseDto toEntityDto() {
+  public EntityResponseDto toEntityDto(final RoleType roleType) {
     return new EntityResponseDto(
       getId(),
       getName(),
@@ -59,8 +59,7 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
       EntityType.REPORT,
       this.combined,
       this.reportType,
-      // defaults to EDITOR, any authorization specific values have to be applied in responsible service layer
-      RoleType.EDITOR
+      roleType
     );
   }
 

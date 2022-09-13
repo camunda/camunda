@@ -18,6 +18,7 @@ import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -34,7 +35,7 @@ public class CsvExportServiceTest {
   @Mock
   private AuthorizationCheckReportEvaluationHandler reportService;
 
-  @Mock
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private ConfigurationService configurationService;
 
   @InjectMocks
@@ -42,8 +43,8 @@ public class CsvExportServiceTest {
 
   @BeforeEach
   public void init() {
-    when(configurationService.getExportCsvLimit()).thenReturn(100);
-    when(configurationService.getExportCsvDelimiter()).thenReturn(',');
+    when(configurationService.getCsvConfiguration().getExportCsvLimit()).thenReturn(100);
+    when(configurationService.getCsvConfiguration().getExportCsvDelimiter()).thenReturn(',');
   }
 
   @Test

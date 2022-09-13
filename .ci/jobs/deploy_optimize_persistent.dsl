@@ -4,7 +4,7 @@ pipelineJob('deploy-optimize-persistent') {
   description 'Deploy Optimize persistent components to its namespace'
 
   // By default, this job is disabled in non-prod envs.
-  if (binding.variables.get("ENVIRONMENT") != "prod") {
+  if (ENVIRONMENT != "prod") {
     disabled()
   }
 

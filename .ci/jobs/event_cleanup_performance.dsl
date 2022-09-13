@@ -4,7 +4,7 @@ pipelineJob('event-cleanup-performance') {
   description 'Test Optimize Event Based Process History Cleanup performance.'
 
   // By default, this job is disabled in non-prod envs.
-  if (binding.variables.get("ENVIRONMENT") != "prod") {
+  if (ENVIRONMENT != "prod") {
     disabled()
   }
 
@@ -25,11 +25,14 @@ pipelineJob('event-cleanup-performance') {
     stringParam('CLEANUP_TIMEOUT_MINUTES', '240', 'Time limit for a cleanup run to finish')
   }
 
-  properties {
-    pipelineTriggers {
-      triggers {
-        cron {
-          spec('H 20 * * 1-5')
+  // Disable cron testing envs, in case someone tests the job and forgets to disable it
+  if (ENVIRONMENT == "prod") {
+    properties {
+      pipelineTriggers {
+        triggers {
+          cron {
+            spec('H 20 * * 1-5')
+          }
         }
       }
     }

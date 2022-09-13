@@ -95,7 +95,6 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
       httpClientBuilder.setSSLContext(sslContext);
 
-
       final ProxyConfiguration proxyConfig = configurationService.getElasticSearchProxyConfig();
       if (proxyConfig.isEnabled()) {
         httpClientBuilder.setProxy(new HttpHost(
@@ -109,7 +108,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
   private static RestClientBuilder buildDefaultRestClient(ConfigurationService configurationService, String protocol) {
     final RestClientBuilder restClientBuilder = RestClient.builder(
-      buildElasticsearchConnectionNodes(configurationService, protocol))
+        buildElasticsearchConnectionNodes(configurationService, protocol))
       .setRequestConfigCallback(
         requestConfigBuilder -> requestConfigBuilder
           .setConnectTimeout(configurationService.getElasticsearchConnectionTimeout())

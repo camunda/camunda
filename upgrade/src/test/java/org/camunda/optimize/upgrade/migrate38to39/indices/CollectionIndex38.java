@@ -19,7 +19,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-public class CollectionIndexOld extends DefaultIndexMappingCreator {
+public class CollectionIndex38 extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 4;
 

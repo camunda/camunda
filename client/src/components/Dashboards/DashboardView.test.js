@@ -156,6 +156,15 @@ it('should return to light mode when the component is unmounted', async () => {
   expect(spy).toHaveBeenCalled();
 });
 
+it('should hide alert dropdown in full screen mode', async () => {
+  useFullScreenHandle().active = true;
+  const node = shallow(<DashboardView />);
+
+  await runAllEffects();
+
+  expect(node.find(AlertsDropdown)).not.toExist();
+});
+
 it('should disable the share button if not authorized', async () => {
   const node = shallow(<DashboardView isAuthorizedToShare={false} sharingEnabled />);
 

@@ -19,8 +19,8 @@ import static org.mockserver.model.HttpRequest.request;
 
 public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT {
 
-  public AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(engineIntegrationExtension);
-  public AuthorizationClient secondAuthorizationClient = new AuthorizationClient(secondaryEngineIntegrationExtension);
+  private final AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(engineIntegrationExtension);
+  private final AuthorizationClient secondAuthorizationClient = new AuthorizationClient(secondaryEngineIntegrationExtension);
 
   @Test
   public void authorizedByAtLeastOneEngine() {

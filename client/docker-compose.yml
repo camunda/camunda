@@ -26,7 +26,7 @@ services:
       retries: 3
   cambpm:
     image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.17.0}
-    profiles: ['cambpm']
+    profiles: ['platform']
     container_name: cambpm
     environment:
       - DB_DRIVER=org.postgresql.Driver
@@ -51,7 +51,7 @@ services:
       - postgres
   postgres:
     image: postgres:11.2
-    profiles: ['cambpm']
+    profiles: ['platform']
     container_name: postgres
     command: ["postgres", "-c", "max_connections=200", "-c", "effective_cache_size=4GB", "-c", "shared_buffers=2GB", "-c", "synchronous_commit=off", "-c", "log_statement=none", "-c", "checkpoint_timeout=600", "-c", "max_wal_size=30GB"]
     environment:
@@ -70,8 +70,8 @@ services:
     volumes:
       - ./databaseDumps:/dump/
   zeebe:
-    image: camunda/zeebe:${ZEEBE_VERSION:-1.0.0}
-    profiles: ['zeebe']
+    image: camunda/zeebe:${ZEEBE_VERSION:-8.0.0}
+    profiles: ['cloud', 'self-managed']
     container_name: zeebe
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
@@ -83,3 +83,32 @@ services:
       - ../zeebe-application.yml:/usr/local/zeebe/config/application.yaml
     depends_on:
       - elasticsearch
+  keycloak:
+    container_name: keycloak
+    image: jboss/keycloak:16.1.1
+    profiles: ['self-managed']
+    ports:
+      - "18080:8080"
+    environment:
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+  identity:
+    depends_on:
+      - keycloak
+    restart: on-failure
+    container_name: identity
+    image: camunda/identity:SNAPSHOT
+    profiles: ['self-managed']
+    ports:
+      - "8081:8081"
+    environment:
+      SERVER_PORT: 8081
+      KEYCLOAK_URL: http://keycloak:8080/auth
+      IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
+      KEYCLOAK_INIT_OPTIMIZE_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:3000
+      KEYCLOAK_USERS_0_USERNAME: "demo"
+      KEYCLOAK_USERS_0_PASSWORD: "demo"
+      KEYCLOAK_USERS_0_FIRST_NAME: "demo"
+      KEYCLOAK_USERS_0_ROLES_0: "Identity"
+      KEYCLOAK_USERS_0_ROLES_1: "Optimize"

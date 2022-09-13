@@ -22,6 +22,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.rest.engine.PlatformEngineContextFactory;
+import org.camunda.optimize.service.KpiEvaluationSchedulerService;
 import org.camunda.optimize.service.KpiService;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.SettingsService;
@@ -175,6 +176,7 @@ public class EmbeddedOptimizeExtension
       ((ConfigurableApplicationContext) applicationContext).close();
       setCloseContextAfterTest(false);
       setApplicationContext(SpringExtension.getApplicationContext(extensionContext));
+      reloadConfiguration();
     }
   }
 
@@ -591,6 +593,10 @@ public class EmbeddedOptimizeExtension
 
   public CleanupScheduler getCleanupScheduler() {
     return getBean(CleanupScheduler.class);
+  }
+
+  public KpiEvaluationSchedulerService getKpiSchedulerService() {
+    return getBean(KpiEvaluationSchedulerService.class);
   }
 
   public TelemetryScheduler getTelemetryScheduler() {

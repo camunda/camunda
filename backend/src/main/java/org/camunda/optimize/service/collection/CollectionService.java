@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRe
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
@@ -21,12 +22,14 @@ import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.relations.CollectionRelationService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -43,19 +46,24 @@ public class CollectionService {
   private final CollectionEntityService collectionEntityService;
   private final CollectionWriter collectionWriter;
   private final CollectionReader collectionReader;
+  private final AbstractIdentityService identityService;
 
   public IdResponseDto createNewCollectionAndReturnId(final String userId,
                                                       final PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
+    if (!identityService.getUserAuthorizations(userId).contains(AuthorizationType.ENTITY_EDITOR)) {
+      throw new ForbiddenException("User is not an authorized entity editor");
+    }
     return collectionWriter.createNewCollectionAndReturnId(userId, partialCollectionDefinitionDto);
   }
 
   public Optional<IdResponseDto> createNewCollectionWithPresetId(final String userId,
-                                                       final PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto,
-                                                       final String presetId,
-                                                       final boolean automaticallyCreated) {
+                                                                 final PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto,
+                                                                 final String presetId,
+                                                                 final boolean automaticallyCreated) {
     try {
-      return Optional.of(collectionWriter.createNewCollectionAndReturnId(userId, partialCollectionDefinitionDto,
-                                                                        presetId, automaticallyCreated));
+      return Optional.of(collectionWriter.createNewCollectionAndReturnId(
+        userId, partialCollectionDefinitionDto, presetId, automaticallyCreated
+      ));
     } catch (OptimizeRuntimeException e) {
       // This can happen if the collection has been created in parallel, let's check if it already exists
       if (Optional.ofNullable(getCollectionDefinition(presetId)).isEmpty()) {
@@ -63,8 +71,7 @@ public class CollectionService {
         // exception
         log.error("Unexpected error when trying to create collection with ID " + presetId, e);
         throw e;
-      }
-      else {
+      } else {
         // If it exists already, there's nothing we need to do, return empty to avoid the re-creation of reports
         return Optional.empty();
       }
@@ -169,4 +176,5 @@ public class CollectionService {
     final AuthorizedCollectionDefinitionDto collectionDefinitionDto) {
     return AuthorizedCollectionDefinitionRestDto.from(collectionDefinitionDto);
   }
+
 }

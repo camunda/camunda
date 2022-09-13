@@ -70,7 +70,6 @@ public class OptimizeJettyServerCustomizer implements WebServerFactoryCustomizer
 
       handlerCollection.addHandler(handler);
       server.setHandler(handlerCollection);
-
     };
     factory.addServerCustomizers(jettyServerCustomizer);
   }

@@ -23,13 +23,14 @@ import {
 } from 'components';
 import {isSharingEnabled, getOptimizeProfile} from 'config';
 import {formatters, checkDeleteConflict} from 'services';
+import {withUser} from 'HOC';
 import {t} from 'translation';
 
 import {shareReport, revokeReportSharing, getSharedReport} from './service';
 
 import './ReportView.scss';
 
-export default class ReportView extends React.Component {
+export class ReportView extends React.Component {
   state = {
     deleting: null,
     sharingEnabled: false,
@@ -118,6 +119,7 @@ export default class ReportView extends React.Component {
                   main
                   href={this.constructCSVDownloadLink()}
                   totalCount={calculateTotalEntries(report)}
+                  user={this.props.user}
                 >
                   <Icon type="save" />
                   {t('report.downloadCSV')}
@@ -143,6 +145,8 @@ export default class ReportView extends React.Component {
     );
   }
 }
+
+export default withUser(ReportView);
 
 function calculateTotalEntries({result}) {
   switch (result.type) {

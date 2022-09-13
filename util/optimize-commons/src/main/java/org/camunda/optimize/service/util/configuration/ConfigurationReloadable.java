@@ -9,7 +9,7 @@ import org.springframework.context.ApplicationContext;
 
 /**
  * Every class that implements this interfaces is automatically
- * called as soon as {TestEmbeddedCamundaOptimize#reloadConfiguration} is called.
+ * called as soon as {EmbeddedOptimizeExtension#reloadConfiguration} is called.
  */
 public interface ConfigurationReloadable {
 

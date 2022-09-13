@@ -8,9 +8,9 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 
-import {Button, EntityList, Icon, Tooltip} from 'components';
+import {Button, DocsLink, EntityList, Icon, Tooltip} from 'components';
 import {t} from 'translation';
-import {withErrorHandling} from 'HOC';
+import {withErrorHandling, withUser} from 'HOC';
 import {addNotification, showError} from 'notifications';
 import {getOptimizeProfile} from 'config';
 
@@ -22,7 +22,7 @@ import {loadProcesses, updateProcess, loadManagementDashboard} from './service';
 
 import './Processes.scss';
 
-export function Processes({mightFail}) {
+export function Processes({mightFail, user}) {
   const [processes, setProcesses] = useState();
   const [sorting, setSorting] = useState();
   const [editProcessConfig, setEditProcessConfig] = useState();
@@ -55,13 +55,17 @@ export function Processes({mightFail}) {
     t('common.name'),
     t('processes.timeKpi'),
     t('processes.qualityKpi'),
-    t('dashboard.label'),
     t('common.configure'),
   ];
 
   if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
     const ownerColumn = t('processes.owner');
     columns.splice(1, 0, ownerColumn);
+  }
+
+  const isEditor = user?.authorizations.includes('entity_editor');
+  if (isEditor) {
+    columns.splice(-1, 0, t('dashboard.label'));
   }
 
   return (
@@ -77,10 +81,12 @@ export function Processes({mightFail}) {
       <EntityList
         name={t('processes.title')}
         headerText={
-          <div className="goalInfo">
-            {t('processes.displayData')}{' '}
-            <span className="highlighted">{t('processes.endedThisMonth')}</span>
-          </div>
+          <>
+            {t('processes.kpiInfo')}{' '}
+            <DocsLink location="components/optimize/userguide/processes/#set-time-and-quality-kpis">
+              {t('events.sources.learnMore')}
+            </DocsLink>
+          </>
         }
         empty={t('processes.empty')}
         isLoading={!processes}
@@ -103,10 +109,15 @@ export function Processes({mightFail}) {
                   <KpiSummary kpis={qualityKpis} />
                 </div>
               </Tooltip>,
-              <Link className="processHoverBtn" to={linkToDashboard} target="_blank">
-                {t('common.view')} <Icon type="jump" />
-              </Link>,
             ];
+
+            if (isEditor) {
+              meta.push(
+                <Link className="processHoverBtn" to={linkToDashboard} target="_blank">
+                  {t('common.view')} <Icon type="jump" />
+                </Link>
+              );
+            }
 
             if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
               meta.unshift(
@@ -139,8 +150,9 @@ export function Processes({mightFail}) {
         <ConfigureProcessModal
           initialConfig={editProcessConfig}
           onClose={() => setEditProcessConfig()}
-          onConfirm={async (newConfig, emailEnabled, ownerName) => {
-            await mightFail(
+          onConfirm={(newConfig, emailEnabled, ownerName) => {
+            setEditProcessConfig();
+            mightFail(
               updateProcess(editProcessConfig.processDefinitionKey, newConfig),
               () => {
                 if (emailEnabled && newConfig.processDigest.enabled) {
@@ -149,7 +161,6 @@ export function Processes({mightFail}) {
                     text: t('processes.digestConfigured', {name: ownerName}),
                   });
                 }
-                setEditProcessConfig();
                 loadProcessesList();
               },
               showError
@@ -161,4 +172,4 @@ export function Processes({mightFail}) {
   );
 }
 
-export default withErrorHandling(Processes);
+export default withUser(withErrorHandling(Processes));

@@ -10,11 +10,13 @@ Docker Compose 1.29.2+
 ## Installation
 
 Install yarn
+
 ```bash
 npm install -g yarn
 ```
 
 Install dependencies
+
 ```bash
 yarn
 ```
@@ -32,11 +34,33 @@ gcloud auth application-default login
 gcloud config set project ci-30-162810
 ```
 
+## Setup Auth0 credentials
+
+Create a file called `.env` in the root directory (client) that contains the following:
+```bash
+AUTH0_CLIENTSECRET=
+AUTH0_USEREMAIL=
+AUTH0_USERPASSWORD=
+```
+
+Retrieve the credentials from the [vault](https://vault.int.camunda.com/ui/vault/secrets/secret/show/products/optimize/ci/jenkins) and paste them into the .env file you have just created
+
+
 ## Development server
 
 ```bash
 yarn run start-backend
 ```
+
+The above command will run Optimize in Camunda Platform 7 mode.
+if you want to run Optimize in cloud or self managed mode, use one of the following:
+
+```bash
+yarn run start-backend-cloud
+yarn run start-backend-sm
+```
+> **Tip:**
+  Make sure you don't have any active docker containers running on the optimize ports (e.g. 8090, etc) before starting the backend.
 
 Then in new terminal
 
@@ -117,8 +141,8 @@ Waiting...Fatal error: watch ENOSPC
     at FSWatcher.start (fs.js:1376:19)
     ....
 ```
-then you can find [here](https://stackoverflow.com/a/17437601) a solution for this.
 
+then you can find [here](https://stackoverflow.com/a/17437601) a solution for this.
 
 ## E2E Testing
 

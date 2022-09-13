@@ -13,7 +13,16 @@ import {parseISO} from 'date-fns';
 import {format} from 'dates';
 import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
-import {Icon, Dropdown, EntityList, Deleter, BulkDeleter, Tooltip} from 'components';
+import {
+  Icon,
+  Dropdown,
+  EntityList,
+  Deleter,
+  BulkDeleter,
+  Tooltip,
+  ReportTemplateModal,
+  DashboardTemplateModal,
+} from 'components';
 import {formatters, loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {showError, addNotification} from 'notifications';
 import {getOptimizeProfile} from 'config';
@@ -27,8 +36,6 @@ import UserList from './UserList';
 import AlertList from './AlertList';
 import SourcesList from './SourcesList';
 import CollectionModal from './modals/CollectionModal';
-import ReportTemplateModal from './modals/ReportTemplateModal';
-import DashboardTemplateModal from './modals/DashboardTemplateModal';
 
 import {formatLink, formatType, formatSubEntities} from './formatters';
 
@@ -135,6 +142,7 @@ export class Collection extends React.Component {
     }
 
     const collectionEntity = {...collection, entityType: 'collection'};
+    const hasEditRights = collection && collection.currentUserRole !== 'viewer';
 
     return (
       <div className="Collection">
@@ -187,8 +195,7 @@ export class Collection extends React.Component {
             <EntityList
               name={t('home.collectionTitle')}
               action={(bulkActive) =>
-                collection &&
-                collection.currentUserRole !== 'viewer' && (
+                hasEditRights && (
                   <CreateNewButton
                     primary={!bulkActive}
                     collection={collection.id}
@@ -198,15 +205,27 @@ export class Collection extends React.Component {
                   />
                 )
               }
-              bulkActions={[
-                <BulkDeleter
-                  type="delete"
-                  deleteEntities={async (selected) => await removeEntities(selected, collection)}
-                  checkConflicts={async (selected) => await checkConflicts(selected, collection)}
-                  conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
-                />,
-              ]}
-              empty={t('home.empty')}
+              bulkActions={
+                hasEditRights && [
+                  <BulkDeleter
+                    type="delete"
+                    deleteEntities={async (selected) => await removeEntities(selected, collection)}
+                    checkConflicts={async (selected) => await checkConflicts(selected, collection)}
+                    conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
+                  />,
+                ]
+              }
+              empty={
+                <>
+                  {t('home.empty')}
+                  {!hasEditRights && (
+                    <>
+                      <br />
+                      {t('home.contactManager')}
+                    </>
+                  )}
+                </>
+              }
               isLoading={isLoading}
               sorting={sorting}
               onChange={this.loadEntities}

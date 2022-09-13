@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.importing.ImportSchedulerManagerService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.importing.EngineConstants;
@@ -41,6 +42,7 @@ public class StatusCheckingService {
   private final ConfigurationService configurationService;
   private final EngineContextFactory engineContextFactory;
   private final ImportSchedulerManagerService importSchedulerManagerService;
+  private final OptimizeIndexNameService optimizeIndexNameService;
 
   private final LoadingCache<EngineContext, Boolean> engineConnectionCache = CacheBuilder.newBuilder()
     .expireAfterWrite(1, TimeUnit.MINUTES)
@@ -62,7 +64,7 @@ public class StatusCheckingService {
   public boolean isConnectedToElasticSearch() {
     boolean isConnected = false;
     try {
-      ClusterHealthRequest request = new ClusterHealthRequest();
+      ClusterHealthRequest request = new ClusterHealthRequest(optimizeIndexNameService.getIndexPrefix() + "*");
       final ClusterHealthResponse healthResponse = esClient.getClusterHealth(request);
 
       isConnected = healthResponse.status().getStatus() == Response.Status.OK.getStatusCode()

@@ -146,7 +146,7 @@ export default withErrorHandling(
             {this.props.generated && (
               <MessageBox type="warning">
                 {t('events.generationWarning')}{' '}
-                <DocsLink location="user-guide/event-based-processes#autogenerate">
+                <DocsLink location="components/optimize/userguide/additional-features/event-based-processes/#event-based-process-auto-generation">
                   {t('common.seeDocs')}
                 </DocsLink>
               </MessageBox>

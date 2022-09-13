@@ -18,6 +18,12 @@ spec:
     metadata:
       labels: {{ include "commonLabels" $ | nindent 8 }}
     spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: previews
+      tolerations:
+        - key: "previews"
+          operator: "Exists"
+          effect: "NoSchedule"
       imagePullSecrets:
         - name: registry-camunda-cloud
       volumes:

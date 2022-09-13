@@ -13,7 +13,7 @@ import {t} from 'translation';
 import {showError} from 'notifications';
 import {BPMNDiagram, HeatmapOverlay, Button} from 'components';
 import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
-import {withErrorHandling} from 'HOC';
+import {withErrorHandling, withUser} from 'HOC';
 
 import OutlierControlPanel from './OutlierControlPanel';
 import OutlierDetailsModal from './OutlierDetailsModal';
@@ -133,6 +133,7 @@ export class OutlierAnalysis extends React.Component {
           value={boundValue}
           config={config}
           totalCount={totalCount}
+          user={this.props.user}
         />
       </div>
     );
@@ -192,4 +193,4 @@ export class OutlierAnalysis extends React.Component {
   }
 }
 
-export default withErrorHandling(OutlierAnalysis);
+export default withErrorHandling(withUser(OutlierAnalysis));

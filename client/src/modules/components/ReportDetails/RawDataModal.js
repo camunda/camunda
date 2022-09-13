@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState, useCallback} from 'react';
+import React, {useState, useCallback, useEffect} from 'react';
 
 import {Modal, Button, ReportRenderer, LoadingIndicator} from 'components';
 import {withErrorHandling} from 'HOC';
@@ -18,46 +18,19 @@ import './RawDataModal.scss';
 export function RawDataModal({name, report, close, mightFail}) {
   const [rawDataReport, setRawDataReport] = useState();
   const [error, setError] = useState();
-
-  const loadReport = useCallback(
-    (query) => {
-      const newType = report.type === 'decision' ? 'new-decision' : 'new';
-      const defaultReport = newReport[newType];
-
-      mightFail(
-        evaluateReport(
-          {
-            ...report,
-            data: {
-              ...report.data,
-              configuration: {
-                ...defaultReport.data.configuration,
-                xml: report.data.configuration.xml,
-              },
-              view: {
-                entity: null,
-                properties: ['rawData'],
-              },
-              groupBy: {
-                type: 'none',
-                value: null,
-              },
-              visualization: 'table',
-            },
-          },
-          [],
-          query
-        ),
-        setRawDataReport,
-        setError
-      );
-    },
-    [mightFail, report]
-  );
+  const [reportPayload, setReportPayload] = useState(convertToRawData(report));
+  const [params, setParams] = useState();
 
   useEffect(() => {
-    loadReport();
-  }, [loadReport]);
+    mightFail(evaluateReport(reportPayload, [], params), setRawDataReport, setError);
+  }, [mightFail, params, reportPayload]);
+
+  const loadReport = useCallback((params, reportWithUpdatedSorting) => {
+    setParams(params);
+    if (reportWithUpdatedSorting) {
+      setReportPayload(reportWithUpdatedSorting);
+    }
+  }, []);
 
   return (
     <Modal className="RawDataModal" open size="max" onClose={close}>
@@ -79,3 +52,29 @@ export function RawDataModal({name, report, close, mightFail}) {
 }
 
 export default withErrorHandling(RawDataModal);
+
+function convertToRawData(report) {
+  const newType = report.type === 'decision' ? 'new-decision' : 'new';
+  const defaultReport = newReport[newType];
+
+  return {
+    ...report,
+    data: {
+      ...report.data,
+      configuration: {
+        ...defaultReport.data.configuration,
+        xml: report.data.configuration.xml,
+        sorting: {by: 'startDate', order: 'desc'},
+      },
+      view: {
+        entity: null,
+        properties: ['rawData'],
+      },
+      groupBy: {
+        type: 'none',
+        value: null,
+      },
+      visualization: 'table',
+    },
+  };
+}

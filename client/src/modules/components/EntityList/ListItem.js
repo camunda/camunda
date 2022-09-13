@@ -21,6 +21,7 @@ export default function ListItem({
   data: {type, name, link, icon, meta = [], actions, warning},
   hasWarning,
   singleAction,
+  selectable,
 }) {
   const content = (
     <>
@@ -53,7 +54,7 @@ export default function ListItem({
     <li
       className={classnames('ListItem', {
         active: isSelected,
-        selectable: actions?.length > 0,
+        selectable: selectable && actions?.length > 0,
       })}
     >
       <Input type="checkbox" checked={isSelected} onChange={onSelectionChange} />

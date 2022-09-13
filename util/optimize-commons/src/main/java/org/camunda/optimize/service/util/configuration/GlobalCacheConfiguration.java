@@ -13,4 +13,5 @@ public class GlobalCacheConfiguration {
   private CacheConfiguration definitions;
   private CacheConfiguration definitionEngines;
   private CacheConfiguration eventProcessRoles;
+  private CloudUserCacheConfiguration cloudUsers;
 }

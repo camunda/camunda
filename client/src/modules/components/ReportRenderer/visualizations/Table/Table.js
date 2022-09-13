@@ -24,7 +24,7 @@ import ObjectVariableModal from './ObjectVariableModal';
 import './Table.scss';
 
 export function Table(props) {
-  const {report, updateReport, mightFail, loadReport} = props;
+  const {report, updateReport, mightFail, loadReport, context} = props;
   const {
     reportType,
     combined,
@@ -128,7 +128,7 @@ export function Table(props) {
       ...tableData,
       resultType: result.type,
       sorting: configuration && configuration.sorting,
-      updateSorting: updateReport && updateSorting,
+      updateSorting: context !== 'shared' && context !== 'dashboard' && updateSorting,
       sortByLabel: ['flowNodes', 'userTasks'].includes(groupBy.type),
     };
   }

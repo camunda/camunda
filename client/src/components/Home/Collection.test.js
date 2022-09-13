@@ -8,7 +8,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Dropdown, EntityList, Deleter} from 'components';
+import {Dropdown, EntityList, Deleter, ReportTemplateModal} from 'components';
 import {refreshBreadcrumbs} from 'components/navigation';
 import {loadEntity, updateEntity} from 'services';
 import {getOptimizeProfile} from 'config';
@@ -16,7 +16,6 @@ import {getOptimizeProfile} from 'config';
 import {Collection} from './Collection';
 import Copier from './Copier';
 import CollectionModal from './modals/CollectionModal';
-import ReportTemplateModal from './modals/ReportTemplateModal';
 import {loadCollectionEntities} from './service';
 
 jest.mock('config', () => ({

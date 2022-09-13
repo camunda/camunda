@@ -151,6 +151,7 @@ public class ConfigurationService {
   private String pluginDirectory;
 
   private String containerHost;
+  private String contextPath;
   private String containerKeystorePassword;
   private String containerKeystoreLocation;
   private Integer containerHttpsPort;
@@ -179,8 +180,11 @@ public class ConfigurationService {
 
   private Map<String, WebhookConfiguration> configuredWebhooks;
 
-  private Integer exportCsvLimit;
-  private char exportCsvDelimiter;
+  private String digestCronTrigger;
+
+  private EntityConfiguration entityConfiguration;
+
+  private CsvConfiguration csvConfiguration;
 
   private Properties quartzProperties;
 
@@ -557,7 +561,7 @@ public class ConfigurationService {
   }
 
   public boolean getCustomerOnboardingImport() {
-    if(customerOnboarding == null) {
+    if (customerOnboarding == null) {
       customerOnboarding = configJsonContext.read(ConfigurationServiceConstants.CUSTOMER_ONBOARDING_DATA, Boolean.class);
     }
     return customerOnboarding;
@@ -716,6 +720,13 @@ public class ConfigurationService {
     return containerHost;
   }
 
+  public Optional<String> getContextPath() {
+    if (contextPath == null) {
+      contextPath = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_CONTEXT_PATH);
+    }
+    return Optional.ofNullable(contextPath);
+  }
+
   public String getContainerKeystorePassword() {
     if (containerKeystorePassword == null) {
       containerKeystorePassword = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_KEYSTORE_PASSWORD);
@@ -727,7 +738,7 @@ public class ConfigurationService {
   public Optional<String> getContainerAccessUrl() {
     if (containerAccessUrl == null) {
       containerAccessUrl =
-        Optional.ofNullable(configJsonContext.read(ConfigurationServiceConstants.CONTAINER_ACCESSURL));
+        Optional.ofNullable(configJsonContext.read(ConfigurationServiceConstants.CONTAINER_ACCESS_URL));
     }
     return containerAccessUrl;
   }
@@ -890,7 +901,7 @@ public class ConfigurationService {
     return emailAuthenticationConfiguration;
   }
 
-  public Boolean getImportDmnDataEnabled() {
+  private Boolean getImportDmnDataEnabled() {
     if (importDmnDataEnabled == null) {
       importDmnDataEnabled = configJsonContext.read(ConfigurationServiceConstants.IMPORT_DMN_DATA, Boolean.class);
     }
@@ -902,7 +913,7 @@ public class ConfigurationService {
     return getImportDmnDataEnabled();
   }
 
-  public Boolean getImportUserTaskWorkerDataEnabled() {
+  private Boolean getImportUserTaskWorkerDataEnabled() {
     if (importUserTaskWorkerDataEnabled == null) {
       importUserTaskWorkerDataEnabled = configJsonContext.read(
         ConfigurationServiceConstants.IMPORT_USER_TASK_WORKER_DATA,
@@ -968,23 +979,31 @@ public class ConfigurationService {
     return configuredWebhooks;
   }
 
-  public Integer getExportCsvLimit() {
-    if (exportCsvLimit == null) {
-      exportCsvLimit = configJsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_LIMIT, Integer.class);
+  public String getDigestCronTrigger() {
+    if (digestCronTrigger == null) {
+      digestCronTrigger = configJsonContext.read(ConfigurationServiceConstants.DIGEST_CRON_TRIGGER, String.class);
     }
-    return exportCsvLimit;
+    return digestCronTrigger;
   }
 
-  public char getExportCsvDelimiter() {
-    if (exportCsvDelimiter == 0) {
-      String delimiter = configJsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_DELIMITER);
-      if (delimiter != null) {
-        exportCsvDelimiter = delimiter.charAt(0);
-      } else {
-        exportCsvDelimiter = ',';
-      }
+  public EntityConfiguration getEntityConfiguration() {
+    if (entityConfiguration == null) {
+      entityConfiguration = configJsonContext.read(
+        ConfigurationServiceConstants.ENTITY_CONFIGURATION,
+        EntityConfiguration.class
+      );
     }
-    return exportCsvDelimiter;
+    return entityConfiguration;
+  }
+
+  public CsvConfiguration getCsvConfiguration() {
+    if (csvConfiguration == null) {
+      csvConfiguration = configJsonContext.read(
+        ConfigurationServiceConstants.CSV_CONFIGURATION,
+        CsvConfiguration.class
+      );
+    }
+    return csvConfiguration;
   }
 
   public String getElasticsearchSecurityUsername() {

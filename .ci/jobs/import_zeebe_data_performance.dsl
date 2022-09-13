@@ -9,7 +9,7 @@ pipelineJob('import-zeebe-data-performance') {
   description 'Test Optimize Import performance against a Zeebe dataset.'
 
   // By default, this job is disabled in non-prod envs.
-  if (binding.variables.get("ENVIRONMENT") != "prod") {
+  if (ENVIRONMENT != "prod") {
     disabled()
   }
 
@@ -33,11 +33,14 @@ pipelineJob('import-zeebe-data-performance') {
     choiceParam('SNAPSHOT_FOLDER_NAME', ['zeebe-data-import-performance', 'zeebe-data-test'])
   }
 
-  properties {
-    pipelineTriggers {
-      triggers {
-        cron {
-          spec('H 1 * * 1-5')
+  // Disable cron testing envs, in case someone tests the job and forgets to disable it
+  if (ENVIRONMENT == "prod") {
+    properties {
+      pipelineTriggers {
+        triggers {
+          cron {
+            spec('H 1 * * 1-5')
+          }
         }
       }
     }

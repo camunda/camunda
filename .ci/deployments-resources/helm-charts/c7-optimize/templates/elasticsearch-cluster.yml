@@ -21,6 +21,12 @@ spec:
           camunda.cloud/managed-by: {{ index .Values.global.labels "camunda.cloud/managed-by" }}
         annotations: {{ include "commonAnnotations" $ | nindent 10 }}
       spec:
+        nodeSelector:
+          cloud.google.com/gke-nodepool: previews
+        tolerations:
+          - key: "previews"
+            operator: "Exists"
+            effect: "NoSchedule"
         initContainers:
         - name: sysctl
           securityContext:

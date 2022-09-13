@@ -49,3 +49,9 @@ it('should invoke onSelectionChange when checkbox is triggered', () => {
 
   expect(spy).toHaveBeenCalledWith('test');
 });
+
+it('should add selectable class if there are actions and selectable prop is specfied ', () => {
+  const node = shallow(<ListItem data={{actions: [{}]}} selectable />);
+
+  expect(node.find('.ListItem')).toHaveClassName('selectable');
+});

@@ -20,18 +20,10 @@ function draw(chart) {
   if (chart.legend.height > chartRadius && !viewMoreClicked[chart.id]) {
     chart.options.plugins.legend.maxHeight = 100;
     chart.options.plugins.legend.labels.generateLabels = function (chart) {
-      const labels = originalGenerateLabels(chart);
-
       // add an invisible legend to catch onClick and onHover easily
-      return labels.slice(0, 3).concat([
-        {
-          text: 'viewMoreLegend',
-          fillStyle: 'tranparent',
-          strokeStyle: 'transparent',
-          fontColor: 'transparent',
-          boxWidth: 10,
-        },
-      ]);
+      return originalGenerateLabels(chart)
+        .slice(0, 3)
+        .concat([emptyLegend('viewMoreLegend')]);
     };
 
     update(chart, true);
@@ -39,19 +31,16 @@ function draw(chart) {
 
   // expand the chart legends when clicking "View More"
   if (previouslyTruncated[chart.id] && viewMoreClicked[chart.id]) {
-    chart.options.plugins.legend.labels.generateLabels = originalGenerateLabels;
     chart.options.plugins.legend.maxHeight = undefined;
+    chart.options.plugins.legend.labels.generateLabels = (chart) =>
+      [emptyLegend('viewLessLegend')].concat(originalGenerateLabels(chart));
     update(chart, false);
   }
 
-  // add "View More" text in the same position as
-  // the last legend
   if (previouslyTruncated[chart.id]) {
-    const lastLegend = chart.legend.legendHitBoxes[3];
-    const textXPos = lastLegend.left + (lastLegend.width / 2 - 20);
-    const textYPos = lastLegend.top + 5;
-    chart.ctx.fillStyle = 'blue';
-    chart.ctx.fillText(t('common.viewMore'), textXPos, textYPos);
+    addText(chart, 3, t('common.viewMore'));
+  } else if (viewMoreClicked[chart.id]) {
+    addText(chart, 0, t('common.viewLess'));
   }
 }
 
@@ -62,6 +51,24 @@ function update(chart, newTruncatedState) {
 
   previouslyTruncated[chart.id] = newTruncatedState;
   chart.update();
+}
+
+function addText(chart, position, text) {
+  const {left, width, top} = chart.legend.legendHitBoxes[position];
+  const textXPos = left + width / 2 - 20;
+  const textYPos = top + 5;
+  chart.ctx.fillStyle = 'blue';
+  chart.ctx.fillText(text, textXPos, textYPos);
+}
+
+function emptyLegend(text) {
+  return {
+    text,
+    fillStyle: 'tranparent',
+    strokeStyle: 'transparent',
+    fontColor: 'transparent',
+    boxWidth: 10,
+  };
 }
 
 const generateLegends = {
@@ -79,10 +86,15 @@ const generateLegends = {
         viewMoreClicked[chart.id] = true;
         chart.update();
       }
+
+      if (legend.text === 'viewLessLegend') {
+        viewMoreClicked[chart.id] = false;
+        chart.update();
+      }
     };
 
     chart.options.plugins.legend.onHover = (evt, legend) => {
-      if (legend.text === 'viewMoreLegend') {
+      if (legend.text === 'viewMoreLegend' || legend.text === 'viewLessLegend') {
         chart.canvas.style.cursor = 'pointer';
       } else {
         chart.canvas.style.cursor = 'auto';

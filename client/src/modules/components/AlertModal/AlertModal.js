@@ -261,7 +261,9 @@ export class AlertModal extends React.Component {
                 type="warning"
                 dangerouslySetInnerHTML={{
                   __html: t('alert.emailWarning', {
-                    docsLink: this.props.docsLink + 'technical-guide/setup/configuration/#email',
+                    docsLink:
+                      this.props.docsLink +
+                      'self-managed/optimize-deployment/configuration/system-configuration/#email',
                   }),
                 }}
               />

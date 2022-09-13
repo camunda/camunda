@@ -4,7 +4,7 @@ pipelineJob('upgrade-performance-static-dataset') {
   description 'Test Optimize upgrade performance against a static dataset.'
 
   // By default, this job is disabled in non-prod envs.
-  if (binding.variables.get("ENVIRONMENT") != "prod") {
+  if (ENVIRONMENT != "prod") {
     disabled()
   }
 
@@ -25,11 +25,14 @@ pipelineJob('upgrade-performance-static-dataset') {
     stringParam('UPGRADE_TIMEOUT_MINUTES', '240', 'Timeout for the upgrade stage to complete in minutes.')
   }
 
-  properties {
-    pipelineTriggers {
-      triggers {
-        cron {
-          spec('H 4 * * 1-5')
+  // Disable cron testing envs, in case someone tests the job and forgets to disable it
+  if (ENVIRONMENT == "prod") {
+    properties {
+      pipelineTriggers {
+        triggers {
+          cron {
+            spec('H 4 * * 1-5')
+          }
         }
       }
     }

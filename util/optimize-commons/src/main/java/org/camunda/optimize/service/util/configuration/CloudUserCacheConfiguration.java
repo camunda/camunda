@@ -3,19 +3,12 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.dto.optimize.query.goals;
+package org.camunda.optimize.service.util.configuration;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class ProcessDurationGoalResultDto {
-
-  private DurationGoalType type;
-  private Long value;
-  private Boolean successful;
-
+public class CloudUserCacheConfiguration {
+  private int maxSize;
+  private long minFetchIntervalSeconds;
 }

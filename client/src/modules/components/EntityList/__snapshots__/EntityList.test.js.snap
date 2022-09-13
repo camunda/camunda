@@ -58,6 +58,7 @@ exports[`should match snapshot 1`] = `
         isSelected={false}
         key="0"
         onSelectionChange={[Function]}
+        selectable={false}
         singleAction={true}
       />
       <ListItem
@@ -78,6 +79,7 @@ exports[`should match snapshot 1`] = `
         isSelected={false}
         key="1"
         onSelectionChange={[Function]}
+        selectable={false}
         singleAction={true}
       />
       <ListItem
@@ -100,6 +102,7 @@ exports[`should match snapshot 1`] = `
         isSelected={false}
         key="2"
         onSelectionChange={[Function]}
+        selectable={false}
         singleAction={true}
       />
     </ul>
@@ -116,7 +119,7 @@ exports[`should not show a header entry for column entries that are hidden 1`] =
 >
   <ForwardRef(Input)
     checked={false}
-    className=""
+    className="hidden"
     onChange={[Function]}
     type="checkbox"
   />
@@ -159,7 +162,7 @@ exports[`should show a column header if specified 1`] = `
 >
   <ForwardRef(Input)
     checked={false}
-    className=""
+    className="hidden"
     onChange={[Function]}
     type="checkbox"
   />

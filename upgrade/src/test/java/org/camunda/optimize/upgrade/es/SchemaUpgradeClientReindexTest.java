@@ -61,7 +61,7 @@ public class SchemaUpgradeClientReindexTest {
 
   @Mock
   private ElasticSearchSchemaManager schemaManager;
-  @Mock(answer = Answers.RETURNS_DEEP_STUBS, lenient = true)
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Mock.Strictness.LENIENT)
   private OptimizeElasticsearchClient elasticsearchClient;
   @Mock
   private ConfigurationService configurationService;

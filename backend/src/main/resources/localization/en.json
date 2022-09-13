@@ -145,6 +145,7 @@
       "decision": "Decision Table",
       "process": "Process",
       "notCreated": "There are no sources added yet",
+      "contactManager": "Please contact the collection manager to add new sources",
       "add": "Add Source",
       "definitionName": "Definition Name",
       "deleteWarning": "The '{name}' Data Source will be removed from the Collection.",
@@ -159,6 +160,8 @@
       "unauthorizedTenant": "(Unauthorized Tenant)"
     },
     "empty": "There are no items created yet",
+    "contactEditor": "Please contact an Optimize editor to create new items",
+    "contactManager": "Please contact the collection manager to create new items",
     "welcome": "Welcome"
   },
   "processes": {
@@ -168,8 +171,7 @@
     "processOwner": "Process Owner",
     "timeKpi": "KPI: Time",
     "qualityKpi": "KPI: Quality",
-    "displayData": "Goals display data from instances",
-    "endedThisMonth": "ended in the last 30 days",
+    "kpiInfo": "KPI values are based on certain reports.",
     "setGoal": "Set Goal",
     "editGoal": "Edit Goal",
     "goals": "Goals",
@@ -179,7 +181,7 @@
     "processOverview": "Process Overview",
     "configureProcess": "Configure Process",
     "emailDigest": "Email Digest",
-    "digestInfo": "The process digest sends periodic emails with the existing KPI status to the Process Owner.",
+    "digestInfo": "The process digest sends periodic emails with the existing KPI status to the Process Owner. By default, the digest will be sent every Monday at 9:00 AM (To change the default send time, please contact your administrator).",
     "digestConfigured": "Your process digest has been successfully configured. An email has been sent to {name}.",
     "timeGoals": {
       "label": "Time goals",
@@ -699,12 +701,12 @@
     },
     "addButton": {
       "addReport": "Add a Report",
-      "selectReport": "Select Report",
-      "addExternal": "Add External Source",
+      "optimizeReport": "Optimize Report",
       "addReportLabel": "Add Report",
       "selectReportPlaceholder": "Select a Report",
       "noReports": "No reports have been created",
-      "externalUrl": "External URL"
+      "externalUrl": "External URL",
+      "newReport": "New Report from a template"
     },
     "noAuthorization": "Missing authorization",
     "noReportAccess": "No access to report",
@@ -782,6 +784,7 @@
     "apply": "Apply Changes",
     "create": "Create Alert",
     "notCreated": "There are no Alerts created yet",
+    "contactManager": "Please contact the collection manager to create new Alerts",
     "inactiveStatus": "Alert inactive",
     "activateInfo": "To active add email or target system",
     "existingAlerts": "Existing alerts",
@@ -907,6 +910,7 @@
     "view": "View",
     "viewDocumentation": "View documentation",
     "viewMore": "View More",
+    "viewLess": "View Less",
     "configure": "Configure",
     "process": {
       "label": "Process",

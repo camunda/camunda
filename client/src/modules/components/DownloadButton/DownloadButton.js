@@ -8,7 +8,7 @@
 import React, {useState, useEffect} from 'react';
 
 import {Button, Modal} from 'components';
-import {withErrorHandling, withDocs} from 'HOC';
+import {withErrorHandling, withDocs, withUser} from 'HOC';
 import {get} from 'request';
 import {showError} from 'notifications';
 import {getExportCsvLimit} from 'config';
@@ -25,6 +25,9 @@ export function DownloadButton({
   retriever,
   totalCount,
   docsLink,
+  user,
+  getUser,
+  refreshUser,
   ...props
 }) {
   const [exportLimit, setExportLimit] = useState(1000);
@@ -46,6 +49,7 @@ export function DownloadButton({
         hiddenElement.href = window.URL.createObjectURL(data);
         hiddenElement.download = fileName || href.substring(href.lastIndexOf('/') + 1);
         hiddenElement.click();
+        setModalOpen(false);
       },
       showError
     );
@@ -55,17 +59,19 @@ export function DownloadButton({
     setModalOpen(false);
   };
 
-  const displayModal = totalCount > exportLimit;
+  if (!user?.authorizations.includes('csv_export')) {
+    return null;
+  }
 
   return (
     <>
       <Button
         {...props}
-        onClick={(evt) => (displayModal ? setModalOpen(true) : triggerDownload(evt))}
+        onClick={(evt) => (totalCount > exportLimit ? setModalOpen(true) : triggerDownload(evt))}
       />
-      {displayModal && (
-        <Modal open={modalOpen} onClose={closeModal}>
-          <Modal.Header>Download CSV</Modal.Header>
+      {modalOpen && (
+        <Modal open onClose={closeModal}>
+          <Modal.Header>{t('report.downloadCSV')}</Modal.Header>
           <Modal.Content>
             <p>
               <b>{t('common.csvLimit.Warning')}</b>
@@ -74,7 +80,7 @@ export function DownloadButton({
             <p
               dangerouslySetInnerHTML={{
                 __html: t('common.csvLimit.exportApi', {
-                  docsLink: docsLink + 'technical-guide/rest-api/report/get-data-export',
+                  docsLink: docsLink + 'apis-clients/optimize-api/report/get-data-export/',
                 }),
               }}
             />
@@ -98,4 +104,4 @@ async function getData(url) {
   return await response.blob();
 }
 
-export default withErrorHandling(withDocs(DownloadButton));
+export default withErrorHandling(withDocs(withUser(DownloadButton)));

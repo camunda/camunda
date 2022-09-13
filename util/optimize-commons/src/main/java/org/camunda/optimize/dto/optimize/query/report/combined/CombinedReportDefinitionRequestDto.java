@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.optimize.query.report.combined;
 import com.google.common.collect.ImmutableMap;
 import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.ReportType;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -24,8 +25,8 @@ public class CombinedReportDefinitionRequestDto extends ReportDefinitionDto<Comb
   }
 
   @Override
-  public EntityResponseDto toEntityDto() {
-    final EntityResponseDto entityDto = super.toEntityDto();
+  public EntityResponseDto toEntityDto(final RoleType roleType) {
+    final EntityResponseDto entityDto = super.toEntityDto(roleType);
     entityDto.getData().setSubEntityCounts(ImmutableMap.of(EntityType.REPORT, (long) getData().getReports().size()));
     return entityDto;
   }

@@ -26,6 +26,7 @@ public class ConfigurationServiceConstants {
   public static final String EMAIL_AUTHENTICATION = "$.email.authentication";
 
   public static final String CONFIGURED_WEBHOOKS = "$.webhookAlerting.webhooks";
+  public static final String DIGEST_CRON_TRIGGER = "$.digest.cronTrigger";
   //@formatter:off
   public static final String ELASTICSEARCH_MAX_JOB_QUEUE_SIZE = "$.import.elasticsearchJobExecutorQueueSize";
   public static final String ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT = "$.import.elasticsearchJobExecutorThreadCount";
@@ -90,15 +91,18 @@ public class ConfigurationServiceConstants {
 
   public static final String ENGINE_DATE_FORMAT = "$.serialization.engineDateFormat";
   public static final String CONTAINER_HOST = "$.container.host";
+  public static final String CONTAINER_CONTEXT_PATH = "$.container.contextPath";
   public static final String CONTAINER_KEYSTORE_PASSWORD = "$.container.keystore.password";
   public static final String CONTAINER_KEYSTORE_LOCATION = "$.container.keystore.location";
   public static final String CONTAINER_HTTPS_PORT = "$.container.ports.https";
   public static final String CONTAINER_HTTP_PORT = "$.container.ports.http";
   public static final String CONTAINER_STATUS_MAX_CONNECTIONS = "$.container.status.connections.max";
 
-  public static final String CONTAINER_ACCESSURL = "$.container.accessUrl";
+  public static final String CONTAINER_ACCESS_URL = "$.container.accessUrl";
 
-  public static final String EXPORT_CSV_LIMIT = "$.export.csv.limit";
+  public static final String ENTITY_CONFIGURATION = "$.entity";
+
+  public static final String CSV_CONFIGURATION = "$.export.csv";
   public static final String EXPORT_CSV_DELIMITER = "$.export.csv.delimiter";
 
   public static final String HISTORY_CLEANUP = "$.historyCleanup";

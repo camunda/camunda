@@ -42,6 +42,7 @@ beforeEach(() => {
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  user: {name: 'John Doe', authorizations: ['entity_editor']},
 };
 
 it('should load processes', async () => {
@@ -78,7 +79,7 @@ it('should hide owner column and process config button in ccsm mode', async () =
 
   await runAllEffects();
 
-  expect(node.find(EntityList).prop('columns')[1].key).not.toBe('owner');
+  expect(node.find(EntityList).prop('columns')[1]).not.toBe('owner');
   expect(node.find(EntityList).prop('data')[0].meta.length).toBe(3);
 });
 
@@ -161,4 +162,13 @@ it('should filter out invalid kpis', async () => {
 
   const entityData = node.find(EntityList).prop('data');
   expect(entityData[0].meta[2].props.content.props.kpis).toEqual([validKpi]);
+});
+
+it('should hide the link to view the dashboard if the user has no edit rights', async () => {
+  const node = shallow(<Processes {...props} user={{...props.user, authorizations: []}} />);
+
+  await runAllEffects();
+
+  expect(node.find(EntityList).prop('columns')[4]).not.toBe('Dashboard');
+  expect(node.find(EntityList).prop('data')[0].meta.length).toBe(4);
 });

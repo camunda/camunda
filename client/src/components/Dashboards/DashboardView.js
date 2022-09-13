@@ -180,9 +180,10 @@ export function DashboardView(props) {
                   <Icon type="filter" /> {t('dashboard.filter.viewButtonText')}
                 </Button>
               )}
-              {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') && (
-                <AlertsDropdown dashboardReports={reports} />
-              )}
+              {!fullScreenHandle.active &&
+                (optimizeProfile === 'cloud' || optimizeProfile === 'platform') && (
+                  <AlertsDropdown dashboardReports={reports} />
+                )}
               <Button
                 main
                 onClick={() =>

@@ -36,7 +36,7 @@ test('add sources, map and publish a process', async (t) => {
 
   await t.typeText(e.nameEditField, 'Event Invoice process', {replace: true});
 
-  await t.takeScreenshot('event-based-processes/editMode.png');
+  await t.takeScreenshot('additional-features/img/editMode.png');
 
   // adding sources
 
@@ -52,7 +52,7 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.typeaheadOption(e.variableTypeahead, 'longVar'));
   await t.click(e.startAndEndEvents);
 
-  await t.takeElementScreenshot(e.modalContainer, 'event-based-processes/sourceModal.png');
+  await t.takeElementScreenshot(e.modalContainer, 'additional-features/img/sourceModal.png');
 
   await t.click(e.primaryModalButton);
 
@@ -60,7 +60,7 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.externalEvents);
   await t.click(e.externalEventgroup(2));
   await t.click(e.externalEventgroup(3));
-  await t.takeElementScreenshot(e.modalContainer, 'event-based-processes/externalEvents.png');
+  await t.takeElementScreenshot(e.modalContainer, 'additional-features/img/externalEvents.png');
   await t.click(e.primaryModalButton);
 
   await t.click(e.addSource);
@@ -68,7 +68,7 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.externalEventgroup(0));
   await t.click(e.primaryModalButton);
 
-  await t.takeElementScreenshot(e.eventsTable, 'event-based-processes/eventsTable.png');
+  await t.takeElementScreenshot(e.eventsTable, 'additional-features/img/eventsTable.png');
 
   // Mapping
 
@@ -87,13 +87,13 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.zoomButton);
   await t.click(e.zoomButton);
 
-  await t.takeScreenshot('event-based-processes/processView.png');
+  await t.takeScreenshot('additional-features/img/processView.png');
 
   // publishing
 
   await t.click(e.publishButton);
 
-  await t.takeElementScreenshot(e.modalContainer, 'event-based-processes/publishModal.png');
+  await t.takeElementScreenshot(e.modalContainer, 'additional-features/img/publishModal.png');
 
   await t.click(e.permissionButton);
 
@@ -104,7 +104,7 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.typeaheadOption(e.usersTypeahead, 'john'));
   await t.typeText(e.typeaheadInput(e.usersTypeahead), 'john', {replace: true});
 
-  await t.takeElementScreenshot(e.modalContainer.nth(1), 'event-based-processes/usersModal.png');
+  await t.takeElementScreenshot(e.modalContainer.nth(1), 'additional-features/img/usersModal.png');
 
   await t.click(e.primaryModalButton.nth(1));
   await t.click(e.primaryModalButton);
@@ -116,11 +116,11 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.navItem);
   await t.hover(e.entity('Event Invoice process'));
   await t.click(Homepage.contextMenu(e.invoiceEventProcess));
-  await t.takeScreenshot('event-based-processes/processList.png');
+  await t.takeScreenshot('additional-features/img/processList.png');
 
   // Edit Access
   await t.click(e.editAccess(e.invoiceEventProcess));
-  await t.takeElementScreenshot(e.modalContainer.nth(0), 'event-based-processes/editAccess.png');
+  await t.takeElementScreenshot(e.modalContainer.nth(0), 'additional-features/img/editAccess.png');
 });
 
 test('auto generate a process', async (t) => {
@@ -139,7 +139,7 @@ test('auto generate a process', async (t) => {
   await t.click(e.externalEvents);
   await t.click(e.primaryModalButton.nth(1));
 
-  await t.takeElementScreenshot(e.modalContainer, 'event-based-processes/auto-generation.png');
+  await t.takeElementScreenshot(e.modalContainer, 'additional-features/img/auto-generation.png');
 
   await t.click(e.buttonWithText('Generate'));
 
@@ -152,14 +152,14 @@ test('delete multiple external events', async (t) => {
 
   await t.resizeWindow(1100, 800);
 
-  await t.takeScreenshot('event-based-processes/external-events.png', {fullPage: true});
+  await t.takeScreenshot('additional-features/img/external-events.png', {fullPage: true});
 
   await t.click(e.eventCheckbox(0));
   await t.click(e.eventCheckbox(3));
   await t.click(e.selectionDropdown);
   await t.hover(e.dropdownOption('Delete'));
 
-  await t.takeScreenshot('event-based-processes/deleting-events.png', {fullPage: true});
+  await t.takeScreenshot('additional-features/img/deleting-events.png', {fullPage: true});
 
   await t.click(e.dropdownOption('Delete'));
   await t.click(e.confirmModalButton);

@@ -21,7 +21,6 @@ export default class Popover extends React.Component {
 
     this.el = document.createElement('div');
     this.id = getRandomId();
-    this.insideClick = false;
 
     this.state = {
       open: !!props.autoOpen,
@@ -85,13 +84,13 @@ export default class Popover extends React.Component {
     // so we know whether the click occured inside the popover,
     // in which case we do not want to close the popover
     setTimeout(() => {
-      if (!(evt.popoverChain || []).includes(this.id) && this.mounted && !this.insideClick) {
+      if (!(evt.popoverChain || []).includes(this.id) && this.mounted && !evt.insideClick) {
         this.setState({
           open: false,
         });
         this.calculateDialogStyle();
       }
-      this.insideClick = false;
+      evt.insideClick = false;
     });
   };
 
@@ -146,10 +145,6 @@ export default class Popover extends React.Component {
     });
   };
 
-  onPopoverDialogMouseDown = (evt) => {
-    this.insideClick = true;
-  };
-
   createOverlay = () => {
     const {renderInPortal} = this.props;
     const {dialogStyles} = this.state;
@@ -166,7 +161,9 @@ export default class Popover extends React.Component {
         className={classnames('overlay', renderInPortal, {
           Popover: renderInPortal,
         })}
-        onClick={this.catchClick}
+        // we use the capture phase because some components (e.g. modals)
+        // stop propagating the events to the document
+        onClickCapture={this.catchClick}
       >
         <span className="Popover__dialog-arrow-border" style={arrowStyles}>
           {' '}
@@ -207,6 +204,7 @@ export default class Popover extends React.Component {
   catchClick = (evt) => {
     evt.nativeEvent.popoverChain = evt.nativeEvent.popoverChain || [];
     evt.nativeEvent.popoverChain.push(this.id);
+    evt.nativeEvent.insideClick = true;
   };
 
   handleKeyPress = (evt) => {

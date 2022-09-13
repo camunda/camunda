@@ -20,14 +20,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
-import org.springframework.security.web.session.SessionManagementFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,6 +37,7 @@ import java.io.IOException;
 import java.net.URI;
 
 import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.ACTUATOR_ENDPOINT;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 import static org.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
@@ -42,6 +45,7 @@ import static org.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
 import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static org.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
+import static org.camunda.optimize.rest.constants.RestConstants.PROMETHEUS_ENDPOINT;
 import static org.camunda.optimize.rest.security.platform.PlatformWebSecurityConfigurerAdapter.DEEP_SUB_PATH_ANY;
 
 @Configuration
@@ -50,7 +54,6 @@ import static org.camunda.optimize.rest.security.platform.PlatformWebSecurityCon
 @Conditional(CCSMCondition.class)
 @Order(2)
 public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
-
   private final SessionService sessionService;
   private final ConfigurationService configurationService;
   private final AuthenticationCookieRefreshFilter authenticationCookieRefreshFilter;
@@ -90,9 +93,13 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
         // Identity callback request handling is public
         .antMatchers(createApiPath(AUTHENTICATION_PATH + CALLBACK)).permitAll()
         // public share resources
-        .antMatchers(EXTERNAL_SUB_PATH + "/", EXTERNAL_SUB_PATH + "/index*",
-                   EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**", EXTERNAL_SUB_PATH + "/*.js",
-                   EXTERNAL_SUB_PATH + "/*.ico").permitAll()
+        .antMatchers(
+          EXTERNAL_SUB_PATH + "/",
+          EXTERNAL_SUB_PATH + "/index*",
+          EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**",
+          EXTERNAL_SUB_PATH + "/*.js",
+          EXTERNAL_SUB_PATH + "/*.ico")
+      .permitAll()
         // public share related resources (API)
         .antMatchers(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)).permitAll()
         // common public api resources
@@ -100,12 +107,18 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
           createApiPath(UI_CONFIGURATION_PATH),
           createApiPath(LOCALIZATION_PATH)
         ).permitAll()
+      .antMatchers(getPrometheusEndpoint()).permitAll()
       .anyRequest().authenticated()
       .and()
       .addFilterBefore(authenticationCookieFilter(), AbstractPreAuthenticatedProcessingFilter.class)
-      .addFilterAfter(authenticationCookieRefreshFilter, SessionManagementFilter.class)
-      .exceptionHandling().authenticationEntryPoint(this::redirectToIdentity);
+      .exceptionHandling()
+        .defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED), new AntPathRequestMatcher(REST_API_PATH + "/**"))
+        .defaultAuthenticationEntryPointFor(this::redirectToIdentity, new AntPathRequestMatcher("/**"));
     //@formatter:on
+  }
+
+  private String getPrometheusEndpoint() {
+    return ACTUATOR_ENDPOINT + PROMETHEUS_ENDPOINT;
   }
 
   private void redirectToIdentity(final HttpServletRequest request, final HttpServletResponse response,
@@ -135,8 +148,8 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
   private IdentityConfiguration identityConfiguration() {
     final CCSMAuthConfiguration ccsmAuthConfig = getCcsmAuthConfiguration();
     return new IdentityConfiguration(
-        ccsmAuthConfig.getIssuerUrl(), ccsmAuthConfig.getIssuerBackendUrl(),
-        ccsmAuthConfig.getClientId(), ccsmAuthConfig.getClientSecret(), ccsmAuthConfig.getAudience()
+      ccsmAuthConfig.getIssuerUrl(), ccsmAuthConfig.getIssuerBackendUrl(),
+      ccsmAuthConfig.getClientId(), ccsmAuthConfig.getClientSecret(), ccsmAuthConfig.getAudience()
     );
   }
 

@@ -2,7 +2,7 @@
 
 exports[`should match snapshot 1`] = `
 <li
-  className="ListItem selectable"
+  className="ListItem"
 >
   <ForwardRef(Input)
     type="checkbox"

@@ -42,5 +42,11 @@
       height: 100%;
       width: calc(100% + 6px);
     }
+
+    .DropdownOption:not(.Submenu) {
+      overflow: hidden;
+      max-width: 400px;
+      text-overflow: ellipsis;
+    }
   }
 }

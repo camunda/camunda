@@ -65,7 +65,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
     uiConfigurationDto.setOptimizeProfile(optimizeProfile);
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
-    uiConfigurationDto.setExportCsvLimit(configurationService.getExportCsvLimit());
+    uiConfigurationDto.setExportCsvLimit(configurationService.getCsvConfiguration().getExportCsvLimit());
 
     final SettingsResponseDto settings = settingService.getSettings();
     uiConfigurationDto.setMetadataTelemetryEnabled(settings.getMetadataTelemetryEnabled().orElse(true));

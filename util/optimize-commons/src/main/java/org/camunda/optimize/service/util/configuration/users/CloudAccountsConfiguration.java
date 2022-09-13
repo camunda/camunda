@@ -5,15 +5,19 @@
  */
 package org.camunda.optimize.service.util.configuration.users;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
 @Data
-public class CloudTokenConfiguration {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class CloudAccountsConfiguration {
 
-  private String tokenUrl;
-  private String clientId;
-  private String clientSecret;
-  private String audience;
-  private String usersUrl;
+  private String accountsUrl;
+
+  // Only here for backwards compatibility as the param got renamed to accountsUrl
+  @Deprecated
+  public void setUsersUrl(final String usersUrl) {
+    this.accountsUrl = usersUrl;
+  }
 
 }

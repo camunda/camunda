@@ -45,5 +45,13 @@ it('should call the onClick handler', () => {
 it('should show an error warning if specified', () => {
   const node = shallow(<ActionItem warning="There is an error" />);
 
-  expect(node.find('Message')).toMatchSnapshot();
+  expect(node.find('Message')).toExist();
+});
+
+it('should prevent editing the action item if warning prop is specified', () => {
+  const spy = jest.fn();
+  const node = shallow(<ActionItem warning="There is an error" onEdit={spy} />);
+
+  node.find(Button).at(0).simulate('click');
+  expect(spy).not.toHaveBeenCalled();
 });

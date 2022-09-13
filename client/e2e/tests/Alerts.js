@@ -48,7 +48,7 @@ test('create, edit, copy and remove an alert', async (t) => {
   await t.click(Alert.reportTypeahead);
   await t.click(Alert.reportTypeaheadOption('Number Report'));
 
-  await t.takeElementScreenshot(Alert.modal, 'alerting/alert-modal-description.png');
+  await t.takeElementScreenshot(Alert.modal, 'additional-features/img/alert-modal-description.png');
 
   await t.click(Alert.primaryModalButton);
 
@@ -58,7 +58,7 @@ test('create, edit, copy and remove an alert', async (t) => {
 
   await t
     .resizeWindow(1200, 500)
-    .takeScreenshot('alerting/alerts-overview.png', {fullPage: true})
+    .takeScreenshot('additional-features/img/alerts-overview.png', {fullPage: true})
     .maximizeWindow();
 
   // EDIT

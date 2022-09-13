@@ -33,12 +33,14 @@ export function TemplateModal({
   className,
   blankSlate,
   templateToState = (data) => data,
+  onConfirm,
+  initialDefinitions = [],
 }) {
   const firstTemplate = templateGroups[1].templates[0];
   const [name, setName] = useState(t(entity + '.templates.' + firstTemplate.name));
   const [xmlData, setXmlData] = useState([]);
   const [template, setTemplate] = useState(firstTemplate.config);
-  const [selectedDefinitions, setSelectedDefinitions] = useState([]);
+  const [selectedDefinitions, setSelectedDefinitions] = useState(initialDefinitions);
   const diagramArea = useRef();
   const templateContainer = useRef();
 
@@ -123,6 +125,13 @@ export function TemplateModal({
 
   const validSelection =
     name && ((xmlData.length > 0 && selectedDefinitions.length > 0) || !template);
+
+  const newEntityState = templateToState({
+    name,
+    template,
+    definitions: selectedDefinitions.map((def) => ({...def, displayName: def.name})),
+    xml: xmlData[0]?.xml,
+  });
 
   return (
     <Modal
@@ -211,21 +220,22 @@ export function TemplateModal({
         <Button main className="cancel" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Link
-          className="Button main primary confirm"
-          disabled={!validSelection}
-          to={{
-            pathname: entity + '/new/edit',
-            state: templateToState({
-              name,
-              template,
-              definitions: selectedDefinitions.map((def) => ({...def, displayName: def.name})),
-              xml: xmlData[0]?.xml,
-            }),
-          }}
-        >
-          {t(entity + '.create')}
-        </Link>
+        {onConfirm ? (
+          <Button main primary className="confirm" onClick={() => onConfirm(newEntityState)}>
+            {t(entity + '.create')}
+          </Button>
+        ) : (
+          <Link
+            className="Button main primary confirm"
+            disabled={!validSelection}
+            to={{
+              pathname: entity + '/new/edit',
+              state: newEntityState,
+            }}
+          >
+            {t(entity + '.create')}
+          </Link>
+        )}
       </Modal.Actions>
     </Modal>
   );

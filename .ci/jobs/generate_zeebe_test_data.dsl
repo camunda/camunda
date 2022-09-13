@@ -4,7 +4,7 @@ pipelineJob('generate-zeebe-test-data') {
   description 'Generates and stores Zeebe test datasets for use in other jobs'
   
   // By default, this job is disabled in non-prod envs.
-  if (binding.variables.get("ENVIRONMENT") != "prod") {
+  if (ENVIRONMENT != "prod") {
       disabled()
   }
 

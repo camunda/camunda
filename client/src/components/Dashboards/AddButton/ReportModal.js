@@ -8,7 +8,17 @@
 import React from 'react';
 import {withRouter} from 'react-router-dom';
 
-import {Modal, Button, Input, Typeahead, LoadingIndicator, Labeled, Form, Tabs} from 'components';
+import {
+  Modal,
+  Button,
+  Input,
+  Typeahead,
+  LoadingIndicator,
+  Labeled,
+  Form,
+  Tabs,
+  Icon,
+} from 'components';
 import {getCollection, loadReports} from 'services';
 import {t} from 'translation';
 
@@ -50,7 +60,6 @@ export default withRouter(
     };
 
     render() {
-      const noReports = !this.state.availableReports || this.state.availableReports.length === 0;
       const loading = this.state.availableReports === null;
 
       const {external, externalUrl, selectedReportId, availableReports} = this.state;
@@ -72,17 +81,24 @@ export default withRouter(
           <Modal.Content>
             <Form>
               <Tabs value={external} onChange={this.setExternal}>
-                <Tabs.Tab value={false} title={t('dashboard.addButton.selectReport')}>
+                <Tabs.Tab value={false} title={t('dashboard.addButton.optimizeReport')}>
                   <Form.Group>
                     {!loading && (
                       <Labeled label={t('dashboard.addButton.addReportLabel')}>
                         <Typeahead
                           initialValue={selectedReport.id}
-                          disabled={noReports}
                           placeholder={t('dashboard.addButton.selectReportPlaceholder')}
                           onChange={this.selectReport}
                           noValuesMessage={t('dashboard.addButton.noReports')}
                         >
+                          <Typeahead.Option
+                            key="newReport"
+                            value="newReport"
+                            label={`+ ${t('dashboard.addButton.newReport')}`}
+                          >
+                            <Icon type="plus" />
+                            <b>{t('dashboard.addButton.newReport')}</b>
+                          </Typeahead.Option>
                           {availableReports.map(({id, name}) => (
                             <Typeahead.Option key={id} value={id}>
                               {name}
@@ -94,7 +110,7 @@ export default withRouter(
                     {loading && <LoadingIndicator />}
                   </Form.Group>
                 </Tabs.Tab>
-                <Tabs.Tab value={true} title={t('dashboard.addButton.addExternal')}>
+                <Tabs.Tab value={true} title={t('dashboard.addButton.externalUrl')}>
                   <Form.Group>
                     <Labeled label={t('dashboard.addButton.externalUrl')}>
                       <Input

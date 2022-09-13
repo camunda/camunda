@@ -36,8 +36,7 @@ public abstract class AbstractPublicAPIConfigurerAdapter extends WebSecurityConf
     http
       .requestMatchers()
       // Public APIs allowed in all modes (SaaS, CCSM and Platform)
-      .antMatchers(PUBLIC_API_PATH,
-                   createApiPath(INGESTION_PATH, VARIABLE_SUB_PATH))
+      .antMatchers(PUBLIC_API_PATH, createApiPath(INGESTION_PATH, VARIABLE_SUB_PATH))
       .and()
       // since these calls will not be used in a browser, we can disable csrf
       .csrf().disable()
@@ -61,4 +60,5 @@ public abstract class AbstractPublicAPIConfigurerAdapter extends WebSecurityConf
   protected static String createApiPath(final String... subPath) {
     return REST_API_PATH + String.join("", subPath);
   }
+
 }

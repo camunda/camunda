@@ -4,7 +4,7 @@ pipelineJob('zeebe_compatibility') {
   description 'Runs Zeebe ITs with different supported Zeebe versions to check compatibility.'
 
   // By default, this job is disabled in non-prod envs.
-  if (binding.variables.get("ENVIRONMENT") != "prod") {
+  if (ENVIRONMENT != "prod") {
     disabled()
   }
 
@@ -20,11 +20,14 @@ pipelineJob('zeebe_compatibility') {
     stringParam('ES_VERSION', '', 'Elasticsearch version to use, defaults to reading it from pom.xml.')
   }
 
-  properties {
-    pipelineTriggers {
-      triggers {
-        cron {
-          spec('H 23 * * 1-5')
+  // Disable cron testing envs, in case someone tests the job and forgets to disable it
+  if (ENVIRONMENT == "prod") {
+    properties {
+      pipelineTriggers {
+        triggers {
+          cron {
+            spec('H 23 * * 1-5')
+          }
         }
       }
     }

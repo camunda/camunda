@@ -1,0 +1,2 @@
+{"index":{"_index":"optimize-process-overview_v1","_id":"report-1"}}
+{"owner": "demo", "processDefinitionKey": "aProcessDefKey", "digest": { "checkInterval": { "unit": "seconds", "value": 5 }, "kpiReportResults": { }, "enabled": true } }

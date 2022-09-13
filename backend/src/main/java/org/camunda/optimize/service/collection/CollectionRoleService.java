@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.RoleType;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
@@ -17,7 +18,6 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDt
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
@@ -169,14 +169,13 @@ public class CollectionRoleService {
       .getRoles()
       .stream()
       .filter(role -> identityService.isUserAuthorizedToAccessIdentity(userId, role.getIdentity()))
-      .map(roleDto -> CollectionRoleResponseDto.from(
-        roleDto,
-        identityService.getIdentityWithMetadataForId(roleDto.getIdentity().getId())
-          .orElseThrow(() -> new OptimizeRuntimeException(
-            "Could not map CollectionRoleDto to CollectionRoleRestDto, identity ["
-              + roleDto.getIdentity().toString() + "] could not be found."
-          ))
-      ))
+      .map(roleDto -> identityService.getIdentityWithMetadataForId(roleDto.getIdentity().getId())
+        .map(identity -> CollectionRoleResponseDto.from(roleDto, identity))
+        .orElseGet(() -> {
+          log.info("Identity with id {} is present in roles but does not exist anymore.", roleDto.getId());
+          return CollectionRoleResponseDto.from(roleDto, new UserDto(roleDto.getIdentity().getId()));
+        })
+      )
       .collect(toList());
 
     if (authCollectionDto.getCurrentUserRole().equals(RoleType.MANAGER)) {

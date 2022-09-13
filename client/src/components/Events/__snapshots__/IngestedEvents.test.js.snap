@@ -107,7 +107,7 @@ exports[`should match snapshot 1`] = `
         No ingested events.
          
         <Unknown
-          location="technical-guide/rest-api/event-ingestion/"
+          location="apis-clients/optimize-api/event-ingestion/"
         >
           Learn more
         </Unknown>

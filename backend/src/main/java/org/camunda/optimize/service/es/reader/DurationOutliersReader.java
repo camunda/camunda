@@ -339,7 +339,7 @@ public class DurationOutliersReader {
       .must(termQuery(VARIABLES + "." + VARIABLE_VALUE, outlierParams.getVariableTerm()));
     mainFilterQuery.must(nestedQuery(VARIABLES, variableTermFilterQuery, ScoreMode.None));
 
-    final Integer recordLimit = configurationService.getExportCsvLimit();
+    final Integer recordLimit = configurationService.getCsvConfiguration().getExportCsvLimit();
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(mainFilterQuery)
       .fetchSource(PROCESS_INSTANCE_ID, null)

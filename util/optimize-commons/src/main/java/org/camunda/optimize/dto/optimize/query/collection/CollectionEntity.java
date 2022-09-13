@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.collection;
 
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 
 import java.time.OffsetDateTime;
@@ -21,5 +22,5 @@ public interface CollectionEntity {
 
   OffsetDateTime getLastModified();
 
-  EntityResponseDto toEntityDto();
+  EntityResponseDto toEntityDto(final RoleType roleType);
 }

@@ -32,6 +32,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
@@ -43,6 +44,7 @@ import org.camunda.optimize.service.exceptions.UncombinableReportsException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonDefinitionScopeCompliantException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonTenantScopeCompliantException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeReportConflictException;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.relations.CollectionReferencingService;
 import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
@@ -87,6 +89,7 @@ public class ReportService implements CollectionReferencingService {
   private final ReportAuthorizationService reportAuthorizationService;
   private final ReportRelationService reportRelationService;
   private final AuthorizedCollectionService collectionService;
+  private final AbstractIdentityService identityService;
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForCollectionDelete(final CollectionDefinitionDto definition) {
@@ -274,6 +277,7 @@ public class ReportService implements CollectionReferencingService {
     final AuthorizedReportDefinitionResponseDto authorizedCombinedReport =
       getReportWithEditAuthorization(userId, currentReportVersion);
     final String combinedReportCollectionId = authorizedCombinedReport.getDefinitionDto().getCollectionId();
+    validateEntityEditorAuthorization(combinedReportCollectionId, userId);
 
     final CombinedProcessReportDefinitionUpdateDto reportUpdate =
       convertToCombinedProcessReportUpdate(updatedReport, userId);
@@ -347,6 +351,7 @@ public class ReportService implements CollectionReferencingService {
     }
     getReportWithEditAuthorization(userId, currentReportVersion);
     ensureCompliesWithCollectionScope(userId, currentReportVersion.getCollectionId(), updatedReport);
+    validateEntityEditorAuthorization(currentReportVersion.getCollectionId(), userId);
 
     final SingleProcessReportDefinitionUpdateDto reportUpdate = convertToSingleProcessReportUpdate(
       updatedReport, userId
@@ -376,6 +381,7 @@ public class ReportService implements CollectionReferencingService {
       getSingleDecisionReportDefinition(reportId, userId);
     getReportWithEditAuthorization(userId, currentReportVersion);
     ensureCompliesWithCollectionScope(userId, currentReportVersion.getCollectionId(), updatedReport);
+    validateEntityEditorAuthorization(currentReportVersion.getCollectionId(), userId);
 
     final SingleDecisionReportDefinitionUpdateDto reportUpdate = convertToSingleDecisionReportUpdate(
       updatedReport, userId
@@ -405,10 +411,7 @@ public class ReportService implements CollectionReferencingService {
       throw new OptimizeValidationException("Management reports cannot be deleted");
     }
     getReportWithEditAuthorization(userId, reportDefinition);
-    if (reportDefinition instanceof SingleProcessReportDefinitionRequestDto &&
-      ((SingleProcessReportDefinitionRequestDto) reportDefinition).getData().isManagementReport()) {
-      throw new OptimizeValidationException("Management Reports cannot be deleted");
-    }
+    validateEntityEditorAuthorization(reportDefinition.getCollectionId(), userId);
 
     if (!force) {
       final Set<ConflictedItemDto> conflictedItems = getConflictedItemsForDeleteReport(reportDefinition);
@@ -448,6 +451,7 @@ public class ReportService implements CollectionReferencingService {
     final String collectionId = optionalProvidedDefinition
       .map(ReportDefinitionDto::getCollectionId)
       .orElse(null);
+    validateEntityEditorAuthorization(collectionId, userId);
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
 
     return createReportMethod.create(
@@ -489,6 +493,7 @@ public class ReportService implements CollectionReferencingService {
                                           final Map<String, String> existingReportCopies,
                                           final boolean keepSubReportNames) {
     final String oldCollectionId = originalReportDefinition.getCollectionId();
+    validateEntityEditorAuthorization(oldCollectionId, userId);
 
     if (!originalReportDefinition.isCombined()) {
       switch (originalReportDefinition.getReportType()) {
@@ -654,6 +659,12 @@ public class ReportService implements CollectionReferencingService {
         collection.getName()
       );
       throw new OptimizeNonDefinitionScopeCompliantException(ImmutableSet.of(conflictedItemDto));
+    }
+  }
+
+  private void validateEntityEditorAuthorization(final String collectionId, final String userId) {
+    if (collectionId == null && !identityService.getUserAuthorizations(userId).contains(AuthorizationType.ENTITY_EDITOR)) {
+      throw new ForbiddenException("User is not an authorized entity editor");
     }
   }
 

@@ -9,7 +9,7 @@ import com.icegreen.greenmail.util.DummySSLSocketFactory;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.GreenMailUtil;
 import com.icegreen.greenmail.util.ServerSetup;
-import org.camunda.optimize.service.EmailSendingService;
+import org.camunda.optimize.service.email.EmailService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
@@ -20,7 +20,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -41,7 +44,9 @@ public class AlertEmailNotificationServiceTest {
   private ConfigurationService configurationService;
 
   private AlertEmailNotificationService notificationService;
-  private EmailSendingService emailSendingService;
+  private EmailService emailService;
+  @Autowired
+  private FreeMarkerConfigurer freemarkerConfigurer;
 
   private GreenMail greenMail;
 
@@ -54,8 +59,8 @@ public class AlertEmailNotificationServiceTest {
     configurationService.setNotificationEmailAddress("from@localhost.com");
     configurationService.setNotificationEmailHostname("127.0.0.1");
     configurationService.setNotificationEmailPort(4444);
-    this.emailSendingService = new EmailSendingService(configurationService);
-    this.notificationService = new AlertEmailNotificationService(configurationService, emailSendingService);
+    this.emailService = new EmailService(configurationService, freemarkerConfigurer);
+    this.notificationService = new AlertEmailNotificationService(configurationService, emailService);
   }
 
   @AfterEach

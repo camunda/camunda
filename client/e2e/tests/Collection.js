@@ -18,6 +18,7 @@ fixture('Collection').page(config.endpoint).beforeEach(login).afterEach(cleanEnt
 async function createCollection(t, name = 'Test Collection') {
   await t.click(Homepage.createNewMenu).click(Homepage.option('New Collection'));
   await t.typeText(Homepage.modalNameInput, name, {replace: true});
+  
   await t.click(Homepage.confirmButton);
   await t.click(e.selectAllCheckbox);
   await t.click(Homepage.confirmButton);
@@ -107,12 +108,12 @@ test('user permissions', async (t) => {
   await t.typeText(e.usersTypeahead, 'peter', {replace: true});
   await t.click(e.option('peter')).pressKey('tab');
   await t.click(e.roleOption('Editor'));
-  await t.takeElementScreenshot(e.addUserModal, 'homepage/addUser.png');
+  await t.takeElementScreenshot(e.addUserModal, 'img/addUser.png');
   await t.click(e.confirmModalButton);
 
   await t
     .resizeWindow(1150, 650)
-    .takeElementScreenshot(e.userList, 'homepage/users.png')
+    .takeElementScreenshot(e.userList, 'img/users.png')
     .maximizeWindow();
 
   // change permissions
@@ -176,7 +177,7 @@ test('add, edit and delete sources', async (t) => {
 
   // add source by definition
   await t.click(e.addButton);
-  await t.takeElementScreenshot(e.addSourceModal, 'homepage/sourceByDefinition.png');
+  await t.takeElementScreenshot(e.addSourceModal, 'img/sourceByDefinition.png');
   const definitionName = 'Hiring Demo 5 Tenants';
   await t.typeText(e.searchField, definitionName, {replace: true});
   await t.click(e.selectAllCheckbox);
@@ -193,7 +194,7 @@ test('add, edit and delete sources', async (t) => {
   await t.click(e.typeaheadOption(tenantName));
   await t.click(e.itemCheckbox(3));
   await t.click(e.itemCheckbox(4));
-  await t.takeElementScreenshot(e.addSourceModal, 'homepage/sourceByTenant.png');
+  await t.takeElementScreenshot(e.addSourceModal, 'img/sourceByTenant.png');
   await t.click(e.confirmModalButton);
   await t.expect(e.processItem.visible).ok();
   await t.expect(e.decisionItem.visible).ok();
@@ -208,11 +209,6 @@ test('add, edit and delete sources', async (t) => {
   await t.click(e.checkbox('engineering'));
   await t.click(e.confirmModalButton);
   await t.expect(e.processItem.nth(1).textContent).notContains('engineering');
-
-  await t
-    .resizeWindow(1150, 600)
-    .takeElementScreenshot(e.sourcesList, 'homepage/sources.png')
-    .maximizeWindow();
 
   // delete source
   await t.hover(e.decisionItem);

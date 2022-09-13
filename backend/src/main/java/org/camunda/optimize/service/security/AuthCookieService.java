@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.NewCookie;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
@@ -37,38 +38,54 @@ public class AuthCookieService {
 
   private final ConfigurationService configurationService;
 
-  public NewCookie createDeleteOptimizeAuthCookie(String requestScheme) {
+  public NewCookie createDeleteOptimizeAuthCookie(final String requestScheme) {
+    return createDeleteOptimizeAuthCookie(isSecureScheme(requestScheme));
+  }
+
+  public NewCookie createDeleteOptimizeAuthCookie(final boolean secure) {
     log.trace("Deleting Optimize authentication cookie.");
     return new NewCookie(
-      OPTIMIZE_AUTHORIZATION,
-      "",
-      "/",
-      null,
-      "delete cookie",
-      0,
-      configurationService.getAuthConfiguration().getCookieConfiguration().resolveSecureFlagValue(requestScheme),
-      true
+      OPTIMIZE_AUTHORIZATION, "", getCookiePath(), null, "delete cookie", 0, secure, true
     );
   }
 
-  public String createNewOptimizeAuthCookie(final String securityToken, final String requestScheme) {
+  public String createNewOptimizeAuthCookie(final String optimizeAuthCookieToken, final String requestScheme) {
+    return createNewOptimizeAuthCookie(
+      optimizeAuthCookieToken,
+      getOptimizeAuthCookieTokenExpiryDate(optimizeAuthCookieToken).orElse(null),
+      requestScheme
+    );
+  }
+
+  public String createNewOptimizeAuthCookie(final String optimizeAuthCookieToken,
+                                            final Instant expiresAt,
+                                            final String requestScheme) {
     log.trace("Creating Optimize authentication cookie.");
-    final Date expiryDate = getTokenIssuedAt(securityToken)
-      .map(Date::toInstant)
-      .map(issuedAt -> issuedAt.plus(getAuthConfiguration().getTokenLifeTimeMinutes(), ChronoUnit.MINUTES))
-      .map(Date::from)
-      .orElse(null);
+
     return createCookie(
-      OPTIMIZE_AUTHORIZATION, AuthCookieService.createOptimizeAuthCookieValue(securityToken), requestScheme, expiryDate
+      OPTIMIZE_AUTHORIZATION,
+      AuthCookieService.createOptimizeAuthCookieValue(optimizeAuthCookieToken),
+      requestScheme,
+      convertInstantToDate(expiresAt)
     );
   }
 
-  public String createOptimizeServiceTokenCookie(final OAuth2AccessToken accessToken, final String requestScheme) {
+  public String createOptimizeServiceTokenCookie(final OAuth2AccessToken accessToken,
+                                                 final Instant expiresAt,
+                                                 final String requestScheme) {
     log.trace("Creating Optimize service token cookie.");
     return createCookie(
-      OPTIMIZE_SERVICE_TOKEN, accessToken.getTokenValue(), requestScheme,
-      Optional.ofNullable(accessToken.getExpiresAt()).map(Date::from).orElse(null)
+      OPTIMIZE_SERVICE_TOKEN,
+      accessToken.getTokenValue(),
+      requestScheme,
+      convertInstantToDate(expiresAt)
     );
+  }
+
+  public Optional<Instant> getOptimizeAuthCookieTokenExpiryDate(final String optimizeAuthCookieToken) {
+    return getTokenIssuedAt(optimizeAuthCookieToken)
+      .map(Date::toInstant)
+      .map(issuedAt -> issuedAt.plus(getAuthConfiguration().getTokenLifeTimeMinutes(), ChronoUnit.MINUTES));
   }
 
   public static Optional<String> getAuthCookieToken(ContainerRequestContext requestContext) {
@@ -93,19 +110,14 @@ public class AuthCookieService {
     return AUTH_COOKIE_TOKEN_VALUE_PREFIX + securityToken;
   }
 
+  private Date convertInstantToDate(final Instant expiresAt) {
+    return Optional.ofNullable(expiresAt).map(Date::from).orElse(null);
+  }
+
   private String createCookie(final String cookieName, final String cookieValue, final String requestScheme,
                               final Date expiryDate) {
     NewCookie newCookie = new NewCookie(
-      cookieName,
-      cookieValue,
-      "/" + configurationService.getAuthConfiguration().getCloudAuthConfiguration().getClusterId(),
-      null,
-      1,
-      null,
-      -1,
-      expiryDate,
-      configurationService.getAuthConfiguration().getCookieConfiguration().resolveSecureFlagValue(requestScheme),
-      true
+      cookieName, cookieValue, getCookiePath(), null, 1, null, -1, expiryDate, isSecureScheme(requestScheme), true
     );
 
     String newCookieAsString = newCookie.toString();
@@ -113,6 +125,14 @@ public class AuthCookieService {
       newCookieAsString = addSameSiteCookieFlag(newCookieAsString);
     }
     return newCookieAsString;
+  }
+
+  private String getCookiePath() {
+    return "/" + configurationService.getAuthConfiguration().getCloudAuthConfiguration().getClusterId();
+  }
+
+  private boolean isSecureScheme(final String requestScheme) {
+    return configurationService.getAuthConfiguration().getCookieConfiguration().resolveSecureFlagValue(requestScheme);
   }
 
   private AuthConfiguration getAuthConfiguration() {

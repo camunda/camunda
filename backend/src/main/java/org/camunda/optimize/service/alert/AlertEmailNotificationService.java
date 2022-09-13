@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
-import org.camunda.optimize.service.EmailSendingService;
+import org.camunda.optimize.service.email.EmailService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +21,7 @@ import java.util.List;
 public class AlertEmailNotificationService implements AlertNotificationService {
 
   private final ConfigurationService configurationService;
-  private final EmailSendingService emailSendingService;
+  private final EmailService emailService;
 
   @Override
   public void notify(@NonNull final AlertNotificationDto notification) {
@@ -36,7 +36,7 @@ public class AlertEmailNotificationService implements AlertNotificationService {
   }
 
   private void sendEmail(String to, String body) {
-    emailSendingService.sendEmailWithErrorHandling(
+    emailService.sendEmailWithErrorHandling(
       to,
       body,
       "[" + configurationService.getNotificationEmailCompanyBranding() + "-Optimize] - Report status"

@@ -100,6 +100,39 @@ public class AlertWebhookIT extends AbstractAlertIT {
   }
 
   @Test
+  public void sendWebhookRequestWithCustomContextPathConfigured(MockServerClient client) {
+    // given
+    try {
+      final String customContextPath = "/customContextPath";
+      embeddedOptimizeExtension.getConfigurationService().setContextPath(customContextPath);
+      setWebhookConfiguration(client.getPort());
+
+      final ProcessInstanceEngineDto processInstance = deployWithTimeShift(0L, 2L);
+      final String collectionId = collectionClient.createNewCollectionWithProcessScope(processInstance);
+      final String reportId = createAndStoreDurationNumberReport(
+        collectionId, processInstance.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS
+      );
+      final AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
+      simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
+      simpleAlert.setFixNotification(true);
+      addReminderToAlert(simpleAlert);
+
+      final String alertId = alertClient.createAlert(simpleAlert);
+
+      // when
+      triggerAndCompleteCheckJob(alertId);
+
+      // then
+      final String expectedNewAlertPayload = createActiveAlertExpectedWebhookPayloadWithAllPlaceholders(
+        collectionId, reportId, simpleAlert, AlertNotificationType.NEW, "2000.0", customContextPath
+      );
+      verifyWebhookCallWithPayload(client, expectedNewAlertPayload);
+    } finally {
+      embeddedOptimizeExtension.getConfigurationService().setContextPath(null);
+    }
+  }
+
+  @Test
   public void configureWebhookWithUnsupportedHttpGETMethod(MockServerClient client) {
     // given
     client.reset();
@@ -372,6 +405,17 @@ public class AlertWebhookIT extends AbstractAlertIT {
     return createPayloadJson(simpleAlert, alertType, currentValue, expectedLink, expectedMessage);
   }
 
+  private String createActiveAlertExpectedWebhookPayloadWithAllPlaceholders(final String collectionId,
+                                                                            final String reportId,
+                                                                            final AlertCreationRequestDto simpleAlert,
+                                                                            final AlertNotificationType alertType,
+                                                                            final String currentValue,
+                                                                            final String contextPath) {
+    final String expectedLink = createReportLink(collectionId, reportId, alertType, contextPath);
+    final String expectedMessage = createAlertMessage(expectedLink);
+    return createPayloadJson(simpleAlert, alertType, currentValue, expectedLink, expectedMessage);
+  }
+
   private String createResolvedAlertExpectedWebhookPayloadWithAllPlaceholders(final String collectionId,
                                                                               final String reportId,
                                                                               final AlertCreationRequestDto simpleAlert,
@@ -398,9 +442,15 @@ public class AlertWebhookIT extends AbstractAlertIT {
   }
 
   private String createReportLink(final String collectionId, final String reportId, final AlertNotificationType type) {
+    return createReportLink(collectionId, reportId, type, "");
+  }
+
+  private String createReportLink(final String collectionId, final String reportId, final AlertNotificationType type,
+                                  final String contextPath) {
     return String.format(
-      "http://localhost:%d/#/collection/%s/report/%s?utm_source=" + type.getUtmSource() + "&utm_medium=webhook",
+      "http://localhost:%d%s/#/collection/%s/report/%s?utm_source=" + type.getUtmSource() + "&utm_medium=webhook",
       embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY),
+      contextPath,
       collectionId,
       reportId
     );
@@ -408,13 +458,13 @@ public class AlertWebhookIT extends AbstractAlertIT {
 
   private String createAlertMessage(final String expectedLink) {
     return "Camunda Optimize - Report Status\\nAlert name:" +
-      " test alert\\nReport name: something\\nStatus: Given threshold [0d 0h 0min 1s 500ms] was exceeded. Current" +
-      " value: 0d 0h 0min 2s 0ms. Please check your Optimize report for more information! \\n" + expectedLink;
+      " test alert\\nReport name: something\\nStatus: Given threshold [1s 500ms] was exceeded. Current" +
+      " value: 2s. Please check your Optimize report for more information! \\n" + expectedLink;
   }
 
   private String createAlertResolvedMessage(final String expectedLink) {
     return "Camunda Optimize - Report Status\\nAlert name: test alert\\nReport name: something\\nStatus: Given " +
-      "threshold [0d 0h 0min 1s 500ms] is not exceeded anymore. Current value: 0d 0h 0min 1s 500ms. Please check your" +
+      "threshold [1s 500ms] is not exceeded anymore. Current value: 1s 500ms. Please check your" +
       " Optimize report for more information! \\n" + expectedLink;
   }
 

@@ -52,7 +52,7 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
 
   private static final String CSV_SUFFIX = ".csv";
-  public static final String SUB_PATH_ANY = "/*";
+  private static final String SUB_PATH_ANY = "/*";
   public static final String DEEP_SUB_PATH_ANY = "/**";
 
   private final AuthCookieService authCookieService;
@@ -63,8 +63,7 @@ public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerA
 
   @Override
   public void configure(AuthenticationManagerBuilder auth) throws Exception {
-    auth
-      .authenticationProvider(preAuthenticatedAuthenticationProvider);
+    auth.authenticationProvider(preAuthenticatedAuthenticationProvider);
   }
 
   public AuthenticationCookieFilter authenticationCookieFilter() throws Exception {
@@ -93,9 +92,12 @@ public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerA
         // websocket
         .antMatchers(STATUS_WEBSOCKET_PATH).permitAll()
         // public resources
-        .antMatchers(EXTERNAL_SUB_PATH + "/", EXTERNAL_SUB_PATH + "/index*",
-                     EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**", EXTERNAL_SUB_PATH + "/*.js",
-                     EXTERNAL_SUB_PATH + "/*.ico").permitAll()
+        .antMatchers(EXTERNAL_SUB_PATH + "/",
+                     EXTERNAL_SUB_PATH + "/index*",
+                     EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**",
+                     EXTERNAL_SUB_PATH + "/*.js",
+                     EXTERNAL_SUB_PATH + "/*.ico")
+      .permitAll()
         // public share related resources (API)
         .antMatchers(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)).permitAll()
         // common public api resources

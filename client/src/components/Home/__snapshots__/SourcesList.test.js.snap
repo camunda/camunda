@@ -88,7 +88,11 @@ exports[`should match snapshot 1`] = `
         },
       ]
     }
-    empty="There are no sources added yet"
+    empty={
+      <React.Fragment>
+        There are no sources added yet
+      </React.Fragment>
+    }
     isLoading={false}
     name="Data Sources"
     onChange={[Function]}

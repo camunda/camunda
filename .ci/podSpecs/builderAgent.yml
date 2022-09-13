@@ -27,19 +27,39 @@ spec:
       requests:
         cpu: 4
         memory: 4Gi
-  - name: docker
-    image: docker:18.06-dind
+  # this docker-in-docker container is used to spawn containers dynamically inside a docker container
+  - name: dind
+    image: docker:20.10.16-dind
     args: ["--storage-driver=overlay2"]
     securityContext:
       privileged: true
+    env:
+      # This disabled automatic TLS setup as this is not exposed to the network anyway
+      - name: DOCKER_TLS_CERTDIR
+        value: ""
     tty: true
     resources:
       limits:
-        cpu: 2
+        cpu: 1
         memory: 1Gi
       requests:
-        cpu: 2
+        cpu: 1
         memory: 1Gi
+    # this docker image is used for docker cli as it ships with additional tooling like buildx for multiplatform builds
+  - name: docker
+    image: crazymax/docker:20.10.16
+    command: ["/bin/bash"]
+    env:
+      - name: DOCKER_HOST
+        value: tcp://localhost:2375
+    tty: true
+    resources:
+      limits:
+        cpu: 500m
+        memory: 256Mi
+      requests:
+        cpu: 500m
+        memory: 256Mi
   - name: node
     image: node:14.15.4-alpine
     command: ["cat"]

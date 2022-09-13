@@ -42,6 +42,7 @@ it('evaluate the raw data of the report on mount', () => {
       data: {
         configuration: {
           xml: 'xml data',
+          sorting: {by: 'startDate', order: 'desc'},
         },
         groupBy: {type: 'none', value: null},
         view: {entity: null, properties: ['rawData']},
@@ -62,4 +63,18 @@ it('should pass the error to reportRenderer if evaluation fails', async () => {
   await flushPromises();
 
   expect(node.find(ReportRenderer).prop('error')).toEqual({status: 400, ...testError});
+});
+
+it('evaluate re-evaluate the report when called loadReport prop', () => {
+  const node = shallow(<RawDataModal {...props} />);
+  runLastEffect();
+
+  const sortParams = {limit: '20', offset: 0};
+  const report = {data: {configuration: {sorting: {by: 'startDate', order: 'asc'}}}};
+  node.find(ReportRenderer).prop('loadReport')(sortParams, report);
+
+  evaluateReport.mockClear();
+  runLastEffect();
+
+  expect(evaluateReport).toHaveBeenCalledWith(report, [], sortParams);
 });

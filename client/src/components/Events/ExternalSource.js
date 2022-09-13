@@ -66,7 +66,7 @@ export function ExternalSource({
     return (
       <div className="ExternalSource empty">
         {t('events.table.seeDocs')}
-        <DocsLink location="technical-guide/rest-api/event-ingestion/">
+        <DocsLink location="apis-clients/optimize-api/event-ingestion/">
           {t('events.table.documentation')}
         </DocsLink>
         .

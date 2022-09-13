@@ -90,6 +90,8 @@ container:
   # A host name or IP address, to identify a specific network interface on
   # which to listen.
   host: ${CONTAINER_HOST:localhost}
+  # Allows you to specify a custom context path. If set, must start with a leading '/'
+  contextPath: ${CAMUNDA_OPTIMIZE_CONTEXT_PATH:null}
   ports:
     # A port number that will be used by Optimize to process HTTP connections.
     # If set to null, ~ or left empty, http connections won't be accepted.
@@ -114,12 +116,7 @@ container:
 # Configuration for fetching user data
 users:
   cloud:
-    # The URL at which access tokens can be retrieved
-    tokenUrl: ${CAMUNDA_OPTIMIZE_AUTH0_TOKEN_URL:}
-    clientId: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_CLIENTID:}
-    clientSecret: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_CLIENTSECRET:}
-    audience: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE:}
-    usersUrl: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_URL:}
+    accountsUrl: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_URL:}
 
 # Configuration for engines used to import data. Please note that you have to have at
 # least one engine configured at all times.
@@ -479,8 +476,22 @@ webhookAlerting:
 #        # whether this proxy is using a secured connection
 #        sslEnabled: false
 
+digest:
+  # cron expression to define when enabled email digests are to be sent
+  cronTrigger: "0 0 9 * * MON"
+
+entity:
+  # which users are authorized to create/edit/delete Optimize entities outside of a collection.
+  # Available options: 'all', 'superuser', 'none'
+  authorizedEditors: 'all'
+  # Specifies the frequency with which we want to refresh the KPI values on ES
+  # The given number is the interval in seconds
+  kpiRefreshInterval: 600
+
 export:
   csv:
+    # which users are authorized to download CSVs. Available options: 'all', 'superuser', 'none'
+    authorizedUsers: 'all'
     # Maximum number of records returned by CSV export
     # Note: Increasing this value comes at a memory cost for the Optimize application that varies based on the actual data.
     # As a rough guideline, an export of a 50000 records raw data report containing 8 variables on each instance
@@ -648,6 +659,12 @@ caches:
     maxSize: 1000
     # the time a read result will be cached
     defaultTtlMillis: 10000
+  # This cache is used to cache the most recently fetched CCSaaS users.
+  # It prevents too many fetch requests to the external service.
+  cloudUsers:
+    maxSize: ${CAMUNDA_OPTIMIZE_CLOUD_USER_CACHE_MAX_SIZE:10000}
+    # the minimum interval (in seconds) between each request to repopulate the cache.
+    minFetchIntervalSeconds: ${CAMUNDA_OPTIMIZE_CLOUD_USER_CACHE_MIN_FETCH_INTERVAL_SECONDS:600}
 
 externalVariable:
   import:

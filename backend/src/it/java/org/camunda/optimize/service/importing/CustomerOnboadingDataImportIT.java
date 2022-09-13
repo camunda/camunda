@@ -25,8 +25,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEF
 
 public class CustomerOnboadingDataImportIT extends AbstractImportIT {
 
-  private static final String CUSTOMER_ONBOARDING_PROCESS_INSTANCES = "customer_onboarding_test_process_instances.json";
-  private static final String CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME = "customer_onboarding_definition.json";
+  public static final String CUSTOMER_ONBOARDING_PROCESS_INSTANCES = "customer_onboarding_test_process_instances.json";
+  public static final String CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME = "customer_onboarding_definition.json";
   private static final String CUSTOMER_ONBOARDING_DEFINITION_NAME = "customer_onboarding_en";
 
   @RegisterExtension

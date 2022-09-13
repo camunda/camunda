@@ -88,9 +88,14 @@ it('should not close the popover when clicking inside the popover', () => {
   );
 
   node.setState({open: true});
-  node.find('.Popover__dialog').simulate('MouseDown');
-  node.instance().close({});
+
+  const evt = {nativeEvent: {}};
+  node.find('.overlay').simulate('clickCapture', evt);
+  expect(evt.nativeEvent.insideClick).toBe(true);
+
+  node.instance().close(evt.nativeEvent);
   jest.runAllTimers();
+  expect(evt.nativeEvent.insideClick).toBe(false);
 
   expect(node).toIncludeText('Child content');
 });

@@ -74,9 +74,9 @@ export class Report extends React.Component {
     });
   };
 
-  loadReport = (params) =>
+  loadReport = (params, report = this.state.report) =>
     this.props.mightFail(
-      evaluateReport(this.getId(), [], params),
+      evaluateReport(report ?? this.getId(), [], params),
       async (response) => {
         this.setState({
           report: response,

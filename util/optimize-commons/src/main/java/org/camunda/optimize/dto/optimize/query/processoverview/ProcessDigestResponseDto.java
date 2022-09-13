@@ -12,7 +12,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 
 @Data
 @FieldNameConstants
@@ -25,7 +24,6 @@ public class ProcessDigestResponseDto implements OptimizeDto {
   public static class Fields {
   }
 
-  protected AlertInterval checkInterval;
   @JsonProperty("enabled")
   protected boolean enabled;
 }

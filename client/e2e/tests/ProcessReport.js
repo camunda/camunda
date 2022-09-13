@@ -26,7 +26,7 @@ test('create a report from a template', async (t) => {
 
   await t.click(e.templateOption('Heatmap: Flownode count'));
 
-  await t.takeScreenshot('process/single-report/reportTemplate.png', {fullPage: true});
+  await t.takeScreenshot('img/reportTemplate.png', {fullPage: true});
   await t.maximizeWindow();
 
   await t.click(e.modalConfirmbutton);
@@ -48,7 +48,7 @@ test('create and name a report', async (t) => {
 
   await u.selectVisualization(t, 'Heatmap');
 
-  await t.takeScreenshot('process/single-report/report-reportEditActions.png', {fullPage: true});
+  await t.takeScreenshot('img/report-reportEditActions.png', {fullPage: true});
   await t.maximizeWindow();
 
   await u.save(t);
@@ -75,7 +75,7 @@ test('sharing', async (t) => {
   await t.click(e.shareSwitch);
 
   await t
-    .takeScreenshot('process/single-report/report-sharingPopover.png', {fullPage: true})
+    .takeScreenshot('process-analysis/report-analysis/img/report-sharingPopover.png', {fullPage: true})
     .maximizeWindow();
 
   const shareUrl = await e.shareUrl.value;
@@ -140,7 +140,7 @@ test('version selection', async (t) => {
 
   await t.takeElementScreenshot(
     e.definitionSelectionDialog,
-    'process/single-report/report-versionSelection.png'
+    'process-analysis/report-analysis/img/report-versionSelection.png'
   );
 
   const rangeNumber = +(await e.reportNumber.textContent);
@@ -152,7 +152,7 @@ test('version selection', async (t) => {
 
   await t.takeElementScreenshot(
     e.definitionSelectionDialog,
-    'process/single-report/tenantSelection.png'
+    'process-analysis/report-analysis/img/tenantSelection.png'
   );
 });
 
@@ -180,7 +180,7 @@ test('sort table columns', async (t) => {
 
   await t
     .resizeWindow(1600, 650)
-    .takeScreenshot('process/single-report/sorting.png', {fullPage: true})
+    .takeScreenshot('process-analysis/report-analysis/img/sorting.png', {fullPage: true})
     .maximizeWindow();
 
   let a, b, c;
@@ -255,7 +255,7 @@ test('exclude raw data columns', async (t) => {
   await t.click(e.selectSwitchLabel('End Date'));
   await t.click(e.selectSwitchLabel('approved'));
 
-  await t.takeScreenshot('process/single-report/rawdata.png').maximizeWindow();
+  await t.takeScreenshot('process-analysis/report-analysis/img/rawdata.png').maximizeWindow();
 
   await t.expect(e.reportRenderer.textContent).notContains('Start Date');
 });
@@ -308,7 +308,7 @@ test('Limit the precsion in number report', async (t) => {
 
   await t
     .resizeWindow(1600, 800)
-    .takeScreenshot('process/single-report/NumberConfiguration.png', {fullPage: true})
+    .takeScreenshot('process-analysis/report-analysis/img/NumberConfiguration.png', {fullPage: true})
     .maximizeWindow();
 
   await t.expect(e.reportNumber.visible).ok();
@@ -421,7 +421,7 @@ test('bar chart and line chart configuration', async (t) => {
   await t.click(e.configurationButton);
   await t.click(e.cyanColor);
 
-  await t.takeScreenshot('process/single-report/chartConfiguration.png', {fullPage: true});
+  await t.takeScreenshot('process-analysis/report-analysis/img/chartConfiguration.png', {fullPage: true});
 
   await t.click(e.goalSwitch);
 
@@ -430,11 +430,11 @@ test('bar chart and line chart configuration', async (t) => {
 
   await t.expect(e.reportChart.visible).ok();
 
-  await t.takeScreenshot('process/single-report/targetValue.png', {fullPage: true});
+  await t.takeScreenshot('process-analysis/report-analysis/img/targetValue.png', {fullPage: true});
 
   await u.selectVisualization(t, 'Line Chart');
 
-  await t.takeElementScreenshot(e.reportRenderer, 'process/single-report/targetline.png');
+  await t.takeElementScreenshot(e.reportRenderer, 'process-analysis/report-analysis/img/targetline.png');
 
   await t.maximizeWindow();
 
@@ -462,7 +462,7 @@ test('bar chart and line chart configuration', async (t) => {
 
   await t
     .resizeWindow(1600, 800)
-    .takeScreenshot('process/single-report/stackedBar.png', {fullPage: true});
+    .takeScreenshot('process-analysis/report-analysis/img/stackedBar.png', {fullPage: true});
 
   await t.click(e.configurationButton);
 
@@ -472,7 +472,7 @@ test('bar chart and line chart configuration', async (t) => {
 
   await t.click(e.configurationButton);
 
-  await t.takeScreenshot('process/single-report/barLine.png', {fullPage: true});
+  await t.takeScreenshot('process-analysis/report-analysis/img/barLine.png', {fullPage: true});
 
   await t.click(e.lineButton);
 
@@ -529,7 +529,7 @@ test('aggregators', async (t) => {
 
   await t.click(e.aggregationTypeSelect);
 
-  await t.takeScreenshot('process/single-report/durationAggregation.png', {fullPage: true});
+  await t.takeScreenshot('process-analysis/report-analysis/img/durationAggregation.png', {fullPage: true});
 
   await t.click(e.aggregationOption('Minimum'));
   await t.click(e.aggregationOption('Average'));
@@ -575,7 +575,7 @@ test('progress bar and reset to default', async (t) => {
 
   await t
     .resizeWindow(1000, 530)
-    .takeElementScreenshot(e.reportProgressBar, 'process/single-report/progressbar.png')
+    .takeElementScreenshot(e.reportProgressBar, 'process-analysis/report-analysis/img/progressbar.png')
     .maximizeWindow();
 
   await t.click(e.configurationButton);
@@ -584,7 +584,7 @@ test('progress bar and reset to default', async (t) => {
 
   await t
     .resizeWindow(1000, 530)
-    .takeElementScreenshot(e.reportProgressBar, 'process/single-report/progressbarExceeded.png')
+    .takeElementScreenshot(e.reportProgressBar, 'process-analysis/report-analysis/img/progressbarExceeded.png')
     .maximizeWindow();
 
   await t.click(e.configurationButton);
@@ -616,7 +616,7 @@ test('heatmap target values', async (t) => {
   await t.typeText(e.targetValueInput('Prepare Bank Transfer'), '5');
   await t.typeText(e.targetValueInput('Review Invoice'), '1');
 
-  await t.takeElementScreenshot(e.modalContainer, 'process/single-report/targetvalue-2.png');
+  await t.takeElementScreenshot(e.modalContainer, 'process-analysis/report-analysis/img/targetvalue-2.png');
 
   await t.click(e.primaryModalButton);
 
@@ -633,7 +633,7 @@ test('heatmap target values', async (t) => {
   );
   await addAnnotation(e.badge('prepareBankTransfer'), 'Target Value for Activity', {x: 50, y: 0});
 
-  await t.takeScreenshot('process/single-report/targetvalue-1.png', {fullPage: true});
+  await t.takeScreenshot('process-analysis/report-analysis/img/targetvalue-1.png', {fullPage: true});
 
   await clearAllAnnotations();
 
@@ -661,7 +661,7 @@ test('always show tooltips', async (t) => {
   await t.click(e.selectSwitchLabel('Show Absolute Value'));
   await t.click(e.selectSwitchLabel('Show Relative Value'));
 
-  await t.takeScreenshot('process/single-report/heatmap.png', {fullPage: true}).maximizeWindow();
+  await t.takeScreenshot('process-analysis/report-analysis/img/heatmap.png', {fullPage: true}).maximizeWindow();
 
   await t.expect(e.tooltip.visible).ok();
 });
@@ -715,7 +715,7 @@ test('should be able to distribute candidate group by user task', async (t) => {
 
   await t.expect(e.visualizationDropdown.textContent).contains('Bar Chart');
 
-  await t.takeElementScreenshot(e.reportRenderer, 'process/single-report/distributed-report.png');
+  await t.takeElementScreenshot(e.reportRenderer, 'process-analysis/report-analysis/img/distributed-report.png');
 
   await t.click(e.visualizationDropdown);
 
@@ -774,7 +774,7 @@ test('process parts', async (t) => {
   await t.click(e.modalFlowNode('StartEvent_1'));
   await t.click(e.modalFlowNode('assignApprover'));
 
-  await t.takeElementScreenshot(e.modalContainer, 'process/single-report/process-part.png');
+  await t.takeElementScreenshot(e.modalContainer, 'process-analysis/report-analysis/img/process-part.png');
   await t.maximizeWindow();
 
   await t.click(e.primaryModalButton);
@@ -855,7 +855,7 @@ test('distribute by variable', async (t) => {
   await t.click(e.submenuOption('approved'));
   await t
     .resizeWindow(1650, 900)
-    .takeElementScreenshot(e.reportRenderer, 'process/single-report/distributedByVar.png')
+    .takeElementScreenshot(e.reportRenderer, 'process-analysis/report-analysis/img/distributedByVar.png')
     .maximizeWindow();
 
   await t.click(e.distributedBySelect);
@@ -1037,7 +1037,7 @@ test('multi-definition report', async (t) => {
 
   await t.takeElementScreenshot(
     e.modalContainer,
-    'process/single-report/report-processDefinitionSelection.png'
+    'process-analysis/report-analysis/img/report-processDefinitionSelection.png'
   );
 
   await t.maximizeWindow();

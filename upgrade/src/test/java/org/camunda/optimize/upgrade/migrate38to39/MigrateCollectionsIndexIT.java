@@ -20,7 +20,7 @@ public class MigrateCollectionsIndexIT extends AbstractUpgrade38IT {
   @Test
   public void migrateCollectionsIndex() {
     // given
-    executeBulk("steps/collectionsIndex/38-collections-index.json");
+    executeBulk("steps/3.8/collection/38-collections-index.json");
 
     // when
     performUpgrade();

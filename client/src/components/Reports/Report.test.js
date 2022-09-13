@@ -52,6 +52,10 @@ const report = {
 loadEntity.mockReturnValue(report);
 evaluateReport.mockReturnValue(report);
 
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
 it('should display a loading indicator', () => {
   const node = shallow(<Report {...props} mightFail={() => {}} />);
 
@@ -75,7 +79,7 @@ it('should pass the error to report view and edit mode if evaluation fails', asy
   const node = shallow(<Report {...props} mightFail={mightFail} />);
   await node.instance().loadReport();
 
-  expect(node.find('ReportView').prop('error')).toEqual(testError);
+  expect(node.find(ReportView).prop('error')).toEqual(testError);
 });
 
 it('should initially evaluate the report', () => {
@@ -136,4 +140,23 @@ it('should render ReportView component if viewMode is view', () => {
   node.setState({loaded: true, report});
 
   expect(node.find(ReportView)).toExist();
+});
+
+it('should use the passed evaluation payload to evaluate the report if it exists', () => {
+  const node = shallow(<Report {...props} />);
+
+  expect(evaluateReport).toHaveBeenCalledWith('1', [], undefined);
+
+  const passedReport = {id: '2'};
+  node.find(ReportView).prop('loadReport')(undefined, passedReport);
+  expect(evaluateReport).toHaveBeenCalledWith(passedReport, [], undefined);
+});
+
+it('should use the existing report in state to evaluate the report after loading it', () => {
+  const node = shallow(<Report {...props} />);
+
+  expect(evaluateReport).toHaveBeenCalledWith('1', [], undefined);
+
+  node.find(ReportView).prop('loadReport')();
+  expect(evaluateReport).toHaveBeenCalledWith(report, [], undefined);
 });

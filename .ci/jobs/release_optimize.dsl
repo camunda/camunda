@@ -4,7 +4,7 @@ pipelineJob('camunda-optimize-release') {
   description 'Release Camunda Optimize to Camunda Nexus and tag GitHub repository.'
 
   // By default, this job is disabled in non-prod envs.
-  if (binding.variables.get("ENVIRONMENT") != "prod") {
+  if (ENVIRONMENT != "prod") {
     disabled()
   }
 

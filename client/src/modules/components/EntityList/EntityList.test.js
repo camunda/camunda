@@ -335,3 +335,9 @@ it('should display extra text in the header if specified', () => {
 
   expect(node.find('.header .headerText')).toIncludeText('foo');
 });
+
+it('should add "hidden" classname to select all checkbox if there are no bulk actions', () => {
+  const node = shallow(<EntityList {...props} columns={[{}]} />);
+
+  expect(node.find('.columnHeaders > [type="checkbox"].hidden')).toExist();
+});

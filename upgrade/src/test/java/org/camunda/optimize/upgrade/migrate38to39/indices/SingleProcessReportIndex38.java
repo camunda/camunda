@@ -18,7 +18,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROC
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
 
-public class SingleProcessReportIndexOld extends AbstractReportIndex {
+public class SingleProcessReportIndex38 extends AbstractReportIndex {
 
   public static final int VERSION = 8;
 

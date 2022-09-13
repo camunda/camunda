@@ -9,6 +9,8 @@ import React, {useState, useRef, useEffect} from 'react';
 import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 
+import {getNonOverflowingValues} from './service';
+
 import './Tooltip.scss';
 
 export default function Tooltip({
@@ -20,7 +22,6 @@ export default function Tooltip({
   delay = 800,
   overflowOnly = false,
 }) {
-  const [timeout, setTimeout] = useState();
   const [hovering, setHovering] = useState(false);
   const [style, setStyle] = useState();
   const [tooltipAlign, setTooltipAlign] = useState(align);
@@ -28,45 +29,26 @@ export default function Tooltip({
 
   const hoverElement = useRef();
   const tooltip = useRef();
+  const timeout = useRef();
 
   useEffect(() => {
     if (!tooltip.current || !hoverElement.current) {
       return;
     }
 
-    const body = document.fullscreenElement || document.body;
-    const tooltipBox = tooltip.current.getBoundingClientRect();
-    const tooltipMargin = getTooltipMargin(tooltip.current);
-    const tooltipHeight = tooltipBox.height + tooltipMargin;
-    const hoverElementBox = hoverElement.current.getBoundingClientRect();
+    const {width, left, top, newAlign, newPosition} = getNonOverflowingValues(
+      tooltip.current,
+      hoverElement.current,
+      align,
+      position
+    );
 
-    const widthToArrow = align === 'center' ? tooltipBox.width / 2 : tooltipBox.width;
-    const left = {
-      center: hoverElementBox.x + hoverElementBox.width / 2,
-      left: hoverElementBox.x,
-      right: hoverElementBox.x + hoverElementBox.width,
-    };
-
-    let tooltipAlign = align;
-    if (widthToArrow - left[align] > 0) {
-      tooltipAlign = 'left';
-    } else if (left[align] + widthToArrow > body.clientWidth) {
-      tooltipAlign = 'right';
-    }
-
-    let tooltipPosition = position;
-    if (position === 'bottom' && hoverElementBox.bottom + tooltipHeight > body.clientHeight) {
-      tooltipPosition = 'top';
-    } else if (position === 'top' && hoverElementBox.y - tooltipHeight < 0) {
-      tooltipPosition = 'bottom';
-    }
-
-    setTooltipPosition(tooltipPosition);
-    setTooltipAlign(tooltipAlign);
+    setTooltipPosition(newPosition);
+    setTooltipAlign(newAlign);
     setStyle({
-      width: tooltipBox.width,
-      left: left[tooltipAlign] + 'px',
-      top: hoverElementBox[tooltipPosition] + 'px',
+      width,
+      left: left + 'px',
+      top: top + 'px',
     });
   }, [align, hovering, position]);
 
@@ -87,20 +69,18 @@ export default function Tooltip({
             const {currentTarget} = evt;
             if (!overflowOnly || currentTarget.scrollWidth > currentTarget.clientWidth) {
               hoverElement.current = currentTarget;
-              setTimeout(window.setTimeout(() => setHovering(true), delay));
+              timeout.current = window.setTimeout(() => setHovering(true), delay);
             }
-            child.props.onMouseEnter && child.props.onMouseEnter(evt);
+            child.props.onMouseEnter?.(evt);
           },
           onMouseLeave: (evt) => {
             hoverElement.current = null;
-            window.clearTimeout(timeout);
-            setTimeout(
-              window.setTimeout(() => {
-                setHovering(false);
-                setStyle();
-              }, delay)
-            );
-            child.props.onMouseLeave && child.props.onMouseLeave(evt);
+            window.clearTimeout(timeout.current);
+            timeout.current = window.setTimeout(() => {
+              setHovering(false);
+              setStyle();
+            }, delay);
+            child.props.onMouseLeave?.(evt);
           },
         })
       )}
@@ -115,7 +95,7 @@ export default function Tooltip({
             )}
             style={style}
             ref={tooltip}
-            onMouseEnter={() => window.clearTimeout(timeout)}
+            onMouseEnter={() => window.clearTimeout(timeout.current)}
             onMouseLeave={() => setHovering(false)}
           >
             {content}
@@ -124,11 +104,4 @@ export default function Tooltip({
         )}
     </>
   );
-}
-
-function getTooltipMargin(tooltip) {
-  const tooltipStyles = window.getComputedStyle(tooltip);
-  const getProperty = (property) => Number(tooltipStyles.getPropertyValue(property).match(/\d+/));
-
-  return getProperty('margin-top') + getProperty('margin-bottom');
 }
