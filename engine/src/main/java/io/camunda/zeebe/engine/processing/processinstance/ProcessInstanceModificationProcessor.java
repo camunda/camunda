@@ -509,6 +509,13 @@ public final class ProcessInstanceModificationProcessor
 
     catchEventBehavior.unsubscribeFromEvents(elementInstanceKey, sideEffects);
 
+    // terminate all child instances if the element is an event subprocess
+    if (elementInstance.getValue().getBpmnElementType() == BpmnElementType.EVENT_SUB_PROCESS) {
+      elementInstanceState.getChildren(elementInstanceKey).stream()
+          .filter(ElementInstance::canTerminate)
+          .forEach(childInstance -> terminateElement(childInstance, sideEffects));
+    }
+
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATED, elementInstanceRecord);
   }
