@@ -12,6 +12,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
@@ -660,6 +661,100 @@ public class ModifyProcessInstanceTerminationTest {
             tuple(
                 BpmnElementType.EVENT_SUB_PROCESS,
                 "event-subprocess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
+  public void shouldTerminateEmbeddedSubProcess() {
+    // given
+    final var correlationKey = CLASS_RULE_HELPER.getCorrelationValue();
+
+    final Consumer<EventSubProcessBuilder> eventSubProcess =
+        eventSP ->
+            eventSP
+                .startEvent()
+                .message(m -> m.name("start").zeebeCorrelationKeyExpression("key"))
+                .interrupting(false)
+                .userTask("B")
+                .endEvent();
+
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess(
+                "subprocess",
+                sp ->
+                    sp.embeddedSubProcess()
+                        .eventSubProcess("event-subprocess", eventSubProcess)
+                        .startEvent()
+                        .userTask("A")
+                        .endEvent())
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", correlationKey)
+            .create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    ENGINE.message().withName("start").withCorrelationKey(correlationKey).publish();
+
+    final var subProcessKey = getElementInstanceKeyOfElement(processInstanceKey, "subprocess");
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("B")
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(subProcessKey)
+        .modify();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            r -> r.getValue().getElementId(),
+            Record::getIntent)
+        .describedAs("Expect to terminate the subprocess and all containing elements")
+        .containsSequence(
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "subprocess",
+                ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.EVENT_SUB_PROCESS,
+                "event-subprocess",
+                ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.EVENT_SUB_PROCESS,
+                "event-subprocess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "subprocess",
                 ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATED));
