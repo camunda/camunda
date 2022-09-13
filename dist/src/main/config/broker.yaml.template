@@ -170,6 +170,40 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DISKUSAGEMONITORINGINTERVAL
       # diskUsageMonitoringInterval = 1s
 
+      # backup:
+        # Configure backup store. NOTE:- Use the same configuration on all brokers of this cluster.
+
+        # Set the backup store type. Supported values are [NONE, S3]. Default value is NONE
+        # When NONE, no backup store is configured and no backup will be taken.
+        # Use S3 to use any S3 compatible storage (https://docs.aws.amazon.com/AmazonS3/latest/API/Type_API_Reference.html).
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_STORE
+        # store: NONE
+
+        # Configure the following if store is set to S3
+        # s3:
+
+          # Name of the bucket where the backup will be stored.
+          # The bucket must be already created. The bucket must not be shared with other zeebe clusters. bucketName must not be empty.
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_S3_BUCKETNAME
+          # bucketName:
+
+          # Configure URL endpoint for the store.
+          # If no endpoint is provided, it will be determined based on the configured region.
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_S3_ENDPOINT
+          # endpoint:
+
+          # Configure AWS region. If no region is provided it will be determined as documented in
+          # https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_S3_REGION
+          # region:
+
+          # Configure access credentials. If either accessKey or secretKey is not provided, the credentials
+          # will be determined as documented in https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_S3_ACCESSKEY
+          # accessKey:
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_S3_SECRETKEY
+          # secretKey:
+
     # cluster:
       # This section contains all cluster related configurations, to setup a zeebe cluster
 
