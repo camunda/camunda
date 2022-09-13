@@ -34,10 +34,6 @@ public class InclusiveGatewayValidator implements ModelElementValidator<Inclusiv
     final SequenceFlow defaultFlow = element.getDefault();
     final int size = element.getIncoming().size();
     if (defaultFlow != null) {
-      if (defaultFlow.getConditionExpression() == null && size > 1) {
-        validationResultCollector.addError(
-            0, "Must have a condition even if it's marked as the default flow");
-      }
       if (defaultFlow.getSource() != element) {
         validationResultCollector.addError(0, "Default flow must start at gateway");
       }
