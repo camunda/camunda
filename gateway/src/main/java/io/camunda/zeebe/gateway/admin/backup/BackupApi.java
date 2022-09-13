@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.admin.backup;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public interface BackupApi {
 
@@ -19,5 +19,13 @@ public interface BackupApi {
    * @param backupId the id of the backup to be taken
    * @return the backupId
    */
-  CompletableFuture<Long> takeBackup(long backupId);
+  CompletionStage<Long> takeBackup(long backupId);
+
+  /**
+   * Returns the status of the backup. The future fails if the request was not processed by at least
+   * one partition.
+   *
+   * @return the status of the backup
+   */
+  CompletionStage<BackupStatus> getStatus(long backupId);
 }

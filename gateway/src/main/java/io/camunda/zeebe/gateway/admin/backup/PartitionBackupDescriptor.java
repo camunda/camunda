@@ -7,10 +7,4 @@
  */
 package io.camunda.zeebe.gateway.admin.backup;
 
-public class BackupFailedException extends RuntimeException {
-
-  public BackupFailedException(final long backupId, final Throwable error) {
-    super(
-        "Failed to trigger backup (id = %d) on at least one partition.".formatted(backupId), error);
-  }
-}
+record PartitionBackupDescriptor(String snapshotId, long checkpointPosition, int brokerId) {}

@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.admin.backup;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
+import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import org.junit.Before;
@@ -51,6 +52,103 @@ public class BackupRequestHandlerTest extends GatewayTest {
     assertThat(future)
         .failsWithin(Duration.ofMillis(500))
         .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(BackupFailedException.class);
+        .withCauseInstanceOf(BackupOperationFailedException.class);
+  }
+
+  @Test
+  public void shouldReturnCompleteStatusWhenAllPartitionsHaveCompleteBackup() {
+    // given
+    final BackupQueryStub stub = new BackupQueryStub();
+    stub.registerWith(brokerClient);
+
+    // when
+    final var future = requestHandler.getStatus(1);
+
+    // then
+    assertThat(future)
+        .succeedsWithin(Duration.ofMillis(500))
+        .returns(BackupStatusCode.COMPLETED, BackupStatus::status);
+
+    final var status = future.toCompletableFuture().join();
+    assertThat(status.partitions())
+        .hasSize(brokerClient.getTopologyManager().getTopology().getPartitionsCount());
+  }
+
+  @Test
+  public void shouldReturnInProgressStatusWhenOnePartitionIsInProgress() {
+    // given
+    final BackupQueryStub stub = new BackupQueryStub();
+    stub.withInProgressResponseFor(1);
+    stub.registerWith(brokerClient);
+
+    // when
+    final var future = requestHandler.getStatus(1);
+
+    // then
+    assertThat(future)
+        .succeedsWithin(Duration.ofMillis(500))
+        .returns(BackupStatusCode.IN_PROGRESS, BackupStatus::status);
+
+    final var status = future.toCompletableFuture().join();
+    assertThat(status.partitions())
+        .hasSize(brokerClient.getTopologyManager().getTopology().getPartitionsCount());
+  }
+
+  @Test
+  public void shouldReturnFailedStatusWhenOnePartitionIsFailed() {
+    // given
+    final BackupQueryStub stub = new BackupQueryStub();
+    stub.withFailedResponseFor(1).withInProgressResponseFor(2);
+    stub.registerWith(brokerClient);
+
+    // when
+    final var future = requestHandler.getStatus(1);
+
+    // then
+    assertThat(future)
+        .succeedsWithin(Duration.ofMillis(500))
+        .returns(BackupStatusCode.FAILED, BackupStatus::status);
+
+    final var status = future.toCompletableFuture().join();
+    assertThat(status.failureReason().orElseThrow()).contains("FAILED");
+    assertThat(status.partitions())
+        .hasSize(brokerClient.getTopologyManager().getTopology().getPartitionsCount());
+  }
+
+  @Test
+  public void shouldReturnDoesNotExistStatusWhenOnePartitionBackupDoesNotExist() {
+    // given
+    final BackupQueryStub stub = new BackupQueryStub();
+    stub.withDoesNotExistFor(1).withInProgressResponseFor(2);
+    stub.registerWith(brokerClient);
+
+    // when
+    final var future = requestHandler.getStatus(1);
+
+    // then
+    assertThat(future)
+        .succeedsWithin(Duration.ofMillis(500))
+        .returns(BackupStatusCode.DOES_NOT_EXIST, BackupStatus::status);
+
+    final var status = future.toCompletableFuture().join();
+    assertThat(status.partitions())
+        .hasSize(brokerClient.getTopologyManager().getTopology().getPartitionsCount());
+  }
+
+  @Test
+  public void shouldFailWhenQueryToOnePartitionFails() {
+    // given
+    final BackupQueryStub stub = new BackupQueryStub();
+    stub.withErrorResponseFor(1).withInProgressResponseFor(2);
+    stub.registerWith(brokerClient);
+
+    // when
+    final var future = requestHandler.getStatus(1);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofMillis(500))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(BackupOperationFailedException.class);
   }
 }
