@@ -85,8 +85,8 @@ public final class ProcessInstanceModificationProcessor
   private static final String ERROR_MESSAGE_MORE_THAN_ONE_FLOW_SCOPE_INSTANCE =
       """
       Expected to modify instance of process '%s' but it contains one or more activate instructions \
-      for an element that has a flow scope with more than one active instances. Can't decide in \
-      which instance of the flow scope the element should be activated.""";
+      for an element that has a flow scope with more than one active instance: '%s'. Can't decide \
+      in which instance of the flow scope the element should be activated.""";
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
@@ -213,7 +213,8 @@ public final class ProcessInstanceModificationProcessor
 
     } else if (error instanceof MultipleFlowScopeInstancesFoundException exception) {
       final var rejectionReason =
-          ERROR_MESSAGE_MORE_THAN_ONE_FLOW_SCOPE_INSTANCE.formatted(exception.getBpmnProcessId());
+          ERROR_MESSAGE_MORE_THAN_ONE_FLOW_SCOPE_INSTANCE.formatted(
+              exception.getBpmnProcessId(), exception.getFlowScopeId());
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, rejectionReason);
       responseWriter.writeRejectionOnCommand(

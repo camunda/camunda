@@ -373,8 +373,8 @@ public class ModifyProcessInstanceRejectionTest {
                 """
                 Expected to modify instance of process '%s' but it contains one or more activate \
                 instructions for an element that has a flow scope with more than one active \
-                instances. Can't decide in which instance of the flow scope the element should be \
-                activated.""",
+                instance: 'event-subprocess'. Can't decide in which instance of the flow scope the \
+                element should be activated.""",
                 PROCESS_ID));
   }
 }

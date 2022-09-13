@@ -22,6 +22,7 @@ public final class MultipleFlowScopeInstancesFoundException extends RuntimeExcep
       "Expected to have zero or one instance of the flow scope '%s' but found multiple instances.";
 
   private final String bpmnProcessId;
+  private final String flowScopeId;
 
   /**
    * Constructs a new exception for the case that a flow scope has more instances as expected.
@@ -32,9 +33,14 @@ public final class MultipleFlowScopeInstancesFoundException extends RuntimeExcep
   MultipleFlowScopeInstancesFoundException(final String flowScopeId, final String bpmnProcessId) {
     super(ERROR_MESSAGE.formatted(flowScopeId));
     this.bpmnProcessId = bpmnProcessId;
+    this.flowScopeId = flowScopeId;
   }
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
+  }
+
+  public String getFlowScopeId() {
+    return flowScopeId;
   }
 }
