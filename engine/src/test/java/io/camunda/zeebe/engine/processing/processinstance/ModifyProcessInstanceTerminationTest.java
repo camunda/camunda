@@ -838,15 +838,12 @@ public class ModifyProcessInstanceTerminationTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .parallelGateway()
-                .userTask("A")
-                .moveToLastGateway()
                 .subProcess(
-                    "B",
+                    "A",
                     s ->
                         s.embeddedSubProcess()
                             .startEvent()
-                            .userTask("C")
+                            .userTask("B")
                             .endEvent()
                             .subProcessDone()
                             .multiInstance()
@@ -860,13 +857,13 @@ public class ModifyProcessInstanceTerminationTest {
     final var multiInstanceElement =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementId("B")
+            .withElementId("A")
             .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
             .getFirst();
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementId("C")
+                .withElementId("B")
                 .withElementType(BpmnElementType.USER_TASK)
                 .limit(3))
         .describedAs("Await until all 3 user tasks are activated as pre-condition")
@@ -881,17 +878,14 @@ public class ModifyProcessInstanceTerminationTest {
         .modify();
 
     // then
-    assertThatElementIsTerminated(processInstanceKey, "B");
+    assertThatElementIsTerminated(processInstanceKey, "A");
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords()
                 .onlyEvents()
                 .withProcessInstanceKey(processInstanceKey)
                 .skipUntil(r -> r.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING)
-                .limit(
-                    r ->
-                        r.getValue().getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY
-                            && r.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATED))
+                .limitToProcessInstanceTerminated())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .describedAs("Expect that all active instances of the multi-instance have been terminated")
         .containsSequence(
@@ -908,7 +902,9 @@ public class ModifyProcessInstanceTerminationTest {
             tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_TERMINATED));
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
 
   @Test
@@ -919,15 +915,12 @@ public class ModifyProcessInstanceTerminationTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .parallelGateway()
-                .userTask("A")
-                .moveToLastGateway()
                 .subProcess(
-                    "B",
+                    "A",
                     s ->
                         s.embeddedSubProcess()
                             .startEvent()
-                            .userTask("C")
+                            .userTask("B")
                             .endEvent()
                             .subProcessDone()
                             .multiInstance()
@@ -941,12 +934,12 @@ public class ModifyProcessInstanceTerminationTest {
     final var multiInstanceElement =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementId("B")
+            .withElementId("A")
             .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
             .getFirst();
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
-        .withElementId("C")
+        .withElementId("B")
         .withElementType(BpmnElementType.USER_TASK)
         .await();
 
@@ -959,17 +952,14 @@ public class ModifyProcessInstanceTerminationTest {
         .modify();
 
     // then
-    assertThatElementIsTerminated(processInstanceKey, "B");
+    assertThatElementIsTerminated(processInstanceKey, "A");
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords()
                 .onlyEvents()
                 .withProcessInstanceKey(processInstanceKey)
                 .skipUntil(r -> r.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING)
-                .limit(
-                    r ->
-                        r.getValue().getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY
-                            && r.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATED))
+                .limitToProcessInstanceTerminated())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .describedAs("Expect that all active instances of the multi-instance have been terminated")
         .containsSequence(
@@ -978,7 +968,9 @@ public class ModifyProcessInstanceTerminationTest {
             tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_TERMINATED));
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
 
   private static long getElementInstanceKeyOfElement(
