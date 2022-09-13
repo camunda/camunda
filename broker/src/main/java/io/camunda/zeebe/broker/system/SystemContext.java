@@ -15,6 +15,8 @@ import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -66,9 +68,20 @@ public final class SystemContext {
 
   private void validateConfiguration() {
     final ClusterCfg cluster = brokerCfg.getCluster();
-    final DataCfg data = brokerCfg.getData();
-    final var experimental = brokerCfg.getExperimental();
 
+    validateClusterConfig(cluster);
+
+    validateDataConfig(brokerCfg.getData());
+
+    validateExperimentalConfigs(cluster, brokerCfg.getExperimental());
+
+    final var security = brokerCfg.getNetwork().getSecurity();
+    if (security.isEnabled()) {
+      validateNetworkSecurityConfig(security);
+    }
+  }
+
+  private static void validateClusterConfig(final ClusterCfg cluster) {
     final int partitionCount = cluster.getPartitionsCount();
     if (partitionCount < 1) {
       throw new IllegalArgumentException("Partition count must not be smaller then 1.");
@@ -80,20 +93,49 @@ public final class SystemContext {
       throw new IllegalArgumentException(String.format(NODE_ID_ERROR_MSG, nodeId, clusterSize));
     }
 
-    final var maxAppendBatchSize = experimental.getMaxAppendBatchSize();
-    if (maxAppendBatchSize.isNegative() || maxAppendBatchSize.toBytes() >= Integer.MAX_VALUE) {
-      throw new IllegalArgumentException(
-          String.format(MAX_BATCH_SIZE_ERROR_MSG, Integer.MAX_VALUE, maxAppendBatchSize));
-    }
-
     final int replicationFactor = cluster.getReplicationFactor();
     if (replicationFactor < 1 || replicationFactor > clusterSize) {
       throw new IllegalArgumentException(
           String.format(REPLICATION_FACTOR_ERROR_MSG, replicationFactor, clusterSize));
     }
 
-    final var dataCfg = brokerCfg.getData();
+    final var heartbeatInterval = cluster.getHeartbeatInterval();
+    final var electionTimeout = cluster.getElectionTimeout();
+    if (heartbeatInterval.toMillis() < 1) {
+      throw new IllegalArgumentException(
+          String.format("heartbeatInterval %s must be at least 1ms", heartbeatInterval));
+    }
+    if (electionTimeout.toMillis() < 1) {
+      throw new IllegalArgumentException(
+          String.format("electionTimeout %s must be at least 1ms", electionTimeout));
+    }
+    if (electionTimeout.compareTo(heartbeatInterval) < 1) {
+      throw new IllegalArgumentException(
+          String.format(
+              "electionTimeout %s must be greater than heartbeatInterval %s",
+              electionTimeout, heartbeatInterval));
+    }
+  }
 
+  private void validateExperimentalConfigs(
+      final ClusterCfg cluster, final ExperimentalCfg experimental) {
+    if (experimental.isDisableExplicitRaftFlush()) {
+      LOG.warn(REPLICATION_WITH_DISABLED_FLUSH_WARNING);
+    }
+
+    final var maxAppendBatchSize = experimental.getMaxAppendBatchSize();
+    if (maxAppendBatchSize.isNegative() || maxAppendBatchSize.toBytes() >= Integer.MAX_VALUE) {
+      throw new IllegalArgumentException(
+          String.format(MAX_BATCH_SIZE_ERROR_MSG, Integer.MAX_VALUE, maxAppendBatchSize));
+    }
+
+    final var partitioningConfig = experimental.getPartitioning();
+    if (partitioningConfig.getScheme() == Scheme.FIXED) {
+      validateFixedPartitioningScheme(cluster, experimental);
+    }
+  }
+
+  private void validateDataConfig(final DataCfg dataCfg) {
     final var snapshotPeriod = dataCfg.getSnapshotPeriod();
     if (snapshotPeriod.isNegative() || snapshotPeriod.minus(MINIMUM_SNAPSHOT_PERIOD).isNegative()) {
       throw new IllegalArgumentException(String.format(SNAPSHOT_PERIOD_ERROR_MSG, snapshotPeriod));
@@ -115,7 +157,7 @@ public final class SystemContext {
               diskUsageReplicationWatermark));
     }
 
-    if (data.isDiskUsageMonitoringEnabled()
+    if (dataCfg.isDiskUsageMonitoringEnabled()
         && diskUsageCommandWatermark >= diskUsageReplicationWatermark) {
       throw new IllegalArgumentException(
           String.format(
@@ -123,35 +165,33 @@ public final class SystemContext {
               diskUsageCommandWatermark, diskUsageReplicationWatermark));
     }
 
-    if (experimental.isDisableExplicitRaftFlush()) {
-      LOG.warn(REPLICATION_WITH_DISABLED_FLUSH_WARNING);
+    validateBackupCfg(dataCfg.getBackup());
+  }
+
+  private void validateBackupCfg(final BackupStoreCfg backup) {
+    if (backup.getStore() == BackupStoreType.NONE) {
+      LOG.warn("No backup store is configured. Backups will not be taken");
+      return;
     }
 
-    final var heartbeatInterval = cluster.getHeartbeatInterval();
-    final var electionTimeout = cluster.getElectionTimeout();
-    if (heartbeatInterval.toMillis() < 1) {
-      throw new IllegalArgumentException(
-          String.format("heartbeatInterval %s must be at least 1ms", heartbeatInterval));
-    }
-    if (electionTimeout.toMillis() < 1) {
-      throw new IllegalArgumentException(
-          String.format("electionTimeout %s must be at least 1ms", electionTimeout));
-    }
-    if (electionTimeout.compareTo(heartbeatInterval) < 1) {
-      throw new IllegalArgumentException(
-          String.format(
-              "electionTimeout %s must be greater than heartbeatInterval %s",
-              electionTimeout, heartbeatInterval));
-    }
-
-    final var partitioningConfig = experimental.getPartitioning();
-    if (partitioningConfig.getScheme() == Scheme.FIXED) {
-      validateFixedPartitioningScheme(cluster, experimental);
-    }
-
-    final var security = brokerCfg.getNetwork().getSecurity();
-    if (security.isEnabled()) {
-      validateNetworkSecurityConfig(security);
+    if (backup.getStore() == BackupStoreType.S3) {
+      final var s3Config = backup.getS3();
+      if (s3Config.getBucketName() == null || s3Config.getBucketName().isEmpty()) {
+        throw new IllegalArgumentException(
+            "Configuration for S3 backup store is incomplete. bucketName must not be empty.");
+      }
+      if (s3Config.getRegion() == null) {
+        LOG.warn(
+            "No region configured for S3 backup store. Region will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment)");
+      }
+      if (s3Config.getEndpoint() == null) {
+        LOG.warn(
+            "No endpoint configured for S3 backup store. Endpoint will be determined from the region");
+      }
+      if (s3Config.getAccessKey() == null || s3Config.getSecretKey() == null) {
+        LOG.warn(
+            "Access credentials (accessKey, secretKey) not configured for S3 backup store. Credentials will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain)");
+      }
     }
   }
 
