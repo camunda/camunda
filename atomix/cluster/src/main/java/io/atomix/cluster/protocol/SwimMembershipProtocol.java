@@ -116,7 +116,7 @@ public class SwimMembershipProtocol
   private ScheduledFuture<?> probeFuture;
   private ScheduledFuture<?> syncFuture;
 
-  SwimMembershipProtocol(final SwimMembershipProtocolConfig config) {
+  public SwimMembershipProtocol(final SwimMembershipProtocolConfig config) {
     this.config = config;
   }
 

@@ -68,7 +68,7 @@ public final class BootstrapDiscoveryProvider
                     .collect(Collectors.toList())));
   }
 
-  BootstrapDiscoveryProvider(final BootstrapDiscoveryConfig config) {
+  public BootstrapDiscoveryProvider(final BootstrapDiscoveryConfig config) {
     this.config = checkNotNull(config);
     bootstrapNodes =
         ImmutableSet.copyOf(config.getNodes().stream().map(Node::new).collect(Collectors.toList()));
