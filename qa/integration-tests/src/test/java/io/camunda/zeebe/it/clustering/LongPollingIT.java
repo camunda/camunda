@@ -130,7 +130,6 @@ final class LongPollingIT {
       engine.waitForIdleState(Duration.ofSeconds(30));
       Loggers.LONG_POLLING.error("Checking if we have two job batch activate commands...");
 
-
       assertThat(records())
           .as("long polling should trigger a second ACTIVATE command without the client doing so")
           .extracting(Record::getValueType, Record::getIntent)
@@ -164,7 +163,7 @@ final class LongPollingIT {
     @Override
     public void testFailed(final ExtensionContext context, final Throwable cause) {
       Loggers.LONG_POLLING.error("Printing log entirely: ");
-      new CompactRecordLogger(records().collect(Collectors.toList()));
+      new CompactRecordLogger(records().collect(Collectors.toList())).log();
     }
   }
 }
