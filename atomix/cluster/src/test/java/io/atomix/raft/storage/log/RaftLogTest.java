@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class RaftLogTest {
+  private static final long DEFAULT_APPLICATION_ENTRY_LENGTH = 2L;
 
   private final InitialEntry initialEntry = new InitialEntry();
   private final ConfigurationEntry configurationEntry =
@@ -50,7 +51,7 @@ class RaftLogTest {
               new DefaultRaftMember(MemberId.from("0"), Type.ACTIVE, Instant.ofEpochSecond(1234))));
   private final ByteBuffer data =
       ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putInt(0, 123456);
-  private final ApplicationEntry applicationEntry = new ApplicationEntry(1, 2, data);
+  private final ApplicationEntry firstApplicationEntry = createApplicationEntry(1);
   private RaftLog raftlog;
   private RaftLogReader reader;
 
@@ -102,7 +103,7 @@ class RaftLogTest {
   @Test
   void shouldAppendApplicationEntry() {
     // given
-    final RaftLogEntry entry = new RaftLogEntry(1, applicationEntry);
+    final RaftLogEntry entry = new RaftLogEntry(1, firstApplicationEntry);
     // when
     final var appended = raftlog.append(entry);
 
@@ -120,7 +121,7 @@ class RaftLogTest {
   @Test
   void shouldUpdateLastAppendedEntry() {
     // given
-    final RaftLogEntry entry = new RaftLogEntry(1, applicationEntry);
+    final RaftLogEntry entry = new RaftLogEntry(1, firstApplicationEntry);
     // when
     final var appended = raftlog.append(entry);
 
@@ -131,7 +132,7 @@ class RaftLogTest {
   @Test
   void shouldAppendPersistedRaftEntry(@TempDir final File directory) {
     // given
-    final RaftLogEntry entry = new RaftLogEntry(1, applicationEntry);
+    final RaftLogEntry entry = new RaftLogEntry(1, firstApplicationEntry);
     final var persistedRaftRecord = raftlog.append(entry).getPersistedRaftRecord();
     final var raftlogFollower =
         RaftLog.builder().withDirectory(directory).withName("test-follower").build();
@@ -142,9 +143,9 @@ class RaftLogTest {
     // then
     assertThat(raftlogFollower.getLastEntry()).isEqualTo(appended);
     assertThat(appended.index()).isEqualTo(1);
-    assertThat(appended.entry()).isEqualTo(applicationEntry);
+    assertThat(appended.entry()).isEqualTo(firstApplicationEntry);
     assertThat(appended.getPersistedRaftRecord().asqn())
-        .isEqualTo(applicationEntry.lowestPosition());
+        .isEqualTo(firstApplicationEntry.lowestPosition());
 
     raftlogFollower.close();
   }
@@ -152,9 +153,11 @@ class RaftLogTest {
   @Test
   void shouldDeleteAfter() {
     // given
-    raftlog.append(new RaftLogEntry(1, applicationEntry));
-    final var secondEntry = raftlog.append(new RaftLogEntry(1, applicationEntry));
-    raftlog.append(new RaftLogEntry(1, applicationEntry));
+    raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
+    final var secondEntry =
+        raftlog.append(new RaftLogEntry(1, createApplicationEntryAfter(firstApplicationEntry)));
+    raftlog.append(
+        new RaftLogEntry(1, createApplicationEntryAfter(secondEntry.getApplicationEntry())));
 
     // when
     raftlog.deleteAfter(secondEntry.index());
@@ -167,9 +170,14 @@ class RaftLogTest {
   @Test
   void shouldNotDeleteCommittedEntries() {
     // given
-    raftlog.append(new RaftLogEntry(1, applicationEntry));
-    final var deleteIndex = raftlog.append(new RaftLogEntry(1, applicationEntry)).index();
-    final var commitIndex = raftlog.append(new RaftLogEntry(1, applicationEntry)).index();
+    raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
+    final ApplicationEntry secondApplicationEntry =
+        createApplicationEntryAfter(firstApplicationEntry);
+    final var deleteIndex = raftlog.append(new RaftLogEntry(1, secondApplicationEntry)).index();
+    final var commitIndex =
+        raftlog
+            .append(new RaftLogEntry(1, createApplicationEntryAfter(secondApplicationEntry)))
+            .index();
 
     // when
     raftlog.setCommitIndex(commitIndex);
@@ -182,9 +190,11 @@ class RaftLogTest {
   @Test
   void shouldReset() {
     // given
-    raftlog.append(new RaftLogEntry(1, applicationEntry));
-    raftlog.append(new RaftLogEntry(1, applicationEntry));
-    raftlog.append(new RaftLogEntry(1, applicationEntry));
+    raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
+    final IndexedRaftLogEntry secondEntry =
+        raftlog.append(new RaftLogEntry(1, createApplicationEntryAfter(firstApplicationEntry)));
+    raftlog.append(
+        new RaftLogEntry(1, createApplicationEntryAfter(secondEntry.getApplicationEntry())));
 
     // when
     raftlog.reset(10);
@@ -228,5 +238,15 @@ class RaftLogTest {
 
     // then
     verify(journal, timeout(1).times(0)).flush();
+  }
+
+  private ApplicationEntry createApplicationEntryAfter(final ApplicationEntry applicationEntry) {
+    return createApplicationEntry(applicationEntry.highestPosition() + 1);
+  }
+
+  private ApplicationEntry createApplicationEntry(final long lowestPosition) {
+    // -1 on highest position as the lowestPosition is inclusive
+    return new ApplicationEntry(
+        lowestPosition, lowestPosition + DEFAULT_APPLICATION_ENTRY_LENGTH - 1, data);
   }
 }

@@ -534,7 +534,8 @@ public final class ProcessInstanceModificationProcessor
     final BpmnElementType elementType = elementInstance.getValue().getBpmnElementType();
     if (elementType == BpmnElementType.EVENT_SUB_PROCESS
         || elementType == BpmnElementType.SUB_PROCESS
-        || elementType == BpmnElementType.PROCESS) {
+        || elementType == BpmnElementType.PROCESS
+        || elementType == BpmnElementType.MULTI_INSTANCE_BODY) {
       elementInstanceState.getChildren(elementInstanceKey).stream()
           .filter(ElementInstance::canTerminate)
           .forEach(childInstance -> terminateElement(childInstance, sideEffects));

@@ -16,7 +16,10 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
+
 import io.camunda.zeebe.journal.CorruptedJournalException;
+import io.camunda.zeebe.journal.JournalException.InvalidASqn;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.JournalException.SegmentFull;
@@ -42,6 +45,7 @@ final class SegmentWriter {
   private final Segment segment;
   private final JournalIndex index;
   private final long firstIndex;
+  private long highestAsqn;
   private JournalRecord lastEntry;
   private boolean isOpen = true;
   private final JournalRecordReaderUtil recordUtil;
@@ -54,7 +58,8 @@ final class SegmentWriter {
       final MappedByteBuffer buffer,
       final Segment segment,
       final JournalIndex index,
-      final long lastWrittenIndex) {
+      final long lastWrittenIndex,
+      final long highestAsqn) {
     this.segment = segment;
     descriptorLength = segment.descriptor().length();
     recordUtil = new JournalRecordReaderUtil(serializer);
@@ -62,6 +67,7 @@ final class SegmentWriter {
     firstIndex = segment.index();
     this.buffer = buffer;
     writeBuffer.wrap(buffer);
+    this.highestAsqn = highestAsqn;
     reset(0, lastWrittenIndex);
   }
 
@@ -81,17 +87,45 @@ final class SegmentWriter {
     }
   }
 
-  Either<SegmentFull, JournalRecord> append(final long asqn, final DirectBuffer data) {
-    // Store the entry index.
-    final long recordIndex = getNextIndex();
+  public long getHighestAsqn() {
+    return highestAsqn;
+  }
 
-    // TODO: Should reject append if the asqn is not greater than the previous record
+  Either<SegmentFull, JournalRecord> append(final JournalRecord record) {
+    return append(record.index(), record.asqn(), record.data(), record.checksum());
+  }
+
+  Either<SegmentFull, JournalRecord> append(final long asqn, final DirectBuffer data) {
+    return append(getNextIndex(), asqn, data, null);
+  }
+
+  private Either<SegmentFull, JournalRecord> append(
+      final Long entryIndex,
+      final long asqn,
+      final DirectBuffer data,
+      final Long expectedChecksum) {
+    final long nextIndex = getNextIndex();
+
+    // If the entry's index is not the expected next index in the segment, fail the append.
+    if (entryIndex != nextIndex) {
+      throw new InvalidIndex(
+          String.format(
+              "The record index is not sequential. Expected the next index to be %d, but the record to append has index %d",
+              nextIndex, entryIndex));
+    }
+
+    if (asqn != SegmentedJournal.ASQN_IGNORE && asqn <= highestAsqn) {
+      throw new InvalidASqn(
+          String.format(
+              "The records asqn is not big enough. Expected it to be bigger than %d but was %d",
+              highestAsqn, asqn));
+    }
 
     final int startPosition = buffer.position();
     final int frameLength = FrameUtil.getLength();
     final int metadataLength = serializer.getMetadataLength();
 
-    final RecordData indexedRecord = new RecordData(recordIndex, asqn, data);
+    final RecordData indexedRecord = new RecordData(entryIndex, asqn, data);
 
     final var writeResult =
         writeRecord(startPosition + frameLength + metadataLength, indexedRecord);
@@ -99,11 +133,20 @@ final class SegmentWriter {
       buffer.position(startPosition);
       return Either.left(writeResult.getLeft());
     }
+
     final int recordLength = writeResult.get();
 
     final long checksum =
         checksumGenerator.compute(
             buffer, startPosition + frameLength + metadataLength, recordLength);
+
+    if (expectedChecksum != null && expectedChecksum != checksum) {
+      buffer.position(startPosition);
+      throw new InvalidChecksum(
+          String.format(
+              "Failed to append record. Checksum %d does not match the expected %d.",
+              checksum, expectedChecksum));
+    }
 
     writeMetadata(startPosition, frameLength, recordLength, checksum);
     updateLastWrittenEntry(startPosition, frameLength, metadataLength);
@@ -113,55 +156,18 @@ final class SegmentWriter {
     return Either.right(lastEntry);
   }
 
-  Either<SegmentFull, Void> append(final JournalRecord record) {
-    final long nextIndex = getNextIndex();
-
-    // If the entry's index is not the expected next index in the segment, fail the append.
-    if (record.index() != nextIndex) {
-      throw new InvalidIndex(
-          String.format(
-              "The record index is not sequential. Expected the next index to be %d, but the record to append has index %d",
-              nextIndex, record.index()));
-    }
-
-    final int startPosition = buffer.position();
-    final int frameLength = FrameUtil.getLength();
-    final int metadataLength = serializer.getMetadataLength();
-
-    final RecordData indexedRecord = new RecordData(record.index(), record.asqn(), record.data());
-
-    final var writeResult =
-        writeRecord(startPosition + frameLength + metadataLength, indexedRecord);
-    if (writeResult.isLeft()) {
-      buffer.position(startPosition);
-      return Either.left(writeResult.getLeft());
-    }
-
-    final int recordLength = writeResult.get();
-    final long checksum =
-        checksumGenerator.compute(
-            buffer, startPosition + frameLength + metadataLength, recordLength);
-
-    if (record.checksum() != checksum) {
-      buffer.position(startPosition);
-      throw new InvalidChecksum(
-          String.format("Failed to append record %s. Checksum does not match", record));
-    }
-
-    writeMetadata(startPosition, frameLength, recordLength, checksum);
-    updateLastWrittenEntry(startPosition, frameLength, metadataLength);
-    FrameUtil.writeVersion(buffer, startPosition);
-
-    buffer.position(startPosition + frameLength + metadataLength + recordLength);
-    return Either.right(null);
-  }
-
   private void updateLastWrittenEntry(
       final int startPosition, final int frameLength, final int metadataLength) {
     final var metadata = serializer.readMetadata(writeBuffer, startPosition + frameLength);
     final var data = serializer.readData(writeBuffer, startPosition + frameLength + metadataLength);
     lastEntry = new PersistedJournalRecord(metadata, data);
+    updateHighestAsqn(lastEntry);
     index.index(lastEntry, startPosition);
+  }
+
+  private void updateHighestAsqn(final JournalRecord entry) {
+    highestAsqn =
+        entry.asqn() != ASQN_IGNORE && entry.asqn() > highestAsqn ? entry.asqn() : highestAsqn;
   }
 
   private void writeMetadata(
@@ -205,6 +211,7 @@ final class SegmentWriter {
         // read version so that buffer's position is advanced
         FrameUtil.readVersion(buffer);
         lastEntry = recordUtil.read(buffer, nextIndex);
+        updateHighestAsqn(lastEntry);
         nextIndex++;
         this.index.index(lastEntry, position);
         buffer.mark();

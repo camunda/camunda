@@ -56,13 +56,14 @@ final class Segment implements AutoCloseable {
       final SegmentDescriptor descriptor,
       final MappedByteBuffer buffer,
       final long maxWrittenIndex,
+      final long highestAsqn,
       final JournalIndex index) {
     this.file = file;
     this.descriptor = descriptor;
     this.buffer = buffer;
     this.index = index;
 
-    writer = createWriter(maxWrittenIndex);
+    writer = createWriter(maxWrittenIndex, highestAsqn);
   }
 
   /**
@@ -90,6 +91,15 @@ final class Segment implements AutoCloseable {
    */
   public long lastIndex() {
     return writer.getLastIndex();
+  }
+
+  /**
+   * Returns the highest/last application sequence number in the segment.
+   *
+   * @return The highest/last application sequence number in the segment.
+   */
+  public long highestAsqn() {
+    return writer.getHighestAsqn();
   }
 
   /**
@@ -151,8 +161,8 @@ final class Segment implements AutoCloseable {
     return reader;
   }
 
-  private SegmentWriter createWriter(final long lastWrittenIndex) {
-    return new SegmentWriter(buffer, this, index, lastWrittenIndex);
+  private SegmentWriter createWriter(final long lastWrittenIndex, final long highestAsqn) {
+    return new SegmentWriter(buffer, this, index, lastWrittenIndex, highestAsqn);
   }
 
   /**
