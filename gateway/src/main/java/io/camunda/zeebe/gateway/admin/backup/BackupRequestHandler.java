@@ -97,17 +97,12 @@ public final class BackupRequestHandler implements BackupApi {
 
     final var combinedStatus = getAggregatedStatus(partitionStatuses);
 
-    if (combinedStatus.isEmpty()) {
-      throw new IllegalStateException(
-          "Backup status cannot be calculated from %s".formatted(partitionStatuses));
-    }
-
     String failureReason = null;
-    if (combinedStatus.get() == BackupStatusCode.FAILED) {
+    if (combinedStatus == BackupStatusCode.FAILED) {
       failureReason = collectFailureReason(partitionStatuses);
     }
     return new BackupStatus(
-        backupId, combinedStatus.get(), Optional.ofNullable(failureReason), partitionStatuses);
+        backupId, combinedStatus, Optional.ofNullable(failureReason), partitionStatuses);
   }
 
   private String collectFailureReason(final List<PartitionBackupStatus> partitionStatuses) {
@@ -121,9 +116,17 @@ public final class BackupRequestHandler implements BackupApi {
         .collect(Collectors.joining());
   }
 
-  private Optional<BackupStatusCode> getAggregatedStatus(
+  private BackupStatusCode getAggregatedStatus(
       final List<PartitionBackupStatus> partitionStatuses) {
-    return partitionStatuses.stream().map(PartitionBackupStatus::status).reduce(this::combine);
+    return partitionStatuses.stream()
+        .map(PartitionBackupStatus::status)
+        .reduce(this::combine)
+        .orElseThrow(
+            () ->
+                // This should never happen, because partitionStatuses would never be empty.
+                new IllegalStateException(
+                    "Backup status cannot be calculated from status of partitions backup %s. Possible incomplete topology."
+                        .formatted(partitionStatuses)));
   }
 
   private BackupStatusCode combine(final BackupStatusCode x, final BackupStatusCode y) {
