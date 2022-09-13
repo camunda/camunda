@@ -15,6 +15,8 @@ import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -123,6 +125,8 @@ public final class SystemContext {
               diskUsageCommandWatermark, diskUsageReplicationWatermark));
     }
 
+    validateBackupCfg(dataCfg.getBackup());
+
     if (experimental.isDisableExplicitRaftFlush()) {
       LOG.warn(REPLICATION_WITH_DISABLED_FLUSH_WARNING);
     }
@@ -152,6 +156,28 @@ public final class SystemContext {
     final var security = brokerCfg.getNetwork().getSecurity();
     if (security.isEnabled()) {
       validateNetworkSecurityConfig(security);
+    }
+  }
+
+  private void validateBackupCfg(final BackupStoreCfg backup) {
+    if (backup.getStore() == BackupStoreType.S3) {
+      final var s3Config = backup.getS3();
+      if (s3Config.getBucketName() == null || s3Config.getBucketName().isEmpty()) {
+        throw new IllegalArgumentException(
+            "Configuration for S3 backup store is incomplete. bucketName must not be empty.");
+      }
+      if (s3Config.getRegion() == null) {
+        LOG.warn(
+            "No region configured for S3 backup store. Region will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment)");
+      }
+      if (s3Config.getEndpoint() == null) {
+        LOG.warn(
+            "No endpoint configured for S3 backup store. Endpoint will be determined from the region");
+      }
+      if (s3Config.getAccessKey() == null || s3Config.getSecretKey() == null) {
+        LOG.warn(
+            "Access credentials (accessKey, secretKey) not configured for S3 backup store. Credentials will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain)");
+      }
     }
   }
 
