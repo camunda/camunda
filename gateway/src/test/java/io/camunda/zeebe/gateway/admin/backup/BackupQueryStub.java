@@ -15,6 +15,7 @@ import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -46,7 +47,10 @@ public class BackupQueryStub
         .setFailureReason("")
         .setCheckpointPosition(100)
         .setBrokerId(1)
-        .setPartitionId(request.getPartitionId());
+        .setPartitionId(request.getPartitionId())
+        .setBrokerVersion("test")
+        .setCreatedAt(Instant.now().toString())
+        .setLastUpdated(Instant.now().toString());
   }
 
   private BackupStatusResponse getFailedStatus(final BackupStatusRequest request) {
@@ -66,7 +70,9 @@ public class BackupQueryStub
         .setFailureReason("")
         .setCheckpointPosition(100)
         .setBrokerId(1)
-        .setPartitionId(request.getPartitionId());
+        .setPartitionId(request.getPartitionId())
+        .setCreatedAt(Instant.now().toString())
+        .setLastUpdated(Instant.now().toString());
   }
 
   private BackupStatusResponse getDoesNotExistStatus(final BackupStatusRequest request) {
