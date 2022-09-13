@@ -760,6 +760,76 @@ public class ModifyProcessInstanceTerminationTest {
             tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
 
+  @Test
+  public void shouldTerminateCallActivity() {
+    // given
+    final String callActivityProcessId = "callActivityProcess";
+    final var callActivityProcess =
+        Bpmn.createExecutableProcess(callActivityProcessId)
+            .startEvent()
+            .userTask("A")
+            .endEvent()
+            .done();
+
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .callActivity(
+                "callActivity", callActivity -> callActivity.zeebeProcessId(callActivityProcessId))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(callActivityProcess).withXmlResource(process).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var callActivityKey = getElementInstanceKeyOfElement(processInstanceKey, "callActivity");
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withParentProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(callActivityKey)
+        .modify();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKeyOrParentProcessInstanceKey(processInstanceKey)
+                .limit(PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATED))
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            r -> r.getValue().getElementId(),
+            Record::getIntent)
+        .describedAs("Expect to terminate the callActivity and all containing elements")
+        .containsSequence(
+            tuple(
+                BpmnElementType.CALL_ACTIVITY,
+                "callActivity",
+                ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(
+                BpmnElementType.PROCESS,
+                callActivityProcessId,
+                ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.PROCESS,
+                callActivityProcessId,
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.CALL_ACTIVITY,
+                "callActivity",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
+
   private static long getElementInstanceKeyOfElement(
       final long processInstanceKey, final String elementId) {
     return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
