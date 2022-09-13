@@ -88,7 +88,7 @@ export function Heatmap({report, context, user}) {
           return (
             <div>
               <span className="text" dangerouslySetInnerHTML={{__html: tooltipHTML}} />
-              {context !== 'shared' && user?.authorizations.includes('csv_export') && (
+              {context !== 'shared' && (
                 <DownloadButton
                   retriever={loadRawData(getConfig(report.data, id))}
                   fileName={
@@ -97,6 +97,7 @@ export function Heatmap({report, context, user}) {
                     }) + '.csv'
                   }
                   totalCount={result.instanceCount}
+                  user={user}
                 >
                   <Icon type="save" />
                   {t('common.instanceIds')}

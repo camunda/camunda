@@ -294,7 +294,7 @@ it('should invoke report evaluation when clicking the download instances button'
   expect(loadRawData).toHaveBeenCalledWith('config');
 });
 
-it('should hide to the download csv button if the user does not have authorization', async () => {
+it('should hide to the download csv button in share mode', async () => {
   const heatmapTargetValue = {
     active: true,
     values: {
@@ -308,6 +308,7 @@ it('should hide to the download csv button if the user does not have authorizati
     <Heatmap
       {...props}
       user={user}
+      context="shared"
       report={update(report, {
         data: {
           view: {properties: {$set: ['duration']}},

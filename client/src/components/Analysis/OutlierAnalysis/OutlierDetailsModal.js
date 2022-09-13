@@ -9,13 +9,14 @@ import React from 'react';
 
 import {Modal, Tabs, DurationChart} from 'components';
 import {t} from 'translation';
+import {withUser} from 'HOC';
 
 import VariablesTable from './VariablesTable';
 import InstancesButton from './InstancesButton';
 
 import './OutlierDetailsModal.scss';
 
-export default function OutlierDetailsModal({selectedNode, onClose, config}) {
+export function OutlierDetailsModal({selectedNode, onClose, config, user}) {
   const {id, name, higherOutlier, data, totalCount} = selectedNode;
 
   return (
@@ -38,6 +39,7 @@ export default function OutlierDetailsModal({selectedNode, onClose, config}) {
                 value={higherOutlier.boundValue}
                 config={config}
                 totalCount={totalCount}
+                user={user}
               />
             </p>
             <DurationChart
@@ -56,3 +58,5 @@ export default function OutlierDetailsModal({selectedNode, onClose, config}) {
     </Modal>
   );
 }
+
+export default withUser(OutlierDetailsModal);

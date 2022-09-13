@@ -8,7 +8,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import OutlierDetailsModal from './OutlierDetailsModal';
+import VariablesTable from './VariablesTable';
+import {OutlierDetailsModal} from './OutlierDetailsModal';
 
 const selectedNode = {
   name: 'test',
@@ -27,5 +28,5 @@ it('should pass outlier data to DurationChart and VariablesTable', () => {
 
   expect(node.find('DurationChart').prop('data')).toEqual(selectedNode.data);
   expect(node.find('DurationChart').prop('colors')).toEqual(['#eeeeee', '#1991c8']);
-  expect(node.find('VariablesTable').prop('selectedNode')).toEqual(selectedNode);
+  expect(node.find(VariablesTable).prop('selectedNode')).toEqual(selectedNode);
 });

@@ -8,7 +8,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import VariablesTable from './VariablesTable';
+import {VariablesTable} from './VariablesTable';
 
 import {loadCommonOutliersVariables} from './service';
 

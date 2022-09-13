@@ -530,7 +530,7 @@ body, td {font-family: Arial, Helvetica, sans-serif;}
 
                                 <#if kpiResult.changeType == "NEUTRAL">
                                 <td style="padding: 0 0 0 10px">--</td>
-                                <#elseif piResult.changeType == "GOOD">
+                                <#elseif kpiResult.changeType == "GOOD">
                                 <td style="padding: 0 0 0 10px; color: #00ff00;">${kpiResult.changeInPercent} %</td>
                                 <#else>
                                     <td style="padding: 0 0 0 10px; color: #ff0201;">${kpiResult.changeInPercent} %</td>
