@@ -39,6 +39,12 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
   private byte[] encodedSnapshotId = EMPTY_BYTE_ARRAY;
   private String failureReason = "";
   private byte[] encodedFailureReason = EMPTY_BYTE_ARRAY;
+  private String brokerVersion = "";
+  private byte[] encodedBrokerVersion = EMPTY_BYTE_ARRAY;
+  private String createdAt = "";
+  private byte[] encodedCreatedAt = EMPTY_BYTE_ARRAY;
+  private String lastUpdated = "";
+  private byte[] encodedLastUpdated = EMPTY_BYTE_ARRAY;
 
   public long getBackupId() {
     return backupId;
@@ -116,6 +122,39 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
     return this;
   }
 
+  public String getBrokerVersion() {
+    return brokerVersion;
+  }
+
+  public BackupStatusResponse setBrokerVersion(final String brokerVersion) {
+    this.brokerVersion = brokerVersion;
+    encodedBrokerVersion =
+        encodeString(brokerVersion, BackupStatusResponseEncoder.brokerVersionCharacterEncoding());
+    return this;
+  }
+
+  public String getCreatedAt() {
+    return createdAt;
+  }
+
+  public BackupStatusResponse setCreatedAt(final String createdAt) {
+    this.createdAt = createdAt;
+    encodedCreatedAt =
+        encodeString(createdAt, BackupStatusResponseEncoder.createdAtCharacterEncoding());
+    return this;
+  }
+
+  public String getLastUpdated() {
+    return lastUpdated;
+  }
+
+  public BackupStatusResponse setLastUpdated(final String lastUpdated) {
+    this.lastUpdated = lastUpdated;
+    encodedLastUpdated =
+        encodeString(lastUpdated, BackupStatusResponseEncoder.lastUpdatedCharacterEncoding());
+    return this;
+  }
+
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     bodyDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
@@ -137,6 +176,23 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
     failureReason =
         decodeString(
             encodedFailureReason, BackupStatusResponseDecoder.failureReasonCharacterEncoding());
+
+    encodedBrokerVersion = new byte[bodyDecoder.brokerVersionLength()];
+    bodyDecoder.getBrokerVersion(encodedBrokerVersion, 0, encodedBrokerVersion.length);
+    brokerVersion =
+        decodeString(
+            encodedBrokerVersion, BackupStatusResponseDecoder.brokerVersionCharacterEncoding());
+
+    encodedCreatedAt = new byte[bodyDecoder.createdAtLength()];
+    bodyDecoder.getCreatedAt(encodedCreatedAt, 0, encodedCreatedAt.length);
+    createdAt =
+        decodeString(encodedCreatedAt, BackupStatusResponseDecoder.createdAtCharacterEncoding());
+
+    encodedLastUpdated = new byte[bodyDecoder.lastUpdatedLength()];
+    bodyDecoder.getLastUpdated(encodedLastUpdated, 0, encodedLastUpdated.length);
+    lastUpdated =
+        decodeString(
+            encodedLastUpdated, BackupStatusResponseDecoder.lastUpdatedCharacterEncoding());
   }
 
   private String decodeString(final byte[] encodedSnapshotId, final String charsetName) {
@@ -154,7 +210,13 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
         + BackupStatusResponseEncoder.snapshotIdHeaderLength()
         + encodedSnapshotId.length
         + BackupStatusResponseEncoder.failureReasonHeaderLength()
-        + encodedFailureReason.length;
+        + encodedFailureReason.length
+        + BackupStatusResponseEncoder.brokerVersionHeaderLength()
+        + encodedBrokerVersion.length
+        + BackupStatusResponseEncoder.createdAtHeaderLength()
+        + encodedCreatedAt.length
+        + BackupStatusResponseEncoder.lastUpdatedHeaderLength()
+        + encodedLastUpdated.length;
   }
 
   @Override
@@ -169,7 +231,10 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
         .numberOfPartitions(numberOfPartitions)
         .status(status)
         .putSnapshotId(encodedSnapshotId, 0, encodedSnapshotId.length)
-        .putFailureReason(encodedFailureReason, 0, encodedFailureReason.length);
+        .putFailureReason(encodedFailureReason, 0, encodedFailureReason.length)
+        .putBrokerVersion(encodedBrokerVersion, 0, encodedBrokerVersion.length)
+        .putCreatedAt(encodedCreatedAt, 0, encodedCreatedAt.length)
+        .putLastUpdated(encodedLastUpdated, 0, encodedLastUpdated.length);
   }
 
   private byte[] encodeString(final String value, final String charsetName) {

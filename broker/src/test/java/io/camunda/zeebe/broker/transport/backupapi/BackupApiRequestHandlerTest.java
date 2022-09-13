@@ -32,6 +32,7 @@ import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.ExpandableArrayBuffer;
@@ -162,14 +163,16 @@ final class BackupApiRequestHandlerTest {
             .setPartitionId(1)
             .setBackupId(checkpointId);
 
+    final Instant createdAt = Instant.ofEpochMilli(1000);
+    final Instant lastModified = Instant.ofEpochMilli(2000);
     final BackupStatus status =
         new BackupStatusImpl(
             new BackupIdentifierImpl(1, 1, checkpointId),
             Optional.of(new BackupDescriptorImpl(Optional.of("s-id"), 100, 3, "test")),
             io.camunda.zeebe.backup.api.BackupStatusCode.COMPLETED,
             Optional.empty(),
-            Optional.empty(),
-            Optional.empty());
+            Optional.of(createdAt),
+            Optional.of(lastModified));
 
     when(backupManager.getBackupStatus(checkpointId))
         .thenReturn(CompletableActorFuture.completed(status));
@@ -189,6 +192,9 @@ final class BackupApiRequestHandlerTest {
         .returns(3, BackupStatusResponse::getNumberOfPartitions)
         .returns("s-id", BackupStatusResponse::getSnapshotId)
         .returns(BackupStatusCode.COMPLETED, BackupStatusResponse::getStatus)
+        .returns("test", BackupStatusResponse::getBrokerVersion)
+        .returns(createdAt.toString(), BackupStatusResponse::getCreatedAt)
+        .returns(lastModified.toString(), BackupStatusResponse::getLastUpdated)
         .matches(response -> response.getFailureReason().isEmpty());
   }
 

@@ -144,8 +144,11 @@ public final class BackupApiRequestHandler
                 response
                     .setCheckpointPosition(backupDescriptor.checkpointPosition())
                     .setSnapshotId(backupDescriptor.snapshotId().orElse(""))
-                    .setNumberOfPartitions(backupDescriptor.numberOfPartitions()));
+                    .setNumberOfPartitions(backupDescriptor.numberOfPartitions())
+                    .setBrokerVersion(backupDescriptor.brokerVersion()));
     status.failureReason().ifPresent(response::setFailureReason);
+    status.created().ifPresent(instant -> response.setCreatedAt(instant.toString()));
+    status.lastModified().ifPresent(instant -> response.setLastUpdated(instant.toString()));
     return response;
   }
 

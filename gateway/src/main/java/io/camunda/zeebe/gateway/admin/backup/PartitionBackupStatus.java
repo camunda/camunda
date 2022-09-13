@@ -15,7 +15,9 @@ record PartitionBackupStatus(
     int partitionId,
     BackupStatusCode status,
     Optional<PartitionBackupDescriptor> description,
-    Optional<String> failureReason) {
+    Optional<String> failureReason,
+    Optional<String> createdAt,
+    Optional<String> lastUpdatedAt) {
 
   static PartitionBackupStatus from(final BackupStatusResponse response) {
 
@@ -31,15 +33,25 @@ record PartitionBackupStatus(
   private static PartitionBackupStatus validStatus(final BackupStatusResponse response) {
     final var descriptor =
         new PartitionBackupDescriptor(
-            response.getSnapshotId(), response.getCheckpointPosition(), response.getBrokerId());
+            response.getSnapshotId(),
+            response.getCheckpointPosition(),
+            response.getBrokerId(),
+            response.getBrokerVersion());
     return new PartitionBackupStatus(
-        response.getPartitionId(), response.getStatus(), Optional.of(descriptor), Optional.empty());
+        response.getPartitionId(),
+        response.getStatus(),
+        Optional.of(descriptor),
+        Optional.empty(),
+        Optional.ofNullable(response.getCreatedAt()),
+        Optional.ofNullable(response.getLastUpdated()));
   }
 
   private static PartitionBackupStatus notExistingStatus(final BackupStatusResponse response) {
     return new PartitionBackupStatus(
         response.getPartitionId(),
         BackupStatusCode.DOES_NOT_EXIST,
+        Optional.empty(),
+        Optional.empty(),
         Optional.empty(),
         Optional.empty());
   }
@@ -49,6 +61,8 @@ record PartitionBackupStatus(
         response.getPartitionId(),
         BackupStatusCode.FAILED,
         Optional.empty(),
-        Optional.of(response.getFailureReason()));
+        Optional.of(response.getFailureReason()),
+        Optional.ofNullable(response.getCreatedAt()),
+        Optional.ofNullable(response.getLastUpdated()));
   }
 }
