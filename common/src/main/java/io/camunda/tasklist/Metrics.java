@@ -23,6 +23,7 @@ public class Metrics {
   public static final String TIMER_NAME_IMPORT_QUERY = TASKLIST_NAMESPACE + "import.query";
   public static final String TIMER_NAME_IMPORT_INDEX_QUERY =
       TASKLIST_NAMESPACE + "import.index.query";
+  public static final String TIMER_NAME_IMPORT_TIME = TASKLIST_NAMESPACE + "import.time";
   public static final String TIMER_NAME_ARCHIVER_QUERY = TASKLIST_NAMESPACE + "archiver.query";
   public static final String TIMER_NAME_ARCHIVER_REINDEX_QUERY =
       TASKLIST_NAMESPACE + "archiver.reindex.query";
@@ -71,7 +72,7 @@ public class Metrics {
     registry.counter(TASKLIST_NAMESPACE + name, tags).increment(count);
   }
 
-  public Timer getTimer(String name) {
-    return registry.timer(name);
+  public Timer getTimer(String name, String... tags) {
+    return registry.timer(name, tags);
   }
 }

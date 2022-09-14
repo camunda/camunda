@@ -8,6 +8,7 @@ package io.camunda.tasklist.zeebeimport.v810.processors;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.util.ElasticsearchUtil;
@@ -22,7 +23,9 @@ import io.camunda.tasklist.zeebeimport.v810.record.value.VariableRecordValueImpl
 import io.camunda.tasklist.zeebeimport.v810.record.value.deployment.DeployedProcessImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +46,8 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
   @Autowired private ProcessZeebeRecordProcessor processZeebeRecordProcessor;
 
   @Autowired private ObjectMapper objectMapper;
+
+  @Autowired private Metrics metrics;
 
   @Override
   protected void processZeebeRecords(ImportBatch importBatch, BulkRequest bulkRequest)
@@ -79,6 +84,21 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
           break;
       }
     }
+    recordRecordImportTime(zeebeRecords);
+  }
+
+  private void recordRecordImportTime(final List<Record> zeebeRecords) {
+    final var currentTime = OffsetDateTime.now().toInstant().toEpochMilli();
+    zeebeRecords.forEach(
+        record ->
+            metrics
+                .getTimer(
+                    Metrics.TIMER_NAME_IMPORT_TIME,
+                    Metrics.TAG_KEY_TYPE,
+                    record.getValueType().toString(),
+                    Metrics.TAG_KEY_PARTITION,
+                    String.valueOf(record.getPartitionId()))
+                .record(currentTime - record.getTimestamp(), TimeUnit.MILLISECONDS));
   }
 
   protected Class<? extends RecordValue> getRecordValueClass(ImportValueType importValueType) {
