@@ -29,6 +29,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.ActorSchedulerConfiguration;
 import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.BrokerClusterConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
@@ -284,13 +285,13 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   private Broker createBroker(final int nodeId) {
-    final File brokerBase = getBrokerBase(nodeId);
-    final BrokerCfg brokerCfg = getBrokerCfg(nodeId);
-    final var systemContext =
-        new SystemContext(
-            brokerCfg,
-            brokerBase.getAbsolutePath(),
-            new ActorSchedulerConfiguration(brokerCfg, controlledClock).getScheduler());
+    final var brokerBase = getBrokerBase(nodeId);
+    final var brokerCfg = getBrokerCfg(nodeId);
+    brokerCfg.init(brokerBase.getAbsolutePath());
+
+    final var atomixCluster = new BrokerClusterConfiguration().atomixCluster(brokerCfg);
+    final var scheduler = new ActorSchedulerConfiguration(brokerCfg, controlledClock).scheduler();
+    final var systemContext = new SystemContext(brokerCfg, scheduler, atomixCluster);
     systemContexts.put(nodeId, systemContext);
 
     systemContext.getScheduler().start();
@@ -568,17 +569,16 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   public void disconnect(final Broker broker) {
-    final var atomix = broker.getBrokerContext().getAtomixCluster();
-
-    ((NettyUnicastService) atomix.getUnicastService()).stop().join();
-    ((NettyMessagingService) atomix.getMessagingService()).stop().join();
+    final var cluster = broker.getSystemContext().getCluster();
+    ((NettyUnicastService) cluster.getUnicastService()).stop().join();
+    ((NettyMessagingService) cluster.getMessagingService()).stop().join();
   }
 
   public void connect(final Broker broker) {
-    final var atomix = broker.getBrokerContext().getAtomixCluster();
+    final var cluster = broker.getSystemContext().getCluster();
 
-    ((NettyUnicastService) atomix.getUnicastService()).start().join();
-    ((NettyMessagingService) atomix.getMessagingService()).start().join();
+    ((NettyUnicastService) cluster.getUnicastService()).start().join();
+    ((NettyMessagingService) cluster.getMessagingService()).start().join();
   }
 
   public void stopBrokerAndAwaitNewLeader(final int nodeId) {
