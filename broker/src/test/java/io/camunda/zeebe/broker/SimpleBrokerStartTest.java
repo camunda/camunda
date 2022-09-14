@@ -45,9 +45,8 @@ public final class SimpleBrokerStartTest {
   @Test
   public void shouldFailToCreateBrokerWithSmallSnapshotPeriod() {
     // given
-    final var brokerCfg = new BrokerCfg();
+    final var brokerCfg = new BrokerCfg(newTemporaryFolder.getAbsolutePath());
     brokerCfg.getData().setSnapshotPeriod(Duration.ofMillis(1));
-    brokerCfg.init(newTemporaryFolder.getAbsolutePath());
 
     // when
 
@@ -67,9 +66,8 @@ public final class SimpleBrokerStartTest {
   @Test
   public void shouldCallPartitionListenerAfterStart() throws Exception {
     // given
-    final var brokerCfg = new BrokerCfg();
+    final var brokerCfg = new BrokerCfg(newTemporaryFolder.getAbsolutePath());
     assignSocketAddresses(brokerCfg);
-    brokerCfg.init(newTemporaryFolder.getAbsolutePath());
 
     final var systemContext =
         new SystemContext(

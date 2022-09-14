@@ -28,7 +28,6 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.test.util.TestConfigurationFactory;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -37,7 +36,6 @@ import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
 import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,7 +43,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import org.agrona.LangUtil;
 import org.assertj.core.util.Files;
 import org.awaitility.Awaitility;
@@ -55,25 +52,21 @@ import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 
 public final class EmbeddedBrokerRule extends ExternalResource {
-
-  public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.yaml";
-  public static final int INSTALL_TIMEOUT = 5;
-  public static final TimeUnit INSTALL_TIMEOUT_UNIT = TimeUnit.MINUTES;
-  protected static final Logger LOG = TestLoggers.TEST_LOGGER;
+  private static final int INSTALL_TIMEOUT = 5;
+  private static final TimeUnit INSTALL_TIMEOUT_UNIT = TimeUnit.MINUTES;
+  private static final Logger LOG = TestLoggers.TEST_LOGGER;
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
-  private static final boolean ENABLE_HTTP_EXPORTER = false;
   private static final String SNAPSHOTS_DIRECTORY = "snapshots";
   private static final String STATE_DIRECTORY = "state";
-  protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
+  private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
-  protected final Supplier<InputStream> configSupplier;
-  protected final Consumer<BrokerCfg>[] configurators;
-  protected BrokerCfg brokerCfg;
-  protected Broker broker;
-  protected final ControlledActorClock controlledActorClock = new ControlledActorClock();
-  protected final SpringBrokerBridge springBrokerBridge = new SpringBrokerBridge();
+  private final Consumer<BrokerCfg>[] configurators;
+  private BrokerCfg brokerCfg;
+  private Broker broker;
+  private final ControlledActorClock controlledActorClock = new ControlledActorClock();
+  private final SpringBrokerBridge springBrokerBridge = new SpringBrokerBridge();
 
-  protected long startTime;
+  private long startTime;
   private AtomixCluster atomixCluster;
   private File newTemporaryFolder;
   private String dataDirectory;
@@ -81,24 +74,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
   @SafeVarargs
   public EmbeddedBrokerRule(final Consumer<BrokerCfg>... configurators) {
-    this(DEFAULT_CONFIG_FILE, configurators);
-  }
-
-  @SafeVarargs
-  public EmbeddedBrokerRule(
-      final String configFileClasspathLocation, final Consumer<BrokerCfg>... configurators) {
-    this(
-        () ->
-            EmbeddedBrokerRule.class
-                .getClassLoader()
-                .getResourceAsStream(configFileClasspathLocation),
-        configurators);
-  }
-
-  @SafeVarargs
-  public EmbeddedBrokerRule(
-      final Supplier<InputStream> configSupplier, final Consumer<BrokerCfg>... configurators) {
-    this.configSupplier = configSupplier;
     this.configurators = configurators;
   }
 
@@ -211,18 +186,8 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
   public void startBroker(final PartitionListener... listeners) {
     if (brokerCfg == null) {
-      try (final InputStream configStream = configSupplier.get()) {
-        if (configStream == null) {
-          brokerCfg = new BrokerCfg();
-        } else {
-          brokerCfg =
-              new TestConfigurationFactory()
-                  .create(null, "zeebe.broker", configStream, BrokerCfg.class);
-        }
-        configureBroker(brokerCfg);
-      } catch (final IOException e) {
-        throw new RuntimeException("Unable to open configuration", e);
-      }
+      brokerCfg = new BrokerCfg(newTemporaryFolder.getAbsolutePath());
+      configureBroker(brokerCfg);
     }
 
     final var scheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg, controlledActorClock);
@@ -283,9 +248,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
     // set random port numbers
     assignSocketAddresses(brokerCfg);
-
-    // initialize configuration
-    brokerCfg.init(newTemporaryFolder.getAbsolutePath());
   }
 
   public void purgeSnapshots() {

@@ -17,14 +17,14 @@ public final class TestConfigReader {
 
   public static BrokerCfg readConfig(final String name, final Map<String, String> environment) {
     final String configPath = "/system/" + name + ".yaml";
-
     final Environment environmentVariables = new Environment(environment);
 
-    final BrokerCfg config =
-        new TestConfigurationFactory()
-            .create(environmentVariables, "zeebe.broker", configPath, BrokerCfg.class);
-    config.init(BROKER_BASE, environmentVariables);
-
-    return config;
+    return new TestConfigurationFactory()
+        .create(
+            environmentVariables,
+            "zeebe.broker",
+            configPath,
+            BrokerCfg.class,
+            new BrokerCfg(BROKER_BASE, environmentVariables));
   }
 }

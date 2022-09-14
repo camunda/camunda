@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker;
 
 import io.camunda.zeebe.broker.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,21 +26,10 @@ import org.springframework.web.context.annotation.ApplicationScope;
  */
 @Configuration(proxyBeanMethods = false)
 public final class BrokerConfiguration {
-
-  @Bean("uninitializedBrokerCfg")
+  @Bean
   @ConfigurationProperties(prefix = "zeebe.broker")
   @ApplicationScope(proxyMode = ScopedProxyMode.NO)
-  private BrokerCfg rawBrokerConfig() {
-    return new BrokerCfg();
-  }
-
-  @Bean("initializedBrokerCfg")
-  @ApplicationScope(proxyMode = ScopedProxyMode.NO)
-  @Primary
-  public BrokerCfg brokerConfig(
-      @Qualifier("uninitializedBrokerCfg") final BrokerCfg config,
-      final WorkingDirectory workingDirectory) {
-    config.init(workingDirectory.path().toString());
-    return config;
+  public BrokerCfg brokerConfig(final WorkingDirectory workingDirectory) {
+    return new BrokerCfg(workingDirectory.path().toString());
   }
 }

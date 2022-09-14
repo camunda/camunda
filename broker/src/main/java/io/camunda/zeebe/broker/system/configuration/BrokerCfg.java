@@ -33,11 +33,18 @@ public final class BrokerCfg {
 
   private boolean executionMetricsExporterEnabled;
 
-  public void init(final String brokerBase) {
-    init(brokerBase, new Environment());
+  /** TODO: prevent callers from using an uninitialized broker configuration */
+  public BrokerCfg() {}
+
+  public BrokerCfg(final String brokerBase) {
+    this(brokerBase, new Environment());
   }
 
-  public void init(final String brokerBase, final Environment environment) {
+  public BrokerCfg(final String brokerBase, final Environment environment) {
+    init(brokerBase, environment);
+  }
+
+  private void init(final String brokerBase, final Environment environment) {
     applyEnvironment(environment);
 
     if (isExecutionMetricsExporterEnabled()) {

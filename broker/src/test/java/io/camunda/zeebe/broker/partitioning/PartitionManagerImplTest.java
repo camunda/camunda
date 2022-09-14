@@ -101,9 +101,6 @@ public final class PartitionManagerImplTest {
   }
 
   private BrokerCfg newConfig() {
-    final var config = new BrokerCfg();
-    config.init(temporaryFolder.getRoot().getAbsolutePath(), environment);
-
-    return config;
+    return new BrokerCfg(temporaryFolder.getRoot().getAbsolutePath(), environment);
   }
 }

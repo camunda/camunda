@@ -285,9 +285,7 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   private Broker createBroker(final int nodeId) {
-    final var brokerBase = getBrokerBase(nodeId);
     final var brokerCfg = getBrokerCfg(nodeId);
-    brokerCfg.init(brokerBase.getAbsolutePath());
 
     final var atomixCluster = new BrokerClusterConfiguration().atomixCluster(brokerCfg);
     final var scheduler = new ActorSchedulerConfiguration(brokerCfg, controlledClock).scheduler();
@@ -322,7 +320,8 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   private BrokerCfg createBrokerCfg(final int nodeId) {
-    final BrokerCfg brokerCfg = new BrokerCfg();
+    final File brokerBase = getBrokerBase(nodeId);
+    final BrokerCfg brokerCfg = new BrokerCfg(brokerBase.getAbsolutePath());
 
     // build-in exporters
     if (ENABLE_DEBUG_EXPORTER) {

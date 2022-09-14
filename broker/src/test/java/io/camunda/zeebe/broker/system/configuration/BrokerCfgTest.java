@@ -183,17 +183,14 @@ public final class BrokerCfgTest {
     exporterCfgInternal1.setJarPath("");
 
     final ExporterCfg exporterCfgInternal2 = new ExporterCfg();
-
-    final BrokerCfg config = new BrokerCfg();
-    config.getExporters().put("external", exporterCfgExternal);
-    config.getExporters().put("internal-1", exporterCfgInternal1);
-    config.getExporters().put("internal-2", exporterCfgInternal2);
-
     final String base = temporaryFolder.getRoot().getAbsolutePath();
     final String jarFile = Paths.get(base, "exporters", "exporter.jar").toAbsolutePath().toString();
 
     // when
-    config.init(base);
+    final BrokerCfg config = new BrokerCfg(base);
+    config.getExporters().put("external", exporterCfgExternal);
+    config.getExporters().put("internal-1", exporterCfgInternal1);
+    config.getExporters().put("internal-2", exporterCfgInternal2);
 
     // then
     assertThat(config.getExporters()).hasSize(3);
