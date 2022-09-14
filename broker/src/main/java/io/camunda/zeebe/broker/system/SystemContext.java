@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker.system;
 
 import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
 
+import io.camunda.zeebe.backup.s3.S3BackupConfig;
+import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
@@ -191,6 +193,20 @@ public final class SystemContext {
       if (s3Config.getAccessKey() == null || s3Config.getSecretKey() == null) {
         LOG.warn(
             "Access credentials (accessKey, secretKey) not configured for S3 backup store. Credentials will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain)");
+      }
+      // Create a throw away S3BackupStore to verify if all configurations are available
+      final S3BackupConfig storeConfig =
+          S3BackupConfig.from(
+              s3Config.getBucketName(),
+              s3Config.getEndpoint(),
+              s3Config.getRegion(),
+              s3Config.getAccessKey(),
+              s3Config.getSecretKey());
+      try {
+        final S3BackupStore backupStore = new S3BackupStore(storeConfig);
+        backupStore.closeAsync();
+      } catch (final Exception e) {
+        throw new InvalidConfigurationException("Cannot configure S3 backup store.", e);
       }
     }
   }
