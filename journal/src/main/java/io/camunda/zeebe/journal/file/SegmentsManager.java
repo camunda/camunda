@@ -23,7 +23,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Optional;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.slf4j.Logger;
@@ -34,7 +33,7 @@ final class SegmentsManager {
 
   private static final long FIRST_SEGMENT_ID = 1;
   private static final long INITIAL_INDEX = 1;
-  private static final long INITIAL_HIGHEST_ASQN = SegmentedJournal.ASQN_IGNORE;
+  private static final long INITIAL_ASQN = SegmentedJournal.ASQN_IGNORE;
 
   private static final Logger LOG = LoggerFactory.getLogger(SegmentsManager.class);
 
@@ -111,11 +110,7 @@ final class SegmentsManager {
             .build();
 
     currentSegment =
-        createSegment(
-            descriptor,
-            Optional.ofNullable(lastSegment)
-                .map(Segment::highestAsqn)
-                .orElse(INITIAL_HIGHEST_ASQN));
+        createSegment(descriptor, lastSegment != null ? lastSegment.lastAsqn() : INITIAL_ASQN);
 
     segments.put(descriptor.index(), currentSegment);
     journalMetrics.incSegmentCount();
@@ -198,7 +193,7 @@ final class SegmentsManager {
             .withIndex(index)
             .withMaxSegmentSize(maxSegmentSize)
             .build();
-    currentSegment = createSegment(descriptor, INITIAL_HIGHEST_ASQN);
+    currentSegment = createSegment(descriptor, INITIAL_ASQN);
     segments.put(index, currentSegment);
     journalMetrics.incSegmentCount();
     return currentSegment;
@@ -229,7 +224,7 @@ final class SegmentsManager {
               .withMaxSegmentSize(maxSegmentSize)
               .build();
 
-      currentSegment = createSegment(descriptor, INITIAL_HIGHEST_ASQN);
+      currentSegment = createSegment(descriptor, INITIAL_ASQN);
 
       segments.put(1L, currentSegment);
       journalMetrics.incSegmentCount();
@@ -256,7 +251,7 @@ final class SegmentsManager {
               .withMaxSegmentSize(maxSegmentSize)
               .build();
 
-      currentSegment = createSegment(descriptor, INITIAL_HIGHEST_ASQN);
+      currentSegment = createSegment(descriptor, INITIAL_ASQN);
 
       segments.put(1L, currentSegment);
       journalMetrics.incSegmentCount();
@@ -270,10 +265,10 @@ final class SegmentsManager {
     deleteDeferredFiles();
   }
 
-  private Segment createSegment(final SegmentDescriptor descriptor, final long highestAsqn) {
+  private Segment createSegment(final SegmentDescriptor descriptor, final long lastWrittenAsqn) {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
     return segmentLoader.createSegment(
-        segmentFile.toPath(), descriptor, lastWrittenIndex, highestAsqn, journalIndex);
+        segmentFile.toPath(), descriptor, lastWrittenIndex, lastWrittenAsqn, journalIndex);
   }
 
   /**
@@ -297,7 +292,7 @@ final class SegmentsManager {
             segmentLoader.loadExistingSegment(
                 file.toPath(),
                 lastWrittenIndex,
-                previousSegment != null ? previousSegment.highestAsqn() : INITIAL_HIGHEST_ASQN,
+                previousSegment != null ? previousSegment.lastAsqn() : INITIAL_ASQN,
                 journalIndex);
 
         if (i > 0) {

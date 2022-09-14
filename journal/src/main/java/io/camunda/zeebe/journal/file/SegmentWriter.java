@@ -45,7 +45,8 @@ final class SegmentWriter {
   private final Segment segment;
   private final JournalIndex index;
   private final long firstIndex;
-  private long highestAsqn;
+  private final long firstAsqn;
+  private long lastAsqn;
   private JournalRecord lastEntry;
   private boolean isOpen = true;
   private final JournalRecordReaderUtil recordUtil;
@@ -59,7 +60,7 @@ final class SegmentWriter {
       final Segment segment,
       final JournalIndex index,
       final long lastWrittenIndex,
-      final long highestAsqn) {
+      final long lastWrittenAsqn) {
     this.segment = segment;
     descriptorLength = segment.descriptor().length();
     recordUtil = new JournalRecordReaderUtil(serializer);
@@ -67,7 +68,8 @@ final class SegmentWriter {
     firstIndex = segment.index();
     this.buffer = buffer;
     writeBuffer.wrap(buffer);
-    this.highestAsqn = highestAsqn;
+    firstAsqn = lastWrittenAsqn + 1;
+    lastAsqn = lastWrittenAsqn;
     reset(0, lastWrittenIndex);
   }
 
@@ -87,8 +89,8 @@ final class SegmentWriter {
     }
   }
 
-  public long getHighestAsqn() {
-    return highestAsqn;
+  public long getLastAsqn() {
+    return lastAsqn;
   }
 
   Either<SegmentFull, JournalRecord> append(final JournalRecord record) {
@@ -114,11 +116,11 @@ final class SegmentWriter {
               nextIndex, entryIndex));
     }
 
-    if (asqn != SegmentedJournal.ASQN_IGNORE && asqn <= highestAsqn) {
+    if (asqn != SegmentedJournal.ASQN_IGNORE && asqn <= lastAsqn) {
       throw new InvalidASqn(
           String.format(
               "The records asqn is not big enough. Expected it to be bigger than %d but was %d",
-              highestAsqn, asqn));
+              lastAsqn, asqn));
     }
 
     final int startPosition = buffer.position();
@@ -161,13 +163,12 @@ final class SegmentWriter {
     final var metadata = serializer.readMetadata(writeBuffer, startPosition + frameLength);
     final var data = serializer.readData(writeBuffer, startPosition + frameLength + metadataLength);
     lastEntry = new PersistedJournalRecord(metadata, data);
-    updateHighestAsqn(lastEntry);
+    updateLastAsqn(lastEntry.asqn());
     index.index(lastEntry, startPosition);
   }
 
-  private void updateHighestAsqn(final JournalRecord entry) {
-    highestAsqn =
-        entry.asqn() != ASQN_IGNORE && entry.asqn() > highestAsqn ? entry.asqn() : highestAsqn;
+  private void updateLastAsqn(final long asqn) {
+    lastAsqn = asqn != ASQN_IGNORE ? asqn : lastAsqn;
   }
 
   private void writeMetadata(
@@ -211,7 +212,7 @@ final class SegmentWriter {
         // read version so that buffer's position is advanced
         FrameUtil.readVersion(buffer);
         lastEntry = recordUtil.read(buffer, nextIndex);
-        updateHighestAsqn(lastEntry);
+        updateLastAsqn(lastEntry.asqn());
         nextIndex++;
         this.index.index(lastEntry, position);
         buffer.mark();
@@ -253,6 +254,7 @@ final class SegmentWriter {
 
     // Truncate the index.
     this.index.deleteAfter(index);
+    lastAsqn = firstAsqn - 1;
 
     if (index < segment.index()) {
       buffer.position(descriptorLength);

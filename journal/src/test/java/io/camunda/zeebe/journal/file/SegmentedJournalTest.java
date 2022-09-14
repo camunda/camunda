@@ -728,6 +728,79 @@ class SegmentedJournalTest {
     assertThat(reopenedJournal.getFirstSegment()).isNotEqualTo(reopenedJournal.getLastSegment());
   }
 
+  @Test
+  void shouldResetAsqnOnTruncateToLastAsqnOfPreviousSegment() {
+    // given
+    final SegmentedJournal journal = openJournal(2);
+    final long initalAsqn = journal.getFirstSegment().lastAsqn();
+    journal.append(1, data);
+
+    // when
+    journal.deleteAfter(journal.getFirstSegment().index() - 1);
+
+    // then
+    assertThat(journal.getFirstSegment().lastAsqn()).isEqualTo(initalAsqn);
+    assertThat(journal.getFirstSegment()).isEqualTo(journal.getLastSegment());
+  }
+
+  @Test
+  void shouldResetAsqnOnTruncateToLastAsqnOfPreviousSegmentWhenNewSegContainsAsqnIgnoreOnly() {
+    // given
+    final SegmentedJournal journal = openJournal(2);
+    journal.append(1, data);
+    final var expectedLastAsqn = journal.append(2, data).asqn();
+    // write to second segment
+    final var indexToTruncate = journal.append(-1, data).index();
+    journal.append(3, data);
+
+    // when
+    journal.deleteAfter(indexToTruncate);
+
+    // then
+    assertThat(journal.getLastSegment().lastAsqn()).isEqualTo(expectedLastAsqn);
+  }
+
+  @Test
+  void shouldSuceedToAppendWithPreviousAsqnAfterTruncateToIndexOfPreviousSegment() {
+    // given
+    final SegmentedJournal journal = openJournal(2);
+    journal.append(1, data);
+
+    // when
+    journal.deleteAfter(journal.getFirstSegment().index() - 1);
+
+    // then
+    journal.append(1, data);
+  }
+
+  @Test
+  void shouldResetAsqnOnTruncateToIndexWithinCurrentSegment() {
+    // given
+    final SegmentedJournal journal = openJournal(2);
+    final JournalRecord firstJournalRecord = journal.append(1, data);
+    journal.append(2, data);
+
+    // when
+    journal.deleteAfter(firstJournalRecord.index());
+
+    // then
+    assertThat(journal.getLastSegment().lastAsqn()).isEqualTo(firstJournalRecord.asqn());
+  }
+
+  @Test
+  void shouldSucceedToAppendWithPreviousAsqnAfterTruncateToIndexWithinCurrentSegment() {
+    // given
+    final SegmentedJournal journal = openJournal(2);
+    final JournalRecord firstJournalRecord = journal.append(1, data);
+    journal.append(2, data);
+
+    // when
+    journal.deleteAfter(firstJournalRecord.index());
+
+    // then
+    journal.append(2, data);
+  }
+
   private SegmentedJournal openJournal(final float entriesPerSegment) {
     return openJournal(entriesPerSegment, entrySize);
   }
