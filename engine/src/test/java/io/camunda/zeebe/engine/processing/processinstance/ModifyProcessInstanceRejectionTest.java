@@ -377,4 +377,61 @@ public class ModifyProcessInstanceRejectionTest {
                 element should be activated.""",
                 PROCESS_ID));
   }
+
+  @Test
+  public void shouldRejectTerminationOfChildProcess() {
+    // given
+    final var callActivityProcessId = "callActivityProcess";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(callActivityProcessId)
+                .startEvent()
+                .userTask("A")
+                .endEvent()
+                .done())
+        .deploy();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .callActivity(
+                    "callActivity",
+                    callActivity -> callActivity.zeebeProcessId(callActivityProcessId))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var userTaskKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst()
+            .getKey();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .terminateElement(userTaskKey)
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that a child instance may not be terminated directly")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            String.format(
+                """
+                Expected to modify instance of process '%s' but the given instructions would terminate \
+                the instance. A different process started this process. To terminate this instance \
+                please modify the parent process instead.""",
+                callActivityProcessId));
+  }
 }
