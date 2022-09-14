@@ -148,7 +148,7 @@ final class SecurityTest {
     actorScheduler.start();
     final var brokerClient =
         new BrokerClientImpl(
-            gatewayCfg,
+            gatewayCfg.getCluster().getRequestTimeout(),
             atomix.getMessagingService(),
             atomix.getMembershipService(),
             atomix.getEventService(),

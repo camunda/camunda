@@ -28,7 +28,7 @@ public final class EmbeddedGatewayService implements AutoCloseable {
       final ClusterEventService eventService) {
     brokerClient =
         new BrokerClientImpl(
-            configuration.getGateway(),
+            configuration.getGateway().getCluster().getRequestTimeout(),
             messagingService,
             membershipService,
             eventService,

@@ -420,7 +420,7 @@ public final class ClusteringRule extends ExternalResource {
 
     final var brokerClient =
         new BrokerClientImpl(
-            gatewayCfg,
+            gatewayCfg.getCluster().getRequestTimeout(),
             atomixCluster.getMessagingService(),
             atomixCluster.getMembershipService(),
             atomixCluster.getEventService(),

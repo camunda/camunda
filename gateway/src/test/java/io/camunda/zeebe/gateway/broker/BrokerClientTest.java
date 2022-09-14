@@ -93,7 +93,7 @@ public final class BrokerClientTest {
 
     client =
         new BrokerClientImpl(
-            configuration,
+            configuration.getCluster().getRequestTimeout(),
             atomixCluster.getMessagingService(),
             atomixCluster.getMembershipService(),
             atomixCluster.getEventService(),

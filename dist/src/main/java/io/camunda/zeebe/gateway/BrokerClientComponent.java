@@ -35,7 +35,7 @@ final class BrokerClientComponent {
   @Bean
   BrokerClient brokerClient() {
     return new BrokerClientImpl(
-        config,
+        config.getCluster().getRequestTimeout(),
         atomixCluster.getMessagingService(),
         atomixCluster.getMembershipService(),
         atomixCluster.getEventService(),
