@@ -45,7 +45,7 @@ final class WorkingDirectoryConfigurationTest {
     final var environment = new StandardEnvironment();
     final var properties = new Properties();
     environment.setActiveProfiles(profile.getId());
-    environment.getPropertySources().addLast(new PropertiesPropertySource("test", properties));
+    environment.getPropertySources().addFirst(new PropertiesPropertySource("test", properties));
     properties.put("basedir", tmpDir.toString());
 
     // when

@@ -23,14 +23,12 @@ import io.camunda.zeebe.util.VersionUtil;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 public final class GatewayClusterConfiguration {
   @Bean
-  @Autowired
   public ClusterConfig clusterConfig(final GatewayCfg config) {
     final var cluster = config.getCluster();
     final var name = cluster.getClusterName();
@@ -47,8 +45,7 @@ public final class GatewayClusterConfiguration {
         .setProtocolConfig(membership);
   }
 
-  @Bean
-  @Autowired
+  @Bean(destroyMethod = "") // disable automatically calling close as we will take care of this
   public AtomixCluster atomixCluster(final GatewayCfg config) {
     return new AtomixCluster(clusterConfig(config), Version.from(VersionUtil.getVersion()));
   }
