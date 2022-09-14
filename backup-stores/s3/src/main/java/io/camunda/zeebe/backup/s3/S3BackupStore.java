@@ -91,6 +91,28 @@ public final class S3BackupStore implements BackupStore {
     return "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
   }
 
+  public static void validateConfig(final S3BackupConfig config) {
+    if (config.bucketName() == null || config.bucketName().isEmpty()) {
+      throw new IllegalArgumentException(
+          "Configuration for S3 backup store is incomplete. bucketName must not be empty.");
+    }
+    if (config.region().isEmpty()) {
+      LOG.warn(
+          "No region configured for S3 backup store. Region will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment)");
+    }
+    if (config.endpoint().isEmpty()) {
+      LOG.warn(
+          "No endpoint configured for S3 backup store. Endpoint will be determined from the region");
+    }
+    if (config.credentials().isEmpty()) {
+      LOG.warn(
+          "Access credentials (accessKey, secretKey) not configured for S3 backup store. Credentials will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain)");
+    }
+    // Create a throw away client to verify if all configurations are available. This will throw an
+    // exception, if any of the required configuration is not available.
+    buildClient(config).close();
+  }
+
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
     LOG.info("Saving {}", backup.id());
@@ -164,6 +186,12 @@ public final class S3BackupStore implements BackupStore {
     LOG.info("Marking {} as failed", id);
     return updateManifestObject(id, manifest -> manifest.asFailed(failureReason))
         .thenApply(Manifest::statusCode);
+  }
+
+  @Override
+  public CompletableFuture<Void> closeAsync() {
+    client.close();
+    return CompletableFuture.completedFuture(null);
   }
 
   private CompletableFuture<NamedFileSet> downloadNamedFileSet(

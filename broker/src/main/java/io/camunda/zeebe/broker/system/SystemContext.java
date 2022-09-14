@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker.system;
 
 import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
 
+import io.camunda.zeebe.backup.s3.S3BackupConfig;
+import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
@@ -176,21 +178,18 @@ public final class SystemContext {
 
     if (backup.getStore() == BackupStoreType.S3) {
       final var s3Config = backup.getS3();
-      if (s3Config.getBucketName() == null || s3Config.getBucketName().isEmpty()) {
-        throw new IllegalArgumentException(
-            "Configuration for S3 backup store is incomplete. bucketName must not be empty.");
-      }
-      if (s3Config.getRegion() == null) {
-        LOG.warn(
-            "No region configured for S3 backup store. Region will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment)");
-      }
-      if (s3Config.getEndpoint() == null) {
-        LOG.warn(
-            "No endpoint configured for S3 backup store. Endpoint will be determined from the region");
-      }
-      if (s3Config.getAccessKey() == null || s3Config.getSecretKey() == null) {
-        LOG.warn(
-            "Access credentials (accessKey, secretKey) not configured for S3 backup store. Credentials will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain)");
+
+      final S3BackupConfig storeConfig =
+          S3BackupConfig.from(
+              s3Config.getBucketName(),
+              s3Config.getEndpoint(),
+              s3Config.getRegion(),
+              s3Config.getAccessKey(),
+              s3Config.getSecretKey());
+      try {
+        S3BackupStore.validateConfig(storeConfig);
+      } catch (final Exception e) {
+        throw new InvalidConfigurationException("Cannot configure S3 backup store.", e);
       }
     }
   }

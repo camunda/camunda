@@ -397,15 +397,31 @@ final class SystemContextTest {
   }
 
   @Test
-  void shouldThrowExceptionWhenS3BucketIsNotProvided() throws CertificateException {
+  void shouldThrowExceptionWhenS3BucketIsNotProvided() {
     // given
     final var brokerCfg = new BrokerCfg();
     brokerCfg.getData().getBackup().setStore(BackupStoreType.S3);
 
     // when - then
     assertThatCode(() -> initSystemContext(brokerCfg))
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasCauseInstanceOf(IllegalArgumentException.class)
+        .cause()
         .hasMessageContaining("bucketName must not be empty");
+  }
+
+  @Test
+  void shouldThrowExceptionWhenS3IsNotConfigured() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    final var backupCfg = brokerCfg.getData().getBackup();
+    backupCfg.setStore(BackupStoreType.S3);
+    backupCfg.getS3().setBucketName("bucket");
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining("Cannot configure S3 backup store");
   }
 
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {
