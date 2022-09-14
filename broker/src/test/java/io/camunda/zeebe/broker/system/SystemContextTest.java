@@ -404,7 +404,9 @@ final class SystemContextTest {
 
     // when - then
     assertThatCode(() -> initSystemContext(brokerCfg))
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasCauseInstanceOf(IllegalArgumentException.class)
+        .cause()
         .hasMessageContaining("bucketName must not be empty");
   }
 
