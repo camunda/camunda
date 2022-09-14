@@ -11,13 +11,16 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.CountProgressDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
@@ -208,10 +211,13 @@ public class ManagementDashboardService {
     dashboardDefinition.setId(MANAGEMENT_DASHBOARD_ID);
     dashboardDefinition.setName(MANAGEMENT_DASHBOARD_NAME);
     dashboardDefinition.setReports(reportsForDashboard);
-    dashboardDefinition.setAvailableFilters(
-      List.of(new DashboardInstanceStartDateFilterDto(), new DashboardInstanceEndDateFilterDto()));
+
+    DashboardInstanceStartDateFilterDto filterDto = new DashboardInstanceStartDateFilterDto();
+    RollingDateFilterDataDto rollingFilter = new RollingDateFilterDataDto(new RollingDateFilterStartDto(12L, DateUnit.MONTHS));
+    filterDto.setData(new DashboardDateFilterDataDto(rollingFilter));
+
+    dashboardDefinition.setAvailableFilters(List.of(filterDto));
     dashboardDefinition.setManagementDashboard(true);
     dashboardWriter.saveDashboard(dashboardDefinition);
   }
-
 }
