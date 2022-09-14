@@ -149,8 +149,6 @@ jobs:
         with:
           name: Slow Unit Tests
   smoke-tests:
-    # This name is hard-referenced from bors.toml
-    # Remember to update that if this name, or the matrix.os changes
     name: Smoke tests on ${{ matrix.os }}
     timeout-minutes: 20
     runs-on: ${{ matrix.os }}
@@ -267,6 +265,7 @@ jobs:
 
   # Used by bors to check all tests, including the unit test matrix.
   # New test jobs must be added to the `needs` lists!
+  # This name is hard-referenced from bors.toml; remember to update that if this name changes
   test-summary:
     name: Test summary
     runs-on: ubuntu-latest
