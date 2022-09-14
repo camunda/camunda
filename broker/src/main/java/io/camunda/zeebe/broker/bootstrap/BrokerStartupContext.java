@@ -53,8 +53,6 @@ public interface BrokerStartupContext {
 
   ClusterServicesImpl getClusterServices();
 
-  void setClusterServices(ClusterServicesImpl o);
-
   CommandApiServiceImpl getCommandApiService();
 
   void setCommandApiService(CommandApiServiceImpl commandApiService);

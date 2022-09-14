@@ -10,11 +10,13 @@ package io.camunda.zeebe.broker.bootstrap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -63,6 +65,7 @@ class CommandApiServiceStepTest {
             mockActorSchedulingService,
             mock(BrokerHealthCheckService.class),
             mock(ExporterRepository.class),
+            mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
             Collections.emptyList());
     testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
     testBrokerStartupContext.setDiskSpaceUsageMonitor(mock(DiskSpaceUsageMonitor.class));
