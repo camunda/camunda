@@ -17,7 +17,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.web.context.annotation.ApplicationScope;
 
-@SuppressWarnings("unused")
 @Configuration(proxyBeanMethods = false)
 public final class ActorSchedulerConfiguration {
   private final BrokerCfg brokerCfg;
