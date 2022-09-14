@@ -46,7 +46,14 @@ public final class CreateProcessInstanceTest {
     firstProcessDefinitionKey =
         CLIENT_RULE.deployProcess(Bpmn.createExecutableProcess(processId).startEvent("v1").done());
     secondProcessDefinitionKey =
-        CLIENT_RULE.deployProcess(Bpmn.createExecutableProcess(processId).startEvent("v2").done());
+        CLIENT_RULE.deployProcess(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent("v2")
+                .parallelGateway()
+                .endEvent("end1")
+                .moveToLastGateway()
+                .endEvent("end2")
+                .done());
   }
 
   @Test
@@ -217,5 +224,21 @@ public final class CreateProcessInstanceTest {
     assertThatThrownBy(() -> command.join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Expected to find process definition with key '123', but none found");
+  }
+
+  @Test
+  public void shouldCreateWithStartInstructions() {
+    // when
+    final var instance =
+        CLIENT_RULE
+            .getClient()
+            .newCreateInstanceCommand()
+            .processDefinitionKey(secondProcessDefinitionKey)
+            .startBeforeElement("end1")
+            .startBeforeElement("end2")
+            .send()
+            .join();
+
+    assertThat(instance.getProcessInstanceKey()).isPositive();
   }
 }
