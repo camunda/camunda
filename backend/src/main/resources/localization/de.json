@@ -511,7 +511,8 @@
         "multipleVariable": "Var",
         "inputVariable": "EingabeVar",
         "outputVariable": "AusgabeVar",
-        "objectVariable": "Objektvariable"
+        "objectVariable": "Objektvariable",
+        "numberOfOpenIncidents": "Anzahl der offener Zwischenfälle"
       },
       "pageError": "Nur die ersten 10.000 Instanzen können angezeigt werden"
     },

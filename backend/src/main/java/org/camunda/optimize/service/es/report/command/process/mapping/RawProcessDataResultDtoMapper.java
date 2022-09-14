@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
+import org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -20,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class RawProcessDataResultDtoMapper {
@@ -58,6 +60,10 @@ public class RawProcessDataResultDtoMapper {
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionId(),
       processInstanceDto.getProcessInstanceId(),
+      processInstanceDto.getIncidents()
+        .stream()
+        .filter(incidentDto -> incidentDto.getIncidentStatus() == IncidentStatus.OPEN)
+        .count(),
       processInstanceDto.getBusinessKey(),
       processInstanceDto.getStartDate(),
       processInstanceDto.getEndDate(),

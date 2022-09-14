@@ -192,6 +192,7 @@ describe('Decision table', () => {
           'processInstanceId',
           'businessKey',
           'startDate',
+          'numberOfOpenIncidents',
           'endDate',
           'duration',
           'engineName',

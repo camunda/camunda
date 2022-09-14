@@ -22,6 +22,7 @@ public class RawDataProcessInstanceDto implements RawDataInstanceDto {
   protected String processDefinitionKey;
   protected String processDefinitionId;
   protected String processInstanceId;
+  protected long numberOfOpenIncidents;
   protected String businessKey;
   protected OffsetDateTime startDate;
   protected OffsetDateTime endDate;
