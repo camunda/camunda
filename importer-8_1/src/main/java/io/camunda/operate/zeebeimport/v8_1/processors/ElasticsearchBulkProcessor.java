@@ -8,6 +8,8 @@ package io.camunda.operate.zeebeimport.v8_1.processors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.SimpleType;
+
+import io.camunda.operate.Metrics;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -20,9 +22,12 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+
+import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.slf4j.Logger;
@@ -67,6 +72,9 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
   @Autowired
   private DecisionEvaluationZeebeRecordProcessor decisionEvaluationZeebeRecordProcessor;
+
+  @Autowired
+  private Metrics metrics;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -119,6 +127,17 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
         logger.debug("Default case triggered for type {}", importValueType);
         break;
     }
+
+    recordRecordImportTime(zeebeRecords);
+  }
+
+  private void recordRecordImportTime(final List<Record> zeebeRecords) {
+    final var currentTime = OffsetDateTime.now().toInstant().toEpochMilli();
+    zeebeRecords.forEach(record -> metrics.getTimer(
+      Metrics.TIMER_NAME_IMPORT_TIME,
+      Metrics.TAG_KEY_TYPE, record.getValueType().toString(),
+      Metrics.TAG_KEY_PARTITION, String.valueOf(record.getPartitionId())
+    ).record(currentTime - record.getTimestamp(), TimeUnit.MILLISECONDS));
   }
 
   private void processProcessMessageSubscription(final BulkRequest bulkRequest,

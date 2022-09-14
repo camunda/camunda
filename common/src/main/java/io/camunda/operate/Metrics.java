@@ -7,16 +7,13 @@
 package io.camunda.operate;
 
 import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.util.List;
 import java.util.Queue;
 import java.util.function.ToDoubleFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -34,6 +31,7 @@ public class Metrics {
   public static final String TIMER_NAME_IMPORT_QUERY = OPERATE_NAMESPACE + "import.query";
   public static final String TIMER_NAME_IMPORT_INDEX_QUERY = OPERATE_NAMESPACE + "import.index.query";
   public static final String TIMER_NAME_IMPORT_PROCESS_BATCH = OPERATE_NAMESPACE + "import.process.batch";
+  public static final String TIMER_NAME_IMPORT_TIME = OPERATE_NAMESPACE + "import.time";
   public static final String TIMER_NAME_ARCHIVER_QUERY = OPERATE_NAMESPACE + "archiver.query";
   public static final String TIMER_NAME_ARCHIVER_REINDEX_QUERY = OPERATE_NAMESPACE + "archiver.reindex.query";
   public static final String TIMER_NAME_ARCHIVER_DELETE_QUERY = OPERATE_NAMESPACE + "archiver.delete.query";
@@ -85,8 +83,8 @@ public class Metrics {
     registerGauge(name, queue, q -> q.size(), tags);
   }
 
-  public Timer getTimer(String name) {
-    return registry.timer(name);
+  public Timer getTimer(String name, String... tags) {
+    return registry.timer(name, tags);
   }
 
 }
