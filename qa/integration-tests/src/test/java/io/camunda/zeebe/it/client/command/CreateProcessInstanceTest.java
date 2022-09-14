@@ -37,7 +37,8 @@ public final class CreateProcessInstanceTest {
 
   private String processId;
   private long firstProcessDefinitionKey;
-  private Long secondProcessDefinitionKey;
+  private long secondProcessDefinitionKey;
+  private long thirdProcessDefinitionKey;
 
   @Before
   public void deployProcess() {
@@ -46,6 +47,17 @@ public final class CreateProcessInstanceTest {
     firstProcessDefinitionKey =
         CLIENT_RULE.deployProcess(Bpmn.createExecutableProcess(processId).startEvent("v1").done());
     secondProcessDefinitionKey =
+        CLIENT_RULE.deployProcess(
+            Bpmn.createExecutableProcess(processId)
+                .eventSubProcess(
+                    "event-sub",
+                    e ->
+                        e.startEvent("msg-start-event")
+                            .message(msg -> msg.name("msg").zeebeCorrelationKey("=missing_var")))
+                .startEvent("v3")
+                .endEvent("end")
+                .done());
+    thirdProcessDefinitionKey =
         CLIENT_RULE.deployProcess(
             Bpmn.createExecutableProcess(processId)
                 .startEvent("v2")
@@ -70,8 +82,8 @@ public final class CreateProcessInstanceTest {
 
     // then
     assertThat(processInstance.getBpmnProcessId()).isEqualTo(processId);
-    assertThat(processInstance.getVersion()).isEqualTo(2);
-    assertThat(processInstance.getProcessDefinitionKey()).isEqualTo(secondProcessDefinitionKey);
+    assertThat(processInstance.getVersion()).isEqualTo(3);
+    assertThat(processInstance.getProcessDefinitionKey()).isEqualTo(thirdProcessDefinitionKey);
   }
 
   @Test
@@ -233,12 +245,33 @@ public final class CreateProcessInstanceTest {
         CLIENT_RULE
             .getClient()
             .newCreateInstanceCommand()
-            .processDefinitionKey(secondProcessDefinitionKey)
+            .processDefinitionKey(thirdProcessDefinitionKey)
             .startBeforeElement("end1")
             .startBeforeElement("end2")
             .send()
             .join();
 
     assertThat(instance.getProcessInstanceKey()).isPositive();
+  }
+
+  @Test
+  public void shouldRejectCreateWithStartInstructions() {
+    // when
+    final var command =
+        CLIENT_RULE
+            .getClient()
+            .newCreateInstanceCommand()
+            .processDefinitionKey(secondProcessDefinitionKey)
+            // without variables
+            .startBeforeElement("end")
+            .send();
+
+    assertThatThrownBy(command::join)
+        .isInstanceOf(ClientException.class)
+        .hasMessageContaining(
+            """
+            Expected to subscribe to catch event(s) of \
+            'process-shouldRejectCreateWithStartInstructions' but failed to evaluate expression \
+            'missing_var': no variable found for name 'missing_var'""");
   }
 }
