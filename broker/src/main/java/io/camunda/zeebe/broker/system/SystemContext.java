@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system;
 
 import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
 
+import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.Loggers;
@@ -48,18 +49,17 @@ public final class SystemContext {
   private final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
   private final ActorScheduler scheduler;
+  private final AtomixCluster cluster;
 
   public SystemContext(
-      final BrokerCfg brokerCfg, final String basePath, final ActorScheduler scheduler) {
+      final BrokerCfg brokerCfg, final ActorScheduler scheduler, final AtomixCluster cluster) {
     this.brokerCfg = brokerCfg;
     this.scheduler = scheduler;
-    initSystemContext(basePath);
+    this.cluster = cluster;
+    initSystemContext();
   }
 
-  private void initSystemContext(final String basePath) {
-    LOG.debug("Initializing system with base path {}", basePath);
-
-    brokerCfg.init(basePath);
+  private void initSystemContext() {
     validateConfiguration();
 
     final var cluster = brokerCfg.getCluster();
@@ -301,6 +301,10 @@ public final class SystemContext {
 
   public BrokerCfg getBrokerConfiguration() {
     return brokerCfg;
+  }
+
+  public AtomixCluster getCluster() {
+    return cluster;
   }
 
   public Map<String, String> getDiagnosticContext() {

@@ -25,7 +25,6 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -73,7 +72,9 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   protected Broker broker;
   protected final ControlledActorClock controlledActorClock = new ControlledActorClock();
   protected final SpringBrokerBridge springBrokerBridge = new SpringBrokerBridge();
+
   protected long startTime;
+  private AtomixCluster atomixCluster;
   private File newTemporaryFolder;
   private String dataDirectory;
   private SystemContext systemContext;
@@ -174,7 +175,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public AtomixCluster getAtomixCluster() {
-    return broker.getBrokerContext().getAtomixCluster();
+    return atomixCluster;
   }
 
   public InetSocketAddress getGatewayAddress() {
@@ -224,15 +225,9 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       }
     }
 
-    final var scheduler =
-        ActorScheduler.newActorScheduler()
-            .setCpuBoundActorThreadCount(brokerCfg.getThreads().getCpuThreadCount())
-            .setIoBoundActorThreadCount(brokerCfg.getThreads().getIoThreadCount())
-            .setMetricsEnabled(brokerCfg.getExperimental().getFeatures().isEnableActorMetrics())
-            .setActorClock(controlledActorClock)
-            .build();
-
-    systemContext = new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), scheduler);
+    final var scheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg, controlledActorClock);
+    atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg);
+    systemContext = new SystemContext(brokerCfg, scheduler, atomixCluster);
     scheduler.start();
 
     final var additionalListeners = new ArrayList<>(Arrays.asList(listeners));
@@ -288,6 +283,9 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
     // set random port numbers
     assignSocketAddresses(brokerCfg);
+
+    // initialize configuration
+    brokerCfg.init(newTemporaryFolder.getAbsolutePath());
   }
 
   public void purgeSnapshots() {

@@ -9,9 +9,13 @@ package io.camunda.zeebe.broker;
 
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
+import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
+import io.camunda.zeebe.broker.test.TestClusterFactory;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -43,6 +47,7 @@ public final class SimpleBrokerStartTest {
     // given
     final var brokerCfg = new BrokerCfg();
     brokerCfg.getData().setSnapshotPeriod(Duration.ofMillis(1));
+    brokerCfg.init(newTemporaryFolder.getAbsolutePath());
 
     // when
 
@@ -50,7 +55,8 @@ public final class SimpleBrokerStartTest {
         assertThatThrownBy(
             () -> {
               final var systemContext =
-                  new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
+                  new SystemContext(
+                      brokerCfg, mock(ActorScheduler.class), mock(AtomixCluster.class));
               new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE);
             });
 
@@ -63,11 +69,13 @@ public final class SimpleBrokerStartTest {
     // given
     final var brokerCfg = new BrokerCfg();
     assignSocketAddresses(brokerCfg);
+    brokerCfg.init(newTemporaryFolder.getAbsolutePath());
+
     final var systemContext =
         new SystemContext(
             brokerCfg,
-            newTemporaryFolder.getAbsolutePath(),
-            ActorScheduler.newActorScheduler().build());
+            TestActorSchedulerFactory.ofBrokerConfig(brokerCfg),
+            TestClusterFactory.createAtomixCluster(brokerCfg));
     systemContext.getScheduler().start();
 
     final var leaderLatch = new CountDownLatch(1);

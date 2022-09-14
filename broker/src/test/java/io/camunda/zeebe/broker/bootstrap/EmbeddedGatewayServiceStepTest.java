@@ -75,10 +75,8 @@ class EmbeddedGatewayServiceStepTest {
               actorScheduler,
               mock(BrokerHealthCheckService.class),
               mock(ExporterRepository.class),
+              mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
               Collections.emptyList());
-
-      testBrokerStartupContext.setClusterServices(
-          mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS));
 
       final var port = SocketUtil.getNextAddress().getPort();
       final var commandApiCfg = TEST_BROKER_CONFIG.getGateway().getNetwork();
@@ -144,6 +142,7 @@ class EmbeddedGatewayServiceStepTest {
               mock(ActorScheduler.class),
               mock(BrokerHealthCheckService.class),
               mock(ExporterRepository.class),
+              mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
               Collections.emptyList());
 
       testBrokerStartupContext.setEmbeddedGatewayService(mockEmbeddedGatewayService);

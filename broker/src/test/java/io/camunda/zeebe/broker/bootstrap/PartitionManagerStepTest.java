@@ -80,11 +80,10 @@ class PartitionManagerStepTest {
               actorScheduler,
               mock(BrokerHealthCheckService.class),
               mock(ExporterRepository.class),
+              mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
               Collections.emptyList());
       testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
       testBrokerStartupContext.setBrokerAdminService(mock(BrokerAdminServiceImpl.class));
-      testBrokerStartupContext.setClusterServices(
-          mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS));
 
       final var memberConfig = new MemberConfig();
       final var member = new Member(memberConfig);
@@ -151,6 +150,7 @@ class PartitionManagerStepTest {
               mock(ActorScheduler.class),
               mock(BrokerHealthCheckService.class),
               mock(ExporterRepository.class),
+              mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
               Collections.emptyList());
 
       testBrokerStartupContext.setPartitionManager(mockPartitionManager);

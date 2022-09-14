@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContextImpl;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
+import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -37,12 +38,10 @@ public final class Broker implements AutoCloseable {
   private boolean isClosed = false;
 
   private CompletableFuture<Broker> startFuture;
-  private final ActorScheduler scheduler;
   private BrokerHealthCheckService healthCheckService;
 
   // TODO make Broker class itself the actor
   private final BrokerStartupActor brokerStartupActor;
-  private final BrokerInfo localBroker;
   private BrokerContext brokerContext;
   // TODO make Broker class itself the actor
 
@@ -55,13 +54,13 @@ public final class Broker implements AutoCloseable {
       final SpringBrokerBridge springBrokerBridge,
       final List<PartitionListener> additionalPartitionListeners) {
     this.systemContext = systemContext;
-    scheduler = this.systemContext.getScheduler();
 
-    localBroker = createBrokerInfo(getConfig());
+    final ActorScheduler scheduler = this.systemContext.getScheduler();
+    final BrokerInfo localBroker = createBrokerInfo(getConfig());
 
     healthCheckService = new BrokerHealthCheckService(localBroker);
 
-    final BrokerStartupContextImpl startupContext =
+    final var startupContext =
         new BrokerStartupContextImpl(
             localBroker,
             systemContext.getBrokerConfiguration(),
@@ -69,6 +68,7 @@ public final class Broker implements AutoCloseable {
             scheduler,
             healthCheckService,
             buildExporterRepository(getConfig()),
+            new ClusterServicesImpl(systemContext.getCluster()),
             additionalPartitionListeners);
 
     brokerStartupActor = new BrokerStartupActor(startupContext);
