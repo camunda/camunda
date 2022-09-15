@@ -8,7 +8,6 @@
 package io.camunda.zeebe.journal.record;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
-import io.camunda.zeebe.journal.RecordDataWriter;
 import io.camunda.zeebe.journal.file.MessageHeaderDecoder;
 import io.camunda.zeebe.journal.file.MessageHeaderEncoder;
 import io.camunda.zeebe.journal.file.RecordDataDecoder;
@@ -16,6 +15,7 @@ import io.camunda.zeebe.journal.file.RecordDataEncoder;
 import io.camunda.zeebe.journal.file.RecordMetadataDecoder;
 import io.camunda.zeebe.journal.file.RecordMetadataEncoder;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.BufferOverflowException;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -35,10 +35,10 @@ public final class SBESerializer implements JournalRecordSerializer {
   public Either<BufferOverflowException, Integer> writeData(
       final long index,
       final long asqn,
-      final RecordDataWriter recordDataWriter,
+      final BufferWriter recordDataWriter,
       final MutableDirectBuffer writeBuffer,
       final int offset) {
-    final int entryLength = recordDataWriter.getRecordLength();
+    final int entryLength = recordDataWriter.getLength();
     final int serializedLength = getSerializedLength(entryLength);
     if (offset + serializedLength > writeBuffer.capacity()) {
       return Either.left(new BufferOverflowException());

@@ -18,7 +18,7 @@ package io.camunda.zeebe.journal.file;
 
 import io.camunda.zeebe.journal.JournalException.SegmentSizeTooSmall;
 import io.camunda.zeebe.journal.JournalRecord;
-import io.camunda.zeebe.journal.RecordDataWriter;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 
 class SegmentedJournalWriter {
   private final SegmentedJournal journal;
@@ -45,7 +45,7 @@ class SegmentedJournalWriter {
     return currentWriter.getNextIndex();
   }
 
-  public JournalRecord append(final long asqn, final RecordDataWriter recordDataWriter) {
+  public JournalRecord append(final long asqn, final BufferWriter recordDataWriter) {
     final var appendResult = currentWriter.append(asqn, recordDataWriter);
     if (appendResult.isRight()) {
       return appendResult.get();

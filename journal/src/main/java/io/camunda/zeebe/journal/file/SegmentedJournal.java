@@ -23,7 +23,7 @@ import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
-import io.camunda.zeebe.journal.RecordDataWriter;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.io.File;
 import java.util.Collection;
 import java.util.Objects;
@@ -72,12 +72,12 @@ public final class SegmentedJournal implements Journal {
   }
 
   @Override
-  public JournalRecord append(final RecordDataWriter recordDataWriter) {
+  public JournalRecord append(final BufferWriter recordDataWriter) {
     return append(ASQN_IGNORE, recordDataWriter);
   }
 
   @Override
-  public JournalRecord append(final long asqn, final RecordDataWriter recordDataWriter) {
+  public JournalRecord append(final long asqn, final BufferWriter recordDataWriter) {
     return writer.append(asqn, recordDataWriter);
   }
 

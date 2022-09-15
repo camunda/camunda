@@ -17,12 +17,12 @@ import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.file.LogCorrupter;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
-import io.camunda.zeebe.journal.record.DirectCopyRecordDataWriter;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.RecordMetadata;
 import io.camunda.zeebe.journal.util.TestJournalRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,20 +40,17 @@ final class JournalTest {
   @TempDir Path directory;
 
   private byte[] entry;
-  private final UnsafeBuffer data = new UnsafeBuffer();
-  private final RecordDataWriter recordDataWriter = new DirectCopyRecordDataWriter(data);
-  private final DirectBuffer dataOther = new UnsafeBuffer();
-  private final DirectCopyRecordDataWriter otherRecordDataWriter =
-      new DirectCopyRecordDataWriter(dataOther);
+  private final DirectBufferWriter recordDataWriter = new DirectBufferWriter();
+  private final DirectBufferWriter otherRecordDataWriter = new DirectBufferWriter();
   private Journal journal;
 
   @BeforeEach
   void setup() {
     entry = "TestData".getBytes();
-    data.wrap(entry);
+    recordDataWriter.wrap(new UnsafeBuffer(entry));
 
     final var entryOther = "TestData".getBytes();
-    dataOther.wrap(entryOther);
+    otherRecordDataWriter.wrap(new UnsafeBuffer(entryOther));
 
     journal = openJournal();
   }
@@ -154,7 +150,7 @@ final class JournalTest {
     for (int i = 0; i < 10; i++) {
       // given
       entry = ("TestData" + i).getBytes();
-      data.wrap(entry);
+      recordDataWriter.wrap(new UnsafeBuffer(entry));
 
       // when
       final var recordAppended = journal.append(i + 10, recordDataWriter);
@@ -568,7 +564,7 @@ final class JournalTest {
   @Test
   void shouldInvalidateAllEntries() throws Exception {
     // given
-    data.wrap("000".getBytes(StandardCharsets.UTF_8));
+    recordDataWriter.wrap(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
     final var firstRecord = copyRecord(journal.append(recordDataWriter));
 
     journal.append(recordDataWriter);
@@ -576,7 +572,7 @@ final class JournalTest {
 
     // when
     journal.deleteAfter(firstRecord.index());
-    data.wrap("111".getBytes(StandardCharsets.UTF_8));
+    recordDataWriter.wrap(new UnsafeBuffer("111".getBytes(StandardCharsets.UTF_8)));
     final var secondRecord = copyRecord(journal.append(recordDataWriter));
 
     journal.close();
@@ -592,7 +588,7 @@ final class JournalTest {
   @Test
   void shouldDetectCorruptedEntry() throws Exception {
     // given
-    data.wrap("000".getBytes(StandardCharsets.UTF_8));
+    recordDataWriter.wrap(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
     journal.append(recordDataWriter);
     final var secondRecord = copyRecord(journal.append(recordDataWriter));
     final File dataFile = Objects.requireNonNull(directory.toFile().listFiles())[0];
@@ -611,7 +607,7 @@ final class JournalTest {
   @Test
   void shouldDeletePartiallyWrittenEntry() throws Exception {
     // given
-    data.wrap("000".getBytes(StandardCharsets.UTF_8));
+    recordDataWriter.wrap(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
     final var firstRecord = copyRecord(journal.append(recordDataWriter));
     final var secondRecord = copyRecord(journal.append(recordDataWriter));
     final File dataFile = Objects.requireNonNull(directory.toFile().listFiles())[0];
@@ -621,7 +617,7 @@ final class JournalTest {
     journal.close();
     assertThat(LogCorrupter.corruptRecord(log, secondRecord.index())).isTrue();
     journal = openJournal(b -> b.withLastWrittenIndex(firstRecord.index()));
-    data.wrap("111".getBytes(StandardCharsets.UTF_8));
+    recordDataWriter.wrap(new UnsafeBuffer("111".getBytes(StandardCharsets.UTF_8)));
     final var lastRecord = journal.append(recordDataWriter);
     final var reader = journal.openReader();
 

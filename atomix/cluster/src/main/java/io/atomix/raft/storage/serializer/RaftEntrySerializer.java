@@ -20,7 +20,7 @@ import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.camunda.zeebe.journal.RecordDataWriter;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
@@ -28,7 +28,7 @@ import org.agrona.MutableDirectBuffer;
 
 public interface RaftEntrySerializer {
 
-  default RecordDataWriter createRecordDataWriter(final long term, final RaftEntry entry) {
+  default BufferWriter createRecordDataWriter(final long term, final RaftEntry entry) {
     if (entry instanceof final ApplicationEntry applicationEntry) {
       return new FunctionalRecordDataWriter(
           () -> getApplicationEntrySerializedLength(applicationEntry),
@@ -113,25 +113,18 @@ public interface RaftEntrySerializer {
    */
   RaftLogEntry readRaftLogEntry(DirectBuffer buffer);
 
-  class FunctionalRecordDataWriter implements RecordDataWriter {
-    private final Supplier<Integer> getRecordLengthFunction;
-    private final BiFunction<MutableDirectBuffer, Integer, Integer> writeFunction;
-
-    public FunctionalRecordDataWriter(
-        final Supplier<Integer> getRecordLengthFunction,
-        final BiFunction<MutableDirectBuffer, Integer, Integer> writeFunction) {
-      this.getRecordLengthFunction = getRecordLengthFunction;
-      this.writeFunction = writeFunction;
-    }
+  record FunctionalRecordDataWriter(
+      Supplier<Integer> getRecordLengthFunction,
+      BiFunction<MutableDirectBuffer, Integer, Integer> writeFunction) implements BufferWriter {
 
     @Override
-    public int getRecordLength() {
+    public int getLength() {
       return getRecordLengthFunction.get();
     }
 
     @Override
-    public int write(final MutableDirectBuffer writeBuffer, final int offset) {
-      return writeFunction.apply(writeBuffer, offset);
+    public void write(final MutableDirectBuffer writeBuffer, final int offset) {
+      writeFunction.apply(writeBuffer, offset);
     }
   }
 }

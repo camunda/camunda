@@ -24,8 +24,6 @@ import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.JournalException.SegmentFull;
 import io.camunda.zeebe.journal.JournalRecord;
-import io.camunda.zeebe.journal.RecordDataWriter;
-import io.camunda.zeebe.journal.record.DirectCopyRecordDataWriter;
 import io.camunda.zeebe.journal.record.JournalRecordReaderUtil;
 import io.camunda.zeebe.journal.record.JournalRecordSerializer;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
@@ -33,6 +31,8 @@ import io.camunda.zeebe.journal.record.RecordMetadata;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.nio.BufferUnderflowException;
 import java.nio.MappedByteBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -97,19 +97,18 @@ final class SegmentWriter {
     return append(
         record.index(),
         record.asqn(),
-        new DirectCopyRecordDataWriter(record.data()),
+        new DirectBufferWriter().wrap(record.data()),
         record.checksum());
   }
 
-  Either<SegmentFull, JournalRecord> append(
-      final long asqn, final RecordDataWriter recordDataWriter) {
+  Either<SegmentFull, JournalRecord> append(final long asqn, final BufferWriter recordDataWriter) {
     return append(getNextIndex(), asqn, recordDataWriter, null);
   }
 
   private Either<SegmentFull, JournalRecord> append(
       final Long entryIndex,
       final long asqn,
-      final RecordDataWriter recordDataWriter,
+      final BufferWriter recordDataWriter,
       final Long expectedChecksum) {
     final long nextIndex = getNextIndex();
 
@@ -182,10 +181,7 @@ final class SegmentWriter {
   }
 
   private Either<SegmentFull, Integer> writeRecord(
-      final long index,
-      final long asqn,
-      final int offset,
-      final RecordDataWriter recordDataWriter) {
+      final long index, final long asqn, final int offset, final BufferWriter recordDataWriter) {
     final var recordLength =
         serializer.writeData(index, asqn, recordDataWriter, writeBuffer, offset);
     if (recordLength.isLeft()) {

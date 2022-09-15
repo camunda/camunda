@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.journal.record;
 
-import io.camunda.zeebe.journal.RecordDataWriter;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.nio.BufferOverflowException;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -29,7 +30,7 @@ public interface JournalRecordSerializer {
     return writeData(
         record.index(),
         record.asqn(),
-        new DirectCopyRecordDataWriter(record.data()),
+        new DirectBufferWriter().wrap(record.data()),
         buffer,
         offset);
   }
@@ -37,7 +38,7 @@ public interface JournalRecordSerializer {
   Either<BufferOverflowException, Integer> writeData(
       final long index,
       final long asqn,
-      RecordDataWriter recordDataWriter,
+      BufferWriter recordDataWriter,
       MutableDirectBuffer writeBuffer,
       int offset);
 

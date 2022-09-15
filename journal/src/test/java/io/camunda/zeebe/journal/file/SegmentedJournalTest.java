@@ -22,13 +22,13 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import io.camunda.zeebe.journal.JournalException.InvalidASqn;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
-import io.camunda.zeebe.journal.RecordDataWriter;
-import io.camunda.zeebe.journal.record.DirectCopyRecordDataWriter;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -49,7 +49,7 @@ class SegmentedJournalTest {
   @TempDir Path directory;
   private final int journalIndexDensity = 1;
   private final UnsafeBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
-  private final RecordDataWriter recordDataWriter = new DirectCopyRecordDataWriter(data);
+  private final BufferWriter recordDataWriter = new DirectBufferWriter().wrap(data);
   private final int entrySize = getSerializedSize(data);
 
   @Test
@@ -323,8 +323,8 @@ class SegmentedJournalTest {
     final var lastRecord =
         journal.append(
             3,
-            new DirectCopyRecordDataWriter(
-                new UnsafeBuffer("new".getBytes(StandardCharsets.UTF_8))));
+            new DirectBufferWriter()
+                .wrap(new UnsafeBuffer("new".getBytes(StandardCharsets.UTF_8))));
 
     // then
     assertThat(first).isEqualTo(lastRecord.index());
@@ -342,11 +342,11 @@ class SegmentedJournalTest {
 
     // when
     final var firstRecord =
-        journal.append(new DirectCopyRecordDataWriter(new UnsafeBuffer("12345".getBytes())));
+        journal.append(new DirectBufferWriter().wrap(new UnsafeBuffer("12345".getBytes())));
     final var secondRecord =
-        journal.append(new DirectCopyRecordDataWriter(new UnsafeBuffer("1234567".getBytes())));
+        journal.append(new DirectBufferWriter().wrap(new UnsafeBuffer("1234567".getBytes())));
     final var thirdRecord =
-        journal.append(new DirectCopyRecordDataWriter(new UnsafeBuffer("1234567890".getBytes())));
+        journal.append(new DirectBufferWriter().wrap(new UnsafeBuffer("1234567890".getBytes())));
 
     // then
     assertThat(reader.next()).isEqualTo(firstRecord);

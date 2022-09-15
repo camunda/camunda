@@ -12,10 +12,10 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
-import io.camunda.zeebe.journal.RecordDataWriter;
-import io.camunda.zeebe.journal.record.DirectCopyRecordDataWriter;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -33,7 +33,7 @@ class SegmentsManagerTest {
   @TempDir Path directory;
   private final int journalIndexDensity = 1;
   private final UnsafeBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
-  private final RecordDataWriter recordDataWriter = new DirectCopyRecordDataWriter(data);
+  private final BufferWriter recordDataWriter = new DirectBufferWriter().wrap(data);
   private final int entrySize = getSerializedSize(data);
 
   @Test

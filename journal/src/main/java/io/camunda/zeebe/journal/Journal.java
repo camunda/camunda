@@ -17,6 +17,7 @@ package io.camunda.zeebe.journal;
 
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 
 public interface Journal extends AutoCloseable {
 
@@ -28,7 +29,7 @@ public interface Journal extends AutoCloseable {
    * @param recordDataWriter a writer that outputs the data of the record
    * @return the journal record that was appended
    */
-  JournalRecord append(RecordDataWriter recordDataWriter);
+  JournalRecord append(BufferWriter recordDataWriter);
 
   /**
    * Appends a new {@link JournalRecord} that contains the data to be written by the
@@ -40,7 +41,7 @@ public interface Journal extends AutoCloseable {
    * @param recordDataWriter a writer that outputs the data of the record
    * @return the journal record that was appended
    */
-  JournalRecord append(long asqn, RecordDataWriter recordDataWriter);
+  JournalRecord append(long asqn, BufferWriter recordDataWriter);
 
   /**
    * Appends a {@link JournalRecord}. If the index of the record is not the next expected index, the
@@ -71,7 +72,7 @@ public interface Journal extends AutoCloseable {
 
   /**
    * Delete all records in the journal and reset the next index to nextIndex. The following calls to
-   * {@link Journal#append(long, RecordDataWriter)} will append at index nextIndex.
+   * {@link Journal#append(long, BufferWriter)} will append at index nextIndex.
    *
    * <p>After this operation, all readers must be reset explicitly. The readers that are not reset
    * will return false for {@link JournalReader#hasNext()}, cannot read any record.
