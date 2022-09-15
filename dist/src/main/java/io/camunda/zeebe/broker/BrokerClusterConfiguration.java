@@ -15,21 +15,17 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.util.VersionUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ScopedProxyMode;
-import org.springframework.web.context.annotation.ApplicationScope;
 
 @Configuration(proxyBeanMethods = false)
 public final class BrokerClusterConfiguration {
   @Bean
-  @ApplicationScope(proxyMode = ScopedProxyMode.NO)
   public ClusterConfig clusterConfig(final BrokerCfg config) {
     final var configFactory = new ClusterConfigFactory();
     return configFactory.mapConfiguration(config);
   }
 
   @Bean(destroyMethod = "") // disable automatically calling close as we will take care of this
-  @ApplicationScope(proxyMode = ScopedProxyMode.NO)
-  public AtomixCluster atomixCluster(final BrokerCfg config) {
-    return new AtomixCluster(clusterConfig(config), Version.from(VersionUtil.getVersion()));
+  public AtomixCluster atomixCluster(final ClusterConfig config) {
+    return new AtomixCluster(config, Version.from(VersionUtil.getVersion()));
   }
 }

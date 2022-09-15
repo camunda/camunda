@@ -26,6 +26,7 @@ import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.raft.partition.RaftPartition;
+import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.ActorSchedulerConfiguration;
 import io.camunda.zeebe.broker.Broker;
@@ -65,6 +66,7 @@ import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import io.netty.util.NetUtil;
 import java.io.File;
@@ -289,7 +291,10 @@ public final class ClusteringRule extends ExternalResource {
     final var brokerCfg = getBrokerCfg(nodeId);
     brokerCfg.init(brokerBase.getAbsolutePath());
 
-    final var atomixCluster = new BrokerClusterConfiguration().atomixCluster(brokerCfg);
+    final var atomixCluster =
+        new AtomixCluster(
+            new BrokerClusterConfiguration().clusterConfig(brokerCfg),
+            Version.from(VersionUtil.getVersion()));
     final var scheduler = new ActorSchedulerConfiguration(brokerCfg, controlledClock).scheduler();
     final var systemContext = new SystemContext(brokerCfg, scheduler, atomixCluster);
     systemContexts.put(nodeId, systemContext);

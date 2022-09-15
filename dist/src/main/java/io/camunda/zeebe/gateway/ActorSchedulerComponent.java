@@ -21,7 +21,7 @@ final class ActorSchedulerComponent {
   private final ActorClockConfiguration clockConfiguration;
 
   @Autowired
-  public ActorSchedulerComponent(
+  ActorSchedulerComponent(
       final GatewayCfg config, final ActorClockConfiguration clockConfiguration) {
     this.config = config;
     this.clockConfiguration = clockConfiguration;
@@ -29,8 +29,8 @@ final class ActorSchedulerComponent {
 
   // disable automatic registration of close as the destroy method, the application will manually
   // close this
-  @Bean(name = "actorScheduler", destroyMethod = "")
-  ActorScheduler createActorSchedulingService() {
+  @Bean(destroyMethod = "")
+  ActorScheduler actorScheduler() {
     return ActorScheduler.newActorScheduler()
         .setCpuBoundActorThreadCount(config.getThreads().getManagementThreads())
         .setIoBoundActorThreadCount(0)

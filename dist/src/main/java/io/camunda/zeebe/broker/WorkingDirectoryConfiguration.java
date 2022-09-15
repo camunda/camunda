@@ -14,16 +14,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
-import org.springframework.web.context.annotation.ApplicationScope;
 
 @Configuration(proxyBeanMethods = false)
 public record WorkingDirectoryConfiguration(Environment environment) {
 
   @Bean
-  @ApplicationScope(proxyMode = ScopedProxyMode.NO)
   public WorkingDirectory workingDirectory() {
     final Path workingDirectory;
 

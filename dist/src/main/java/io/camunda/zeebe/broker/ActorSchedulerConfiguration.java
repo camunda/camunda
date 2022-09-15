@@ -14,8 +14,6 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ScopedProxyMode;
-import org.springframework.web.context.annotation.ApplicationScope;
 
 @Configuration(proxyBeanMethods = false)
 public final class ActorSchedulerConfiguration {
@@ -29,7 +27,6 @@ public final class ActorSchedulerConfiguration {
   }
 
   @Bean(destroyMethod = "") // disable automatically calling close as we will take care of this
-  @ApplicationScope(proxyMode = ScopedProxyMode.NO)
   public ActorScheduler scheduler() {
     final ThreadsCfg cfg = brokerCfg.getThreads();
 

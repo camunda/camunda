@@ -14,8 +14,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.ScopedProxyMode;
-import org.springframework.web.context.annotation.ApplicationScope;
 
 /**
  * Will provide any {@link BrokerCfg} for auto-wiring, guaranteeing they are always initialized.
@@ -26,19 +24,17 @@ import org.springframework.web.context.annotation.ApplicationScope;
  * non-qualified injection will always prefer it.
  */
 @Configuration(proxyBeanMethods = false)
-public final class BrokerConfiguration {
+final class BrokerConfiguration {
 
   @Bean("uninitializedBrokerCfg")
   @ConfigurationProperties(prefix = "zeebe.broker")
-  @ApplicationScope(proxyMode = ScopedProxyMode.NO)
   private BrokerCfg rawBrokerConfig() {
     return new BrokerCfg();
   }
 
   @Bean("initializedBrokerCfg")
-  @ApplicationScope(proxyMode = ScopedProxyMode.NO)
   @Primary
-  public BrokerCfg brokerConfig(
+  BrokerCfg brokerConfig(
       @Qualifier("uninitializedBrokerCfg") final BrokerCfg config,
       final WorkingDirectory workingDirectory) {
     config.init(workingDirectory.path().toString());
