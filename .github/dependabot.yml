@@ -48,6 +48,19 @@ updates:
     labels:
       - "dependencies"
 
+  - package-ecosystem: "docker"
+      directory: "/"
+      schedule:
+        interval: "daily"
+      target-branch: "OPT-6380"
+      commit-message:
+        prefix: "chore"
+        include: "scope"
+      reviewers:
+        - "camunda/optimize"
+      labels:
+        - "dependencies"
+
   # maintenance/3.8
   - package-ecosystem: "maven"
     directory: "/"
