@@ -115,4 +115,35 @@ public class ModifyProcessInstanceTest {
                 "Expected to modify process instance but no process instance found with key '%d'",
                 processDefinitionKey));
   }
+
+  @Test
+  public void shouldRejectCommandForUnknownTerminationTarget() {
+    // given
+    final var processInstance =
+        CLIENT_RULE
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId2)
+            .latestVersion()
+            .send()
+            .join();
+
+    // when
+    final var command =
+        CLIENT_RULE
+            .getClient()
+            .newModifyProcessInstanceCommand(processInstance.getProcessInstanceKey())
+            .terminateElement(123)
+            .send();
+
+    // then
+    assertThatThrownBy(command::join)
+        .isInstanceOf(ClientStatusException.class)
+        .hasMessageContaining(
+            """
+            Expected to modify instance of process \
+            'process-shouldRejectCommandForUnknownTerminationTarget' but it contains one or \
+            more terminate instructions with an element instance that could not be found: \
+            '123'""");
+  }
 }
