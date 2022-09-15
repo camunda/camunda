@@ -89,6 +89,12 @@ public final class ProcessInstanceModificationProcessor
       for an element that has a flow scope with more than one active instance: '%s'. Can't decide \
       in which instance of the flow scope the element should be activated.""";
 
+  private static final String ERROR_MESSAGE_CHILD_PROCESS_INSTANCE_TERMINATED =
+      """
+      Expected to modify instance of process '%s' but the given instructions would terminate \
+      the instance. The instance was created by a call activity in the parent process. \
+      To terminate this instance please modify the parent process instead.""";
+
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
           BpmnElementType.UNSPECIFIED,
@@ -233,6 +239,13 @@ public final class ProcessInstanceModificationProcessor
           typedCommand,
           RejectionType.INVALID_ARGUMENT,
           ERROR_COMMAND_TOO_LARGE.formatted(typedCommand.getValue().getProcessInstanceKey()));
+      return ProcessingError.EXPECTED_ERROR;
+
+    } else if (error instanceof TerminatedChildProcessException exception) {
+      rejectionWriter.appendRejection(
+          typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
     return ProcessingError.UNEXPECTED_ERROR;
@@ -521,6 +534,7 @@ public final class ProcessInstanceModificationProcessor
       final ElementInstance elementInstance, final SideEffects sideEffects) {
     final var elementInstanceKey = elementInstance.getKey();
     final var elementInstanceRecord = elementInstance.getValue();
+    final BpmnElementType elementType = elementInstance.getValue().getBpmnElementType();
 
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
@@ -531,7 +545,6 @@ public final class ProcessInstanceModificationProcessor
     catchEventBehavior.unsubscribeFromEvents(elementInstanceKey, sideEffects);
 
     // terminate all child instances if the element is an event subprocess
-    final BpmnElementType elementType = elementInstance.getValue().getBpmnElementType();
     if (elementType == BpmnElementType.EVENT_SUB_PROCESS
         || elementType == BpmnElementType.SUB_PROCESS
         || elementType == BpmnElementType.PROCESS
@@ -556,6 +569,17 @@ public final class ProcessInstanceModificationProcessor
     var currentElementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
     while (canTerminateElementInstance(currentElementInstance, requiredKeysForActivation)) {
+
+      // Reject the command by throwing an exception if the process is being terminated, but it was
+      // started by a call activity.
+      final var currentElementInstanceRecord = currentElementInstance.getValue();
+      if (currentElementInstanceRecord.getBpmnElementType() == BpmnElementType.PROCESS
+          && currentElementInstanceRecord.hasParentProcess()) {
+        throw new TerminatedChildProcessException(
+            ERROR_MESSAGE_CHILD_PROCESS_INSTANCE_TERMINATED.formatted(
+                currentElementInstanceRecord.getBpmnProcessId()));
+      }
+
       final var flowScopeKey = currentElementInstance.getValue().getFlowScopeKey();
 
       terminateElement(currentElementInstance, sideEffects);
@@ -576,4 +600,20 @@ public final class ProcessInstanceModificationProcessor
   }
 
   private record Rejection(RejectionType type, String reason) {}
+
+  /**
+   * Exception that can be thrown when child instance is being modified. If all active element
+   * instances of this process are being terminated this exception is thrown. The reason for this is
+   * that it's unclear what the expected behavior of the parent process would be in these cases.
+   * Terminating the parent process could be unintended. Creating an incident is an alternative, but
+   * there would be no way to resolve this incident.
+   *
+   * <p>In order to terminate the child process a modification should be performed on the parent
+   * process instead.
+   */
+  private static class TerminatedChildProcessException extends RuntimeException {
+    TerminatedChildProcessException(final String message) {
+      super(message);
+    }
+  }
 }
