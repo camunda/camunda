@@ -69,6 +69,15 @@ public final class GrpcClientRule extends ExternalResource {
     this.configurator = configurator;
   }
 
+  /**
+   * This is a hacky way to allow us to use this class in {@link
+   * io.camunda.zeebe.it.clustering.ClusteringRuleExtension}
+   */
+  public GrpcClientRule(final ZeebeClient client) {
+    this.client = client;
+    configurator = config -> {};
+  }
+
   @Override
   public void before() {
     startTime = System.currentTimeMillis();

@@ -102,7 +102,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public final class ClusteringRule extends ExternalResource {
+public class ClusteringRule extends ExternalResource {
 
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
@@ -360,7 +360,7 @@ public final class ClusteringRule extends ExternalResource {
     return brokerCfg;
   }
 
-  private File getBrokerBase(final int nodeId) {
+  protected File getBrokerBase(final int nodeId) {
     final var base = new File(temporaryFolder.getRoot(), String.valueOf(nodeId));
     if (!base.exists()) {
       base.mkdir();
@@ -682,6 +682,10 @@ public final class ClusteringRule extends ExternalResource {
 
   public InetSocketAddress getGatewayAddress() {
     return gateway.getGatewayCfg().getNetwork().toSocketAddress();
+  }
+
+  public Gateway getGateway() {
+    return gateway;
   }
 
   public ZeebeClient getClient() {
