@@ -70,7 +70,7 @@
     <version.netty>4.1.82.Final</version.netty>
     <version.objenesis>3.3</version.objenesis>
     <version.prometheus>0.16.0</version.prometheus>
-    <version.protobuf>3.21.5</version.protobuf>
+    <version.protobuf>3.21.6</version.protobuf>
     <version.protobuf-common>2.9.2</version.protobuf-common>
     <version.micrometer>1.9.4</version.micrometer>
     <version.rocksdbjni>7.5.3</version.rocksdbjni>
@@ -88,7 +88,7 @@
     <version.feel-scala>1.15.1</version.feel-scala>
     <version.dmn-scala>1.7.3</version.dmn-scala>
     <version.rest-assured>5.1.1</version.rest-assured>
-    <version.spring>5.3.22</version.spring>
+    <version.spring>5.3.23</version.spring>
     <version.spring-boot>2.7.3</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.3.0</version.kryo>
@@ -133,7 +133,7 @@
     <plugin.version.resources>3.3.0</plugin.version.resources>
     <plugin.version.revapi>0.14.7</plugin.version.revapi>
     <plugin.version.scala>4.7.1</plugin.version.scala>
-    <plugin.version.shade>3.3.0</plugin.version.shade>
+    <plugin.version.shade>3.4.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.7.2.0</plugin.version.spotbugs>
     <plugin.version.surefire>3.0.0-M7</plugin.version.surefire>
