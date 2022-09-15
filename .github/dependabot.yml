@@ -5,6 +5,8 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+      time: "03:00"
+      timezone: "UTC"
     commit-message:
       prefix: "deps(maven): "
     labels:
@@ -20,6 +22,8 @@ updates:
     directory: "clients/go"
     schedule:
       interval: "daily"
+      time: "03:00"
+      timezone: "UTC"
     commit-message:
       prefix: "deps(go): "
     labels:
@@ -31,6 +35,8 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+      time: "03:00"
+      timezone: "UTC"
     commit-message:
       prefix: "deps(.github): "
     labels:
