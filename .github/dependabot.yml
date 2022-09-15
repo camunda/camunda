@@ -48,6 +48,7 @@ updates:
     labels:
       - "dependencies"
 
+
   - package-ecosystem: "docker"
       directory: "/"
       schedule:
