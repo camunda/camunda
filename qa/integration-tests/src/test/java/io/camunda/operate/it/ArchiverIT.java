@@ -254,6 +254,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
         .waitUntil()
         .processInstanceIsStarted()
         .decisionInstancesAreCreated(2)
+        .processInstanceIsCompleted()
         .getProcessInstanceKey();
 
     resetZeebeTime();
