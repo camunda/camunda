@@ -18,6 +18,7 @@ import org.agrona.collections.IntArrayList;
 
 public final class BrokerClusterStateImpl implements BrokerClusterState {
 
+  private static final Long TERM_NONE = -1L;
   private final Int2IntHashMap partitionLeaders;
   private final Int2ObjectHashMap<Long> partitionLeaderTerms;
   private final Int2ObjectHashMap<Set<Integer>> partitionFollowers;
@@ -67,7 +68,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
   }
 
   public void setPartitionLeader(final int partitionId, final int leaderId, final long term) {
-    if (partitionLeaderTerms.getOrDefault(partitionId, -1L) <= term) {
+    if (partitionLeaderTerms.getOrDefault(partitionId, TERM_NONE) <= term) {
       partitionLeaders.put(partitionId, leaderId);
       partitionLeaderTerms.put(partitionId, Long.valueOf(term));
       final Set<Integer> followers = partitionFollowers.get(partitionId);
