@@ -11,7 +11,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import java.util.Optional;
 
-record PartitionBackupStatus(
+public record PartitionBackupStatus(
     int partitionId,
     BackupStatusCode status,
     Optional<PartitionBackupDescriptor> description,
