@@ -5,40 +5,38 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.gateway;
+package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
-import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Configuration;
 
-@Component
-final class BrokerClientComponent {
-  final GatewayCfg config;
-  final AtomixCluster atomixCluster;
-  final ActorScheduler actorScheduler;
+@Configuration(proxyBeanMethods = false)
+final class BrokerClientConfiguration {
+  private final BrokerCfg config;
+  private final AtomixCluster cluster;
+  private final ActorScheduler scheduler;
 
   @Autowired
-  BrokerClientComponent(
-      final GatewayCfg config,
-      final AtomixCluster atomixCluster,
-      final ActorScheduler actorScheduler) {
+  BrokerClientConfiguration(
+      final BrokerCfg config, final AtomixCluster cluster, final ActorScheduler scheduler) {
     this.config = config;
-    this.atomixCluster = atomixCluster;
-    this.actorScheduler = actorScheduler;
+    this.cluster = cluster;
+    this.scheduler = scheduler;
   }
 
-  @Bean
+  @Bean(destroyMethod = "close")
   BrokerClient brokerClient() {
     return new BrokerClientImpl(
-        config.getCluster().getRequestTimeout(),
-        atomixCluster.getMessagingService(),
-        atomixCluster.getMembershipService(),
-        atomixCluster.getEventService(),
-        actorScheduler);
+        config.getGateway().getCluster().getRequestTimeout(),
+        cluster.getMessagingService(),
+        cluster.getMembershipService(),
+        cluster.getEventService(),
+        scheduler);
   }
 }

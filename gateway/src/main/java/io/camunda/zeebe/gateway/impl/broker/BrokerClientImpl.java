@@ -18,8 +18,6 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
-import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import java.time.Duration;
@@ -39,7 +37,7 @@ public final class BrokerClientImpl implements BrokerClient {
   private final AtomixClientTransportAdapter atomixTransportAdapter;
 
   public BrokerClientImpl(
-      final GatewayCfg configuration,
+      final Duration requestTimeout,
       final MessagingService messagingService,
       final ClusterMembershipService membershipService,
       final ClusterEventService eventService,
@@ -47,7 +45,6 @@ public final class BrokerClientImpl implements BrokerClient {
     this.eventService = eventService;
     this.schedulingService = schedulingService;
 
-    final ClusterCfg clusterCfg = configuration.getCluster();
     topologyManager = new BrokerTopologyManagerImpl(membershipService::getMembers);
     membershipService.addListener(topologyManager);
     membershipService
@@ -61,7 +58,7 @@ public final class BrokerClientImpl implements BrokerClient {
             atomixTransportAdapter,
             topologyManager,
             new RoundRobinDispatchStrategy(topologyManager),
-            clusterCfg.getRequestTimeout());
+            requestTimeout);
   }
 
   @Override

@@ -54,7 +54,7 @@ public final class GatewayIntegrationTest {
     actorScheduler.start();
     client =
         new BrokerClientImpl(
-            configuration,
+            configuration.getCluster().getRequestTimeout(),
             clusterServices.getMessagingService(),
             clusterServices.getMembershipService(),
             clusterServices.getEventService(),

@@ -57,7 +57,7 @@ class UnavailableBrokersTest {
 
     final var brokerClient =
         new BrokerClientImpl(
-            config,
+            config.getCluster().getRequestTimeout(),
             cluster.getMessagingService(),
             cluster.getMembershipService(),
             cluster.getEventService(),

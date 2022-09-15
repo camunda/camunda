@@ -11,6 +11,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.FileUtil;
@@ -47,6 +48,7 @@ public class StandaloneBroker
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorScheduler actorScheduler;
   private final AtomixCluster cluster;
+  private final BrokerClient brokerClient;
 
   private Broker broker;
 
@@ -56,12 +58,14 @@ public class StandaloneBroker
       final WorkingDirectory workingDirectory,
       final SpringBrokerBridge springBrokerBridge,
       final ActorScheduler actorScheduler,
-      final AtomixCluster cluster) {
+      final AtomixCluster cluster,
+      final BrokerClient brokerClient) {
     this.configuration = configuration;
     this.workingDirectory = workingDirectory;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
     this.cluster = cluster;
+    this.brokerClient = brokerClient;
   }
 
   public static void main(final String[] args) {
@@ -84,6 +88,7 @@ public class StandaloneBroker
     final SystemContext systemContext = new SystemContext(configuration, actorScheduler, cluster);
 
     actorScheduler.start();
+    brokerClient.start();
     broker = new Broker(systemContext, springBrokerBridge);
     broker.start();
   }
