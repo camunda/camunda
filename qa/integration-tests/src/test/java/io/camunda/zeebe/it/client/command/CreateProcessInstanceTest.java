@@ -36,9 +36,9 @@ public final class CreateProcessInstanceTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   private String processId;
+  private String processId2;
   private long firstProcessDefinitionKey;
   private long secondProcessDefinitionKey;
-  private long thirdProcessDefinitionKey;
 
   @Before
   public void deployProcess() {
@@ -49,23 +49,24 @@ public final class CreateProcessInstanceTest {
     secondProcessDefinitionKey =
         CLIENT_RULE.deployProcess(
             Bpmn.createExecutableProcess(processId)
-                .eventSubProcess(
-                    "event-sub",
-                    e ->
-                        e.startEvent("msg-start-event")
-                            .message(msg -> msg.name("msg").zeebeCorrelationKey("=missing_var")))
-                .startEvent("v3")
-                .endEvent("end")
-                .done());
-    thirdProcessDefinitionKey =
-        CLIENT_RULE.deployProcess(
-            Bpmn.createExecutableProcess(processId)
                 .startEvent("v2")
                 .parallelGateway()
                 .endEvent("end1")
                 .moveToLastGateway()
                 .endEvent("end2")
                 .done());
+
+    processId2 = "%s-2".formatted(helper.getBpmnProcessId());
+    CLIENT_RULE.deployProcess(
+        Bpmn.createExecutableProcess(processId2)
+            .eventSubProcess(
+                "event-sub",
+                e ->
+                    e.startEvent("msg-start-event")
+                        .message(msg -> msg.name("msg").zeebeCorrelationKey("=missing_var")))
+            .startEvent("v3")
+            .endEvent("end")
+            .done());
   }
 
   @Test
@@ -82,8 +83,8 @@ public final class CreateProcessInstanceTest {
 
     // then
     assertThat(processInstance.getBpmnProcessId()).isEqualTo(processId);
-    assertThat(processInstance.getVersion()).isEqualTo(3);
-    assertThat(processInstance.getProcessDefinitionKey()).isEqualTo(thirdProcessDefinitionKey);
+    assertThat(processInstance.getVersion()).isEqualTo(2);
+    assertThat(processInstance.getProcessDefinitionKey()).isEqualTo(secondProcessDefinitionKey);
   }
 
   @Test
@@ -245,7 +246,7 @@ public final class CreateProcessInstanceTest {
         CLIENT_RULE
             .getClient()
             .newCreateInstanceCommand()
-            .processDefinitionKey(thirdProcessDefinitionKey)
+            .processDefinitionKey(secondProcessDefinitionKey)
             .startBeforeElement("end1")
             .startBeforeElement("end2")
             .send()
@@ -261,7 +262,8 @@ public final class CreateProcessInstanceTest {
         CLIENT_RULE
             .getClient()
             .newCreateInstanceCommand()
-            .processDefinitionKey(secondProcessDefinitionKey)
+            .bpmnProcessId(processId2)
+            .latestVersion()
             // without variables
             .startBeforeElement("end")
             .send();
@@ -271,7 +273,7 @@ public final class CreateProcessInstanceTest {
         .hasMessageContaining(
             """
             Expected to subscribe to catch event(s) of \
-            'process-shouldRejectCreateWithStartInstructions' but failed to evaluate expression \
+            'process-shouldRejectCreateWithStartInstructions-2' but failed to evaluate expression \
             'missing_var': no variable found for name 'missing_var'""");
   }
 }
