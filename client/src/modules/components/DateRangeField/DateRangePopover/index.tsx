@@ -28,7 +28,7 @@ const DateRangePopover: React.FC<Props> = ({
   return (
     <Popover
       referenceElement={referenceElement}
-      offsetOptions={{offset: [0, 10]}}
+      offsetOptions={[10]}
       placement="right"
       onOutsideClick={onOutsideClick}
     >

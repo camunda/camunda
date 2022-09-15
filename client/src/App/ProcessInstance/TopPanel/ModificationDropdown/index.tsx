@@ -40,13 +40,13 @@ const ModificationDropdown: React.FC<Props> = observer(
     return (
       <Popover
         referenceElement={selectedFlowNodeRef}
-        offsetOptions={{
-          offset: [0, 10],
-        }}
-        flipOptions={{
-          fallbackPlacements: ['top', 'left', 'right'],
-          boundary: diagramCanvasRef?.current ?? undefined,
-        }}
+        offsetOptions={[10]}
+        flipOptions={[
+          {
+            fallbackPlacements: ['top', 'left', 'right'],
+            boundary: diagramCanvasRef?.current ?? undefined,
+          },
+        ]}
       >
         <Title>Flow Node Modifications</Title>
         <Options>

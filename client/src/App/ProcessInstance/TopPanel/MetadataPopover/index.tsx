@@ -66,12 +66,12 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   return (
     <Popover
       referenceElement={selectedFlowNodeRef}
-      offsetOptions={{
-        offset: [0, 10],
-      }}
-      flipOptions={{
-        fallbackPlacements: ['top', 'right', 'left'],
-      }}
+      offsetOptions={[10]}
+      flipOptions={[
+        {
+          fallbackPlacements: ['top', 'right', 'left'],
+        },
+      ]}
     >
       {metaData.instanceCount !== null && metaData.instanceCount > 1 && (
         <>

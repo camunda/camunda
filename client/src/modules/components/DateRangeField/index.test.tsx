@@ -23,7 +23,7 @@ describe('Date Range', () => {
   it('should render readonly input field', async () => {
     render(
       <DateRangeField
-        label={'Start Date Range'}
+        label="Start Date Range"
         fromDateKey="startDateAfter"
         toDateKey="startDateBefore"
       />,
@@ -38,7 +38,7 @@ describe('Date Range', () => {
   it('should close popover on cancel click', async () => {
     const {user} = render(
       <DateRangeField
-        label={'Start Date Range'}
+        label="Start Date Range"
         fromDateKey="startDateAfter"
         toDateKey="startDateBefore"
       />,
@@ -58,7 +58,7 @@ describe('Date Range', () => {
   it('should close popover on outside click', async () => {
     const {user} = render(
       <DateRangeField
-        label={'Start Date Range'}
+        label="Start Date Range"
         fromDateKey="startDateAfter"
         toDateKey="startDateBefore"
       />,
@@ -77,7 +77,7 @@ describe('Date Range', () => {
   it('should not close popover on inside click', async () => {
     const {user} = render(
       <DateRangeField
-        label={'Start Date Range'}
+        label="Start Date Range"
         fromDateKey="startDateAfter"
         toDateKey="startDateBefore"
       />,
@@ -94,7 +94,7 @@ describe('Date Range', () => {
   it('should apply from and to dates', async () => {
     const {user} = render(
       <DateRangeField
-        label={'Start Date Range'}
+        label="Start Date Range"
         fromDateKey="startDateAfter"
         toDateKey="startDateBefore"
       />,

@@ -515,22 +515,17 @@ const theme = {
             backgroundColor: DARK_COLORS.ui03,
           },
         },
-        diagram: {
-          popover: {
-            backgroundColor: DARK_COLORS.ui04,
-            borderColor: DARK_COLORS.ui06,
-            modificationsDropdown: {
-              color: DARK_COLORS.linkDefault,
-            },
-            arrowStyle: {
-              before: {
-                borderColor: DARK_COLORS.ui06,
-              },
-              after: {
-                borderColor: DARK_COLORS.ui04,
-              },
-            },
+        popover: {
+          backgroundColor: DARK_COLORS.ui04,
+          borderColor: DARK_COLORS.ui06,
+          modificationsDropdown: {
+            color: DARK_COLORS.linkDefault,
           },
+          arrowStyle: {
+            borderColor: DARK_COLORS.ui06,
+          },
+        },
+        diagram: {
           modificationsBadgeOverlay: {
             backgroundColor: SEMANTIC_COLORS.primaryButton04,
           },
@@ -992,9 +987,7 @@ const theme = {
             selection: `0 2px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.5)}`,
           },
         },
-        diagram: {
-          popover: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.6)}`,
-        },
+        popover: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.6)}`,
         dropdown: {
           menu: {
             ul: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.6)}`,
@@ -1432,22 +1425,17 @@ const theme = {
             backgroundColor: LIGHT_COLORS.ui02,
           },
         },
-        diagram: {
-          popover: {
-            backgroundColor: LIGHT_COLORS.ui02,
-            borderColor: LIGHT_COLORS.ui05,
-            modificationsDropdown: {
-              color: LIGHT_COLORS.linkDefault,
-            },
-            arrowStyle: {
-              before: {
-                borderColor: LIGHT_COLORS.ui05,
-              },
-              after: {
-                borderColor: LIGHT_COLORS.ui02,
-              },
-            },
+        popover: {
+          backgroundColor: LIGHT_COLORS.ui02,
+          borderColor: LIGHT_COLORS.ui05,
+          modificationsDropdown: {
+            color: LIGHT_COLORS.linkDefault,
           },
+          arrowStyle: {
+            borderColor: LIGHT_COLORS.ui05,
+          },
+        },
+        diagram: {
           modificationsBadgeOverlay: {
             backgroundColor: SEMANTIC_COLORS.primaryButton04,
           },
@@ -1908,9 +1896,7 @@ const theme = {
             selection: `0 2px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.5)}`,
           },
         },
-        diagram: {
-          popover: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
-        },
+        popover: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
         dropdown: {
           menu: {
             ul: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,

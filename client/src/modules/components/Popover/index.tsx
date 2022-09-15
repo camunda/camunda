@@ -5,20 +5,39 @@
  * except in compliance with the proprietary license.
  */
 
-import {usePopper} from 'react-popper';
+import {
+  Side,
+  useFloating,
+  offset,
+  flip,
+  arrow,
+  Placement,
+} from '@floating-ui/react-dom';
 import {createPortal} from 'react-dom';
-import {useLayoutEffect, useRef, useState} from 'react';
-import {Container, Arrow} from './styled';
-import offsetModifier from '@popperjs/core/lib/modifiers/offset';
-import flipModifier from '@popperjs/core/lib/modifiers/flip';
-import {Placement} from '@popperjs/core';
+import {useLayoutEffect, useRef} from 'react';
+import {Container, Arrow, getArrowPosition} from './styled';
+import {isNil} from 'lodash';
+
+function getSide(placement: Placement) {
+  const [side] = placement.split('-');
+
+  return side as Side;
+}
+
+function getValueWhenValidNumber(value: number | undefined | null) {
+  if (isNil(value) || isNaN(value)) {
+    return 0;
+  }
+
+  return value;
+}
 
 type Props = {
   referenceElement?: Element | null;
   children: React.ReactNode;
   placement?: Placement;
-  flipOptions?: typeof flipModifier['options'];
-  offsetOptions?: typeof offsetModifier['options'];
+  flipOptions?: Parameters<typeof flip>;
+  offsetOptions?: Parameters<typeof offset>;
   className?: string;
   onOutsideClick?: (event: MouseEvent) => void;
 };
@@ -27,13 +46,29 @@ const Popover: React.FC<Props> = ({
   referenceElement,
   children,
   placement = 'bottom',
-  flipOptions = {},
-  offsetOptions = {},
+  flipOptions = [],
+  offsetOptions = [],
   className,
   onOutsideClick,
 }) => {
-  const popoverElementRef = useRef<HTMLDivElement | null>(null);
-  const [arrow, setArrow] = useState<HTMLElement | null>(null);
+  const arrowElementRef = useRef<HTMLDivElement | null>(null);
+  const {
+    floating,
+    x,
+    y,
+    strategy,
+    reference,
+    middlewareData,
+    placement: actualPlacement,
+    refs: {floating: popoverElementRef},
+  } = useFloating({
+    placement,
+    middleware: [
+      offset(...offsetOptions),
+      flip(...flipOptions),
+      arrow({element: arrowElementRef}),
+    ],
+  });
 
   useLayoutEffect(() => {
     const handleClick = (event: MouseEvent) => {
@@ -51,46 +86,44 @@ const Popover: React.FC<Props> = ({
     return () => {
       document.body?.removeEventListener('click', handleClick, true);
     };
-  }, [onOutsideClick]);
+  }, [onOutsideClick, popoverElementRef]);
 
-  const {styles, attributes} = usePopper(
-    referenceElement,
-    popoverElementRef.current,
-    {
-      placement,
-      modifiers: [
-        {
-          name: 'offset',
-          options: offsetOptions,
-        },
-        {
-          name: 'flip',
-          options: flipOptions,
-        },
-        {
-          name: 'arrow',
-          options: {
-            element: arrow,
-          },
-        },
-      ],
+  useLayoutEffect(() => {
+    if (referenceElement) {
+      reference(referenceElement);
     }
-  );
+  }, [referenceElement, reference]);
 
-  return referenceElement !== null
-    ? createPortal(
+  const {x: arrowX, y: arrowY} = middlewareData.arrow ?? {};
+
+  return referenceElement === null
+    ? null
+    : createPortal(
         <Container
-          ref={popoverElementRef}
-          style={styles.popper}
           className={className}
-          {...attributes.popper}
+          ref={floating}
+          style={{
+            position: strategy,
+            top: getValueWhenValidNumber(y),
+            left: getValueWhenValidNumber(x),
+          }}
+          data-testid="popover"
         >
-          <Arrow ref={setArrow} style={styles.arrow} {...attributes.arrow} />
-          <div data-testid="popover">{children}</div>
+          <Arrow
+            ref={arrowElementRef}
+            style={{
+              ...getArrowPosition({
+                side: getSide(actualPlacement),
+                x: getValueWhenValidNumber(arrowX),
+                y: getValueWhenValidNumber(arrowY),
+              }),
+            }}
+            $side={getSide(actualPlacement)}
+          />
+          <div>{children}</div>
         </Container>,
         document.body
-      )
-    : null;
+      );
 };
 
 export {Popover};

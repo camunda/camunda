@@ -44,7 +44,7 @@ const Divider = styled.hr`
     margin: 12px 0 17px 0;
     height: 1px;
     border: none;
-    border-top: solid 1px ${theme.colors.modules.diagram.popover.borderColor};
+    border-top: solid 1px ${theme.colors.modules.popover.borderColor};
   `}
 `;
 

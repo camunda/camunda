@@ -45,7 +45,7 @@ const Options = styled.div`
 
 const Option = styled.button`
   ${({theme}) => {
-    const colors = theme.colors.modules.diagram.popover;
+    const colors = theme.colors.modules.popover;
 
     return css`
       display: flex;

@@ -52,7 +52,7 @@ type Props = {
   children?: React.ReactNode;
 };
 
-const Wrapper = ({children}: Props) => {
+const Wrapper: React.FC<Props> = ({children}) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/processes/1']}>

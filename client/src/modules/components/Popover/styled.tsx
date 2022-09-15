@@ -7,22 +7,92 @@
 
 import styled, {css} from 'styled-components';
 import {styles} from '@carbon/elements';
+import type {Side} from '@floating-ui/react-dom';
 
-const Arrow = styled.div`
-  &:before,
-  &:after {
-    position: absolute;
-    content: ' ';
-    pointer-events: none;
-    border: 9px solid transparent;
+const ARROW_SIZE = 18;
+
+function getArrowPosition({
+  side,
+  x,
+  y,
+}: {
+  side: Side;
+  x: number;
+  y: number;
+}):
+  | {bottom: number; left: number}
+  | {top: number; right: number}
+  | {top: number; left: number} {
+  if (side === 'top') {
+    return {
+      left: x,
+      bottom: -(ARROW_SIZE / 2),
+    };
   }
+
+  if (side === 'bottom') {
+    return {
+      left: x,
+      top: -(ARROW_SIZE / 2),
+    };
+  }
+
+  if (side === 'left') {
+    return {
+      top: y,
+      right: -(ARROW_SIZE / 2),
+    };
+  }
+
+  return {
+    top: y,
+    left: -(ARROW_SIZE / 2),
+  };
+}
+
+type Props = {
+  $side: Side;
+};
+
+const Arrow = styled.div<Props>`
+  ${({theme, $side}) => {
+    const colors = theme.colors.modules.popover;
+
+    return css`
+      position: absolute;
+      width: ${ARROW_SIZE}px;
+      height: ${ARROW_SIZE}px;
+      background-color: ${colors.backgroundColor};
+      transform: rotate(45deg);
+
+      ${$side === 'top' &&
+      css`
+        border-bottom: 1px solid ${colors.arrowStyle.borderColor};
+        border-right: 1px solid ${colors.backgroundColor};
+      `}
+      ${$side === 'bottom' &&
+      css`
+        border-left: 1px solid ${colors.arrowStyle.borderColor};
+        border-top: 1px solid ${colors.backgroundColor};
+      `}
+      ${$side === 'right' &&
+      css`
+        border-bottom: 1px solid ${colors.arrowStyle.borderColor};
+        border-left: 1px solid ${colors.backgroundColor};
+      `}
+      ${$side === 'left' &&
+      css`
+        border-right: 1px solid ${colors.arrowStyle.borderColor};
+        border-top: 1px solid ${colors.backgroundColor};
+      `}
+    `;
+  }}
 `;
 
 const Container = styled.div`
   ${({theme}) => {
-    const arrowStyle = theme.colors.modules.diagram.popover.arrowStyle;
-    const colors = theme.colors.modules.diagram.popover;
-    const shadow = theme.shadows.modules.diagram.popover;
+    const colors = theme.colors.modules.popover;
+    const shadow = theme.shadows.modules.popover;
 
     return css`
       background-color: ${colors.backgroundColor};
@@ -33,60 +103,8 @@ const Container = styled.div`
       font-size: 12px;
       border-radius: 3px;
       cursor: auto;
-
-      &[data-popper-reference-hidden='true'] {
-        visibility: hidden;
-      }
-
-      &[data-popper-placement^='top'] > ${Arrow} {
-        bottom: 1px;
-        &:before {
-          left: calc(50% - 9px);
-          border-top-color: ${arrowStyle.before.borderColor};
-        }
-        &:after {
-          left: calc(50% - 8px);
-          border-top-color: ${arrowStyle.after.borderColor};
-        }
-      }
-
-      &[data-popper-placement^='bottom'] > ${Arrow} {
-        top: -17px;
-        &:before {
-          left: calc(50% - 9px);
-          border-bottom-color: ${arrowStyle.before.borderColor};
-        }
-        &:after {
-          left: calc(50% - 8px);
-          border-bottom-color: ${arrowStyle.after.borderColor};
-        }
-      }
-
-      &[data-popper-placement^='right'] > ${Arrow} {
-        left: -17px;
-        &:before {
-          top: calc(50% - 9px);
-          border-right-color: ${arrowStyle.before.borderColor};
-        }
-        &:after {
-          top: calc(50% - 8px);
-          border-right-color: ${arrowStyle.after.borderColor};
-        }
-      }
-
-      &[data-popper-placement^='left'] > ${Arrow} {
-        right: 1px;
-        &:before {
-          top: calc(50% - 9px);
-          border-left-color: ${arrowStyle.before.borderColor};
-        }
-        &:after {
-          top: calc(50% - 8px);
-          border-left-color: ${arrowStyle.after.borderColor};
-        }
-      }
     `;
   }}
 `;
 
-export {Container, Arrow};
+export {Container, Arrow, getArrowPosition};
