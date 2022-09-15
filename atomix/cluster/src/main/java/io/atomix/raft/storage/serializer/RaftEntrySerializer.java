@@ -18,7 +18,6 @@ package io.atomix.raft.storage.serializer;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
-import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.function.BiFunction;
@@ -27,25 +26,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 public interface RaftEntrySerializer {
-
-  default BufferWriter createRecordDataWriter(final long term, final RaftEntry entry) {
-    if (entry instanceof final ApplicationEntry applicationEntry) {
-      return new FunctionalRecordDataWriter(
-          () -> getApplicationEntrySerializedLength(applicationEntry),
-          (buffer, offset) -> writeApplicationEntry(term, applicationEntry, buffer, offset));
-    } else if (entry instanceof final ConfigurationEntry configurationEntry) {
-      return new FunctionalRecordDataWriter(
-          () -> getConfigurationEntrySerializedLength(configurationEntry),
-          (buffer, offset) -> writeConfigurationEntry(term, configurationEntry, buffer, offset));
-    } else if (entry instanceof final InitialEntry initialEntry) {
-      return new FunctionalRecordDataWriter(
-          this::getInitialEntrySerializedLength,
-          (buffer, offset) -> writeInitialEntry(term, initialEntry, buffer, offset));
-    } else {
-      throw new IllegalArgumentException(
-          String.format("Unsupported raft entry type: %s.", entry.getClass()));
-    }
-  }
 
   /**
    * Determines the length in bytes of a serialized application entry.
@@ -113,9 +93,11 @@ public interface RaftEntrySerializer {
    */
   RaftLogEntry readRaftLogEntry(DirectBuffer buffer);
 
-  record FunctionalRecordDataWriter(
+  /** A buffer writer based on serializer logic provided as functions. */
+  record SerializedBufferWriterAdapter(
       Supplier<Integer> getRecordLengthFunction,
-      BiFunction<MutableDirectBuffer, Integer, Integer> writeFunction) implements BufferWriter {
+      BiFunction<MutableDirectBuffer, Integer, Integer> writeFunction)
+      implements BufferWriter {
 
     @Override
     public int getLength() {

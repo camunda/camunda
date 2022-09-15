@@ -138,7 +138,7 @@ public final class RaftLog implements Closeable {
     final JournalRecord journalRecord =
         journal.append(
             entry.getLowestAsqn().orElse(ASQN_IGNORE),
-            serializer.createRecordDataWriter(entry.term(), entry.entry()));
+            entry.entry().toSerializable(entry.term(), serializer));
 
     lastAppendedEntry = new IndexedRaftLogEntryImpl(entry.term(), entry.entry(), journalRecord);
     return lastAppendedEntry;

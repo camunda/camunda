@@ -15,6 +15,9 @@
  */
 package io.atomix.raft.storage.log.entry;
 
+import io.atomix.raft.storage.serializer.RaftEntrySerializer;
+import io.atomix.raft.storage.serializer.RaftEntrySerializer.SerializedBufferWriterAdapter;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -30,5 +33,12 @@ public record ApplicationEntry(long lowestPosition, long highestPosition, Direct
   public ApplicationEntry(
       final long lowestPosition, final long highestPosition, final ByteBuffer data) {
     this(lowestPosition, highestPosition, new UnsafeBuffer(data));
+  }
+
+  @Override
+  public BufferWriter toSerializable(final long term, final RaftEntrySerializer serializer) {
+    return new SerializedBufferWriterAdapter(
+        () -> serializer.getApplicationEntrySerializedLength(this),
+        (buffer, offset) -> serializer.writeApplicationEntry(term, this, buffer, offset));
   }
 }
