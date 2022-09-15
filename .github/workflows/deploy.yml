@@ -88,7 +88,7 @@ jobs:
     steps:
       - id: slack-notify
         name: Send slack notification
-        uses: slackapi/slack-github-action@v1.21.0
+        uses: slackapi/slack-github-action@v1.22.0
         with:
           # For posting a rich message using Block Kit
           payload: |
