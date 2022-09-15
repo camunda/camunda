@@ -16,6 +16,9 @@ type FlowNodeModificationPayload =
       scopeId: string;
       flowNode: {id: string; name: string};
       affectedTokenCount: number;
+      parentScopeIds: {
+        [key: string]: string;
+      };
     }
   | {
       operation: 'CANCEL_TOKEN';
@@ -28,6 +31,9 @@ type FlowNodeModificationPayload =
       affectedTokenCount: number;
       targetFlowNode: {id: string; name: string};
       scopeIds: string[];
+      parentScopeIds: {
+        [key: string]: string;
+      };
     };
 
 type VariableModificationPayload = {
@@ -82,6 +88,22 @@ class Modifications {
     this.state.sourceFlowNodeIdForMoveOperation = sourceFlowNodeId;
   };
 
+  generateParentScopeIds = (targetFlowNodeId: string) => {
+    const flowNode =
+      processInstanceDetailsDiagramStore.getFlowNode(targetFlowNodeId);
+
+    const parentFlowNodeIds =
+      processInstanceDetailsDiagramStore.getFlowNodeParents(flowNode);
+
+    return parentFlowNodeIds.reduce<{[key: string]: string}>(
+      (parentFlowNodeScopes, flowNodeId) => {
+        parentFlowNodeScopes[flowNodeId] = generateUniqueID();
+        return parentFlowNodeScopes;
+      },
+      {}
+    );
+  };
+
   finishMovingToken = (targetFlowNodeId?: string) => {
     if (
       targetFlowNodeId !== undefined &&
@@ -114,6 +136,7 @@ class Modifications {
           scopeIds: Array.from({
             length: newScopeCount,
           }).map(() => generateUniqueID()),
+          parentScopeIds: this.generateParentScopeIds(targetFlowNodeId),
         },
       });
     } else {

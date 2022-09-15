@@ -161,6 +161,22 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
     return this.getMetaData(flowNodeId)?.name || flowNodeId;
   };
 
+  getFlowNode = (flowNodeId: string) => {
+    const flowNodes = getFlowNodes(this.state.diagramModel?.bpmnElements);
+    return flowNodes.find((flowNode: any) => flowNode.id === flowNodeId);
+  };
+
+  getFlowNodeParents = (flowNode?: BusinessObject): string[] => {
+    if (
+      flowNode?.$parent === undefined ||
+      flowNode.$parent.$type === 'bpmn:Process'
+    ) {
+      return [];
+    }
+
+    return [flowNode.$parent.id, ...this.getFlowNodeParents(flowNode.$parent)];
+  };
+
   get flowNodes() {
     const allFlowNodes: BusinessObject[] = getFlowNodes(
       this.state.diagramModel?.bpmnElements

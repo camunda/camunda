@@ -10,6 +10,7 @@ import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
+import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {flowNodeStatesStore} from './flowNodeStates';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 
@@ -39,6 +40,7 @@ describe('stores/modifications', () => {
         scopeId: uniqueID,
         flowNode: {id: '1', name: 'flow-node-1'},
         affectedTokenCount: 1,
+        parentScopeIds: {},
       },
     });
 
@@ -62,6 +64,7 @@ describe('stores/modifications', () => {
         targetFlowNode: {id: '4', name: 'flow-node-4'},
         affectedTokenCount: 2,
         scopeIds: [uniqueIDForMove],
+        parentScopeIds: {},
       },
     });
 
@@ -73,6 +76,7 @@ describe('stores/modifications', () => {
         scopeId: uniqueID,
         flowNode: {id: '1', name: 'flow-node-1'},
         affectedTokenCount: 1,
+        parentScopeIds: {},
       },
       {
         operation: 'CANCEL_TOKEN',
@@ -85,6 +89,7 @@ describe('stores/modifications', () => {
         targetFlowNode: {id: '4', name: 'flow-node-4'},
         affectedTokenCount: 2,
         scopeIds: [uniqueIDForMove],
+        parentScopeIds: {},
       },
     ]);
 
@@ -93,6 +98,7 @@ describe('stores/modifications', () => {
       operation: 'ADD_TOKEN',
       scopeId: '1',
       affectedTokenCount: 1,
+      parentScopeIds: {},
     });
     expect(modificationsStore.state.modifications.length).toEqual(3);
     modificationsStore.removeFlowNodeModification({
@@ -100,6 +106,7 @@ describe('stores/modifications', () => {
       operation: 'ADD_TOKEN',
       scopeId: '1',
       affectedTokenCount: 1,
+      parentScopeIds: {},
     });
     expect(modificationsStore.state.modifications.length).toEqual(3);
     modificationsStore.removeFlowNodeModification({
@@ -107,6 +114,7 @@ describe('stores/modifications', () => {
       operation: 'ADD_TOKEN',
       scopeId: '2',
       affectedTokenCount: 1,
+      parentScopeIds: {},
     });
     expect(modificationsStore.state.modifications.length).toEqual(3);
     modificationsStore.removeFlowNodeModification({
@@ -120,6 +128,7 @@ describe('stores/modifications', () => {
       operation: 'ADD_TOKEN',
       affectedTokenCount: 1,
       scopeId: uniqueID,
+      parentScopeIds: {},
     });
     expect(modificationsStore.state.modifications.length).toEqual(1);
 
@@ -130,6 +139,7 @@ describe('stores/modifications', () => {
         targetFlowNode: {id: '4', name: 'flow-node-4'},
         affectedTokenCount: 2,
         scopeIds: [uniqueIDForMove],
+        parentScopeIds: {},
       },
     ]);
   });
@@ -208,6 +218,7 @@ describe('stores/modifications', () => {
         scopeId: uniqueID,
         flowNode: {id: '1', name: 'flow-node-1'},
         affectedTokenCount: 1,
+        parentScopeIds: {},
       },
     });
 
@@ -238,6 +249,7 @@ describe('stores/modifications', () => {
         flowNode: {id: '1', name: 'flow-node-1'},
         affectedTokenCount: 1,
         scopeId: uniqueID,
+        parentScopeIds: {},
       },
     });
 
@@ -254,6 +266,7 @@ describe('stores/modifications', () => {
         scopeId: generateUniqueID(),
         flowNode: {id: 'flowNode1', name: 'flow-node-1'},
         affectedTokenCount: 1,
+        parentScopeIds: {},
       },
     });
 
@@ -264,6 +277,7 @@ describe('stores/modifications', () => {
         scopeId: generateUniqueID(),
         flowNode: {id: 'flowNode1', name: 'flow-node-1'},
         affectedTokenCount: 1,
+        parentScopeIds: {},
       },
     });
 
@@ -284,6 +298,7 @@ describe('stores/modifications', () => {
         targetFlowNode: {id: 'flowNode4', name: 'flow-node-4'},
         affectedTokenCount: 3,
         scopeIds: ['1', '2', '3'],
+        parentScopeIds: {},
       },
     });
 
@@ -294,6 +309,7 @@ describe('stores/modifications', () => {
         scopeId: generateUniqueID(),
         flowNode: {id: 'flowNode5', name: 'flow-node-5'},
         affectedTokenCount: 1,
+        parentScopeIds: {},
       },
     });
 
@@ -305,6 +321,7 @@ describe('stores/modifications', () => {
         targetFlowNode: {id: 'flowNode6', name: 'flow-node-6'},
         affectedTokenCount: 2,
         scopeIds: ['4', '5'],
+        parentScopeIds: {},
       },
     });
 
@@ -344,6 +361,7 @@ describe('stores/modifications', () => {
         scopeId: generateUniqueID(),
         flowNode: {id: 'flowNode1', name: 'flow-node-1'},
         affectedTokenCount: 1,
+        parentScopeIds: {},
       },
     });
 
@@ -377,6 +395,7 @@ describe('stores/modifications', () => {
         targetFlowNode: {id: 'flowNode3', name: 'flow-node-3'},
         affectedTokenCount: 1,
         scopeIds: ['1'],
+        parentScopeIds: {},
       },
     });
     expect(
@@ -595,5 +614,31 @@ describe('stores/modifications', () => {
         newValue: 'value3',
       },
     ]);
+  });
+
+  it('should generate parent scope ids', async () => {
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockNestedSubprocess))
+      )
+    );
+    await processInstanceDetailsDiagramStore.fetchProcessXml(
+      'processInstanceId'
+    );
+
+    expect(modificationsStore.generateParentScopeIds('user_task')).toEqual({
+      inner_sub_process: expect.any(String),
+      parent_sub_process: expect.any(String),
+    });
+
+    expect(
+      modificationsStore.generateParentScopeIds('inner_sub_process')
+    ).toEqual({
+      parent_sub_process: expect.any(String),
+    });
+
+    expect(
+      modificationsStore.generateParentScopeIds('parent_sub_process')
+    ).toEqual({});
   });
 });

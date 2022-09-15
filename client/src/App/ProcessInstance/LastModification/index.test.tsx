@@ -47,6 +47,7 @@ describe('LastModification', () => {
         scopeId: generateUniqueID(),
         flowNode: {id: '1', name: 'flowNode1'},
         affectedTokenCount: 1,
+        parentScopeIds: {},
       },
     });
     expect(screen.getByText(/Last added modification/)).toBeInTheDocument();
@@ -71,6 +72,7 @@ describe('LastModification', () => {
         targetFlowNode: {id: '4', name: 'flowNode4'},
         affectedTokenCount: 2,
         scopeIds: [generateUniqueID(), generateUniqueID()],
+        parentScopeIds: {},
       },
     });
 

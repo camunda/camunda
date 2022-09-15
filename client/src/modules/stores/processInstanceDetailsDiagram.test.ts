@@ -19,6 +19,7 @@ import {waitFor} from 'modules/testing-library';
 import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 import {flowNodeStatesStore} from './flowNodeStates';
 import {modificationsStore} from './modifications';
+import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 
 describe('stores/processInstanceDiagram', () => {
   beforeEach(() => {
@@ -377,5 +378,51 @@ describe('stores/processInstanceDiagram', () => {
       'timer-boundary',
       'boundary-event',
     ]);
+  });
+
+  it('should get flow node parents', async () => {
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockNestedSubprocess))
+      )
+    );
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: '123',
+        state: 'ACTIVE',
+        processId: '10',
+      })
+    );
+
+    processInstanceDetailsDiagramStore.init();
+
+    await waitFor(() =>
+      expect(processInstanceDetailsDiagramStore.state.status).toEqual('fetched')
+    );
+
+    expect(
+      processInstanceDetailsDiagramStore.getFlowNodeParents(
+        processInstanceDetailsDiagramStore.getFlowNode('user_task')
+      )
+    ).toEqual(['inner_sub_process', 'parent_sub_process']);
+
+    expect(
+      processInstanceDetailsDiagramStore.getFlowNodeParents(
+        processInstanceDetailsDiagramStore.getFlowNode('inner_sub_process')
+      )
+    ).toEqual(['parent_sub_process']);
+
+    expect(
+      processInstanceDetailsDiagramStore.getFlowNodeParents(
+        processInstanceDetailsDiagramStore.getFlowNode('parent_sub_process')
+      )
+    ).toEqual([]);
+
+    expect(
+      processInstanceDetailsDiagramStore.getFlowNodeParents(
+        processInstanceDetailsDiagramStore.getFlowNode('non_existing')
+      )
+    ).toEqual([]);
   });
 });

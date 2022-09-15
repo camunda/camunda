@@ -68,6 +68,8 @@ const ModificationDropdown: React.FC<Props> = observer(
                       ),
                     },
                     affectedTokenCount: 1,
+                    parentScopeIds:
+                      modificationsStore.generateParentScopeIds(flowNodeId),
                   },
                 });
                 flowNodeSelectionStore.clearSelection();
