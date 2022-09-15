@@ -64,8 +64,7 @@ final class StandaloneGatewaySecurityTest {
     assertThatCode(() -> buildGateway(cfg))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
-            "Expected the configured cluster security certificate chain path "
-                + "'/tmp/i-dont-exist.crt' to point to a readable file, but it does not");
+            "Expected the node's inter-cluster communication certificate to be at /tmp/i-dont-exist.crt, but either the file is missing or it is not readable");
   }
 
   @Test
@@ -78,8 +77,7 @@ final class StandaloneGatewaySecurityTest {
     assertThatCode(() -> buildGateway(cfg))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
-            "Expected the configured cluster security private key path '/tmp/i-dont-exist.key' to "
-                + "point to a readable file, but it does not");
+            "Expected the node's inter-cluster communication private key to be at /tmp/i-dont-exist.key, but either the file is missing or it is not readable");
   }
 
   @Test
@@ -92,7 +90,7 @@ final class StandaloneGatewaySecurityTest {
     assertThatCode(() -> buildGateway(cfg))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
-            "Expected to have a valid private key path for cluster security, but none was configured");
+            "Expected a private key in order to enable inter-cluster communication security, but none given");
   }
 
   @Test
@@ -105,8 +103,7 @@ final class StandaloneGatewaySecurityTest {
     assertThatCode(() -> buildGateway(cfg))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
-            "Expected to have a valid certificate chain path for cluster security, but none "
-                + "configured");
+            "Expected a certificate chain in order to enable inter-cluster communication security, but none given");
   }
 
   private GatewayCfg createGatewayCfg() {
@@ -129,14 +126,13 @@ final class StandaloneGatewaySecurityTest {
   }
 
   private StandaloneGateway buildGateway(final GatewayCfg gatewayCfg) {
-    final AtomixComponent clusterComponent = new AtomixComponent(gatewayCfg);
+    final var atomixCluster = new GatewayClusterConfiguration().atomixCluster(gatewayCfg);
     final ActorSchedulerComponent actorSchedulerComponent =
         new ActorSchedulerComponent(gatewayCfg, new ActorClockConfiguration(false));
-    final var atomixCluster = clusterComponent.createAtomixCluster();
-    final var actorScheduler = actorSchedulerComponent.createActorSchedulingService();
+    final var actorScheduler = actorSchedulerComponent.actorScheduler();
     final BrokerClientComponent brokerClientComponent =
         new BrokerClientComponent(gatewayCfg, atomixCluster, actorScheduler);
-    final var brokerClient = brokerClientComponent.createBrokerClient();
+    final var brokerClient = brokerClientComponent.brokerClient();
 
     return new StandaloneGateway(
         gatewayCfg, new SpringGatewayBridge(), actorScheduler, atomixCluster, brokerClient);

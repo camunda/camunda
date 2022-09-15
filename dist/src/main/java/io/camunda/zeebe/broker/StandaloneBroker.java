@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker;
 
+import io.atomix.cluster.AtomixCluster;
+import io.camunda.zeebe.broker.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -14,8 +16,6 @@ import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
@@ -27,8 +27,6 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
 
 /**
  * Entry point for the standalone broker application. By default, it enables the {@link
@@ -42,26 +40,28 @@ import org.springframework.core.env.Profiles;
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
 public class StandaloneBroker
     implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
-  private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+  private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
 
   private final BrokerCfg configuration;
-  private final Environment springEnvironment;
+  private final WorkingDirectory workingDirectory;
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorScheduler actorScheduler;
+  private final AtomixCluster cluster;
 
-  private Path tempFolder;
   private Broker broker;
 
   @Autowired
   public StandaloneBroker(
       final BrokerCfg configuration,
-      final Environment springEnvironment,
+      final WorkingDirectory workingDirectory,
       final SpringBrokerBridge springBrokerBridge,
-      final ActorScheduler actorScheduler) {
+      final ActorScheduler actorScheduler,
+      final AtomixCluster cluster) {
     this.configuration = configuration;
-    this.springEnvironment = springEnvironment;
+    this.workingDirectory = workingDirectory;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
+    this.cluster = cluster;
   }
 
   public static void main(final String[] args) {
@@ -81,27 +81,11 @@ public class StandaloneBroker
 
   @Override
   public void run(final String... args) throws IOException {
-    final Path workingDirectory = resolveWorkingDirectory();
-    final SystemContext systemContext =
-        new SystemContext(configuration, workingDirectory.toString(), actorScheduler);
+    final SystemContext systemContext = new SystemContext(configuration, actorScheduler, cluster);
 
     actorScheduler.start();
     broker = new Broker(systemContext, springBrokerBridge);
     broker.start();
-  }
-
-  private Path resolveWorkingDirectory() throws IOException {
-    final Path workingDirectory;
-    if (shouldUseTemporaryFolder()) {
-      LOG.debug(
-          "Starting broker with a temporary directory; it will be deleted on graceful shutdown");
-      tempFolder = Files.createTempDirectory("zeebe").toAbsolutePath().normalize();
-      workingDirectory = tempFolder;
-    } else {
-      workingDirectory = Path.of(System.getProperty("basedir", ".")).toAbsolutePath().normalize();
-    }
-
-    return workingDirectory;
   }
 
   @Override
@@ -111,27 +95,25 @@ public class StandaloneBroker
       actorScheduler.stop().get();
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
-      LOG.warn("Shutdown interrupted, most likely harmless", e);
+      LOGGER.warn("Shutdown interrupted, most likely harmless", e);
     } catch (final ExecutionException e) {
-      LOG.error("Failed to shutdown broker gracefully", e);
+      LOGGER.error("Failed to shutdown broker gracefully", e);
     } finally {
-      deleteTempDirectory();
+      cleanupWorkingDirectory();
       LogManager.shutdown();
     }
   }
 
-  private boolean shouldUseTemporaryFolder() {
-    return springEnvironment.acceptsProfiles(
-        Profiles.of(Profile.DEVELOPMENT.getId(), Profile.TEST.getId()));
-  }
+  private void cleanupWorkingDirectory() {
+    if (!workingDirectory.isTemporary()) {
+      return;
+    }
 
-  private void deleteTempDirectory() {
-    if (tempFolder != null) {
-      try {
-        FileUtil.deleteFolderIfExists(tempFolder);
-      } catch (final IOException e) {
-        LOG.error("Failed to delete temporary folder {}", tempFolder, e);
-      }
+    LOGGER.debug("Deleting broker temporary working directory {}", workingDirectory.path());
+    try {
+      FileUtil.deleteFolderIfExists(workingDirectory.path());
+    } catch (final IOException e) {
+      LOGGER.warn("Failed to delete temporary directory {}", workingDirectory.path());
     }
   }
 }

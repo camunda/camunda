@@ -9,14 +9,15 @@ package io.camunda.zeebe.broker.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.Mockito.mock;
 
+import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg.NodeCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
 import java.security.cert.CertificateException;
@@ -425,12 +426,6 @@ final class SystemContextTest {
   }
 
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {
-    final ActorScheduler scheduler =
-        ActorScheduler.newActorScheduler()
-            .setCpuBoundActorThreadCount(1)
-            .setIoBoundActorThreadCount(1)
-            .setActorClock(new ControlledActorClock())
-            .build();
-    return new SystemContext(brokerCfg, "test", scheduler);
+    return new SystemContext(brokerCfg, mock(ActorScheduler.class), mock(AtomixCluster.class));
   }
 }

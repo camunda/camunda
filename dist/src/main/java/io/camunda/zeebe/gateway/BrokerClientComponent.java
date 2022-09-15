@@ -32,8 +32,8 @@ final class BrokerClientComponent {
     this.actorScheduler = actorScheduler;
   }
 
-  @Bean("brokerClient")
-  BrokerClient createBrokerClient() {
+  @Bean
+  BrokerClient brokerClient() {
     return new BrokerClientImpl(
         config,
         atomixCluster.getMessagingService(),

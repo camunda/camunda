@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@SuppressWarnings("unused")
 @Configuration(proxyBeanMethods = false)
 public final class ActorSchedulerConfiguration {
   private final BrokerCfg brokerCfg;
@@ -27,8 +26,8 @@ public final class ActorSchedulerConfiguration {
     this.clock = clock;
   }
 
-  @Bean("actorScheduler")
-  public ActorScheduler getScheduler() {
+  @Bean(destroyMethod = "") // disable automatically calling close as we will take care of this
+  public ActorScheduler scheduler() {
     final ThreadsCfg cfg = brokerCfg.getThreads();
 
     final int cpuThreads = cfg.getCpuThreadCount();

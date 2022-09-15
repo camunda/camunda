@@ -46,14 +46,14 @@ public final class BrokerStartupProcess {
   private List<StartupStep<BrokerStartupContext>> buildStartupSteps(final BrokerCfg config) {
     final var result = new ArrayList<StartupStep<BrokerStartupContext>>();
 
+    result.add(new ClusterServicesStep());
+
     if (config.getData().isDiskUsageMonitoringEnabled()) {
       // must be executed before any disk space usage listeners are registered
       result.add(new DiskSpaceUsageMonitorStep());
     }
     result.add(new MonitoringServerStep());
     result.add(new BrokerAdminServiceStep());
-
-    result.add(new ClusterServicesStep());
 
     result.add(new ApiMessagingServiceStep());
     result.add(new GatewayBrokerTransportStep());

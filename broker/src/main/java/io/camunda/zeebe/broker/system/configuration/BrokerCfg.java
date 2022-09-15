@@ -17,14 +17,10 @@ import io.camunda.zeebe.util.Environment;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import java.util.HashMap;
 import java.util.Map;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
-@Component
-@ConfigurationProperties(prefix = "zeebe.broker")
 public final class BrokerCfg {
 
-  protected static final String ENV_DEBUG_EXPORTER = "ZEEBE_DEBUG";
+  static final String ENV_DEBUG_EXPORTER = "ZEEBE_DEBUG";
 
   private NetworkCfg network = new NetworkCfg();
   private ClusterCfg cluster = new ClusterCfg();

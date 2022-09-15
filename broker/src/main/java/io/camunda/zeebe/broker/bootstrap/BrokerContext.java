@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
@@ -18,8 +17,6 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 public interface BrokerContext {
 
   ClusterServices getClusterServices();
-
-  AtomixCluster getAtomixCluster();
 
   EmbeddedGatewayService getEmbeddedGatewayService();
 
