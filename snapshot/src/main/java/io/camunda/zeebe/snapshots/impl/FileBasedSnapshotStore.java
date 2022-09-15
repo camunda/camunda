@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import static io.camunda.zeebe.util.FileUtil.ensureDirectoryExists;
+
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -16,7 +18,9 @@ import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotException;
+import io.camunda.zeebe.snapshots.SnapshotException.CorruptedSnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
@@ -44,7 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class FileBasedSnapshotStore extends Actor
-    implements ConstructableSnapshotStore, ReceivableSnapshotStore {
+    implements ConstructableSnapshotStore, ReceivableSnapshotStore, RestorableSnapshotStore {
 
   static final int VERSION = 1;
 
@@ -657,6 +661,10 @@ public final class FileBasedSnapshotStore extends Actor
     return snapshotsDirectory.resolve(snapshotId.getSnapshotIdAsString() + CHECKSUM_SUFFIX);
   }
 
+  private boolean isChecksumFile(final String name) {
+    return name.endsWith(CHECKSUM_SUFFIX);
+  }
+
   SnapshotMetrics getSnapshotMetrics() {
     return snapshotMetrics;
   }
@@ -688,5 +696,54 @@ public final class FileBasedSnapshotStore extends Actor
         + ", partitionId="
         + partitionId
         + "}";
+  }
+
+  @Override
+  public void restore(final String snapshotId, final Map<String, Path> snapshotFiles)
+      throws IOException {
+    final var parsedSnapshotId =
+        FileBasedSnapshotId.ofFileName(snapshotId)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Failed to parse snapshot id %s".formatted(snapshotId)));
+    final var checksumPath = buildSnapshotsChecksumPath(parsedSnapshotId);
+    final var snapshotPath = buildSnapshotDirectory(parsedSnapshotId);
+    ensureDirectoryExists(snapshotPath);
+
+    LOGGER.info("Moving snapshot {} to {}", snapshotId, snapshotPath);
+
+    final var snapshotFileNames = snapshotFiles.keySet();
+    snapshotFileNames.stream()
+        .filter(name -> !isChecksumFile(name))
+        .forEach(name -> copyNamedFileToDirectory(name, snapshotFiles.get(name), snapshotPath));
+
+    final var checksumFile =
+        snapshotFileNames.stream()
+            .filter(this::isChecksumFile)
+            .findFirst()
+            .map(snapshotFiles::get)
+            .orElseThrow();
+
+    Files.copy(checksumFile, checksumPath);
+
+    LOGGER.info("Moved snapshot {} to {}", snapshotId, snapshotPath);
+
+    // verify snapshot is not corrupted
+    final var snapshot = collectSnapshot(snapshotPath);
+    if (snapshot == null) {
+      throw new CorruptedSnapshotException(
+          "Failed to open restored snapshot in %s".formatted(snapshotPath));
+    }
+  }
+
+  private void copyNamedFileToDirectory(
+      final String name, final Path source, final Path targetDirectory) {
+    final var targetFilePath = targetDirectory.resolve(name);
+    try {
+      Files.move(source, targetFilePath);
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }
