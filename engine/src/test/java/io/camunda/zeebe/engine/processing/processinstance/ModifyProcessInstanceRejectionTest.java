@@ -430,8 +430,8 @@ public class ModifyProcessInstanceRejectionTest {
             String.format(
                 """
                 Expected to modify instance of process '%s' but the given instructions would terminate \
-                the instance. A different process started this process. To terminate this instance \
-                please modify the parent process instead.""",
+                the instance. The instance was created by a call activity in the parent process. \
+                To terminate this instance please modify the parent process instead.""",
                 callActivityProcessId));
   }
 }
