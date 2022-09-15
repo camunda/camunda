@@ -413,8 +413,11 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
             .taskIsCreated("taskInSubprocess")
             .and()
             .taskIsCanceled("subprocessTask")
+            .and()
+            .taskIsCanceled("taskInSubprocess")
             .then()
             .getAllTasks();
+
     assertThat(response.get("$.data.tasks.length()")).isEqualTo("1");
     assertThat(response.get("$.data.tasks[0].name")).isEqualTo("Parent process task");
     assertThat(response.get("$.data.tasks[0].taskState")).isEqualTo("COMPLETED");
