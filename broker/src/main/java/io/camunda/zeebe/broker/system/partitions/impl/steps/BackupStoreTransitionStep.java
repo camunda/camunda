@@ -52,7 +52,7 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
       final var backupCfg = context.getBrokerCfg().getData().getBackup();
       if (backupCfg.getStore() == BackupStoreType.NONE) {
         // No backup store is installed. BackupManager can handle this case
-        context.setBackupManager(null);
+        context.setBackupStore(null);
         installed.complete(null);
       } else if (backupCfg.getStore() == BackupStoreType.S3) {
         installS3Store(context, backupCfg, installed);
