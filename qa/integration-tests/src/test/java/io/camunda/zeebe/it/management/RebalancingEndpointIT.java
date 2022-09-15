@@ -7,28 +7,25 @@
  */
 package io.camunda.zeebe.it.management;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
+import io.camunda.zeebe.qa.util.actuator.RebalanceActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.zeebe.containers.ZeebeGatewayNode;
 import io.zeebe.containers.cluster.ZeebeCluster;
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.Network;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 final class RebalancingEndpointIT {
   private final Network network = Network.newNetwork();
 
+  @Container
   private final ZeebeCluster cluster =
       ZeebeCluster.builder()
           .withImage(ZeebeTestContainerDefaults.defaultTestImage())
@@ -43,17 +40,11 @@ final class RebalancingEndpointIT {
 
   @BeforeEach
   void setup() {
-    cluster.start();
     client = cluster.newClientBuilder().build();
   }
 
-  @AfterEach
-  void teardown() {
-    cluster.stop();
-  }
-
   @Test
-  void shouldRebalanceCluster() throws IOException, InterruptedException {
+  void shouldRebalanceCluster() {
     // given
     forceBadLeaderDistribution();
 
@@ -64,17 +55,9 @@ final class RebalancingEndpointIT {
     reachesGoodLeaderDistribution();
   }
 
-  private void triggerRebalancing() throws IOException, InterruptedException {
-    final var gateway = cluster.getGateways().values().stream().findFirst().orElseThrow();
-    final var monitoringAddress = gateway.getExternalMonitoringAddress();
-    final var httpClient = HttpClient.newHttpClient();
-    final var request =
-        HttpRequest.newBuilder()
-            .POST(BodyPublishers.noBody())
-            .uri(URI.create("http://" + monitoringAddress + "/actuator/rebalance"))
-            .build();
-    final var response = httpClient.send(request, BodyHandlers.discarding());
-    assertThat(response.statusCode()).isEqualTo(200);
+  private void triggerRebalancing() {
+    final ZeebeGatewayNode<?> gateway = cluster.getAvailableGateway();
+    RebalanceActuator.of(gateway).rebalance();
   }
 
   private void forceBadLeaderDistribution() {
