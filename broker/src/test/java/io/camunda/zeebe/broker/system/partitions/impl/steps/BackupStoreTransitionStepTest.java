@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -94,14 +95,13 @@ class BackupStoreTransitionStepTest {
         .isNotEqualTo(backupStorePreviousRole);
   }
 
-  @ParameterizedTest
-  @ArgumentsSource(TransitionsThatShouldInstallService.class)
+  @Test
   // This test fails if you have AWS configured locally (eg:- ~/.aws/)
-  void shouldFailToInstallWhenS3ConfigurationsAreNotAvailable(
-      final Role currentRole, final Role targetRole) {
+  void shouldFailToInstallWhenS3ConfigurationsAreNotAvailable() {
     // given
-    setUpCurrentRole(currentRole);
+    setUpCurrentRole(null);
     configureStore(BackupStoreType.S3, new S3BackupStoreConfig());
+    final var targetRole = Role.LEADER;
 
     // when
     step.prepareTransition(transitionContext, 1, targetRole).join();
