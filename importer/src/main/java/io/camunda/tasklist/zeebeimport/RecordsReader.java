@@ -21,6 +21,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.ImportPositionIndex;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -28,6 +29,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.ReentrantLock;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -45,6 +47,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 /**
@@ -73,9 +76,17 @@ public class RecordsReader {
   /** Time, when the reader must be activated again after backoff. */
   private OffsetDateTime activateDateTime = OffsetDateTime.now().minusMinutes(1L);
 
+  private ImportJob pendingImportJob;
+  private ReentrantLock schedulingImportJobLock;
+  private boolean ongoingRescheduling;
+
   @Autowired
   @Qualifier("importThreadPoolExecutor")
   private ThreadPoolTaskExecutor importExecutor;
+
+  @Autowired
+  @Qualifier("recordsReaderThreadPoolExecutor")
+  private ThreadPoolTaskScheduler readersExecutor;
 
   @Autowired private ImportPositionHolder importPositionHolder;
 
@@ -93,6 +104,7 @@ public class RecordsReader {
     this.partitionId = partitionId;
     this.importValueType = importValueType;
     this.importJobs = new LinkedBlockingQueue<>(queueSize);
+    this.schedulingImportJobLock = new ReentrantLock();
   }
 
   public int readAndScheduleNextBatch() throws IOException {
@@ -104,7 +116,8 @@ public class RecordsReader {
       if (importBatch.getHits().size() == 0) {
         doBackoff();
       } else {
-        scheduleImport(latestPosition, importBatch);
+        final var job = createImportJob(latestPosition, importBatch);
+        scheduleImportJob(job);
       }
       return importBatch.getHits().size();
     } catch (NoSuchIndexException ex) {
@@ -112,13 +125,6 @@ public class RecordsReader {
       doBackoff();
       return 0;
     }
-  }
-
-  private void scheduleImport(ImportPositionEntity latestPosition, ImportBatch importBatch) {
-    // create new instance of import job
-    final ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch, latestPosition);
-    scheduleImport(importJob);
-    importJob.recordLatestScheduledPosition();
   }
 
   public ImportBatch readNextBatch(long positionFrom, Long positionTo) throws NoSuchIndexException {
@@ -212,45 +218,80 @@ public class RecordsReader {
     }
   }
 
-  public void scheduleImport(ImportJob importJob) {
-    boolean scheduled = false;
-    while (!scheduled) {
-      scheduled =
-          importJobs.offer(
-              () -> {
-                try {
-                  final Boolean imported = importJob.call();
-                  if (imported) {
-                    executeNext();
-                  } else {
-                    // retry the same job
-                    sleepFor(2000L);
-                    execute(active);
-                  }
-                  return imported;
-                } catch (Exception ex) {
-                  LOGGER.error("Exception occurred when importing data: " + ex.getMessage(), ex);
-                  // retry the same job
-                  sleepFor(2000L);
-                  execute(active);
-                  return false;
-                }
-              });
-      if (!scheduled) {
-        doBackoffForScheduler();
-      }
-    }
-    if (active == null) {
-      executeNext();
+  private ImportJob createImportJob(
+      final ImportPositionEntity latestPosition, final ImportBatch importBatch) {
+    return beanFactory.getBean(ImportJob.class, importBatch, latestPosition);
+  }
+
+  private void scheduleImportJob(final ImportJob job) {
+    // if loading data on startup is disabled, then someone outside
+    // the zeebe importer scheduler is controlling the readers
+    // in that case, pending jobs are ignored and the "controller"
+    // needs to do another round of importing
+    final var skipPendingJob = !tasklistProperties.getImporter().isStartLoadingDataOnStartup();
+    if (tryToScheduleImportJob(job, skipPendingJob)) {
+      importJobScheduledSucceeded(job);
     }
   }
 
-  /** Freeze the scheduler (usually when queue is full). */
-  private void doBackoffForScheduler() {
-    final int schedulerBackoff = tasklistProperties.getImporter().getSchedulerBackoff();
-    if (schedulerBackoff > 0) {
-      sleepFor(schedulerBackoff);
-    }
+  private void importJobScheduledSucceeded(final ImportJob job) {
+    metrics
+        .getTimer(
+            Metrics.TIMER_NAME_IMPORT_JOB_SCHEDULED_TIME,
+            Metrics.TAG_KEY_TYPE,
+            importValueType.name(),
+            Metrics.TAG_KEY_PARTITION,
+            String.valueOf(partitionId))
+        .record(Duration.between(job.getCreationTime(), OffsetDateTime.now()));
+    job.recordLatestScheduledPosition();
+  }
+
+  public boolean tryToScheduleImportJob(final ImportJob importJob, final boolean skipPendingJob) {
+    return withReschedulingImportJobLock(
+        () -> {
+          var scheduled = false;
+          var retries = 3;
+
+          while (!scheduled && retries > 0) {
+            scheduled = importJobs.offer(executeJob(importJob));
+            retries = retries - 1;
+          }
+
+          if (scheduled) {
+            pendingImportJob = null;
+            if (active == null) {
+              executeNext();
+            }
+          } else if (!skipPendingJob) {
+            pendingImportJob = importJob;
+            activateDateTime = OffsetDateTime.MAX;
+          }
+
+          return scheduled;
+        });
+  }
+
+  private Callable<Boolean> executeJob(final ImportJob job) {
+    return () -> {
+      try {
+        final var imported = job.call();
+        if (imported) {
+          executeNext();
+          rescheduleRecordsReaderIfNecessary();
+        } else {
+          // retry the same job
+          sleepFor(2000L);
+          execute(active);
+        }
+        return imported;
+      } catch (final Exception ex) {
+        LOGGER.error("Exception occurred when importing data: " + ex.getMessage(), ex);
+        // retry the same job
+        sleepFor(2000L);
+        execute(active);
+        return false;
+      }
+    };
   }
 
   private void executeNext() {
@@ -268,6 +309,49 @@ public class RecordsReader {
     LOGGER.debug("Submitted the same job");
   }
 
+  private void rescheduleRecordsReaderIfNecessary() {
+    withReschedulingImportJobLock(
+        () -> {
+          if (hasPendingImportJobToReschedule() && shouldReschedulePendingImportJob()) {
+            startRescheduling();
+            readersExecutor.submit(this::reschedulePendingImportJob);
+          }
+        });
+  }
+
+  private void reschedulePendingImportJob() {
+    try {
+      scheduleImportJob(pendingImportJob);
+    } finally {
+      // whatever happened (exception or not),
+      // reset state and schedule reader so that
+      // the reader starts from the last loaded
+      // position again
+      withReschedulingImportJobLock(
+          () -> {
+            pendingImportJob = null;
+            activateDateTime = OffsetDateTime.now().minusMinutes(1L);
+            completeRescheduling();
+          });
+    }
+  }
+
+  private boolean hasPendingImportJobToReschedule() {
+    return pendingImportJob != null;
+  }
+
+  private boolean shouldReschedulePendingImportJob() {
+    return !ongoingRescheduling;
+  }
+
+  private void startRescheduling() {
+    ongoingRescheduling = true;
+  }
+
+  private void completeRescheduling() {
+    ongoingRescheduling = false;
+  }
+
   public int getPartitionId() {
     return partitionId;
   }
@@ -278,5 +362,24 @@ public class RecordsReader {
 
   public BlockingQueue<Callable<Boolean>> getImportJobs() {
     return importJobs;
+  }
+
+  private void withReschedulingImportJobLock(final Runnable action) {
+    withReschedulingImportJobLock(
+        () -> {
+          action.run();
+          return null;
+        });
+  }
+
+  private <T> T withReschedulingImportJobLock(final Callable<T> action) {
+    try {
+      schedulingImportJobLock.lock();
+      return action.call();
+    } catch (Exception e) {
+      throw new TasklistRuntimeException(e);
+    } finally {
+      schedulingImportJobLock.unlock();
+    }
   }
 }

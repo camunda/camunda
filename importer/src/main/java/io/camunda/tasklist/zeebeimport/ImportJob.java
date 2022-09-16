@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.exceptions.NoSuchIndexException;
 import io.camunda.tasklist.property.TasklistProperties;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -42,6 +43,8 @@ public class ImportJob implements Callable<Boolean> {
 
   private ImportPositionEntity lastProcessedPosition;
 
+  private OffsetDateTime creationTime;
+
   @Autowired private ImportBatchProcessorFactory importBatchProcessorFactory;
 
   @Autowired
@@ -62,6 +65,7 @@ public class ImportJob implements Callable<Boolean> {
   public ImportJob(ImportBatch importBatch, ImportPositionEntity previousPosition) {
     this.importBatch = importBatch;
     this.previousPosition = previousPosition;
+    this.creationTime = OffsetDateTime.now();
   }
 
   @Override
@@ -216,6 +220,10 @@ public class ImportJob implements Callable<Boolean> {
     } else {
       return false;
     }
+  }
+
+  public OffsetDateTime getCreationTime() {
+    return creationTime;
   }
 
   protected void notifyImportListenersAsFinished(ImportBatch importBatch) {

@@ -6,62 +6,55 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
-import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
-
 import io.camunda.tasklist.property.TasklistProperties;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
 @DependsOn("schemaStartup")
-public class ZeebeImporter extends Thread {
+public class ZeebeImporter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeImporter.class);
-
-  private boolean shutdown = false;
-
-  /** Lock object, that can be used to be informed about finished import. */
-  private final Object importFinished = new Object();
 
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired private RecordsReaderHolder recordsReaderHolder;
 
+  @Autowired
+  @Qualifier("recordsReaderThreadPoolExecutor")
+  private ThreadPoolTaskScheduler readersExecutor;
+
   @PostConstruct
   public void startImportingData() {
     if (tasklistProperties.getImporter().isStartLoadingDataOnStartup()) {
-      start();
+      LOGGER.info("INIT: Start importing data...");
+      readersExecutor.submit(this::run);
     }
   }
 
-  @Override
   public void run() {
-    LOGGER.info("INIT: Start importing data...");
-    while (!shutdown) {
-      synchronized (importFinished) {
-        try {
-          final int countRecords = performOneRoundOfImport();
-          if (countRecords == 0) {
-            importFinished.notifyAll();
-            doBackoff();
-          }
-        } catch (Exception ex) {
-          // retry
-          LOGGER.error("Error occurred while importing Zeebe data. Will be retried.", ex);
-          doBackoff();
-        }
+    try {
+      final int countRecords = performOneRoundOfImport();
+      if (countRecords == 0) {
+        doBackoff();
+      } else {
+        readersExecutor.submit(this::run);
       }
+    } catch (Exception ex) {
+      // retry
+      LOGGER.error("Error occurred while importing Zeebe data. Will be retried.", ex);
+      doBackoff();
     }
   }
 
@@ -81,30 +74,7 @@ public class ZeebeImporter extends Thread {
     return recordsReader.readAndScheduleNextBatch();
   }
 
-  @Bean("importThreadPoolExecutor")
-  public ThreadPoolTaskExecutor getTaskExecutor() {
-    final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-    executor.setCorePoolSize(tasklistProperties.getImporter().getThreadsCount());
-    executor.setMaxPoolSize(tasklistProperties.getImporter().getThreadsCount());
-    executor.setThreadNamePrefix("import_");
-    executor.initialize();
-    return executor;
-  }
-
-  public Object getImportFinished() {
-    return importFinished;
-  }
-
-  @PreDestroy
-  public void shutdown() {
-    LOGGER.info("Shutdown ZeebeImporter");
-    shutdown = true;
-    synchronized (importFinished) {
-      importFinished.notifyAll();
-    }
-  }
-
   private void doBackoff() {
-    sleepFor(2000);
+    readersExecutor.schedule(this::run, OffsetDateTime.now().plusSeconds(2).toInstant());
   }
 }
