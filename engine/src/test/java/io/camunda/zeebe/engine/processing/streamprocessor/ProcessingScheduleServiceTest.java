@@ -79,6 +79,8 @@ public class ProcessingScheduleServiceTest {
   public void clean() {
     dummyProcessor.continueReplay();
     dummyProcessor.continueProcessing();
+    streamPlatform = null;
+
   }
 
   @Test
