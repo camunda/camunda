@@ -257,37 +257,38 @@ public class ProcessingScheduleServiceTest {
     // different ticks, as tasks expiring on the same tick will be submitted in a non-deterministic
     // order
     final var counter = new AtomicInteger(0);
-    when(batchWriter.tryWrite())
-        .then(
-            i -> {
-              final var invocationCount = counter.incrementAndGet();
-              // wait a sufficiently high enough invocation count to ensure the second timer is
-              // expired, gets scheduled, and then the executions are interleaved. this is quite
-              // hard to do in a deterministic controlled way because of the way our timers are
-              // scheduled
-              if (invocationCount < 5000) {
-                return -1L;
-              }
+    doAnswer(i -> {
+      final var invocationCount = counter.incrementAndGet();
+      // wait a sufficiently high enough invocation count to ensure the second timer is
+      // expired, gets scheduled, and then the executions are interleaved. this is quite
+      // hard to do in a deterministic controlled way because of the way our timers are
+      // scheduled
+      if (invocationCount < 5000) {
+        return -1L;
+      }
 
-              Loggers.PROCESS_PROCESSOR_LOGGER.debug("Calling real method");
-              return i.callRealMethod();
-            });
+      Loggers.PROCESS_PROCESSOR_LOGGER.debug("Calling real method");
+      return i.callRealMethod();
+    }).when(batchWriter).tryWrite();
 
-    dummyProcessorSpy.scheduleService.runDelayed(
-        Duration.ZERO,
-        builder -> {
-          // force trigger second task
-          clock.addTime(Duration.ofMinutes(1));
-          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
-          return builder.build();
-        });
-    dummyProcessorSpy.scheduleService.runDelayed(
-        Duration.ofMinutes(1),
-        builder -> {
-          Loggers.PROCESS_PROCESSOR_LOGGER.debug("Running second timer");
-          builder.appendCommandRecord(2, ACTIVATE_ELEMENT, RECORD);
-          return builder.build();
-        });
+    runWithinActor(() -> {
+      dummyProcessorSpy.scheduleService.runDelayed(
+          Duration.ZERO,
+          builder -> {
+            // force trigger second task
+            clock.addTime(Duration.ofMinutes(1));
+            builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
+            return builder.build();
+          });
+      dummyProcessorSpy.scheduleService.runDelayed(
+          Duration.ofMinutes(1),
+          builder -> {
+            Loggers.PROCESS_PROCESSOR_LOGGER.debug("Running second timer");
+            builder.appendCommandRecord(2, ACTIVATE_ELEMENT, RECORD);
+            return builder.build();
+          });
+    });
+
 
     // then
     Awaitility.await("until both records are written to the stream")
@@ -298,6 +299,11 @@ public class ProcessingScheduleServiceTest {
         .as("records were written in order of submitted tasks")
         .extracting(LoggedEvent::getKey)
         .containsExactly(1L, 2L);
+  }
+
+  private void runWithinActor(final Runnable runnable) {
+    final var actor = Actor.wrap(c -> runnable.run());
+    streamPlatform.getActorScheduler().submitActor(actor).join(30, TimeUnit.SECONDS);
   }
 
   private static final class DummyTask implements Task {
