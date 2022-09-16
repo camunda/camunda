@@ -8,6 +8,7 @@
 import {useEffect, useState} from 'react';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {Container, Header, Tab} from './styled';
+import {tracking} from 'modules/tracking';
 
 type TabType = {
   id: string;
@@ -17,17 +18,28 @@ type TabType = {
 
 type Props = {
   tabs: TabType[];
+  eventName?: 'variables-panel-used';
+  dataTestId?: string;
 };
 
-const TabView: React.FC<Props> = ({tabs = []}) => {
+const TabView: React.FC<Props> = ({tabs = [], eventName, dataTestId}) => {
   const [selectedTab, setSelectedTab] = useState<TabType | null>(null);
 
   useEffect(() => {
     setSelectedTab(selectedTab ?? tabs[0] ?? null);
   }, [tabs, selectedTab]);
 
+  useEffect(() => {
+    if (eventName !== undefined && selectedTab?.id !== undefined) {
+      tracking.track({
+        eventName,
+        toTab: selectedTab.id,
+      });
+    }
+  }, [selectedTab, eventName]);
+
   return (
-    <Container>
+    <Container data-testid={dataTestId}>
       {tabs.length === 1 ? (
         <>
           <PanelHeader title={tabs[0]!.label}></PanelHeader>

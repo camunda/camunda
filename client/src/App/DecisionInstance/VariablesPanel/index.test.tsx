@@ -19,7 +19,6 @@ import {
   literalExpression,
 } from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
-import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
 describe('<VariablesPanel />', () => {
   it('should have 2 tabs', () => {
@@ -91,32 +90,6 @@ describe('<VariablesPanel />', () => {
         name: /outputs/i,
       })
     ).toBeInTheDocument();
-  });
-
-  it('should use persisted tab and should persist selected tab', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.json(invoiceClassification))
-      )
-    );
-    decisionInstanceDetailsStore.fetchDecisionInstance('1');
-    storeStateLocally({
-      decisionInstanceTab: 'result',
-    });
-
-    const {user} = render(<VariablesPanel />, {wrapper: ThemeProvider});
-
-    expect(
-      await screen.findByTestId('results-json-viewer')
-    ).toBeInTheDocument();
-
-    await user.click(
-      screen.getByRole('button', {
-        name: /inputs and outputs/i,
-      })
-    );
-
-    expect(getStateLocally()?.decisionInstanceTab).toBe('inputs-and-outputs');
   });
 
   it('should hide input/output tab for literal expressions', async () => {

@@ -111,9 +111,6 @@ const theme = {
         header: {
           backgroundColor: DARK_COLORS.ui03,
         },
-        panelHeader: {
-          backgroundColor: DARK_COLORS.ui03,
-        },
         backgroundColor: DARK_COLORS.ui02,
       },
       metricPanel: {
@@ -1025,9 +1022,6 @@ const theme = {
       },
       decisionInstance: {
         header: {
-          backgroundColor: LIGHT_COLORS.ui02,
-        },
-        panelHeader: {
           backgroundColor: LIGHT_COLORS.ui02,
         },
         backgroundColor: LIGHT_COLORS.ui04,

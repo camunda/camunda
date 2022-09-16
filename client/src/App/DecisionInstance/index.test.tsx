@@ -213,4 +213,71 @@ describe('<DecisionInstance />', () => {
     expect(screen.queryByTestId('drd-panel')).not.toBeInTheDocument();
     expect(screen.queryByTestId('drd')).not.toBeInTheDocument();
   });
+
+  it('should not keep same tab selected when page is completely refreshed', async () => {
+    mockServer.use(
+      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
+        res(ctx.json(invoiceClassification))
+      )
+    );
+
+    const {user, unmount, rerender} = render(<DecisionInstance />, {
+      wrapper: Wrapper,
+    });
+
+    expect(
+      screen.getByRole('heading', {
+        name: /inputs/i,
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {
+        name: /outputs/i,
+      })
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /result/i,
+      })
+    );
+
+    expect(
+      screen.queryByRole('heading', {
+        name: /inputs/i,
+      })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', {
+        name: /outputs/i,
+      })
+    ).not.toBeInTheDocument();
+
+    rerender(<DecisionInstance />);
+
+    expect(
+      screen.queryByRole('heading', {
+        name: /inputs/i,
+      })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', {
+        name: /outputs/i,
+      })
+    ).not.toBeInTheDocument();
+
+    unmount();
+    render(<DecisionInstance />, {wrapper: Wrapper});
+
+    expect(
+      screen.getByRole('heading', {
+        name: /inputs/i,
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {
+        name: /outputs/i,
+      })
+    ).toBeInTheDocument();
+  });
 });

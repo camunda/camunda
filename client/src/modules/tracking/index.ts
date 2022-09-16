@@ -68,7 +68,7 @@ type Events =
     }
   | {
       eventName: 'variables-panel-used';
-      toTab: 'inputs-and-outputs' | 'result';
+      toTab: string;
     }
   | {
       eventName: 'drd-panel-interaction';
