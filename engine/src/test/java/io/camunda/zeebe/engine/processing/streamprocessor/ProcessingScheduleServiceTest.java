@@ -13,7 +13,6 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTI
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
@@ -40,14 +39,12 @@ import io.camunda.zeebe.engine.util.StreamPlatformExtension;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -84,7 +81,6 @@ public class ProcessingScheduleServiceTest {
     dummyProcessor.continueReplay();
     dummyProcessor.continueProcessing();
     streamPlatform = null;
-
   }
 
   @Test
@@ -251,7 +247,9 @@ public class ProcessingScheduleServiceTest {
     final var batchWriter = spy(syncLogStream.newLogStreamBatchWriter());
 
     when(syncLogStream.getAsyncLogStream()).thenReturn(logStream);
-    doReturn(CompletableActorFuture.completed(batchWriter)).when(logStream).newLogStreamBatchWriter();
+    doReturn(CompletableActorFuture.completed(batchWriter))
+        .when(logStream)
+        .newLogStreamBatchWriter();
     streamPlatform
         .withRecordProcessors(List.of(dummyProcessorSpy))
         .buildStreamProcessor(syncLogStream, true);
