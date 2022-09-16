@@ -41,8 +41,7 @@ class CommandRateLimiterTest {
   @Test
   void shouldCompleteRequestOnResponse() {
     // given
-    IntStream.range(0, limit.getLimit())
-        .forEach(i -> assertThat(rateLimiter.tryAcquire(0, i, context)));
+    IntStream.range(0, limit.getLimit()).forEach(i -> rateLimiter.tryAcquire(0, i, context));
     assertThat(rateLimiter.tryAcquire(0, 100, context)).isFalse();
 
     // when
@@ -55,8 +54,7 @@ class CommandRateLimiterTest {
   @Test
   void shouldCompleteAllRequests() {
     // given
-    IntStream.range(0, limit.getLimit())
-        .forEach(i -> assertThat(rateLimiter.tryAcquire(0, i, context)));
+    IntStream.range(0, limit.getLimit()).forEach(i -> rateLimiter.tryAcquire(0, i, context));
     assertThat(rateLimiter.tryAcquire(0, 100, context)).isFalse();
 
     // when
