@@ -14,10 +14,14 @@ import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -70,9 +74,9 @@ public class ModifyProcessInstanceTest {
     final var processInstanceKey = processInstance.getProcessInstanceKey();
 
     final var activatedUserTask =
-        RecordingExporter.processInstanceRecords()
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
-            .limit("A", ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId("A")
             .getFirst();
 
     // when
@@ -93,6 +97,45 @@ public class ModifyProcessInstanceTest {
     assertThatNoException()
         .describedAs("Expect that modification command is not rejected")
         .isThrownBy(command::join);
+
+    final var terminatedTaskA =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .withRecordKey(activatedUserTask.getKey())
+            .withElementId("A")
+            .findAny();
+    final var activatedTaskB =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("B")
+            .findAny();
+    final var activatedTaskC =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("C")
+            .findAny();
+
+    Assertions.assertThat(terminatedTaskA)
+        .describedAs("Expect that task A is terminated")
+        .isPresent();
+    Assertions.assertThat(activatedTaskB)
+        .describedAs("Expect that task B is activated")
+        .isPresent();
+    Assertions.assertThat(activatedTaskC)
+        .describedAs("Expect that task C is activated")
+        .isPresent();
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withScopeKey(activatedTaskB.get().getKey())
+                .withName("foo")
+                .getFirst())
+        .describedAs("Expect that variable 'foo' is created in task B's scope")
+        .isNotNull()
+        .extracting(Record::getValue)
+        .extracting(VariableRecordValue::getValue)
+        .describedAs("Expect that variable is created with value '\"bar\"'")
+        .isEqualTo("\"bar\"");
   }
 
   @Test
