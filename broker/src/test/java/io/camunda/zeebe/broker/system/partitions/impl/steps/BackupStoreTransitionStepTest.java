@@ -31,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -39,7 +40,10 @@ class BackupStoreTransitionStepTest {
 
   private static final TestConcurrencyControl TEST_CONCURRENCY_CONTROL =
       new TestConcurrencyControl();
-  @Mock BrokerCfg brokerCfg;
+
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  BrokerCfg brokerCfg;
+
   @Mock DataCfg dataCfg;
   @Mock BackupStore backupStorePreviousRole;
 
@@ -51,6 +55,8 @@ class BackupStoreTransitionStepTest {
   void setup() {
     transitionContext.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
     transitionContext.setBrokerCfg(brokerCfg);
+
+    lenient().when(brokerCfg.getExperimental().getFeatures().isEnableBackup()).thenReturn(true);
 
     step = new BackupStoreTransitionStep();
   }

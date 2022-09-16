@@ -53,7 +53,11 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
         || (context.getBackupManager() == null && targetRole != Role.INACTIVE)) {
 
       final ActorFuture<Void> backupManagerInstalled;
-      if (context.getBackupStore() == null) {
+
+      final var isBackupFeatureEnabled =
+          context.getBrokerCfg().getExperimental().getFeatures().isEnableBackup();
+
+      if (context.getBackupStore() == null || !isBackupFeatureEnabled) {
         backupManagerInstalled =
             installNoopBackupManager(
                 context, "No BackupStore is configured. Backup operations cannot be executed.");
@@ -67,7 +71,9 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
       backupManagerInstalled.onComplete(
           (ignore, error) -> {
             if (error == null) {
-              installCheckpointProcessor(context, context.getBackupManager());
+              if (isBackupFeatureEnabled) {
+                installCheckpointProcessor(context, context.getBackupManager());
+              }
               installed.complete(null);
             } else {
               installed.completeExceptionally(error);
