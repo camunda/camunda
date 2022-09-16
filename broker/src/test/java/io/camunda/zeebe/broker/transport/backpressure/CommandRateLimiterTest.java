@@ -10,11 +10,18 @@ package io.camunda.zeebe.broker.transport.backpressure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.netflix.concurrency.limits.limit.SettableLimit;
+import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class CommandRateLimiterTest {
 
@@ -67,26 +74,6 @@ class CommandRateLimiterTest {
   }
 
   @Test
-  void shouldAcquireWhenJobCompleteCommandAfterLimit() {
-    // given
-    IntStream.range(0, limit.getLimit())
-        .forEach(i -> assertThat(rateLimiter.tryAcquire(0, 1, context)).isTrue());
-
-    // then
-    assertThat(rateLimiter.tryAcquire(0, 1, JobIntent.COMPLETE)).isTrue();
-  }
-
-  @Test
-  void shouldAcquireWhenJobFailCommandAfterLimit() {
-    // given
-    IntStream.range(0, limit.getLimit())
-        .forEach(i -> assertThat(rateLimiter.tryAcquire(0, 1, context)).isTrue());
-
-    // then
-    assertThat(rateLimiter.tryAcquire(0, 1, JobIntent.FAIL)).isTrue();
-  }
-
-  @Test
   void shouldReleaseRequestOnIgnore() {
     // given
     rateLimiter.tryAcquire(0, 1, context);
@@ -97,5 +84,27 @@ class CommandRateLimiterTest {
 
     // then
     assertThat(rateLimiter.getInflightCount()).isEqualTo(0);
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideWhitelistedIntents")
+  void shouldWhiteListedCommandAfterLimit(final Intent intent) {
+    // given
+    IntStream.range(0, limit.getLimit())
+        .forEach(i -> assertThat(rateLimiter.tryAcquire(0, 1, context)).isTrue());
+    assertThat(rateLimiter.tryAcquire(0, 1, context)).isFalse();
+
+    // then
+    assertThat(rateLimiter.tryAcquire(0, 1, intent)).isTrue();
+  }
+
+  private static Stream<Arguments> provideWhitelistedIntents() {
+    return Stream.of(
+        Arguments.of(JobIntent.COMPLETE),
+        Arguments.of(JobIntent.FAIL),
+        Arguments.of(ProcessInstanceIntent.CANCEL),
+        Arguments.of(DeploymentIntent.CREATE),
+        Arguments.of(DeploymentIntent.DISTRIBUTE),
+        Arguments.of(DeploymentDistributionIntent.COMPLETE));
   }
 }
