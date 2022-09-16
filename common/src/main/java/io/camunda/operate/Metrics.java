@@ -32,6 +32,7 @@ public class Metrics {
   public static final String TIMER_NAME_IMPORT_INDEX_QUERY = OPERATE_NAMESPACE + "import.index.query";
   public static final String TIMER_NAME_IMPORT_PROCESS_BATCH = OPERATE_NAMESPACE + "import.process.batch";
   public static final String TIMER_NAME_IMPORT_TIME = OPERATE_NAMESPACE + "import.time";
+  public static final String TIMER_NAME_IMPORT_JOB_SCHEDULED_TIME = OPERATE_NAMESPACE + "import.job.scheduled";
   public static final String TIMER_NAME_ARCHIVER_QUERY = OPERATE_NAMESPACE + "archiver.query";
   public static final String TIMER_NAME_ARCHIVER_REINDEX_QUERY = OPERATE_NAMESPACE + "archiver.reindex.query";
   public static final String TIMER_NAME_ARCHIVER_DELETE_QUERY = OPERATE_NAMESPACE + "archiver.delete.query";

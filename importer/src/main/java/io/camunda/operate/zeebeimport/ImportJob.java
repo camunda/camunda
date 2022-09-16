@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -43,6 +44,8 @@ public class ImportJob implements Callable<Boolean> {
 
   private ImportPositionEntity lastProcessedPosition;
 
+  private OffsetDateTime creationTime;
+
   @Autowired
   private ImportBatchProcessorFactory importBatchProcessorFactory;
 
@@ -68,6 +71,7 @@ public class ImportJob implements Callable<Boolean> {
   public ImportJob(ImportBatch importBatch, ImportPositionEntity previousPosition) {
     this.importBatch = importBatch;
     this.previousPosition = previousPosition;
+    this.creationTime = OffsetDateTime.now();
   }
 
   @Override
@@ -186,6 +190,10 @@ public class ImportJob implements Callable<Boolean> {
     return lastProcessedPosition;
   }
 
+  public ImportBatch getImportBatch() {
+    return importBatch;
+  }
+
   public boolean indexChange() {
     if (importBatch.getLastRecordIndexName() != null && previousPosition != null && previousPosition.getIndexName() != null) {
       return !importBatch.getLastRecordIndexName().equals(previousPosition.getIndexName());
@@ -209,4 +217,9 @@ public class ImportJob implements Callable<Boolean> {
       }
     }
   }
+
+  public OffsetDateTime getCreationTime() {
+    return creationTime;
+  }
+
 }

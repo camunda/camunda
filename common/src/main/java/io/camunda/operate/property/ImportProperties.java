@@ -34,6 +34,11 @@ public class ImportProperties {
 
   private int readerBackoff = DEFAULT_READER_BACKOFF;
 
+  /**
+   * The property is not used anymore. Instead of a backoff,
+   * the records reader gets rescheduled once the queue has capacity.
+   */
+  @Deprecated(since = "8.1.0")
   private int schedulerBackoff = DEFAULT_SCHEDULER_BACKOFF;
 
   private int flowNodeTreeCacheSize = DEFAULT_FLOW_NODE_TREE_CACHE_SIZE;
