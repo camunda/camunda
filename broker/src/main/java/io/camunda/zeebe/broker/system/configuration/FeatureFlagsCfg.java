@@ -32,6 +32,7 @@ public final class FeatureFlagsCfg {
 
   private boolean enableYieldingDueDateChecker = DEFAULT_SETTINGS.yieldingDueDateChecker();
   private boolean enableActorMetrics = DEFAULT_SETTINGS.enableActorMetrics();
+  private boolean enableBackup = DEFAULT_SETTINGS.enableBackup();
 
   public boolean isEnableYieldingDueDateChecker() {
     return enableYieldingDueDateChecker;
@@ -49,8 +50,17 @@ public final class FeatureFlagsCfg {
     this.enableActorMetrics = enableActorMetrics;
   }
 
+  public boolean isEnableBackup() {
+    return enableBackup;
+  }
+
+  public void setEnableBackup(final boolean enableBackup) {
+    this.enableBackup = enableBackup;
+  }
+
   public FeatureFlags toFeatureFlags() {
-    return new FeatureFlags(enableYieldingDueDateChecker, enableActorMetrics /*, enableFoo*/);
+    return new FeatureFlags(
+        enableYieldingDueDateChecker, enableActorMetrics, enableBackup /*, enableFoo*/);
   }
 
   @Override

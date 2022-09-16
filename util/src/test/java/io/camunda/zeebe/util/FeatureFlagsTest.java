@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-public class FeatureFlagsTest {
+class FeatureFlagsTest {
 
   @Test
   void testDefaultValues() {
@@ -20,6 +20,8 @@ public class FeatureFlagsTest {
 
     // then
     assertThat(sut.yieldingDueDateChecker()).isFalse();
+    assertThat(sut.enableActorMetrics()).isFalse();
+    assertThat(sut.enableBackup()).isFalse();
   }
 
   @Test
