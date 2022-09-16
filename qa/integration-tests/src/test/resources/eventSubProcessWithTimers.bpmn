@@ -41,7 +41,7 @@
         <bpmn:startEvent id="StartEvent_0kpitfv" name="Timer in sub-subprocess" isInterrupting="false">
           <bpmn:outgoing>SequenceFlow_1c82aad</bpmn:outgoing>
           <bpmn:timerEventDefinition>
-            <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R2/PT2S</bpmn:timeCycle>
+            <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R1/PT2S</bpmn:timeCycle>
           </bpmn:timerEventDefinition>
         </bpmn:startEvent>
       </bpmn:subProcess>
