@@ -7,5 +7,5 @@
  */
 package io.camunda.zeebe.gateway.admin.backup;
 
-record PartitionBackupDescriptor(
+public record PartitionBackupDescriptor(
     String snapshotId, long checkpointPosition, int brokerId, String brokerVersion) {}

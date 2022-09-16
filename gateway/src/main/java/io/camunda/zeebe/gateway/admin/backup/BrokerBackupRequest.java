@@ -15,8 +15,8 @@ import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandResponse;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
-import io.camunda.zeebe.protocol.management.BackupRequestEncoder;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
+import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
@@ -32,7 +32,7 @@ public final class BrokerBackupRequest extends BrokerRequest<CheckpointRecord> {
   final ExecuteCommandResponse response = new ExecuteCommandResponse();
 
   public BrokerBackupRequest() {
-    super(BackupRequestEncoder.SCHEMA_ID, BackupRequestEncoder.TEMPLATE_ID);
+    super(ExecuteCommandResponseDecoder.SCHEMA_ID, ExecuteCommandResponseDecoder.TEMPLATE_ID);
     request.setType(BackupRequestType.TAKE_BACKUP);
   }
 

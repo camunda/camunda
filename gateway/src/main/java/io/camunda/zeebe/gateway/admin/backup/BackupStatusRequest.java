@@ -11,7 +11,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
-import io.camunda.zeebe.protocol.management.BackupRequestEncoder;
+import io.camunda.zeebe.protocol.management.BackupRequestType;
+import io.camunda.zeebe.protocol.management.BackupStatusResponseDecoder;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
@@ -23,7 +24,8 @@ public class BackupStatusRequest extends BrokerRequest<BackupStatusResponse> {
   protected final BackupStatusResponse response = new BackupStatusResponse();
 
   public BackupStatusRequest() {
-    super(BackupRequestEncoder.SCHEMA_ID, BackupRequestEncoder.TEMPLATE_ID);
+    super(BackupStatusResponseDecoder.SCHEMA_ID, BackupStatusResponseDecoder.TEMPLATE_ID);
+    request.setType(BackupRequestType.QUERY_STATUS);
   }
 
   public long getBackupId() {

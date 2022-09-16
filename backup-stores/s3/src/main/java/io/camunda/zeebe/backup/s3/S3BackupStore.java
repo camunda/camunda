@@ -348,7 +348,7 @@ public final class S3BackupStore implements BackupStore {
         AsyncRequestBody.fromFile(filePath));
   }
 
-  private static S3AsyncClient buildClient(final S3BackupConfig config) {
+  public static S3AsyncClient buildClient(final S3BackupConfig config) {
     final var builder = S3AsyncClient.builder();
     config.endpoint().ifPresent(endpoint -> builder.endpointOverride(URI.create(endpoint)));
     config.region().ifPresent(region -> builder.region(Region.of(region)));
