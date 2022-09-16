@@ -16,6 +16,7 @@ import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
@@ -252,7 +253,24 @@ public final class CreateProcessInstanceTest {
             .send()
             .join();
 
-    assertThat(instance.getProcessInstanceKey()).isPositive();
+    final var processInstanceKey = instance.getProcessInstanceKey();
+
+    // then
+    assertThat(processInstanceKey).isPositive();
+
+    final var activatedTaskB =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("end1")
+            .findAny();
+    final var activatedTaskC =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("end2")
+            .findAny();
+
+    assertThat(activatedTaskB).describedAs("Expect that end event 'end1' is activated").isPresent();
+    assertThat(activatedTaskC).describedAs("Expect that end event 'end2' is activated").isPresent();
   }
 
   @Test
