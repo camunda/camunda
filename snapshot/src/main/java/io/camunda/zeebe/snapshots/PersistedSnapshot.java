@@ -8,11 +8,10 @@
 package io.camunda.zeebe.snapshots;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.util.CloseableSilently;
 import java.nio.file.Path;
 
 /** Represents a snapshot, which was persisted at the {@link PersistedSnapshotStore}. */
-public interface PersistedSnapshot extends CloseableSilently {
+public interface PersistedSnapshot {
 
   /**
    * Returns the snapshot format version.
