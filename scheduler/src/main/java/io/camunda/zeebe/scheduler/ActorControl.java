@@ -136,7 +136,7 @@ public class ActorControl implements ConcurrencyControl {
    * @return
    */
   public ScheduledTimer runDelayed(final Duration delay, final Runnable runnable) {
-    ensureCalledFromWithinActor("runDelayed(...)");
+//    ensureCalledFromWithinActor("runDelayed(...)");
     return scheduleTimer(delay, false, runnable);
   }
 
