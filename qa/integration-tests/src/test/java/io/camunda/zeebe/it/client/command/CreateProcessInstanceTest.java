@@ -36,8 +36,9 @@ public final class CreateProcessInstanceTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   private String processId;
+  private String processId2;
   private long firstProcessDefinitionKey;
-  private Long secondProcessDefinitionKey;
+  private long secondProcessDefinitionKey;
 
   @Before
   public void deployProcess() {
@@ -46,7 +47,26 @@ public final class CreateProcessInstanceTest {
     firstProcessDefinitionKey =
         CLIENT_RULE.deployProcess(Bpmn.createExecutableProcess(processId).startEvent("v1").done());
     secondProcessDefinitionKey =
-        CLIENT_RULE.deployProcess(Bpmn.createExecutableProcess(processId).startEvent("v2").done());
+        CLIENT_RULE.deployProcess(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent("v2")
+                .parallelGateway()
+                .endEvent("end1")
+                .moveToLastGateway()
+                .endEvent("end2")
+                .done());
+
+    processId2 = "%s-2".formatted(helper.getBpmnProcessId());
+    CLIENT_RULE.deployProcess(
+        Bpmn.createExecutableProcess(processId2)
+            .eventSubProcess(
+                "event-sub",
+                e ->
+                    e.startEvent("msg-start-event")
+                        .message(msg -> msg.name("msg").zeebeCorrelationKey("=missing_var")))
+            .startEvent("v3")
+            .endEvent("end")
+            .done());
   }
 
   @Test
@@ -217,5 +237,43 @@ public final class CreateProcessInstanceTest {
     assertThatThrownBy(() -> command.join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Expected to find process definition with key '123', but none found");
+  }
+
+  @Test
+  public void shouldCreateWithStartInstructions() {
+    // when
+    final var instance =
+        CLIENT_RULE
+            .getClient()
+            .newCreateInstanceCommand()
+            .processDefinitionKey(secondProcessDefinitionKey)
+            .startBeforeElement("end1")
+            .startBeforeElement("end2")
+            .send()
+            .join();
+
+    assertThat(instance.getProcessInstanceKey()).isPositive();
+  }
+
+  @Test
+  public void shouldRejectCreateWithStartInstructions() {
+    // when
+    final var command =
+        CLIENT_RULE
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId2)
+            .latestVersion()
+            // without variables
+            .startBeforeElement("end")
+            .send();
+
+    assertThatThrownBy(command::join)
+        .isInstanceOf(ClientException.class)
+        .hasMessageContaining(
+            """
+            Expected to subscribe to catch event(s) of \
+            'process-shouldRejectCreateWithStartInstructions-2' but failed to evaluate expression \
+            'missing_var': no variable found for name 'missing_var'""");
   }
 }
