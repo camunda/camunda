@@ -13,6 +13,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTI
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -79,6 +80,7 @@ public class ProcessingScheduleServiceTest {
   public void clean() {
     dummyProcessor.continueReplay();
     dummyProcessor.continueProcessing();
+    streamPlatform = null;
   }
 
   @Test
@@ -240,13 +242,14 @@ public class ProcessingScheduleServiceTest {
   void shouldPreserveOrderingOfWritesEvenWithRetries() {
     // given
     final var dummyProcessorSpy = spy(dummyProcessor);
-    final var syncLogStream = spy(streamPlatform.createLogStream("stream", 1));
+    final var syncLogStream = spy(streamPlatform.getLogStream("stream-1"));
     final var logStream = spy(syncLogStream.getAsyncLogStream());
     final var batchWriter = spy(syncLogStream.newLogStreamBatchWriter());
 
     when(syncLogStream.getAsyncLogStream()).thenReturn(logStream);
-    when(logStream.newLogStreamBatchWriter())
-        .thenReturn(CompletableActorFuture.completed(batchWriter));
+    doReturn(CompletableActorFuture.completed(batchWriter))
+        .when(logStream)
+        .newLogStreamBatchWriter();
     streamPlatform
         .withRecordProcessors(List.of(dummyProcessorSpy))
         .buildStreamProcessor(syncLogStream, true);

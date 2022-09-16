@@ -107,6 +107,7 @@ public final class StreamPlatform {
         .thenReturn(EmptyProcessingResult.INSTANCE);
     when(defaultRecordProcessor.accepts(any())).thenReturn(true);
     recordProcessors = List.of(defaultRecordProcessor);
+    closeables.add(() -> recordProcessors.clear());
   }
 
   public SynchronousLogStream createLogStream(final String name, final int partitionId) {
@@ -135,8 +136,7 @@ public final class StreamPlatform {
 
     final LogContext logContext = LogContext.createLogContext(logStream);
     logContextMap.put(name, logContext);
-    closeables.add(logContext);
-    closeables.add(() -> logContextMap.remove(name));
+    closeables.add(() -> logContextMap.remove(name).close());
     return logStream;
   }
 
@@ -253,7 +253,7 @@ public final class StreamPlatform {
     final ProcessorContext processorContext =
         ProcessorContext.createStreamContext(streamProcessor, zeebeDb, storage, snapshot);
     streamContextMap.put(logName, processorContext);
-    closeables.add(processorContext);
+    closeables.add(() -> streamContextMap.remove(logName).close());
 
     return streamProcessor;
   }

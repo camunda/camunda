@@ -9,6 +9,7 @@ package io.camunda.zeebe.util.allocation;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
+import org.agrona.BufferUtil;
 
 public final class DirectBufferAllocator implements BufferAllocator {
   private static final AtomicLong ALLOCATED_MEMORY = new AtomicLong();
@@ -26,6 +27,7 @@ public final class DirectBufferAllocator implements BufferAllocator {
 
   private static void onFree(final AllocatedDirectBuffer buffer) {
     ALLOCATED_MEMORY.addAndGet(-buffer.capacity());
+    BufferUtil.free(buffer.rawBuffer);
   }
 
   public static long getAllocatedMemoryInKb() {

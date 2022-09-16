@@ -124,6 +124,7 @@ public class StreamPlatformExtension implements BeforeEachCallback {
       Collections.reverse(closables);
       CloseHelper.quietCloseAll(closables);
       closables.clear();
+      streamPlatform = null;
     }
   }
 }
