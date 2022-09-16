@@ -242,7 +242,7 @@ public class ProcessingScheduleServiceTest {
   void shouldPreserveOrderingOfWritesEvenWithRetries() {
     // given
     final var dummyProcessorSpy = spy(dummyProcessor);
-    final var syncLogStream = spy(streamPlatform.createLogStream("stream", 1));
+    final var syncLogStream = spy(streamPlatform.getLogStream("stream-1"));
     final var logStream = spy(syncLogStream.getAsyncLogStream());
     final var batchWriter = spy(syncLogStream.newLogStreamBatchWriter());
 
