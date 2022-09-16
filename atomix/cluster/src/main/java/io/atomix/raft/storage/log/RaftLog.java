@@ -16,10 +16,9 @@
  */
 package io.atomix.raft.storage.log;
 
+import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
+
 import io.atomix.raft.protocol.PersistedRaftRecord;
-import io.atomix.raft.storage.log.entry.ApplicationEntry;
-import io.atomix.raft.storage.log.entry.ConfigurationEntry;
-import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
@@ -27,9 +26,6 @@ import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalRecord;
 import java.io.Closeable;
 import org.agrona.CloseHelper;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 /** Raft log. */
 public final class RaftLog implements Closeable {
@@ -39,8 +35,6 @@ public final class RaftLog implements Closeable {
 
   private IndexedRaftLogEntry lastAppendedEntry;
   private volatile long commitIndex;
-
-  private final MutableDirectBuffer writeBuffer = new ExpandableArrayBuffer(4 * 1024);
 
   RaftLog(final Journal journal, final boolean flushExplicitly) {
     this.journal = journal;
@@ -141,28 +135,10 @@ public final class RaftLog implements Closeable {
   }
 
   public IndexedRaftLogEntry append(final RaftLogEntry entry) {
-    final JournalRecord journalRecord;
-
-    if (entry.isApplicationEntry()) {
-      final ApplicationEntry asqnEntry = entry.getApplicationEntry();
-      final int serializedLength =
-          serializer.writeApplicationEntry(entry.term(), asqnEntry, writeBuffer, 0);
-      journalRecord =
-          journal.append(
-              asqnEntry.lowestPosition(), new UnsafeBuffer(writeBuffer, 0, serializedLength));
-    } else if (entry.isInitialEntry()) {
-      final InitialEntry initialEntry = entry.getInitialEntry();
-      final int serializedLength =
-          serializer.writeInitialEntry(entry.term(), initialEntry, writeBuffer, 0);
-      journalRecord = journal.append(new UnsafeBuffer(writeBuffer, 0, serializedLength));
-    } else if (entry.isConfigurationEntry()) {
-      final ConfigurationEntry configurationEntry = entry.getConfigurationEntry();
-      final int serializedLength =
-          serializer.writeConfigurationEntry(entry.term(), configurationEntry, writeBuffer, 0);
-      journalRecord = journal.append(new UnsafeBuffer(writeBuffer, 0, serializedLength));
-    } else {
-      throw new IllegalArgumentException("Unexpected entry type " + entry);
-    }
+    final JournalRecord journalRecord =
+        journal.append(
+            entry.getLowestAsqn().orElse(ASQN_IGNORE),
+            entry.entry().toSerializable(entry.term(), serializer));
 
     lastAppendedEntry = new IndexedRaftLogEntryImpl(entry.term(), entry.entry(), journalRecord);
     return lastAppendedEntry;

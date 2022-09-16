@@ -15,6 +15,7 @@
  */
 package io.atomix.raft.storage.serializer;
 
+import static io.atomix.raft.storage.serializer.ConfigurationEntryEncoder.RaftMemberEncoder;
 import static io.atomix.raft.storage.serializer.SerializerUtil.getRaftMemberType;
 import static io.atomix.raft.storage.serializer.SerializerUtil.getSBEType;
 
@@ -27,6 +28,7 @@ import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.serializer.ConfigurationEntryDecoder.RaftMemberDecoder;
+import io.camunda.zeebe.journal.file.RecordDataEncoder;
 import java.time.Instant;
 import java.util.ArrayList;
 import org.agrona.DirectBuffer;
@@ -38,11 +40,45 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
   final RaftLogEntryEncoder raftLogEntryEncoder = new RaftLogEntryEncoder();
   final ApplicationEntryEncoder applicationEntryEncoder = new ApplicationEntryEncoder();
   final ConfigurationEntryEncoder configurationEntryEncoder = new ConfigurationEntryEncoder();
-
   final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   final RaftLogEntryDecoder raftLogEntryDecoder = new RaftLogEntryDecoder();
   final ApplicationEntryDecoder applicationEntryDecoder = new ApplicationEntryDecoder();
   final ConfigurationEntryDecoder configurationEntryDecoder = new ConfigurationEntryDecoder();
+
+  @Override
+  public int getApplicationEntrySerializedLength(final ApplicationEntry entry) {
+    // raft frame length
+    return headerEncoder.encodedLength()
+        + raftLogEntryEncoder.sbeBlockLength()
+        // + application entry length
+        + headerEncoder.encodedLength()
+        + applicationEntryEncoder.sbeBlockLength()
+        + RecordDataEncoder.dataHeaderLength()
+        + entry.data().capacity();
+  }
+
+  @Override
+  public int getInitialEntrySerializedLength() {
+    return headerEncoder.encodedLength() + raftLogEntryEncoder.sbeBlockLength();
+  }
+
+  @Override
+  public int getConfigurationEntrySerializedLength(final ConfigurationEntry entry) {
+    // raft frame length
+    return headerEncoder.encodedLength()
+        + raftLogEntryEncoder.sbeBlockLength()
+        // configuration entry length
+        + headerEncoder.encodedLength()
+        // timestamp
+        + configurationEntryEncoder.sbeBlockLength()
+        // members header
+        + RaftMemberEncoder.sbeHeaderSize()
+        // member entries
+        + entry.members().stream()
+            .map(this::getConfigurationMemberEntryLength)
+            .mapToInt(Integer::intValue)
+            .sum();
+  }
 
   @Override
   public int writeApplicationEntry(
@@ -141,6 +177,13 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
     }
 
     return new RaftLogEntry(term, entry);
+  }
+
+  private int getConfigurationMemberEntryLength(final RaftMember raftMember) {
+    final String id = raftMember.memberId().id();
+    return RaftMemberEncoder.sbeBlockLength()
+        + RaftMemberEncoder.memberIdHeaderLength()
+        + ((null == id || id.isEmpty()) ? 0 : id.length());
   }
 
   private int writeRaftFrame(
