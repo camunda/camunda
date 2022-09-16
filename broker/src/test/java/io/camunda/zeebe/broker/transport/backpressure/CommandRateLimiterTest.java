@@ -14,9 +14,9 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import java.util.stream.IntStream;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public final class CommandRateLimiterTest {
+class CommandRateLimiterTest {
 
   private static final int INITIAL_LIMIT = 5;
   private final SettableLimit limit = new SettableLimit(INITIAL_LIMIT);
@@ -25,12 +25,12 @@ public final class CommandRateLimiterTest {
   private final Intent context = ProcessInstanceCreationIntent.CREATE;
 
   @Test
-  public void shouldAcquire() {
+  void shouldAcquire() {
     assertThat(rateLimiter.tryAcquire(0, 1, context)).isTrue();
   }
 
   @Test
-  public void shouldNotAcquireAfterLimit() {
+  void shouldNotAcquireAfterLimit() {
     // given
     IntStream.range(0, limit.getLimit())
         .forEach(i -> assertThat(rateLimiter.tryAcquire(0, 1, context)).isTrue());
@@ -39,7 +39,7 @@ public final class CommandRateLimiterTest {
   }
 
   @Test
-  public void shouldCompleteRequestOnResponse() {
+  void shouldCompleteRequestOnResponse() {
     // given
     IntStream.range(0, limit.getLimit())
         .forEach(i -> assertThat(rateLimiter.tryAcquire(0, i, context)));
@@ -53,7 +53,7 @@ public final class CommandRateLimiterTest {
   }
 
   @Test
-  public void shouldCompleteAllRequests() {
+  void shouldCompleteAllRequests() {
     // given
     IntStream.range(0, limit.getLimit())
         .forEach(i -> assertThat(rateLimiter.tryAcquire(0, i, context)));
@@ -69,7 +69,7 @@ public final class CommandRateLimiterTest {
   }
 
   @Test
-  public void shouldAcquireWhenJobCompleteCommandAfterLimit() {
+  void shouldAcquireWhenJobCompleteCommandAfterLimit() {
     // given
     IntStream.range(0, limit.getLimit())
         .forEach(i -> assertThat(rateLimiter.tryAcquire(0, 1, context)).isTrue());
@@ -79,7 +79,7 @@ public final class CommandRateLimiterTest {
   }
 
   @Test
-  public void shouldAcquireWhenJobFailCommandAfterLimit() {
+  void shouldAcquireWhenJobFailCommandAfterLimit() {
     // given
     IntStream.range(0, limit.getLimit())
         .forEach(i -> assertThat(rateLimiter.tryAcquire(0, 1, context)).isTrue());
@@ -89,7 +89,7 @@ public final class CommandRateLimiterTest {
   }
 
   @Test
-  public void shouldReleaseRequestOnIgnore() {
+  void shouldReleaseRequestOnIgnore() {
     // given
     rateLimiter.tryAcquire(0, 1, context);
     assertThat(rateLimiter.getInflightCount()).isEqualTo(1);
