@@ -71,9 +71,7 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
       backupManagerInstalled.onComplete(
           (ignore, error) -> {
             if (error == null) {
-              if (isBackupFeatureEnabled) {
-                installCheckpointProcessor(context, context.getBackupManager());
-              }
+              installCheckpointProcessor(context, context.getBackupManager());
               installed.complete(null);
             } else {
               installed.completeExceptionally(error);
