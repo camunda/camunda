@@ -33,6 +33,7 @@ import {FieldArray, useFieldArray} from 'react-final-form-arrays';
 import {NewVariableModification} from './NewVariableModification';
 import {VariableFormValues} from 'modules/types/variables';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
+import {OnLastVariableModificationRemoved} from './OnLastVariableModificationRemoved';
 
 const Variables: React.FC = observer(() => {
   const {
@@ -65,7 +66,7 @@ const Variables: React.FC = observer(() => {
     );
 
     return disposer;
-  });
+  }, [isModificationModeEnabled, form]);
 
   const {initialValues} = useFormState();
 
@@ -151,24 +152,29 @@ const Variables: React.FC = observer(() => {
                 scrollableContainerRef={scrollableContentRef}
               >
                 <tbody>
-                  <FieldArray name="newVariables">
-                    {({fields}) =>
-                      fields
-                        .map((variableName, index) => {
-                          return (
-                            <TR key={variableName}>
-                              <NewVariableModification
-                                variableName={variableName}
-                                onRemove={() => {
-                                  fields.remove(index);
-                                }}
-                              />
-                            </TR>
-                          );
-                        })
-                        .reverse()
-                    }
-                  </FieldArray>
+                  {isModificationModeEnabled && (
+                    <>
+                      <OnLastVariableModificationRemoved />
+                      <FieldArray name="newVariables">
+                        {({fields}) =>
+                          fields
+                            .map((variableName, index) => {
+                              return (
+                                <TR key={variableName}>
+                                  <NewVariableModification
+                                    variableName={variableName}
+                                    onRemove={() => {
+                                      fields.remove(index);
+                                    }}
+                                  />
+                                </TR>
+                              );
+                            })
+                            .reverse()
+                        }
+                      </FieldArray>
+                    </>
+                  )}
                   {items.map(
                     ({
                       name: variableName,

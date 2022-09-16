@@ -13,6 +13,7 @@ import {mockProcessForModifications} from 'modules/mocks/mockProcessForModificat
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {flowNodeStatesStore} from './flowNodeStates';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
+import {createEditVariableModification} from 'modules/mocks/modifications';
 
 describe('stores/modifications', () => {
   afterEach(() => {
@@ -160,18 +161,12 @@ describe('stores/modifications', () => {
     });
 
     expect(modificationsStore.state.modifications.length).toEqual(1);
-
-    modificationsStore.addModification({
-      type: 'variable',
-      payload: {
-        id: '2',
-        operation: 'EDIT_VARIABLE',
-        scopeId: '2',
-        flowNodeName: 'flow-node-2',
-        name: 'variable1',
-        oldValue: 'variable2-oldValue',
-        newValue: 'variable2-newValue',
-      },
+    createEditVariableModification({
+      name: 'variable1',
+      oldValue: 'variable2-oldValue',
+      newValue: 'variable2-newValue',
+      flowNodeName: 'flow-node-2',
+      scopeId: '2',
     });
 
     expect(modificationsStore.state.modifications.length).toEqual(2);
@@ -192,12 +187,25 @@ describe('stores/modifications', () => {
 
     modificationsStore.removeVariableModification('1', '1', 'ADD_VARIABLE');
     expect(modificationsStore.state.modifications.length).toEqual(1);
+
+    expect(modificationsStore.state.lastRemovedModification).toEqual({
+      payload: {
+        flowNodeName: 'flow-node-1',
+        id: '1',
+        name: 'variable1',
+        newValue: 'variable1-newValue',
+        oldValue: 'variable1-oldValue',
+        operation: 'ADD_VARIABLE',
+        scopeId: '1',
+      },
+      type: 'variable',
+    });
     expect(modificationsStore.state.modifications).toEqual([
       {
         payload: {
           flowNodeName: 'flow-node-2',
+          id: 'variable1',
           scopeId: '2',
-          id: '2',
           name: 'variable1',
           newValue: 'variable2-newValue',
           oldValue: 'variable2-oldValue',
@@ -206,6 +214,27 @@ describe('stores/modifications', () => {
         type: 'variable',
       },
     ]);
+
+    modificationsStore.removeVariableModification(
+      '2',
+      'variable1',
+      'EDIT_VARIABLE'
+    );
+
+    expect(modificationsStore.state.lastRemovedModification).toEqual({
+      payload: {
+        flowNodeName: 'flow-node-2',
+        id: 'variable1',
+        name: 'variable1',
+        newValue: 'variable2-newValue',
+        oldValue: 'variable2-oldValue',
+        operation: 'EDIT_VARIABLE',
+        scopeId: '2',
+      },
+      type: 'variable',
+    });
+
+    expect(modificationsStore.state.modifications.length).toEqual(0);
   });
 
   it('should remove last modification', async () => {
@@ -533,28 +562,20 @@ describe('stores/modifications', () => {
       },
     ]);
 
-    modificationsStore.addModification({
-      type: 'variable',
-      payload: {
-        operation: 'EDIT_VARIABLE',
-        scopeId: 'flow-node-1',
-        flowNodeName: 'flowNode1',
-        id: 'existing-variable',
-        name: 'existing-variable',
-        newValue: '123',
-      },
+    createEditVariableModification({
+      scopeId: 'flow-node-1',
+      flowNodeName: 'flowNode1',
+      name: 'existing-variable',
+      oldValue: '12',
+      newValue: '123',
     });
 
-    modificationsStore.addModification({
-      type: 'variable',
-      payload: {
-        operation: 'EDIT_VARIABLE',
-        scopeId: 'flow-node-1',
-        flowNodeName: 'flowNode1',
-        id: 'existing-variable',
-        name: 'existing-variable',
-        newValue: '1234',
-      },
+    createEditVariableModification({
+      scopeId: 'flow-node-1',
+      flowNodeName: 'flowNode1',
+      name: 'existing-variable',
+      oldValue: '12',
+      newValue: '1234',
     });
 
     expect(modificationsStore.variableModifications).toEqual([
@@ -573,6 +594,7 @@ describe('stores/modifications', () => {
         id: 'existing-variable',
         name: 'existing-variable',
         newValue: '1234',
+        oldValue: '12',
       },
     ]);
 
@@ -604,6 +626,7 @@ describe('stores/modifications', () => {
         id: 'existing-variable',
         name: 'existing-variable',
         newValue: '1234',
+        oldValue: '12',
       },
       {
         operation: 'ADD_VARIABLE',
@@ -640,5 +663,75 @@ describe('stores/modifications', () => {
     expect(
       modificationsStore.generateParentScopeIds('parent_sub_process')
     ).toEqual({});
+  });
+
+  it('should retrieve last variable modification correctly', async () => {
+    const FLOW_NODE_INSTANCE_ID = 'test-flow-node';
+
+    createEditVariableModification({
+      scopeId: FLOW_NODE_INSTANCE_ID,
+      name: 'test',
+      oldValue: '12',
+      newValue: '123',
+    });
+    expect(
+      modificationsStore.getLastVariableModification(
+        FLOW_NODE_INSTANCE_ID,
+        'test',
+        'EDIT_VARIABLE'
+      )
+    ).toEqual({
+      operation: 'EDIT_VARIABLE',
+      flowNodeName: 'flow-node-name',
+      id: 'test',
+      scopeId: FLOW_NODE_INSTANCE_ID,
+      name: 'test',
+      oldValue: '12',
+      newValue: '123',
+    });
+
+    createEditVariableModification({
+      scopeId: FLOW_NODE_INSTANCE_ID,
+      name: 'test2',
+      oldValue: '123',
+      newValue: '1234',
+    });
+    expect(
+      modificationsStore.getLastVariableModification(
+        FLOW_NODE_INSTANCE_ID,
+        'test2',
+        'EDIT_VARIABLE'
+      )
+    ).toEqual({
+      operation: 'EDIT_VARIABLE',
+      flowNodeName: 'flow-node-name',
+      id: 'test2',
+      scopeId: FLOW_NODE_INSTANCE_ID,
+      name: 'test2',
+      oldValue: '123',
+      newValue: '1234',
+    });
+
+    createEditVariableModification({
+      scopeId: FLOW_NODE_INSTANCE_ID,
+      name: 'test',
+      oldValue: '12',
+      newValue: '12345',
+    });
+    expect(
+      modificationsStore.getLastVariableModification(
+        FLOW_NODE_INSTANCE_ID,
+        'test',
+        'EDIT_VARIABLE'
+      )
+    ).toEqual({
+      operation: 'EDIT_VARIABLE',
+      flowNodeName: 'flow-node-name',
+      id: 'test',
+      scopeId: FLOW_NODE_INSTANCE_ID,
+      name: 'test',
+      oldValue: '12',
+      newValue: '12345',
+    });
   });
 });

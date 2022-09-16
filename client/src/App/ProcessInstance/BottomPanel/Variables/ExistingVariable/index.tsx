@@ -11,21 +11,77 @@ import {
   VariableName,
   EditInputTD,
   EditInputContainer,
-} from './styled';
-import {validateValueComplete, validateValueValid} from './validators';
-import {Field, useForm, useFormState} from 'react-final-form';
+} from '../styled';
+import {validateValueComplete, validateValueValid} from '../validators';
+import {Field, useField, useForm, useFormState} from 'react-final-form';
 import {useRef, useState} from 'react';
-import {EditButtons} from './EditButtons';
+import {EditButtons} from '../EditButtons';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {tracking} from 'modules/tracking';
 import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
-import {createVariableFieldName} from './createVariableFieldName';
+import {createVariableFieldName} from '../createVariableFieldName';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
+import {variablesStore} from 'modules/stores/variables';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 
 type Props = {
   variableName: string;
   variableValue: string;
+};
+
+const createModification = ({
+  scopeId,
+  isValid,
+  isDirty,
+  name,
+  oldValue,
+  newValue,
+}: {
+  scopeId: string | null;
+  isValid: boolean;
+  isDirty: boolean;
+  name: string;
+  oldValue: string;
+  newValue: string;
+}) => {
+  if (
+    !modificationsStore.isModificationModeEnabled ||
+    scopeId === null ||
+    !isValid ||
+    newValue === ''
+  ) {
+    return;
+  }
+
+  const lastEditModification = modificationsStore.getLastVariableModification(
+    scopeId,
+    name,
+    'EDIT_VARIABLE'
+  );
+
+  if (
+    lastEditModification?.newValue !== newValue &&
+    (isDirty ||
+      (lastEditModification !== undefined &&
+        lastEditModification.newValue !== newValue))
+  ) {
+    modificationsStore.addModification(
+      {
+        type: 'variable',
+        payload: {
+          operation: 'EDIT_VARIABLE',
+          id: name,
+          scopeId,
+          flowNodeName: flowNodeSelectionStore.selectedFlowNodeName,
+          name,
+          oldValue,
+          newValue,
+        },
+      },
+      true
+    );
+  }
 };
 
 const ExistingVariable: React.FC<Props> = observer(
@@ -40,6 +96,24 @@ const ExistingVariable: React.FC<Props> = observer(
     const fieldName = isModificationModeEnabled
       ? createVariableFieldName(variableName)
       : 'value';
+
+    const {
+      meta: {validating, valid},
+    } = useField(fieldName);
+
+    const isValid = !validating && valid;
+
+    const lastEditModification = modificationsStore.getLastVariableModification(
+      variablesStore.scopeId,
+      variableName,
+      'EDIT_VARIABLE'
+    );
+
+    const initialValue =
+      lastEditModification !== undefined
+        ? lastEditModification?.newValue
+        : variableValue;
+
     return (
       <>
         <TD>
@@ -50,7 +124,7 @@ const ExistingVariable: React.FC<Props> = observer(
           <EditInputContainer>
             <Field
               name={fieldName}
-              initialValue={variableValue}
+              initialValue={initialValue}
               validate={mergeValidators(
                 validateValueComplete,
                 validateValueValid
@@ -77,6 +151,18 @@ const ExistingVariable: React.FC<Props> = observer(
                   }}
                   shouldDebounceError={false}
                   autoFocus={!isModificationModeEnabled}
+                  onBlur={(e) => {
+                    createModification({
+                      scopeId: variablesStore.scopeId,
+                      name: variableName,
+                      oldValue: variableValue,
+                      newValue: input.value ?? '',
+                      isDirty: variableValue !== input.value ?? false,
+                      isValid: isValid ?? false,
+                    });
+
+                    input.onBlur(e);
+                  }}
                 />
               )}
             </Field>
@@ -100,6 +186,15 @@ const ExistingVariable: React.FC<Props> = observer(
             tracking.track({
               eventName: 'json-editor-saved',
               variant: 'edit-variable',
+            });
+
+            createModification({
+              scopeId: variablesStore.scopeId,
+              name: variableName,
+              oldValue: variableValue,
+              newValue: value ?? '',
+              isDirty: initialValue !== value,
+              isValid: isValid ?? false,
             });
           }}
         />

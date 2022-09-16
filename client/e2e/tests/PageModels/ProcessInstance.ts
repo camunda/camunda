@@ -5,7 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {screen} from '@testing-library/testcafe';
+import {screen, within} from '@testing-library/testcafe';
+import {t} from 'testcafe';
 
 class ProcessInstancePage {
   newVariableNameField = screen.queryByTestId('add-variable-name').shadowRoot();
@@ -19,6 +20,26 @@ class ProcessInstancePage {
   addVariableButton = screen.queryByRole('button', {name: 'Add variable'});
   variableSpinner = screen.queryByTestId('edit-variable-spinner');
   operationSpinner = screen.queryByTestId('operation-spinner');
+
+  getEditVariableFieldSelector = (variableName: string) => {
+    return within(screen.getByTestId(variableName))
+      .getByTestId('edit-variable-value')
+      .shadowRoot();
+  };
+
+  getEditVariableFieldValue = (variableName: string) => {
+    return within(this.getEditVariableFieldSelector(variableName)).queryByRole(
+      'textbox'
+    ).value;
+  };
+
+  typeText = async (
+    field: Selector | SelectorPromise,
+    text: string,
+    options?: TypeActionOptions
+  ) => {
+    await t.typeText(within(field).queryByRole('textbox'), text, options);
+  };
 }
 
 export const processInstancePage = new ProcessInstancePage();

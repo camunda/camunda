@@ -11,6 +11,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MemoryRouter} from 'react-router-dom';
 import {modificationsStore} from 'modules/stores/modifications';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
+import {createEditVariableModification} from 'modules/mocks/modifications';
 
 type Props = {
   children?: React.ReactNode;
@@ -96,17 +97,12 @@ describe('LastModification', () => {
       screen.getByText(/Add new variable "variableName1"/)
     ).toBeInTheDocument();
 
-    modificationsStore.addModification({
-      type: 'variable',
-      payload: {
-        id: '2',
-        operation: 'EDIT_VARIABLE',
-        scopeId: '5',
-        flowNodeName: 'flowNode6',
-        name: 'variableName2',
-        oldValue: 'variableValue2',
-        newValue: 'editedVariableValue2',
-      },
+    createEditVariableModification({
+      name: 'variableName2',
+      oldValue: 'variableValue2',
+      newValue: 'editedVariableValue2',
+      scopeId: '5',
+      flowNodeName: 'flowNode6',
     });
 
     expect(

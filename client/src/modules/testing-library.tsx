@@ -8,12 +8,16 @@
 import {render as baseRender} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+const user = userEvent.setup({delay: null});
 function render(...args: Parameters<typeof baseRender>) {
   return {
-    user: userEvent.setup({delay: null}),
+    user,
     ...baseRender(...args),
   };
 }
 
+type UserEvent = typeof user;
+
 export * from '@testing-library/react';
 export {render};
+export type {UserEvent};

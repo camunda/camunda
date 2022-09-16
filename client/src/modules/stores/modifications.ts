@@ -61,6 +61,7 @@ type Modification = FlowNodeModification | VariableModification;
 type State = {
   status: 'enabled' | 'moving-token' | 'disabled' | 'adding-modification';
   modifications: Modification[];
+  lastRemovedModification: Modification | undefined;
   sourceFlowNodeIdForMoveOperation: string | null;
 };
 
@@ -68,6 +69,7 @@ const DEFAULT_STATE: State = {
   status: 'disabled',
   modifications: [],
   sourceFlowNodeIdForMoveOperation: null,
+  lastRemovedModification: undefined,
 };
 
 const EMPTY_MODIFICATION = Object.freeze({
@@ -154,16 +156,22 @@ class Modifications {
     this.state.status = 'disabled';
   };
 
-  addModification = (modification: Modification) => {
-    this.state.status = 'adding-modification';
-    this.modificationsLoadingTimeout = window.setTimeout(() => {
-      this.enableModificationMode();
-    }, 500);
+  addModification = (
+    modification: Modification,
+    preventLoadingOverlay?: boolean
+  ) => {
+    if (!preventLoadingOverlay) {
+      this.state.status = 'adding-modification';
+      this.modificationsLoadingTimeout = window.setTimeout(() => {
+        this.enableModificationMode();
+      }, 500);
+    }
+
     this.state.modifications.push(modification);
   };
 
   removeLastModification = () => {
-    this.state.modifications.pop();
+    this.state.lastRemovedModification = this.state.modifications.pop();
   };
 
   removeFlowNodeModification = (
@@ -196,15 +204,28 @@ class Modifications {
     id: string,
     operation: 'ADD_VARIABLE' | 'EDIT_VARIABLE'
   ) => {
-    this.state.modifications = this.state.modifications.filter(
-      ({type, payload}) =>
-        !(
-          type === 'variable' &&
-          payload.scopeId === scopeId &&
-          payload.id === id &&
-          payload.operation === operation
-        )
+    const lastModification = this.getLastVariableModification(
+      scopeId,
+      id,
+      operation
     );
+
+    if (lastModification === undefined) {
+      return;
+    }
+
+    const index = this.state.modifications.findIndex(
+      ({type, payload}) =>
+        type === 'variable' &&
+        payload.scopeId === lastModification.scopeId &&
+        payload.id === lastModification.id &&
+        payload.operation === lastModification.operation
+    );
+
+    this.state.lastRemovedModification = this.state.modifications.splice(
+      index,
+      1
+    )[0];
   };
 
   get isModificationModeEnabled() {
@@ -307,6 +328,19 @@ class Modifications {
       .filter(isFlowNodeModification)
       .map(({payload}) => payload);
   }
+
+  getLastVariableModification = (
+    flowNodeInstanceId: string | null,
+    id: string,
+    operation: 'ADD_VARIABLE' | 'EDIT_VARIABLE'
+  ) => {
+    return this.variableModifications.find(
+      (modification) =>
+        modification.operation === operation &&
+        modification.scopeId === flowNodeInstanceId &&
+        modification.id === id
+    );
+  };
 
   reset = () => {
     this.state = {...DEFAULT_STATE};

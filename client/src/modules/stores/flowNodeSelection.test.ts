@@ -21,6 +21,7 @@ describe('stores/flowNodeSelection', () => {
           ctx.json({
             id: PROCESS_INSTANCE_ID,
             state: 'ACTIVE',
+            processName: 'some process name',
           })
         )
       )
@@ -177,5 +178,19 @@ describe('stores/flowNodeSelection', () => {
 
     modificationsStore.disableModificationMode();
     expect(flowNodeSelectionStore.state.selection).toEqual(rootNode);
+  });
+
+  it('should get selected flow node name', async () => {
+    const selection = {
+      flowNodeId: 'startEvent',
+      flowNodeInstanceId: '2251799813689409',
+    };
+
+    expect(flowNodeSelectionStore.selectedFlowNodeName).toBe(
+      'some process name'
+    );
+
+    flowNodeSelectionStore.selectFlowNode(selection);
+    expect(flowNodeSelectionStore.selectedFlowNodeName).toBe('startEvent');
   });
 });

@@ -23,6 +23,7 @@ class MockModelContentChangedEvent implements editor.IModelContentChangedEvent {
 const Editor: typeof OriginalEditor = ({value, onChange}) => {
   return (
     <textarea
+      data-testid="monaco-editor"
       value={value}
       onChange={(event) => {
         onChange?.(event.target.value, new MockModelContentChangedEvent());

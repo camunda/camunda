@@ -10,6 +10,7 @@ import {FlowNodeInstance} from './flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {modificationsStore} from './modifications';
 import {flowNodeStatesStore} from './flowNodeStates';
+import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 
 type Selection = {
   flowNodeId?: string;
@@ -86,6 +87,27 @@ class FlowNodeSelection {
     return (
       this.state.selection?.flowNodeInstanceId ===
       processInstanceDetailsStore.state.processInstance?.id
+    );
+  }
+
+  get selectedFlowNodeName() {
+    if (
+      processInstanceDetailsStore.state.processInstance === null ||
+      this.state.selection === null
+    ) {
+      return '';
+    }
+
+    if (this.isRootNodeSelected) {
+      return processInstanceDetailsStore.state.processInstance.processName;
+    }
+
+    if (this.state.selection.flowNodeId === undefined) {
+      return '';
+    }
+
+    return processInstanceDetailsDiagramStore.getFlowNodeName(
+      this.state.selection.flowNodeId
     );
   }
 
