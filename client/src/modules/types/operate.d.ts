@@ -20,7 +20,8 @@ type OperationEntityType =
   | 'CANCEL_PROCESS_INSTANCE'
   | 'DELETE_PROCESS_INSTANCE'
   | 'UPDATE_VARIABLE'
-  | 'ADD_VARIABLE';
+  | 'ADD_VARIABLE'
+  | 'MODIFY_PROCESS_INSTANCE';
 
 type InstanceEntityState =
   | 'ACTIVE'

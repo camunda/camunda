@@ -11,6 +11,7 @@ import {ReactComponent as RetryOperation} from 'modules/components/Icon/retry.sv
 import {ReactComponent as CancelOperation} from 'modules/components/Icon/stop.svg';
 import {ReactComponent as EditOperation} from 'modules/components/Icon/edit.svg';
 import {ReactComponent as DeleteOperation} from 'modules/components/Icon/delete.svg';
+import {ReactComponent as ModifyOperation} from 'modules/components/Icon/modify.svg';
 import {styles} from '@carbon/elements';
 
 type EntryProps = {
@@ -109,6 +110,10 @@ const Delete = styled(DeleteOperation)`
   ${iconStyle};
 `;
 
+const Modify = styled(ModifyOperation)`
+  ${iconStyle};
+`;
+
 export {
   Entry,
   EntryStatus,
@@ -122,4 +127,5 @@ export {
   Cancel,
   Edit,
   Delete,
+  Modify,
 };

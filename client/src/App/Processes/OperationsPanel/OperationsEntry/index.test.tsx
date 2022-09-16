@@ -110,6 +110,20 @@ describe('OperationsEntry', () => {
     expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
   });
 
+  it('should render modify operation', () => {
+    render(<OperationsEntry {...mockProps} operation={OPERATIONS.MODIFY} />, {
+      wrapper: createWrapper(),
+    });
+
+    expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
+    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(
+      screen.getByText('df325d44-6a4c-4428-b017-24f923f1d052')
+    ).toBeInTheDocument();
+    expect(screen.getByText('Modify')).toBeInTheDocument();
+    expect(screen.getByTestId('operation-modify-icon')).toBeInTheDocument();
+  });
+
   it('should render instances count when there is one instance', () => {
     render(<OperationsEntry {...mockProps} operation={OPERATIONS.EDIT} />, {
       wrapper: createWrapper(),

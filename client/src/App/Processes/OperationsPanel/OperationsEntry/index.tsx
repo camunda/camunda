@@ -21,6 +21,7 @@ const TYPE_LABELS: Readonly<Record<OperationEntityType, string>> = {
   RESOLVE_INCIDENT: 'Retry',
   CANCEL_PROCESS_INSTANCE: 'Cancel',
   DELETE_PROCESS_INSTANCE: 'Delete',
+  MODIFY_PROCESS_INSTANCE: 'Modify',
 };
 
 type Props = {
@@ -77,6 +78,9 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
           )}
           {'DELETE_PROCESS_INSTANCE' === type && (
             <Styled.Delete data-testid="operation-delete-icon" />
+          )}
+          {'MODIFY_PROCESS_INSTANCE' === type && (
+            <Styled.Modify data-testid="operation-modify-icon" />
           )}
         </Styled.OperationIcon>
       </Styled.EntryStatus>
