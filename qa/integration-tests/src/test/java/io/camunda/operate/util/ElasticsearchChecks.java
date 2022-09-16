@@ -243,7 +243,36 @@ public class ElasticsearchChecks {
         if (flowNodes.size() == 0) {
           return false;
         } else {
-          return flowNodes.get(0).getState().equals(FlowNodeState.TERMINATED);
+          return flowNodes.stream().allMatch(flowNode -> flowNode.getState().equals(FlowNodeState.TERMINATED));
+        }
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
+  @Bean(name = "flowNodesAreTerminatedCheck")
+  public Predicate<Object[]> getFlowNodesAreTerminatedCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(3);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
+      assertThat(objects[2]).isInstanceOf(Integer.class);
+      final Long processInstanceKey = (Long) objects[0];
+      final String flowNodeId = (String) objects[1];
+      final Integer instancesCount = (Integer) objects[2];
+      try {
+        List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances(
+            processInstanceKey);
+        final List<FlowNodeInstanceEntity> flowNodes = flowNodeInstances.stream()
+            .filter(a -> a.getFlowNodeId().equals(flowNodeId))
+            .collect(Collectors.toList());
+        if (flowNodes.size() == 0) {
+          return false;
+        } else {
+          return
+              flowNodes.stream().filter(fn -> fn.getState().equals(FlowNodeState.TERMINATED)).count()
+                  >= instancesCount;
         }
       } catch (NotFoundException ex) {
         return false;

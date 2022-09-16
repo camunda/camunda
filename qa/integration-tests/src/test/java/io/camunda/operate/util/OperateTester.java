@@ -6,13 +6,11 @@
  */
 package io.camunda.operate.util;
 
-import static io.camunda.operate.util.CollectionUtil.map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.util.CollectionUtil.filter;
 import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
@@ -30,6 +28,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
@@ -47,7 +46,6 @@ import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.exceptions.ArchiverException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
@@ -152,6 +150,14 @@ public class OperateTester {
   @Autowired
   @Qualifier("flowNodeIsCompletedCheck")
   private Predicate<Object[]> flowNodeIsCompletedCheck;
+
+  @Autowired
+  @Qualifier("flowNodeIsTerminatedCheck")
+  private Predicate<Object[]> flowNodeIsTerminatedCheck;
+
+  @Autowired
+  @Qualifier("flowNodesAreTerminatedCheck")
+  private Predicate<Object[]> flowNodesAreTerminatedCheck;
 
   @Autowired
   @Qualifier("operationsByProcessInstanceAreCompletedCheck")
@@ -343,6 +349,22 @@ public class OperateTester {
     return this;
   }
 
+  public OperateTester flowNodeIsTerminated(final String activityId) {
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsTerminatedCheck, processInstanceKey, activityId);
+    return this;
+  }
+
+  public OperateTester flowNodeIsCanceled(final String activityId) {
+    return flowNodeIsTerminated(activityId);
+  }
+
+  public OperateTester flowNodesAreTerminated(final String activityId, final int count) {
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodesAreTerminatedCheck, processInstanceKey, activityId, count);
+    return this;
+  }
+  public OperateTester flowNodesAreCanceled(final String activityId, final int count) {
+    return flowNodesAreTerminated(activityId, count);
+  }
   public OperateTester activateJob(String type){
     zeebeClient.newActivateJobsCommand()
         .jobType(type)
@@ -407,6 +429,33 @@ public class OperateTester {
   public OperateTester deleteProcessInstance() throws Exception {
     postOperation(new CreateOperationRequestDto(OperationType.DELETE_PROCESS_INSTANCE));
     elasticsearchTestRule.refreshIndexesInElasticsearch();
+    return this;
+  }
+
+  public OperateTester activateFlowNode(String flowNodeId){
+    zeebeClient.newModifyProcessInstanceCommand(processInstanceKey)
+        .activateElement(flowNodeId)
+        .send().join();
+    return this;
+  }
+
+  public OperateTester cancelAllFlowNodesFor(final String flowNodeId){
+    getAllFlowNodeInstances(processInstanceKey).stream()
+        .filter(flowNode -> flowNode.getFlowNodeId().equals(flowNodeId))
+        .map(flowNode-> flowNode.getKey())
+        .forEach(key ->
+          zeebeClient
+              .newModifyProcessInstanceCommand(processInstanceKey)
+              .terminateElement(key)
+              .send().join()
+        );
+    return this;
+  }
+
+  public OperateTester cancelFlowNodeInstance(Long flowNodeInstanceId){
+    zeebeClient.newModifyProcessInstanceCommand(processInstanceKey)
+        .terminateElement(flowNodeInstanceId)
+        .send().join();
     return this;
   }
 
@@ -578,7 +627,10 @@ public class OperateTester {
     assertThat(listViewResponse.getProcessInstances()).hasSize(1);
     return listViewResponse.getProcessInstances().get(0);
   }
-
+  public OperateTester sendMessages(final String messageName,final String correlationKey, final String payload, final int count){
+    ZeebeTestUtil.sendMessages(zeebeClient, messageName, payload, count, correlationKey);
+    return this;
+  }
   private MvcResult postRequest(String requestUrl, Object query) throws Exception {
     MockHttpServletRequestBuilder request = post(requestUrl)
         .content(mockMvcTestRule.json(query))
@@ -589,4 +641,5 @@ public class OperateTester {
         .andExpect(content().contentTypeCompatibleWith(mockMvcTestRule.getContentType()))
         .andReturn();
   }
+
 }

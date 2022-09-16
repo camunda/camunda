@@ -10,7 +10,6 @@ import static io.camunda.operate.entities.FlowNodeType.CALL_ACTIVITY;
 import static io.camunda.operate.entities.FlowNodeType.MULTI_INSTANCE_BODY;
 import static io.camunda.operate.entities.FlowNodeType.SERVICE_TASK;
 import static io.camunda.operate.entities.FlowNodeType.SUB_PROCESS;
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,7 +21,6 @@ import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
-import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
@@ -43,7 +41,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -1009,16 +1006,21 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     final String correlationKey = "5";
     final String messageName = "clientMessage";
     deployProcess("messageEventProcess_v_1.bpmn");
-    final Long processInstanceKey = ZeebeTestUtil
-        .startProcessInstance(zeebeClient, processId, "{\"clientId\": \"5\"}");
-    sleepFor(1000);
+    Long processInstanceKey = tester.deployProcess("messageEventProcess_v_1.bpmn")
+        .waitUntil().processIsDeployed()
+        .and()
+        .startProcessInstance(processId,"{\"clientId\": \"5\"}")
+        .waitUntil().processInstanceIsStarted()
+        .then()
+        .getProcessInstanceKey();
 
-    //when
-    ZeebeTestUtil.sendMessages(zeebeClient, messageName, "{\"messageVar\": \"someValue\"}", 20,
-        correlationKey);
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
+    // when
+    tester.sendMessages(messageName, correlationKey, "{\"messageVar\": \"someValue\"}",20)
+        .and().waitUntil()
+        .flowNodeIsActive("taskA");
 
-    //assert flow node instances
+    // then
+    // assert flow node instances
     final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
         .getAllFlowNodeInstances(processInstanceKey);
     assertThat(allFlowNodeInstances).hasSize(3);

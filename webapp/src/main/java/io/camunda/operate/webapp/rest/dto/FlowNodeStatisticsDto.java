@@ -26,16 +26,18 @@ public class FlowNodeStatisticsDto {
     return activityId;
   }
 
-  public void setActivityId(String activityId) {
+  public FlowNodeStatisticsDto setActivityId(String activityId) {
     this.activityId = activityId;
+    return this;
   }
 
   public Long getActive() {
     return active;
   }
 
-  public void setActive(Long active) {
+  public FlowNodeStatisticsDto setActive(Long active) {
     this.active = active;
+    return this;
   }
 
   public void addActive(Long active) {
@@ -46,8 +48,9 @@ public class FlowNodeStatisticsDto {
     return canceled;
   }
 
-  public void setCanceled(Long canceled) {
+  public FlowNodeStatisticsDto setCanceled(Long canceled) {
     this.canceled = canceled;
+    return this;
   }
 
   public void addCanceled(Long canceled) {
@@ -58,8 +61,9 @@ public class FlowNodeStatisticsDto {
     return incidents;
   }
 
-  public void setIncidents(Long incidents) {
+  public FlowNodeStatisticsDto setIncidents(Long incidents) {
     this.incidents = incidents;
+    return this;
   }
 
   public void addIncidents(Long incidents) {
@@ -70,8 +74,9 @@ public class FlowNodeStatisticsDto {
     return completed;
   }
 
-  public void setCompleted(Long completed) {
+  public FlowNodeStatisticsDto setCompleted(Long completed) {
     this.completed = completed;
+    return this;
   }
 
   public void addCompleted(Long completed) {

@@ -204,6 +204,12 @@ public class ProcessInstanceRestService {
     return flowNodeInstanceReader.getFlowNodeStates(processInstanceId);
   }
 
+  @Operation(summary = "Get flow node statistic by process instance id")
+  @GetMapping("/{processInstanceId}/statistics")
+  public Collection<FlowNodeStatisticsDto> getStatistics(@PathVariable @ValidLongId String processInstanceId) {
+    return flowNodeInstanceReader.getFlowNodeStatisticsForProcessInstance(Long.parseLong(processInstanceId));
+  }
+
   @Operation(summary = "Get flow node metadata.")
   @PostMapping("/{processInstanceId}/flow-node-metadata")
   public FlowNodeMetadataDto getFlowNodeMetadata(@PathVariable @ValidLongId String processInstanceId,

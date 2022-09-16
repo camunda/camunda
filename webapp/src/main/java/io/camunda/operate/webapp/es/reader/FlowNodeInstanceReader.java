@@ -47,10 +47,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
 import io.camunda.operate.cache.ProcessCache;
-import io.camunda.operate.entities.EventEntity;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.entities.IncidentEntity;
+import io.camunda.operate.entities.*;
 import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
@@ -62,6 +59,7 @@ import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.es.reader.IncidentReader.IncidentDataHolder;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
+import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
@@ -76,16 +74,11 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.zeebeimport.util.TreePath;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -121,6 +114,11 @@ public class FlowNodeInstanceReader extends AbstractReader {
   public static final String LEVELS_TOP_HITS_AGG_NAME = "levelsTopHitsAgg";
 
   public static final String FINISHED_FLOW_NODES_BUCKETS_AGG_NAME = "finishedFlowNodesBuckets";
+  public static final String FLOW_NODE_ID_AGG = "flowNodeIdAgg";
+  public static final String COUNT_INCIDENT = "countIncident";
+  public static final String COUNT_CANCELED = "countCanceled";
+  public static final String COUNT_COMPLETED = "countCompleted";
+  public static final String COUNT_ACTIVE = "countActive";
 
   @Autowired
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
@@ -800,7 +798,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
       }
     } catch (IOException e) {
       final String message = String.format(
-          "Exception occurred, while obtaining calles decision instance id for flow node instance: %s",
+          "Exception occurred, while obtaining calls decision instance id for flow node instance: %s",
           e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
@@ -924,4 +922,38 @@ public class FlowNodeInstanceReader extends AbstractReader {
     return result;
   }
 
+  public Collection<FlowNodeStatisticsDto> getFlowNodeStatisticsForProcessInstance(final Long processInstanceId) {
+    try{
+      final SearchRequest request = ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
+          .source(new SearchSourceBuilder()
+              .query(constantScoreQuery(termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceId)))
+              .aggregation(terms(FLOW_NODE_ID_AGG).field(FLOW_NODE_ID)
+                  .subAggregation(
+                    filter(COUNT_INCIDENT, termQuery(INCIDENT, true)))
+                  .subAggregation(
+                      filter(COUNT_CANCELED, termQuery(STATE, TERMINATED)))
+                  .subAggregation(
+                      filter(COUNT_COMPLETED, termQuery(STATE, COMPLETED)))
+                  .subAggregation(
+                      filter(COUNT_ACTIVE, boolQuery()
+                          .must(termQuery(STATE, ACTIVE))
+                          .must(termQuery(INCIDENT, false)))))
+              .size(0));
+      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      final Aggregations aggregations = response.getAggregations();
+      final Terms flowNodeAgg = aggregations.get(FLOW_NODE_ID_AGG);
+      return flowNodeAgg.getBuckets().stream().map( bucket ->
+        new FlowNodeStatisticsDto()
+            .setActivityId(bucket.getKeyAsString())
+            .setCanceled(((Filter)bucket.getAggregations().get(COUNT_CANCELED)).getDocCount())
+            .setIncidents(((Filter)bucket.getAggregations().get(COUNT_INCIDENT)).getDocCount())
+            .setCompleted(((Filter)bucket.getAggregations().get(COUNT_COMPLETED)).getDocCount())
+            .setActive(((Filter)bucket.getAggregations().get(COUNT_ACTIVE)).getDocCount())
+      ).collect(Collectors.toList());
+    } catch (IOException e) {
+      final String message = String.format(
+          "Exception occurred, while obtaining statistics for process instance flow nodes: %s", e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+  }
 }
