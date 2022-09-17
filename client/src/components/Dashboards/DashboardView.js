@@ -58,6 +58,7 @@ export function DashboardView(props) {
     refreshRateSeconds,
     disableNameLink,
     customizeReportLink,
+    simplifiedDateFilter,
   } = props;
   const [autoRefreshInterval, setAutoRefreshInterval] = useState(refreshRateSeconds * 1000);
   const [deleting, setDeleting] = useState(null);
@@ -211,6 +212,7 @@ export function DashboardView(props) {
             availableFilters={availableFilters}
             filter={filter}
             setFilter={setFilter}
+            simplifiedDateFilter={simplifiedDateFilter}
           />
         )}
         <Deleter

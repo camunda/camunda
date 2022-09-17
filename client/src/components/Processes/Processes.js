@@ -98,6 +98,7 @@ export function Processes({mightFail, user}) {
           reports={dashboard.reports}
           availableFilters={dashboard.availableFilters}
           customizeReportLink={(id) => `/processes/report/${id}/`}
+          simplifiedDateFilter
         />
       )}
       <EntityList

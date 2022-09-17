@@ -738,8 +738,8 @@
       },
       "types": {
         "state": "Instance State",
-        "instanceStartDate": "Start Date",
-        "instanceEndDate": "End Date",
+        "instanceStartDate": "Instance Start Date",
+        "instanceEndDate": "Instance End Date",
         "variable": "Variable",
         "runningInstancesOnly": "Running",
         "completedInstancesOnly": "Completed",

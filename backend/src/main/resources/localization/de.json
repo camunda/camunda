@@ -738,8 +738,8 @@
       },
       "types": {
         "state": "Instanzstatus",
-        "instanceStartDate": "Startdatum",
-        "instanceEndDate": "Enddatum",
+        "instanceStartDate": "Startdatum der Instanz",
+        "instanceEndDate": "Enddatum der Instanz",
         "variable": "Variable",
         "runningInstancesOnly": "Laufend",
         "completedInstancesOnly": "Abgeschlossen",
