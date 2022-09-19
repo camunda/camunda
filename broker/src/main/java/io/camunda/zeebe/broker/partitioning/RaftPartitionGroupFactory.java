@@ -27,9 +27,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-final class RaftPartitionGroupFactory {
+public final class RaftPartitionGroupFactory {
 
-  RaftPartitionGroup buildRaftPartitionGroup(
+  public RaftPartitionGroup buildRaftPartitionGroup(
       final BrokerCfg configuration, final ReceivableSnapshotStoreFactory snapshotStoreFactory) {
 
     final DataCfg dataConfiguration = configuration.getData();
