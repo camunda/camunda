@@ -147,7 +147,7 @@ spec:
           cpu: 4
           memory: 8Gi
     - name: operate
-      image: gcr.io/ci-30-162810/camunda-operate:latest
+      image: registry.camunda.cloud/team-operate/camunda-operate:latest
       env:
         - name: CAMUNDA_OPERATE_OPERATIONEXECUTOR_EXECUTORENABLED
           value: false
@@ -162,6 +162,8 @@ spec:
         requests:
           cpu: 2
           memory: 8Gi
+  imagePullSecrets:
+  - name: operate-registry-camunda-cloud
   volumes:
   - name: configdir
     emptyDir: {}
