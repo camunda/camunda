@@ -217,10 +217,7 @@ public class DeploymentRejectionTest {
 
     // then
     Assertions.assertThat(deploymentRejection)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            "Unable to deploy resources as the size exceeds the maximum batch size. Please split "
-                + "the resources into separate deployments, or reduce the size of the deployed "
-                + "resource.");
+        .hasRejectionType(RejectionType.EXCEEDED_BATCH)
+        .hasRejectionReason("");
   }
 }
