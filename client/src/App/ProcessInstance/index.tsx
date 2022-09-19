@@ -260,7 +260,7 @@ const ProcessInstance: React.FC = observer(() => {
                     />
                   </>
                 }
-              ></InformationModal>
+              />
               <InformationModal
                 isVisible={isDiscardModificationsModalVisible}
                 onClose={() => setIsDiscardModificationsModalVisible(false)}
