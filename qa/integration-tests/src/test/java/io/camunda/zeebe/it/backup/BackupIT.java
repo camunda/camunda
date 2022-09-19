@@ -48,6 +48,8 @@ class BackupIT {
   private BackupRequestHandler backupRequestHandler;
 
   private void configureBackupStore(final BrokerCfg config) {
+    config.getExperimental().getFeatures().setEnableBackup(true);
+
     final var backupConfig = config.getData().getBackup();
     backupConfig.setStore(BackupStoreType.S3);
 

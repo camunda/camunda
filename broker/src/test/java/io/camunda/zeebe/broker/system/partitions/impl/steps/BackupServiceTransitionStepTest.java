@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -49,7 +50,8 @@ class BackupServiceTransitionStepTest {
   @Mock ActorSchedulingService actorSchedulingService;
   @Mock BackupStore backupStore;
 
-  @Mock BrokerCfg brokerCfg;
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  BrokerCfg brokerCfg;
 
   @Mock ClusterCfg clusterCfg;
 
@@ -64,8 +66,9 @@ class BackupServiceTransitionStepTest {
     transitionContext.setBrokerCfg(brokerCfg);
     transitionContext.setRaftPartition(raftPartition);
 
-    lenient().when(brokerCfg.getCluster()).thenReturn(clusterCfg);
-    lenient().when(clusterCfg.getPartitionsCount()).thenReturn(3);
+    lenient().when(brokerCfg.getExperimental().getFeatures().isEnableBackup()).thenReturn(true);
+
+    lenient().when(brokerCfg.getCluster().getPartitionsCount()).thenReturn(3);
     lenient()
         .when(raftPartition.members())
         .thenReturn(Set.of(MemberId.from("1"), MemberId.from("2")));
