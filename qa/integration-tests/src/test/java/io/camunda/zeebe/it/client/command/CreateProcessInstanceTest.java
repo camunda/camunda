@@ -9,13 +9,18 @@ package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
@@ -252,7 +257,25 @@ public final class CreateProcessInstanceTest {
             .send()
             .join();
 
-    assertThat(instance.getProcessInstanceKey()).isPositive();
+    final var processInstanceKey = instance.getProcessInstanceKey();
+
+    // then
+    assertThat(processInstanceKey).isPositive();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .extracting(Record::getValue)
+        .extracting(
+            ProcessInstanceRecordValue::getBpmnElementType,
+            ProcessInstanceRecordValue::getElementId)
+        .describedAs("Expect that both end events are activated")
+        .contains(
+            tuple(BpmnElementType.END_EVENT, "end1"), tuple(BpmnElementType.END_EVENT, "end2"))
+        .describedAs("Expect that the start event is not activated")
+        .doesNotContain(tuple(BpmnElementType.START_EVENT, "v2"));
   }
 
   @Test
