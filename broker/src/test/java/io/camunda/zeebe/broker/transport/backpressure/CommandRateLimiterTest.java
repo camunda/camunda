@@ -10,13 +10,20 @@ package io.camunda.zeebe.broker.transport.backpressure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.netflix.concurrency.limits.limit.SettableLimit;
+import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.stream.IntStream;
-import org.junit.Test;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-public final class CommandRateLimiterTest {
+class CommandRateLimiterTest {
 
   private static final int INITIAL_LIMIT = 5;
   private final SettableLimit limit = new SettableLimit(INITIAL_LIMIT);
@@ -25,12 +32,12 @@ public final class CommandRateLimiterTest {
   private final Intent context = ProcessInstanceCreationIntent.CREATE;
 
   @Test
-  public void shouldAcquire() {
+  void shouldAcquire() {
     assertThat(rateLimiter.tryAcquire(0, 1, context)).isTrue();
   }
 
   @Test
-  public void shouldNotAcquireAfterLimit() {
+  void shouldNotAcquireAfterLimit() {
     // given
     IntStream.range(0, limit.getLimit())
         .forEach(i -> assertThat(rateLimiter.tryAcquire(0, 1, context)).isTrue());
@@ -39,10 +46,9 @@ public final class CommandRateLimiterTest {
   }
 
   @Test
-  public void shouldCompleteRequestOnResponse() {
+  void shouldCompleteRequestOnResponse() {
     // given
-    IntStream.range(0, limit.getLimit())
-        .forEach(i -> assertThat(rateLimiter.tryAcquire(0, i, context)));
+    IntStream.range(0, limit.getLimit()).forEach(i -> rateLimiter.tryAcquire(0, i, context));
     assertThat(rateLimiter.tryAcquire(0, 100, context)).isFalse();
 
     // when
@@ -53,10 +59,9 @@ public final class CommandRateLimiterTest {
   }
 
   @Test
-  public void shouldCompleteAllRequests() {
+  void shouldCompleteAllRequests() {
     // given
-    IntStream.range(0, limit.getLimit())
-        .forEach(i -> assertThat(rateLimiter.tryAcquire(0, i, context)));
+    IntStream.range(0, limit.getLimit()).forEach(i -> rateLimiter.tryAcquire(0, i, context));
     assertThat(rateLimiter.tryAcquire(0, 100, context)).isFalse();
 
     // when
@@ -69,27 +74,7 @@ public final class CommandRateLimiterTest {
   }
 
   @Test
-  public void shouldAcquireWhenJobCompleteCommandAfterLimit() {
-    // given
-    IntStream.range(0, limit.getLimit())
-        .forEach(i -> assertThat(rateLimiter.tryAcquire(0, 1, context)).isTrue());
-
-    // then
-    assertThat(rateLimiter.tryAcquire(0, 1, JobIntent.COMPLETE)).isTrue();
-  }
-
-  @Test
-  public void shouldAcquireWhenJobFailCommandAfterLimit() {
-    // given
-    IntStream.range(0, limit.getLimit())
-        .forEach(i -> assertThat(rateLimiter.tryAcquire(0, 1, context)).isTrue());
-
-    // then
-    assertThat(rateLimiter.tryAcquire(0, 1, JobIntent.FAIL)).isTrue();
-  }
-
-  @Test
-  public void shouldReleaseRequestOnIgnore() {
+  void shouldReleaseRequestOnIgnore() {
     // given
     rateLimiter.tryAcquire(0, 1, context);
     assertThat(rateLimiter.getInflightCount()).isEqualTo(1);
@@ -99,5 +84,27 @@ public final class CommandRateLimiterTest {
 
     // then
     assertThat(rateLimiter.getInflightCount()).isEqualTo(0);
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideWhitelistedIntents")
+  void shouldWhiteListedCommandAfterLimit(final Intent intent) {
+    // given
+    IntStream.range(0, limit.getLimit())
+        .forEach(i -> assertThat(rateLimiter.tryAcquire(0, 1, context)).isTrue());
+    assertThat(rateLimiter.tryAcquire(0, 1, context)).isFalse();
+
+    // then
+    assertThat(rateLimiter.tryAcquire(0, 1, intent)).isTrue();
+  }
+
+  private static Stream<Arguments> provideWhitelistedIntents() {
+    return Stream.of(
+        Arguments.of(JobIntent.COMPLETE),
+        Arguments.of(JobIntent.FAIL),
+        Arguments.of(ProcessInstanceIntent.CANCEL),
+        Arguments.of(DeploymentIntent.CREATE),
+        Arguments.of(DeploymentIntent.DISTRIBUTE),
+        Arguments.of(DeploymentDistributionIntent.COMPLETE));
   }
 }
