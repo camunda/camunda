@@ -30,7 +30,7 @@ public class ForwardErrorController {
   @Autowired
     private OperateProfileService operateProfileService;
 
-  @GetMapping(value = {"/{regex:\\w+}", "/**/{regex:\\w+}"})
+  @GetMapping(value = {"/{regex:[\\w-]+}", "/**/{regex:[\\w-]+}"})
   public String forward404(HttpServletRequest request) {
     final String requestedURI = request.getRequestURI().substring(request.getContextPath().length());
     if (operateProfileService.isLoginDelegated() && isNotLoggedIn()) {
