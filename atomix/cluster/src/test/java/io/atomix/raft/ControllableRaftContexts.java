@@ -16,7 +16,10 @@
 package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
@@ -33,6 +36,7 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
+import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.io.File;
 import java.io.IOException;
@@ -84,6 +88,7 @@ public final class ControllableRaftContexts {
 
   // Used only for verification. Map[term -> leader]
   private final Map<Long, MemberId> leadersAtTerms = new HashMap<>();
+  private final AppendListener appendListener = mock(AppendListener.class);
 
   public ControllableRaftContexts(final int nodeCount) {
     this.nodeCount = nodeCount;
@@ -305,7 +310,7 @@ public final class ControllableRaftContexts {
     if (role instanceof final LeaderRole leaderRole) {
       LoggerFactory.getLogger("TEST").info("Appending on leader {}", memberId.id());
       final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, nextEntry++);
-      leaderRole.appendEntry(0, 1, data, mock(AppendListener.class));
+      leaderRole.appendEntry(nextEntry, nextEntry, data, appendListener);
     }
   }
 
@@ -509,5 +514,9 @@ public final class ControllableRaftContexts {
 
   public void assertAllMembersAreReady() {
     raftServers.values().forEach(raft -> assertThat(raft.getState()).isEqualTo(State.READY));
+  }
+
+  public void assertNoJournalAppendErrors() {
+    verify(appendListener, times(0)).onWriteError(any(JournalException.class));
   }
 }

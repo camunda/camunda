@@ -138,6 +138,7 @@ public final class ProcessingStateMachine {
   private ProcessingResult currentProcessingResult;
   private RecordProcessor currentProcessor;
   private final LogStreamBatchWriter logStreamBatchWriter;
+  private boolean inProcessing;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -167,7 +168,7 @@ public final class ProcessingStateMachine {
 
   private void skipRecord() {
     notifySkippedListener(currentRecord);
-    context.setInProcessing(false);
+    inProcessing = false;
     actor.submit(this::readNextRecord);
     metrics.eventSkipped();
   }
@@ -198,7 +199,7 @@ public final class ProcessingStateMachine {
               && lastWrittenPosition <= previousRecord.getPosition();
     }
 
-    if (shouldProcessNext.getAsBoolean() && hasNext && !context.isInProcessing()) {
+    if (shouldProcessNext.getAsBoolean() && hasNext && !inProcessing) {
       currentRecord = logStreamReader.next();
 
       if (eventFilter.applies(currentRecord)) {
@@ -223,7 +224,7 @@ public final class ProcessingStateMachine {
   private void processCommand(final LoggedEvent command) {
     // we have to mark ourself has inProcessing to not interfere with readNext calls, which
     // are triggered from commit listener
-    context.setInProcessing(true);
+    inProcessing = true;
 
     currentProcessingResult = EmptyProcessingResult.INSTANCE;
 
@@ -448,7 +449,7 @@ public final class ProcessingStateMachine {
           processingTimer.close();
 
           // continue with next record
-          context.setInProcessing(false);
+          inProcessing = false;
           actor.submit(this::readNextRecord);
         });
   }

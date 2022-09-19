@@ -39,12 +39,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final ActorSchedulingService actorScheduler;
   private final BrokerHealthCheckService healthCheckService;
   private final ExporterRepository exporterRepository;
-
+  private final ClusterServicesImpl clusterServices;
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
 
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
-  private ClusterServicesImpl clusterServices;
   private AtomixServerTransport gatewayBrokerTransport;
   private ManagedMessagingService commandApiMessagingService;
   private CommandApiServiceImpl commandApiService;
@@ -60,6 +59,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final ActorSchedulingService actorScheduler,
       final BrokerHealthCheckService healthCheckService,
       final ExporterRepository exporterRepository,
+      final ClusterServicesImpl clusterServices,
       final List<PartitionListener> additionalPartitionListeners) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
@@ -68,6 +68,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.actorScheduler = requireNonNull(actorScheduler);
     this.healthCheckService = requireNonNull(healthCheckService);
     this.exporterRepository = requireNonNull(exporterRepository);
+    this.clusterServices = requireNonNull(clusterServices);
     partitionListeners.addAll(additionalPartitionListeners);
   }
 
@@ -123,11 +124,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public ClusterServicesImpl getClusterServices() {
     return clusterServices;
-  }
-
-  @Override
-  public void setClusterServices(final ClusterServicesImpl clusterServices) {
-    this.clusterServices = clusterServices;
   }
 
   @Override

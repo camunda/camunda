@@ -626,6 +626,7 @@ public class ModifyProcessInstanceTest {
 
   @Test
   public void shouldSetVariablesFromMultipleInstructions() {
+    // given
     ENGINE
         .deployment()
         .withXmlResource(
@@ -643,6 +644,7 @@ public class ModifyProcessInstanceTest {
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
+    // when
     ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
@@ -659,6 +661,7 @@ public class ModifyProcessInstanceTest {
         .withGlobalVariables(Map.of("bar", true))
         .modify();
 
+    // then
     Assertions.assertThat(RecordingExporter.variableRecords().onlyEvents().limit(7))
         .extracting(Record::getValue)
         .extracting(VariableRecordValue::getName, VariableRecordValue::getValue)
@@ -670,6 +673,65 @@ public class ModifyProcessInstanceTest {
             tuple("buzz", "5"),
             tuple("foo", "\"updated\""),
             tuple("bar", "true"));
+  }
+
+  @Test
+  public void shouldTerminateAndActivateElementInTheSameScope() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "sp",
+                    sp ->
+                        sp.embeddedSubProcess().startEvent().userTask("A").userTask("B").endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var terminateElement =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+    final var terminatedElementScope = terminateElement.getValue().getFlowScopeKey();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(terminateElement.getKey())
+        .activateElement("B")
+        .modify();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .onlyEvents()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("A")
+                .limit("A", ProcessInstanceIntent.ELEMENT_TERMINATED))
+        .extracting(Record::getIntent)
+        .containsSequence(
+            ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED);
+    // Verifies that the element is activated in the same scope the other element was terminated in.
+    verifyThatElementIsActivated(
+        processInstanceKey, "B", BpmnElementType.USER_TASK, terminatedElementScope);
+
+    // and
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("B")
+        .limit(1)
+        .map(Record::getKey)
+        .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
+    verifyThatElementIsCompleted(processInstanceKey, "B");
+    verifyThatElementIsCompleted(processInstanceKey, "sp");
+    verifyThatProcessInstanceIsCompleted(processInstanceKey);
   }
 
   private static void verifyThatRootElementIsActivated(

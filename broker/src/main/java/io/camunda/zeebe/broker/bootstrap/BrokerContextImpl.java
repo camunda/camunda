@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import static java.util.Objects.requireNonNull;
 
-import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
@@ -40,11 +39,6 @@ final class BrokerContextImpl implements BrokerContext {
   @Override
   public ClusterServicesImpl getClusterServices() {
     return clusterServices;
-  }
-
-  @Override
-  public AtomixCluster getAtomixCluster() {
-    return clusterServices.getAtomixCluster();
   }
 
   @Override

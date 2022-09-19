@@ -17,6 +17,9 @@
 package io.atomix.raft.storage.log.entry;
 
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.storage.serializer.RaftEntrySerializer;
+import io.atomix.raft.storage.serializer.RaftEntrySerializer.SerializedBufferWriterAdapter;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
 
 /**
@@ -28,4 +31,11 @@ import java.util.Collection;
  * member changes, a new {@code ConfigurationEntry} must be logged for the configuration change.
  */
 public record ConfigurationEntry(long timestamp, Collection<RaftMember> members)
-    implements RaftEntry {}
+    implements RaftEntry {
+  @Override
+  public BufferWriter toSerializable(final long term, final RaftEntrySerializer serializer) {
+    return new SerializedBufferWriterAdapter(
+        () -> serializer.getConfigurationEntrySerializedLength(this),
+        (buffer, offset) -> serializer.writeConfigurationEntry(term, this, buffer, offset));
+  }
+}

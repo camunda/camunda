@@ -26,8 +26,11 @@ import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.raft.partition.RaftPartition;
+import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.broker.ActorSchedulerConfiguration;
 import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.BrokerClusterConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
@@ -63,6 +66,7 @@ import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import io.netty.util.NetUtil;
 import java.io.File;
@@ -98,7 +102,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public final class ClusteringRule extends ExternalResource {
+public class ClusteringRule extends ExternalResource {
 
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
@@ -283,10 +287,16 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   private Broker createBroker(final int nodeId) {
-    final File brokerBase = getBrokerBase(nodeId);
-    final BrokerCfg brokerCfg = getBrokerCfg(nodeId);
-    final var systemContext =
-        new SystemContext(brokerCfg, brokerBase.getAbsolutePath(), controlledClock);
+    final var brokerBase = getBrokerBase(nodeId);
+    final var brokerCfg = getBrokerCfg(nodeId);
+    brokerCfg.init(brokerBase.getAbsolutePath());
+
+    final var atomixCluster =
+        new AtomixCluster(
+            new BrokerClusterConfiguration().clusterConfig(brokerCfg),
+            Version.from(VersionUtil.getVersion()));
+    final var scheduler = new ActorSchedulerConfiguration(brokerCfg, controlledClock).scheduler();
+    final var systemContext = new SystemContext(brokerCfg, scheduler, atomixCluster);
     systemContexts.put(nodeId, systemContext);
 
     systemContext.getScheduler().start();
@@ -350,7 +360,7 @@ public final class ClusteringRule extends ExternalResource {
     return brokerCfg;
   }
 
-  private File getBrokerBase(final int nodeId) {
+  protected File getBrokerBase(final int nodeId) {
     final var base = new File(temporaryFolder.getRoot(), String.valueOf(nodeId));
     if (!base.exists()) {
       base.mkdir();
@@ -410,7 +420,7 @@ public final class ClusteringRule extends ExternalResource {
 
     final var brokerClient =
         new BrokerClientImpl(
-            gatewayCfg,
+            gatewayCfg.getCluster().getRequestTimeout(),
             atomixCluster.getMessagingService(),
             atomixCluster.getMembershipService(),
             atomixCluster.getEventService(),
@@ -564,17 +574,16 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   public void disconnect(final Broker broker) {
-    final var atomix = broker.getBrokerContext().getAtomixCluster();
-
-    ((NettyUnicastService) atomix.getUnicastService()).stop().join();
-    ((NettyMessagingService) atomix.getMessagingService()).stop().join();
+    final var cluster = broker.getSystemContext().getCluster();
+    ((NettyUnicastService) cluster.getUnicastService()).stop().join();
+    ((NettyMessagingService) cluster.getMessagingService()).stop().join();
   }
 
   public void connect(final Broker broker) {
-    final var atomix = broker.getBrokerContext().getAtomixCluster();
+    final var cluster = broker.getSystemContext().getCluster();
 
-    ((NettyUnicastService) atomix.getUnicastService()).start().join();
-    ((NettyMessagingService) atomix.getMessagingService()).start().join();
+    ((NettyUnicastService) cluster.getUnicastService()).start().join();
+    ((NettyMessagingService) cluster.getMessagingService()).start().join();
   }
 
   public void stopBrokerAndAwaitNewLeader(final int nodeId) {
@@ -673,6 +682,10 @@ public final class ClusteringRule extends ExternalResource {
 
   public InetSocketAddress getGatewayAddress() {
     return gateway.getGatewayCfg().getNetwork().toSocketAddress();
+  }
+
+  public Gateway getGateway() {
+    return gateway;
   }
 
   public ZeebeClient getClient() {

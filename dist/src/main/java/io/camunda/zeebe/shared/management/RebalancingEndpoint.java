@@ -28,6 +28,7 @@ public final class RebalancingEndpoint {
   }
 
   @WriteOperation
+  @SuppressWarnings("UnusedReturnValue")
   public WebEndpointResponse<Void> rebalance() {
     LOG.info("Rebalancing leaders of all partitions");
     service.rebalanceCluster();

@@ -100,15 +100,17 @@ public final class InclusiveGatewayProcessor
     }
 
     for (final ExecutableSequenceFlow sequenceFlow : element.getOutgoingWithCondition()) {
-      final Expression condition = sequenceFlow.getCondition();
-      final Either<Failure, Boolean> isFulfilledOrFailure =
-          expressionBehavior.evaluateBooleanExpression(condition, context.getElementInstanceKey());
-      if (isFulfilledOrFailure.isLeft()) {
-        return Either.left(isFulfilledOrFailure.getLeft());
-
-      } else if (isFulfilledOrFailure.get()) {
-        // the condition is fulfilled
-        executableSequenceFlows.add(sequenceFlow);
+      if (element.getDefaultFlow() == null || element.getDefaultFlow() != sequenceFlow) {
+        final Expression condition = sequenceFlow.getCondition();
+        final Either<Failure, Boolean> isFulfilledOrFailure =
+            expressionBehavior.evaluateBooleanExpression(
+                condition, context.getElementInstanceKey());
+        if (isFulfilledOrFailure.isLeft()) {
+          return Either.left(isFulfilledOrFailure.getLeft());
+        } else if (isFulfilledOrFailure.get()) {
+          // the condition is fulfilled
+          executableSequenceFlows.add(sequenceFlow);
+        }
       }
     }
     if (executableSequenceFlows.size() > 0) {

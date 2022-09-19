@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import java.io.File;
 import java.time.Duration;
 import java.util.Optional;
@@ -40,6 +41,8 @@ public final class DataCfg implements ConfigurationEntry {
   private double diskUsageCommandWatermark = DEFAULT_DISK_USAGE_COMMAND_WATERMARK;
   private Duration diskUsageMonitoringInterval = DEFAULT_DISK_USAGE_MONITORING_DELAY;
 
+  private BackupStoreCfg backup = new BackupStoreCfg();
+
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     directory = ConfigurationUtil.toAbsolutePath(directory, brokerBase);
@@ -51,6 +54,8 @@ public final class DataCfg implements ConfigurationEntry {
       diskUsageReplicationWatermark = DISABLED_DISK_USAGE_WATERMARK;
       diskUsageCommandWatermark = DISABLED_DISK_USAGE_WATERMARK;
     }
+
+    backup.init(globalConfig, brokerBase);
   }
 
   public String getDirectory() {
@@ -131,11 +136,20 @@ public final class DataCfg implements ConfigurationEntry {
     this.diskUsageMonitoringInterval = diskUsageMonitoringInterval;
   }
 
+  public BackupStoreCfg getBackup() {
+    return backup;
+  }
+
+  public void setBackup(final BackupStoreCfg backup) {
+    this.backup = backup;
+  }
+
   @Override
   public String toString() {
     return "DataCfg{"
-        + "directory="
+        + "directory='"
         + directory
+        + '\''
         + ", logSegmentSize="
         + logSegmentSize
         + ", snapshotPeriod="
@@ -150,6 +164,8 @@ public final class DataCfg implements ConfigurationEntry {
         + diskUsageCommandWatermark
         + ", diskUsageMonitoringInterval="
         + diskUsageMonitoringInterval
+        + ", backup="
+        + backup
         + '}';
   }
 }

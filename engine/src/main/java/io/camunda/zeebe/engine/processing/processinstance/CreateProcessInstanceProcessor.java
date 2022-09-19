@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.P
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.KeyGenerator;
@@ -76,6 +77,7 @@ public final class CreateProcessInstanceProcessor
   private final KeyGenerator keyGenerator;
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final TypedResponseWriter responseWriter;
   private final ProcessEngineMetrics metrics;
 
   private final ElementActivationBehavior elementActivationBehavior;
@@ -91,6 +93,7 @@ public final class CreateProcessInstanceProcessor
     this.keyGenerator = keyGenerator;
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
     this.metrics = metrics;
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
   }
@@ -119,6 +122,8 @@ public final class CreateProcessInstanceProcessor
     if (error instanceof EventSubscriptionException exception) {
       // This exception is only thrown for ProcessInstanceCreationRecord with start instructions
       rejectionWriter.appendRejection(
+          typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      responseWriter.writeRejectionOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }

@@ -84,16 +84,6 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     return elementIdProp.getValue();
   }
 
-  @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
-  }
-
-  public ProcessInstanceRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
-    return this;
-  }
-
   public ProcessInstanceRecord setBpmnProcessId(
       final DirectBuffer directBuffer, final int offset, final int length) {
     bpmnProcessIdProp.setValue(directBuffer, offset, length);
@@ -113,6 +103,16 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKeyProp.getValue();
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
+  }
+
+  public ProcessInstanceRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
+    return this;
   }
 
   @Override
@@ -187,6 +187,10 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public ProcessInstanceRecord setBpmnProcessId(final DirectBuffer directBuffer) {
     bpmnProcessIdProp.setValue(directBuffer);
     return this;
+  }
+
+  public boolean hasParentProcess() {
+    return getParentProcessInstanceKey() != -1L;
   }
 
   public ProcessInstanceRecord setElementId(

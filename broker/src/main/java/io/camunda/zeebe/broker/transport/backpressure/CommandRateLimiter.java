@@ -9,9 +9,11 @@ package io.camunda.zeebe.broker.transport.backpressure;
 
 import com.netflix.concurrency.limits.limiter.AbstractLimiter;
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import java.util.EnumSet;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -26,7 +28,13 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
   private static final Logger LOG =
       LoggerFactory.getLogger("io.camunda.zeebe.broker.transport.backpressure");
   private static final Set<? extends Intent> WHITE_LISTED_COMMANDS =
-      EnumSet.of(JobIntent.COMPLETE, JobIntent.FAIL);
+      Set.of(
+          JobIntent.COMPLETE,
+          JobIntent.FAIL,
+          ProcessInstanceIntent.CANCEL,
+          DeploymentIntent.CREATE,
+          DeploymentIntent.DISTRIBUTE,
+          DeploymentDistributionIntent.COMPLETE);
   private final Map<ListenerId, Listener> responseListeners = new ConcurrentHashMap<>();
   private final int partitionId;
   private final BackpressureMetrics metrics = new BackpressureMetrics();

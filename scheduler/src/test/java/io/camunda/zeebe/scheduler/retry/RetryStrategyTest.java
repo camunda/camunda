@@ -15,6 +15,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import java.lang.reflect.Constructor;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -114,6 +115,44 @@ public final class RetryStrategyTest {
     assertThat(resultFuture.isDone()).isTrue();
     assertThat(resultFuture.isCompletedExceptionally()).isTrue();
     assertThat(resultFuture.getException()).isExactlyInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  public void shouldNotInterleaveRetry() {
+    // given
+    final AtomicReference<ActorFuture<Boolean>> firstFuture = new AtomicReference<>();
+    final AtomicReference<ActorFuture<Boolean>> secondFuture = new AtomicReference<>();
+
+    final AtomicInteger executionAttempt = new AtomicInteger(0);
+    final AtomicInteger firstResult = new AtomicInteger();
+    final AtomicInteger secondResult = new AtomicInteger();
+
+    // when
+    final var retryCounts = 5;
+    actorControl.run(
+        () ->
+            firstFuture.set(
+                retryStrategy.runWithRetry(
+                    () -> {
+                      firstResult.set(executionAttempt.getAndIncrement());
+                      return executionAttempt.get() >= retryCounts;
+                    })));
+    actorControl.run(
+        () ->
+            secondFuture.set(
+                retryStrategy.runWithRetry(
+                    () -> {
+                      secondResult.set(executionAttempt.getAndIncrement());
+                      return true;
+                    })));
+
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(firstFuture.get()).isDone().isNotEqualTo(secondFuture.get());
+    assertThat(secondFuture.get()).isDone();
+    assertThat(firstResult).hasValue(retryCounts - 1);
+    assertThat(secondResult).hasValue(retryCounts);
   }
 
   private static final class ControllableActor extends Actor {

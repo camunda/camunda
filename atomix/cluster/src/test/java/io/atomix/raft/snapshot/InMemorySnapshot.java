@@ -166,9 +166,6 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
   }
 
   @Override
-  public void close() {}
-
-  @Override
   public long index() {
     return index;
   }

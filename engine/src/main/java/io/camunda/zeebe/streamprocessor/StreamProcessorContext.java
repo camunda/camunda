@@ -55,10 +55,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private CommandResponseWriter commandResponseWriter;
   private InterPartitionCommandSender partitionCommandSender;
 
-  // this is always accessed by the same actor; which means we don't need to use a concurrent/thread
-  // safe structure here
-  private boolean inProcessing;
-
   // this is accessed outside, which is why we need to make sure that it is thread-safe
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
 
@@ -105,23 +101,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   public StreamProcessorContext logStreamReader(final LogStreamReader logStreamReader) {
     this.logStreamReader = logStreamReader;
     return this;
-  }
-
-  /**
-   * @return allows to determine whether there is a current processing is on going
-   */
-  boolean isInProcessing() {
-    return inProcessing;
-  }
-
-  /**
-   * Sets the state of the processing. This is useful to show between different actor jobs whether a
-   * processing is going on or not, and to determine whether certain actions can be taken.
-   *
-   * @param inProcessing the state of processing
-   */
-  void setInProcessing(final boolean inProcessing) {
-    this.inProcessing = inProcessing;
   }
 
   public StreamProcessorContext eventCache(final RecordValues recordValues) {

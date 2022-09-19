@@ -72,7 +72,9 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   protected Broker broker;
   protected final ControlledActorClock controlledActorClock = new ControlledActorClock();
   protected final SpringBrokerBridge springBrokerBridge = new SpringBrokerBridge();
+
   protected long startTime;
+  private AtomixCluster atomixCluster;
   private File newTemporaryFolder;
   private String dataDirectory;
   private SystemContext systemContext;
@@ -173,7 +175,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public AtomixCluster getAtomixCluster() {
-    return broker.getBrokerContext().getAtomixCluster();
+    return atomixCluster;
   }
 
   public InetSocketAddress getGatewayAddress() {
@@ -222,9 +224,11 @@ public final class EmbeddedBrokerRule extends ExternalResource {
         throw new RuntimeException("Unable to open configuration", e);
       }
     }
-    systemContext =
-        new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
-    systemContext.getScheduler().start();
+
+    final var scheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg, controlledActorClock);
+    atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg);
+    systemContext = new SystemContext(brokerCfg, scheduler, atomixCluster);
+    scheduler.start();
 
     final var additionalListeners = new ArrayList<>(Arrays.asList(listeners));
     final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());
@@ -279,6 +283,9 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
     // set random port numbers
     assignSocketAddresses(brokerCfg);
+
+    // initialize configuration
+    brokerCfg.init(newTemporaryFolder.getAbsolutePath());
   }
 
   public void purgeSnapshots() {

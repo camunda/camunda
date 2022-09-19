@@ -8,7 +8,7 @@ github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
 github.com/Microsoft/go-winio/pkg/security
 github.com/Microsoft/go-winio/vhd
-# github.com/Microsoft/hcsshim v0.9.3
+# github.com/Microsoft/hcsshim v0.9.4
 ## explicit; go 1.13
 github.com/Microsoft/hcsshim
 github.com/Microsoft/hcsshim/computestorage
@@ -35,29 +35,27 @@ github.com/Microsoft/hcsshim/osversion
 # github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496
 ## explicit; go 1.12
 github.com/asaskevich/govalidator
-# github.com/cenkalti/backoff/v4 v4.1.2
+# github.com/cenkalti/backoff/v4 v4.1.3
 ## explicit; go 1.13
 github.com/cenkalti/backoff/v4
 # github.com/containerd/cgroups v1.0.4
 ## explicit; go 1.17
 github.com/containerd/cgroups/stats/v1
-# github.com/containerd/containerd v1.6.6
+# github.com/containerd/containerd v1.6.8
 ## explicit; go 1.17
 github.com/containerd/containerd/errdefs
 github.com/containerd/containerd/log
 github.com/containerd/containerd/pkg/userns
 github.com/containerd/containerd/platforms
 github.com/containerd/containerd/sys
-# github.com/containerd/continuity v0.3.0
-## explicit; go 1.17
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/docker/distribution v2.7.1+incompatible
+# github.com/docker/distribution v2.8.1+incompatible
 ## explicit
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
-# github.com/docker/docker v20.10.17+incompatible
+# github.com/docker/docker v20.10.18+incompatible
 ## explicit
 github.com/docker/docker/api
 github.com/docker/docker/api/types
@@ -90,7 +88,7 @@ github.com/docker/docker/pkg/system
 github.com/docker/go-connections/nat
 github.com/docker/go-connections/sockets
 github.com/docker/go-connections/tlsconfig
-# github.com/docker/go-units v0.4.0
+# github.com/docker/go-units v0.5.0
 ## explicit
 github.com/docker/go-units
 # github.com/go-ozzo/ozzo-validation/v4 v4.3.0
@@ -116,7 +114,7 @@ github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
-# github.com/google/go-cmp v0.5.8
+# github.com/google/go-cmp v0.5.9
 ## explicit; go 1.13
 github.com/google/go-cmp/cmp
 github.com/google/go-cmp/cmp/cmpopts
@@ -132,14 +130,14 @@ github.com/google/uuid
 github.com/inconshreveable/mousetrap
 # github.com/kr/pretty v0.3.0
 ## explicit; go 1.12
-# github.com/magiconair/properties v1.8.5
+# github.com/magiconair/properties v1.8.6
 ## explicit; go 1.13
 github.com/magiconair/properties
 # github.com/mitchellh/go-homedir v1.1.0
 ## explicit
 github.com/mitchellh/go-homedir
-# github.com/moby/sys/mount v0.2.0
-## explicit; go 1.14
+# github.com/moby/sys/mount v0.3.3
+## explicit; go 1.16
 github.com/moby/sys/mount
 # github.com/moby/sys/mountinfo v0.6.2
 ## explicit; go 1.16
@@ -181,7 +179,7 @@ github.com/spf13/pflag
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 github.com/stretchr/testify/suite
-# github.com/testcontainers/testcontainers-go v0.13.0
+# github.com/testcontainers/testcontainers-go v0.14.0
 ## explicit; go 1.13
 github.com/testcontainers/testcontainers-go
 github.com/testcontainers/testcontainers-go/wait
@@ -209,7 +207,7 @@ golang.org/x/net/trace
 golang.org/x/oauth2
 golang.org/x/oauth2/clientcredentials
 golang.org/x/oauth2/internal
-# golang.org/x/sys v0.0.0-20220622161953-175b2fd9d664
+# golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8
 ## explicit; go 1.17
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
@@ -317,8 +315,6 @@ google.golang.org/protobuf/types/descriptorpb
 google.golang.org/protobuf/types/known/anypb
 google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/timestamppb
-# gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-## explicit; go 1.11
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit; go 1.15
 gopkg.in/yaml.v2

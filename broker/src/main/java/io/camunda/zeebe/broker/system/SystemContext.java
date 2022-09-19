@@ -9,17 +9,20 @@ package io.camunda.zeebe.broker.system;
 
 import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
 
+import io.atomix.cluster.AtomixCluster;
+import io.camunda.zeebe.backup.s3.S3BackupConfig;
+import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
-import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,32 +48,42 @@ public final class SystemContext {
 
   private final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
-  private ActorScheduler scheduler;
+  private final ActorScheduler scheduler;
+  private final AtomixCluster cluster;
 
-  public SystemContext(final BrokerCfg brokerCfg, final String basePath, final ActorClock clock) {
+  public SystemContext(
+      final BrokerCfg brokerCfg, final ActorScheduler scheduler, final AtomixCluster cluster) {
     this.brokerCfg = brokerCfg;
-
-    initSystemContext(clock, basePath);
+    this.scheduler = scheduler;
+    this.cluster = cluster;
+    initSystemContext();
   }
 
-  private void initSystemContext(final ActorClock clock, final String basePath) {
-    LOG.debug("Initializing system with base path {}", basePath);
-
-    brokerCfg.init(basePath);
+  private void initSystemContext() {
     validateConfiguration();
 
     final var cluster = brokerCfg.getCluster();
     final String brokerId = String.format("Broker-%d", cluster.getNodeId());
 
     diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
-    scheduler = initScheduler(clock, brokerId);
   }
 
   private void validateConfiguration() {
     final ClusterCfg cluster = brokerCfg.getCluster();
-    final DataCfg data = brokerCfg.getData();
-    final var experimental = brokerCfg.getExperimental();
 
+    validateClusterConfig(cluster);
+
+    validateDataConfig(brokerCfg.getData());
+
+    validateExperimentalConfigs(cluster, brokerCfg.getExperimental());
+
+    final var security = brokerCfg.getNetwork().getSecurity();
+    if (security.isEnabled()) {
+      validateNetworkSecurityConfig(security);
+    }
+  }
+
+  private static void validateClusterConfig(final ClusterCfg cluster) {
     final int partitionCount = cluster.getPartitionsCount();
     if (partitionCount < 1) {
       throw new IllegalArgumentException("Partition count must not be smaller then 1.");
@@ -82,20 +95,49 @@ public final class SystemContext {
       throw new IllegalArgumentException(String.format(NODE_ID_ERROR_MSG, nodeId, clusterSize));
     }
 
-    final var maxAppendBatchSize = experimental.getMaxAppendBatchSize();
-    if (maxAppendBatchSize.isNegative() || maxAppendBatchSize.toBytes() >= Integer.MAX_VALUE) {
-      throw new IllegalArgumentException(
-          String.format(MAX_BATCH_SIZE_ERROR_MSG, Integer.MAX_VALUE, maxAppendBatchSize));
-    }
-
     final int replicationFactor = cluster.getReplicationFactor();
     if (replicationFactor < 1 || replicationFactor > clusterSize) {
       throw new IllegalArgumentException(
           String.format(REPLICATION_FACTOR_ERROR_MSG, replicationFactor, clusterSize));
     }
 
-    final var dataCfg = brokerCfg.getData();
+    final var heartbeatInterval = cluster.getHeartbeatInterval();
+    final var electionTimeout = cluster.getElectionTimeout();
+    if (heartbeatInterval.toMillis() < 1) {
+      throw new IllegalArgumentException(
+          String.format("heartbeatInterval %s must be at least 1ms", heartbeatInterval));
+    }
+    if (electionTimeout.toMillis() < 1) {
+      throw new IllegalArgumentException(
+          String.format("electionTimeout %s must be at least 1ms", electionTimeout));
+    }
+    if (electionTimeout.compareTo(heartbeatInterval) < 1) {
+      throw new IllegalArgumentException(
+          String.format(
+              "electionTimeout %s must be greater than heartbeatInterval %s",
+              electionTimeout, heartbeatInterval));
+    }
+  }
 
+  private void validateExperimentalConfigs(
+      final ClusterCfg cluster, final ExperimentalCfg experimental) {
+    if (experimental.isDisableExplicitRaftFlush()) {
+      LOG.warn(REPLICATION_WITH_DISABLED_FLUSH_WARNING);
+    }
+
+    final var maxAppendBatchSize = experimental.getMaxAppendBatchSize();
+    if (maxAppendBatchSize.isNegative() || maxAppendBatchSize.toBytes() >= Integer.MAX_VALUE) {
+      throw new IllegalArgumentException(
+          String.format(MAX_BATCH_SIZE_ERROR_MSG, Integer.MAX_VALUE, maxAppendBatchSize));
+    }
+
+    final var partitioningConfig = experimental.getPartitioning();
+    if (partitioningConfig.getScheme() == Scheme.FIXED) {
+      validateFixedPartitioningScheme(cluster, experimental);
+    }
+  }
+
+  private void validateDataConfig(final DataCfg dataCfg) {
     final var snapshotPeriod = dataCfg.getSnapshotPeriod();
     if (snapshotPeriod.isNegative() || snapshotPeriod.minus(MINIMUM_SNAPSHOT_PERIOD).isNegative()) {
       throw new IllegalArgumentException(String.format(SNAPSHOT_PERIOD_ERROR_MSG, snapshotPeriod));
@@ -117,7 +159,7 @@ public final class SystemContext {
               diskUsageReplicationWatermark));
     }
 
-    if (data.isDiskUsageMonitoringEnabled()
+    if (dataCfg.isDiskUsageMonitoringEnabled()
         && diskUsageCommandWatermark >= diskUsageReplicationWatermark) {
       throw new IllegalArgumentException(
           String.format(
@@ -125,35 +167,30 @@ public final class SystemContext {
               diskUsageCommandWatermark, diskUsageReplicationWatermark));
     }
 
-    if (experimental.isDisableExplicitRaftFlush()) {
-      LOG.warn(REPLICATION_WITH_DISABLED_FLUSH_WARNING);
+    validateBackupCfg(dataCfg.getBackup());
+  }
+
+  private void validateBackupCfg(final BackupStoreCfg backup) {
+    if (backup.getStore() == BackupStoreType.NONE) {
+      LOG.warn("No backup store is configured. Backups will not be taken");
+      return;
     }
 
-    final var heartbeatInterval = cluster.getHeartbeatInterval();
-    final var electionTimeout = cluster.getElectionTimeout();
-    if (heartbeatInterval.toMillis() < 1) {
-      throw new IllegalArgumentException(
-          String.format("heartbeatInterval %s must be at least 1ms", heartbeatInterval));
-    }
-    if (electionTimeout.toMillis() < 1) {
-      throw new IllegalArgumentException(
-          String.format("electionTimeout %s must be at least 1ms", electionTimeout));
-    }
-    if (electionTimeout.compareTo(heartbeatInterval) < 1) {
-      throw new IllegalArgumentException(
-          String.format(
-              "electionTimeout %s must be greater than heartbeatInterval %s",
-              electionTimeout, heartbeatInterval));
-    }
+    if (backup.getStore() == BackupStoreType.S3) {
+      final var s3Config = backup.getS3();
 
-    final var partitioningConfig = experimental.getPartitioning();
-    if (partitioningConfig.getScheme() == Scheme.FIXED) {
-      validateFixedPartitioningScheme(cluster, experimental);
-    }
-
-    final var security = brokerCfg.getNetwork().getSecurity();
-    if (security.isEnabled()) {
-      validateNetworkSecurityConfig(security);
+      final S3BackupConfig storeConfig =
+          S3BackupConfig.from(
+              s3Config.getBucketName(),
+              s3Config.getEndpoint(),
+              s3Config.getRegion(),
+              s3Config.getAccessKey(),
+              s3Config.getSecretKey());
+      try {
+        S3BackupStore.validateConfig(storeConfig);
+      } catch (final Exception e) {
+        throw new InvalidConfigurationException("Cannot configure S3 backup store.", e);
+      }
     }
   }
 
@@ -258,28 +295,16 @@ public final class SystemContext {
     }
   }
 
-  private ActorScheduler initScheduler(final ActorClock clock, final String brokerId) {
-    final ThreadsCfg cfg = brokerCfg.getThreads();
-
-    final int cpuThreads = cfg.getCpuThreadCount();
-    final int ioThreads = cfg.getIoThreadCount();
-    final boolean metricsEnabled = brokerCfg.getExperimental().getFeatures().isEnableActorMetrics();
-
-    return ActorScheduler.newActorScheduler()
-        .setActorClock(clock)
-        .setCpuBoundActorThreadCount(cpuThreads)
-        .setIoBoundActorThreadCount(ioThreads)
-        .setMetricsEnabled(metricsEnabled)
-        .setSchedulerName(brokerId)
-        .build();
-  }
-
   public ActorScheduler getScheduler() {
     return scheduler;
   }
 
   public BrokerCfg getBrokerConfiguration() {
     return brokerCfg;
+  }
+
+  public AtomixCluster getCluster() {
+    return cluster;
   }
 
   public Map<String, String> getDiagnosticContext() {

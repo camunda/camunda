@@ -9,12 +9,15 @@ package io.camunda.zeebe.broker.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.Mockito.mock;
 
+import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg.NodeCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
-import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
+import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
 import java.security.cert.CertificateException;
@@ -394,7 +397,35 @@ final class SystemContextTest {
                 + "configured");
   }
 
+  @Test
+  void shouldThrowExceptionWhenS3BucketIsNotProvided() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getData().getBackup().setStore(BackupStoreType.S3);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasCauseInstanceOf(IllegalArgumentException.class)
+        .cause()
+        .hasMessageContaining("bucketName must not be empty");
+  }
+
+  @Test
+  void shouldThrowExceptionWhenS3IsNotConfigured() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    final var backupCfg = brokerCfg.getData().getBackup();
+    backupCfg.setStore(BackupStoreType.S3);
+    backupCfg.getS3().setBucketName("bucket");
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining("Cannot configure S3 backup store");
+  }
+
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {
-    return new SystemContext(brokerCfg, "test", new ControlledActorClock());
+    return new SystemContext(brokerCfg, mock(ActorScheduler.class), mock(AtomixCluster.class));
   }
 }

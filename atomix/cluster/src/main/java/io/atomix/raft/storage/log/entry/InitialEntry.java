@@ -16,6 +16,10 @@
  */
 package io.atomix.raft.storage.log.entry;
 
+import io.atomix.raft.storage.serializer.RaftEntrySerializer;
+import io.atomix.raft.storage.serializer.RaftEntrySerializer.SerializedBufferWriterAdapter;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+
 /**
  * Indicates a leader change has occurred.
  *
@@ -23,4 +27,12 @@ package io.atomix.raft.storage.log.entry;
  * leadership change has occurred. Initialize entries are always the first entry to be committed at
  * the start of a leader's term.
  */
-public record InitialEntry() implements RaftEntry {}
+public record InitialEntry() implements RaftEntry {
+
+  @Override
+  public BufferWriter toSerializable(final long term, final RaftEntrySerializer serializer) {
+    return new SerializedBufferWriterAdapter(
+        serializer::getInitialEntrySerializedLength,
+        (buffer, offset) -> serializer.writeInitialEntry(term, this, buffer, offset));
+  }
+}

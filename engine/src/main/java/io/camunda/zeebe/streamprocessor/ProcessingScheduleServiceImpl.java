@@ -80,22 +80,19 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
       }
 
       final var currentStreamProcessorPhase = streamProcessorContext.getStreamProcessorPhase();
-      if (currentStreamProcessorPhase != Phase.PROCESSING
-          || streamProcessorContext.isInProcessing()) {
+      if (currentStreamProcessorPhase != Phase.PROCESSING) {
 
         // We want to execute the scheduled tasks only if the StreamProcessor is in the PROCESSING
-        // PHASE, but no processing is currently happening.
+        // PHASE
         //
         // To make sure that:
         //
         //  * we are not running during replay/init phase (the state might not be up-to-date yet)
         //  * we are not running during suspending
-        //  * we are not interfering with the current ongoing processing,
-        //    such that all transaction changes are available during our task execution
+        //
         Loggers.PROCESS_PROCESSOR_LOGGER.trace(
-            "Not able to execute scheduled task right now. [streamProcessorPhase: {}, inProcessing: {}]",
-            currentStreamProcessorPhase,
-            streamProcessorContext.isInProcessing());
+            "Not able to execute scheduled task right now. [streamProcessorPhase: {}]",
+            currentStreamProcessorPhase);
         actorControl.submit(toRunnable(task));
         return;
       }
@@ -112,6 +109,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
           writeRetryStrategy.runWithRetry(
               () -> {
                 Loggers.PROCESS_PROCESSOR_LOGGER.trace("Write scheduled TaskResult to dispatcher!");
+                logStreamBatchWriter.reset();
                 result
                     .getRecordBatch()
                     .forEach(

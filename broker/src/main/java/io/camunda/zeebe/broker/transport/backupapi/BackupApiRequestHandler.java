@@ -65,7 +65,7 @@ public final class BackupApiRequestHandler
 
   @Override
   protected ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleAsync(
-      final int partitionId,
+      final int requestStreamId,
       final long requestId,
       final BackupApiRequestReader requestReader,
       final BackupApiResponseWriter responseWriter,
@@ -73,7 +73,8 @@ public final class BackupApiRequestHandler
 
     return switch (requestReader.type()) {
       case TAKE_BACKUP -> CompletableActorFuture.completed(
-          handleTakeBackupRequest(requestReader, responseWriter, errorWriter));
+          handleTakeBackupRequest(
+              requestStreamId, requestId, requestReader, responseWriter, errorWriter));
       case QUERY_STATUS -> handleQueryStatusHandler(requestReader, responseWriter, errorWriter);
       default -> CompletableActorFuture.completed(
           unknownRequest(errorWriter, requestReader.getMessageDecoder().type()));
@@ -81,6 +82,8 @@ public final class BackupApiRequestHandler
   }
 
   private Either<ErrorResponseWriter, BackupApiResponseWriter> handleTakeBackupRequest(
+      final int requestStreamId,
+      final long requestId,
       final BackupApiRequestReader requestReader,
       final BackupApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
@@ -92,7 +95,9 @@ public final class BackupApiRequestHandler
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
             .valueType(ValueType.CHECKPOINT)
-            .intent(CheckpointIntent.CREATE);
+            .intent(CheckpointIntent.CREATE)
+            .requestId(requestId)
+            .requestStreamId(requestStreamId);
     final CheckpointRecord checkpointRecord =
         new CheckpointRecord().setCheckpointId(requestReader.backupId());
 
@@ -144,8 +149,11 @@ public final class BackupApiRequestHandler
                 response
                     .setCheckpointPosition(backupDescriptor.checkpointPosition())
                     .setSnapshotId(backupDescriptor.snapshotId().orElse(""))
-                    .setNumberOfPartitions(backupDescriptor.numberOfPartitions()));
+                    .setNumberOfPartitions(backupDescriptor.numberOfPartitions())
+                    .setBrokerVersion(backupDescriptor.brokerVersion()));
     status.failureReason().ifPresent(response::setFailureReason);
+    status.created().ifPresent(instant -> response.setCreatedAt(instant.toString()));
+    status.lastModified().ifPresent(instant -> response.setLastUpdated(instant.toString()));
     return response;
   }
 

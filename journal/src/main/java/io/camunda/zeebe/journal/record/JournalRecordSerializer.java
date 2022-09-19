@@ -8,6 +8,8 @@
 package io.camunda.zeebe.journal.record;
 
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.nio.BufferOverflowException;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -23,8 +25,22 @@ public interface JournalRecordSerializer {
    * @return Either an error if there is not enough space or the number of bytes that were written
    *     to the buffer
    */
+  default Either<BufferOverflowException, Integer> writeData(
+      final RecordData record, final MutableDirectBuffer buffer, final int offset) {
+    return writeData(
+        record.index(),
+        record.asqn(),
+        new DirectBufferWriter().wrap(record.data()),
+        buffer,
+        offset);
+  }
+
   Either<BufferOverflowException, Integer> writeData(
-      RecordData record, MutableDirectBuffer buffer, int offset);
+      final long index,
+      final long asqn,
+      BufferWriter recordDataWriter,
+      MutableDirectBuffer writeBuffer,
+      int offset);
 
   /**
    * Writes a {@link RecordMetadata} to the buffer.

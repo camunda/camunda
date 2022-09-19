@@ -5,12 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.gateway.admin.backup;
+package io.camunda.zeebe.broker.system;
 
-public class BackupFailedException extends RuntimeException {
-
-  public BackupFailedException(final long backupId, final Throwable error) {
-    super(
-        "Failed to trigger backup (id = %d) on at least one partition.".formatted(backupId), error);
+public class InvalidConfigurationException extends RuntimeException {
+  public InvalidConfigurationException(final String message, final Exception cause) {
+    super(message, cause);
   }
 }

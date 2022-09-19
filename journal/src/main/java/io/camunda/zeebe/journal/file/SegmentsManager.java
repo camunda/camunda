@@ -31,8 +31,9 @@ import org.slf4j.LoggerFactory;
 /** Create new segments. Load existing segments from the disk. Keep track of all segments. */
 final class SegmentsManager {
 
-  private static final int FIRST_SEGMENT_ID = 1;
-  private static final int INITIAL_INDEX = 1;
+  private static final long FIRST_SEGMENT_ID = 1;
+  private static final long INITIAL_INDEX = 1;
+  private static final long INITIAL_ASQN = SegmentedJournal.ASQN_IGNORE;
 
   private static final Logger LOG = LoggerFactory.getLogger(SegmentsManager.class);
 
@@ -108,7 +109,8 @@ final class SegmentsManager {
             .withMaxSegmentSize(maxSegmentSize)
             .build();
 
-    currentSegment = createSegment(descriptor);
+    currentSegment =
+        createSegment(descriptor, lastSegment != null ? lastSegment.lastAsqn() : INITIAL_ASQN);
 
     segments.put(descriptor.index(), currentSegment);
     journalMetrics.incSegmentCount();
@@ -191,7 +193,7 @@ final class SegmentsManager {
             .withIndex(index)
             .withMaxSegmentSize(maxSegmentSize)
             .build();
-    currentSegment = createSegment(descriptor);
+    currentSegment = createSegment(descriptor, INITIAL_ASQN);
     segments.put(index, currentSegment);
     journalMetrics.incSegmentCount();
     return currentSegment;
@@ -217,12 +219,12 @@ final class SegmentsManager {
     } else {
       final SegmentDescriptor descriptor =
           SegmentDescriptor.builder()
-              .withId(1)
-              .withIndex(1)
+              .withId(FIRST_SEGMENT_ID)
+              .withIndex(INITIAL_INDEX)
               .withMaxSegmentSize(maxSegmentSize)
               .build();
 
-      currentSegment = createSegment(descriptor);
+      currentSegment = createSegment(descriptor, INITIAL_ASQN);
 
       segments.put(1L, currentSegment);
       journalMetrics.incSegmentCount();
@@ -249,7 +251,7 @@ final class SegmentsManager {
               .withMaxSegmentSize(maxSegmentSize)
               .build();
 
-      currentSegment = createSegment(descriptor);
+      currentSegment = createSegment(descriptor, INITIAL_ASQN);
 
       segments.put(1L, currentSegment);
       journalMetrics.incSegmentCount();
@@ -263,10 +265,10 @@ final class SegmentsManager {
     deleteDeferredFiles();
   }
 
-  private Segment createSegment(final SegmentDescriptor descriptor) {
+  private Segment createSegment(final SegmentDescriptor descriptor, final long lastWrittenAsqn) {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
     return segmentLoader.createSegment(
-        segmentFile.toPath(), descriptor, lastWrittenIndex, journalIndex);
+        segmentFile.toPath(), descriptor, lastWrittenIndex, lastWrittenAsqn, journalIndex);
   }
 
   /**
@@ -280,19 +282,25 @@ final class SegmentsManager {
     final List<Segment> segments = new ArrayList<>();
 
     final List<File> files = getSortedLogSegments();
+    Segment previousSegment = null;
     for (int i = 0; i < files.size(); i++) {
       final File file = files.get(i);
 
       try {
         LOG.debug("Found segment file: {}", file.getName());
         final Segment segment =
-            segmentLoader.loadExistingSegment(file.toPath(), lastWrittenIndex, journalIndex);
+            segmentLoader.loadExistingSegment(
+                file.toPath(),
+                lastWrittenIndex,
+                previousSegment != null ? previousSegment.lastAsqn() : INITIAL_ASQN,
+                journalIndex);
 
         if (i > 0) {
           checkForIndexGaps(segments.get(i - 1), segment);
         }
 
         segments.add(segment);
+        previousSegment = segment;
       } catch (final CorruptedJournalException e) {
         if (handleSegmentCorruption(files, segments, i)) {
           return segments;

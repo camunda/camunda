@@ -16,7 +16,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.ConstructorBinding;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.context.annotation.Bean;
-import org.springframework.web.context.annotation.ApplicationScope;
 
 @SuppressWarnings("unused")
 @ConfigurationProperties("zeebe.clock")
@@ -38,13 +37,11 @@ public final class ActorClockConfiguration {
   }
 
   @Bean
-  @ApplicationScope
   public ActorClock getClock() {
     return clock;
   }
 
   @Bean
-  @ApplicationScope
   public ActorClockService getClockService() {
     return service;
   }

@@ -15,4 +15,9 @@
  */
 package io.atomix.raft.storage.log.entry;
 
-public interface RaftEntry {}
+import io.atomix.raft.storage.serializer.RaftEntrySerializer;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+
+public interface RaftEntry {
+  BufferWriter toSerializable(long term, RaftEntrySerializer serializer);
+}

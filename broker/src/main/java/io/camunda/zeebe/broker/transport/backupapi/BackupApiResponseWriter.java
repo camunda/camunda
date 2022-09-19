@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.transport.backupapi;
 
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
-import io.camunda.zeebe.protocol.management.BackupStatusResponseEncoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderEncoder;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.ServerResponseImpl;
@@ -55,7 +54,7 @@ public final class BackupApiResponseWriter implements ResponseWriter {
   @Override
   public int getLength() {
     if (hasResponse) {
-      return MessageHeaderEncoder.ENCODED_LENGTH + BackupStatusResponseEncoder.BLOCK_LENGTH;
+      return MessageHeaderEncoder.ENCODED_LENGTH + status.getLength();
     } else {
       return 0;
     }

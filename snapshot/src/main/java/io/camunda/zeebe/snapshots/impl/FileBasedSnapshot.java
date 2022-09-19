@@ -161,11 +161,6 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   @Override
-  public void close() {
-    // nothing to be done
-  }
-
-  @Override
   public int hashCode() {
     int result = getDirectory().hashCode();
     result = 31 * result + checksumFile.hashCode();

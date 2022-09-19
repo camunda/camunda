@@ -16,7 +16,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
+import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior.ActivatedElementKeys;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
+import io.camunda.zeebe.engine.processing.common.MultipleFlowScopeInstancesFoundException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -80,6 +82,18 @@ public final class ProcessInstanceModificationProcessor
       Expected to modify instance of process '%s' but it contains one or more variable instructions \
       with a scope element that doesn't belong to the activating element's flow scope. \
       These variables should be set before or after the modification.""";
+
+  private static final String ERROR_MESSAGE_MORE_THAN_ONE_FLOW_SCOPE_INSTANCE =
+      """
+      Expected to modify instance of process '%s' but it contains one or more activate instructions \
+      for an element that has a flow scope with more than one active instance: '%s'. Can't decide \
+      in which instance of the flow scope the element should be activated.""";
+
+  private static final String ERROR_MESSAGE_CHILD_PROCESS_INSTANCE_TERMINATED =
+      """
+      Expected to modify instance of process '%s' but the given instructions would terminate \
+      the instance. The instance was created by a call activity in the parent process. \
+      To terminate this instance please modify the parent process instead.""";
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
@@ -153,24 +167,27 @@ public final class ProcessInstanceModificationProcessor
       return;
     }
 
-    value
-        .getActivateInstructions()
-        .forEach(
-            instruction -> {
-              final var elementToActivate =
-                  process.getProcess().getElementById(instruction.getElementId());
+    final var requiredKeysForActivation =
+        value.getActivateInstructions().stream()
+            .flatMap(
+                instruction -> {
+                  final var elementToActivate =
+                      process.getProcess().getElementById(instruction.getElementId());
 
-              elementActivationBehavior.activateElement(
-                  processInstanceRecord,
-                  elementToActivate,
-                  (elementId, scopeKey) ->
-                      executeVariableInstruction(
-                          BufferUtil.bufferAsString(elementId),
-                          scopeKey,
-                          processInstance,
-                          process,
-                          instruction));
-            });
+                  final ActivatedElementKeys activatedElementKeys =
+                      elementActivationBehavior.activateElement(
+                          processInstanceRecord,
+                          elementToActivate,
+                          (elementId, scopeKey) ->
+                              executeVariableInstruction(
+                                  BufferUtil.bufferAsString(elementId),
+                                  scopeKey,
+                                  processInstance,
+                                  process,
+                                  instruction));
+                  return activatedElementKeys.getFlowScopeKeys().stream();
+                })
+            .collect(Collectors.toSet());
 
     final var sideEffectQueue = new SideEffectQueue();
     sideEffect.accept(sideEffectQueue);
@@ -179,13 +196,12 @@ public final class ProcessInstanceModificationProcessor
         .getTerminateInstructions()
         .forEach(
             instruction -> {
-              // todo: deal with non-existing element instance (#9983)
               final var elementInstance =
                   elementInstanceState.getInstance(instruction.getElementInstanceKey());
               final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
 
               terminateElement(elementInstance, sideEffectQueue);
-              terminateFlowScopes(flowScopeKey, sideEffectQueue);
+              terminateFlowScopes(flowScopeKey, sideEffectQueue, requiredKeysForActivation);
             });
 
     stateWriter.appendFollowUpEvent(eventKey, ProcessInstanceModificationIntent.MODIFIED, value);
@@ -203,6 +219,17 @@ public final class ProcessInstanceModificationProcessor
       responseWriter.writeRejectionOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
+
+    } else if (error instanceof MultipleFlowScopeInstancesFoundException exception) {
+      final var rejectionReason =
+          ERROR_MESSAGE_MORE_THAN_ONE_FLOW_SCOPE_INSTANCE.formatted(
+              exception.getBpmnProcessId(), exception.getFlowScopeId());
+      rejectionWriter.appendRejection(
+          typedCommand, RejectionType.INVALID_ARGUMENT, rejectionReason);
+      responseWriter.writeRejectionOnCommand(
+          typedCommand, RejectionType.INVALID_ARGUMENT, rejectionReason);
+      return ProcessingError.EXPECTED_ERROR;
+
     } else if (error instanceof ExceededBatchRecordSizeException) {
       rejectionWriter.appendRejection(
           typedCommand,
@@ -212,6 +239,13 @@ public final class ProcessInstanceModificationProcessor
           typedCommand,
           RejectionType.INVALID_ARGUMENT,
           ERROR_COMMAND_TOO_LARGE.formatted(typedCommand.getValue().getProcessInstanceKey()));
+      return ProcessingError.EXPECTED_ERROR;
+
+    } else if (error instanceof TerminatedChildProcessException exception) {
+      rejectionWriter.appendRejection(
+          typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
     return ProcessingError.UNEXPECTED_ERROR;
@@ -500,6 +534,7 @@ public final class ProcessInstanceModificationProcessor
       final ElementInstance elementInstance, final SideEffects sideEffects) {
     final var elementInstanceKey = elementInstance.getKey();
     final var elementInstanceRecord = elementInstance.getValue();
+    final BpmnElementType elementType = elementInstance.getValue().getBpmnElementType();
 
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
@@ -509,14 +544,42 @@ public final class ProcessInstanceModificationProcessor
 
     catchEventBehavior.unsubscribeFromEvents(elementInstanceKey, sideEffects);
 
+    // terminate all child instances if the element is an event subprocess
+    if (elementType == BpmnElementType.EVENT_SUB_PROCESS
+        || elementType == BpmnElementType.SUB_PROCESS
+        || elementType == BpmnElementType.PROCESS
+        || elementType == BpmnElementType.MULTI_INSTANCE_BODY) {
+      elementInstanceState.getChildren(elementInstanceKey).stream()
+          .filter(ElementInstance::canTerminate)
+          .forEach(childInstance -> terminateElement(childInstance, sideEffects));
+    } else if (elementType == BpmnElementType.CALL_ACTIVITY) {
+      final var calledActivityElementInstance =
+          elementInstanceState.getInstance(elementInstance.getCalledChildInstanceKey());
+      terminateElement(calledActivityElementInstance, sideEffects);
+    }
+
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATED, elementInstanceRecord);
   }
 
-  private void terminateFlowScopes(final long elementInstanceKey, final SideEffects sideEffects) {
+  private void terminateFlowScopes(
+      final long elementInstanceKey,
+      final SideEffects sideEffects,
+      final Set<Long> requiredKeysForActivation) {
     var currentElementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
-    while (canTerminateElementInstance(currentElementInstance)) {
+    while (canTerminateElementInstance(currentElementInstance, requiredKeysForActivation)) {
+
+      // Reject the command by throwing an exception if the process is being terminated, but it was
+      // started by a call activity.
+      final var currentElementInstanceRecord = currentElementInstance.getValue();
+      if (currentElementInstanceRecord.getBpmnElementType() == BpmnElementType.PROCESS
+          && currentElementInstanceRecord.hasParentProcess()) {
+        throw new TerminatedChildProcessException(
+            ERROR_MESSAGE_CHILD_PROCESS_INSTANCE_TERMINATED.formatted(
+                currentElementInstanceRecord.getBpmnProcessId()));
+      }
+
       final var flowScopeKey = currentElementInstance.getValue().getFlowScopeKey();
 
       terminateElement(currentElementInstance, sideEffects);
@@ -525,13 +588,32 @@ public final class ProcessInstanceModificationProcessor
     }
   }
 
-  private boolean canTerminateElementInstance(final ElementInstance elementInstance) {
+  private boolean canTerminateElementInstance(
+      final ElementInstance elementInstance, final Set<Long> requiredKeysForActivation) {
     return elementInstance != null
         // if it has no active element instances
         && elementInstance.getNumberOfActiveElementInstances() == 0
         // and no pending element activations (i.e. activate command is written but not processed)
-        && elementInstance.getActiveSequenceFlows() == 0;
+        && elementInstance.getActiveSequenceFlows() == 0
+        // no activate instruction requires this element instance
+        && !requiredKeysForActivation.contains(elementInstance.getKey());
   }
 
   private record Rejection(RejectionType type, String reason) {}
+
+  /**
+   * Exception that can be thrown when child instance is being modified. If all active element
+   * instances of this process are being terminated this exception is thrown. The reason for this is
+   * that it's unclear what the expected behavior of the parent process would be in these cases.
+   * Terminating the parent process could be unintended. Creating an incident is an alternative, but
+   * there would be no way to resolve this incident.
+   *
+   * <p>In order to terminate the child process a modification should be performed on the parent
+   * process instead.
+   */
+  private static class TerminatedChildProcessException extends RuntimeException {
+    TerminatedChildProcessException(final String message) {
+      super(message);
+    }
+  }
 }
