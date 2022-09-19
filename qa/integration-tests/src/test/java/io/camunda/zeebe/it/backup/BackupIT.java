@@ -17,6 +17,7 @@ import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
+import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -26,18 +27,12 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.testcontainers.containers.localstack.LocalStackContainer;
-import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
 class BackupIT {
-  @Container
-  private static final LocalStackContainer S3 =
-      new LocalStackContainer(DockerImageName.parse("localstack/localstack:0.14.5"))
-          .withServices(Service.S3);
+  @Container private static final MinioContainer S3 = new MinioContainer();
 
   private GrpcClientRule client;
 
@@ -56,19 +51,15 @@ class BackupIT {
     final var s3Config = backupConfig.getS3();
     final String bucketName = RandomStringUtils.randomAlphabetic(10).toLowerCase();
     s3Config.setBucketName(bucketName);
-    s3Config.setEndpoint(S3.getEndpointOverride(Service.S3).toString());
-    s3Config.setRegion(S3.getRegion());
-    s3Config.setAccessKey(S3.getAccessKey());
-    s3Config.setSecretKey(S3.getSecretKey());
+    s3Config.setEndpoint(S3.externalEndpoint());
+    s3Config.setRegion(S3.region());
+    s3Config.setAccessKey(S3.accessKey());
+    s3Config.setSecretKey(S3.secretKey());
 
     // Create bucket before for storing backups
     final var s3ClientConfig =
         io.camunda.zeebe.backup.s3.S3BackupConfig.from(
-            bucketName,
-            s3Config.getEndpoint(),
-            S3.getRegion(),
-            S3.getAccessKey(),
-            S3.getSecretKey());
+            bucketName, s3Config.getEndpoint(), S3.region(), S3.accessKey(), S3.secretKey());
     try (final var s3Client = S3BackupStore.buildClient(s3ClientConfig)) {
       s3Client.createBucket(builder -> builder.bucket(bucketName).build()).join();
     }

@@ -17,13 +17,11 @@ import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
 @WebEndpoint(id = "backups", enableByDefault = false)
-@ConditionalOnProperty(prefix = "zeebe.broker.experimental.features", name = "enableBackup")
 final class BackupEndpoint {
   private final BackupApi api;
 

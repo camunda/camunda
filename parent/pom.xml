@@ -929,6 +929,32 @@
         <version>${version.jnr-posix}</version>
       </dependency>
 
+      <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>bom</artifactId>
+        <version>${version.awssdk}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!--
+        Sad workaround for https://github.com/testcontainers/testcontainers-java/issues/4279; when
+        this is not needed and removed, make sure to remove it from child modules including this as
+        well
+      -->
+      <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-core</artifactId>
+        <version>1.12.306</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>*</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
       <!-- Dependencies present for convergence only -->
       <!-- between log4j2 and commons-compress (from testcontainers) -->
       <dependency>
@@ -985,14 +1011,6 @@
         <groupId>com.cronutils</groupId>
         <artifactId>cron-utils</artifactId>
         <version>${version.cron-utils}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>software.amazon.awssdk</groupId>
-        <artifactId>bom</artifactId>
-        <version>${version.awssdk}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
 
     </dependencies>
