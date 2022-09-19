@@ -608,6 +608,8 @@ pipeline {
             PUSH_LATEST_TAG = "${isMainOrMaintenanceBranch() ? "TRUE" : "FALSE"}"
             VERSION = readMavenPom().getVersion()
             IS_MAIN = "${isMainBranch() ? "TRUE" : "FALSE"}"
+            REVISION = "${env.GIT_COMMIT}"
+            DATE = java.time.Instant.now().toString()
           }
           steps {
             container('docker') {
@@ -628,9 +630,47 @@ pipeline {
 
               printf -v tag_arguments -- "-t %s " "\${tags[@]}"
               docker buildx create --use
+
+              export VERSION=${VERSION}
+              export DATE=${DATE}
+              export REVISION=${REVISION}
+              export BASE_IMAGE=docker.io/library/alpine:3.16.2
+              apk update
+              apk add jq
+
+              # Since docker buildx doesn't allow to use --load for a multi-platform build, we do it one at a time to be
+              # able to perform the checks before pushing
+              # First amd64
               docker buildx build \
                 \${tag_arguments} \
                 --build-arg VERSION=${VERSION} \
+                --build-arg DATE=${DATE} \
+                --build-arg REVISION=${REVISION} \
+                --platform linux/amd64 \
+                --load \
+                .
+              export ARCHITECTURE=amd64
+              ./docker/test/verify.sh \${tags[@]}
+
+              # Now arm64
+              docker buildx build \
+                \${tag_arguments} \
+                --build-arg VERSION=${VERSION} \
+                --build-arg DATE=${DATE} \
+                --build-arg REVISION=${REVISION} \
+                --platform linux/arm64 \
+                --load \
+                .
+              export ARCHITECTURE=arm64
+              ./docker/test/verify.sh \${tags[@]}
+
+              # If we made it to here, all checks were successful. So let's build it to push. This is not as
+              # inefficient as it looks, since docker retrieves the previously generated images from the build cache
+              docker buildx build \
+                \${tag_arguments} \
+                --build-arg VERSION=${VERSION} \
+                --build-arg DATE=${DATE} \
+                --build-arg REVISION=${REVISION} \
                 --platform linux/amd64,linux/arm64 \
                 --push \
                 .
