@@ -276,19 +276,22 @@ public class ProcessingScheduleServiceTest {
               return i.callRealMethod();
             });
 
-    dummyProcessorSpy.scheduleService.runDelayed(
-        Duration.ZERO,
-        builder -> {
-          // force trigger second task
-          clock.addTime(Duration.ofMinutes(1));
-          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
-          return builder.build();
-        });
+    // we need to schedule first the longer delayed task, otherwise we might get race conditions
+    // with the scheduling and clock adjustment
     dummyProcessorSpy.scheduleService.runDelayed(
         Duration.ofMinutes(1),
         builder -> {
           Loggers.PROCESS_PROCESSOR_LOGGER.debug("Running second timer");
           builder.appendCommandRecord(2, ACTIVATE_ELEMENT, RECORD);
+          return builder.build();
+        });
+    dummyProcessorSpy.scheduleService.runDelayed(
+        Duration.ZERO,
+        builder -> {
+          Loggers.PROCESS_PROCESSOR_LOGGER.debug("Running first timer");
+          // force trigger second task
+          clock.addTime(Duration.ofMinutes(1));
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
           return builder.build();
         });
 
