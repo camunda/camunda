@@ -255,7 +255,8 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                                 modificationsStore.removeVariableModification(
                                   scopeId,
                                   id,
-                                  operation
+                                  operation,
+                                  'summaryModal'
                                 );
                               }}
                               icon={<DeleteIcon />}

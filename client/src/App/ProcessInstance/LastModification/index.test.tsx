@@ -11,7 +11,10 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MemoryRouter} from 'react-router-dom';
 import {modificationsStore} from 'modules/stores/modifications';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
-import {createEditVariableModification} from 'modules/mocks/modifications';
+import {
+  createAddVariableModification,
+  createEditVariableModification,
+} from 'modules/mocks/modifications';
 
 type Props = {
   children?: React.ReactNode;
@@ -81,16 +84,12 @@ describe('LastModification', () => {
       screen.getByText(/Move "flowNode3" to "flowNode4"/)
     ).toBeInTheDocument();
 
-    modificationsStore.addModification({
-      type: 'variable',
-      payload: {
-        id: '1',
-        operation: 'ADD_VARIABLE',
-        scopeId: '5',
-        flowNodeName: 'flowNode5',
-        name: 'variableName1',
-        newValue: 'variableValue1',
-      },
+    createAddVariableModification({
+      id: '1',
+      scopeId: '5',
+      flowNodeName: 'flowNode5',
+      name: 'variableName1',
+      value: 'variableValue1',
     });
 
     expect(

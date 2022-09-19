@@ -57,11 +57,17 @@ type VariableModification = {
 };
 
 type Modification = FlowNodeModification | VariableModification;
+type RemovedModificationSource = 'variables' | 'summaryModal' | 'footer';
 
 type State = {
   status: 'enabled' | 'moving-token' | 'disabled' | 'adding-modification';
   modifications: Modification[];
-  lastRemovedModification: Modification | undefined;
+  lastRemovedModification:
+    | {
+        modification: Modification | undefined;
+        source: RemovedModificationSource;
+      }
+    | undefined;
   sourceFlowNodeIdForMoveOperation: string | null;
 };
 
@@ -171,7 +177,10 @@ class Modifications {
   };
 
   removeLastModification = () => {
-    this.state.lastRemovedModification = this.state.modifications.pop();
+    this.state.lastRemovedModification = {
+      modification: this.state.modifications.pop(),
+      source: 'footer',
+    };
   };
 
   removeFlowNodeModification = (
@@ -202,7 +211,8 @@ class Modifications {
   removeVariableModification = (
     scopeId: string,
     id: string,
-    operation: 'ADD_VARIABLE' | 'EDIT_VARIABLE'
+    operation: 'ADD_VARIABLE' | 'EDIT_VARIABLE',
+    source: RemovedModificationSource
   ) => {
     const lastModification = this.getLastVariableModification(
       scopeId,
@@ -222,10 +232,10 @@ class Modifications {
         payload.operation === lastModification.operation
     );
 
-    this.state.lastRemovedModification = this.state.modifications.splice(
-      index,
-      1
-    )[0];
+    this.state.lastRemovedModification = {
+      modification: this.state.modifications.splice(index, 1)[0],
+      source,
+    };
   };
 
   get isModificationModeEnabled() {
@@ -340,6 +350,24 @@ class Modifications {
         modification.scopeId === flowNodeInstanceId &&
         modification.id === id
     );
+  };
+
+  getAddVariableModifications = (scopeId: string | null) => {
+    if (scopeId === null) {
+      return [];
+    }
+
+    return this.variableModifications
+      .filter(
+        (modification) =>
+          modification.operation === 'ADD_VARIABLE' &&
+          modification.scopeId === scopeId
+      )
+      .map(({name, newValue, id}) => ({
+        name,
+        value: newValue,
+        id,
+      }));
   };
 
   reset = () => {

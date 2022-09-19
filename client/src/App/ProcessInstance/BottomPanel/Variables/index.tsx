@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, useMemo} from 'react';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {variablesStore} from 'modules/stores/variables';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
@@ -51,9 +51,10 @@ const Variables: React.FC = observer(() => {
 
   const form = useForm<VariableFormValues>();
 
-  useEffect(() => {
-    form.reset({});
-  }, [form, scopeId]);
+  const addVariableModifications = useMemo(
+    () => modificationsStore.getAddVariableModifications(scopeId),
+    [scopeId]
+  );
 
   useEffect(() => {
     const disposer = reaction(
@@ -73,7 +74,8 @@ const Variables: React.FC = observer(() => {
   const fieldArray = useFieldArray('newVariables');
 
   const isViewMode = isModificationModeEnabled
-    ? fieldArray.fields.length === 0
+    ? fieldArray.fields.length === 0 &&
+      modificationsStore.getAddVariableModifications(scopeId).length === 0
     : initialValues === undefined || Object.values(initialValues).length === 0;
 
   const isAddMode = initialValues?.name === '' && initialValues?.value === '';
@@ -155,12 +157,22 @@ const Variables: React.FC = observer(() => {
                   {isModificationModeEnabled && (
                     <>
                       <OnLastVariableModificationRemoved />
-                      <FieldArray name="newVariables">
+                      <FieldArray
+                        name="newVariables"
+                        initialValue={
+                          addVariableModifications.length > 0
+                            ? addVariableModifications
+                            : undefined
+                        }
+                      >
                         {({fields}) =>
                           fields
                             .map((variableName, index) => {
                               return (
-                                <TR key={variableName}>
+                                <TR
+                                  key={variableName}
+                                  data-testid={`newVariables[${index}]`}
+                                >
                                   <NewVariableModification
                                     variableName={variableName}
                                     onRemove={() => {

@@ -5,9 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
+import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {modificationsStore} from '../stores/modifications';
 
-export const createEditVariableModification = ({
+const createEditVariableModification = ({
   scopeId,
   flowNodeName = 'flow-node-name',
   name,
@@ -33,3 +34,31 @@ export const createEditVariableModification = ({
     },
   });
 };
+
+const createAddVariableModification = ({
+  id,
+  scopeId,
+  flowNodeName = 'flow-node-name',
+  name,
+  value,
+}: {
+  id?: string;
+  scopeId: string;
+  flowNodeName?: string;
+  name: string;
+  value: string;
+}) => {
+  modificationsStore.addModification({
+    type: 'variable',
+    payload: {
+      operation: 'ADD_VARIABLE',
+      id: id ?? generateUniqueID(),
+      scopeId,
+      flowNodeName,
+      name,
+      newValue: value,
+    },
+  });
+};
+
+export {createEditVariableModification, createAddVariableModification};

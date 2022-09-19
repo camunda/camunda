@@ -49,7 +49,10 @@ const Wrapper: React.FC<Props> = ({children}) => {
   );
 };
 
-const editValueFromTextfield = async (user: UserEvent, value: string) => {
+const editValueFromTextfieldAndBlur = async (
+  user: UserEvent,
+  value: string
+) => {
   await user.click(screen.getByTestId('edit-variable-value'));
   await user.type(screen.getByTestId('edit-variable-value'), value);
   await user.tab();
@@ -64,7 +67,7 @@ const editValueFromJSONEditor = async (user: UserEvent, value: string) => {
 
 const editValue = async (type: string, user: UserEvent, value: string) => {
   if (type === 'textfield') {
-    return editValueFromTextfield(user, value);
+    return editValueFromTextfieldAndBlur(user, value);
   }
   if (type === 'jsoneditor') {
     return editValueFromJSONEditor(user, value);

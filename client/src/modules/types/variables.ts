@@ -8,7 +8,7 @@
 type VariableFormValues = {
   [key: string]: string;
 } & {
-  newVariables?: {name: string; value: string}[];
+  newVariables?: {id: string; name: string; value: string}[];
 };
 
 export type {VariableFormValues};

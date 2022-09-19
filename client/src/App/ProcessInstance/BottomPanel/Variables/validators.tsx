@@ -22,62 +22,60 @@ const validateNameCharacters: FieldValidator<string | undefined> = (
   }
 };
 
-const validateModifiedNameComplete: FieldValidator<string | undefined> =
-  promisifyValidator(
-    (variableName = '', allValues: {value?: string} | undefined, meta) => {
-      const fieldName = meta?.name ?? '';
+const validateModifiedNameComplete: FieldValidator<string | undefined> = (
+  variableName = '',
+  allValues: {value?: string} | undefined,
+  meta
+) => {
+  if (meta?.active) {
+    return undefined;
+  }
+  const fieldName = meta?.name ?? '';
 
-      const variableValue =
-        get(allValues, `${getNewVariablePrefix(fieldName)}.value`) ?? '';
+  const variableValue =
+    get(allValues, `${getNewVariablePrefix(fieldName)}.value`) ?? '';
 
-      if (variableValue.trim() !== '' && variableName === '') {
-        return ERRORS.EMPTY_NAME;
-      }
-    },
-    VALIDATION_DELAY
+  if (variableValue.trim() !== '' && variableName === '') {
+    return ERRORS.EMPTY_NAME;
+  }
+};
+
+const validateModifiedNameNotDuplicate: FieldValidator<string | undefined> = (
+  variableName = '',
+  allValues:
+    | {value?: string; newVariables?: Array<VariableFormValues>}
+    | undefined,
+  meta
+) => {
+  if (allValues?.newVariables === undefined) {
+    return;
+  }
+
+  const isVariableDuplicate = variablesStore.state.items.some(
+    ({name}) => name === variableName
   );
 
-const validateModifiedNameNotDuplicate: FieldValidator<string | undefined> =
-  promisifyValidator(
-    (
-      variableName = '',
-      allValues:
-        | {value?: string; newVariables?: Array<VariableFormValues>}
-        | undefined,
-      meta
-    ) => {
-      if (allValues?.newVariables === undefined) {
-        return;
-      }
+  if (meta?.dirty && isVariableDuplicate) {
+    return ERRORS.DUPLICATE_NAME;
+  }
 
-      const isVariableDuplicate = variablesStore.state.items.some(
-        ({name}) => name === variableName
-      );
+  if (
+    allValues.newVariables.filter((variable) => variable?.name === variableName)
+      .length <= 1
+  ) {
+    return;
+  }
 
-      if (meta?.dirty && isVariableDuplicate) {
-        return ERRORS.DUPLICATE_NAME;
-      }
+  if (
+    meta?.active ||
+    meta?.error === ERRORS.DUPLICATE_NAME ||
+    meta?.validating
+  ) {
+    return ERRORS.DUPLICATE_NAME;
+  }
 
-      if (
-        allValues.newVariables.filter(
-          (variable) => variable?.name === variableName
-        ).length <= 1
-      ) {
-        return;
-      }
-
-      if (
-        meta?.active ||
-        meta?.error === ERRORS.DUPLICATE_NAME ||
-        meta?.validating
-      ) {
-        return ERRORS.DUPLICATE_NAME;
-      }
-
-      return;
-    },
-    VALIDATION_DELAY
-  );
+  return;
+};
 
 const validateNameComplete: FieldValidator<string | undefined> =
   promisifyValidator(
@@ -136,34 +134,36 @@ const validateValueValid: FieldValidator<string | undefined> =
     return ERRORS.INVALID_VALUE;
   }, VALIDATION_DELAY);
 
-const validateModifiedValueComplete: FieldValidator<string | undefined> =
-  promisifyValidator(
-    (variableValue = '', allValues: {name?: string} | undefined, meta) => {
-      const fieldName = meta?.name ?? '';
+const validateModifiedValueComplete: FieldValidator<string | undefined> = (
+  variableValue = '',
+  allValues: {name?: string} | undefined,
+  meta
+) => {
+  if (!meta?.visited) {
+    return undefined;
+  }
 
-      const variableName =
-        get(allValues, `${getNewVariablePrefix(fieldName)}.name`) ?? '';
+  const fieldName = meta?.name ?? '';
 
-      if (
-        (variableName === '' && variableValue === '') ||
-        variableValue !== ''
-      ) {
-        return;
-      }
+  const variableName =
+    get(allValues, `${getNewVariablePrefix(fieldName)}.name`) ?? '';
 
-      return ERRORS.EMPTY_VALUE;
-    },
-    VALIDATION_DELAY
-  );
+  if ((variableName === '' && variableValue === '') || variableValue !== '') {
+    return;
+  }
 
-const validateModifiedValueValid: FieldValidator<string | undefined> =
-  promisifyValidator((variableValue = '') => {
-    if (variableValue === '' || isValidJSON(variableValue)) {
-      return;
-    }
+  return ERRORS.EMPTY_VALUE;
+};
 
-    return ERRORS.INVALID_VALUE;
-  }, VALIDATION_DELAY);
+const validateModifiedValueValid: FieldValidator<string | undefined> = (
+  variableValue = ''
+) => {
+  if (variableValue === '' || isValidJSON(variableValue)) {
+    return;
+  }
+
+  return ERRORS.INVALID_VALUE;
+};
 
 export {
   validateNameCharacters,

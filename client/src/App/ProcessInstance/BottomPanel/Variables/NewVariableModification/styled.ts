@@ -39,6 +39,7 @@ const FlexContainer = styled.div`
 
 const ActionButtons = styled(DefaultActionButtons)`
   padding: 8px 0 0 4px;
+  align-self: flex-start;
 `;
 
 const NewValueTD = styled(TD)`

@@ -21,10 +21,34 @@ class ProcessInstancePage {
   variableSpinner = screen.queryByTestId('edit-variable-spinner');
   operationSpinner = screen.queryByTestId('operation-spinner');
 
+  getNewVariableNameFieldSelector = (variableName: string) => {
+    return within(screen.getByTestId(variableName))
+      .getByTestId('new-variable-name')
+      .shadowRoot();
+  };
+
+  getNewVariableValueFieldSelector = (variableName: string) => {
+    return within(screen.getByTestId(variableName))
+      .getByTestId('new-variable-value')
+      .shadowRoot();
+  };
+
   getEditVariableFieldSelector = (variableName: string) => {
     return within(screen.getByTestId(variableName))
       .getByTestId('edit-variable-value')
       .shadowRoot();
+  };
+
+  getNewVariableNameFieldValue = (variableName: string) => {
+    return within(
+      this.getNewVariableNameFieldSelector(variableName)
+    ).queryByRole('textbox').value;
+  };
+
+  getNewVariableValueFieldValue = (variableName: string) => {
+    return within(
+      this.getNewVariableValueFieldSelector(variableName)
+    ).queryByRole('textbox').value;
   };
 
   getEditVariableFieldValue = (variableName: string) => {

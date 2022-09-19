@@ -6,7 +6,7 @@
  */
 
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {VariablePanel} from './index';
+import {VariablePanel} from '../index';
 import {
   render,
   screen,

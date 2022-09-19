@@ -9,26 +9,31 @@ import React, {useEffect} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {observer} from 'mobx-react';
 import {variablesStore} from 'modules/stores/variables';
-import {useForm} from 'react-final-form';
+import {useForm, useFormState} from 'react-final-form';
 import {createVariableFieldName} from './createVariableFieldName';
 import {reaction} from 'mobx';
+import {VariableFormValues} from 'modules/types/variables';
+import {useFieldArray} from 'react-final-form-arrays';
 
 const OnLastVariableModificationRemoved: React.FC = observer(() => {
   const {scopeId} = variablesStore;
   const form = useForm();
+  const formState = useFormState<VariableFormValues>();
+  const fieldArray = useFieldArray('newVariables');
+  const newVariables = formState.values.newVariables;
 
   useEffect(() => {
     const disposer = reaction(
       () => modificationsStore.state.lastRemovedModification,
       (lastRemovedModification) => {
         if (
-          lastRemovedModification === undefined ||
-          lastRemovedModification.type === 'token'
+          lastRemovedModification?.modification === undefined ||
+          lastRemovedModification.modification.type === 'token'
         ) {
           return;
         }
 
-        const {payload} = lastRemovedModification;
+        const {payload} = lastRemovedModification.modification;
 
         if (payload.operation === 'EDIT_VARIABLE') {
           const {scopeId: removedVariableScopeId, id, name, oldValue} = payload;
@@ -50,6 +55,36 @@ const OnLastVariableModificationRemoved: React.FC = observer(() => {
               ? lastEditModification.newValue
               : oldValue
           );
+        } else if (payload.operation === 'ADD_VARIABLE') {
+          const {scopeId: removedVariableScopeId, id} = payload;
+
+          if (
+            removedVariableScopeId !== scopeId ||
+            newVariables === undefined
+          ) {
+            return;
+          }
+
+          const lastAddModification =
+            modificationsStore.getLastVariableModification(
+              scopeId,
+              id,
+              'ADD_VARIABLE'
+            );
+
+          const index = newVariables.findIndex((field) => field.id === id);
+
+          if (index !== -1 && lastRemovedModification.source !== 'variables') {
+            if (lastAddModification !== undefined) {
+              fieldArray.fields.update(index, {
+                id: lastAddModification.id,
+                name: lastAddModification.name,
+                value: lastAddModification.newValue,
+              });
+            } else {
+              fieldArray.fields.remove(index);
+            }
+          }
         }
       }
     );
@@ -57,7 +92,7 @@ const OnLastVariableModificationRemoved: React.FC = observer(() => {
     return () => {
       disposer();
     };
-  }, [scopeId, form]);
+  }, [scopeId, form, fieldArray, newVariables]);
 
   return null;
 });

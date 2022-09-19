@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {createAddVariableModification} from 'modules/mocks/modifications';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {
@@ -55,16 +56,11 @@ describe('Modification Summary Modal', () => {
       wrapper: ThemeProvider,
     });
 
-    modificationsStore.addModification({
-      type: 'variable',
-      payload: {
-        operation: 'ADD_VARIABLE',
-        scopeId: 'flow-node-1',
-        flowNodeName: 'flow node 1',
-        id: '1',
-        name: 'test',
-        newValue: '123',
-      },
+    createAddVariableModification({
+      scopeId: 'flow-node-1',
+      flowNodeName: 'flow node 1',
+      name: 'test',
+      value: '123',
     });
 
     expect(
@@ -111,16 +107,11 @@ describe('Modification Summary Modal', () => {
       }
     );
 
-    modificationsStore.addModification({
-      type: 'variable',
-      payload: {
-        operation: 'ADD_VARIABLE',
-        scopeId: 'flow-node-1',
-        flowNodeName: 'flow node 1',
-        id: '1',
-        name: 'test',
-        newValue: '123',
-      },
+    createAddVariableModification({
+      scopeId: 'flow-node-1',
+      flowNodeName: 'flow node 1',
+      name: 'test',
+      value: '123',
     });
 
     await user.click(
@@ -237,16 +228,11 @@ describe('Modification Summary Modal', () => {
       }
     );
 
-    modificationsStore.addModification({
-      type: 'variable',
-      payload: {
-        operation: 'ADD_VARIABLE',
-        scopeId: 'flow-node-1',
-        flowNodeName: 'flow node 1',
-        id: '1',
-        name: 'test',
-        newValue: '123',
-      },
+    createAddVariableModification({
+      scopeId: 'flow-node-1',
+      flowNodeName: 'flow node 1',
+      name: 'test',
+      value: '123',
     });
 
     modificationsStore.addModification({

@@ -25,6 +25,7 @@ import {
 import arrayMutators from 'final-form-arrays';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import {modificationsStore} from 'modules/stores/modifications';
+import {generateUniqueID} from 'modules/utils/generateUniqueID';
 
 const VariablesContent: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -42,7 +43,12 @@ const VariablesContent: React.FC = observer(() => {
   const {displayStatus} = variablesStore;
 
   const hasEmptyNewVariable = (values: VariableFormValues) =>
-    values.newVariables?.some((variable) => variable === undefined);
+    values.newVariables?.some(
+      (variable) =>
+        variable === undefined ||
+        variable.name === undefined ||
+        variable.value === undefined
+    );
 
   return (
     <Content>
@@ -66,7 +72,15 @@ const VariablesContent: React.FC = observer(() => {
       )}
 
       <ReactFinalForm<VariableFormValues>
-        mutators={{...arrayMutators}}
+        mutators={{
+          ...arrayMutators,
+          triggerValidation(fieldsToValidate: string[], state, {changeValue}) {
+            fieldsToValidate.forEach((fieldName) => {
+              changeValue(state, fieldName, (n) => n);
+            });
+          },
+        }}
+        key={variablesStore.scopeId}
         onSubmit={async (values, form) => {
           const {initialValues} = form.getState();
 
@@ -111,7 +125,9 @@ const VariablesContent: React.FC = observer(() => {
               {isModificationModeEnabled && !variablesStore.hasNoContent && (
                 <AddVariableButton
                   onClick={() => {
-                    form.mutators.push?.('newVariables');
+                    form.mutators.push?.('newVariables', {
+                      id: generateUniqueID(),
+                    });
                   }}
                   disabled={
                     form.getState().submitting ||
