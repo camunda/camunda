@@ -20,12 +20,14 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.ByteValue;
 import org.assertj.core.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class CreateProcessInstanceRejectionTest {
 
+  public static final long MAX_MESSAGE_SIZE = ByteValue.ofMegabytes(4);
   private static final String PROCESS_ID = "process-id";
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
@@ -204,5 +206,31 @@ public class CreateProcessInstanceRejectionTest {
         .doesNotContain(
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldRejectCommandIfTooLarge() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
+        .deploy();
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withVariable("variable", "x".repeat((int) (MAX_MESSAGE_SIZE - ByteValue.ofKilobytes(1))))
+        .expectRejection()
+        .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withBpmnProcessId(PROCESS_ID)
+                .onlyCommandRejections()
+                .getFirst())
+        .hasIntent(ProcessInstanceCreationIntent.CREATE)
+        .hasRejectionType(RejectionType.EXCEEDED_BATCH);
   }
 }
