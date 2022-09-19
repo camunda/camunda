@@ -50,7 +50,7 @@
     <version.docker-java-api>3.2.13</version.docker-java-api>
     <version.elasticsearch>7.17.5</version.elasticsearch>
     <version.error-prone>2.15.0</version.error-prone>
-    <version.grpc>1.49.0</version.grpc>
+    <version.grpc>1.49.1</version.grpc>
     <version.gson>2.9.1</version.gson>
     <version.guava>31.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -112,7 +112,7 @@
     <version.jnr-posix>3.1.15</version.jnr-posix>
     <version.zpt>8.0.6</version.zpt>
     <version.feign>11.9.1</version.feign>
-    <version.awssdk>2.17.275</version.awssdk>
+    <version.awssdk>2.17.276</version.awssdk>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -127,7 +127,7 @@
     <plugin.version.failsafe>3.0.0-M7</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.8</plugin.version.jacoco>
-    <plugin.version.maven-jar>3.2.2</plugin.version.maven-jar>
+    <plugin.version.maven-jar>3.3.0</plugin.version.maven-jar>
     <plugin.version.proto-backwards-compatibility>1.0.7</plugin.version.proto-backwards-compatibility>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
