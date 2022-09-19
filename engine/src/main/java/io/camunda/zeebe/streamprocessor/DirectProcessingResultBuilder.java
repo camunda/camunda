@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.StringUtil;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,7 +69,9 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
       }
     } else {
       throw new IllegalStateException(
-          String.format("The record value %s is not a UnifiedRecordValue", value));
+          String.format(
+              "The record value %s is not a UnifiedRecordValue",
+              StringUtil.limitString(value.toString(), 1024)));
     }
 
     return Either.right(this);

@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -58,16 +59,7 @@ public final class RecordBatch implements MutableRecordBatch {
     if (!recordBatchSizePredicate.test(recordBatchEntries.size() + 1, batchSize + entryLength)) {
       return Either.left(
           new ExceededBatchRecordSizeException(
-              "Can't append entry: '"
-                  + recordBatchEntry
-                  + "' with size: "
-                  + entryLength
-                  + " this would exceed the maximum batch size."
-                  + " [ currentBatchEntryCount: "
-                  + recordBatchEntries.size()
-                  + ", currentBatchSize: "
-                  + batchSize
-                  + "]"));
+              recordBatchEntry, entryLength, recordBatchEntries.size(), batchSize));
     }
 
     recordBatchEntries.add(recordBatchEntry);
@@ -104,8 +96,21 @@ public final class RecordBatch implements MutableRecordBatch {
    * explicitly
    */
   public static class ExceededBatchRecordSizeException extends RuntimeException {
-    public ExceededBatchRecordSizeException(final String message) {
-      super(message);
+
+    public ExceededBatchRecordSizeException(
+        final RecordBatchEntry recordBatchEntry,
+        final int entryLength,
+        final int recordBatchEntriesSize,
+        final int batchSize) {
+      super(
+          """
+          Can't append entry: '%s' with size: %d this would exceed the maximum batch size. \
+          [ currentBatchEntryCount: %d, currentBatchSize: %d]"""
+              .formatted(
+                  StringUtil.limitString(recordBatchEntry.toString(), 1024),
+                  entryLength,
+                  recordBatchEntriesSize,
+                  batchSize));
     }
   }
 }
