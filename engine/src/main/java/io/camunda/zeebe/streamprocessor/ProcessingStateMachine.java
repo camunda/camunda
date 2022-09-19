@@ -243,7 +243,7 @@ public final class ProcessingStateMachine {
 
       final long position = typedCommand.getPosition();
       final ProcessingResultBuilder processingResultBuilder =
-          new DirectProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
+          new BufferedProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
@@ -321,7 +321,7 @@ public final class ProcessingStateMachine {
     zeebeDbTransaction.run(
         () -> {
           final ProcessingResultBuilder processingResultBuilder =
-              new DirectProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
+              new BufferedProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
 
           currentProcessingResult =
               currentProcessor.onProcessingError(

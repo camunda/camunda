@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.api;
 import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.engine.api.records.RecordBatchEntry;
 
-/** Here the interface is just a suggestion. Can be whatever PDT team thinks is best to work with */
 public interface TaskResult {
 
   /**

@@ -21,16 +21,15 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
 /**
- * Implementation of {@code TaskResultBuilder} that uses direct access to the stream. This
- * implementation is here to support a bridge for legacy code. Legacy code can first be shaped into
- * the interfaces defined in engine abstraction, and subseqeently the interfaces can be
- * re-implemented to allow for buffered writing to stream
+ * Implementation of {@code TaskResultBuilder} that buffers the task results. After being done with
+ * task execution the {@link #build()} will turn the result into a immutable {@link TaskResult},
+ * which allows to process the result further.
  */
-final class DirectTaskResultBuilder implements TaskResultBuilder {
+final class BufferedTaskResultBuilder implements TaskResultBuilder {
 
   private final MutableRecordBatch mutableRecordBatch;
 
-  DirectTaskResultBuilder(final RecordBatchSizePredicate predicate) {
+  BufferedTaskResultBuilder(final RecordBatchSizePredicate predicate) {
     mutableRecordBatch = new RecordBatch(predicate);
   }
 
