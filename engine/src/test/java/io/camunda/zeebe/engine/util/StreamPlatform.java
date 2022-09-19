@@ -43,9 +43,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -67,8 +65,8 @@ public final class StreamPlatform {
   private final List<AutoCloseable> closeables;
   private final ActorScheduler actorScheduler;
   private final CommandResponseWriter mockCommandResponseWriter;
-  private final Map<String, LogContext> logContextMap = new HashMap<>();
-  private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
+  private LogContext logContext;
+  private ProcessorContext processorContext;
   private boolean snapshotWasTaken = false;
   private final StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private List<RecordProcessor> recordProcessors;
@@ -110,42 +108,36 @@ public final class StreamPlatform {
     closeables.add(() -> recordProcessors.clear());
   }
 
-  public SynchronousLogStream createLogStream(final String name, final int partitionId) {
+  public SynchronousLogStream createLogStream() {
     final var listLogStorage = new ListLogStorage();
     return createLogStream(
-        name,
-        partitionId,
         listLogStorage,
         logStream -> listLogStorage.setPositionListener(logStream::setLastWrittenPosition));
   }
 
   private SynchronousLogStream createLogStream(
-      final String name,
-      final int partitionId,
-      final LogStorage logStorage,
-      final Consumer<SyncLogStream> logStreamConsumer) {
+      final LogStorage logStorage, final Consumer<SyncLogStream> logStreamConsumer) {
     final var logStream =
         SyncLogStream.builder()
-            .withLogName(name)
+            .withLogName(STREAM_NAME + DEFAULT_PARTITION)
             .withLogStorage(logStorage)
-            .withPartitionId(partitionId)
+            .withPartitionId(DEFAULT_PARTITION)
             .withActorSchedulingService(actorScheduler)
             .build();
 
     logStreamConsumer.accept(logStream);
 
-    final LogContext logContext = LogContext.createLogContext(logStream);
-    logContextMap.put(name, logContext);
-    closeables.add(() -> logContextMap.remove(name).close());
+    logContext = LogContext.createLogContext(logStream);
+    closeables.add(() -> logContext.close());
     return logStream;
   }
 
-  public SynchronousLogStream getLogStream(final String name) {
-    return logContextMap.get(name).getLogStream();
+  public SynchronousLogStream getLogStream() {
+    return logContext.getLogStream();
   }
 
-  public Stream<LoggedEvent> events(final String logName) {
-    final SynchronousLogStream logStream = getLogStream(logName);
+  public Stream<LoggedEvent> events() {
+    final SynchronousLogStream logStream = getLogStream();
 
     final LogStreamReader reader = logStream.newLogStreamReader();
     closeables.add(reader);
@@ -192,14 +184,12 @@ public final class StreamPlatform {
   }
 
   public StreamProcessor startStreamProcessor() {
-    final var logName = getLogName(DEFAULT_PARTITION);
-    final SynchronousLogStream stream = getLogStream(logName);
+    final SynchronousLogStream stream = getLogStream();
     return buildStreamProcessor(stream, true);
   }
 
   public StreamProcessor startStreamProcessorNotAwaitOpening() {
-    final var logName = getLogName(DEFAULT_PARTITION);
-    final SynchronousLogStream stream = getLogStream(logName);
+    final SynchronousLogStream stream = getLogStream();
     return buildStreamProcessor(stream, false);
   }
 
@@ -223,7 +213,6 @@ public final class StreamPlatform {
     } else {
       zeebeDb = zeebeDbFactory.createDb(storage.toFile());
     }
-    final String logName = stream.getLogName();
 
     final var builder =
         StreamProcessor.builder()
@@ -250,48 +239,27 @@ public final class StreamPlatform {
     }
     openFuture.join(15, TimeUnit.SECONDS);
 
-    final ProcessorContext processorContext =
+    processorContext =
         ProcessorContext.createStreamContext(streamProcessor, zeebeDb, storage, snapshot);
-    streamContextMap.put(logName, processorContext);
-    closeables.add(() -> streamContextMap.remove(logName).close());
+    closeables.add(() -> processorContext.close());
 
     return streamProcessor;
   }
 
   public void pauseProcessing() {
-    pauseProcessing(getLogName(DEFAULT_PARTITION));
-  }
-
-  // todo remove multi partition support - is not necessary for the StreamProcessor tests
-  @Deprecated
-  public void pauseProcessing(final String streamName) {
-    streamContextMap.get(streamName).streamProcessor.pauseProcessing().join();
-    LOG.info("Paused processing for stream {}", streamName);
+    processorContext.streamProcessor.pauseProcessing().join();
+    LOG.info("Paused processing for processor {}", processorContext.streamProcessor.getName());
   }
 
   public void resumeProcessing() {
-    resumeProcessing(getLogName(DEFAULT_PARTITION));
-  }
-  // todo remove multi partition support - is not necessary for the StreamProcessor tests
-  @Deprecated
-  public void resumeProcessing(final String streamName) {
-    streamContextMap.get(streamName).streamProcessor.resumeProcessing();
-    LOG.info("Resume processing for stream {}", streamName);
+    processorContext.streamProcessor.resumeProcessing();
+    LOG.info("Resume processing for processor {}", processorContext.streamProcessor.getName());
   }
 
-  public void snapshot(final String streamName) {
-    streamContextMap.get(streamName).snapshot();
+  public void snapshot() {
+    processorContext.snapshot();
     snapshotWasTaken = true;
-    LOG.info("Snapshot database for stream {}", streamName);
-  }
-
-  public void closeProcessor(final String streamName) throws Exception {
-    streamContextMap.remove(streamName).close();
-    LOG.info("Closed stream {}", streamName);
-  }
-
-  public List<RecordProcessor> getRecordProcessors() {
-    return recordProcessors;
+    LOG.info("Snapshot database for processor {}", processorContext.streamProcessor.getName());
   }
 
   public RecordProcessor getDefaultRecordProcessor() {
@@ -299,19 +267,13 @@ public final class StreamPlatform {
   }
 
   public StreamProcessor getStreamProcessor() {
-    return getStreamProcessor(getLogName(DEFAULT_PARTITION));
-  }
-
-  public StreamProcessor getStreamProcessor(final String streamName) {
-    return Optional.ofNullable(streamContextMap.get(streamName))
+    return Optional.ofNullable(processorContext)
         .map(c -> c.streamProcessor)
-        .orElseThrow(
-            () -> new NoSuchElementException("No stream processor found with name: " + streamName));
+        .orElseThrow(() -> new NoSuchElementException("No stream processor found."));
   }
 
-  public LogStreamBatchWriter setupBatchWriter(
-      final String logName, final RecordToWrite[] recordToWrites) {
-    final SynchronousLogStream logStream = getLogStream(logName);
+  public LogStreamBatchWriter setupBatchWriter(final RecordToWrite[] recordToWrites) {
+    final SynchronousLogStream logStream = getLogStream();
     final LogStreamBatchWriter logStreamBatchWriter = logStream.newLogStreamBatchWriter();
     for (final RecordToWrite recordToWrite : recordToWrites) {
       logStreamBatchWriter
@@ -325,12 +287,8 @@ public final class StreamPlatform {
     return logStreamBatchWriter;
   }
 
-  public static String getLogName(final int partitionId) {
-    return STREAM_NAME + partitionId;
-  }
-
   public long writeBatch(final RecordToWrite... recordsToWrite) {
-    final var batchWriter = setupBatchWriter(getLogName(DEFAULT_PARTITION), recordsToWrite);
+    final var batchWriter = setupBatchWriter(recordsToWrite);
     return writeActor.submit(batchWriter::tryWrite).join();
   }
 
