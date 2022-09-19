@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.shared.management;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -52,7 +52,7 @@ public class ActorClockEndpoint {
   @ReadOperation
   public WebEndpointResponse<Response> getCurrentClock() {
     final var instant = Instant.ofEpochMilli(service.epochMilli());
-    return new WebEndpointResponse<>(new Response(instant));
+    return new WebEndpointResponse<>(new Response(instant.toEpochMilli(), instant));
   }
 
   /**
@@ -109,7 +109,7 @@ public class ActorClockEndpoint {
    *
    * @return 200 and the current clock time
    */
-  @SuppressWarnings("unused")
+  @SuppressWarnings({"unused", "UnusedReturnValue"})
   @DeleteOperation
   public WebEndpointResponse<?> resetTime() {
     final var clock = service.mutable();
@@ -156,22 +156,6 @@ public class ActorClockEndpoint {
   }
 
   /** A response type for future proofing, in case the format needs to be changed in the future. */
-  protected static final class Response {
-    @JsonProperty("epochMilli")
-    protected final long epochMilli;
-
-    @JsonProperty("instant")
-    protected final Instant instant;
-
-    public Response(final Instant instant) {
-      this.instant = instant;
-      epochMilli = instant.toEpochMilli();
-    }
-
-    @SuppressWarnings("unused") // Used by Jackson deserialization
-    private Response() {
-      this.epochMilli = 0;
-      this.instant = null;
-    }
-  }
+  @VisibleForTesting
+  record Response(long epochMilli, Instant instant) {}
 }
