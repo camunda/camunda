@@ -127,13 +127,13 @@ public final class StreamPlatform {
 
     logStreamConsumer.accept(logStream);
 
-    logContext = LogContext.createLogContext(logStream);
+    logContext = new LogContext(logStream);
     closeables.add(() -> logContext.close());
     return logStream;
   }
 
   public SynchronousLogStream getLogStream() {
-    return logContext.getLogStream();
+    return logContext.logStream();
   }
 
   public Stream<LoggedEvent> events() {
@@ -299,24 +299,10 @@ public final class StreamPlatform {
     }
   }
 
-  private static final class LogContext implements AutoCloseable {
-    private final SynchronousLogStream logStream;
-
-    private LogContext(final SynchronousLogStream logStream) {
-      this.logStream = logStream;
-    }
-
-    public static LogContext createLogContext(final SyncLogStream logStream) {
-      return new LogContext(logStream);
-    }
-
+  private record LogContext(SynchronousLogStream logStream) implements AutoCloseable {
     @Override
     public void close() {
       logStream.close();
-    }
-
-    public SynchronousLogStream getLogStream() {
-      return logStream;
     }
   }
 
