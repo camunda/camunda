@@ -147,7 +147,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldExecuteScheduledTaskAfterReplay() {
+  public void shouldNotExecuteTaskWhichAreScheduledDuringReplay() {
     // given
     final var processor = spy(dummyProcessor);
     processor.blockReplay();
@@ -165,7 +165,7 @@ public class ProcessingScheduleServiceTest {
     final var inOrder = inOrder(processor, mockedTask);
     inOrder.verify(processor, TIMEOUT).init(any());
     inOrder.verify(processor, TIMEOUT).replay(any());
-    inOrder.verify(mockedTask, TIMEOUT).execute(any());
+    inOrder.verify(mockedTask, never()).execute(any());
     inOrder.verifyNoMoreInteractions();
   }
 
