@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import io.camunda.zeebe.gateway.admin.exporting.ExportingControlApi;
 import java.util.concurrent.CompletionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
@@ -20,10 +21,10 @@ import org.springframework.stereotype.Component;
 @WebEndpoint(id = "exporting")
 public final class ExportingEndpoint {
   static final String PAUSE = "pause";
-  final ExportingService exportingService;
+  final ExportingControlApi exportingService;
 
   @Autowired
-  public ExportingEndpoint(final ExportingService exportingService) {
+  public ExportingEndpoint(final ExportingControlApi exportingService) {
     this.exportingService = exportingService;
   }
 

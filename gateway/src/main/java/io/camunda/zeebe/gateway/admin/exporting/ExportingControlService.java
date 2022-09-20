@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.shared.management;
+package io.camunda.zeebe.gateway.admin.exporting;
 
 import io.camunda.zeebe.gateway.admin.BrokerAdminRequest;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
@@ -16,13 +16,11 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.springframework.stereotype.Component;
 
-@Component
-public class ExportingService {
+public class ExportingControlService implements ExportingControlApi {
   final BrokerClient brokerClient;
 
-  public ExportingService(final BrokerClient brokerClient) {
+  public ExportingControlService(final BrokerClient brokerClient) {
     this.brokerClient = brokerClient;
   }
 
