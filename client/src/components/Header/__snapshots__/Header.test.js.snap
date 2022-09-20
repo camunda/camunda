@@ -50,6 +50,11 @@ exports[`matches the snapshot 1`] = `
           "/processes/*",
         ]
       }
+      breadcrumbsEntities={
+        Array [
+          "report",
+        ]
+      }
       linksTo="/processes"
       name="Processes"
     />

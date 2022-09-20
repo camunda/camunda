@@ -68,6 +68,7 @@ export function Header({mightFail, location, noActions}) {
               name={t('navigation.processes')}
               linksTo="/processes"
               active={['/processes/', '/processes/*']}
+              breadcrumbsEntities={['report']}
             />
             <HeaderNav.Item
               name={t('navigation.analysis')}

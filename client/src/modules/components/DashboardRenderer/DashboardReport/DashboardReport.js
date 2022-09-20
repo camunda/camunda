@@ -16,6 +16,7 @@ export default function DashboardReport({
   report,
   filter = [],
   disableNameLink,
+  customizeReportLink,
   addons,
   tileDimensions,
   loadReport,
@@ -27,6 +28,7 @@ export default function DashboardReport({
       report={report}
       filter={filter}
       disableNameLink={disableNameLink}
+      customizeReportLink={customizeReportLink}
       loadReport={loadReport}
     >
       {(props = {}) =>

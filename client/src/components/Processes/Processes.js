@@ -75,7 +75,7 @@ export function Processes({mightFail, user}) {
         <DashboardView
           reports={dashboard.reports}
           availableFilters={dashboard.availableFilters}
-          disableNameLink
+          customizeReportLink={(id) => `/processes/report/${id}/`}
         />
       )}
       <EntityList

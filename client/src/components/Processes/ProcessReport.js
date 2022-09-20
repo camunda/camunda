@@ -5,5 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-export {default as Processes} from './Processes';
-export {default as ProcessReport} from './ProcessReport';
+import React from 'react';
+
+import {Report} from '../Reports';
+
+import './ProcessReport.scss';
+
+export default function ProcessReport({...props}) {
+  return (
+    <div className="ProcessReport">
+      <Report {...props} />
+    </div>
+  );
+}

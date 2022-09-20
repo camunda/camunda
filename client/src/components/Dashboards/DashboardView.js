@@ -57,6 +57,7 @@ export function DashboardView(props) {
     onDelete,
     refreshRateSeconds,
     disableNameLink,
+    customizeReportLink,
   } = props;
   const [autoRefreshInterval, setAutoRefreshInterval] = useState(refreshRateSeconds * 1000);
   const [deleting, setDeleting] = useState(null);
@@ -224,6 +225,7 @@ export function DashboardView(props) {
             reports={reports}
             filter={filter}
             disableNameLink={disableNameLink}
+            customizeReportLink={customizeReportLink}
             addons={[
               <AutoRefreshBehavior key="autorefresh" interval={autoRefreshInterval} />,
               <DiagramScrollLock key="diagramScrollLock" />,

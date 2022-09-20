@@ -16,4 +16,4 @@ export {Sharing} from './Sharing';
 export {Home, Collection} from './Home';
 export {License, WithLicense} from './License';
 export {default as Logout} from './Logout';
-export {Processes} from './Processes';
+export {Processes, ProcessReport} from './Processes';

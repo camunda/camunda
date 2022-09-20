@@ -90,14 +90,19 @@ export class OptimizeReport extends React.Component {
       return <LoadingIndicator />;
     }
 
-    const {disableNameLink, filter, children = () => {}} = this.props;
+    const {
+      disableNameLink,
+      customizeReportLink = (id) => `report/${id}/`,
+      filter,
+      children = () => {},
+    } = this.props;
 
     return (
       <div className="OptimizeReport DashboardReport__wrapper">
         {data && (
           <div className="titleBar" tabIndex="-1">
             <EntityName
-              linkTo={!disableNameLink && `report/${data.id}/`}
+              linkTo={!disableNameLink && customizeReportLink(data.id)}
               details={<ReportDetails report={data} />}
             >
               {data.name}

@@ -58,6 +58,16 @@ it('should provide a link to the report', async () => {
   expect(node.find('EntityName')).toHaveProp('linkTo', 'report/a/');
 });
 
+it('should use the customizeReportLink prop to get the link if specified', async () => {
+  loadReport.mockReturnValue({name: 'Report Name', id: 'a'});
+  const node = shallow(<OptimizeReport {...props} customizeReportLink={(id) => `test/${id}/`} />);
+
+  await node.instance().loadReport();
+  node.update();
+
+  expect(node.find('EntityName')).toHaveProp('linkTo', 'test/a/');
+});
+
 it('should not provide a link to the report when link is disabled', async () => {
   loadReport.mockReturnValue({name: 'Report Name'});
   const node = shallow(<OptimizeReport {...props} disableNameLink />);
