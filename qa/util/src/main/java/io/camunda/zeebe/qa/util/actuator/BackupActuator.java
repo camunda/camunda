@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.qa.util.actuator;
 
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import feign.Feign;
 import feign.FeignException;
 import feign.FeignException.InternalServerError;
@@ -20,6 +21,7 @@ import feign.Target.HardCodedTarget;
 import feign.codec.ErrorDecoder;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator.ErrorResponse.Payload;
 import io.zeebe.containers.ZeebeNode;
 import java.io.IOException;
@@ -27,7 +29,6 @@ import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Java interface for the node's backup actuator. To instantiate this interface, you can use {@link
@@ -60,7 +61,7 @@ public interface BackupActuator {
   @SuppressWarnings("JavadocLinkAsPlainText")
   static BackupActuator of(final String endpoint) {
     final var target = new HardCodedTarget<>(BackupActuator.class, endpoint);
-    final var decoder = new JacksonDecoder();
+    final var decoder = new JacksonDecoder(List.of(new Jdk8Module()));
 
     return Feign.builder()
         .encoder(new JacksonEncoder())
@@ -81,7 +82,7 @@ public interface BackupActuator {
 
   @RequestLine("GET /{id}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
-  BackupStatusResponse status(@Param final long id);
+  BackupStatus status(@Param final long id);
 
   /**
    * Custom error handler, mapping errors with body to custom types for easier
@@ -116,23 +117,6 @@ public interface BackupActuator {
   }
 
   record TakeBackupResponse(long id) {}
-
-  record BackupStatusResponse(
-      long id,
-      String status,
-      List<PartitionBackupStatusResponse> partitions,
-      Optional<String> failure) {}
-
-  record PartitionBackupStatusResponse(
-      int id,
-      String status,
-      Optional<PartitionBackupDescriptorResponse> descriptor,
-      Optional<String> createdAt,
-      Optional<String> lastUpdatedAt,
-      Optional<String> failure) {}
-
-  record PartitionBackupDescriptorResponse(
-      String snapshotId, long checkpointPosition, int brokerId, String brokerVersion) {}
 
   final class ErrorResponse extends InternalServerError {
     private final Payload payload;
