@@ -63,7 +63,8 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return this;
   }
 
-  public StreamProcessorContext scheduleService(final ProcessingScheduleService processingScheduleService) {
+  public StreamProcessorContext scheduleService(
+      final ProcessingScheduleService processingScheduleService) {
     this.processingScheduleService = processingScheduleService;
     return this;
   }

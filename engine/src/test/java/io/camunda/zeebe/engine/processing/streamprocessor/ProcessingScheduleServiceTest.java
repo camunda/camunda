@@ -65,7 +65,8 @@ public class ProcessingScheduleServiceTest {
     clock = new ControlledActorClock();
     final var builder =
         ActorScheduler.newActorScheduler()
-            .setCpuBoundActorThreadCount(Math.max(1, Runtime.getRuntime().availableProcessors() - 2))
+            .setCpuBoundActorThreadCount(
+                Math.max(1, Runtime.getRuntime().availableProcessors() - 2))
             .setIoBoundActorThreadCount(2)
             .setActorClock(clock);
 
@@ -74,8 +75,9 @@ public class ProcessingScheduleServiceTest {
 
     lifecycleSupplier = new LifecycleSupplier();
     writerAsyncSupplier = new WriterAsyncSupplier();
-    processingScheduleService = new ProcessingScheduleServiceImpl("actorName", lifecycleSupplier,
-        lifecycleSupplier, writerAsyncSupplier);
+    processingScheduleService =
+        new ProcessingScheduleServiceImpl(
+            "actorName", lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier);
     actorScheduler.submitActor(processingScheduleService);
   }
 
@@ -164,8 +166,9 @@ public class ProcessingScheduleServiceTest {
   public void shouldNotExecuteTasksWhenScheduledOnClosedActor() {
     // given
     lifecycleSupplier.currentPhase = Phase.PAUSED;
-    final var notOpenScheduleService = new ProcessingScheduleServiceImpl("actorName", lifecycleSupplier,
-        lifecycleSupplier, writerAsyncSupplier);
+    final var notOpenScheduleService =
+        new ProcessingScheduleServiceImpl(
+            "actorName", lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier);
     final var mockedTask = spy(new DummyTask());
 
     // when
@@ -178,9 +181,11 @@ public class ProcessingScheduleServiceTest {
   @Test
   public void shouldFailActorIfWriterCantBeRetrieved() {
     // given
-    writerAsyncSupplier.writerFutureRef.set(CompletableActorFuture.completedExceptionally(new RuntimeException("expected")));
-    final var notOpenScheduleService = new ProcessingScheduleServiceImpl("actorName", lifecycleSupplier,
-        lifecycleSupplier, writerAsyncSupplier);
+    writerAsyncSupplier.writerFutureRef.set(
+        CompletableActorFuture.completedExceptionally(new RuntimeException("expected")));
+    final var notOpenScheduleService =
+        new ProcessingScheduleServiceImpl(
+            "actorName", lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier);
 
     // when
     final var actorFuture = actorScheduler.submitActor(notOpenScheduleService);
@@ -276,8 +281,7 @@ public class ProcessingScheduleServiceTest {
     final var mockedTask = spy(new DummyTask());
 
     // when
-    processingScheduleService.runAtFixedRate(
-        Duration.ofMillis(10), mockedTask);
+    processingScheduleService.runAtFixedRate(Duration.ofMillis(10), mockedTask);
 
     // then
     verify(mockedTask, TIMEOUT.times(5)).execute(any());
@@ -296,8 +300,10 @@ public class ProcessingScheduleServiceTest {
     verify(mockedTask, never()).execute(any());
   }
 
-  private static final class WriterAsyncSupplier implements Supplier<ActorFuture<LogStreamBatchWriter>> {
-    AtomicReference<ActorFuture<LogStreamBatchWriter>> writerFutureRef = new AtomicReference<>(CompletableActorFuture.completed(mock(LogStreamBatchWriter.class)));
+  private static final class WriterAsyncSupplier
+      implements Supplier<ActorFuture<LogStreamBatchWriter>> {
+    AtomicReference<ActorFuture<LogStreamBatchWriter>> writerFutureRef =
+        new AtomicReference<>(CompletableActorFuture.completed(mock(LogStreamBatchWriter.class)));
 
     @Override
     public ActorFuture<LogStreamBatchWriter> get() {

@@ -55,14 +55,15 @@ public class ProcessingScheduleServiceImpl extends Actor implements ProcessingSc
   protected void onActorStarting() {
     writeRetryStrategy = new AbortableRetryStrategy(actor);
     final var writerFuture = writerAsyncSupplier.get();
-    actor.runOnCompletionBlockingCurrentPhase(writerFuture, (writer, failure) -> {
-      if (failure == null) {
-        logStreamBatchWriter = writer;
-      }
-      else {
-        actor.fail(failure);
-      }
-    });
+    actor.runOnCompletionBlockingCurrentPhase(
+        writerFuture,
+        (writer, failure) -> {
+          if (failure == null) {
+            logStreamBatchWriter = writer;
+          } else {
+            actor.fail(failure);
+          }
+        });
   }
 
   @Override
@@ -154,7 +155,8 @@ public class ProcessingScheduleServiceImpl extends Actor implements ProcessingSc
                                 .done());
 
                 return logStreamBatchWriter.tryWrite() >= 0;
-              }, abortCondition);
+              },
+              abortCondition);
 
       writeFuture.onComplete(
           (v, t) -> {

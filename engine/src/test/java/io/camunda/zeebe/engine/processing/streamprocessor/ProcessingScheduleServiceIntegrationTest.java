@@ -201,8 +201,7 @@ public class ProcessingScheduleServiceIntegrationTest {
   public void shouldCloseWhenStreamProcessorClosed() throws Exception {
     // given
     final var dummyProcessorSpy = spy(dummyProcessor);
-    streamPlatform.withRecordProcessors(List.of(dummyProcessorSpy))
-        .startStreamProcessor();
+    streamPlatform.withRecordProcessors(List.of(dummyProcessorSpy)).startStreamProcessor();
 
     // when
     streamPlatform.closeStreamProcessor();

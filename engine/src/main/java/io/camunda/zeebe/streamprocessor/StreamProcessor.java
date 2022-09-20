@@ -130,7 +130,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     logStream = streamProcessorContext.getLogStream();
     partitionId = logStream.getPartitionId();
     actorName = buildActorName(processorBuilder.getNodeId(), "StreamProcessor", partitionId);
-    scheduleServiceActorName = buildActorName(processorBuilder.getNodeId(), "ProcessingScheduleService", partitionId);
+    scheduleServiceActorName =
+        buildActorName(processorBuilder.getNodeId(), "ProcessingScheduleService", partitionId);
     metrics = new StreamProcessorMetrics(partitionId);
     recordProcessors.addAll(processorBuilder.getRecordProcessors());
   }
@@ -171,11 +172,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       // the schedule service actor is only submitted to the scheduler if the replay is done,
       // until then it is an unusable and closed actor
-      scheduleService = new ProcessingScheduleServiceImpl(
-          scheduleServiceActorName,
-          streamProcessorContext::getStreamProcessorPhase,
-          streamProcessorContext.getAbortCondition(),
-          logStream::newLogStreamBatchWriter);
+      scheduleService =
+          new ProcessingScheduleServiceImpl(
+              scheduleServiceActorName,
+              streamProcessorContext::getStreamProcessorPhase,
+              streamProcessorContext.getAbortCondition(),
+              logStream::newLogStreamBatchWriter);
       streamProcessorContext.scheduleService(scheduleService);
 
       initRecordProcessors();
@@ -285,15 +287,16 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       streamProcessorContext.logStreamBatchWriter(batchWriter);
       streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
 
-      final var processingScheduleServiceFuture = actorSchedulingService.submitActor(scheduleService);
-      processingScheduleServiceFuture.onComplete((v, failure) -> {
-        if (failure == null) {
-          startProcessing(lastProcessingPositions);
-        }
-        else {
-          onFailure(failure);
-        }
-      });
+      final var processingScheduleServiceFuture =
+          actorSchedulingService.submitActor(scheduleService);
+      processingScheduleServiceFuture.onComplete(
+          (v, failure) -> {
+            if (failure == null) {
+              startProcessing(lastProcessingPositions);
+            } else {
+              onFailure(failure);
+            }
+          });
     } else {
       onFailure(errorOnReceivingWriter);
     }
