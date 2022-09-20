@@ -90,6 +90,8 @@ public class OperateProperties {
   @NestedConfigurationProperty
   private OAuthClientProperties client = new OAuthClientProperties();
 
+  private BackupProperties backup = new BackupProperties();
+
   public boolean isImporterEnabled() {
     return importerEnabled;
   }
@@ -283,4 +285,12 @@ public class OperateProperties {
     this.client = client;
   }
 
+  public BackupProperties getBackup() {
+    return backup;
+  }
+
+  public OperateProperties setBackup(BackupProperties backup) {
+    this.backup = backup;
+    return this;
+  }
 }

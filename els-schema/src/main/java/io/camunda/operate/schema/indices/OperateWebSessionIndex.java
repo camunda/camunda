@@ -6,10 +6,11 @@
  */
 package io.camunda.operate.schema.indices;
 
+import io.camunda.operate.schema.backup.Prio4Backup;
 import org.springframework.stereotype.Component;
 
 @Component
-public class OperateWebSessionIndex extends AbstractIndexDescriptor{
+public class OperateWebSessionIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
   public static final String ID = "id";
   public static final String CREATION_TIME = "creationTime";

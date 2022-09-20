@@ -6,10 +6,11 @@
  */
 package io.camunda.operate.schema.indices;
 
+import io.camunda.operate.schema.backup.Prio4Backup;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DecisionIndex extends AbstractIndexDescriptor {
+public class DecisionIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
   public static final String INDEX_NAME = "decision";
   public static final String ID = "id";

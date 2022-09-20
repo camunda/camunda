@@ -65,3 +65,10 @@ JAVA_OPTS=-Dspring.profiles.active=dev-data ./operate
 or
 JAVA_OPTS=-Dspring.profiles.active=dev-data ./operate.bat
 ```
+
+## Webapp module
+
+This module contains:
+* Internal and Public API REST endpoints
+* Operation executor
+* Management (Actuator) endpoints: Usage metrics and [Backup API](docs/backup.md)

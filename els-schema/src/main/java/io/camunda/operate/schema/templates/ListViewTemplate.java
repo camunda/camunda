@@ -6,10 +6,11 @@
  */
 package io.camunda.operate.schema.templates;
 
+import io.camunda.operate.schema.backup.Prio2Backup;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ListViewTemplate extends AbstractTemplateDescriptor {
+public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio2Backup {
 
   public static final String INDEX_NAME = "list-view";
 

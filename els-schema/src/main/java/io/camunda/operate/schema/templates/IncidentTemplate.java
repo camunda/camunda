@@ -10,11 +10,12 @@ import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.entities.IncidentState;
+import io.camunda.operate.schema.backup.Prio3Backup;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class IncidentTemplate extends AbstractTemplateDescriptor implements ProcessInstanceDependant {
+public class IncidentTemplate extends AbstractTemplateDescriptor implements ProcessInstanceDependant, Prio3Backup {
 
   public static QueryBuilder ACTIVE_INCIDENT_QUERY = joinWithAnd(termQuery(IncidentTemplate.STATE,
       IncidentState.ACTIVE), termQuery(IncidentTemplate.PENDING, false));

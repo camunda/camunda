@@ -8,3 +8,4 @@ target/
 .vscode/
 dependency-reduced-pom.xml
 .eslintcache
+els-snapshots

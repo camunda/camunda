@@ -10,6 +10,7 @@ services:
       - bootstrap.memory_lock=true
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
+      - path.repo=/usr/local/els-snapshots
     ulimits:
       memlock:
         soft: -1
@@ -20,6 +21,8 @@ services:
     restart: always
     networks:
       - identity-network
+    volumes:
+      - ./els-snapshots:/usr/local/els-snapshots
 
   keycloak:
     container_name: keycloak

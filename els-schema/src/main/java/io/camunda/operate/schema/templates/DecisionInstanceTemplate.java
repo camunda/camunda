@@ -6,10 +6,12 @@
  */
 package io.camunda.operate.schema.templates;
 
+import io.camunda.operate.schema.backup.Prio3Backup;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DecisionInstanceTemplate extends AbstractTemplateDescriptor implements ProcessInstanceDependant {
+public class DecisionInstanceTemplate extends AbstractTemplateDescriptor implements ProcessInstanceDependant,
+    Prio3Backup {
 
   public static final String INDEX_NAME = "decision-instance";
 

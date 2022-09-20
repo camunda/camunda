@@ -6,10 +6,11 @@
  */
 package io.camunda.operate.schema.indices;
 
+import io.camunda.operate.schema.backup.Prio1Backup;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ImportPositionIndex extends AbstractIndexDescriptor {
+public class ImportPositionIndex extends AbstractIndexDescriptor implements Prio1Backup {
 
   public static final String INDEX_NAME = "import-position";
   public static final String ALIAS_NAME = "aliasName";
