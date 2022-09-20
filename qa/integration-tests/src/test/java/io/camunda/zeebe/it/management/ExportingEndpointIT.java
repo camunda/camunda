@@ -9,10 +9,7 @@ package io.camunda.zeebe.it.management;
 
 import static io.camunda.zeebe.it.management.ExportingEndpointIT.StableValuePredicate.hasStableValue;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import feign.FeignException;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
@@ -26,7 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.Network;
 
 final class ExportingEndpointIT {
 
@@ -70,51 +66,6 @@ final class ExportingEndpointIT {
           Awaitility.await().untilAsserted(() -> allPartitionsPaused(cluster));
         }
       }
-    }
-  }
-
-  @Test
-  void failsIfMemberIsShutdown() {
-    try (final var cluster =
-        ZeebeCluster.builder()
-            .withImage(ZeebeTestContainerDefaults.defaultTestImage())
-            .withEmbeddedGateway(true)
-            .withBrokersCount(3)
-            .withPartitionsCount(1)
-            .withReplicationFactor(3)
-            .build()) {
-      // given
-      cluster.start();
-
-      // when
-      //noinspection resource
-      cluster.getBrokers().values().stream().findAny().orElseThrow().stop();
-
-      // then
-      final var actuator = ExportingActuator.of(cluster.getAvailableGateway());
-      assertThatExceptionOfType(FeignException.class)
-          .isThrownBy(actuator::pause)
-          .returns(500, FeignException::status);
-    }
-  }
-
-  @Test
-  void succeedsWithoutConfiguredExporters() {
-    try (final var cluster =
-        ZeebeCluster.builder()
-            .withImage(ZeebeTestContainerDefaults.defaultTestImage())
-            .withEmbeddedGateway(true)
-            .withBrokersCount(1)
-            .withPartitionsCount(1)
-            .withReplicationFactor(1)
-            .withNetwork(Network.newNetwork())
-            .build()) {
-      // given
-      cluster.start();
-
-      // then
-      assertThatCode(() -> ExportingActuator.of(cluster.getAvailableGateway()).pause())
-          .doesNotThrowAnyException();
     }
   }
 
