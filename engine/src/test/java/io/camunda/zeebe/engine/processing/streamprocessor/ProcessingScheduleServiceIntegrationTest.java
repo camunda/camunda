@@ -71,7 +71,6 @@ public class ProcessingScheduleServiceIntegrationTest {
   @AfterEach
   public void clean() {
     dummyProcessor.continueReplay();
-    dummyProcessor.continueProcessing();
     streamPlatform = null;
   }
 
@@ -221,7 +220,6 @@ public class ProcessingScheduleServiceIntegrationTest {
   private static final class DummyProcessor implements RecordProcessor {
 
     private ProcessingScheduleService scheduleService;
-    private CountDownLatch processingLatch;
     private CountDownLatch replayLatch;
 
     @Override
@@ -248,13 +246,6 @@ public class ProcessingScheduleServiceIntegrationTest {
     @Override
     public ProcessingResult process(
         final TypedRecord record, final ProcessingResultBuilder processingResultBuilder) {
-      if (processingLatch != null) {
-        try {
-          processingLatch.await();
-        } catch (final InterruptedException e) {
-          throw new RuntimeException(e);
-        }
-      }
       return EmptyProcessingResult.INSTANCE;
     }
 
@@ -264,16 +255,6 @@ public class ProcessingScheduleServiceIntegrationTest {
         final TypedRecord record,
         final ProcessingResultBuilder processingResultBuilder) {
       return EmptyProcessingResult.INSTANCE;
-    }
-
-    public void blockProcessing() {
-      processingLatch = new CountDownLatch(1);
-    }
-
-    public void continueProcessing() {
-      if (processingLatch != null) {
-        processingLatch.countDown();
-      }
     }
 
     public void blockReplay() {
