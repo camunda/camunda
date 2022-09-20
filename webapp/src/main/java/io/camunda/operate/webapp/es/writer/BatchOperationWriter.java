@@ -167,6 +167,8 @@ public class BatchOperationWriter {
       //create batch operation with unique id
       final BatchOperationEntity batchOperation = createBatchOperationEntity(batchOperationRequest.getOperationType(), batchOperationRequest.getName());
 
+      persistBatchOperationEntity(batchOperation);
+
       //create single operations
       final int batchSize = operateProperties.getElasticsearch().getBatchSize();
       ConstantScoreQueryBuilder query = listViewReader.createProcessInstancesQuery(batchOperationRequest.getQuery());
@@ -382,7 +384,7 @@ public class BatchOperationWriter {
     return createIndexRequest(operationEntity, processInstanceKey);
   }
 
-  private IndexRequest getIndexOperationRequest(Long processInstanceKey, Long incidentKey, String batchOperationId, OperationType operationType) throws PersistenceException {
+  protected IndexRequest getIndexOperationRequest(Long processInstanceKey, Long incidentKey, String batchOperationId, OperationType operationType) throws PersistenceException {
     OperationEntity operationEntity = createOperationEntity(processInstanceKey, operationType, batchOperationId);
     operationEntity.setIncidentKey(incidentKey);
 
