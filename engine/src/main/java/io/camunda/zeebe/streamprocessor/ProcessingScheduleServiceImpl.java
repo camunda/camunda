@@ -19,19 +19,23 @@ import java.time.Duration;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
 
 /**
  * Here the implementation is just a suggestion to amke the engine abstraction work. Can be whatever
  * PDT team thinks is best to work with
  */
 public class ProcessingScheduleServiceImpl extends Actor implements ProcessingScheduleService {
+  private static final Logger LOG = Loggers.STREAM_PROCESSING;
   private AbortableRetryStrategy writeRetryStrategy;
   private final Supplier<StreamProcessor.Phase> streamProcessorPhaseSupplier;
-  private final BooleanSupplier abortCondition;;
+  private final BooleanSupplier abortCondition;
   private final Supplier<ActorFuture<LogStreamBatchWriter>> writerAsyncSupplier;
   private LogStreamBatchWriter logStreamBatchWriter;
+  private final String actorName;
 
   public ProcessingScheduleServiceImpl(
+      final String name,
       final Supplier<Phase> streamProcessorPhaseSupplier,
       final BooleanSupplier abortCondition,
       final Supplier<ActorFuture<LogStreamBatchWriter>> writerAsyncSupplier) {
@@ -39,6 +43,12 @@ public class ProcessingScheduleServiceImpl extends Actor implements ProcessingSc
     this.streamProcessorPhaseSupplier = streamProcessorPhaseSupplier;
     this.abortCondition = abortCondition;
     this.writerAsyncSupplier = writerAsyncSupplier;
+    actorName = name;
+  }
+
+  @Override
+  public String getName() {
+    return actorName;
   }
 
   @Override
@@ -53,6 +63,11 @@ public class ProcessingScheduleServiceImpl extends Actor implements ProcessingSc
         actor.fail(failure);
       }
     });
+  }
+
+  @Override
+  protected void onActorClosed() {
+    LOG.debug("Closed processing schedule service {}.", getName());
   }
 
   @Override
@@ -107,7 +122,7 @@ public class ProcessingScheduleServiceImpl extends Actor implements ProcessingSc
         //  * we are not running during replay/init phase (the state might not be up-to-date yet)
         //  * we are not running during suspending
         //
-        Loggers.PROCESS_PROCESSOR_LOGGER.trace(
+        LOG.trace(
             "Not able to execute scheduled task right now. [streamProcessorPhase: {}]",
             currentStreamProcessorPhase);
         actor.submit(toRunnable(task));
@@ -124,7 +139,7 @@ public class ProcessingScheduleServiceImpl extends Actor implements ProcessingSc
       final var writeFuture =
           writeRetryStrategy.runWithRetry(
               () -> {
-                Loggers.PROCESS_PROCESSOR_LOGGER.trace("Write scheduled TaskResult to dispatcher!");
+                LOG.trace("Write scheduled TaskResult to dispatcher!");
                 logStreamBatchWriter.reset();
                 result
                     .getRecordBatch()
@@ -148,7 +163,7 @@ public class ProcessingScheduleServiceImpl extends Actor implements ProcessingSc
               //   can happen if we tried to write a too big batch of records
               //   this should resolve if we use the buffered writer were we detect these errors
               // earlier
-              Loggers.PROCESS_PROCESSOR_LOGGER.warn("Writing of scheduled TaskResult failed!", t);
+              LOG.warn("Writing of scheduled TaskResult failed!", t);
             }
           });
     };
