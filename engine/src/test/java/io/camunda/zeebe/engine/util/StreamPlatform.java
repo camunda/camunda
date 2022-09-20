@@ -119,7 +119,7 @@ public final class StreamPlatform {
     logStorage.setPositionListener(logStream::setLastWrittenPosition);
 
     logContext = new LogContext(logStream);
-    closeables.add(() -> logContext.close());
+    closeables.add(logContext);
   }
 
   public SynchronousLogStream getLogStream() {
@@ -230,7 +230,7 @@ public final class StreamPlatform {
     openFuture.join(15, TimeUnit.SECONDS);
 
     processorContext = new ProcessorContext(streamProcessor, zeebeDb, storage, snapshot);
-    closeables.add(() -> processorContext.close());
+    closeables.add(processorContext);
 
     return streamProcessor;
   }
