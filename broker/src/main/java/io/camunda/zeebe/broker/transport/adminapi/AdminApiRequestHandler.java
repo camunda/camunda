@@ -53,6 +53,7 @@ public class AdminApiRequestHandler
       case STEP_DOWN_IF_NOT_PRIMARY -> CompletableActorFuture.completed(
           stepDownIfNotPrimary(responseWriter, partitionId, errorWriter));
       case PAUSE_EXPORTING -> pauseExporting(responseWriter, partitionId, errorWriter);
+      case RESUME_EXPORTING -> resumeExporting(responseWriter, partitionId, errorWriter);
       default -> unknownRequest(errorWriter, requestReader.getMessageDecoder().type());
     };
   }
@@ -90,6 +91,39 @@ public class AdminApiRequestHandler
                     Either.left(
                         errorWriter.internalError(
                             "Partition %s failed to pause exporting", partitionId)));
+              }
+            });
+
+    return result;
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> resumeExporting(
+      final ApiResponseWriter responseWriter,
+      final int partitionId,
+      final ErrorResponseWriter errorWriter) {
+    final var partitionAdminAccess = adminAccess.forPartition(partitionId);
+    if (partitionAdminAccess.isEmpty()) {
+      return CompletableActorFuture.completed(
+          Either.left(
+              errorWriter.internalError(
+                  "Partition %s failed to resume exporting. Could not find the partition.",
+                  partitionId)));
+    }
+
+    final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
+    partitionAdminAccess
+        .orElseThrow()
+        .resumeExporting()
+        .onComplete(
+            (r, t) -> {
+              if (t == null) {
+                result.complete(Either.right(responseWriter));
+              } else {
+                LOG.error("Failed to resume exporting on partition {}", partitionId, t);
+                result.complete(
+                    Either.left(
+                        errorWriter.internalError(
+                            "Partition %s failed to resume exporting", partitionId)));
               }
             });
 
