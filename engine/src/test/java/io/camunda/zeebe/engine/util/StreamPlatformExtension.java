@@ -118,7 +118,7 @@ public class StreamPlatformExtension implements BeforeEachCallback {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
       Collections.reverse(closables);
       CloseHelper.quietCloseAll(closables);
       closables.clear();
