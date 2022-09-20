@@ -27,7 +27,6 @@ import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
-import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SyncLogStream;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
@@ -49,7 +48,6 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
@@ -108,15 +106,8 @@ public final class StreamPlatform {
     closeables.add(() -> recordProcessors.clear());
   }
 
-  public SynchronousLogStream createLogStream() {
-    final var listLogStorage = new ListLogStorage();
-    return createLogStream(
-        listLogStorage,
-        logStream -> listLogStorage.setPositionListener(logStream::setLastWrittenPosition));
-  }
-
-  private SynchronousLogStream createLogStream(
-      final LogStorage logStorage, final Consumer<SyncLogStream> logStreamConsumer) {
+  public void createLogStream() {
+    final var logStorage = new ListLogStorage();
     final var logStream =
         SyncLogStream.builder()
             .withLogName(STREAM_NAME + DEFAULT_PARTITION)
@@ -125,11 +116,10 @@ public final class StreamPlatform {
             .withActorSchedulingService(actorScheduler)
             .build();
 
-    logStreamConsumer.accept(logStream);
+    logStorage.setPositionListener(logStream::setLastWrittenPosition);
 
     logContext = new LogContext(logStream);
     closeables.add(() -> logContext.close());
-    return logStream;
   }
 
   public SynchronousLogStream getLogStream() {
