@@ -18,7 +18,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.gateway.admin.exporting.ExportingControlService.InvalidTopologyException;
+import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
@@ -74,7 +74,8 @@ public class ExportingControlServiceTest {
     final var service = new ExportingControlService(client);
 
     // then
-    assertThatExceptionOfType(InvalidTopologyException.class).isThrownBy(service::pauseExporting);
+    assertThatExceptionOfType(IncompleteTopologyException.class)
+        .isThrownBy(service::pauseExporting);
   }
 
   @ParameterizedTest

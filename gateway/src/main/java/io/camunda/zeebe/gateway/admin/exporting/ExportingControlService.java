@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.admin.exporting;
 
 import io.camunda.zeebe.gateway.admin.BrokerAdminRequest;
+import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import java.util.Collections;
@@ -77,7 +78,7 @@ public class ExportingControlService implements ExportingControlApi {
     final var partitions = topology.getPartitions();
 
     if (partitions.size() != expectedPartitions) {
-      throw new InvalidTopologyException(
+      throw new IncompleteTopologyException(
           "Found %s partitions but expected %s, current topology: %s"
               .formatted(partitions.size(), expectedPartitions, topology));
     }
@@ -87,7 +88,7 @@ public class ExportingControlService implements ExportingControlApi {
 
       if (leaderId == BrokerClusterState.UNKNOWN_NODE_ID
           || leaderId == BrokerClusterState.NODE_ID_NULL) {
-        throw new InvalidTopologyException(
+        throw new IncompleteTopologyException(
             "Leader %s of partition %s is not known, current topology: %s"
                 .formatted(leaderId, partition, topology));
       }
@@ -98,7 +99,7 @@ public class ExportingControlService implements ExportingControlApi {
       for (final var follower : followers) {
         if (follower == BrokerClusterState.UNKNOWN_NODE_ID
             || follower == BrokerClusterState.NODE_ID_NULL) {
-          throw new InvalidTopologyException(
+          throw new IncompleteTopologyException(
               "Follower %s of partition %s is not known, current topology: %s"
                   .formatted(follower, partition, topology));
         }
@@ -106,16 +107,10 @@ public class ExportingControlService implements ExportingControlApi {
 
       final var memberCount = followers.size() + 1;
       if (memberCount != replicationFactor) {
-        throw new InvalidTopologyException(
+        throw new IncompleteTopologyException(
             "Expected %s members of partition %s but found %s, current topology: %s"
                 .formatted(replicationFactor, partition, memberCount, topology));
       }
-    }
-  }
-
-  static final class InvalidTopologyException extends IllegalStateException {
-    InvalidTopologyException(final String message) {
-      super(message);
     }
   }
 }
