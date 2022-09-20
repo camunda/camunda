@@ -239,8 +239,7 @@ public final class StreamPlatform {
     }
     openFuture.join(15, TimeUnit.SECONDS);
 
-    processorContext =
-        ProcessorContext.createStreamContext(streamProcessor, zeebeDb, storage, snapshot);
+    processorContext = new ProcessorContext(streamProcessor, zeebeDb, storage, snapshot);
     closeables.add(() -> processorContext.close());
 
     return streamProcessor;
@@ -306,31 +305,9 @@ public final class StreamPlatform {
     }
   }
 
-  private static final class ProcessorContext implements AutoCloseable {
-    private final ZeebeDb zeebeDb;
-    private final StreamProcessor streamProcessor;
-    private final Path runtimePath;
-    private final Path snapshotPath;
-    private boolean closed = false;
-
-    private ProcessorContext(
-        final StreamProcessor streamProcessor,
-        final ZeebeDb zeebeDb,
-        final Path runtimePath,
-        final Path snapshotPath) {
-      this.streamProcessor = streamProcessor;
-      this.zeebeDb = zeebeDb;
-      this.runtimePath = runtimePath;
-      this.snapshotPath = snapshotPath;
-    }
-
-    public static ProcessorContext createStreamContext(
-        final StreamProcessor streamProcessor,
-        final ZeebeDb zeebeDb,
-        final Path runtimePath,
-        final Path snapshotPath) {
-      return new ProcessorContext(streamProcessor, zeebeDb, runtimePath, snapshotPath);
-    }
+  private record ProcessorContext(
+      StreamProcessor streamProcessor, ZeebeDb zeebeDb, Path runtimePath, Path snapshotPath)
+      implements AutoCloseable {
 
     public void snapshot() {
       zeebeDb.createSnapshot(snapshotPath.toFile());
@@ -338,7 +315,7 @@ public final class StreamPlatform {
 
     @Override
     public void close() throws Exception {
-      if (closed) {
+      if (streamProcessor.isClosed()) {
         return;
       }
 
@@ -348,7 +325,6 @@ public final class StreamPlatform {
       if (runtimePath.toFile().exists()) {
         FileUtil.deleteFolder(runtimePath);
       }
-      closed = true;
     }
   }
 }
