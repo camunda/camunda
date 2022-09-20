@@ -9,13 +9,12 @@ package io.camunda.zeebe.it.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.backup.api.BackupStatus;
-import io.camunda.zeebe.backup.api.BackupStatusCode;
-import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
+import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
+import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
+import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
-import io.camunda.zeebe.qa.util.actuator.BackupActuator.PartitionBackupStatusResponse;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator.TakeBackupResponse;
 import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
@@ -51,7 +50,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * maintain consistency via checkpoint records. Other test suites should be set up for this.
  */
 @Testcontainers
-final class BackupApiIT {
+final class BackupAcceptanceIT {
   private static final Network NETWORK = Network.newNetwork();
 
   private final String bucketName = RandomStringUtils.randomAlphabetic(10).toLowerCase();
@@ -103,8 +102,8 @@ final class BackupApiIT {
             minio.secretKey());
     store = new S3BackupStore(config);
 
-    try (final var s3Client = S3BackupStore.buildClient(config)) {
-      s3Client.createBucket(builder -> builder.bucket(config.bucketName()).build()).join();
+    try (final var client = S3BackupStore.buildClient(config)) {
+      client.createBucket(builder -> builder.bucket(config.bucketName()).build()).join();
     }
   }
 
@@ -131,31 +130,13 @@ final class BackupApiIT {
         .untilAsserted(
             () -> {
               final var status = actuator.status(response.id());
-              assertThat(status.id()).isEqualTo(response.id());
-              assertThat(status.failure()).isEmpty();
-              assertThat(status.status()).isEqualTo("COMPLETED");
+              assertThat(status)
+                  .extracting(BackupStatus::backupId, BackupStatus::status)
+                  .containsExactly(1L, BackupStatusCode.COMPLETED);
               assertThat(status.partitions())
-                  .extracting(PartitionBackupStatusResponse::id)
-                  .containsExactly(1, 2);
+                  .flatExtracting(PartitionBackupStatus::partitionId)
+                  .containsExactlyInAnyOrder(1, 2);
             });
-  }
-
-  private void assertBackupCompleteOnAllPartitions() {
-
-    // TODO: this will be replaced by the status API later
-    for (int partitionId = 1; partitionId < 2; partitionId++) {
-      assertBackupCompleteForPartition(partitionId);
-    }
-  }
-
-  private void assertBackupCompleteForPartition(final int partitionId) {
-    final var backupId = new BackupIdentifierImpl(0, partitionId, 1);
-    final var status = store.getStatus(backupId);
-
-    assertThat(status)
-        .succeedsWithin(Duration.ofSeconds(30))
-        .extracting(BackupStatus::id, BackupStatus::statusCode)
-        .containsExactly(backupId, BackupStatusCode.COMPLETED);
   }
 
   private void configureBroker(final ZeebeBrokerNode<?> broker) {
