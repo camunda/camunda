@@ -125,22 +125,6 @@ public class StandaloneGateway
       }
     }
 
-    if (atomixCluster != null) {
-      try {
-        atomixCluster.stop().orTimeout(10, TimeUnit.SECONDS).join();
-      } catch (final Exception e) {
-        LOG.warn("Failed to gracefully shutdown cluster services", e);
-      }
-    }
-
-    if (actorScheduler != null) {
-      try {
-        actorScheduler.close();
-      } catch (final Exception e) {
-        LOG.warn("Failed to gracefully shutdown actor scheduler", e);
-      }
-    }
-
     LogManager.shutdown();
   }
 }

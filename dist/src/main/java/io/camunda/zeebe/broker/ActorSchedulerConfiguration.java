@@ -26,7 +26,7 @@ public final class ActorSchedulerConfiguration {
     this.clock = clock;
   }
 
-  @Bean(destroyMethod = "") // disable automatically calling close as we will take care of this
+  @Bean(destroyMethod = "close")
   public ActorScheduler scheduler() {
     final ThreadsCfg cfg = brokerCfg.getThreads();
 
