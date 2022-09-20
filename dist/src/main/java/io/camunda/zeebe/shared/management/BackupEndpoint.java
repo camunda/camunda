@@ -9,10 +9,12 @@ package io.camunda.zeebe.shared.management;
 
 import io.camunda.zeebe.gateway.admin.backup.BackupApi;
 import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
+import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.concurrent.CompletionException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
@@ -42,18 +44,34 @@ final class BackupEndpoint {
       return new WebEndpointResponse<>(new TakeBackupResponse(backupId));
     } catch (final CompletionException e) {
       return new WebEndpointResponse<>(
-          new TakeBackupError(id, e.getCause().getMessage()),
+          new ErrorResponse(id, e.getCause().getMessage()),
           WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
     } catch (final Exception e) {
       return new WebEndpointResponse<>(
-          new TakeBackupError(id, e.getMessage()),
+          new ErrorResponse(id, e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  // TODO: do not use the internal data type directly, but later use the OpenAPI generated models on
+  //       both the client and server side
+  @ReadOperation
+  public WebEndpointResponse<?> status(@Selector @NonNull final long id) {
+    try {
+      final BackupStatus status = api.getStatus(id).toCompletableFuture().join();
+      return new WebEndpointResponse<>(status);
+    } catch (final CompletionException e) {
+      return new WebEndpointResponse<>(
+          new ErrorResponse(id, e.getCause().getMessage()),
           WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+    } catch (final Exception e) {
+      return new WebEndpointResponse<>(
+          new ErrorResponse(id, e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
     }
   }
 
   @VisibleForTesting
-  record TakeBackupResponse(long id) {}
+  record ErrorResponse(long id, String failure) {}
 
   @VisibleForTesting
-  record TakeBackupError(long id, String failure) {}
+  record TakeBackupResponse(long id) {}
 }

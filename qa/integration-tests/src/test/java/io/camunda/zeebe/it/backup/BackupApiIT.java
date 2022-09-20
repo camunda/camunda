@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.actuator.BackupActuator.PartitionBackupStatusResponse;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator.TakeBackupResponse;
 import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
@@ -127,10 +128,20 @@ final class BackupApiIT {
     assertThat(response).isEqualTo(new TakeBackupResponse(1L));
     Awaitility.await("until a backup exists with the given ID")
         .atMost(Duration.ofSeconds(30))
-        .untilAsserted(this::assertBackupCompleteOnAllPartitions);
+        .untilAsserted(
+            () -> {
+              final var status = actuator.status(response.id());
+              assertThat(status.id()).isEqualTo(response.id());
+              assertThat(status.failure()).isEmpty();
+              assertThat(status.status()).isEqualTo("COMPLETED");
+              assertThat(status.partitions())
+                  .extracting(PartitionBackupStatusResponse::id)
+                  .containsExactly(1, 2);
+            });
   }
 
   private void assertBackupCompleteOnAllPartitions() {
+
     // TODO: this will be replaced by the status API later
     for (int partitionId = 1; partitionId < 2; partitionId++) {
       assertBackupCompleteForPartition(partitionId);

@@ -160,6 +160,11 @@
       <artifactId>agrona</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+
     <!-- /end -->
 
     <dependency>
@@ -297,6 +302,7 @@
           <ignoredNonTestScopedDependencies>
             <ignoredNonTestScopedDependency>org.agrona:agrona</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.netty:netty-handler</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>io.camunda:zeebe-protocol</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
