@@ -44,6 +44,8 @@ jobs:
           chmod +x agent
           ./agent --private-registry-url=http://localhost:5000 '--private-registry-allowed-image-name-globs=*,*/*' &
           ./agent wait
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - run: >
           mvn -B -T2 --no-snapshot-updates
           -D junitThreadCount=12
@@ -52,6 +54,11 @@ jobs:
           -P parallel-tests,extract-flaky-tests
           -pl !:zeebe-elasticsearch-exporter
           verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Duplicate Test Check
+        uses: ./.github/actions/check-duplicate-tests
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: always()
@@ -70,11 +77,18 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - run: >
           mvn -B --no-snapshot-updates
           -D skipUTs -D skipChecks -D failsafe.rerunFailingTestsCount=3
           -pl :zeebe-elasticsearch-exporter
           verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Duplicate Test Check
+        uses: ./.github/actions/check-duplicate-tests
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: always()
@@ -112,13 +126,20 @@ jobs:
         with:
           go: false
           maven-extra-args: -am -pl ${{ matrix.project }}
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - run: >
           mvn -B --no-snapshot-updates
           -D skipITs -D skipChecks
           -pl ${{ matrix.project }}
           verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Normalize artifact name
         run: echo "ARTIFACT_NAME=$(echo ${{ matrix.project }} | sed 's/\//-/g')" >> $GITHUB_ENV
+      - name: Duplicate Test Check
+        uses: ./.github/actions/check-duplicate-tests
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: always()
@@ -138,11 +159,18 @@ jobs:
         with:
           go: false
           maven-extra-args: -am -pl engine/
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - run: >
           mvn -B --no-snapshot-updates
           -D skipITs -D skipChecks
           -pl :zeebe-workflow-engine
           verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Duplicate Test Check
+        uses: ./.github/actions/check-duplicate-tests
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: always()
@@ -193,7 +221,18 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-      - run: mvn -T1C -B -D skipChecks -P parallel-tests,include-random-tests test
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - run: >
+          mvn -T1C -B
+          -P parallel-tests,include-random-tests
+          -D skipChecks
+          test
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Duplicate Test Check
+        uses: ./.github/actions/check-duplicate-tests
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: always()
@@ -250,6 +289,8 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
           cache: maven
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - run: >
           mvn -B
           -P disableCheckstyle,extract-flaky-tests
@@ -257,6 +298,11 @@ jobs:
           -D surefire.rerunFailingTestsCount=3
           -pl clients/java
           verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Duplicate Test Check
+        uses: ./.github/actions/check-duplicate-tests
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: always()
