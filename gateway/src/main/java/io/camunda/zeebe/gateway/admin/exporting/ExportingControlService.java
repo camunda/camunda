@@ -24,6 +24,7 @@ public class ExportingControlService implements ExportingControlApi {
     this.brokerClient = brokerClient;
   }
 
+  @Override
   public CompletableFuture<Void> pauseExporting() {
     final var topology = brokerClient.getTopologyManager().getTopology();
     return broadcastOnTopology(topology, BrokerAdminRequest::pauseExporting);
