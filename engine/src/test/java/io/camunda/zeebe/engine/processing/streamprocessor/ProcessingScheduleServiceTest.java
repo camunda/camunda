@@ -19,6 +19,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.Task;
 import io.camunda.zeebe.engine.api.TaskResult;
@@ -35,7 +36,9 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.streamprocessor.ProcessingScheduleServiceImpl;
 import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -216,6 +219,65 @@ public class ProcessingScheduleServiceTest {
     verify(batchWriter, TIMEOUT).event();
     verify(logEntryBuilder, TIMEOUT).key(1);
     verify(batchWriter, TIMEOUT).tryWrite();
+  }
+
+  @RegressionTest("https://github.com/camunda/zeebe/issues/10240")
+  public void shouldPreserveOrderingOfWritesEvenWithRetries() {
+    // given
+    final var batchWriter = writerAsyncSupplier.get().join();
+    when(batchWriter.canWriteAdditionalEvent(anyInt(), anyInt())).thenReturn(true);
+    final var logEntryBuilder = mock(LogEntryBuilder.class, Mockito.RETURNS_DEEP_STUBS);
+    when(batchWriter.event()).thenReturn(logEntryBuilder);
+
+    // when - in order to make sure we would interleave tasks without the fix for #10240, we need to
+    // make sure we retry at least twice, such that the second task can be executed in between both
+    // invocations. ensure both tasks have an expiry far away enough such that they expire on
+    // different ticks, as tasks expiring on the same tick will be submitted in a non-deterministic
+    // order
+    final var counter = new AtomicInteger(0);
+    when(batchWriter.tryWrite())
+        .then(
+            i -> {
+              final var invocationCount = counter.incrementAndGet();
+              // wait a sufficiently high enough invocation count to ensure the second timer is
+              // expired, gets scheduled, and then the executions are interleaved. this is quite
+              // hard to do in a deterministic controlled way because of the way our timers are
+              // scheduled
+              if (invocationCount < 5000) {
+                return -1L;
+              }
+
+              Loggers.PROCESS_PROCESSOR_LOGGER.debug("End tryWrite loop");
+              return 0L;
+            });
+
+    scheduleService.runDelayed(
+        Duration.ofMinutes(1),
+        builder -> {
+          Loggers.PROCESS_PROCESSOR_LOGGER.debug("Running second timer");
+          builder.appendCommandRecord(2, ACTIVATE_ELEMENT, RECORD);
+          return builder.build();
+        });
+    scheduleService.runDelayed(
+        Duration.ZERO,
+        builder -> {
+          Loggers.PROCESS_PROCESSOR_LOGGER.debug("Running first timer");
+          // force trigger second task
+          clock.addTime(Duration.ofMinutes(1));
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
+          return builder.build();
+        });
+
+    // then
+    final var inOrder = inOrder(batchWriter, logEntryBuilder);
+
+    inOrder.verify(batchWriter, TIMEOUT).event();
+    inOrder.verify(logEntryBuilder, TIMEOUT).key(1);
+    inOrder.verify(batchWriter, TIMEOUT).tryWrite();
+    inOrder.verify(batchWriter, TIMEOUT).event();
+    inOrder.verify(logEntryBuilder, TIMEOUT).key(2);
+    inOrder.verify(batchWriter, TIMEOUT).tryWrite();
+    inOrder.verifyNoMoreInteractions();
   }
 
   @Test
