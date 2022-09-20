@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.util;
 
-import static io.camunda.zeebe.engine.util.StreamProcessingComposite.getLogName;
 import static org.junit.platform.commons.util.ReflectionUtils.makeAccessible;
 
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -111,8 +110,7 @@ public class StreamPlatformExtension implements BeforeEachCallback {
 
         // streams
         streamPlatform = new StreamPlatform(tempFolder, closables, actorScheduler, factory);
-        final var partitionId = 1;
-        streamPlatform.createLogStream(getLogName(partitionId), partitionId);
+        streamPlatform.createLogStream();
 
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);
@@ -120,7 +118,7 @@ public class StreamPlatformExtension implements BeforeEachCallback {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
       Collections.reverse(closables);
       CloseHelper.quietCloseAll(closables);
       closables.clear();

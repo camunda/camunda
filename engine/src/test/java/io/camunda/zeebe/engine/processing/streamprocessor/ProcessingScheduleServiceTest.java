@@ -240,7 +240,7 @@ public class ProcessingScheduleServiceTest {
   void shouldPreserveOrderingOfWritesEvenWithRetries() {
     // given
     final var dummyProcessorSpy = spy(dummyProcessor);
-    final var syncLogStream = spy(streamPlatform.getLogStream("stream-1"));
+    final var syncLogStream = spy(streamPlatform.getLogStream());
     final var logStream = spy(syncLogStream.getAsyncLogStream());
     final var batchWriter = spy(syncLogStream.newLogStreamBatchWriter());
 
@@ -296,9 +296,8 @@ public class ProcessingScheduleServiceTest {
     // then
     Awaitility.await("until both records are written to the stream")
         .atMost(Duration.ofSeconds(10))
-        .untilAsserted(
-            () -> assertThat(streamPlatform.events(syncLogStream.getLogName())).hasSize(2));
-    assertThat(streamPlatform.events(syncLogStream.getLogName()))
+        .untilAsserted(() -> assertThat(streamPlatform.events()).hasSize(2));
+    assertThat(streamPlatform.events())
         .as("records were written in order of submitted tasks")
         .extracting(LoggedEvent::getKey)
         .containsExactly(1L, 2L);
