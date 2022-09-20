@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
@@ -171,10 +172,21 @@ public class Engine implements RecordProcessor {
             ERROR_MESSAGE_PROCESSING_EXCEPTION_OCCURRED, record, processingException.getMessage());
     LOG.error(errorMessage, processingException);
 
-    writers.rejection().appendRejection(record, RejectionType.PROCESSING_ERROR, errorMessage);
-    writers
-        .response()
-        .writeRejectionOnCommand(record, RejectionType.PROCESSING_ERROR, errorMessage);
+    if (processingException instanceof ExceededBatchRecordSizeException) {
+      // Rejection reason is left empty here. This is because we need to make sure we can write the
+      // rejection. The record itself does not exceed the batch record size, but adding a reason
+      // could cause it to cross the limit. When this happens the engine would reach an
+      // exception-loop.
+      writers.rejection().appendRejection(record, RejectionType.EXCEEDED_BATCH_RECORD_SIZE, "");
+      writers
+          .response()
+          .writeRejectionOnCommand(record, RejectionType.EXCEEDED_BATCH_RECORD_SIZE, "");
+    } else {
+      writers.rejection().appendRejection(record, RejectionType.PROCESSING_ERROR, errorMessage);
+      writers
+          .response()
+          .writeRejectionOnCommand(record, RejectionType.PROCESSING_ERROR, errorMessage);
+    }
     errorRecord.initErrorRecord(processingException, record.getPosition());
 
     if (DbBlackListState.shouldBeBlacklisted(record.getIntent())) {

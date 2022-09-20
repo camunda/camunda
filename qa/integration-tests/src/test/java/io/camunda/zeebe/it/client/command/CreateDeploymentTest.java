@@ -142,9 +142,6 @@ public final class CreateDeploymentTest {
     // then
     assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
-        .hasMessageContaining(
-            "Unable to deploy resources as the size exceeds the maximum batch size. Please split "
-                + "the resources into separate deployments, or reduce the size of the deployed "
-                + "resource.");
+        .hasMessageContaining("rejected with code 'EXCEEDED_BATCH_RECORD_SIZE'");
   }
 }

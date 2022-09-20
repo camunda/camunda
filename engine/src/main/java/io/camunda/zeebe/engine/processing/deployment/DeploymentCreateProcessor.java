@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.deployment;
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
-import io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -26,7 +25,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectP
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -49,9 +47,6 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
   private static final String COULD_NOT_CREATE_TIMER_MESSAGE =
       "Expected to create timer for start event, but encountered the following error: %s";
-  private static final String ERROR_DEPLOYMENT_TOO_LARGE_MESSAGE =
-      "Unable to deploy resources as the size exceeds the maximum batch size. Please split the"
-          + " resources into separate deployments, or reduce the size of the deployed resource.";
 
   private final SideEffectQueue sideEffects = new SideEffectQueue();
 
@@ -66,7 +61,6 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   private final DeploymentDistributionBehavior deploymentDistributionBehavior;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
-  private final TypedCommandWriter commandWriter;
 
   public DeploymentCreateProcessor(
       final ZeebeState zeebeState,
@@ -81,7 +75,6 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
-    commandWriter = writers.command();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     deploymentTransformer =
@@ -133,19 +126,6 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
           deploymentTransformer.getRejectionType(),
           deploymentTransformer.getRejectionReason());
     }
-  }
-
-  @Override
-  public ProcessingError tryHandleError(
-      final TypedRecord<DeploymentRecord> command, final Throwable error) {
-    if (error instanceof ExceededBatchRecordSizeException) {
-      rejectionWriter.appendRejection(
-          command, RejectionType.INVALID_ARGUMENT, ERROR_DEPLOYMENT_TOO_LARGE_MESSAGE);
-      responseWriter.writeRejectionOnCommand(
-          command, RejectionType.INVALID_ARGUMENT, ERROR_DEPLOYMENT_TOO_LARGE_MESSAGE);
-      return ProcessingError.EXPECTED_ERROR;
-    }
-    return ProcessingError.UNEXPECTED_ERROR;
   }
 
   private void createTimerIfTimerStartEvent(
