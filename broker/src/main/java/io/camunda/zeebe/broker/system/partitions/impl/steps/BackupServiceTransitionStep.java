@@ -140,7 +140,7 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
   private static void installCheckpointProcessor(
       final PartitionTransitionContext context, final BackupManager backupManager) {
     final CheckpointRecordsProcessor checkpointRecordsProcessor =
-        new CheckpointRecordsProcessor(backupManager);
+        new CheckpointRecordsProcessor(backupManager, context.getPartitionId());
     context.setCheckpointProcessor(checkpointRecordsProcessor);
   }
 

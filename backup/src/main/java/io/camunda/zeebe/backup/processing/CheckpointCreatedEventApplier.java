@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.api.CheckpointListener;
+import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import java.util.Set;
@@ -17,10 +18,15 @@ public final class CheckpointCreatedEventApplier {
   private final CheckpointState checkpointState;
   private final Set<CheckpointListener> checkpointListeners;
 
+  private final CheckpointMetrics metrics;
+
   public CheckpointCreatedEventApplier(
-      final CheckpointState checkpointState, final Set<CheckpointListener> checkpointListeners) {
+      final CheckpointState checkpointState,
+      final Set<CheckpointListener> checkpointListeners,
+      final CheckpointMetrics metrics) {
     this.checkpointState = checkpointState;
     this.checkpointListeners = checkpointListeners;
+    this.metrics = metrics;
   }
 
   public void apply(final CheckpointRecord checkpointRecord) {
