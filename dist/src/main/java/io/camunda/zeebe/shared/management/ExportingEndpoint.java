@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 @WebEndpoint(id = "exporting")
 public final class ExportingEndpoint {
   static final String PAUSE = "pause";
+  static final String RESUME = "resume";
   final ExportingControlApi exportingService;
 
   @Autowired
@@ -31,10 +32,10 @@ public final class ExportingEndpoint {
   @WriteOperation
   public WebEndpointResponse<?> post(@Selector(match = Match.SINGLE) final String operationKey) {
     try {
-      //noinspection SwitchStatementWithTooFewBranches
       final var result =
           switch (operationKey) {
             case PAUSE -> exportingService.pauseExporting();
+            case RESUME -> exportingService.resumeExporting();
             default -> throw new UnsupportedOperationException();
           };
       result.join();
