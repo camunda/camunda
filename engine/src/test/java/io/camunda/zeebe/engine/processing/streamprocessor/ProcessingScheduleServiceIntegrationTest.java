@@ -96,38 +96,6 @@ public class ProcessingScheduleServiceIntegrationTest {
   }
 
   @Test
-  public void shouldNotExecuteScheduledTaskIfProcessingIsOngoing() {
-    // given
-    dummyProcessor.blockProcessing();
-    streamPlatform.writeBatch(command().processInstance(ACTIVATE_ELEMENT, RECORD));
-    streamPlatform.withRecordProcessors(List.of(dummyProcessor)).startStreamProcessor();
-    final var mockedTask = spy(new DummyTask());
-
-    // when
-    dummyProcessor.scheduleService.runDelayed(Duration.ZERO, mockedTask);
-
-    // then
-    verify(mockedTask, never()).execute(any());
-  }
-
-  @Test
-  public void shouldExecuteScheduledTaskAfterProcessing() {
-    // given
-    dummyProcessor.blockProcessing();
-    streamPlatform.writeBatch(command().processInstance(ACTIVATE_ELEMENT, RECORD));
-    streamPlatform.withRecordProcessors(List.of(dummyProcessor)).startStreamProcessor();
-    final var mockedTask = spy(new DummyTask());
-
-    // when
-    dummyProcessor.scheduleService.runDelayed(Duration.ZERO, mockedTask);
-    verify(mockedTask, never()).execute(any());
-    dummyProcessor.continueProcessing();
-
-    // then
-    verify(mockedTask, TIMEOUT).execute(any());
-  }
-
-  @Test
   public void shouldNotExecuteScheduledTaskIfOnReplay() {
     // given
     dummyProcessor.blockReplay();
