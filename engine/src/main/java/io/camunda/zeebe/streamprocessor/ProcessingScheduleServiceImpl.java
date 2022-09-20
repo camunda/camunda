@@ -10,33 +10,60 @@ package io.camunda.zeebe.streamprocessor;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.Task;
-import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
 import java.time.Duration;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 /**
  * Here the implementation is just a suggestion to amke the engine abstraction work. Can be whatever
  * PDT team thinks is best to work with
  */
-public class ProcessingScheduleServiceImpl implements ProcessingScheduleService {
+public class ProcessingScheduleServiceImpl extends Actor implements ProcessingScheduleService {
+  private AbortableRetryStrategy writeRetryStrategy;
+  private final Supplier<StreamProcessor.Phase> streamProcessorPhaseSupplier;
+  private final BooleanSupplier abortCondition;;
+  private final Supplier<ActorFuture<LogStreamBatchWriter>> writerAsyncSupplier;
+  private LogStreamBatchWriter logStreamBatchWriter;
 
-  private final ActorControl actorControl;
-  private final StreamProcessorContext streamProcessorContext;
-  private final AbortableRetryStrategy writeRetryStrategy;
+  public ProcessingScheduleServiceImpl(
+      final Supplier<Phase> streamProcessorPhaseSupplier,
+      final BooleanSupplier abortCondition,
+      final Supplier<ActorFuture<LogStreamBatchWriter>> writerAsyncSupplier) {
 
-  // todo remove context from CTOR; will be cleaned up after engine abstraction is done
-  public ProcessingScheduleServiceImpl(final StreamProcessorContext streamProcessorContext) {
-    actorControl = streamProcessorContext.getActor();
-    this.streamProcessorContext = streamProcessorContext;
-    writeRetryStrategy = new AbortableRetryStrategy(actorControl);
+    this.streamProcessorPhaseSupplier = streamProcessorPhaseSupplier;
+    this.abortCondition = abortCondition;
+    this.writerAsyncSupplier = writerAsyncSupplier;
+  }
+
+  @Override
+  protected void onActorStarting() {
+    writeRetryStrategy = new AbortableRetryStrategy(actor);
+    final var writerFuture = writerAsyncSupplier.get();
+    actor.runOnCompletionBlockingCurrentPhase(writerFuture, (writer, failure) -> {
+      if (failure == null) {
+        logStreamBatchWriter = writer;
+      }
+      else {
+        actor.fail(failure);
+      }
+    });
+  }
+
+  @Override
+  public <T> void runOnCompletion(
+      final ActorFuture<T> precedingTask, final BiConsumer<T, Throwable> followUpTask) {
+    scheduleOnActor(() -> actor.runOnCompletion(precedingTask, followUpTask));
   }
 
   @Override
   public void runDelayed(final Duration delay, final Runnable followUpTask) {
-    scheduleOnActor(() -> actorControl.runDelayed(delay, followUpTask));
+    scheduleOnActor(() -> actor.runDelayed(delay, followUpTask));
   }
 
   @Override
@@ -45,17 +72,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
   }
 
   @Override
-  public <T> void runOnCompletion(
-      final ActorFuture<T> precedingTask, final BiConsumer<T, Throwable> followUpTask) {
-    scheduleOnActor(() -> actorControl.runOnCompletion(precedingTask, followUpTask));
-  }
-
-  @Override
   public void runAtFixedRate(final Duration delay, final Task task) {
-    /* TODO preliminary implementation; with the direct access
-     * this only works because this class is scheduled on the same actor as the
-     * stream processor.
-     */
     runDelayed(
         delay,
         toRunnable(
@@ -69,17 +86,17 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
   }
 
   private void scheduleOnActor(final Runnable task) {
-    actorControl.submit(task);
+    actor.submit(task);
   }
 
   Runnable toRunnable(final Task task) {
     return () -> {
-      if (streamProcessorContext.getAbortCondition().getAsBoolean()) {
+      if (abortCondition.getAsBoolean()) {
         // it might be that we are closing, then we should just stop
         return;
       }
 
-      final var currentStreamProcessorPhase = streamProcessorContext.getStreamProcessorPhase();
+      final var currentStreamProcessorPhase = streamProcessorPhaseSupplier.get();
       if (currentStreamProcessorPhase != Phase.PROCESSING) {
 
         // We want to execute the scheduled tasks only if the StreamProcessor is in the PROCESSING
@@ -93,10 +110,9 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
         Loggers.PROCESS_PROCESSOR_LOGGER.trace(
             "Not able to execute scheduled task right now. [streamProcessorPhase: {}]",
             currentStreamProcessorPhase);
-        actorControl.submit(toRunnable(task));
+        actor.submit(toRunnable(task));
         return;
       }
-      final var logStreamBatchWriter = streamProcessorContext.getLogStreamBatchWriter();
       final var builder =
           new DirectTaskResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
       final var result = task.execute(builder);
@@ -123,8 +139,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService 
                                 .done());
 
                 return logStreamBatchWriter.tryWrite() >= 0;
-              },
-              streamProcessorContext.getAbortCondition());
+              }, abortCondition);
 
       writeFuture.onComplete(
           (v, t) -> {
