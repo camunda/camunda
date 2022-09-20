@@ -89,7 +89,9 @@ jobs:
       - name: Maven Test Build
         run: >
           mvn -B --no-snapshot-updates
-          -D skipUTs -D skipChecks -D failsafe.rerunFailingTestsCount=3
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P extract-flaky-tests
           -pl :zeebe-elasticsearch-exporter
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
