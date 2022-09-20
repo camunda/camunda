@@ -173,7 +173,10 @@ public class Engine implements RecordProcessor {
     LOG.error(errorMessage, processingException);
 
     if (processingException instanceof ExceededBatchRecordSizeException) {
-
+      // Rejection reason is left empty here. This is because we need to make sure we can write the
+      // rejection. The record itself does not exceed the batch record size, but adding a reason
+      // could cause it to cross the limit. When this happens the engine would reach an
+      // exception-loop.
       writers.rejection().appendRejection(record, RejectionType.EXCEEDED_BATCH_RECORD_SIZE, "");
       writers
           .response()
