@@ -47,6 +47,7 @@ const ModificationDropdown: React.FC<Props> = observer(
             boundary: diagramCanvasRef?.current ?? undefined,
           },
         ]}
+        variant="arrow"
       >
         <Title>Flow Node Modifications</Title>
         <Options>

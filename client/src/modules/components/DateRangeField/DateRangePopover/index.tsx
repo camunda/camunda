@@ -31,6 +31,7 @@ const DateRangePopover: React.FC<Props> = ({
       offsetOptions={[10]}
       placement="right"
       onOutsideClick={onOutsideClick}
+      variant="arrow"
     >
       <Form onSubmit={onApply} initialValues={initialValues}>
         {({handleSubmit}) => (

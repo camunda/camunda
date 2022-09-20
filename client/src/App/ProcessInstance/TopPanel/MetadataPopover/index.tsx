@@ -72,6 +72,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
           fallbackPlacements: ['top', 'right', 'left'],
         },
       ]}
+      variant="arrow"
     >
       {metaData.instanceCount !== null && metaData.instanceCount > 1 && (
         <>
