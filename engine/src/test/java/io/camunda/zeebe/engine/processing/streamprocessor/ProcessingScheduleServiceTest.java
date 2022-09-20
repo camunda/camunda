@@ -49,7 +49,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
@@ -238,7 +237,6 @@ public class ProcessingScheduleServiceTest {
   }
 
   @RegressionTest("https://github.com/camunda/zeebe/issues/10240")
-  @Disabled("Flaky test due to https://github.com/camunda/zeebe/issues/10306; enable once fixed")
   void shouldPreserveOrderingOfWritesEvenWithRetries() {
     // given
     final var dummyProcessorSpy = spy(dummyProcessor);
@@ -276,19 +274,22 @@ public class ProcessingScheduleServiceTest {
               return i.callRealMethod();
             });
 
-    dummyProcessorSpy.scheduleService.runDelayed(
-        Duration.ZERO,
-        builder -> {
-          // force trigger second task
-          clock.addTime(Duration.ofMinutes(1));
-          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
-          return builder.build();
-        });
+    // we need to schedule first the longer delayed task, otherwise we might get race conditions
+    // with the scheduling and clock adjustment
     dummyProcessorSpy.scheduleService.runDelayed(
         Duration.ofMinutes(1),
         builder -> {
           Loggers.PROCESS_PROCESSOR_LOGGER.debug("Running second timer");
           builder.appendCommandRecord(2, ACTIVATE_ELEMENT, RECORD);
+          return builder.build();
+        });
+    dummyProcessorSpy.scheduleService.runDelayed(
+        Duration.ZERO,
+        builder -> {
+          Loggers.PROCESS_PROCESSOR_LOGGER.debug("Running first timer");
+          // force trigger second task
+          clock.addTime(Duration.ofMinutes(1));
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
           return builder.build();
         });
 
