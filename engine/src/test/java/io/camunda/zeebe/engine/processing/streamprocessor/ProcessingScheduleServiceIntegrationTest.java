@@ -55,7 +55,7 @@ import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
 
 @ExtendWith(StreamPlatformExtension.class)
-public class ProcessingScheduleServiceTest {
+public class ProcessingScheduleServiceIntegrationTest {
 
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
