@@ -217,7 +217,7 @@ public class DeploymentRejectionTest {
 
     // then
     Assertions.assertThat(deploymentRejection)
-        .hasRejectionType(RejectionType.EXCEEDED_BATCH)
+        .hasRejectionType(RejectionType.EXCEEDED_BATCH_RECORD_SIZE)
         .hasRejectionReason("");
   }
 }

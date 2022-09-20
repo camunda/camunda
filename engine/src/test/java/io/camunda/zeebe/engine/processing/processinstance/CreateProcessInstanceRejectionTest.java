@@ -27,7 +27,7 @@ import org.junit.Test;
 
 public class CreateProcessInstanceRejectionTest {
 
-  public static final long MAX_MESSAGE_SIZE = ByteValue.ofMegabytes(4);
+  private static final long MAX_MESSAGE_SIZE = ByteValue.ofMegabytes(4);
   private static final String PROCESS_ID = "process-id";
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
@@ -231,6 +231,6 @@ public class CreateProcessInstanceRejectionTest {
                 .onlyCommandRejections()
                 .getFirst())
         .hasIntent(ProcessInstanceCreationIntent.CREATE)
-        .hasRejectionType(RejectionType.EXCEEDED_BATCH);
+        .hasRejectionType(RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
   }
 }

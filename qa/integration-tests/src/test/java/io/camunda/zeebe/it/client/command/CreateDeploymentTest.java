@@ -142,6 +142,6 @@ public final class CreateDeploymentTest {
     // then
     assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
-        .hasMessageContaining("rejected with code 'EXCEEDED_BATCH'");
+        .hasMessageContaining("rejected with code 'EXCEEDED_BATCH_RECORD_SIZE'");
   }
 }
