@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
+import org.agrona.collections.IntHashSet;
 
 public class ExportingControlService implements ExportingControlApi {
   final BrokerClient brokerClient;
@@ -49,8 +49,16 @@ public class ExportingControlService implements ExportingControlApi {
     final var leader = topology.getLeaderForPartition(partitionId);
     final var followers =
         Optional.ofNullable(topology.getFollowersForPartition(partitionId)).orElseGet(Set::of);
+    final var inactive =
+        Optional.ofNullable(topology.getInactiveNodesForPartition(partitionId)).orElseGet(Set::of);
+
+    final var members = new IntHashSet(topology.getReplicationFactor());
+    members.add(leader);
+    members.addAll(followers);
+    members.addAll(inactive);
+
     final var requests =
-        Stream.concat(Stream.of(leader), followers.stream())
+        members.stream()
             .map(
                 brokerId -> {
                   final var request = new BrokerAdminRequest();

@@ -15,7 +15,6 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -62,7 +61,7 @@ public class ExportingControlServiceTest {
 
       for (final var inactive :
           Optional.ofNullable(topology.getInactiveNodesForPartition(partition)).orElse(Set.of())) {
-        verify(client, never()).sendRequest(requestTo(partition, inactive));
+        verify(client).sendRequest(requestTo(partition, inactive));
       }
     }
   }
