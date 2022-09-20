@@ -11,6 +11,12 @@ on:
   workflow_dispatch: {}
   workflow_call: {}
 
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
 jobs:
   integration-tests:
     name: Integration tests
@@ -46,7 +52,8 @@ jobs:
           ./agent wait
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
-      - run: >
+      - name: Maven Test Build
+        run: >
           mvn -B -T2 --no-snapshot-updates
           -D junitThreadCount=12
           -D skipUTs -D skipChecks
@@ -79,9 +86,12 @@ jobs:
           go: false
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
-      - run: >
+      - name: Maven Test Build
+        run: >
           mvn -B --no-snapshot-updates
-          -D skipUTs -D skipChecks -D failsafe.rerunFailingTestsCount=3
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P extract-flaky-tests
           -pl :zeebe-elasticsearch-exporter
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -128,7 +138,8 @@ jobs:
           maven-extra-args: -am -pl ${{ matrix.project }}
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
-      - run: >
+      - name: Maven Test Build
+        run: >
           mvn -B --no-snapshot-updates
           -D skipITs -D skipChecks
           -pl ${{ matrix.project }}
@@ -161,7 +172,8 @@ jobs:
           maven-extra-args: -am -pl engine/
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
-      - run: >
+      - name: Maven Test Build
+        run: >
           mvn -B --no-snapshot-updates
           -D skipITs -D skipChecks
           -pl :zeebe-workflow-engine
@@ -223,7 +235,8 @@ jobs:
           go: false
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
-      - run: >
+      - name: Maven Test Build
+        run: >
           mvn -T1C -B
           -P parallel-tests,include-random-tests
           -D skipChecks
@@ -291,7 +304,8 @@ jobs:
           cache: maven
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
-      - run: >
+      - name: Maven Test Build
+        run: >
           mvn -B
           -P disableCheckstyle,extract-flaky-tests
           -D skipChecks -D skipITs

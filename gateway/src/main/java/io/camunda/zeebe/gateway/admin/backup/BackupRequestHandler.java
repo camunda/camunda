@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.admin.backup;
 
+import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.gateway.cmd.NoTopologyAvailableException;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;

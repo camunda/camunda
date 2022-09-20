@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.exporter.stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
@@ -87,5 +88,17 @@ public final class ExporterDirectorPauseTest {
 
     // then
     verify(exporter, after(TIMEOUT).times(0)).export(any());
+  }
+
+  @Test
+  public void canPauseAndResumeWithoutAnyExporter() {
+    // given
+    activeExporter.startExporterDirector(List.of());
+
+    // then
+    assertThatCode(() -> activeExporter.getDirector().pauseExporting().join())
+        .doesNotThrowAnyException();
+    assertThatCode(() -> activeExporter.getDirector().resumeExporting().join())
+        .doesNotThrowAnyException();
   }
 }

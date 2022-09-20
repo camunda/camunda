@@ -27,9 +27,7 @@ final class ActorSchedulerComponent {
     this.clockConfiguration = clockConfiguration;
   }
 
-  // disable automatic registration of close as the destroy method, the application will manually
-  // close this
-  @Bean(destroyMethod = "")
+  @Bean(destroyMethod = "close")
   ActorScheduler actorScheduler() {
     return ActorScheduler.newActorScheduler()
         .setCpuBoundActorThreadCount(config.getThreads().getManagementThreads())
