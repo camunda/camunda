@@ -39,6 +39,7 @@ import io.camunda.zeebe.engine.util.StreamPlatformExtension;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
@@ -234,6 +235,21 @@ public class ProcessingScheduleServiceTest {
     // then
     verify(dummyProcessorSpy, TIMEOUT.times(5))
         .process(Mockito.argThat(record -> record.getKey() == 1), any());
+  }
+
+  @Test
+  public void shouldCloseWhenStreamProcessorClosed() throws Exception {
+    // given
+    final var dummyProcessorSpy = spy(dummyProcessor);
+    streamPlatform.withRecordProcessors(List.of(dummyProcessorSpy))
+        .startStreamProcessor();
+
+    // when
+    streamPlatform.closeStreamProcessor();
+
+    // then
+    assertThat(streamPlatform.getStreamProcessor().isClosed()).isTrue();
+    assertThat(((Actor) dummyProcessorSpy.scheduleService).isActorClosed()).isTrue();
   }
 
   @RegressionTest("https://github.com/camunda/zeebe/issues/10240")

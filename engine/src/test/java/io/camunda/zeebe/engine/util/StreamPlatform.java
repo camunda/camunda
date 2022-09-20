@@ -281,6 +281,10 @@ public final class StreamPlatform {
     return writeActor.submit(batchWriter::tryWrite).join();
   }
 
+  public void closeStreamProcessor() throws Exception {
+    processorContext.close();
+  }
+
   /** Used to run writes within an actor thread. */
   private static final class WriteActor extends Actor {
     public ActorFuture<Long> submit(final Callable<Long> write) {
