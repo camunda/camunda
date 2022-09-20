@@ -93,10 +93,25 @@ public class JobMetricsTest {
     final long processInstanceKey = createProcessInstanceWithJob(JOB_TYPE);
 
     final var timeout = Duration.ofMinutes(10);
-    ENGINE.jobs().withType(JOB_TYPE).withTimeout(timeout.toMillis()).activate();
+    final var jobRecord =
+        ENGINE
+            .jobs()
+            .withType(JOB_TYPE)
+            .withTimeout(timeout.toMillis())
+            .activate()
+            .getValue()
+            .getJobs()
+            .get(0);
 
     // when
-    ENGINE.getClock().addTime(timeout);
+    // We need to add 1 ms as the deadline needs to be < the current time. Without the extra 1 ms
+    // it could be that the JobTimeoutTrigger is triggered at the exact same time as the job
+    // deadline resulting in the Job activation not being expired yet.
+    ENGINE
+        .getClock()
+        .addTime(
+            Duration.ofMillis(
+                jobRecord.getDeadline() - ENGINE.getClock().getCurrentTimeInMillis() + 1));
     RecordingExporter.jobRecords(JobIntent.TIMED_OUT)
         .withProcessInstanceKey(processInstanceKey)
         .await();
