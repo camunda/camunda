@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
+import static org.assertj.core.groups.Tuple.tuple;
+
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.EndEventBuilder;
@@ -18,7 +20,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
-import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -57,8 +58,8 @@ public final class TerminateEndEventTest {
         .describedAs(
             "Expect to complete the process instance when reaching the terminate end event")
         .containsSubsequence(
-            Tuple.tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
-            Tuple.tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -93,10 +94,10 @@ public final class TerminateEndEventTest {
         .describedAs(
             "Expect to terminate all element instances when reaching the terminate end event")
         .containsSubsequence(
-            Tuple.tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
-            Tuple.tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
-            Tuple.tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
-            Tuple.tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -146,29 +147,28 @@ public final class TerminateEndEventTest {
         .describedAs(
             "Expect to terminate all element instances in the subprocess when reaching the terminate end event")
         .containsSubsequence(
-            Tuple.tuple(BpmnElementType.SERVICE_TASK, "C", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            Tuple.tuple(
+            tuple(BpmnElementType.SERVICE_TASK, "C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
                 BpmnElementType.END_EVENT,
                 "terminate-end",
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
-            Tuple.tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED))
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED))
         .describedAs("Expect to complete the subprocess and take the outgoing sequence flow")
         .containsSubsequence(
-            Tuple.tuple(
+            tuple(
                 BpmnElementType.SUB_PROCESS, "subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            Tuple.tuple(
+            tuple(
                 BpmnElementType.SEQUENCE_FLOW,
                 "to_end_after_subprocess",
                 ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            Tuple.tuple(
+            tuple(
                 BpmnElementType.END_EVENT,
                 "end_after_subprocess",
                 ProcessInstanceIntent.ELEMENT_COMPLETED))
         .describedAs(
             "Expect that the element instances outside of the subprocess are not terminated")
         .doesNotContain(
-            Tuple.tuple(
-                BpmnElementType.SERVICE_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED));
+            tuple(BpmnElementType.SERVICE_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED));
 
     ENGINE_RULE.job().ofInstance(processInstanceKey).withType("A").complete();
 
@@ -183,10 +183,9 @@ public final class TerminateEndEventTest {
         .describedAs(
             "Expect to complete the process instance after all element instances are completed")
         .containsSubsequence(
-            Tuple.tuple(BpmnElementType.SERVICE_TASK, "A", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            Tuple.tuple(
+            tuple(BpmnElementType.SERVICE_TASK, "A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
                 BpmnElementType.END_EVENT, "end_after_A", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            Tuple.tuple(
-                BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+            tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 }
