@@ -185,9 +185,7 @@ const ProcessInstance: React.FC = observer(() => {
           Process Instance Modification Mode
         </ModificationHeader>
       )}
-      {modificationStatus === 'adding-modification' && (
-        <ModificationLoadingOverlay label="Adding modifications..." />
-      )}
+
       {modificationStatus === 'applying-modifications' && (
         <ModificationLoadingOverlay label="Applying modifications..." />
       )}

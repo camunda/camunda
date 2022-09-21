@@ -469,233 +469,6 @@ describe('Instance', () => {
   );
 
   (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
-    'should display loading overlay when an add token modification is made',
-    async () => {
-      mockServer.use(
-        rest.get('/api/process-instances/:id', (_, res, ctx) =>
-          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
-        ),
-        rest.post(
-          '/api/process-instances/:instanceId/flow-node-metadata',
-          (_, res, ctx) => res.once(ctx.json(undefined))
-        ),
-
-        rest.post(
-          '/api/process-instances/:processInstanceId/modify',
-          (_, res, ctx) => res.once(ctx.delay(1000), ctx.json({}))
-        )
-      );
-
-      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(
-        screen.getByTestId('instance-header-skeleton')
-      );
-
-      storeStateLocally({
-        [`hideModificationHelperModal`]: true,
-      });
-      await user.click(
-        screen.getByRole('button', {
-          name: /modify instance/i,
-        })
-      );
-
-      expect(
-        screen.getByText('Process Instance Modification Mode')
-      ).toBeInTheDocument();
-
-      jest.useFakeTimers();
-
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'taskD',
-      });
-
-      await user.click(
-        screen.getByRole('button', {name: /add single flow node instance/i})
-      );
-
-      expect(screen.getByText(/adding modifications.../i)).toBeInTheDocument();
-      jest.runOnlyPendingTimers();
-      expect(
-        screen.queryByText(/adding modifications.../i)
-      ).not.toBeInTheDocument();
-
-      expect(await screen.findByTestId('badge-plus-icon')).toBeInTheDocument();
-
-      await user.click(screen.getByTestId('apply-modifications-button'));
-      await user.click(screen.getByRole('button', {name: 'Apply'}));
-      expect(
-        screen.getByText(/applying modifications.../i)
-      ).toBeInTheDocument();
-      jest.runOnlyPendingTimers();
-
-      await waitForElementToBeRemoved(() =>
-        screen.getByText(/applying modifications.../i)
-      );
-
-      expect(
-        screen.queryByText('Process Instance Modification Mode')
-      ).not.toBeInTheDocument();
-
-      jest.clearAllTimers();
-      jest.useRealTimers();
-    }
-  );
-
-  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
-    'should display loading overlay when a flow node modification is made',
-    async () => {
-      mockServer.use(
-        rest.get('/api/process-instances/:id', (_, res, ctx) =>
-          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
-        ),
-        rest.post(
-          '/api/process-instances/:instanceId/flow-node-metadata',
-          (_, res, ctx) => res.once(ctx.json(undefined))
-        )
-      );
-
-      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(
-        screen.getByTestId('instance-header-skeleton')
-      );
-
-      storeStateLocally({
-        [`hideModificationHelperModal`]: true,
-      });
-      await user.click(
-        screen.getByRole('button', {
-          name: /modify instance/i,
-        })
-      );
-
-      jest.useFakeTimers();
-
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'taskD',
-      });
-
-      await user.click(
-        screen.getByRole('button', {name: /add single flow node instance/i})
-      );
-
-      expect(screen.getByText(/adding modifications.../i)).toBeInTheDocument();
-      jest.runOnlyPendingTimers();
-      expect(
-        screen.queryByText(/adding modifications.../i)
-      ).not.toBeInTheDocument();
-
-      expect(await screen.findByTestId('badge-plus-icon')).toBeInTheDocument();
-
-      jest.clearAllTimers();
-      jest.useRealTimers();
-    }
-  );
-
-  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
-    'should display loading overlay when a cancel token modification is made',
-    async () => {
-      mockServer.use(
-        rest.get('/api/process-instances/:id', (_, res, ctx) =>
-          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
-        ),
-        rest.post(
-          '/api/process-instances/:instanceId/flow-node-metadata',
-          (_, res, ctx) => res.once(ctx.json(undefined))
-        )
-      );
-
-      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(
-        screen.getByTestId('instance-header-skeleton')
-      );
-
-      storeStateLocally({
-        [`hideModificationHelperModal`]: true,
-      });
-      await user.click(
-        screen.getByRole('button', {
-          name: /modify instance/i,
-        })
-      );
-
-      jest.useFakeTimers();
-
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'taskD',
-      });
-
-      await user.click(
-        screen.getByRole('button', {
-          name: /cancel all running flow node instances in this flow node/i,
-        })
-      );
-      expect(screen.getByText(/adding modifications.../i)).toBeInTheDocument();
-      jest.runOnlyPendingTimers();
-      expect(
-        screen.queryByText(/adding modifications.../i)
-      ).not.toBeInTheDocument();
-      expect(await screen.findByTestId('badge-minus-icon')).toBeInTheDocument();
-
-      jest.clearAllTimers();
-      jest.useRealTimers();
-    }
-  );
-
-  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
-    'should display loading overlay when a move token modification is made',
-    async () => {
-      mockServer.use(
-        rest.get('/api/process-instances/:id', (_, res, ctx) =>
-          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
-        ),
-        rest.post(
-          '/api/process-instances/:instanceId/flow-node-metadata',
-          (_, res, ctx) => res.once(ctx.json(undefined))
-        )
-      );
-
-      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(
-        screen.getByTestId('instance-header-skeleton')
-      );
-
-      storeStateLocally({
-        [`hideModificationHelperModal`]: true,
-      });
-      await user.click(
-        screen.getByRole('button', {
-          name: /modify instance/i,
-        })
-      );
-
-      jest.useFakeTimers();
-
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'taskD',
-      });
-
-      await user.click(
-        screen.getByRole('button', {
-          name: /move all running instances in this flow node to another target/i,
-        })
-      );
-      modificationsStore.finishMovingToken('EndEvent_042s0oc');
-
-      expect(screen.getByText(/adding modifications.../i)).toBeInTheDocument();
-      jest.runOnlyPendingTimers();
-      expect(
-        screen.queryByText(/adding modifications.../i)
-      ).not.toBeInTheDocument();
-      expect(await screen.findByTestId('badge-minus-icon')).toBeInTheDocument();
-      expect(screen.getByTestId('badge-plus-icon')).toBeInTheDocument();
-
-      jest.clearAllTimers();
-      jest.useRealTimers();
-    }
-  );
-
-  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
     'should stop polling during the modification mode',
     async () => {
       jest.useFakeTimers();
@@ -831,6 +604,76 @@ describe('Instance', () => {
       expect(
         handlePollingProcessInstanceDetailStatisticsSpy
       ).toHaveBeenCalledTimes(2);
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    }
+  );
+
+  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
+    'should display loading overlay when modifications are applied',
+    async () => {
+      mockServer.use(
+        rest.get('/api/process-instances/:id', (_, res, ctx) =>
+          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
+        ),
+        rest.post(
+          '/api/process-instances/:instanceId/flow-node-metadata',
+          (_, res, ctx) => res.once(ctx.json(undefined))
+        ),
+
+        rest.post(
+          '/api/process-instances/:processInstanceId/modify',
+          (_, res, ctx) => res.once(ctx.delay(1000), ctx.json({}))
+        )
+      );
+
+      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+      await waitForElementToBeRemoved(
+        screen.getByTestId('instance-header-skeleton')
+      );
+
+      storeStateLocally({
+        [`hideModificationHelperModal`]: true,
+      });
+      await user.click(
+        screen.getByRole('button', {
+          name: /modify instance/i,
+        })
+      );
+
+      expect(
+        screen.getByText('Process Instance Modification Mode')
+      ).toBeInTheDocument();
+
+      jest.useFakeTimers();
+
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'taskD',
+      });
+
+      await user.click(
+        screen.getByRole('button', {name: /add single flow node instance/i})
+      );
+
+      expect(await screen.findByTestId('badge-plus-icon')).toBeInTheDocument();
+
+      await user.click(screen.getByTestId('apply-modifications-button'));
+      await user.click(screen.getByRole('button', {name: 'Apply'}));
+      expect(
+        screen.getByText(/applying modifications.../i)
+      ).toBeInTheDocument();
+
+      processInstanceDetailsStore.stopPolling();
+      jest.runOnlyPendingTimers();
+
+      await waitForElementToBeRemoved(() =>
+        screen.getByText(/applying modifications.../i)
+      );
+
+      expect(
+        screen.queryByText('Process Instance Modification Mode')
+      ).not.toBeInTheDocument();
 
       jest.clearAllTimers();
       jest.useRealTimers();

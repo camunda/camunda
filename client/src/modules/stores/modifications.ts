@@ -68,12 +68,7 @@ type Modification = FlowNodeModification | VariableModification;
 type RemovedModificationSource = 'variables' | 'summaryModal' | 'footer';
 
 type State = {
-  status:
-    | 'enabled'
-    | 'moving-token'
-    | 'disabled'
-    | 'adding-modification'
-    | 'applying-modifications';
+  status: 'enabled' | 'moving-token' | 'disabled' | 'applying-modifications';
   modifications: Modification[];
   lastRemovedModification:
     | {
@@ -186,17 +181,7 @@ class Modifications {
     this.state.status = 'applying-modifications';
   };
 
-  addModification = (
-    modification: Modification,
-    preventLoadingOverlay?: boolean
-  ) => {
-    if (!preventLoadingOverlay) {
-      this.state.status = 'adding-modification';
-      this.modificationsLoadingTimeout = window.setTimeout(() => {
-        this.enableModificationMode();
-      }, 500);
-    }
-
+  addModification = (modification: Modification) => {
     this.state.modifications.push(modification);
   };
 

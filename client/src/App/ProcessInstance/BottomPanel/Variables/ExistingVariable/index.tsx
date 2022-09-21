@@ -66,21 +66,18 @@ const createModification = ({
       (lastEditModification !== undefined &&
         lastEditModification.newValue !== newValue))
   ) {
-    modificationsStore.addModification(
-      {
-        type: 'variable',
-        payload: {
-          operation: 'EDIT_VARIABLE',
-          id: name,
-          scopeId,
-          flowNodeName: flowNodeSelectionStore.selectedFlowNodeName,
-          name,
-          oldValue,
-          newValue,
-        },
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'EDIT_VARIABLE',
+        id: name,
+        scopeId,
+        flowNodeName: flowNodeSelectionStore.selectedFlowNodeName,
+        name,
+        oldValue,
+        newValue,
       },
-      true
-    );
+    });
   }
 };
 
