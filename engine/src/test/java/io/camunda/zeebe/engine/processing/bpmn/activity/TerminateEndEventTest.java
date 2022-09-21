@@ -58,4 +58,42 @@ public final class TerminateEndEventTest {
             Tuple.tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
             Tuple.tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
+
+  @Test
+  public void shouldCancelRootElementInstance() {
+    // given
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .parallelGateway("fork")
+                .userTask("A")
+                .endEvent("none-end")
+                .moveToNode("fork")
+                .serviceTask("B", serviceTask -> serviceTask.zeebeJobType("B"))
+                .endEvent("terminate-end", EndEventBuilder::terminate)
+                .done())
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE_RULE.job().ofInstance(processInstanceKey).withType("B").complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(record -> record.getValue().getBpmnElementType(), Record::getIntent)
+        .describedAs(
+            "Expect to terminate the active element instance when reaching the terminate end event")
+        .containsSubsequence(
+            Tuple.tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            Tuple.tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            Tuple.tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            Tuple.tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
 }
