@@ -21,6 +21,7 @@ import io.camunda.zeebe.snapshots.SnapshotException.CorruptedSnapshotException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -212,7 +213,7 @@ class PartitionRestoreServiceTest {
   }
 
   private void appendRecord(final long asqn, final String data) {
-    journal.append(asqn, new UnsafeBuffer(data.getBytes()));
+    journal.append(asqn, new DirectBufferWriter().wrap(new UnsafeBuffer(data.getBytes())));
   }
 
   private PersistedSnapshot takeSnapshot(final long index, final long lastWrittenPosition) {
