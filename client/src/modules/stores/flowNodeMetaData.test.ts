@@ -17,7 +17,6 @@ import {modificationsStore} from './modifications';
 const PROCESS_INSTANCE_ID = '2251799813689404';
 
 const metaData: MetaDataEntity = {
-  breadcrumb: [{flowNodeId: 'startEvent', flowNodeType: 'START_EVENT'}],
   flowNodeId: 'ServiceTask_1',
   flowNodeInstanceId: '2251799813689409',
   flowNodeType: 'SERVICE_TASK',

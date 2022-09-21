@@ -12,12 +12,13 @@ import {
   SummaryDataKey,
   SummaryDataValue,
   Header,
-  IncidentTitle,
   Title,
   PeterCaseSummaryHeader,
   PeterCaseSummaryBody,
   Divider,
   Popover,
+  CalledProcessValue,
+  CalledProcessName,
 } from './styled';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -26,10 +27,21 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 import {buildMetadata} from './buildMetadata';
-import {getModalHeadline} from './getModalHeadline';
 import {Paths} from 'modules/routes';
 import {Link} from 'modules/components/Link';
 import {tracking} from 'modules/tracking';
+import {getExecutionDuration} from './getExecutionDuration';
+
+const NULL_METADATA = {
+  flowNodeInstanceId: null,
+  startDate: null,
+  endDate: null,
+  calledProcessInstanceId: null,
+  calledProcessDefinitionName: null,
+  calledDecisionInstanceId: null,
+  calledDecisionDefinitionName: null,
+  flowNodeType: null,
+} as const;
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -50,6 +62,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     processInstanceDetailsDiagramStore.getMetaData(flowNodeId);
   const flowNodeName = flowNodeMetaData?.name || flowNodeId;
   const {instanceMetadata, incident, incidentCount} = metaData;
+
   const {
     flowNodeInstanceId,
     startDate,
@@ -59,7 +72,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     calledDecisionInstanceId,
     calledDecisionDefinitionName,
     flowNodeType,
-  } = instanceMetadata || {};
+  } = instanceMetadata ?? NULL_METADATA;
   const rootCauseInstance = incident?.rootCauseInstance || null;
   const rootCauseDecision = incident?.rootCauseDecision || null;
 
@@ -77,12 +90,11 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
       {metaData.instanceCount !== null && metaData.instanceCount > 1 && (
         <>
           <PeterCaseSummaryHeader>
-            {`There are ${metaData.instanceCount} Instances`}
+            {`This Flow Node triggered ${metaData.instanceCount} times`}
           </PeterCaseSummaryHeader>
           <PeterCaseSummaryBody>
-            To view details for any of these,
-            <br />
-            select one Instance in the Instance History.
+            To view details for any of these, select one Instance in the
+            Instance History.
           </PeterCaseSummaryBody>
         </>
       )}
@@ -105,46 +117,27 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
           </Header>
 
           <SummaryDataKey>Flow Node Instance Key</SummaryDataKey>
+          <SummaryDataValue>{flowNodeInstanceId}</SummaryDataValue>
+          <SummaryDataKey>Execution Duration</SummaryDataKey>
           <SummaryDataValue>
-            {metaData.breadcrumb.map((item) => (
-              <Fragment key={`${flowNodeId}-${item.flowNodeType}`}>
-                <LinkButton
-                  size="small"
-                  data-testid="select-flownode"
-                  onClick={() =>
-                    flowNodeSelectionStore.selectFlowNode({
-                      flowNodeId,
-                      flowNodeType: item.flowNodeType,
-                      isMultiInstance:
-                        item.flowNodeType === 'MULTI_INSTANCE_BODY',
-                    })
-                  }
-                >
-                  {flowNodeName}
-                  {item.flowNodeType === 'MULTI_INSTANCE_BODY'
-                    ? ' (Multi Instance)'
-                    : ''}
-                </LinkButton>
-                {' › '}
-              </Fragment>
-            ))}
-            <span>{flowNodeInstanceId}</span>
+            {getExecutionDuration(startDate!, endDate)}
           </SummaryDataValue>
-          <SummaryDataKey>Start Date</SummaryDataKey>
-          <SummaryDataValue>{startDate}</SummaryDataValue>
-          <SummaryDataKey>End Date</SummaryDataKey>
-          <SummaryDataValue>{endDate || '—'}</SummaryDataValue>
           {flowNodeMetaData?.type.elementType === 'TASK_CALL_ACTIVITY' &&
             flowNodeType !== 'MULTI_INSTANCE_BODY' && (
               <>
                 <SummaryDataKey>Called Process Instance</SummaryDataKey>
-                <SummaryDataValue>
+                <SummaryDataValue data-testid="called-process-instance">
                   {calledProcessInstanceId ? (
                     <Link
                       to={Paths.processInstance(calledProcessInstanceId)}
                       title={`View ${calledProcessDefinitionName} instance ${calledProcessInstanceId}`}
                     >
-                      {`${calledProcessDefinitionName} - ${calledProcessInstanceId}`}
+                      <CalledProcessValue>
+                        <CalledProcessName>
+                          {`${calledProcessDefinitionName}`}
+                        </CalledProcessName>
+                        {` - ${calledProcessInstanceId}`}
+                      </CalledProcessValue>
                     </Link>
                   ) : (
                     'None'
@@ -173,7 +166,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
             <>
               <Divider />
               <Header>
-                <IncidentTitle>Incident</IncidentTitle>
+                <Title $variant="incident">Incident</Title>
                 <LinkButton
                   size="small"
                   onClick={() => {
@@ -194,7 +187,9 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
               {incident.errorMessage !== null && (
                 <>
                   <SummaryDataKey>Error Message</SummaryDataKey>
-                  <SummaryDataValue>{incident.errorMessage}</SummaryDataValue>
+                  <SummaryDataValue $lineClamp={2}>
+                    {incident.errorMessage}
+                  </SummaryDataValue>
                 </>
               )}
               {rootCauseInstance !== null && rootCauseDecision === null && (
@@ -232,7 +227,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
           <JSONEditorModal
             isVisible={isModalVisible}
             onClose={() => setIsModalVisible(false)}
-            title={getModalHeadline({flowNodeName, metaData})}
+            title={`Flow Node "${flowNodeName}" ${flowNodeInstanceId} Metadata`}
             value={buildMetadata(metaData.instanceMetadata, incident)}
             readOnly
           />
@@ -242,7 +237,9 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
         <>
           <Divider />
           <Header>
-            <IncidentTitle aria-label="Incidents">Incidents</IncidentTitle>
+            <Title aria-label="Incidents" $variant="incident">
+              Incidents
+            </Title>
             <LinkButton
               size="small"
               onClick={() => {
@@ -256,7 +253,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
             </LinkButton>
           </Header>
           <SummaryDataValue>
-            {`${incidentCount} incidents occured`}
+            {`${incidentCount} incidents occurred`}
           </SummaryDataValue>
         </>
       )}

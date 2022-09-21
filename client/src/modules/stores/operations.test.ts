@@ -95,7 +95,7 @@ describe('stores/operations', () => {
       ]);
     });
 
-    it('should not prepend operations and call error callback when a server error occured', async () => {
+    it('should not prepend operations and call error callback when a server error occurred', async () => {
       mockServer.use(
         rest.post('/api/batch-operations', (_, res, ctx) =>
           res.once(ctx.json(operations))
@@ -105,7 +105,7 @@ describe('stores/operations', () => {
         rest.post(
           '/api/process-instances/:instanceId/operation',
           (_, res, ctx) =>
-            res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
+            res.once(ctx.status(500), ctx.json({error: 'an error occurred'}))
         )
       );
 
@@ -123,7 +123,7 @@ describe('stores/operations', () => {
       expect(mockOnError).toHaveBeenCalled();
     });
 
-    it('should not prepend operations and call error callback when a network error occured', async () => {
+    it('should not prepend operations and call error callback when a network error occurred', async () => {
       mockServer.use(
         rest.post('/api/batch-operations', (_, res, ctx) =>
           res.once(ctx.json(operations))
@@ -191,7 +191,7 @@ describe('stores/operations', () => {
       expect(mockOnSuccess).toHaveBeenCalled();
     });
 
-    it('should not prepend operations and call error callback when a server error occured', async () => {
+    it('should not prepend operations and call error callback when a server error occurred', async () => {
       mockServer.use(
         rest.post('/api/batch-operations', (_, res, ctx) =>
           res.once(ctx.json(operations))
@@ -199,7 +199,7 @@ describe('stores/operations', () => {
       );
       mockServer.use(
         rest.post('/api/process-instances/batch-operation', (_, res, ctx) =>
-          res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
+          res.once(ctx.status(500), ctx.json({error: 'an error occurred'}))
         )
       );
 
@@ -219,7 +219,7 @@ describe('stores/operations', () => {
       expect(mockOnError).toHaveBeenCalled();
     });
 
-    it('should not prepend operations and call error callback when a network error occured', async () => {
+    it('should not prepend operations and call error callback when a network error occurred', async () => {
       mockServer.use(
         rest.post('/api/batch-operations', (_, res, ctx) =>
           res.once(ctx.json(operations))

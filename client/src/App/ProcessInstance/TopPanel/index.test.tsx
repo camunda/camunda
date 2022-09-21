@@ -125,7 +125,7 @@ describe('TopPanel', () => {
 
     processInstanceDetailsStore.init({id: 'instance_with_incident'});
     await processInstanceDetailsDiagramStore.fetchProcessXml('1');
-    expect(await screen.findByText('1 Incident occured')).toBeInTheDocument();
+    expect(await screen.findByText('1 Incident occurred')).toBeInTheDocument();
   });
 
   it('should show an error when a server error occurs', async () => {
@@ -220,8 +220,7 @@ describe('TopPanel', () => {
       await screen.findByText(/Flow Node Instance Key/)
     ).toBeInTheDocument();
 
-    expect(screen.getByText(/Start Date/)).toBeInTheDocument();
-    expect(screen.getByText(/End Date/)).toBeInTheDocument();
+    expect(screen.getByText(/Execution Duration/)).toBeInTheDocument();
 
     modificationsStore.enableModificationMode();
 

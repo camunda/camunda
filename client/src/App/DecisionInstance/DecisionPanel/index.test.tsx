@@ -52,7 +52,7 @@ describe('<DecisionPanel />', () => {
     expect(
       await screen.findByText('DecisionTable view mock')
     ).toBeInTheDocument();
-    expect(screen.queryByText('An error occured')).not.toBeInTheDocument();
+    expect(screen.queryByText('An error occurred')).not.toBeInTheDocument();
   });
 
   it('should render literal expression', async () => {
@@ -82,6 +82,6 @@ describe('<DecisionPanel />', () => {
 
     render(<DecisionPanel />, {wrapper: ThemeProvider});
 
-    expect(await screen.findByText('An error occured')).toBeInTheDocument();
+    expect(await screen.findByText('An error occurred')).toBeInTheDocument();
   });
 });

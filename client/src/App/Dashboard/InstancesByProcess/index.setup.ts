@@ -26,6 +26,6 @@ const mockWithMultipleVersions = [
   }),
 ];
 
-const mockErrorResponse = {error: 'an error occured'};
+const mockErrorResponse = {error: 'an error occurred'};
 
 export {mockWithSingleVersion, mockWithMultipleVersions, mockErrorResponse};

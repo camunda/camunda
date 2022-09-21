@@ -40,7 +40,6 @@ const mockVariables: Readonly<
 ];
 
 const mockMetaData: MetaDataEntity = {
-  breadcrumb: [],
   flowNodeId: null,
   flowNodeInstanceId: '123',
   flowNodeType: 'start-event',

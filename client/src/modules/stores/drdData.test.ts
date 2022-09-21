@@ -37,7 +37,7 @@ describe('drdDataStore', () => {
       rest.get(
         '/api/decision-instances/:decisionInstancdId/drd-data',
         (_, res, ctx) =>
-          res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
+          res.once(ctx.status(500), ctx.json({error: 'an error occurred'}))
       )
     );
 

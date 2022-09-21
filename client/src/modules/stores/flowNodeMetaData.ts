@@ -43,10 +43,7 @@ type InstanceMetaData = {
   calledDecisionDefinitionName: string | null;
 };
 
-type Breadcrumb = {flowNodeId: string; flowNodeType: string};
-
 type MetaData = {
-  breadcrumb: Breadcrumb[];
   flowNodeId: string | null;
   flowNodeInstanceId: string | null;
   flowNodeType: string | null;

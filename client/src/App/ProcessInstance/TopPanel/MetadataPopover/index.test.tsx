@@ -23,7 +23,6 @@ import {
   mockProcessXML,
 } from 'modules/testUtils';
 import {mockIncidents} from 'modules/mocks/incidents';
-import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {incidentsStore} from 'modules/stores/incidents';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
@@ -42,6 +41,13 @@ import {
 } from 'modules/mocks/metadata';
 import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
 import {LocationLog} from 'modules/utils/LocationLog';
+
+const MOCK_EXECUTION_DATE = '21 seconds';
+
+jest.mock('date-fns', () => ({
+  ...jest.requireActual('date-fns'),
+  formatDistanceToNowStrict: () => MOCK_EXECUTION_DATE,
+}));
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
@@ -112,8 +118,7 @@ describe('MetadataPopover', () => {
     expect(
       await screen.findByText(/Flow Node Instance Key/)
     ).toBeInTheDocument();
-    expect(screen.getByText(/Start Date/)).toBeInTheDocument();
-    expect(screen.getByText(/End Date/)).toBeInTheDocument();
+    expect(screen.getByText(/Execution Duration/)).toBeInTheDocument();
     expect(screen.getByText(/Type/)).toBeInTheDocument();
     expect(screen.getByText(/Error Message/)).toBeInTheDocument();
     expect(screen.getAllByText(/View/)).toHaveLength(2);
@@ -126,7 +131,9 @@ describe('MetadataPopover', () => {
     expect(
       screen.getByText(instanceMetadata!.flowNodeInstanceId)
     ).toBeInTheDocument();
-    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(
+      screen.getByText(`${MOCK_EXECUTION_DATE} (running)`)
+    ).toBeInTheDocument();
     expect(screen.getByText(incident.errorMessage)).toBeInTheDocument();
     expect(screen.getByText(incident.errorType.name)).toBeInTheDocument();
     expect(
@@ -161,8 +168,7 @@ describe('MetadataPopover', () => {
     expect(
       await screen.findByText(/Flow Node Instance Key/)
     ).toBeInTheDocument();
-    expect(screen.getByText(/Start Date/)).toBeInTheDocument();
-    expect(screen.getByText(/End Date/)).toBeInTheDocument();
+    expect(screen.getByText(/Execution Duration/)).toBeInTheDocument();
     expect(screen.getByText(/Called Process Instance/)).toBeInTheDocument();
     expect(screen.getByText(/View/)).toBeInTheDocument();
 
@@ -171,15 +177,12 @@ describe('MetadataPopover', () => {
         calledInstanceMetadata.instanceMetadata!.flowNodeInstanceId
       )
     ).toBeInTheDocument();
-    expect(screen.getAllByText(MOCK_TIMESTAMP)).toHaveLength(2);
-    expect(
-      screen.getByText(
-        `Called Process - ${
-          calledInstanceMetadata.instanceMetadata!.calledProcessInstanceId
-        }`
-      )
-    ).toBeInTheDocument();
-
+    expect(screen.getByText('Less than 1 second')).toBeInTheDocument();
+    expect(screen.getByTestId('called-process-instance')).toHaveTextContent(
+      `Called Process - ${
+        calledInstanceMetadata.instanceMetadata!.calledProcessInstanceId
+      }`
+    );
     expect(screen.queryByText(/incidentErrorType/)).not.toBeInTheDocument();
     expect(screen.queryByText(/incidentErrorMessage/)).not.toBeInTheDocument();
   });
@@ -216,7 +219,7 @@ describe('MetadataPopover', () => {
     await user.click(firstViewLink!);
 
     expect(
-      screen.getByText(/Flow Node "Activity_0zqism7" Metadata/)
+      screen.getByText(/Flow Node "Activity_0zqism7" 2251799813699889 Metadata/)
     ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
 
@@ -253,7 +256,7 @@ describe('MetadataPopover', () => {
 
     await user.click(screen.getByRole('button', {name: 'Close'}));
     await waitForElementToBeRemoved(
-      screen.getByText(/Flow Node "Activity_0zqism7" Metadata/)
+      screen.getByText(/Flow Node "Activity_0zqism7" 2251799813699889 Metadata/)
     );
   });
 
@@ -280,14 +283,14 @@ describe('MetadataPopover', () => {
     renderPopover();
 
     expect(
-      await screen.findByText(/There are 10 Instances/)
+      await screen.findByText(/This Flow Node triggered 10 times/)
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /To view details for any of these,\s*select one Instance in the Instance History./
+        /To view details for any of these, select one Instance in the Instance History./
       )
     ).toBeInTheDocument();
-    expect(screen.getByText(/3 incidents occured/)).toBeInTheDocument();
+    expect(screen.getByText(/3 incidents occurred/)).toBeInTheDocument();
     expect(screen.getByText(/View/)).toBeInTheDocument();
     expect(
       screen.queryByText(/Flow Node Instance Key/)

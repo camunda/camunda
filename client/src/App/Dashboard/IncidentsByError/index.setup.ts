@@ -38,7 +38,7 @@ const mockIncidentsByErrorWithBigErrorMessage = createIncidentsByError([
   }),
 ]);
 
-const mockErrorResponse = {error: 'an error occured'};
+const mockErrorResponse = {error: 'an error occurred'};
 
 export {
   mockIncidentsByError,

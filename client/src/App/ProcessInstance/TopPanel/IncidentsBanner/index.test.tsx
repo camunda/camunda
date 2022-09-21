@@ -53,7 +53,7 @@ describe('IncidentsBanner', () => {
 
     render(<IncidentsBanner {...mockProps} />, {wrapper: Wrapper});
 
-    expect(screen.getByText('1 Incident occured')).toBeInTheDocument();
+    expect(screen.getByText('1 Incident occurred')).toBeInTheDocument();
   });
 
   it('should show the right text for more than 1 incident', async () => {
@@ -71,6 +71,6 @@ describe('IncidentsBanner', () => {
 
     render(<IncidentsBanner {...mockProps} />, {wrapper: Wrapper});
 
-    expect(screen.getByText('2 Incidents occured')).toBeInTheDocument();
+    expect(screen.getByText('2 Incidents occurred')).toBeInTheDocument();
   });
 });

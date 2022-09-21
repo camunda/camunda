@@ -34,7 +34,7 @@ const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeInstance');
  */
 export const createIncident = (options = {}) => {
   return {
-    errorMessage: 'Some Condition error has occured',
+    errorMessage: 'Some Condition error has occurred',
     errorType: {
       name: 'Condition error',
       id: 'CONDITION_ERROR',

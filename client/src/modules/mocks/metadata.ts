@@ -39,7 +39,6 @@ const baseMetadata: MetaDataEntity = {
   flowNodeId: null,
   flowNodeType: null,
   instanceCount: null,
-  breadcrumb: [],
   incidentCount: 0,
   incident: null,
   instanceMetadata: baseInstanceMetadata,

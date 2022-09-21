@@ -21,7 +21,7 @@ const IncidentsBanner: React.FC<Props> = observer(({onClick, isOpen}) => {
   const {processInstanceId} = useProcessInstancePageParams();
   const {incidentsCount} = incidentsStore;
 
-  const errorMessage = `${pluralSuffix(incidentsCount, 'Incident')} occured`;
+  const errorMessage = `${pluralSuffix(incidentsCount, 'Incident')} occurred`;
   const title = `View ${pluralSuffix(
     incidentsCount,
     'Incident'

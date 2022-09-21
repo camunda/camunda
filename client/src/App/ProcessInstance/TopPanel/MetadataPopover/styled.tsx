@@ -13,6 +13,7 @@ const Popover = styled(BasePopover)`
   z-index: 5;
   width: 354px;
   padding: 12px 11px 11px;
+  text-align: left;
 `;
 
 const Header = styled.div`
@@ -22,21 +23,22 @@ const Header = styled.div`
   margin-bottom: 10px;
 `;
 
-const TitleStyles = css`
-  margin: 0;
-  ${styles.productiveHeading01}
-  height: 17px;
-`;
+type TitleProps = {
+  $variant?: 'default' | 'incident';
+};
 
-const Title = styled.h2`
-  ${TitleStyles}
-`;
-
-const IncidentTitle = styled.h2`
-  ${({theme}) => css`
-    ${TitleStyles}
-    color: ${theme.colors.incidentsAndErrors};
-  `}
+const Title = styled.h2<TitleProps>`
+  ${({theme, $variant = 'default'}) =>
+    css`
+      margin: 0;
+      ${styles.productiveHeading01}
+      height: 17px;
+      ${$variant === 'incident'
+        ? css`
+            color: ${theme.colors.incidentsAndErrors};
+          `
+        : null}
+    `}
 `;
 
 const Divider = styled.hr`
@@ -50,13 +52,11 @@ const Divider = styled.hr`
 
 const PeterCaseSummaryHeader = styled.div`
   font-weight: bold;
-  text-align: center;
   white-space: nowrap;
 `;
 
 const PeterCaseSummaryBody = styled.div`
   margin-top: 3px;
-  text-align: center;
   width: 100%;
 `;
 
@@ -69,14 +69,51 @@ const SummaryDataKey = styled.dt`
   margin-bottom: 4px;
 `;
 
-const SummaryDataValue = styled.dd`
-  ${styles.label01};
-  margin-left: 0;
-  white-space: nowrap;
-  overflow: hidden;
+type Props = {
+  $lineClamp?: number;
+};
+
+const SummaryDataValue = styled.dd<Props>`
+  ${({$lineClamp}) => css`
+    ${styles.label01};
+    margin-left: 0;
+    margin-bottom: 8px;
+    ${$lineClamp !== undefined &&
+    css`
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: ${$lineClamp};
+      overflow: hidden;
+    `}
+  `}
+`;
+
+const CalledProcessValue = styled.span`
+  max-width: 100%;
+  width: fit-content;
+  text-align: left;
   text-overflow: ellipsis;
-  height: 15px;
-  margin-bottom: 8px;
+  overflow: hidden;
+  display: inline-block;
+  white-space: nowrap;
+
+  &::after {
+    content: '';
+    display: block;
+    border-bottom: 1px solid currentColor;
+    margin-top: -2px;
+  }
+`;
+
+const CalledProcessName = styled.span`
+  text-align: left;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  display: inline-block;
+  white-space: nowrap;
+  max-width: 70%;
+  width: fit-content;
+  margin-bottom: -4px;
 `;
 
 export {
@@ -84,9 +121,10 @@ export {
   Header,
   Title,
   Divider,
-  IncidentTitle,
   PeterCaseSummaryHeader,
   PeterCaseSummaryBody,
   SummaryDataKey,
   SummaryDataValue,
+  CalledProcessValue,
+  CalledProcessName,
 };

@@ -346,7 +346,7 @@ describe('InstanceHeader', () => {
         res.once(ctx.json(mockInstanceWithoutOperations))
       ),
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
+        res.once(ctx.status(500), ctx.json({error: 'an error occurred'}))
       ),
       rest.get('/api/processes/:id/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))

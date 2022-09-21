@@ -74,7 +74,7 @@ describe('IncidentOperation', () => {
   it('should remove spinner and enable button when a server error occurs on an operation', async () => {
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.json({error: 'An error occured'}))
+        res.once(ctx.status(500), ctx.json({error: 'An error occurred'}))
       )
     );
 

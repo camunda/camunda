@@ -370,7 +370,7 @@ describe('stores/variables', () => {
         rest.post(
           '/api/process-instances/:instanceId/operation',
           (_, res, ctx) =>
-            res.once(ctx.status(500), ctx.json({error: 'An error occured'}))
+            res.once(ctx.status(500), ctx.json({error: 'An error occurred'}))
         )
       );
 
@@ -514,7 +514,7 @@ describe('stores/variables', () => {
         rest.post(
           '/api/process-instances/:instanceId/operation',
           (_, res, ctx) =>
-            res.once(ctx.status(500), ctx.json({error: 'An error occured'}))
+            res.once(ctx.status(500), ctx.json({error: 'An error occurred'}))
         )
       );
 

@@ -110,7 +110,7 @@ const assignApproverGroup: DecisionInstanceType = {
   decisionVersion: 1,
   evaluationDate: '2022-01-20T13:26:52.531+0000',
   processInstanceId: '777',
-  errorMessage: 'An error occured',
+  errorMessage: 'An error occurred',
   evaluatedInputs: [
     {
       id: '0',
