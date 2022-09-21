@@ -1,13 +1,20 @@
+---
+name: teardown-preview-env
 on:
   delete:
     branches:
-      - "!master"
+      - "stable/**"
+  pull_request:
+    types: [ unlabeled, closed ]
 
-name: teardown-preview-env
 jobs:
   teardown:
-    name: teardown-${{ github.event.ref }}
+    # check whether it's a branch delete stable || check whether it's unlabled || check whether the PR was closed / merged
+    if: contains( github.event.ref, 'stable/' ) || github.event.label.name == 'deploy-preview' || (github.event.action == 'closed' && contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
+    name: teardown-${{ github.head_ref || github.event.ref }} # env is not yet available here
     runs-on: ubuntu-20.04
+    env:
+      BRANCH_NAME: ${{ github.head_ref || github.event.ref }} # head_ref = branch on PR, event.ref stable/**
     steps:
       #########################################################################
       # Setup: import secrets from vault
@@ -28,11 +35,11 @@ jobs:
         uses: actions/checkout@v3
       #########################################################################
       # Tear down preview environment
-      - name: Tear down ${{ steps.params.outputs.deployment_id }} Preview Environment
+      - name: Tear down Preview Environment
         uses: ./.github/actions/deploy-preview
         with:
-          deployment_ref: ${{ github.event.ref }}
-          revision: ${{ github.ref_name }}
-          docker_tag: ci-${{ github.sha }}
+          deployment_ref: ${{ env.BRANCH_NAME }} # actual branch name, which is the targetRevision in ArgoCD
+          revision: ${{ env.BRANCH_NAME }} # doesn't matter for teardown but is required
+          docker_tag: ci-${{ github.sha }} # doesn't matter for teardown but is required
           argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
           step: stop

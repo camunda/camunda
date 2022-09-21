@@ -1,0 +1,55 @@
+---
+name: deploy-preview-env
+on: 
+  push:
+    branches:
+      - 'master'
+      - 'stable/**'
+  pull_request:
+    types: [ labeled,synchronize ]
+
+jobs:
+  deploy-preview:
+    # checks whether it was a push event = master or stable branch || check whether the labeled event was deploy-preview || check whether on new commit of PR the label deploy-preview exists
+    if: github.event_name == 'push' || github.event.label.name == 'deploy-preview' || contains( github.event.pull_request.labels.*.name, 'deploy-preview')
+    runs-on: ubuntu-20.04
+    env:
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }} # head_ref = branch on PR, ref_name if master / stable/**
+    concurrency:
+      group: pr-update-${{ github.head_ref || github.ref_name }} # env is not yet available here
+      cancel-in-progress: true
+
+    steps:
+    #########################################################################
+    # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
+    - id: sanitize
+      uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+      with:
+        branch: ${{ env.BRANCH_NAME }}
+        max_length: '50'
+    #########################################################################
+    # Setup: import secrets from vault
+    - name: Import secrets
+      id: secrets
+      uses: hashicorp/vault-action@7d98524254c38dc6892804f991526ff30905f643
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/tasklist/ci/tasklist ARGOCD_TOKEN;
+    #########################################################################
+    # Setup: checkout code. This is required because we are using
+    # composite actions and deployment manifests.
+    - name: Checkout
+      uses: actions/checkout@v3
+    #########################################################################
+    # Create a preview environment
+    - name: Deploy Preview Environment
+      uses: ./.github/actions/deploy-preview
+      with:
+        deployment_id: ${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }} # fake ternary https://github.com/actions/runner/issues/409
+        revision: ${{ env.BRANCH_NAME }}
+        docker_tag: "ci-${{ github.event.pull_request.head.sha || github.sha }}" # commit id of latest push event
+        argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}

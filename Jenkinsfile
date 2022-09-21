@@ -70,6 +70,29 @@ pipeline {
         }
       }
     }
+    stage('Deploy - Docker Image') {
+      environment {
+        IMAGE_TAG = getImageTag()
+        HARBOR_REGISTRY = credentials('camunda-nexus')
+        CI_IMAGE_TAG = getCiImageTag()
+      }
+      steps {
+        lock('zeebe-tasklist-dockerimage-upload') {
+          container('maven') {
+            configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+              sh """
+                mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:${IMAGE_TAG}
+                mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
+
+                if [ "${env.BRANCH_NAME}" = 'master' ]; then
+                  mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:latest
+                fi
+              """
+            }
+          }
+        }
+      }
+    }
     stage('Tests') {
       when {
         not {
@@ -100,34 +123,6 @@ pipeline {
     }
     stage('Deploy') {
       parallel {
-        stage('Deploy - Docker Image') {
-          when {
-            not {
-                expression { BRANCH_NAME ==~ /(.*-nodeploy)/ }
-            }
-          }
-          environment {
-            IMAGE_TAG = getImageTag()
-            HARBOR_REGISTRY = credentials('camunda-nexus')
-            CI_IMAGE_TAG = getCiImageTag()
-          }
-          steps {
-            lock('zeebe-tasklist-dockerimage-upload') {
-              container('maven') {
-                configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-                  sh """
-                    mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:${IMAGE_TAG}
-                    mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
-
-                    if [ "${env.BRANCH_NAME}" = 'master' ]; then
-                      mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${ZEEBE_TASKLIST_DOCKER_IMAGE()}:latest
-                    fi
-                  """
-                }
-              }
-            }
-          }
-        }
         stage('Deploy - Docker Image SNAPSHOT') {
           when {
               branch 'master'
@@ -167,21 +162,6 @@ pipeline {
             }
           }
         }
-      }
-    }
-    stage ('Deploy to K8s') {
-      when {
-        not {
-            expression { BRANCH_NAME ==~ /(.*-nodeploy)/ }
-        }
-      }
-      steps {
-        build job: '/deploy-branch-to-k8s-gha',
-          parameters: [
-              string(name: 'BRANCH', value: env.BRANCH_NAME),
-              string(name: 'DOCKER_TAG', value: getCiImageTag()),
-              string(name: 'REF', value: env.BRANCH_NAME),
-          ]
       }
     }
   }
