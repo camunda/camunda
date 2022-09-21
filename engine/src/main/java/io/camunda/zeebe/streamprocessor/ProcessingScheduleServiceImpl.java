@@ -92,7 +92,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
     openFuture = new CompletableActorFuture<>();
     writeRetryStrategy = new AbortableRetryStrategy(control);
     final var writerFuture = writerAsyncSupplier.get();
-    control.runOnCompletionBlockingCurrentPhase(
+    control.runOnCompletion(
         writerFuture,
         (writer, failure) -> {
           if (failure == null) {
