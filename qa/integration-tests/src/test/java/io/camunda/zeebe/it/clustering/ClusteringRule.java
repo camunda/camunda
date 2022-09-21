@@ -427,9 +427,9 @@ public class ClusteringRule extends ExternalResource {
             actorScheduler);
     brokerClient.start();
     final Gateway gateway = new Gateway(gatewayCfg, brokerClient, actorScheduler);
-    closeables.manage(actorScheduler::stop);
+    closeables.manage(actorScheduler);
     closeables.manage(gateway::stop);
-    closeables.manage(atomixCluster::stop);
+    closeables.manage(() -> atomixCluster.stop().get(10, TimeUnit.SECONDS));
     closeables.manage(brokerClient);
     return gateway;
   }
