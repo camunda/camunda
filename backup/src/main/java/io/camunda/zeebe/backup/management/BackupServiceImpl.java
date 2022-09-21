@@ -12,12 +12,14 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -127,19 +129,21 @@ final class BackupServiceImpl {
     };
   }
 
-  ActorFuture<BackupStatus> getBackupStatus(
-      final BackupIdentifier backupId, final ConcurrencyControl executor) {
-    final var future = new CompletableActorFuture<BackupStatus>();
+  public ActorFuture<Optional<BackupStatus>> getBackupStatus(
+      final int partitionId, final long checkpointId, final ConcurrencyControl executor) {
+    final var future = new CompletableActorFuture<Optional<BackupStatus>>();
     executor.run(
         () ->
             backupStore
-                .getStatus(backupId)
+                .list(
+                    new BackupIdentifierWildcardImpl(
+                        Optional.empty(), Optional.of(partitionId), Optional.of(checkpointId)))
                 .whenComplete(
-                    (status, error) -> {
-                      if (error == null) {
-                        future.complete(status);
+                    (backupStatuses, throwable) -> {
+                      if (throwable != null) {
+                        future.completeExceptionally(throwable);
                       } else {
-                        future.completeExceptionally(error);
+                        future.complete(backupStatuses.stream().max(BackupStatusCode.BY_STATUS));
                       }
                     }));
     return future;

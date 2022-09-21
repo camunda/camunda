@@ -175,31 +175,51 @@ class BackupServiceImplTest {
   void shouldGetBackupStatus() {
     // given
     final BackupStatus status = mock(BackupStatus.class);
-    when(backupStore.getStatus(any())).thenReturn(CompletableFuture.completedFuture(status));
+    when(backupStore.list(any())).thenReturn(CompletableFuture.completedFuture(List.of(status)));
 
     // when
-    final var result =
-        backupService.getBackupStatus(new BackupIdentifierImpl(1, 1, 1), concurrencyControl);
+    final var result = backupService.getBackupStatus(1, 1, concurrencyControl);
 
     // then
-    assertThat(result).succeedsWithin(Duration.ofMillis(100)).isEqualTo(status);
+    assertThat(result).succeedsWithin(Duration.ofMillis(100)).isEqualTo(Optional.of(status));
   }
 
   @Test
   void shouldCompleteFutureWhenBackupStatusFailed() {
     // given
-    when(backupStore.getStatus(any()))
+    when(backupStore.list(any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")));
 
     // when
-    final var result =
-        backupService.getBackupStatus(new BackupIdentifierImpl(1, 1, 1), concurrencyControl);
+    final var result = backupService.getBackupStatus(1, 1, concurrencyControl);
 
     // then
     assertThat(result)
         .failsWithin(Duration.ofMillis(100))
         .withThrowableOfType(ExecutionException.class)
         .withMessageContaining("Expected");
+  }
+
+  @Test
+  void shouldReturnBestStatusCode() {
+    // given
+    final BackupStatus status1 = mock(BackupStatus.class);
+    when(status1.statusCode()).thenReturn(BackupStatusCode.IN_PROGRESS);
+    final BackupStatus status2 = mock(BackupStatus.class);
+    when(status2.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
+
+    when(backupStore.list(any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of(status1, status2)));
+
+    // when
+    final var result = backupService.getBackupStatus(1, 1, concurrencyControl);
+
+    // then
+    assertThat(result)
+        .succeedsWithin(Duration.ofMillis(100))
+        .returns(
+            Optional.of(BackupStatusCode.COMPLETED),
+            backupStatus -> backupStatus.map(BackupStatus::statusCode));
   }
 
   @Test
