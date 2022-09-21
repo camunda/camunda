@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
 public final class EventSubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
@@ -93,12 +92,20 @@ public final class EventSubProcessProcessor
       final ExecutableFlowElementContainer element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
+    final var flowScopeInstance = stateBehavior.getElementInstance(flowScopeContext);
 
-    if (childContext == null
-        || (flowScopeContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
-            && stateBehavior.canBeTerminated(childContext))) {
-      final var terminated = stateTransitionBehavior.transitionToTerminated(flowScopeContext);
-      stateTransitionBehavior.onElementTerminated(element, terminated);
+    if (childContext == null || stateBehavior.canBeTerminated(childContext)) {
+
+      if (flowScopeInstance.isTerminating()) {
+        // the event subprocess was terminated by its flow scope
+        final var terminated = stateTransitionBehavior.transitionToTerminated(flowScopeContext);
+        stateTransitionBehavior.onElementTerminated(element, terminated);
+
+      } else if (flowScopeInstance.isActive()) {
+        // the child element instances were terminated by a terminate end event in the
+        // event subprocess
+        stateTransitionBehavior.completeElement(flowScopeContext);
+      }
     }
   }
 }
