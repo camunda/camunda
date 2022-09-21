@@ -89,7 +89,8 @@ public class PartitionRestoreService {
         LOG.error(
             "Partition's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
             rootDirectory);
-        CompletableFuture.failedFuture(new DirectoryNotEmptyException(rootDirectory.toString()));
+        return CompletableFuture.failedFuture(
+            new DirectoryNotEmptyException(rootDirectory.toString()));
       }
 
       // First download the contents to a temporary directory and then move it to the correct
@@ -108,7 +109,7 @@ public class PartitionRestoreService {
         return entries.findFirst().isEmpty();
       }
     }
-    return false;
+    return !Files.exists(path);
   }
 
   // While taking the backup, we add all log segments. But the backup must only have entries upto
