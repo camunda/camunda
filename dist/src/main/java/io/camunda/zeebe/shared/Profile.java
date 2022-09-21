@@ -19,6 +19,7 @@ public enum Profile {
   // application specific profiles
   BROKER("broker"),
   GATEWAY("gateway"),
+  RESTORE("restore"),
 
   // environment profiles
   TEST("test"),
