@@ -5,9 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.system.restore;
-
-import static io.camunda.zeebe.util.FileUtil.ensureDirectoryExists;
+package io.camunda.zeebe.restore;
 
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.Backup;
@@ -97,7 +95,7 @@ public class PartitionRestoreService {
       // First download the contents to a temporary directory and then move it to the correct
       // locations.
       final var tempTargetDirectory = rootDirectory.resolve("restoring-" + backupId);
-      ensureDirectoryExists(tempTargetDirectory);
+      FileUtil.ensureDirectoryExists(tempTargetDirectory);
       return CompletableFuture.completedFuture(tempTargetDirectory);
     } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
