@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.zeebe.broker.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;

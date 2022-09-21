@@ -5,8 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker;
+package io.camunda.zeebe.broker.shared;
 
+import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.shared.Profile;
 import java.io.IOException;
 import java.io.UncheckedIOException;
