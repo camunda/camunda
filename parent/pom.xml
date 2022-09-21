@@ -85,7 +85,7 @@
     <version.testcontainers>1.17.3</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
     <version.zeebe-test-container>3.5.0</version.zeebe-test-container>
-    <version.feel-scala>1.15.1</version.feel-scala>
+    <version.feel-scala>1.15.2</version.feel-scala>
     <version.dmn-scala>1.7.3</version.dmn-scala>
     <version.rest-assured>5.1.1</version.rest-assured>
     <version.spring>5.3.23</version.spring>
@@ -96,7 +96,7 @@
     <version.jqwik>1.6.5</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.8</version.json-smart>
-    <version.byte-buddy>1.12.16</version.byte-buddy>
+    <version.byte-buddy>1.12.17</version.byte-buddy>
     <version.revapi>0.27.0</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.9.2</version.immutables>
