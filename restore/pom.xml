@@ -76,6 +76,10 @@
       <artifactId>zeebe-scheduler</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-broker</artifactId>
+    </dependency>
 
   </dependencies>
 </project>
