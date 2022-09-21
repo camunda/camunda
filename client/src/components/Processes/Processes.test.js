@@ -172,3 +172,15 @@ it('should hide the link to view the dashboard if the user has no edit rights', 
   expect(node.find(EntityList).prop('columns')[4]).not.toBe('Dashboard');
   expect(node.find(EntityList).prop('data')[0].meta.length).toBe(4);
 });
+
+it('display the search info correctly', async () => {
+  const node = shallow(<Processes {...props} />);
+
+  await runAllEffects();
+
+  const text = node.find(EntityList).prop('displaySearchInfo')('', 1).props.children;
+  expect(text).toBe('1 process listed');
+
+  const textWithQuery = node.find(EntityList).prop('displaySearchInfo')('def', 1).props.children;
+  expect(textWithQuery).toBe('1 of 1 process listed');
+});

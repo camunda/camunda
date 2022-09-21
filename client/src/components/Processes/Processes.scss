@@ -8,6 +8,13 @@
     color: var(--grey-darken-23);
     margin: 30px 0 0 65px;
     flex-grow: 1;
+    min-height: 50px;
+
+    .info {
+      font-size: 14px;
+      line-height: 18px;
+      color: var(--grey-darken-33);
+    }
   }
 
   .fullscreen {
@@ -53,6 +60,14 @@
 
     .columnHeaders {
       padding-right: 0;
+
+      .meta .Icon {
+        opacity: 0.5;
+
+        &:hover {
+          opacity: 1;
+        }
+      }
 
       .meta:last-child span {
         visibility: hidden;

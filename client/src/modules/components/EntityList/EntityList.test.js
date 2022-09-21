@@ -48,7 +48,8 @@ const props = {
 it('should match snapshot', () => {
   const node = shallow(<EntityList {...props} />);
 
-  expect(node).toMatchSnapshot();
+  expect(node.find('h1')).toIncludeText(props.name);
+  expect(node.find('ListItem').length).toBe(3);
 });
 
 it('should show a loading indicator', () => {
@@ -330,10 +331,14 @@ it('should pass the selection state to action', () => {
   expect(spy).toHaveBeenCalledWith(true);
 });
 
-it('should display extra text in the header if specified', () => {
-  const node = shallow(<EntityList {...props} headerText="foo" />);
+it('should display search info according to the specified format', () => {
+  const node = shallow(
+    <EntityList {...props} displaySearchInfo={(query, count) => `${query} shows ${count} item`} />
+  );
 
-  expect(node.find('.header .headerText')).toIncludeText('foo');
+  node.find('SearchField').simulate('change', 'adashboard');
+
+  expect(node.find('.header .searchInfo')).toIncludeText('adashboard shows 1 item');
 });
 
 it('should add "hidden" classname to select all checkbox if there are no bulk actions', () => {
