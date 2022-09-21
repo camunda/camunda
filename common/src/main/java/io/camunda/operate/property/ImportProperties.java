@@ -24,6 +24,8 @@ public class ImportProperties {
 
   public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
 
+  public static final int DEFAULT_IMPORT_POSITION_UPDATE_INTERVAL = 10000;
+
   private int threadsCount = DEFAULT_IMPORT_THREADS_COUNT;
 
   private int postImportThreadsCount = DEFAULT_POST_IMPORT_THREADS_COUNT;
@@ -42,6 +44,8 @@ public class ImportProperties {
   private int schedulerBackoff = DEFAULT_SCHEDULER_BACKOFF;
 
   private int flowNodeTreeCacheSize = DEFAULT_FLOW_NODE_TREE_CACHE_SIZE;
+
+  private int importPositionUpdateInterval = DEFAULT_IMPORT_POSITION_UPDATE_INTERVAL;
 
   /**
    * Indicates, whether loading of Zeebe data should start on startup.
@@ -127,4 +131,13 @@ public class ImportProperties {
     this.variableSizeThreshold = variableSizeThreshold;
     return this;
   }
+
+  public int getImportPositionUpdateInterval() {
+    return importPositionUpdateInterval;
+  }
+
+  public void setImportPositionUpdateInterval(int importPositionUpdateInterval) {
+    this.importPositionUpdateInterval = importPositionUpdateInterval;
+  }
+
 }

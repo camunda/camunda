@@ -46,4 +46,13 @@ public class ImportConfig {
     executor.initialize();
     return executor;
   }
+
+  @Bean("importPositionUpdateThreadPoolExecutor")
+  public ThreadPoolTaskScheduler getImportPositionUpdateTaskExecutor() {
+    ThreadPoolTaskScheduler executor = new ThreadPoolTaskScheduler();
+    executor.setPoolSize(1);
+    executor.setThreadNamePrefix("import_position_update_");
+    executor.initialize();
+    return executor;
+  }
 }

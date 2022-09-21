@@ -196,14 +196,16 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     tester = beanFactory.getBean(OperateTester.class, zeebeClient, mockMvcTestRule, elasticsearchTestRule);
 
     processCache.clearCache();
+    importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
     importPositionHolder.clearCache();
+    importPositionHolder.scheduleImportPositionUpdateTask();
     partitionHolder.setZeebeClient(getClient());
-
   }
 
   @After
   public void after() {
     processCache.clearCache();
+    importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
     importPositionHolder.clearCache();
   }
 
