@@ -14,14 +14,14 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
-import io.zeebe.containers.ZeebeGatewayNode;
+import io.zeebe.containers.ZeebeNode;
 
 /**
- * Java interface for the gateway's rebalance actuator. To instantiate this interface, you can use
+ * Java interface for the node's rebalance actuator. To instantiate this interface, you can use
  * {@link Feign}; see {@link #of(String)} as an example.
  *
- * <p>You can use one of {@link #of(String)} or {@link #of(ZeebeGatewayNode)} to create a new client
- * to use for yourself.
+ * <p>You can use one of {@link #of(String)} or {@link #of(ZeebeNode)} to create a new client to use
+ * for yourself.
  *
  * <p>Adding a new method is simple: simply define the input/output here as you normally would, and
  * make sure to add the correct JSON encoding headers (`Accept` for the response type,
@@ -31,14 +31,12 @@ import io.zeebe.containers.ZeebeGatewayNode;
 public interface RebalanceActuator {
 
   /**
-   * Returns a {@link RebalanceActuator} instance using the given node as upstream. This only
-   * accepts {@link ZeebeGatewayNode} at the moment, as only a node with a gateway can use this
-   * actuator.
+   * Returns a {@link RebalanceActuator} instance using the given node as upstream.
    *
    * @param node the node to connect to
    * @return a new instance of {@link RebalanceActuator}
    */
-  static RebalanceActuator of(final ZeebeGatewayNode<?> node) {
+  static RebalanceActuator of(final ZeebeNode<?> node) {
     final var endpoint =
         String.format("http://%s/actuator/rebalance", node.getExternalMonitoringAddress());
     return of(endpoint);

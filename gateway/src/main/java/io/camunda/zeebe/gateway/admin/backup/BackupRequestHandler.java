@@ -41,11 +41,7 @@ public final class BackupRequestHandler implements BackupApi {
                             .map(partitionId -> getBackupRequestForPartition(backupId, partitionId))
                             .map(brokerClient::sendRequestWithRetry)
                             .toArray(CompletableFuture[]::new))
-                    .thenApply(ignore -> backupId))
-        .exceptionallyCompose(
-            error ->
-                CompletableFuture.failedFuture(
-                    new BackupOperationFailedException("take", backupId, error.getCause())));
+                    .thenApply(ignore -> backupId));
   }
 
   @Override
@@ -61,11 +57,7 @@ public final class BackupRequestHandler implements BackupApi {
 
               return CompletableFuture.allOf(statusesReceived.toArray(CompletableFuture[]::new))
                   .thenApply(ignore -> aggregatePartitionStatus(backupId, statusesReceived));
-            })
-        .exceptionallyCompose(
-            error ->
-                CompletableFuture.failedFuture(
-                    new BackupOperationFailedException("query", backupId, error.getCause())));
+            });
   }
 
   private CompletionStage<BrokerClusterState> checkTopologyComplete() {

@@ -16,6 +16,9 @@ public interface BackupApi {
    * partitions have processed the request. Returned future fails if the request was not processed
    * by at least one partition.
    *
+   * <p>TODO: check if it makes more sense to return a {@link java.util.concurrent.Future} if we're
+   * always blocking on the result and never combining.
+   *
    * @param backupId the id of the backup to be taken
    * @return the backupId
    */
@@ -24,6 +27,9 @@ public interface BackupApi {
   /**
    * Returns the status of the backup. The future fails if the request was not processed by at least
    * one partition.
+   *
+   * <p>TODO: check if it makes more sense to return a {@link java.util.concurrent.Future} if we're
+   * always blocking on the result and never combining.
    *
    * @return the status of the backup
    */
