@@ -19,6 +19,7 @@ import {fetchFlowNodeInstances} from 'modules/api/flowNodeInstances';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {isEqual} from 'lodash';
+import {modificationsStore} from './modifications';
 
 const MAX_PROCESS_INSTANCES_STORED = 200;
 const MAX_INSTANCES_PER_REQUEST = 50;
@@ -295,7 +296,9 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     } catch (error) {
       this.handleFetchFailure(error);
     } finally {
-      this.startPolling();
+      if (!modificationsStore.isModificationModeEnabled) {
+        this.startPolling();
+      }
     }
   };
 

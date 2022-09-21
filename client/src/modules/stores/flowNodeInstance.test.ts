@@ -14,6 +14,7 @@ import {
   createMultiInstanceFlowNodeInstances,
 } from 'modules/testUtils';
 import {flowNodeInstanceStore} from './flowNodeInstance';
+import {modificationsStore} from './modifications';
 
 const PROCESS_INSTANCE_ID = 'processInstance';
 const mockFlowNodeInstances =
@@ -231,6 +232,7 @@ describe('stores/flowNodeInstance', () => {
     afterEach(() => {
       pollInstancesSpy.mockReset();
       stopPollingSpy.mockReset();
+      modificationsStore.reset();
       jest.clearAllTimers();
       jest.useRealTimers();
     });
@@ -310,6 +312,39 @@ describe('stores/flowNodeInstance', () => {
 
       jest.runOnlyPendingTimers();
       expect(stopPollingSpy).toHaveBeenCalled();
+      expect(pollInstancesSpy).not.toHaveBeenCalled();
+    });
+
+    it('should not start polling after flow node instances are fetched during modification mode', async () => {
+      modificationsStore.enableModificationMode();
+      mockServer.use(
+        rest.post('/api/flow-node-instances', (_, res, ctx) =>
+          res.once(ctx.status(500), ctx.json({}))
+        )
+      );
+
+      processInstanceDetailsStore.setProcessInstance(
+        createInstance({
+          id: PROCESS_INSTANCE_ID,
+          state: 'ACTIVE',
+        })
+      );
+
+      flowNodeInstanceStore.fetchFlowNodeInstances({
+        treePath: 'test',
+      });
+
+      await waitFor(() =>
+        expect(flowNodeInstanceStore.state.status).toBe('error')
+      );
+      jest.runOnlyPendingTimers();
+
+      mockServer.use(
+        rest.post('/api/flow-node-instances', (_, res, ctx) =>
+          res.once(ctx.json(mockFlowNodeInstances.level1))
+        )
+      );
+
       expect(pollInstancesSpy).not.toHaveBeenCalled();
     });
   });
