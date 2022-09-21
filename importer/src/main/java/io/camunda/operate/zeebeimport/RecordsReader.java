@@ -271,7 +271,10 @@ public class RecordsReader implements Runnable {
   }
 
   private SearchResponse withTimer(Callable<SearchResponse> callable) throws Exception {
-    return metrics.getTimer(Metrics.TIMER_NAME_IMPORT_QUERY).recordCallable(callable);
+    return metrics.getTimer(Metrics.TIMER_NAME_IMPORT_QUERY,
+        Metrics.TAG_KEY_TYPE, importValueType.name(),
+        Metrics.TAG_KEY_PARTITION, String.valueOf(partitionId))
+    .recordCallable(callable);
   }
 
   public boolean tryToScheduleImportJob(final ImportJob importJob, final boolean skipPendingJob) {

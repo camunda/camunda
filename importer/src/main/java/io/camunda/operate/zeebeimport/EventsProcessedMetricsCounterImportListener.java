@@ -29,8 +29,10 @@ public class EventsProcessedMetricsCounterImportListener implements ImportListen
       metrics.recordCounts(Metrics.COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI, importBatch.getFinishedWiCount());
     }
     if (importBatch.getScheduledTime() != null) {
-      metrics.getTimer(TIMER_NAME_IMPORT_PROCESS_BATCH)
-          .record(Duration.between(importBatch.getScheduledTime(), OffsetDateTime.now()));
+      metrics.getTimer(TIMER_NAME_IMPORT_PROCESS_BATCH,
+          Metrics.TAG_KEY_TYPE, importBatch.getImportValueType().name(),
+          Metrics.TAG_KEY_PARTITION, String.valueOf(importBatch.getPartitionId()))
+      .record(Duration.between(importBatch.getScheduledTime(), OffsetDateTime.now()));
     }
   }
 
@@ -39,8 +41,10 @@ public class EventsProcessedMetricsCounterImportListener implements ImportListen
     metrics.recordCounts(Metrics.COUNTER_NAME_EVENTS_PROCESSED, importBatch.getRecordsCount(),
         Metrics.TAG_KEY_TYPE, importBatch.getImportValueType().toString(), Metrics.TAG_KEY_PARTITION, String.valueOf(importBatch.getPartitionId()), Metrics.TAG_KEY_STATUS, Metrics.TAG_VALUE_FAILED);
     if (importBatch.getScheduledTime() != null) {
-      metrics.getTimer(TIMER_NAME_IMPORT_PROCESS_BATCH)
-          .record(Duration.between(importBatch.getScheduledTime(), OffsetDateTime.now()));
+      metrics.getTimer(TIMER_NAME_IMPORT_PROCESS_BATCH,
+          Metrics.TAG_KEY_TYPE, importBatch.getImportValueType().name(),
+          Metrics.TAG_KEY_PARTITION, String.valueOf(importBatch.getPartitionId()))
+      .record(Duration.between(importBatch.getScheduledTime(), OffsetDateTime.now()));
     }
   }
 

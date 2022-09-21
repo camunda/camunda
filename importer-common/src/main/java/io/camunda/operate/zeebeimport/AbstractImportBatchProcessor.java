@@ -25,19 +25,35 @@ public abstract class AbstractImportBatchProcessor implements ImportBatchProcess
   @Override
   public void performImport(ImportBatch importBatch) throws PersistenceException {
     BulkRequest bulkRequest = new BulkRequest();
-    processZeebeRecords(importBatch, bulkRequest);
     try {
-      withTimer(() -> {
+      withProcessingTimer(() -> {
+        processZeebeRecords(importBatch, bulkRequest);
+        return null;
+      }, importBatch);
+
+      withImportIndexQueryTimer(() -> {
         ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
         return null;
-      });
+      }, importBatch);
+
     } catch (Exception e) {
       throw new PersistenceException(e);
     }
   }
 
-  private void withTimer(Callable<Void> callable) throws Exception {
-    metrics.getTimer(Metrics.TIMER_NAME_IMPORT_INDEX_QUERY).recordCallable(callable);
+  private void withProcessingTimer(final Callable<Void> callable, final ImportBatch importBatch) throws Exception {
+    withTimer(callable, Metrics.TIMER_NAME_IMPORT_PROCESSING_DURATION, importBatch);
+  }
+
+  private void withImportIndexQueryTimer(Callable<Void> callable, final ImportBatch importBatch) throws Exception {
+    withTimer(callable, Metrics.TIMER_NAME_IMPORT_INDEX_QUERY, importBatch);
+  }
+
+  private void withTimer(final Callable<Void> callable, String timerName, final ImportBatch importBatch) throws Exception {
+    metrics.getTimer(timerName,
+        Metrics.TAG_KEY_TYPE, importBatch.getImportValueType().name(),
+        Metrics.TAG_KEY_PARTITION, String.valueOf(importBatch.getPartitionId()))
+    .recordCallable(callable);
   }
 
   /**

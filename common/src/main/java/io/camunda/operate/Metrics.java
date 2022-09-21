@@ -33,9 +33,12 @@ public class Metrics {
   public static final String TIMER_NAME_IMPORT_PROCESS_BATCH = OPERATE_NAMESPACE + "import.process.batch";
   public static final String TIMER_NAME_IMPORT_TIME = OPERATE_NAMESPACE + "import.time";
   public static final String TIMER_NAME_IMPORT_JOB_SCHEDULED_TIME = OPERATE_NAMESPACE + "import.job.scheduled";
+  public static final String TIMER_NAME_IMPORT_PROCESSING_DURATION = OPERATE_NAMESPACE + "import.processing.duration";
   public static final String TIMER_NAME_ARCHIVER_QUERY = OPERATE_NAMESPACE + "archiver.query";
   public static final String TIMER_NAME_ARCHIVER_REINDEX_QUERY = OPERATE_NAMESPACE + "archiver.reindex.query";
   public static final String TIMER_NAME_ARCHIVER_DELETE_QUERY = OPERATE_NAMESPACE + "archiver.delete.query";
+
+
   // Counters:
   public static final String COUNTER_NAME_EVENTS_PROCESSED = "events.processed";
   public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI = "events.processed.finished.process.instances";

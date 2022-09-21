@@ -135,7 +135,7 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
     final var currentTime = OffsetDateTime.now().toInstant().toEpochMilli();
     zeebeRecords.forEach(record -> metrics.getTimer(
       Metrics.TIMER_NAME_IMPORT_TIME,
-      Metrics.TAG_KEY_TYPE, record.getValueType().toString(),
+      Metrics.TAG_KEY_TYPE, record.getValueType().name(),
       Metrics.TAG_KEY_PARTITION, String.valueOf(record.getPartitionId())
     ).record(currentTime - record.getTimestamp(), TimeUnit.MILLISECONDS));
   }
