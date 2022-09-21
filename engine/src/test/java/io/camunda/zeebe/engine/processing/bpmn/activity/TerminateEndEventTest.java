@@ -286,4 +286,78 @@ public final class TerminateEndEventTest {
                 BpmnElementType.END_EVENT, "end_after_A", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
+
+  @Test
+  public void shouldCancelChildProcessInstance() {
+    // given
+    final var childProcessId = brokerClassRuleHelper.getBpmnProcessId();
+
+    final var childProcess =
+        Bpmn.createExecutableProcess(childProcessId)
+            .startEvent()
+            .parallelGateway("fork")
+            .userTask("A")
+            .endEvent("none-end")
+            .moveToNode("fork")
+            .serviceTask("B", serviceTask -> serviceTask.zeebeJobType("B"))
+            .endEvent("terminate-end", EndEventBuilder::terminate)
+            .done();
+
+    final var parentProcess =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .callActivity("C", callActivity -> callActivity.zeebeProcessId(childProcessId))
+            .sequenceFlowId("to_end_after_C")
+            .endEvent("end_after_C")
+            .done();
+
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource("parent.bpmn", parentProcess)
+        .withXmlResource("child.bpmn", childProcess)
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var childProcessInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getKey();
+
+    ENGINE_RULE.job().ofInstance(childProcessInstanceKey).withType("B").complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKeyOrParentProcessInstanceKey(processInstanceKey)
+                .limit(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .extracting(
+            record -> record.getValue().getBpmnElementType(),
+            record -> record.getValue().getElementId(),
+            Record::getIntent)
+        .describedAs(
+            "Expect to terminate all element instances in the child process instance when reaching the terminate end event")
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, "B", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.END_EVENT,
+                "terminate-end",
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED))
+        .describedAs("Expect to complete the child process instance and the call activity")
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, childProcessId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.CALL_ACTIVITY, "C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.SEQUENCE_FLOW,
+                "to_end_after_C",
+                ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(
+                BpmnElementType.END_EVENT, "end_after_C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
 }
