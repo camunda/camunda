@@ -23,7 +23,6 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
-import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import java.util.Arrays;
@@ -37,28 +36,6 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process").done(),
         singletonList(expect("process", "Must have at least one start event"))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .endEvent("end")
-            .signalEventDefinition("foo")
-            .id("eventDefinition")
-            .done(),
-        Arrays.asList(
-            expect("end", "End events must be one of: none, error or message"),
-            expect("eventDefinition", "Event definition of this type is not supported"))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .endEvent()
-            .serviceTask("task", tb -> tb.zeebeJobType("task"))
-            .done(),
-        singletonList(
-            expect(
-                EndEvent.class,
-                "End events must not have outgoing sequence flows to other elements."))
       },
       {
         Bpmn.createExecutableProcess("process")
