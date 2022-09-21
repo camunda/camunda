@@ -12,12 +12,15 @@ import static org.assertj.core.groups.Tuple.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.EndEventBuilder;
+import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
@@ -28,6 +31,7 @@ public final class TerminateEndEventTest {
 
   @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
+  @Rule public final BrokerClassRuleHelper brokerClassRuleHelper = new BrokerClassRuleHelper();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -167,6 +171,100 @@ public final class TerminateEndEventTest {
                 ProcessInstanceIntent.ELEMENT_COMPLETED))
         .describedAs(
             "Expect that the element instances outside of the subprocess are not terminated")
+        .doesNotContain(
+            tuple(BpmnElementType.SERVICE_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED));
+
+    ENGINE_RULE.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            record -> record.getValue().getBpmnElementType(),
+            record -> record.getValue().getElementId(),
+            Record::getIntent)
+        .describedAs(
+            "Expect to complete the process instance after all element instances are completed")
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, "A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.END_EVENT, "end_after_A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCancelElementInstanceInEventSubprocess() {
+    // given
+    final var messageName = brokerClassRuleHelper.getMessageName();
+    final var correlationKey = brokerClassRuleHelper.getCorrelationValue();
+
+    final Consumer<EventSubProcessBuilder> eventSubprocessBuilder =
+        eventSubprocess ->
+            eventSubprocess
+                .startEvent()
+                .interrupting(false)
+                .message(message -> message.name(messageName).zeebeCorrelationKeyExpression("key"))
+                .parallelGateway("fork")
+                .userTask("B")
+                .endEvent("end_after_B")
+                .moveToNode("fork")
+                .serviceTask("C", serviceTask -> serviceTask.zeebeJobType("C"))
+                .endEvent("terminate-end", EndEventBuilder::terminate);
+
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .eventSubProcess("event_subprocess", eventSubprocessBuilder)
+            .startEvent()
+            .serviceTask("A", serviceTask -> serviceTask.zeebeJobType("A"))
+            .endEvent("end_after_A")
+            .done();
+
+    ENGINE_RULE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE_RULE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", correlationKey)
+            .create();
+
+    ENGINE_RULE
+        .message()
+        .withName(messageName)
+        .withCorrelationKey(correlationKey)
+        .withTimeToLive(Duration.ofHours(1))
+        .publish();
+
+    ENGINE_RULE.job().ofInstance(processInstanceKey).withType("C").complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit("event_subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .extracting(
+            record -> record.getValue().getBpmnElementType(),
+            record -> record.getValue().getElementId(),
+            Record::getIntent)
+        .describedAs(
+            "Expect to terminate all element instances in the event subprocess when reaching the terminate end event")
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, "C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.END_EVENT,
+                "terminate-end",
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED))
+        .describedAs("Expect to complete the event subprocess")
+        .contains(
+            tuple(
+                BpmnElementType.EVENT_SUB_PROCESS,
+                "event_subprocess",
+                ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs(
+            "Expect that the element instances outside of the event subprocess are not terminated")
         .doesNotContain(
             tuple(BpmnElementType.SERVICE_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED));
 
