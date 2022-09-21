@@ -35,6 +35,7 @@ import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -102,6 +103,21 @@ describe('Instance', () => {
       ),
       rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
         res(ctx.json(statistics))
+      ),
+      rest.get(
+        '/api/process-instances/:processInstanceId/statistics',
+        (_, res, ctx) =>
+          res(
+            ctx.json([
+              {
+                activityId: 'taskD',
+                active: 1,
+                incidents: 1,
+                completed: 0,
+                canceled: 0,
+              },
+            ])
+          )
       ),
       rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res(
@@ -453,7 +469,7 @@ describe('Instance', () => {
   );
 
   (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
-    'should display loading overlay when a flow node modification is made',
+    'should display loading overlay when an add token modification is made',
     async () => {
       mockServer.use(
         rest.get('/api/process-instances/:id', (_, res, ctx) =>
@@ -497,14 +513,39 @@ describe('Instance', () => {
 
       expect(await screen.findByTestId('badge-plus-icon')).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', {name: /undo/i}));
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    }
+  );
 
+  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
+    'should display loading overlay when a cancel token modification is made',
+    async () => {
       mockServer.use(
+        rest.get('/api/process-instances/:id', (_, res, ctx) =>
+          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
+        ),
         rest.post(
           '/api/process-instances/:instanceId/flow-node-metadata',
           (_, res, ctx) => res.once(ctx.json(undefined))
         )
       );
+
+      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+      await waitForElementToBeRemoved(
+        screen.getByTestId('instance-header-skeleton')
+      );
+
+      storeStateLocally({
+        [`hideModificationHelperModal`]: true,
+      });
+      await user.click(
+        screen.getByRole('button', {
+          name: /modify instance/i,
+        })
+      );
+
+      jest.useFakeTimers();
 
       flowNodeSelectionStore.selectFlowNode({
         flowNodeId: 'taskD',
@@ -522,14 +563,39 @@ describe('Instance', () => {
       ).not.toBeInTheDocument();
       expect(await screen.findByTestId('badge-minus-icon')).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', {name: /undo/i}));
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    }
+  );
 
+  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
+    'should display loading overlay when a move token modification is made',
+    async () => {
       mockServer.use(
+        rest.get('/api/process-instances/:id', (_, res, ctx) =>
+          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
+        ),
         rest.post(
           '/api/process-instances/:instanceId/flow-node-metadata',
           (_, res, ctx) => res.once(ctx.json(undefined))
         )
       );
+
+      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+      await waitForElementToBeRemoved(
+        screen.getByTestId('instance-header-skeleton')
+      );
+
+      storeStateLocally({
+        [`hideModificationHelperModal`]: true,
+      });
+      await user.click(
+        screen.getByRole('button', {
+          name: /modify instance/i,
+        })
+      );
+
+      jest.useFakeTimers();
 
       flowNodeSelectionStore.selectFlowNode({
         flowNodeId: 'taskD',
@@ -588,6 +654,11 @@ describe('Instance', () => {
         'pollInstances'
       );
 
+      const handlePollingProcessInstanceDetailStatisticsSpy = jest.spyOn(
+        processInstanceDetailsStatisticsStore,
+        'handlePolling'
+      );
+
       mockServer.use(
         rest.get('/api/process-instances/:id', (_, res, ctx) =>
           res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
@@ -609,6 +680,9 @@ describe('Instance', () => {
       expect(handlePollingFlowNodeStatesSpy).toHaveBeenCalledTimes(0);
       expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
       expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
+      expect(
+        handlePollingProcessInstanceDetailStatisticsSpy
+      ).toHaveBeenCalledTimes(0);
 
       clearPollingStates();
       jest.runOnlyPendingTimers();
@@ -618,6 +692,9 @@ describe('Instance', () => {
       expect(handlePollingFlowNodeStatesSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+      expect(
+        handlePollingProcessInstanceDetailStatisticsSpy
+      ).toHaveBeenCalledTimes(1);
 
       await waitFor(() => {
         expect(variablesStore.state.status).toBe('fetched');
@@ -641,6 +718,9 @@ describe('Instance', () => {
       expect(handlePollingFlowNodeStatesSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+      expect(
+        handlePollingProcessInstanceDetailStatisticsSpy
+      ).toHaveBeenCalledTimes(1);
 
       clearPollingStates();
       jest.runOnlyPendingTimers();
@@ -651,6 +731,9 @@ describe('Instance', () => {
       expect(handlePollingFlowNodeStatesSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+      expect(
+        handlePollingProcessInstanceDetailStatisticsSpy
+      ).toHaveBeenCalledTimes(1);
 
       await user.click(screen.getByTestId('discard-all-button'));
       await user.click(screen.getByTestId('discard-button'));
@@ -671,6 +754,9 @@ describe('Instance', () => {
       expect(handlePollingFlowNodeStatesSpy).toHaveBeenCalledTimes(2);
       expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(2);
       expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(2);
+      expect(
+        handlePollingProcessInstanceDetailStatisticsSpy
+      ).toHaveBeenCalledTimes(2);
 
       jest.clearAllTimers();
       jest.useRealTimers();

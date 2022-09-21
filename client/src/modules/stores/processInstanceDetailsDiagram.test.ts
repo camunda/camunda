@@ -95,6 +95,7 @@ describe('stores/processInstanceDiagram', () => {
         eventType: undefined,
         isMultiInstance: false,
         multiInstanceType: undefined,
+        isProcessEndEvent: false,
         inputMappings: [],
         outputMappings: [],
       },
@@ -109,6 +110,7 @@ describe('stores/processInstanceDiagram', () => {
         eventType: undefined,
         isMultiInstance: false,
         multiInstanceType: undefined,
+        isProcessEndEvent: false,
         inputMappings: [],
         outputMappings: [],
       },
@@ -123,6 +125,7 @@ describe('stores/processInstanceDiagram', () => {
         eventType: undefined,
         isMultiInstance: false,
         multiInstanceType: undefined,
+        isProcessEndEvent: true,
         inputMappings: [],
         outputMappings: [],
       },
@@ -323,6 +326,7 @@ describe('stores/processInstanceDiagram', () => {
       'service-task-5',
       'service-task-6',
       'intermediate-throw',
+      'multi-instance-service-task',
     ]);
 
     expect(processInstanceDetailsDiagramStore.cancellableFlowNodes).toEqual([
@@ -348,6 +352,7 @@ describe('stores/processInstanceDiagram', () => {
       'service-task-5',
       'service-task-6',
       'intermediate-throw',
+      'multi-instance-service-task',
       'message-boundary',
     ]);
 

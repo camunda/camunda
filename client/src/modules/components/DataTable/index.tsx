@@ -11,6 +11,7 @@ import {Container, THead, TH, TR, TD} from './styled';
 
 type Column = {
   id: string;
+  dataTestId?: string;
   cellContent: string | React.ReactNode;
   isBold?: boolean;
   width?: string;
@@ -46,8 +47,9 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
             {rows.map(({id, columns}) => {
               return (
                 <TR key={id}>
-                  {columns.map(({id, cellContent, isBold}) => (
+                  {columns.map(({id, dataTestId, cellContent, isBold}) => (
                     <TD
+                      data-testid={dataTestId}
                       key={id}
                       $isBold={isBold}
                       $hasFixedColumnWidths={hasFixedColumnWidths}

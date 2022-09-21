@@ -42,8 +42,6 @@ type State = {
   status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
 };
 
-type FlowNodeState = 'active' | 'incidents' | 'canceled' | 'completed';
-
 const DEFAULT_STATE: State = {
   statistics: [],
   diagramModel: null,
@@ -250,5 +248,4 @@ class ProcessDiagram extends NetworkReconnectionHandler {
   }
 }
 
-export type {FlowNodeState};
 export const processDiagramStore = new ProcessDiagram();

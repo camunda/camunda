@@ -23,6 +23,8 @@ type OperationEntityType =
   | 'ADD_VARIABLE'
   | 'MODIFY_PROCESS_INSTANCE';
 
+type FlowNodeState = 'active' | 'incidents' | 'canceled' | 'completed';
+
 type InstanceEntityState =
   | 'ACTIVE'
   | 'COMPLETED'

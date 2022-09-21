@@ -17,11 +17,13 @@ import {
   createAddVariableModification,
   createEditVariableModification,
 } from 'modules/mocks/modifications';
+import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 
 describe('stores/modifications', () => {
   afterEach(() => {
     modificationsStore.reset();
     processInstanceDetailsDiagramStore.reset();
+    processInstanceDetailsStatisticsStore.reset();
     flowNodeStatesStore.reset();
   });
 
@@ -299,6 +301,39 @@ describe('stores/modifications', () => {
   });
 
   it('should get modifications by flow node', async () => {
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessForModifications))
+      ),
+
+      rest.get(
+        '/api/process-instances/:processInstanceId/statistics',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              {
+                activityId: 'multi-instance-subprocess',
+                active: 0,
+                incidents: 0,
+                completed: 0,
+                canceled: 0,
+              },
+              {
+                activityId: 'subprocess-service-task',
+                active: 2,
+                incidents: 1,
+                completed: 0,
+                canceled: 0,
+              },
+            ])
+          )
+      )
+    );
+    await processInstanceDetailsDiagramStore.fetchProcessXml(
+      'processInstanceId'
+    );
+    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
+
     modificationsStore.addModification({
       type: 'token',
       payload: {
@@ -365,30 +400,65 @@ describe('stores/modifications', () => {
       },
     });
 
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'CANCEL_TOKEN',
+        flowNode: {id: 'multi-instance-subprocess', name: 'flow-node-7'},
+        affectedTokenCount: 0,
+      },
+    });
+
     expect(modificationsStore.modificationsByFlowNode).toEqual({
       flowNode1: {
         cancelledTokens: 0,
         newTokens: 2,
+        cancelledChildTokens: 0,
       },
       flowNode2: {
         cancelledTokens: 3,
         newTokens: 0,
+        cancelledChildTokens: 0,
       },
       flowNode3: {
         cancelledTokens: 3,
         newTokens: 0,
+        cancelledChildTokens: 0,
       },
       flowNode4: {
         cancelledTokens: 0,
         newTokens: 3,
+        cancelledChildTokens: 0,
       },
       flowNode5: {
         cancelledTokens: 2,
         newTokens: 1,
+        cancelledChildTokens: 0,
       },
       flowNode6: {
         cancelledTokens: 0,
         newTokens: 2,
+        cancelledChildTokens: 0,
+      },
+      'multi-instance-subprocess': {
+        cancelledChildTokens: 3,
+        cancelledTokens: 0,
+        newTokens: 0,
+      },
+      'subprocess-end-task': {
+        cancelledChildTokens: 0,
+        cancelledTokens: 0,
+        newTokens: 0,
+      },
+      'subprocess-service-task': {
+        cancelledChildTokens: 0,
+        cancelledTokens: 3,
+        newTokens: 0,
+      },
+      'subprocess-start-1': {
+        cancelledChildTokens: 0,
+        cancelledTokens: 0,
+        newTokens: 0,
       },
     });
   });
@@ -447,6 +517,26 @@ describe('stores/modifications', () => {
   });
 
   it('should move tokens', async () => {
+    mockServer.use(
+      rest.get(
+        '/api/process-instances/:processInstanceId/statistics',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              {
+                activityId: 'flowNode1',
+                active: 2,
+                incidents: 0,
+                completed: 0,
+                canceled: 0,
+              },
+            ])
+          )
+      )
+    );
+
+    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
+
     expect(modificationsStore.modificationsByFlowNode).toEqual({});
     expect(
       modificationsStore.state.sourceFlowNodeIdForMoveOperation
@@ -463,10 +553,12 @@ describe('stores/modifications', () => {
       flowNode1: {
         cancelledTokens: 2,
         newTokens: 0,
+        cancelledChildTokens: 0,
       },
       flowNode2: {
         cancelledTokens: 0,
         newTokens: 2,
+        cancelledChildTokens: 0,
       },
     });
 
@@ -491,8 +583,24 @@ describe('stores/modifications', () => {
               'subprocess-start-1': 'COMPLETED',
               'subprocess-service-task': 'INCIDENT',
               'service-task-7': 'ACTIVE',
+              'multi-instance-service-task': 'ACTIVE',
               'message-boundary': 'ACTIVE',
             })
+          )
+      ),
+      rest.get(
+        '/api/process-instances/:processInstanceId/statistics',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              {
+                activityId: 'multi-instance-service-task',
+                active: 2,
+                incidents: 0,
+                completed: 0,
+                canceled: 0,
+              },
+            ])
           )
       )
     );
@@ -500,17 +608,20 @@ describe('stores/modifications', () => {
       'processInstanceId'
     );
     await flowNodeStatesStore.fetchFlowNodeStates('processInstanceId');
-    modificationsStore.startMovingToken('multi-instance-subprocess');
+    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
+    modificationsStore.startMovingToken('multi-instance-service-task');
     modificationsStore.finishMovingToken('service-task-7');
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
-      'multi-instance-subprocess': {
+      'multi-instance-service-task': {
         cancelledTokens: 2,
         newTokens: 0,
+        cancelledChildTokens: 0,
       },
       'service-task-7': {
         cancelledTokens: 0,
         newTokens: 1,
+        cancelledChildTokens: 0,
       },
     });
   });

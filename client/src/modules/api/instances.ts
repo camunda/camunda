@@ -118,6 +118,12 @@ async function fetchProcessInstancesStatistics(payload: any) {
   });
 }
 
+async function fetchProcessInstanceDetailStatistics(
+  processInstanceId: ProcessInstanceEntity['id']
+) {
+  return request({url: `${URL}/${processInstanceId}/statistics`});
+}
+
 /**
  * @param {*} payload object with query params.
  */
@@ -190,4 +196,5 @@ export {
   getOperation,
   fetchVariables,
   fetchVariable,
+  fetchProcessInstanceDetailStatistics,
 };

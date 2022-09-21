@@ -34,6 +34,7 @@ type NodeMetaDataMap = {
       multiInstanceType?: string;
       inputMappings: {source: string; target: string}[];
       outputMappings: {source: string; target: string}[];
+      isProcessEndEvent: boolean;
     };
   };
 };
@@ -62,10 +63,12 @@ const createNodeMetaDataMap = (bpmnElements: {
       const {inputMappings, outputMappings} =
         getInputOutputMappings(bpmnElement);
 
+      const elementType = getElementType(bpmnElement);
+
       map[activityId] = {
         name: bpmnElement.name,
         type: {
-          elementType: getElementType(bpmnElement),
+          elementType,
           eventType: getEventType(bpmnElement),
           isMultiInstance:
             bpmnElement?.loopCharacteristics?.$type ===
@@ -73,6 +76,9 @@ const createNodeMetaDataMap = (bpmnElements: {
           multiInstanceType: getMultiInstanceType(bpmnElement),
           inputMappings,
           outputMappings,
+          isProcessEndEvent:
+            elementType === 'END' &&
+            bpmnElement?.$parent?.$type === 'bpmn:Process',
         },
       };
       return map;

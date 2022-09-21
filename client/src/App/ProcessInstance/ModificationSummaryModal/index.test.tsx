@@ -6,8 +6,12 @@
  */
 
 import {createAddVariableModification} from 'modules/mocks/modifications';
+import {mockServer} from 'modules/mock-server/node';
+import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {
   render,
   screen,
@@ -15,6 +19,7 @@ import {
 } from 'modules/testing-library';
 import {createInstance} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {rest} from 'msw';
 import {ModificationSummaryModal} from './index';
 
 describe('Modification Summary Modal', () => {
@@ -278,5 +283,58 @@ describe('Modification Summary Modal', () => {
     await waitForElementToBeRemoved(() =>
       screen.getByRole('heading', {name: /variable "anotherVariable"/i})
     );
+  });
+
+  it('should display total affected token count if a subprocess is canceled', async () => {
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessForModifications))
+      ),
+
+      rest.get(
+        '/api/process-instances/:processInstanceId/statistics',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              {
+                activityId: 'multi-instance-subprocess',
+                active: 6,
+                incidents: 1,
+                completed: 0,
+                canceled: 0,
+              },
+              {
+                activityId: 'subprocess-service-task',
+                active: 4,
+                incidents: 2,
+                completed: 0,
+                canceled: 0,
+              },
+            ])
+          )
+      )
+    );
+    await processInstanceDetailsDiagramStore.fetchProcessXml(
+      'processInstanceId'
+    );
+    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
+
+    render(<ModificationSummaryModal isVisible onClose={() => {}} />, {
+      wrapper: ThemeProvider,
+    });
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'CANCEL_TOKEN',
+        flowNode: {
+          id: 'multi-instance-subprocess',
+          name: 'multi instance subprocess',
+        },
+        affectedTokenCount: 1,
+      },
+    });
+
+    expect(screen.getByTestId('affected-token-count')).toHaveTextContent('7');
   });
 });

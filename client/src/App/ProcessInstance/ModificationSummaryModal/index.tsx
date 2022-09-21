@@ -130,6 +130,10 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                 ]}
                 rows={modificationsStore.flowNodeModifications.map(
                   (modification, index) => {
+                    const flowNodeId =
+                      modification.operation === 'MOVE_TOKEN'
+                        ? modification.targetFlowNode.id
+                        : modification.flowNode.id;
                     return {
                       id: index.toString(),
                       columns: [
@@ -162,7 +166,12 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                         },
                         {
                           id: 'affectedTokens',
-                          cellContent: modification.affectedTokenCount,
+                          dataTestId: 'affected-token-count',
+                          cellContent:
+                            modification.affectedTokenCount +
+                            (modificationsStore.modificationsByFlowNode[
+                              flowNodeId
+                            ]?.cancelledChildTokens ?? 0),
                         },
                         {
                           id: 'delete',

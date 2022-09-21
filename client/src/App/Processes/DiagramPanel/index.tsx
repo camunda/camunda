@@ -18,12 +18,9 @@ import {
 } from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes';
 import {PanelHeader} from 'modules/components/PanelHeader';
-import {StatisticsOverlay} from './StatisticsOverlay';
+import {StatisticsOverlay} from 'modules/components/StatisticsOverlay';
 import {useEffect} from 'react';
-import {
-  processDiagramStore,
-  FlowNodeState,
-} from 'modules/stores/processDiagram';
+import {processDiagramStore} from 'modules/stores/processDiagram';
 
 type Props = {
   children: React.ReactNode;

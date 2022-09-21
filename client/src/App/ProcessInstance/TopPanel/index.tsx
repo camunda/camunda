@@ -23,17 +23,31 @@ import {Diagram} from 'modules/components/Diagram';
 import {IncidentsWrapper} from '../IncidentsWrapper';
 import {Container, DiagramPanel, StatusMessage} from './styled';
 import {IncidentsBanner} from './IncidentsBanner';
-import {StateOverlay} from './StateOverlay';
+import {StatisticsOverlay} from 'modules/components/StatisticsOverlay';
 import {tracking} from 'modules/tracking';
 import {MetadataPopover} from './MetadataPopover';
 import {modificationsStore} from 'modules/stores/modifications';
 import {ModificationDropdown} from './ModificationDropdown';
 import {MoveTokenBanner} from './MoveTokenBanner';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
-import {MODIFICATIONS, FLOW_NODE_STATE} from 'modules/bpmn-js/badgePositions';
+import {
+  CANCELED_BADGE,
+  MODIFICATIONS,
+  ACTIVE_BADGE,
+  INCIDENTS_BADGE,
+  COMPLETED_BADGE,
+} from 'modules/bpmn-js/badgePositions';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
+
+const overlayPositions = {
+  active: ACTIVE_BADGE,
+  incidents: INCIDENTS_BADGE,
+  canceled: CANCELED_BADGE,
+  completed: COMPLETED_BADGE,
+} as const;
 
 type ModificationBadgePayload = {
   newTokenCount: number;
@@ -46,10 +60,7 @@ type Props = {
 };
 
 const TopPanel: React.FC<Props> = observer(() => {
-  const {
-    selectableFlowNodes,
-    state: {flowNodes},
-  } = flowNodeStatesStore;
+  const {selectableFlowNodes} = flowNodeStatesStore;
 
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
@@ -68,33 +79,15 @@ const TopPanel: React.FC<Props> = observer(() => {
     };
   }, [processInstanceId]);
 
-  const flowNodeStateOverlays = computed(() =>
-    Object.entries(flowNodes).reduce<
-      {
-        flowNodeId: string;
-        type: string;
-        payload: {state: InstanceEntityState};
-        position: OverlayPosition;
-      }[]
-    >((flowNodeStates, [flowNodeId, state]) => {
-      const metaData =
-        processInstanceDetailsDiagramStore.getMetaData(flowNodeId);
-
-      if (state === 'COMPLETED' && metaData?.type.elementType !== 'END') {
-        return flowNodeStates;
-      } else {
-        return [
-          ...flowNodeStates,
-          {
-            flowNodeId,
-            type: OVERLAY_TYPE_STATE,
-            position: FLOW_NODE_STATE,
-            payload: {state},
-          },
-        ];
-      }
-    }, [])
-  );
+  const flowNodeStateOverlays =
+    processInstanceDetailsStatisticsStore.flowNodeStatistics.map(
+      ({flowNodeState, count, flowNodeId}) => ({
+        payload: {flowNodeState, count},
+        type: OVERLAY_TYPE_STATE,
+        flowNodeId,
+        position: overlayPositions[flowNodeState],
+      })
+    );
 
   const modificationBadgesPerFlowNode = computed(() =>
     Object.entries(modificationsStore.modificationsByFlowNode).reduce<
@@ -216,10 +209,10 @@ const TopPanel: React.FC<Props> = observer(() => {
                 overlaysData={
                   isModificationModeEnabled
                     ? [
-                        ...flowNodeStateOverlays.get(),
+                        ...flowNodeStateOverlays,
                         ...modificationBadgesPerFlowNode.get(),
                       ]
-                    : flowNodeStateOverlays.get()
+                    : flowNodeStateOverlays
                 }
                 selectedFlowNodeOverlay={
                   isModificationModeEnabled ? (
@@ -230,15 +223,17 @@ const TopPanel: React.FC<Props> = observer(() => {
                 }
                 highlightedSequenceFlows={processedSequenceFlows}
               >
-                {stateOverlays?.map((overlay) => {
+                {stateOverlays.map((overlay) => {
                   const payload = overlay.payload as {
-                    state: InstanceEntityState;
+                    flowNodeState: FlowNodeState;
+                    count: number;
                   };
 
                   return (
-                    <StateOverlay
-                      key={overlay.flowNodeId}
-                      state={payload.state}
+                    <StatisticsOverlay
+                      key={`${overlay.flowNodeId}-${payload.flowNodeState}`}
+                      flowNodeState={payload.flowNodeState}
+                      count={payload.count}
                       container={overlay.container}
                     />
                   );

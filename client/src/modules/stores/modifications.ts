@@ -9,6 +9,8 @@ import {makeAutoObservable} from 'mobx';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {isFlowNodeMultiInstance} from './utils/isFlowNodeMultiInstance';
+import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
+import {getFlowElementIds} from 'modules/bpmn-js/getFlowElementIds';
 
 type FlowNodeModificationPayload =
   | {
@@ -81,6 +83,7 @@ const DEFAULT_STATE: State = {
 const EMPTY_MODIFICATION = Object.freeze({
   newTokens: 0,
   cancelledTokens: 0,
+  cancelledChildTokens: 0,
 });
 
 class Modifications {
@@ -117,7 +120,10 @@ class Modifications {
       targetFlowNodeId !== undefined &&
       this.state.sourceFlowNodeIdForMoveOperation !== null
     ) {
-      const affectedTokenCount = 2; //  TODO: This can only be set when instance counts are known #2926
+      const affectedTokenCount =
+        processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
+          this.state.sourceFlowNodeIdForMoveOperation
+        );
       const newScopeCount = isFlowNodeMultiInstance(
         this.state.sourceFlowNodeIdForMoveOperation
       )
@@ -253,6 +259,7 @@ class Modifications {
       [key: string]: {
         newTokens: number;
         cancelledTokens: number;
+        cancelledChildTokens: number;
       };
     }>((modificationsByFlowNode, {type, payload}) => {
       if (type === 'variable') {
@@ -285,6 +292,33 @@ class Modifications {
       if (operation === 'CANCEL_TOKEN') {
         modificationsByFlowNode[flowNode.id]!.cancelledTokens =
           affectedTokenCount;
+
+        // set cancel token counts for child elements if flow node has any
+        const elementIds = getFlowElementIds(
+          processInstanceDetailsDiagramStore.getFlowNode(flowNode.id)
+        );
+
+        let affectedChildTokenCount = 0;
+        elementIds.forEach((elementId) => {
+          if (!modificationsByFlowNode[elementId]) {
+            modificationsByFlowNode[elementId] = {
+              ...EMPTY_MODIFICATION,
+            };
+          }
+          modificationsByFlowNode[elementId]!.cancelledTokens =
+            (processInstanceDetailsStatisticsStore.statisticsByFlowNode[
+              elementId
+            ]?.active ?? 0) +
+            (processInstanceDetailsStatisticsStore.statisticsByFlowNode[
+              elementId
+            ]?.incidents ?? 0);
+
+          affectedChildTokenCount +=
+            modificationsByFlowNode[elementId]!.cancelledTokens;
+        });
+
+        modificationsByFlowNode[flowNode.id]!.cancelledChildTokens =
+          affectedChildTokenCount;
       }
 
       if (operation === 'ADD_TOKEN') {
@@ -299,7 +333,14 @@ class Modifications {
   isCancelModificationAppliedOnFlowNode = (flowNodeId: string) => {
     const cancelledTokens =
       this.modificationsByFlowNode[flowNodeId]?.cancelledTokens ?? 0;
-    return cancelledTokens > 0;
+
+    const cancelModificationForFlowNode = this.flowNodeModifications.find(
+      (modification) =>
+        modification.operation === 'CANCEL_TOKEN' &&
+        modification.flowNode.id === flowNodeId
+    );
+
+    return cancelledTokens > 0 || cancelModificationForFlowNode !== undefined;
   };
 
   get variableModifications() {

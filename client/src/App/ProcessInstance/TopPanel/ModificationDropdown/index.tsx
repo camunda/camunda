@@ -20,6 +20,7 @@ import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -100,7 +101,10 @@ const ModificationDropdown: React.FC<Props> = observer(
                             flowNodeId
                           ),
                         },
-                        affectedTokenCount: 1, //  TODO: This can only be set when instance counts are known #2926
+                        affectedTokenCount:
+                          processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
+                            flowNodeId
+                          ),
                       },
                     });
                     flowNodeSelectionStore.clearSelection();
@@ -109,16 +113,19 @@ const ModificationDropdown: React.FC<Props> = observer(
                   <CancelIcon />
                   Cancel
                 </Option>
-                <Option
-                  title="Move all running instances in this flow node to another target"
-                  onClick={() => {
-                    modificationsStore.startMovingToken(flowNodeId);
-                    flowNodeSelectionStore.clearSelection();
-                  }}
-                >
-                  <MoveIcon />
-                  Move
-                </Option>
+                {processInstanceDetailsDiagramStore.getFlowNode(flowNodeId)
+                  ?.$type !== 'bpmn:SubProcess' && (
+                  <Option
+                    title="Move all running instances in this flow node to another target"
+                    onClick={() => {
+                      modificationsStore.startMovingToken(flowNodeId);
+                      flowNodeSelectionStore.clearSelection();
+                    }}
+                  >
+                    <MoveIcon />
+                    Move
+                  </Option>
+                )}
               </>
             )}
           {processInstanceDetailsDiagramStore.nonModifiableFlowNodes.includes(

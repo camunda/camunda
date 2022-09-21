@@ -303,4 +303,40 @@ describe('Modification Dropdown', () => {
     expect(screen.getByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
   });
+
+  it('should not support move operation for sub processes', async () => {
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessForModifications))
+      ),
+      rest.get(
+        '/api/process-instances/:processId/flow-node-states',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              'multi-instance-subprocess': 'INCIDENT',
+            })
+          )
+      )
+    );
+
+    initializeStores();
+    renderPopover();
+
+    await waitFor(() =>
+      expect(
+        processInstanceDetailsDiagramStore.state.diagramModel
+      ).not.toBeNull()
+    );
+    modificationsStore.enableModificationMode();
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'multi-instance-subprocess',
+    });
+
+    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
+    expect(await screen.findByText(/Add/)).toBeInTheDocument();
+    expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+  });
 });

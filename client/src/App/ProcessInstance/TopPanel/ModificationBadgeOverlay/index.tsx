@@ -19,6 +19,10 @@ const ModificationBadgeOverlay: React.FC<Props> = ({
   newTokenCount,
   cancelledTokenCount,
 }) => {
+  if (newTokenCount === 0 && cancelledTokenCount === 0) {
+    return null;
+  }
+
   return createPortal(
     <Modifications>
       {newTokenCount > 0 && (

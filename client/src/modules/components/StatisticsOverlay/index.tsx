@@ -6,7 +6,6 @@
  */
 
 import {createPortal} from 'react-dom';
-import {FlowNodeState} from 'modules/stores/processDiagram';
 import {ReactComponent as IncidentIcon} from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
 import {ReactComponent as ActiveIcon} from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
 import {ReactComponent as CompletedIcon} from 'modules/components/Icon/diagram-badge-single-instance-completed.svg';

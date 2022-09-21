@@ -47,6 +47,7 @@ import {variablesStore} from 'modules/stores/variables';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -83,6 +84,7 @@ const ProcessInstance: React.FC = observer(() => {
           incidentsStore.stopPolling();
           flowNodeStatesStore.stopPolling();
           flowNodeInstanceStore.stopPolling();
+          processInstanceDetailsStatisticsStore.stopPolling();
         } else {
           variablesStore.startPolling(processInstanceId);
           sequenceFlowsStore.startPolling(processInstanceId);
@@ -90,6 +92,7 @@ const ProcessInstance: React.FC = observer(() => {
           incidentsStore.startPolling(processInstanceId);
           flowNodeStatesStore.startPolling(processInstanceId);
           flowNodeInstanceStore.startPolling();
+          processInstanceDetailsStatisticsStore.startPolling(processInstanceId);
         }
       }
     );
@@ -126,6 +129,7 @@ const ProcessInstance: React.FC = observer(() => {
         },
       });
       flowNodeInstanceStore.init();
+      processInstanceDetailsStatisticsStore.init(processInstanceId);
       processInstanceDetailsDiagramStore.init();
       flowNodeSelectionStore.init();
     }
@@ -134,6 +138,7 @@ const ProcessInstance: React.FC = observer(() => {
   useEffect(() => {
     return () => {
       processInstanceDetailsStore.reset();
+      processInstanceDetailsStatisticsStore.reset();
       flowNodeInstanceStore.reset();
       processInstanceDetailsDiagramStore.reset();
       flowNodeTimeStampStore.reset();
