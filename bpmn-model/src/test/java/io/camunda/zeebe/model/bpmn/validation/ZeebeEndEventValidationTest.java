@@ -19,11 +19,26 @@ import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.ex
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.EndEventBuilder;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class ZeebeEndEventValidationTest {
+
+  @Test
+  @DisplayName("Should support terminate end events")
+  void terminateEndEvent() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .endEvent("end", EndEventBuilder::terminate)
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
 
   @Test
   @DisplayName("Should not support signal end events")
@@ -40,7 +55,7 @@ class ZeebeEndEventValidationTest {
     // when/then
     ProcessValidationUtil.assertThatProcessHasViolations(
         process,
-        expect("end", "End events must be one of: none, error or message"),
+        expect("end", "End events must be one of: none, error, message, or terminate"),
         expect("eventDefinition", "Event definition of this type is not supported"));
   }
 
