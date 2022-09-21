@@ -19,6 +19,7 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.TerminateEventDefinition;
 
 /**
  * @author Sebastian Menski
@@ -70,5 +71,18 @@ public abstract class AbstractEndEventBuilder<B extends AbstractEndEventBuilder<
     final ErrorEventDefinition errorEventDefinition = createEmptyErrorEventDefinition();
     element.getEventDefinitions().add(errorEventDefinition);
     return new ErrorEventDefinitionBuilder(modelInstance, errorEventDefinition);
+  }
+
+  /**
+   * Creates a terminate event definition and add it to the end event. It morphs the end event into
+   * a terminate end event.
+   *
+   * @return the builder object
+   */
+  public B terminate() {
+    final TerminateEventDefinition terminateEventDefinition =
+        createInstance(TerminateEventDefinition.class);
+    element.getEventDefinitions().add(terminateEventDefinition);
+    return myself;
   }
 }
