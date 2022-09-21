@@ -13,7 +13,6 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import java.nio.file.Path;
 import java.util.List;
@@ -104,8 +103,7 @@ public final class BackupService extends Actor implements BackupManager {
 
   @Override
   public ActorFuture<Void> deleteBackup(final long checkpointId) {
-    return CompletableActorFuture.completedExceptionally(
-        new UnsupportedOperationException("Not implemented"));
+    return internalBackupManager.deleteBackup(getBackupId(checkpointId), actor);
   }
 
   @Override

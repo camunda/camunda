@@ -145,6 +145,24 @@ final class BackupServiceImpl {
     return future;
   }
 
+  ActorFuture<Void> deleteBackup(
+      final BackupIdentifier backupId, final ConcurrencyControl executor) {
+    final var future = new CompletableActorFuture<Void>();
+    executor.run(
+        () ->
+            backupStore
+                .delete(backupId)
+                .whenComplete(
+                    (status, error) -> {
+                      if (error == null) {
+                        future.complete(null);
+                      } else {
+                        future.completeExceptionally(error);
+                      }
+                    }));
+    return future;
+  }
+
   void failInProgressBackups(
       final int partitionId,
       final long lastCheckpointId,

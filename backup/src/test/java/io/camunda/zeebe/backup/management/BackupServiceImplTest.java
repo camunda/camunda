@@ -275,6 +275,36 @@ class BackupServiceImplTest {
         .markFailed(inProgressBackup, "Backup is cancelled due to leader change.");
   }
 
+  @Test
+  void shouldDeleteBackup() {
+    // given
+    when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    final var result =
+        backupService.deleteBackup(new BackupIdentifierImpl(1, 1, 1), concurrencyControl);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofMillis(100)).isNull();
+  }
+
+  @Test
+  void shouldFailDeleteBackup() {
+    // given
+    final var failure = new RuntimeException("failure");
+    when(backupStore.delete(any())).thenReturn(CompletableFuture.failedFuture(failure));
+
+    // when
+    final var result =
+        backupService.deleteBackup(new BackupIdentifierImpl(1, 1, 1), concurrencyControl);
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withCause(failure);
+  }
+
   private ActorFuture<Void> failedFuture() {
     final ActorFuture<Void> future = concurrencyControl.createFuture();
     future.completeExceptionally(new RuntimeException("Expected"));
