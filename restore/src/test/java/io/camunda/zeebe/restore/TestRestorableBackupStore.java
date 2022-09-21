@@ -9,6 +9,7 @@ package io.camunda.zeebe.restore;
 
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -72,6 +74,25 @@ final class TestRestorableBackupStore implements BackupStore {
               Optional.empty());
     }
     return CompletableFuture.completedFuture(backupStatus);
+  }
+
+  @Override
+  public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
+    final var matchingBackups =
+        backups.values().stream()
+            .filter(backup -> wildcard.matches(backup.id()))
+            .map(
+                backup ->
+                    (BackupStatus)
+                        new BackupStatusImpl(
+                            backup.id(),
+                            Optional.of(backup.descriptor()),
+                            BackupStatusCode.COMPLETED,
+                            Optional.empty(),
+                            Optional.empty(),
+                            Optional.empty()))
+            .toList();
+    return CompletableFuture.completedFuture(matchingBackups);
   }
 
   @Override

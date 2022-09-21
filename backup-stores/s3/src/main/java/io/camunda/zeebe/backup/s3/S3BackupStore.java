@@ -14,6 +14,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -34,16 +35,21 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
+import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
@@ -75,6 +81,8 @@ public final class S3BackupStore implements BackupStore {
   static final String SEGMENTS_PREFIX = "segments/";
   static final String MANIFEST_OBJECT_KEY = "manifest.json";
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
+  private static final Pattern BACKUP_IDENTIFIER_PATTERN =
+      Pattern.compile("^(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*");
   private final S3BackupConfig config;
   private final S3AsyncClient client;
 
@@ -85,6 +93,40 @@ public final class S3BackupStore implements BackupStore {
   public S3BackupStore(final S3BackupConfig config, final S3AsyncClient client) {
     this.config = config;
     this.client = client;
+  }
+
+  private static Optional<BackupIdentifier> tryParseKeyAsId(final String key) {
+    final var matcher = BACKUP_IDENTIFIER_PATTERN.matcher(key);
+    if (matcher.matches()) {
+      try {
+        final var nodeId = Integer.parseInt(matcher.group("nodeId"));
+        final var partitionId = Integer.parseInt(matcher.group("partitionId"));
+        final var checkpointId = Long.parseLong(matcher.group("checkpointId"));
+        return Optional.of(new BackupIdentifierImpl(nodeId, partitionId, checkpointId));
+      } catch (final NumberFormatException e) {
+        LOG.warn("Tried interpreting key {} as a BackupIdentifier but failed", key, e);
+      }
+    }
+    return Optional.empty();
+  }
+
+  /**
+   * Tries to build the longest possible prefix based on the given wildcard. If the first component
+   * of prefix is not present in the wildcard, the prefix will be empty. If the second component of
+   * the prefix is empty, the prefix will only contain the first prefix component and so forth.
+   *
+   * <p>Using the resulting prefix to list objects does not guarantee that returned objects actually
+   * match the wildcard, use {@link S3BackupStore#tryParseKeyAsId(String objectKey)} and {@link
+   * BackupIdentifierWildcard#matches(BackupIdentifier id)} to ensure that the listed object
+   * matches.
+   */
+  private static String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
+    //noinspection OptionalGetWithoutIsPresent -- checked by takeWhile
+    return Stream.of(wildcard.partitionId(), wildcard.checkpointId(), wildcard.nodeId())
+        .takeWhile(Optional::isPresent)
+        .map(Optional::get)
+        .map(Number::toString)
+        .collect(Collectors.joining("/"));
   }
 
   public static String objectPrefix(final BackupIdentifier id) {
@@ -141,6 +183,13 @@ public final class S3BackupStore implements BackupStore {
   public CompletableFuture<BackupStatus> getStatus(final BackupIdentifier id) {
     LOG.info("Querying status of {}", id);
     return readManifestObject(id).thenApply(Manifest::toStatus);
+  }
+
+  @Override
+  public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
+    LOG.info("Querying status of {}", wildcard);
+    return readManifestObjects(wildcard)
+        .thenApplyAsync(manifests -> manifests.stream().map(Manifest::toStatus).toList());
   }
 
   @Override
@@ -250,7 +299,30 @@ public final class S3BackupStore implements BackupStore {
             });
   }
 
-  private CompletableFuture<Manifest> readManifestObject(final BackupIdentifier id) {
+  private SdkPublisher<BackupIdentifier> findBackupIds(final BackupIdentifierWildcard wildcard) {
+    final var prefix = wildcardPrefix(wildcard);
+    LOG.debug("Using prefix {} to search for manifest files matching {}", prefix, wildcard);
+    return client
+        .listObjectsV2Paginator(cfg -> cfg.bucket(config.bucketName()).prefix(prefix))
+        .contents()
+        .filter(obj -> obj.key().endsWith(MANIFEST_OBJECT_KEY))
+        .map(S3Object::key)
+        .map(S3BackupStore::tryParseKeyAsId)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .filter(wildcard::matches);
+  }
+
+  private CompletableFuture<Collection<Manifest>> readManifestObjects(
+      final BackupIdentifierWildcard wildcard) {
+    final var aggregator = new AsyncAggregatingSubscriber<Manifest>(16);
+    final var publisher = findBackupIds(wildcard).map(this::readManifestObject);
+    publisher.subscribe(aggregator);
+
+    return aggregator.result();
+  }
+
+  CompletableFuture<Manifest> readManifestObject(final BackupIdentifier id) {
     LOG.debug("Reading manifest object of {}", id);
     return client
         .getObject(
