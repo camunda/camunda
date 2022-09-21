@@ -16,6 +16,7 @@ import {
 import {useLayoutEffect, useRef} from 'react';
 import {Container, Arrow, getArrowPosition} from './styled';
 import {isNil} from 'lodash';
+import {createPortal} from 'react-dom';
 
 function getSide(placement: Placement) {
   const [side] = placement.split('-');
@@ -95,31 +96,34 @@ const ArrowPopover: React.FC<Props> = ({
 
   const {x: arrowX, y: arrowY} = middlewareData.arrow ?? {};
 
-  return referenceElement === null ? null : (
-    <Container
-      className={className}
-      ref={floating}
-      style={{
-        position: strategy,
-        top: getValueWhenValidNumber(y),
-        left: getValueWhenValidNumber(x),
-      }}
-      data-testid="popover"
-    >
-      <Arrow
-        ref={arrowElementRef}
-        style={{
-          ...getArrowPosition({
-            side: getSide(actualPlacement),
-            x: getValueWhenValidNumber(arrowX),
-            y: getValueWhenValidNumber(arrowY),
-          }),
-        }}
-        $side={getSide(actualPlacement)}
-      />
-      <div>{children}</div>
-    </Container>
-  );
+  return referenceElement === null
+    ? null
+    : createPortal(
+        <Container
+          className={className}
+          ref={floating}
+          style={{
+            position: strategy,
+            top: getValueWhenValidNumber(y),
+            left: getValueWhenValidNumber(x),
+          }}
+          data-testid="popover"
+        >
+          <Arrow
+            ref={arrowElementRef}
+            style={{
+              ...getArrowPosition({
+                side: getSide(actualPlacement),
+                x: getValueWhenValidNumber(arrowX),
+                y: getValueWhenValidNumber(arrowY),
+              }),
+            }}
+            $side={getSide(actualPlacement)}
+          />
+          <div>{children}</div>
+        </Container>,
+        document.body
+      );
 };
 
 export {ArrowPopover};
