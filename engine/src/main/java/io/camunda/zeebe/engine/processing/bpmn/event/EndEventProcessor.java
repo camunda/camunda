@@ -20,14 +20,15 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
+import java.util.List;
 
 public final class EndEventProcessor implements BpmnElementProcessor<ExecutableEndEvent> {
-
-  private final NoneEndEventBehavior noneEndEventBehavior = new NoneEndEventBehavior();
-  private final ErrorEndEventBehavior errorEndEventBehavior = new ErrorEndEventBehavior();
-  private final MessageEndEventBehavior messageEndEventBehavior = new MessageEndEventBehavior();
-  private final TerminateEndEventBehavior terminateEndEventBehavior =
-      new TerminateEndEventBehavior();
+  private final List<EndEventBehavior> endEventBehaviors =
+      List.of(
+          new NoneEndEventBehavior(),
+          new ErrorEndEventBehavior(),
+          new MessageEndEventBehavior(),
+          new TerminateEndEventBehavior());
 
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
@@ -74,22 +75,18 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   }
 
   private EndEventBehavior eventBehaviorOf(final ExecutableEndEvent element) {
-    if (element.hasError()) {
-      return errorEndEventBehavior;
-
-    } else if (element.getJobWorkerProperties() != null) {
-      return messageEndEventBehavior;
-
-    } else if (element.isTerminateEndEvent()) {
-      return terminateEndEventBehavior;
-
-    } else {
-      return noneEndEventBehavior;
-    }
+    return endEventBehaviors.stream()
+        .filter(behavior -> behavior.isSuitableForEvent(element))
+        .findFirst()
+        .orElseThrow(
+            () -> new UnsupportedOperationException("This kind of end event is not supported."));
   }
 
   /** Extract different behaviors depending on the type of event. */
   private interface EndEventBehavior {
+
+    boolean isSuitableForEvent(final ExecutableEndEvent element);
+
     void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating);
 
     default void onComplete(
@@ -102,6 +99,13 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   private class NoneEndEventBehavior implements EndEventBehavior {
 
     @Override
+    public boolean isSuitableForEvent(final ExecutableEndEvent element) {
+      return !element.hasError()
+          && element.getJobWorkerProperties() == null
+          && !element.isTerminateEndEvent();
+    }
+
+    @Override
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
       final var activated = stateTransitionBehavior.transitionToActivated(activating);
       final var completing = stateTransitionBehavior.transitionToCompleting(activated);
@@ -112,6 +116,11 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   }
 
   private class ErrorEndEventBehavior implements EndEventBehavior {
+
+    @Override
+    public boolean isSuitableForEvent(final ExecutableEndEvent element) {
+      return element.hasError();
+    }
 
     @Override
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
@@ -137,6 +146,11 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   }
 
   private class MessageEndEventBehavior implements EndEventBehavior {
+
+    @Override
+    public boolean isSuitableForEvent(final ExecutableEndEvent element) {
+      return element.getJobWorkerProperties() != null;
+    }
 
     @Override
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
@@ -167,6 +181,11 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   }
 
   private class TerminateEndEventBehavior implements EndEventBehavior {
+
+    @Override
+    public boolean isSuitableForEvent(final ExecutableEndEvent element) {
+      return element.isTerminateEndEvent();
+    }
 
     @Override
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
