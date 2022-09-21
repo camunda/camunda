@@ -35,7 +35,7 @@ public final class TestBackupProvider implements ArgumentsProvider {
         arguments(named("stub without snapshot", backupWithoutSnapshot())));
   }
 
-  private Backup backupWithoutSnapshot() throws IOException {
+  public Backup backupWithoutSnapshot() throws IOException {
     final var tempDir = Files.createTempDirectory("backup");
     Files.createDirectory(tempDir.resolve("segments/"));
     final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
@@ -50,7 +50,11 @@ public final class TestBackupProvider implements ArgumentsProvider {
         new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)));
   }
 
-  private Backup simpleBackup() throws IOException {
+  public Backup simpleBackup() throws IOException {
+    return simpleBackupWithId(new BackupIdentifierImpl(1, 2, 3));
+  }
+
+  public Backup simpleBackupWithId(final BackupIdentifierImpl id) throws IOException {
     final var tempDir = Files.createTempDirectory("backup");
     Files.createDirectory(tempDir.resolve("segments/"));
     final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
@@ -65,9 +69,22 @@ public final class TestBackupProvider implements ArgumentsProvider {
     Files.write(s2, RandomUtils.nextBytes(1024));
 
     return new BackupImpl(
-        new BackupIdentifierImpl(1, 2, 3),
+        id,
         new BackupDescriptorImpl(Optional.of("test-snapshot-id"), 4, 5, "test"),
         new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)),
         new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)));
+  }
+
+  public Backup minimalBackupWithId(final BackupIdentifierImpl id) throws IOException {
+    final var tempDir = Files.createTempDirectory("backup");
+    Files.createDirectory(tempDir.resolve("segments/"));
+    final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
+    Files.write(seg1, RandomUtils.nextBytes(1));
+
+    return new BackupImpl(
+        id,
+        new BackupDescriptorImpl(Optional.empty(), 4, 5, "test"),
+        new NamedFileSetImpl(Map.of()),
+        new NamedFileSetImpl(Map.of("segment-file-1", seg1)));
   }
 }
