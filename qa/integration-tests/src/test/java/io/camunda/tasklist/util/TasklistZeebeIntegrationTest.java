@@ -84,7 +84,9 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
     tester = beanFactory.getBean(TasklistTester.class, zeebeClient, elasticsearchTestRule);
 
     processCache.clearCache();
+    importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
     importPositionHolder.clearCache();
+    importPositionHolder.scheduleImportPositionUpdateTask();
     partitionHolder.setZeebeClient(getClient());
 
     setDefaultCurrentUser();
@@ -116,6 +118,7 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
   public void after() {
     setDefaultCurrentUser();
     processCache.clearCache();
+    importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
     importPositionHolder.clearCache();
   }
 

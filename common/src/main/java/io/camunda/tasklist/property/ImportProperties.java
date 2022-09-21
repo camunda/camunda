@@ -18,6 +18,8 @@ public class ImportProperties {
 
   private static final int DEFAULT_SCHEDULER_BACKOFF = 5000;
 
+  private static final int DEFAULT_IMPORT_POSITION_UPDATE_INTERVAL = 10000;
+
   private int threadsCount = DEFAULT_IMPORT_THREADS_COUNT;
 
   private int queueSize = DEFAULT_IMPORT_QUEUE_SIZE;
@@ -36,6 +38,8 @@ public class ImportProperties {
 
   /** Variable size under which we won't store preview separately. */
   private int variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
+
+  private int importPositionUpdateInterval = DEFAULT_IMPORT_POSITION_UPDATE_INTERVAL;
 
   public boolean isStartLoadingDataOnStartup() {
     return startLoadingDataOnStartup;
@@ -84,5 +88,13 @@ public class ImportProperties {
   public ImportProperties setVariableSizeThreshold(final int variableSizeThreshold) {
     this.variableSizeThreshold = variableSizeThreshold;
     return this;
+  }
+
+  public int getImportPositionUpdateInterval() {
+    return importPositionUpdateInterval;
+  }
+
+  public void setImportPositionUpdateInterval(int importPositionUpdateInterval) {
+    this.importPositionUpdateInterval = importPositionUpdateInterval;
   }
 }

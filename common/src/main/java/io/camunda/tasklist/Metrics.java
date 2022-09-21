@@ -26,6 +26,8 @@ public class Metrics {
   public static final String TIMER_NAME_IMPORT_TIME = TASKLIST_NAMESPACE + "import.time";
   public static final String TIMER_NAME_IMPORT_JOB_SCHEDULED_TIME =
       TASKLIST_NAMESPACE + "import.job.scheduled";
+  public static final String TIMER_NAME_IMPORT_POSITION_UPDATE =
+      TASKLIST_NAMESPACE + "import.position.update";
   public static final String TIMER_NAME_ARCHIVER_QUERY = TASKLIST_NAMESPACE + "archiver.query";
   public static final String TIMER_NAME_ARCHIVER_REINDEX_QUERY =
       TASKLIST_NAMESPACE + "archiver.reindex.query";
