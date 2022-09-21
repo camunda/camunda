@@ -12,7 +12,6 @@ import static io.camunda.zeebe.engine.util.RecordToWrite.event;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -120,11 +119,9 @@ public class ProcessingScheduleServiceIntegrationTest {
     processor.continueReplay();
 
     // then
-    final var inOrder = inOrder(processor, mockedTask);
-    inOrder.verify(processor, TIMEOUT).init(any());
-    inOrder.verify(processor, TIMEOUT).replay(any());
-    inOrder.verify(mockedTask, never()).execute(any());
-    inOrder.verifyNoMoreInteractions();
+    verify(processor, TIMEOUT).init(any());
+    verify(processor, TIMEOUT).replay(any());
+    verify(mockedTask, never()).execute(any());
   }
 
   @Test
