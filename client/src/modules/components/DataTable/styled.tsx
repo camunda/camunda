@@ -30,15 +30,24 @@ const THead = styled(Table.THead)`
   }}
 `;
 
-const TR = styled(Table.TR)`
-  height: 40px;
-  &:first-child {
-    border-top: none;
-  }
-
-  &:last-child {
-    border-bottom: none;
-  }
+type TRProps = {
+  $hideLastChildBottomBorder?: boolean;
+};
+const TR = styled(Table.TR)<TRProps>`
+  ${({$hideLastChildBottomBorder}) => {
+    return css`
+      height: 40px;
+      &:first-child {
+        border-top: none;
+      }
+      ${$hideLastChildBottomBorder &&
+      css`
+        &:last-child {
+          border-bottom: none;
+        }
+      `}
+    `;
+  }}
 `;
 
 type TDProps = {

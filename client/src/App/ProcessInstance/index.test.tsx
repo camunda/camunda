@@ -478,6 +478,80 @@ describe('Instance', () => {
         rest.post(
           '/api/process-instances/:instanceId/flow-node-metadata',
           (_, res, ctx) => res.once(ctx.json(undefined))
+        ),
+
+        rest.post(
+          '/api/process-instances/:processInstanceId/modify',
+          (_, res, ctx) => res.once(ctx.delay(1000), ctx.json({}))
+        )
+      );
+
+      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+      await waitForElementToBeRemoved(
+        screen.getByTestId('instance-header-skeleton')
+      );
+
+      storeStateLocally({
+        [`hideModificationHelperModal`]: true,
+      });
+      await user.click(
+        screen.getByRole('button', {
+          name: /modify instance/i,
+        })
+      );
+
+      expect(
+        screen.getByText('Process Instance Modification Mode')
+      ).toBeInTheDocument();
+
+      jest.useFakeTimers();
+
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'taskD',
+      });
+
+      await user.click(
+        screen.getByRole('button', {name: /add single flow node instance/i})
+      );
+
+      expect(screen.getByText(/adding modifications.../i)).toBeInTheDocument();
+      jest.runOnlyPendingTimers();
+      expect(
+        screen.queryByText(/adding modifications.../i)
+      ).not.toBeInTheDocument();
+
+      expect(await screen.findByTestId('badge-plus-icon')).toBeInTheDocument();
+
+      await user.click(screen.getByTestId('apply-modifications-button'));
+      await user.click(screen.getByRole('button', {name: 'Apply'}));
+      expect(
+        screen.getByText(/applying modifications.../i)
+      ).toBeInTheDocument();
+      jest.runOnlyPendingTimers();
+
+      await waitForElementToBeRemoved(() =>
+        screen.getByText(/applying modifications.../i)
+      );
+
+      expect(
+        screen.queryByText('Process Instance Modification Mode')
+      ).not.toBeInTheDocument();
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    }
+  );
+
+  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
+    'should display loading overlay when a flow node modification is made',
+    async () => {
+      mockServer.use(
+        rest.get('/api/process-instances/:id', (_, res, ctx) =>
+          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
+        ),
+        rest.post(
+          '/api/process-instances/:instanceId/flow-node-metadata',
+          (_, res, ctx) => res.once(ctx.json(undefined))
         )
       );
 

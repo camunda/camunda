@@ -33,6 +33,10 @@ describe('stores/modifications', () => {
     expect(modificationsStore.isModificationModeEnabled).toBe(true);
     modificationsStore.disableModificationMode();
     expect(modificationsStore.isModificationModeEnabled).toBe(false);
+    modificationsStore.enableModificationMode();
+    expect(modificationsStore.isModificationModeEnabled).toBe(true);
+    modificationsStore.startApplyingModifications();
+    expect(modificationsStore.isModificationModeEnabled).toBe(false);
   });
 
   it('should add/remove flow node modifications', async () => {
@@ -993,5 +997,242 @@ describe('stores/modifications', () => {
     expect(
       modificationsStore.getAddVariableModifications('non-existing-flow-node')
     ).toEqual([]);
+  });
+
+  it('should generate modifications payload', () => {
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        flowNode: {id: 'flow_node_0', name: 'flow node 0'},
+        scopeId: 'random-scope-id-0',
+        affectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        flowNode: {id: 'flow_node_1', name: 'flow node 1'},
+        scopeId: 'random-scope-id-1',
+        affectedTokenCount: 1,
+        parentScopeIds: {
+          'first-parent-scope': 'random-scope-id-first',
+          'second-parent-scope': 'random-scope-id-second',
+        },
+      },
+    });
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'CANCEL_TOKEN',
+        flowNode: {id: 'flow_node_2', name: 'flow node 2'},
+        affectedTokenCount: 1,
+      },
+    });
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'MOVE_TOKEN',
+        flowNode: {id: 'flow_node_3', name: 'flow node 3'},
+        targetFlowNode: {id: 'flow_node_4', name: 'flow node 4'},
+        affectedTokenCount: 1,
+        scopeIds: ['random-scope-id-2'],
+        parentScopeIds: {
+          'first-parent': 'random-scope-id-for-parent-1',
+          'second-parent': 'random-scope-id-for-parent-2',
+          'third-parent': 'random-scope-id-for-parent-3',
+        },
+      },
+    });
+
+    // add 2 variables to one of the newly created scopes
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'ADD_VARIABLE',
+        scopeId: 'random-scope-id-1',
+        name: 'name1',
+        newValue: 'value1',
+        id: '1',
+        flowNodeName: 'flow node 1',
+      },
+    });
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'ADD_VARIABLE',
+        scopeId: 'random-scope-id-1',
+        name: 'name2',
+        newValue: 'value2',
+        id: '2',
+        flowNodeName: 'flow node 1',
+      },
+    });
+
+    // add 2 variables and edit one variable to existing scopes
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'ADD_VARIABLE',
+        scopeId: 'random-scope-id-5',
+        name: 'name3',
+        newValue: 'value3',
+        id: '3',
+        flowNodeName: 'flow node 5',
+      },
+    });
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'ADD_VARIABLE',
+        scopeId: 'random-scope-id-5',
+        name: 'name4',
+        newValue: 'value4',
+        id: '4',
+        flowNodeName: 'flow node 5',
+      },
+    });
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'EDIT_VARIABLE',
+        scopeId: 'random-scope-id-5',
+        name: 'name5',
+        oldValue: 'value5',
+        newValue: 'value5-edited',
+        id: '5',
+        flowNodeName: 'flow node 5',
+      },
+    });
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'EDIT_VARIABLE',
+        scopeId: 'random-scope-id-5',
+        name: 'name5',
+        oldValue: 'value5',
+        newValue: 'value5-edited2',
+        id: '5',
+        flowNodeName: 'flow node 5',
+      },
+    });
+
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'ADD_VARIABLE',
+        scopeId: 'random-scope-id-2',
+        name: 'name6',
+        newValue: 'value6',
+        id: '6',
+        flowNodeName: 'flow node 4',
+      },
+    });
+
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'ADD_VARIABLE',
+        scopeId: 'random-scope-id-for-parent-1',
+        name: 'name7',
+        newValue: 'value7',
+        id: '7',
+        flowNodeName: 'flow node 7',
+      },
+    });
+
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'ADD_VARIABLE',
+        scopeId: 'random-scope-id-for-parent-1',
+        name: 'name8',
+        newValue: 'value8',
+        id: '8',
+        flowNodeName: 'flow node 7',
+      },
+    });
+
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'ADD_VARIABLE',
+        scopeId: 'random-scope-id-for-parent-3',
+        name: 'name9',
+        newValue: 'value9',
+        id: '9',
+        flowNodeName: 'flow node 9',
+      },
+    });
+
+    modificationsStore.addModification({
+      type: 'variable',
+      payload: {
+        operation: 'ADD_VARIABLE',
+        scopeId: 'random-scope-id-first',
+        name: 'name10',
+        newValue: 'value10',
+        id: '10',
+        flowNodeName: 'flow node 10',
+      },
+    });
+
+    expect(modificationsStore.generateModificationsPayload()).toEqual([
+      {
+        modification: 'ADD_TOKEN',
+        sourceFlowNodeId: 'flow_node_0',
+        variables: undefined,
+      },
+      {
+        modification: 'ADD_TOKEN',
+        sourceFlowNodeId: 'flow_node_1',
+        variables: {
+          'first-parent-scope': [
+            {
+              name10: 'value10',
+            },
+          ],
+          flow_node_1: [{name1: 'value1', name2: 'value2'}],
+        },
+      },
+      {modification: 'CANCEL_TOKEN', targetFlowNodeId: 'flow_node_2'},
+      {
+        modification: 'MOVE_TOKEN',
+        sourceFlowNodeId: 'flow_node_3',
+        targetFlowNodeId: 'flow_node_4',
+        newTokensCount: 1,
+        variables: {
+          flow_node_4: [{name6: 'value6'}],
+          'first-parent': [
+            {
+              name7: 'value7',
+              name8: 'value8',
+            },
+          ],
+          'third-parent': [
+            {
+              name9: 'value9',
+            },
+          ],
+        },
+      },
+      {
+        modification: 'ADD_VARIABLE',
+        scopeKey: 'random-scope-id-5',
+        variables: [{name3: 'value3'}],
+      },
+      {
+        modification: 'ADD_VARIABLE',
+        scopeKey: 'random-scope-id-5',
+        variables: [{name4: 'value4'}],
+      },
+      {
+        modification: 'EDIT_VARIABLE',
+        scopeKey: 'random-scope-id-5',
+        variables: [{name5: 'value5-edited2'}],
+      },
+    ]);
   });
 });

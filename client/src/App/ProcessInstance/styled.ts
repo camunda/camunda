@@ -36,12 +36,13 @@ const Container = styled.main<ContainerProps>`
         $isModificationOutlineVisible ? `${MODIFICATION_HEADER_HEIGHT}px` : ''
       } ${$isBreadcrumbVisible ? '30px' : ''} 56px 1fr`};
       height: 100%;
+      position: relative;
+
       ${$isModificationOutlineVisible &&
       css`
         border: 4px solid ${theme.colors.primaryButton04};
         border-right: none;
         border-left: none;
-        position: relative;
         &:before {
           ${frameStyles}
           left: 0;

@@ -188,6 +188,9 @@ const ProcessInstance: React.FC = observer(() => {
       {modificationStatus === 'adding-modification' && (
         <ModificationLoadingOverlay label="Adding modifications..." />
       )}
+      {modificationStatus === 'applying-modifications' && (
+        <ModificationLoadingOverlay label="Applying modifications..." />
+      )}
 
       {isBreadcrumbVisible && (
         <Breadcrumb

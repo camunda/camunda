@@ -8,10 +8,14 @@
 import styled, {css} from 'styled-components';
 import {Spinner as BaseSpinner} from 'modules/components/Spinner';
 import {zModificationLoadingOverlay} from 'modules/constants/componentHierarchy';
-import {MODIFICATION_HEADER_HEIGHT} from 'modules/constants';
 
-const Overlay = styled.div`
-  ${({theme}) => {
+type OverlayProps = {
+  $modificationHeaderHeight: number;
+  $footerHeight: number;
+};
+
+const Overlay = styled.div<OverlayProps>`
+  ${({theme, $modificationHeaderHeight, $footerHeight}) => {
     const colors = theme.colors.processInstance.modifications.loadingOverlay;
 
     return css`
@@ -22,8 +26,8 @@ const Overlay = styled.div`
       justify-content: center;
       width: 100%;
       position: absolute;
-      height: calc(100% - ${MODIFICATION_HEADER_HEIGHT}px);
-      margin-top: ${MODIFICATION_HEADER_HEIGHT}px;
+      height: calc(100% - ${$modificationHeaderHeight}px + ${$footerHeight}px);
+      margin-top: ${$modificationHeaderHeight}px;
     `;
   }}
 `;

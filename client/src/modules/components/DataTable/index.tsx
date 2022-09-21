@@ -35,7 +35,7 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
       <Container className={className} ref={ref}>
         <Table>
           <THead>
-            <TR>
+            <TR $hideLastChildBottomBorder>
               {headerColumns.map(({cellContent, isBold, width}, index) => (
                 <TH key={index} $isBold={isBold} $width={width}>
                   {cellContent}

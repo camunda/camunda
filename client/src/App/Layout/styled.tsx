@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {HEADER_HEIGHT} from 'modules/constants';
+import {HEADER_HEIGHT, FOOTER_HEIGHT} from 'modules/constants';
 import styled, {css} from 'styled-components';
 
 type GridProps = {
@@ -24,7 +24,8 @@ const Grid = styled.div<GridProps>`
             ${HEADER_HEIGHT}px calc(100% - ${HEADER_HEIGHT}px)
           `
         : css`
-            ${HEADER_HEIGHT}px calc(100% - ${HEADER_HEIGHT + 38}px) 38px
+            ${HEADER_HEIGHT}px calc(100% - ${HEADER_HEIGHT +
+            FOOTER_HEIGHT}px) ${FOOTER_HEIGHT}px
           `};
     `;
   }}

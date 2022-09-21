@@ -27,6 +27,7 @@ import {getProcessName} from 'modules/utils/instance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {ActionButton} from 'modules/components/ActionButton';
 import {VariableModification} from './VariableModification';
+import {useNotifications} from 'modules/notifications';
 
 type Props = {
   isVisible: boolean;
@@ -43,6 +44,8 @@ const OPERATION_DISPLAY_NAME = {
 
 const ModificationSummaryModal: React.FC<Props> = observer(
   ({isVisible, onClose}) => {
+    const notifications = useNotifications();
+
     const flowNodeModificationsTableRef = useRef<HTMLDivElement>(null);
     const variableModificationsTableRef = useRef<HTMLDivElement>(null);
 
@@ -287,7 +290,24 @@ const ModificationSummaryModal: React.FC<Props> = observer(
             </Modal.SecondaryButton>
             <Modal.PrimaryButton
               title="Apply"
-              onClick={onClose}
+              onClick={() => {
+                modificationsStore.applyModifications({
+                  processInstanceId,
+                  onSuccess: () => {
+                    notifications.displayNotification('success', {
+                      headline: 'Modifications applied',
+                    });
+                  },
+                  onError: () => {
+                    notifications.displayNotification('error', {
+                      headline: 'Modification failed',
+                      description:
+                        'Unable to apply modifications, please try again.',
+                    });
+                  },
+                });
+                onClose();
+              }}
               data-testid="apply-button"
             >
               Apply

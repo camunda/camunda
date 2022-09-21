@@ -11,6 +11,12 @@ import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagra
 import {isFlowNodeMultiInstance} from './utils/isFlowNodeMultiInstance';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 import {getFlowElementIds} from 'modules/bpmn-js/getFlowElementIds';
+import {
+  modify,
+  ModificationPayload,
+  FlowNodeVariables,
+} from 'modules/api/modifications';
+import {logger} from 'modules/logger';
 
 type FlowNodeModificationPayload =
   | {
@@ -62,7 +68,12 @@ type Modification = FlowNodeModification | VariableModification;
 type RemovedModificationSource = 'variables' | 'summaryModal' | 'footer';
 
 type State = {
-  status: 'enabled' | 'moving-token' | 'disabled' | 'adding-modification';
+  status:
+    | 'enabled'
+    | 'moving-token'
+    | 'disabled'
+    | 'adding-modification'
+    | 'applying-modifications';
   modifications: Modification[];
   lastRemovedModification:
     | {
@@ -91,7 +102,10 @@ class Modifications {
   modificationsLoadingTimeout: number | undefined;
 
   constructor() {
-    makeAutoObservable(this);
+    makeAutoObservable(this, {
+      generateModificationsPayload: false,
+      setVariableModificationsForParentScopes: false,
+    });
   }
 
   startMovingToken = (sourceFlowNodeId: string) => {
@@ -166,6 +180,10 @@ class Modifications {
 
   disableModificationMode = () => {
     this.state.status = 'disabled';
+  };
+
+  startApplyingModifications = () => {
+    this.state.status = 'applying-modifications';
   };
 
   addModification = (
@@ -245,7 +263,7 @@ class Modifications {
   };
 
   get isModificationModeEnabled() {
-    return this.state.status !== 'disabled';
+    return !['disabled', 'applying-modifications'].includes(this.state.status);
   }
 
   get lastModification() {
@@ -409,6 +427,181 @@ class Modifications {
         value: newValue,
         id,
       }));
+  };
+
+  getVariableModificationsPerScope = (scopeId: string) => {
+    const variableModifications = this.variableModifications.filter(
+      (modification) => modification.scopeId === scopeId
+    );
+
+    if (variableModifications.length === 0) {
+      return undefined;
+    }
+
+    return variableModifications.reduce<{[key: string]: string}>(
+      (accumulator, {name, newValue}) => {
+        accumulator[name] = newValue;
+        return accumulator;
+      },
+      {}
+    );
+  };
+
+  setVariableModificationsForParentScopes = (parentScopeIds: {
+    [flowNodeId: string]: string;
+  }) => {
+    return Object.entries(parentScopeIds).reduce<FlowNodeVariables>(
+      (variableModifications, [flowNodeId, scopeId]) => {
+        if (scopeId === undefined) {
+          return variableModifications;
+        }
+
+        const variables = this.getVariableModificationsPerScope(scopeId);
+
+        if (variables === undefined) {
+          return variableModifications;
+        }
+
+        variableModifications[flowNodeId] = [variables];
+
+        return variableModifications;
+      },
+      {}
+    );
+  };
+
+  generateModificationsPayload = () => {
+    let variablesForNewScopes: string[] = [];
+    const flowNodeModifications = this.flowNodeModifications.reduce<
+      ModificationPayload['modifications']
+    >((modifications, payload) => {
+      const {operation} = payload;
+
+      if (operation === 'ADD_TOKEN') {
+        const variablesPerScope = this.getVariableModificationsPerScope(
+          payload.scopeId
+        );
+
+        const variablesForParentScopes =
+          this.setVariableModificationsForParentScopes(payload.parentScopeIds);
+
+        variablesForNewScopes = variablesForNewScopes.concat([
+          payload.scopeId,
+          ...Object.values(payload.parentScopeIds),
+        ]);
+
+        const allVariables = {...variablesForParentScopes};
+        if (variablesPerScope !== undefined) {
+          allVariables[payload.flowNode.id] = [variablesPerScope];
+        }
+
+        return [
+          ...modifications,
+          {
+            modification: payload.operation,
+            sourceFlowNodeId: payload.flowNode.id,
+            variables:
+              Object.keys(allVariables).length > 0 ? allVariables : undefined,
+          },
+        ];
+      }
+
+      if (operation === 'CANCEL_TOKEN') {
+        return [
+          ...modifications,
+          {
+            modification: payload.operation,
+            targetFlowNodeId: payload.flowNode.id,
+          },
+        ];
+      }
+
+      if (operation === 'MOVE_TOKEN') {
+        const {scopeIds, operation, flowNode, targetFlowNode, parentScopeIds} =
+          payload;
+
+        const variablesForAllTargetScopes = scopeIds.reduce<
+          Array<{[key: string]: string}>
+        >((allVariables, scopeId) => {
+          const variables = this.getVariableModificationsPerScope(scopeId);
+          if (variables === undefined) {
+            return allVariables;
+          }
+
+          variablesForNewScopes.push(scopeId);
+          return [...allVariables, variables];
+        }, []);
+
+        const variablesForParentScopes =
+          this.setVariableModificationsForParentScopes(parentScopeIds);
+        variablesForNewScopes = variablesForNewScopes.concat(
+          Object.values(parentScopeIds)
+        );
+
+        const allVariables = {...variablesForParentScopes};
+        if (variablesForAllTargetScopes.length > 0) {
+          allVariables[targetFlowNode.id] = variablesForAllTargetScopes;
+        }
+
+        return [
+          ...modifications,
+          {
+            modification: operation,
+            sourceFlowNodeId: flowNode.id,
+            targetFlowNodeId: targetFlowNode.id,
+            newTokensCount: scopeIds.length,
+            variables:
+              Object.keys(allVariables).length > 0 ? allVariables : undefined,
+          },
+        ];
+      }
+
+      return modifications;
+    }, []);
+
+    const variableModifications = this.variableModifications
+      .filter(({scopeId}) => !variablesForNewScopes.includes(scopeId))
+      .map(({operation, scopeId, name, newValue}) => {
+        return {
+          modification: operation,
+          scopeKey: scopeId,
+          variables: [{[name]: newValue}],
+        };
+      });
+
+    return [...flowNodeModifications, ...variableModifications];
+  };
+
+  applyModifications = async ({
+    processInstanceId,
+    onSuccess,
+    onError,
+  }: {
+    processInstanceId: string;
+    onSuccess: () => void;
+    onError: () => void;
+  }) => {
+    this.startApplyingModifications();
+
+    try {
+      const response = await modify({
+        processInstanceId,
+        payload: {modifications: this.generateModificationsPayload()},
+      });
+
+      if (response.ok) {
+        onSuccess();
+      } else {
+        logger.error('Failed to modify Process Instance');
+        onError();
+      }
+    } catch (error) {
+      logger.error('Failed to modify Process Instance');
+      logger.error(error);
+      onError();
+    } finally {
+      this.reset();
+    }
   };
 
   reset = () => {

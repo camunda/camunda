@@ -15,12 +15,20 @@ import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInsta
 import {
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {createInstance} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {rest} from 'msw';
 import {ModificationSummaryModal} from './index';
+
+const mockDisplayNotification = jest.fn();
+jest.mock('modules/notifications', () => ({
+  useNotifications: () => ({
+    displayNotification: mockDisplayNotification,
+  }),
+}));
 
 describe('Modification Summary Modal', () => {
   beforeEach(() => {
@@ -220,7 +228,7 @@ describe('Modification Summary Modal', () => {
 
     expect(mockOnClose).toHaveBeenCalledTimes(1);
 
-    await user.click(screen.getByTestId('apply-button'));
+    await user.click(screen.getByRole('button', {name: 'Exit Modal'}));
 
     expect(mockOnClose).toHaveBeenCalledTimes(2);
   });
@@ -336,5 +344,84 @@ describe('Modification Summary Modal', () => {
     });
 
     expect(screen.getByTestId('affected-token-count')).toHaveTextContent('7');
+  });
+
+  it('should display success notification when modifications are applied with success', async () => {
+    modificationsStore.enableModificationMode();
+    const mockOnClose = jest.fn();
+
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:processInstanceId/modify',
+        (_, res, ctx) => res.once(ctx.json({}))
+      )
+    );
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId: '123',
+        flowNode: {id: 'flow-node-1', name: 'flow node 1'},
+        affectedTokenCount: 3,
+        parentScopeIds: {},
+      },
+    });
+
+    const {user} = render(
+      <ModificationSummaryModal isVisible onClose={mockOnClose} />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
+
+    await waitFor(() =>
+      expect(mockDisplayNotification).toHaveBeenCalledWith('success', {
+        headline: 'Modifications applied',
+      })
+    );
+    expect(mockOnClose).toHaveBeenCalled();
+    expect(modificationsStore.isModificationModeEnabled).toBe(false);
+  });
+
+  it('should display error notification when modifications are applied with failure', async () => {
+    modificationsStore.enableModificationMode();
+    const mockOnClose = jest.fn();
+
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:processInstanceId/modify',
+        (_, res, ctx) => res.once(ctx.status(500), ctx.json({}))
+      )
+    );
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId: '123',
+        flowNode: {id: 'flow-node-1', name: 'flow node 1'},
+        affectedTokenCount: 3,
+        parentScopeIds: {},
+      },
+    });
+
+    const {user} = render(
+      <ModificationSummaryModal isVisible onClose={mockOnClose} />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
+
+    await waitFor(() =>
+      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
+        headline: 'Modification failed',
+        description: 'Unable to apply modifications, please try again.',
+      })
+    );
+    expect(mockOnClose).toHaveBeenCalled();
+    expect(modificationsStore.isModificationModeEnabled).toBe(false);
   });
 });
