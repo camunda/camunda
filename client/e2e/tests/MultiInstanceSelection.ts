@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {screen, within} from '@testing-library/testcafe';
 import {wait} from './utils/wait';
 import {demoUser} from './utils/Roles';
 import {setup} from './MultiInstanceSelection.setup';
