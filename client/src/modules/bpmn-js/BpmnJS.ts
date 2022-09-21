@@ -41,6 +41,7 @@ type RenderOptions = {
   selectedFlowNodeId?: string;
   overlaysData?: OverlayData[];
   highlightedSequenceFlows?: string[];
+  nonSelectableNodeTooltipText?: string;
 };
 
 class BpmnJS {
@@ -92,6 +93,7 @@ class BpmnJS {
       selectedFlowNodeId,
       overlaysData = [],
       highlightedSequenceFlows = [],
+      nonSelectableNodeTooltipText,
     } = options;
 
     if (this.#navigatedViewer === null) {
@@ -131,12 +133,16 @@ class BpmnJS {
       const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
       this.#nonSelectableFlowNodes.forEach((flowNodeId) => {
         this.#removeMarker(flowNodeId, 'op-non-selectable');
+        this.#removeTooltip(flowNodeId);
       });
       const nonSelectableFlowNodes = elementRegistry?.filter((element) =>
         isNonSelectableFlowNode(element, selectableFlowNodes)
       );
       nonSelectableFlowNodes?.forEach(({id}) => {
         this.#addMarker(id, 'op-non-selectable');
+        if (nonSelectableNodeTooltipText !== undefined) {
+          this.#addTooltip(id, nonSelectableNodeTooltipText);
+        }
       });
       this.#nonSelectableFlowNodes = nonSelectableFlowNodes
         ? nonSelectableFlowNodes.map(({id}) => id)
@@ -217,6 +223,35 @@ class BpmnJS {
 
     if (elementRegistry?.get(elementId) !== undefined) {
       canvas?.addMarker(elementId, className);
+    }
+  };
+
+  #addTooltip = (flowNodeId: string, tooltipText: string) => {
+    const titleElement = document.querySelector(
+      `[data-element-id="${flowNodeId}"] title`
+    );
+
+    if (titleElement === null) {
+      const tooltip = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'title'
+      );
+
+      tooltip.textContent = tooltipText;
+      document
+        .querySelector(`[data-element-id="${flowNodeId}"]`)
+        ?.appendChild(tooltip);
+    }
+  };
+
+  #removeTooltip = (flowNodeId: string) => {
+    const titleElement = document.querySelector(
+      `[data-element-id="${flowNodeId}"] title`
+    );
+    if (titleElement !== null) {
+      document
+        .querySelector(`[data-element-id="${flowNodeId}"]`)
+        ?.removeChild(titleElement);
     }
   };
 
