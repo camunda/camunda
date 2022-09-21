@@ -14,10 +14,11 @@ const StatisticSpan = styled.span`
 
 type StatisticProps = {
   $state: 'active' | 'incidents' | 'completed' | 'canceled';
+  $isFaded: boolean;
 };
 
 const Statistic = styled.div<StatisticProps>`
-  ${({theme, $state}) => {
+  ${({theme, $state, $isFaded}) => {
     const colors =
       theme.colors.modules.diagram.statisticOverlay.statistic[$state];
 
@@ -29,8 +30,16 @@ const Statistic = styled.div<StatisticProps>`
       height: 24px;
       border-radius: 12px;
       transform: translateX(-50%);
-      background-color: ${colors.backgroundColor};
+      background-color: ${$isFaded
+        ? colors.fadedBackgroundColor
+        : colors.backgroundColor};
       color: ${theme.colors.white};
+
+      svg {
+        color: ${$isFaded
+          ? colors.fadedBackgroundColor
+          : colors.backgroundColor};
+      }
     `;
   }}
 `;

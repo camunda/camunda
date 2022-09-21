@@ -61,6 +61,8 @@ const DARK_COLORS = {
   pillHover: '#767a80',
   rowHover: '#4e4f55',
   logo: '#f8f8f8',
+  canceledBadgeActive: '#6f897d',
+  canceledBadgeIncident: '#94595b',
 } as const;
 const LIGHT_COLORS = {
   ...SEMANTIC_COLORS,
@@ -89,6 +91,8 @@ const LIGHT_COLORS = {
   label: '#edeff3',
   rowHover: '#e7e9ee',
   logo: '#666666',
+  canceledBadgeActive: '#96baa8',
+  canceledBadgeIncident: '#cc8a8a',
 } as const;
 
 const theme = {
@@ -530,15 +534,19 @@ const theme = {
             statistic: {
               active: {
                 backgroundColor: SEMANTIC_COLORS.allIsWell,
+                fadedBackgroundColor: DARK_COLORS.canceledBadgeActive,
               },
               incidents: {
                 backgroundColor: SEMANTIC_COLORS.incidentsAndErrors,
+                fadedBackgroundColor: DARK_COLORS.canceledBadgeIncident,
               },
               completed: {
                 backgroundColor: LIGHT_COLORS.button02,
+                fadedBackgroundColor: LIGHT_COLORS.button02,
               },
               canceled: {
                 backgroundColor: SEMANTIC_COLORS.badge02,
+                fadedBackgroundColor: SEMANTIC_COLORS.badge02,
               },
             },
           },
@@ -1437,15 +1445,19 @@ const theme = {
             statistic: {
               active: {
                 backgroundColor: SEMANTIC_COLORS.allIsWell,
+                fadedBackgroundColor: LIGHT_COLORS.canceledBadgeActive,
               },
               incidents: {
                 backgroundColor: SEMANTIC_COLORS.incidentsAndErrors,
+                fadedBackgroundColor: LIGHT_COLORS.canceledBadgeIncident,
               },
               completed: {
                 backgroundColor: LIGHT_COLORS.button02,
+                fadedBackgroundColor: LIGHT_COLORS.button02,
               },
               canceled: {
                 backgroundColor: SEMANTIC_COLORS.badge02,
+                fadedBackgroundColor: SEMANTIC_COLORS.badge02,
               },
             },
           },

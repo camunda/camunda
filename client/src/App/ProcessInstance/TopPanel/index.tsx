@@ -235,6 +235,9 @@ const TopPanel: React.FC<Props> = observer(() => {
                       flowNodeState={payload.flowNodeState}
                       count={payload.count}
                       container={overlay.container}
+                      isFaded={modificationsStore.isCancelModificationAppliedOnFlowNode(
+                        overlay.flowNodeId
+                      )}
                     />
                   );
                 })}
