@@ -727,6 +727,10 @@ public final class FileBasedSnapshotStore extends Actor
 
     Files.copy(checksumFile, checksumPath);
 
+    // Flush directory of this snapshot as well as root snapshot directory
+    FileUtil.flushDirectory(snapshotPath);
+    FileUtil.flushDirectory(snapshotsDirectory);
+
     LOGGER.info("Moved snapshot {} to {}", snapshotId, snapshotPath);
 
     // verify snapshot is not corrupted
@@ -743,7 +747,7 @@ public final class FileBasedSnapshotStore extends Actor
     try {
       Files.move(source, targetFilePath);
     } catch (final IOException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
   }
 }

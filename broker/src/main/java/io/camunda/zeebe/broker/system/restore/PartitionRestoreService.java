@@ -20,7 +20,9 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -178,6 +180,12 @@ public class PartitionRestoreService {
     final var segmentFileNames = segmentFileSet.keySet();
     segmentFileNames.forEach(
         name -> copyNamedFileToDirectory(name, segmentFileSet.get(name), rootDirectory));
+
+    try {
+      FileUtil.flushDirectory(rootDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   private void moveSnapshotFiles(final Backup backup) {
@@ -193,7 +201,7 @@ public class PartitionRestoreService {
       snapshotStore.restore(
           backup.descriptor().snapshotId().orElseThrow(), backup.snapshot().namedFiles());
     } catch (final IOException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
   }
 
@@ -203,7 +211,7 @@ public class PartitionRestoreService {
     try {
       Files.move(source, targetFilePath);
     } catch (final IOException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
   }
 
