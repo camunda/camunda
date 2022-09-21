@@ -54,12 +54,7 @@ type ModificationBadgePayload = {
   cancelledTokenCount: number;
 };
 
-type Props = {
-  incidents?: unknown;
-  children?: React.ReactNode;
-};
-
-const TopPanel: React.FC<Props> = observer(() => {
+const TopPanel: React.FC = observer(() => {
   const {selectableFlowNodes} = flowNodeStatesStore;
 
   const {processInstanceId = ''} = useProcessInstancePageParams();
