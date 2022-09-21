@@ -12,6 +12,8 @@ public class ExecutableEndEvent extends ExecutableFlowNode implements Executable
   private JobWorkerProperties jobWorkerProperties;
   private ExecutableError error;
 
+  private boolean isTerminateEndEvent;
+
   public ExecutableEndEvent(final String id) {
     super(id);
   }
@@ -36,5 +38,13 @@ public class ExecutableEndEvent extends ExecutableFlowNode implements Executable
   @Override
   public void setJobWorkerProperties(final JobWorkerProperties jobWorkerProperties) {
     this.jobWorkerProperties = jobWorkerProperties;
+  }
+
+  public boolean isTerminateEndEvent() {
+    return isTerminateEndEvent;
+  }
+
+  public void setTerminateEndEvent(final boolean isTerminateEndEvent) {
+    this.isTerminateEndEvent = isTerminateEndEvent;
   }
 }

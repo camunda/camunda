@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
@@ -25,12 +26,15 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   private final NoneEndEventBehavior noneEndEventBehavior = new NoneEndEventBehavior();
   private final ErrorEndEventBehavior errorEndEventBehavior = new ErrorEndEventBehavior();
   private final MessageEndEventBehavior messageEndEventBehavior = new MessageEndEventBehavior();
+  private final TerminateEndEventBehavior terminateEndEventBehavior =
+      new TerminateEndEventBehavior();
 
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnJobBehavior jobBehavior;
+  private final BpmnStateBehavior stateBehavior;
 
   public EndEventProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -40,6 +44,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     this.stateTransitionBehavior = stateTransitionBehavior;
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
+    stateBehavior = bpmnBehaviors.stateBehavior();
   }
 
   @Override
@@ -71,8 +76,13 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   private EndEventBehavior eventBehaviorOf(final ExecutableEndEvent element) {
     if (element.hasError()) {
       return errorEndEventBehavior;
+
     } else if (element.getJobWorkerProperties() != null) {
       return messageEndEventBehavior;
+
+    } else if (element.isTerminateEndEvent()) {
+      return terminateEndEventBehavior;
+
     } else {
       return noneEndEventBehavior;
     }
@@ -153,6 +163,24 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
         final ExecutableEndEvent element, final BpmnElementContext terminating) {
 
       jobBehavior.cancelJob(terminating);
+    }
+  }
+
+  private class TerminateEndEventBehavior implements EndEventBehavior {
+
+    @Override
+    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+      final var activated = stateTransitionBehavior.transitionToActivated(activating);
+      final var completing = stateTransitionBehavior.transitionToCompleting(activated);
+      stateTransitionBehavior
+          .transitionToCompleted(element, completing)
+          .ifRightOrLeft(
+              completed -> {
+                // terminate all other element instances of the same flow scope
+                final var flowScopeContext = stateBehavior.getFlowScopeContext(completed);
+                stateTransitionBehavior.terminateChildInstances(flowScopeContext);
+              },
+              failure -> incidentBehavior.createIncident(failure, completing));
     }
   }
 }
