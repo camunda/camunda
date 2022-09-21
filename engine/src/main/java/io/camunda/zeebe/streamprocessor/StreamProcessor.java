@@ -111,6 +111,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   private final List<RecordProcessor> recordProcessors = new ArrayList<>();
   private StreamProcessorDbState streamProcessorDbState;
+  private ProcessingScheduleServiceImpl scheduleService;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
@@ -165,6 +166,15 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       LOG.debug("Recovering state of partition {} from snapshot", partitionId);
       final var startRecoveryTimer = metrics.startRecoveryTimer();
       final long snapshotPosition = recoverFromSnapshot();
+
+      // the schedule service actor is only opened if the replay is done,
+      // until then it is an unusable and closed schedule service
+      scheduleService =
+          new ProcessingScheduleServiceImpl(
+              streamProcessorContext::getStreamProcessorPhase,
+              streamProcessorContext.getAbortCondition(),
+              logStream::newLogStreamBatchWriter);
+      streamProcessorContext.scheduleService(scheduleService);
 
       initRecordProcessors();
 
@@ -253,6 +263,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void tearDown() {
+    scheduleService.close();
     streamProcessorContext.getLogStreamReader().close();
     logStream.removeRecordAvailableListener(this);
     replayStateMachine.close();
@@ -273,20 +284,32 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
 
-      processingStateMachine =
-          new ProcessingStateMachine(
-              streamProcessorContext, this::shouldProcessNext, recordProcessors);
-
-      logStream.registerRecordAvailableListener(this);
-
-      // start reading
-      lifecycleAwareListeners.forEach(l -> l.onRecovered(streamProcessorContext));
-      processingStateMachine.startProcessing(lastProcessingPositions);
-      if (!shouldProcess) {
-        setStateToPausedAndNotifyListeners();
-      }
+      final var scheduleServiceOpenFuture = scheduleService.open(actor);
+      scheduleServiceOpenFuture.onComplete(
+          (v, failure) -> {
+            if (failure == null) {
+              startProcessing(lastProcessingPositions);
+            } else {
+              onFailure(failure);
+            }
+          });
     } else {
       onFailure(errorOnReceivingWriter);
+    }
+  }
+
+  private void startProcessing(final LastProcessingPositions lastProcessingPositions) {
+    processingStateMachine =
+        new ProcessingStateMachine(
+            streamProcessorContext, this::shouldProcessNext, recordProcessors);
+
+    logStream.registerRecordAvailableListener(this);
+
+    // start reading
+    lifecycleAwareListeners.forEach(l -> l.onRecovered(streamProcessorContext));
+    processingStateMachine.startProcessing(lastProcessingPositions);
+    if (!shouldProcess) {
+      setStateToPausedAndNotifyListeners();
     }
   }
 
