@@ -35,7 +35,7 @@ const props = {
 it('invoke loadRawData on button Click', async () => {
   const node = shallow(<InstancesButton {...props} />);
 
-  await node.find(DownloadButton).prop('retriever');
+  await node.find(DownloadButton).prop('retriever')();
 
   expect(loadRawData).toHaveBeenCalledWith({
     filter: [
