@@ -104,5 +104,36 @@ class UserTaskTransformerTest {
         }
       }
     }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class CandidateUsersTests {
+
+      Stream<Arguments> candidateUsers() {
+        return Stream.of(
+            Arguments.of(null, null),
+            Arguments.of("", null),
+            Arguments.of(" ", null),
+            Arguments.of("rose", "[\"rose\"]"),
+            Arguments.of("jack,rose", "[\"jack\",\"rose\"]"),
+            Arguments.of(" jack , rose ", "[\"jack\",\"rose\"]"),
+            Arguments.of("=users", "users"),
+            Arguments.of("=[\"jack\",\"rose\"]", "[\"jack\",\"rose\"]"));
+      }
+
+      @DisplayName("Should transform user task with candidateUsers")
+      @ParameterizedTest
+      @MethodSource("candidateUsers")
+      void shouldTransform(final String candidateUsers, final String parsedExpression) {
+        final var userTask =
+            transformUserTask(processWithUserTask(b -> b.zeebeCandidateUsers(candidateUsers)));
+        if (parsedExpression == null) {
+          assertThat(userTask.getJobWorkerProperties().getCandidateUsers()).isNull();
+        } else {
+          assertThat(userTask.getJobWorkerProperties().getCandidateUsers().getExpression())
+              .isEqualTo(parsedExpression);
+        }
+      }
+    }
   }
 }
