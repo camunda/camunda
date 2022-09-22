@@ -34,7 +34,6 @@ import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.roles.RaftRole;
 import io.atomix.raft.storage.RaftStorage;
-import io.atomix.raft.storage.StorageException;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.Managed;
@@ -113,8 +112,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
       synchronized (this) {
         try {
           initServer();
-
-        } catch (final StorageException e) {
+        } catch (final RuntimeException e) {
           return Futures.exceptionalFuture(e);
         }
       }
