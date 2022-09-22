@@ -353,10 +353,29 @@ public final class ZeebeRuntimeValidationTest {
         List.of(expect(ZeebeAssignmentDefinition.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
+        /* invalid candidateUsers expression */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeCandidateUsersExpression(INVALID_EXPRESSION))
+            .done(),
+        List.of(expect(ZeebeAssignmentDefinition.class, INVALID_EXPRESSION_MESSAGE))
+      },
+      {
         /* invalid candidateGroups static value */
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .userTask("task", b -> b.zeebeCandidateGroups("1,,"))
+            .done(),
+        List.of(
+            expect(
+                ZeebeAssignmentDefinition.class,
+                "Expected static value to be a list of comma-separated values, e.g. 'a,b,c', but found '1,,'"))
+      },
+      {
+        /* invalid candidateUsers static value */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeCandidateUsers("1,,"))
             .done(),
         List.of(
             expect(

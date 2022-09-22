@@ -112,6 +112,14 @@ public final class ZeebeRuntimeValidators {
                         .satisfiesIfStatic(
                             ZeebeExpressionValidator::isListOfCsv,
                             "be a list of comma-separated values, e.g. 'a,b,c'"))
+            .hasValidExpression(
+                ZeebeAssignmentDefinition::getCandidateUsers,
+                expression ->
+                    expression
+                        .isOptional()
+                        .satisfiesIfStatic(
+                            ZeebeExpressionValidator::isListOfCsv,
+                            "be a list of comma-separated values, e.g. 'a,b,c'"))
             .build(expressionLanguage),
         // ----------------------------------------
         new TimerCatchEventExpressionValidator(expressionLanguage, expressionProcessor),
