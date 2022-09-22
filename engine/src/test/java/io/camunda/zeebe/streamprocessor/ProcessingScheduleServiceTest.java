@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.streamprocessor;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,7 +34,6 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.streamprocessor.ProcessingScheduleServiceImpl;
 import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
