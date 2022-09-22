@@ -7,9 +7,9 @@ on:
       - release-*
       - trying
       - staging
-  pull_request: {}
-  workflow_dispatch: {}
-  workflow_call: {}
+  pull_request: { }
+  workflow_dispatch: { }
+  workflow_call: { }
 
 defaults:
   run:
@@ -347,10 +347,19 @@ jobs:
   event_file:
     name: "Event File"
     runs-on: ubuntu-latest
+    needs: # Add dependencies so that the event file is republished on retry
+      - integration-tests
+      - exporter-tests
+      - unit-tests
+      - slow-unit-tests
+      - smoke-tests
+      - java-randomized-tests
+      - go-client
+      - java-client
+    if: always()
     steps:
       - name: Upload
         uses: actions/upload-artifact@v3
-        if: always()
         with:
           name: Event File
           path: ${{ github.event_path }}
