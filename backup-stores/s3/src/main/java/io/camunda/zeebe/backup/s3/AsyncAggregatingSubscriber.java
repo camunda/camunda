@@ -87,7 +87,7 @@ public class AsyncAggregatingSubscriber<T> implements Subscriber<CompletableFutu
     return CompletableFuture.supplyAsync(phaser::arriveAndAwaitAdvance)
         .thenApply(
             ignored -> {
-              LOG.debug("");
+              LOG.trace("Result is available: {}", results);
               return results;
             });
   }
