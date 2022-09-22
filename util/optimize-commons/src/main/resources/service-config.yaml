@@ -95,21 +95,21 @@ container:
   ports:
     # A port number that will be used by Optimize to process HTTP connections.
     # If set to null, ~ or left empty, http connections won't be accepted.
-    http: 8090
+    http: ${CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP:8090}
     # A port number that will be used by Optimize to process
     # secure HTTPS connections.
-    https: 8091
+    https: ${CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS:8091}
   # HTTPS requires an SSL Certificate. When you generate an SSL Certificate,
   # you are creating a keystore file and a keystore password for use when the
   # browser interface connects
   keystore:
-    location: keystore.jks
-    password: optimize
+    location: ${CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION:keystore.jks}
+    password: ${CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD:optimize}
   # configuration of status reporting web socket
   status:
     # max number of threads\sessions that will be kept to report status
     connections:
-      max: 10
+      max: ${CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX:10}
   # Optional url to access Optimize (used for links to Optimize in e.g. alert emails)
   accessUrl: ${CONTAINER_ACCESS_URL:null}
 

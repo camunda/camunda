@@ -60,6 +60,10 @@ public class ConfigurationServiceTest {
   private static final Boolean CUSTOM_ES_SSL_ENABLED = true;
   private static final Boolean CUSTOM_SHARING_ENABLED = true;
   private static final Boolean CUSTOM_UI_LOGOUT_HIDDEN = true;
+  public static final int CUSTOM_CONTAINER_HTTP_PORT = 9876;
+  public static final int CUSTOM_CONTAINER_HTTPS_PORT = 9877;
+  public static final String CUSTOM_CONTAINER_KEYSTORE_PASSWORD = "customPassword";
+  public static final int CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS = 5;
 
   @RegisterExtension
   @Order(1)
@@ -205,6 +209,13 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(CUSTOM_CONTAINER_HTTPS_PORT));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD", CUSTOM_CONTAINER_KEYSTORE_PASSWORD);
+    environmentVariablesExtension.set(
+      "CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX",
+      String.valueOf(CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS)
+    );
 
     final ConfigurationService underTest = createConfiguration(locations);
 
@@ -243,6 +254,13 @@ public class ConfigurationServiceTest {
     System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     System.setProperty("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
     System.setProperty("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
+    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
+    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(CUSTOM_CONTAINER_HTTPS_PORT));
+    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD", CUSTOM_CONTAINER_KEYSTORE_PASSWORD);
+    System.setProperty(
+      "CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX",
+      String.valueOf(CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS)
+    );
 
     final ConfigurationService underTest = createConfiguration(locations);
 
@@ -287,6 +305,11 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(1234));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(1233));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION", String.valueOf("envVarKeystore.jks"));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD", String.valueOf("envVarPassword"));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX", String.valueOf(15));
     System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFE_MIN));
     System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
     System.setProperty("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
@@ -314,6 +337,13 @@ public class ConfigurationServiceTest {
     System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     System.setProperty("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
     System.setProperty("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
+    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
+    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(CUSTOM_CONTAINER_HTTPS_PORT));
+    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD", CUSTOM_CONTAINER_KEYSTORE_PASSWORD);
+    System.setProperty(
+      "CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX",
+      String.valueOf(CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS)
+    );
 
     final ConfigurationService underTest = createConfiguration(locations);
 
@@ -361,6 +391,13 @@ public class ConfigurationServiceTest {
     System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     System.setProperty("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
     System.setProperty("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
+    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
+    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(CUSTOM_CONTAINER_HTTPS_PORT));
+    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD", CUSTOM_CONTAINER_KEYSTORE_PASSWORD);
+    System.setProperty(
+      "CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX",
+      String.valueOf(CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS)
+    );
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -507,6 +544,11 @@ public class ConfigurationServiceTest {
     assertThat(underTest.getSharingEnabled()).isEqualTo(CUSTOM_SHARING_ENABLED);
     assertThat(underTest.getUiConfiguration().isLogoutHidden()).isEqualTo(CUSTOM_UI_LOGOUT_HIDDEN);
     assertThat(underTest.getDataArchiveConfiguration().isEnabled()).isFalse();
+
+    assertThat(underTest.getContainerHttpPort()).isPresent().get().isEqualTo(CUSTOM_CONTAINER_HTTP_PORT);
+    assertThat(underTest.getContainerHttpsPort()).isEqualTo(CUSTOM_CONTAINER_HTTPS_PORT);
+    assertThat(underTest.getContainerKeystorePassword()).isEqualTo(CUSTOM_CONTAINER_KEYSTORE_PASSWORD);
+    assertThat(underTest.getMaxStatusConnections()).isEqualTo(CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS);
   }
 
 }
