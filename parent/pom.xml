@@ -23,6 +23,9 @@
       <url>https://zeebe.io/legal/zeebe-community-license-1.1</url>
     </license>
   </licenses>
+  <modules>
+    <module>../stream-platform</module>
+  </modules>
 
   <properties>
     <version.java>17</version.java>
