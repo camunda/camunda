@@ -11,6 +11,7 @@ import Modal from 'modules/components/Modal';
 const Body = styled(Modal.Body)`
   ${({theme}) => {
     return css`
+      padding: 14px 19px;
       padding-top: 0;
       color: ${theme.colors.text01};
       overflow: auto;

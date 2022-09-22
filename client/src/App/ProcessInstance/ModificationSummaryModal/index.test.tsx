@@ -6,8 +6,9 @@
  */
 
 import {createAddVariableModification} from 'modules/mocks/modifications';
-import {mockServer} from 'modules/mock-server/node';
 import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
+import {mockServer} from 'modules/mock-server/node';
+import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
@@ -37,6 +38,7 @@ describe('Modification Summary Modal', () => {
   afterEach(() => {
     modificationsStore.reset();
     processInstanceDetailsStore.reset();
+    flowNodeStatesStore.reset();
   });
 
   it('should render information message', async () => {
@@ -359,6 +361,7 @@ describe('Modification Summary Modal', () => {
         (_, res, ctx) => res.once(ctx.json({}))
       )
     );
+
     modificationsStore.addModification({
       type: 'token',
       payload: {
@@ -428,5 +431,148 @@ describe('Modification Summary Modal', () => {
     );
     expect(mockOnClose).toHaveBeenCalled();
     expect(modificationsStore.isModificationModeEnabled).toBe(false);
+  });
+
+  it('should display/hide warning message if all modifications are about to be canceled', async () => {
+    mockServer.use(
+      rest.get(
+        '/api/process-instances/:instanceId/flow-node-states',
+        (_, rest, ctx) => rest(ctx.json({taskA: 'INCIDENT', taskB: 'ACTIVE'}))
+      )
+    );
+
+    await flowNodeStatesStore.fetchFlowNodeStates('id');
+
+    render(<ModificationSummaryModal isVisible onClose={jest.fn()} />, {
+      wrapper: ThemeProvider,
+    });
+
+    expect(
+      screen.queryByText(
+        'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.'
+      )
+    ).not.toBeInTheDocument();
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'CANCEL_TOKEN',
+        flowNode: {id: 'taskA', name: 'task a'},
+        affectedTokenCount: 1,
+      },
+    });
+
+    expect(
+      screen.queryByText(
+        'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.'
+      )
+    ).not.toBeInTheDocument();
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'CANCEL_TOKEN',
+        flowNode: {id: 'taskB', name: 'task b'},
+        affectedTokenCount: 1,
+      },
+    });
+
+    expect(
+      screen.getByText(
+        'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.'
+      )
+    ).toBeInTheDocument();
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        flowNode: {id: 'taskB', name: 'task b'},
+        affectedTokenCount: 1,
+        scopeId: 'some-scope-id',
+        parentScopeIds: {},
+      },
+    });
+
+    expect(
+      screen.queryByText(
+        'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.'
+      )
+    ).not.toBeInTheDocument();
+  });
+
+  it('should display error message and diable apply button if all modifications are about to be canceled and process has a parent', async () => {
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: '1',
+        parentInstanceId: '2',
+        callHierarchy: [
+          {instanceId: '3', processDefinitionName: 'some root process'},
+          {instanceId: '2', processDefinitionName: 'some parent process'},
+        ],
+      })
+    );
+
+    mockServer.use(
+      rest.get(
+        '/api/process-instances/:instanceId/flow-node-states',
+        (_, rest, ctx) => rest(ctx.json({taskA: 'INCIDENT'}))
+      )
+    );
+
+    await flowNodeStatesStore.fetchFlowNodeStates('id');
+
+    render(<ModificationSummaryModal isVisible onClose={jest.fn()} />, {
+      wrapper: ThemeProvider,
+    });
+
+    expect(
+      screen.queryByText(
+        /This set of planned modifications cannot be applied. This instance is a child instance of/gi
+      )
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.queryByText(/This instance is the child instance of/gi)
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/some parent process - 2/gi)
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        /, and cannot be canceled entirely. To cancel this instance, the root instance/gi
+      )
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/some root process - 3/gi)
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/needs to be canceled./gi)
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled();
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'CANCEL_TOKEN',
+        flowNode: {id: 'taskA', name: 'task a'},
+        affectedTokenCount: 1,
+      },
+    });
+
+    expect(
+      screen.getByText(
+        /This set of planned modifications cannot be applied. This instance is a child instance of/gi
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByText(/some parent process - 2/gi)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /, and cannot be canceled entirely. To cancel this instance, the root instance/gi
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByText(/some root process - 3/gi)).toBeInTheDocument();
+    expect(screen.getByText(/needs to be canceled./gi)).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
   });
 });

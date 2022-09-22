@@ -28,6 +28,9 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {ActionButton} from 'modules/components/ActionButton';
 import {VariableModification} from './VariableModification';
 import {useNotifications} from 'modules/notifications';
+import {Warning} from './Messages/Warning';
+import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
+import {Error} from './Messages/Error';
 
 type Props = {
   isVisible: boolean;
@@ -83,6 +86,10 @@ const ModificationSummaryModal: React.FC<Props> = observer(
     }
 
     const processInstanceId = processInstance.id;
+    const hasParentProcess = processInstance.parentInstanceId !== null;
+
+    const areModificationsInvalid =
+      flowNodeStatesStore.willAllFlowNodesBeCanceled && hasParentProcess;
 
     return (
       <InformationModal
@@ -103,6 +110,10 @@ const ModificationSummaryModal: React.FC<Props> = observer(
               }
               . Click "Apply" to proceed.
             </Info>
+            {flowNodeStatesStore.willAllFlowNodesBeCanceled &&
+              !hasParentProcess && <Warning />}
+            {areModificationsInvalid && <Error />}
+
             <Title>Flow Node Modifications</Title>
             {modificationsStore.flowNodeModifications.length === 0 ? (
               <EmptyMessage>No planned flow node modifications</EmptyMessage>
@@ -309,6 +320,7 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                 onClose();
               }}
               data-testid="apply-button"
+              disabled={areModificationsInvalid}
             >
               Apply
             </Modal.PrimaryButton>

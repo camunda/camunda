@@ -13,7 +13,7 @@ import {ReactComponent as DefaultDelete} from 'modules/components/Icon/delete.sv
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  margin-top: 22px;
+  margin-top: 9px;
 `;
 
 const Process = styled.span`
@@ -23,10 +23,11 @@ const Process = styled.span`
 const Title = styled.div`
   ${styles.productiveHeading02};
   font-weight: 400;
+  margin-top: 19px;
 `;
 
 const Info = styled.p`
-  margin-bottom: 48px;
+  margin-bottom: 29px;
 `;
 
 const DataTable = styled(BaseDataTable)`
@@ -35,7 +36,7 @@ const DataTable = styled(BaseDataTable)`
       theme.colors.processInstance.modifications.summaryModal.tableHeader;
 
     return css`
-      margin-bottom: 50px;
+      margin-bottom: 30px;
       max-height: 185px;
 
       & thead {

@@ -63,7 +63,10 @@ const DARK_COLORS = {
   logo: '#f8f8f8',
   canceledBadgeActive: '#6f897d',
   canceledBadgeIncident: '#94595b',
+  warningNotification: '#704000',
+  errorNotification: '#7a0000',
 } as const;
+
 const LIGHT_COLORS = {
   ...SEMANTIC_COLORS,
   ui01: '#f2f3f5',
@@ -93,6 +96,8 @@ const LIGHT_COLORS = {
   logo: '#666666',
   canceledBadgeActive: '#96baa8',
   canceledBadgeIncident: '#cc8a8a',
+  warningNotification: '#fff0db',
+  errorNotification: '#ffe0e0',
 } as const;
 
 const theme = {
@@ -358,6 +363,14 @@ const theme = {
           summaryModal: {
             tableHeader: {
               backgroundColor: DARK_COLORS.ui01,
+            },
+            warning: {
+              backgroundColor: DARK_COLORS.warningNotification,
+              color: SEMANTIC_COLORS.white,
+            },
+            error: {
+              backgroundColor: DARK_COLORS.errorNotification,
+              color: SEMANTIC_COLORS.white,
             },
           },
           loadingOverlay: {
@@ -979,6 +992,10 @@ const theme = {
           banner: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
         },
       },
+      modificationSummaryModal: {
+        warning: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
+        error: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
+      },
       modificationMode: {
         footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
         lastModification: `0 3px 4px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
@@ -1280,6 +1297,14 @@ const theme = {
           summaryModal: {
             tableHeader: {
               backgroundColor: LIGHT_COLORS.ui04,
+            },
+            warning: {
+              backgroundColor: LIGHT_COLORS.warningNotification,
+              color: DARK_COLORS.ui04,
+            },
+            error: {
+              backgroundColor: LIGHT_COLORS.errorNotification,
+              color: DARK_COLORS.ui04,
             },
           },
           loadingOverlay: {
@@ -1893,6 +1918,10 @@ const theme = {
         ioMappings: {
           banner: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
         },
+      },
+      modificationSummaryModal: {
+        warning: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
+        error: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
       },
       modificationMode: {
         footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,

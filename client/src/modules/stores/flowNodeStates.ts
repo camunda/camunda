@@ -18,6 +18,7 @@ import {fetchFlowNodeStates} from 'modules/api/flowNodeStates';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {modificationsStore} from './modifications';
 
 type State = {
   flowNodes: {
@@ -45,6 +46,7 @@ class FlowNodeStates extends NetworkReconnectionHandler {
       handleFetchFailure: action,
       areAllFlowNodesCompleted: computed,
       selectableFlowNodes: computed,
+      willAllFlowNodesBeCanceled: computed,
       reset: override,
     });
   }
@@ -142,6 +144,22 @@ class FlowNodeStates extends NetworkReconnectionHandler {
 
   get selectableFlowNodes() {
     return Object.keys(this.state.flowNodes);
+  }
+
+  get willAllFlowNodesBeCanceled() {
+    if (
+      modificationsStore.flowNodeModifications.filter(({operation}) =>
+        ['ADD_TOKEN', 'MOVE_TOKEN'].includes(operation)
+      ).length > 0
+    ) {
+      return false;
+    }
+
+    return Object.entries(this.state.flowNodes).every(
+      ([key, value]) =>
+        !['ACTIVE', 'INCIDENT'].includes(value) ||
+        modificationsStore.isCancelModificationAppliedOnFlowNode(key)
+    );
   }
 
   reset() {
