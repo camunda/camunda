@@ -20,8 +20,7 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
-      - name: Use CI Nexus cache
-        uses: ./.github/actions/use-ci-nexus-cache
+          nexus-cache: true
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:

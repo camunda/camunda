@@ -34,7 +34,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
-      - uses: ./.github/actions/use-ci-nexus-cache
+        with:
+          nexus-cache: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
       - uses: ./.github/actions/build-docker
@@ -80,7 +81,7 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
-      - uses: ./.github/actions/use-ci-nexus-cache
+          nexus-cache: true
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -165,7 +166,7 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
-      - uses: ./.github/actions/use-ci-nexus-cache
+          nexus-cache: true
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -297,11 +298,11 @@ jobs:
       # This is a workaround for java 8, which does not support the --add-exports options
       - run: rm .mvn/jvm.config
       # Then run client tests with JDK 8
-      - uses: actions/setup-java@v3.5.0
+      - uses: ./.github/actions/setup-zeebe
         with:
+          go: 'false'
+          maven: 'false'
           java-version: '8'
-          distribution: 'temurin'
-          cache: maven
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build

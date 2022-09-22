@@ -22,6 +22,22 @@ inputs:
     description: If true, will set up Maven; defaults to true
     default: "true"
     required: false
+  nexus-cache:
+    description: If true, sets up Maven to use the internal Nexus cache; only usable on self-hosted runners
+    default: 'false'
+    required: false
+  maven-server-id:
+    description: 'ID of the distributionManagement repository in the pom.xml file. Default is `github`'
+    default: 'github'
+    required: false
+  maven-server-username:
+    description: 'Environment variable name for the username for authentication to the Apache Maven repository. Default is $GITHUB_ACTOR'
+    default: GITHUB_ACTOR
+    required: false
+  maven-server-password:
+    description: 'Environment variable name for password or token for authentication to the Apache Maven repository. Default is $GITHUB_TOKEN'
+    default: GITHUB_TOKEN
+    required: false
 
 outputs: {}
 
@@ -33,10 +49,25 @@ runs:
       with:
         distribution: 'temurin'
         java-version: ${{ inputs.java-version }}
+        server-id: ${{ inputs.maven-server-id }}
+        server-username: ${{ inputs.maven-server-username }}
+        server-password: ${{ inputs.maven-server-password }}
     - if: ${{ inputs.java == 'true' && inputs.maven == 'true' }}
       uses: stCarolas/setup-maven@v4.4
       with:
         maven-version: '3.8.5'
+    - if: ${{ inputs.java == 'true' && inputs.maven == 'true' }}
+      name: Set default maven options
+      shell: bash
+      run: echo "MAVEN_OPTS=-Dhttp.keepAlive=false
+          -Dmaven.wagon.http.pool=false
+          -Dmaven.wagon.http.retryHandler.class=standard
+          -Dmaven.wagon.http.retryHandler.count=3
+          -Dmaven.wagon.httpconnectionManager.ttlSeconds=60
+          ${MAVEN_OPTS}" >> "${GITHUB_ENV}"
+    - if: ${{ inputs.java == 'true' && inputs.maven == 'true' && inputs.nexus-cache == 'true' }}
+      name: Use Camunda Nexus cache
+      uses: ./.github/actions/use-ci-nexus-cache
     - if: ${{ inputs.go == 'true' }}
       uses: actions/setup-go@v3
       with:
