@@ -101,7 +101,7 @@ const TopPanel: React.FC = observer(() => {
           position: MODIFICATIONS,
           payload: {
             newTokenCount: tokens.newTokens,
-            cancelledTokenCount: tokens.cancelledTokens,
+            cancelledTokenCount: tokens.visibleCancelledTokens,
           },
         },
       ];

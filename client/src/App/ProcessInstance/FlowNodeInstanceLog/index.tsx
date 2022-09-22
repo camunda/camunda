@@ -21,6 +21,7 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {TimeStampPill} from './TimeStampPill';
+import {modificationsStore} from 'modules/stores/modifications';
 
 const FlowNodeInstanceLog: React.FC = observer(() => {
   const {
@@ -40,7 +41,7 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
   return (
     <Panel>
       <PanelHeader title="Instance History">
-        <TimeStampPill />
+        {!modificationsStore.isModificationModeEnabled && <TimeStampPill />}
       </PanelHeader>
       {areDiagramDefinitionsAvailable && isInstanceExecutionHistoryAvailable ? (
         <InstanceHistory

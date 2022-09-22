@@ -62,7 +62,7 @@ const WarningIcon = styled(Warning)`
     return css`
       width: 20px;
       height: 18px;
-      fill: ${theme.colors.incidentsAndErrors};
+      color: ${theme.colors.incidentsAndErrors};
       margin-right: 15px;
     `;
   }}

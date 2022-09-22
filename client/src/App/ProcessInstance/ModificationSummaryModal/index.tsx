@@ -171,7 +171,7 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                           id: 'affectedTokens',
                           dataTestId: 'affected-token-count',
                           cellContent:
-                            modification.affectedTokenCount +
+                            modification.visibleAffectedTokenCount +
                             (modificationsStore.modificationsByFlowNode[
                               flowNodeId
                             ]?.cancelledChildTokens ?? 0),

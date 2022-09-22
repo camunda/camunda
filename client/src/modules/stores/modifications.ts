@@ -7,8 +7,8 @@
 
 import {makeAutoObservable} from 'mobx';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
+import {isFlowNodeMultiInstance} from 'modules/stores/utils/isFlowNodeMultiInstance';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
-import {isFlowNodeMultiInstance} from './utils/isFlowNodeMultiInstance';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 import {getFlowElementIds} from 'modules/bpmn-js/getFlowElementIds';
 import {
@@ -24,6 +24,7 @@ type FlowNodeModificationPayload =
       scopeId: string;
       flowNode: {id: string; name: string};
       affectedTokenCount: number;
+      visibleAffectedTokenCount: number;
       parentScopeIds: {
         [key: string]: string;
       };
@@ -32,11 +33,13 @@ type FlowNodeModificationPayload =
       operation: 'CANCEL_TOKEN';
       flowNode: {id: string; name: string};
       affectedTokenCount: number;
+      visibleAffectedTokenCount: number;
     }
   | {
       operation: 'MOVE_TOKEN';
       flowNode: {id: string; name: string};
       affectedTokenCount: number;
+      visibleAffectedTokenCount: number;
       targetFlowNode: {id: string; name: string};
       scopeIds: string[];
       parentScopeIds: {
@@ -89,6 +92,7 @@ const DEFAULT_STATE: State = {
 const EMPTY_MODIFICATION = Object.freeze({
   newTokens: 0,
   cancelledTokens: 0,
+  visibleCancelledTokens: 0,
   cancelledChildTokens: 0,
 });
 
@@ -133,6 +137,10 @@ class Modifications {
         processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
           this.state.sourceFlowNodeIdForMoveOperation
         );
+      const visibleAffectedTokenCount =
+        processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
+          this.state.sourceFlowNodeIdForMoveOperation
+        );
       const newScopeCount = isFlowNodeMultiInstance(
         this.state.sourceFlowNodeIdForMoveOperation
       )
@@ -156,6 +164,7 @@ class Modifications {
             ),
           },
           affectedTokenCount,
+          visibleAffectedTokenCount,
           scopeIds: Array.from({
             length: newScopeCount,
           }).map(() => generateUniqueID()),
@@ -263,6 +272,7 @@ class Modifications {
         newTokens: number;
         cancelledTokens: number;
         cancelledChildTokens: number;
+        visibleCancelledTokens: number;
       };
     }>((modificationsByFlowNode, {type, payload}) => {
       if (type === 'variable') {
@@ -284,12 +294,8 @@ class Modifications {
         modificationsByFlowNode[flowNode.id]!.cancelledTokens =
           affectedTokenCount;
 
-        const isSourceFlowNodeMultiInstance = isFlowNodeMultiInstance(
-          flowNode.id
-        );
-
         modificationsByFlowNode[payload.targetFlowNode.id]!.newTokens =
-          isSourceFlowNodeMultiInstance ? 1 : affectedTokenCount;
+          isFlowNodeMultiInstance(flowNode.id) ? 1 : affectedTokenCount;
       }
 
       if (operation === 'CANCEL_TOKEN') {
@@ -315,9 +321,16 @@ class Modifications {
             (processInstanceDetailsStatisticsStore.statisticsByFlowNode[
               elementId
             ]?.incidents ?? 0);
+          modificationsByFlowNode[elementId]!.visibleCancelledTokens =
+            (processInstanceDetailsStatisticsStore.statisticsByFlowNode[
+              elementId
+            ]?.filteredActive ?? 0) +
+            (processInstanceDetailsStatisticsStore.statisticsByFlowNode[
+              elementId
+            ]?.incidents ?? 0);
 
           affectedChildTokenCount +=
-            modificationsByFlowNode[elementId]!.cancelledTokens;
+            modificationsByFlowNode[elementId]!.visibleCancelledTokens;
         });
 
         modificationsByFlowNode[flowNode.id]!.cancelledChildTokens =
@@ -595,4 +608,5 @@ class Modifications {
   };
 }
 
+export type {FlowNodeModification};
 export const modificationsStore = new Modifications();

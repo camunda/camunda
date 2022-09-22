@@ -232,6 +232,11 @@ const theme = {
               borderColor: rgba(SEMANTIC_COLORS.white, 0.25),
             },
           },
+          placeholder: {
+            modificationIcon: {
+              color: DARK_COLORS.linkDefault,
+            },
+          },
         },
         foldable: {
           summaryLabel: {
@@ -1147,6 +1152,11 @@ const theme = {
           nodeName: {
             selected: {
               borderColor: rgba(LIGHT_COLORS.ui06, 0.25),
+            },
+          },
+          placeholder: {
+            modificationIcon: {
+              color: SEMANTIC_COLORS.primaryButton04,
             },
           },
         },

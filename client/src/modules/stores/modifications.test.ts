@@ -50,6 +50,7 @@ describe('stores/modifications', () => {
         scopeId: uniqueID,
         flowNode: {id: '1', name: 'flow-node-1'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
         parentScopeIds: {},
       },
     });
@@ -61,6 +62,7 @@ describe('stores/modifications', () => {
         operation: 'CANCEL_TOKEN',
         flowNode: {id: '2', name: 'flow-node-2'},
         affectedTokenCount: 3,
+        visibleAffectedTokenCount: 3,
       },
     });
 
@@ -73,6 +75,7 @@ describe('stores/modifications', () => {
         flowNode: {id: '3', name: 'flow-node-3'},
         targetFlowNode: {id: '4', name: 'flow-node-4'},
         affectedTokenCount: 2,
+        visibleAffectedTokenCount: 2,
         scopeIds: [uniqueIDForMove],
         parentScopeIds: {},
       },
@@ -86,18 +89,21 @@ describe('stores/modifications', () => {
         scopeId: uniqueID,
         flowNode: {id: '1', name: 'flow-node-1'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
         parentScopeIds: {},
       },
       {
         operation: 'CANCEL_TOKEN',
         flowNode: {id: '2', name: 'flow-node-2'},
         affectedTokenCount: 3,
+        visibleAffectedTokenCount: 3,
       },
       {
         operation: 'MOVE_TOKEN',
         flowNode: {id: '3', name: 'flow-node-3'},
         targetFlowNode: {id: '4', name: 'flow-node-4'},
         affectedTokenCount: 2,
+        visibleAffectedTokenCount: 2,
         scopeIds: [uniqueIDForMove],
         parentScopeIds: {},
       },
@@ -108,6 +114,7 @@ describe('stores/modifications', () => {
       operation: 'ADD_TOKEN',
       scopeId: '1',
       affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
       parentScopeIds: {},
     });
     expect(modificationsStore.state.modifications.length).toEqual(3);
@@ -116,6 +123,7 @@ describe('stores/modifications', () => {
       operation: 'ADD_TOKEN',
       scopeId: '1',
       affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
       parentScopeIds: {},
     });
     expect(modificationsStore.state.modifications.length).toEqual(3);
@@ -124,6 +132,7 @@ describe('stores/modifications', () => {
       operation: 'ADD_TOKEN',
       scopeId: '2',
       affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
       parentScopeIds: {},
     });
     expect(modificationsStore.state.modifications.length).toEqual(3);
@@ -131,12 +140,14 @@ describe('stores/modifications', () => {
       flowNode: {id: '2', name: ''},
       operation: 'CANCEL_TOKEN',
       affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
     });
     expect(modificationsStore.state.modifications.length).toEqual(2);
     modificationsStore.removeFlowNodeModification({
       flowNode: {id: '1', name: ''},
       operation: 'ADD_TOKEN',
       affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
       scopeId: uniqueID,
       parentScopeIds: {},
     });
@@ -148,6 +159,7 @@ describe('stores/modifications', () => {
         flowNode: {id: '3', name: 'flow-node-3'},
         targetFlowNode: {id: '4', name: 'flow-node-4'},
         affectedTokenCount: 2,
+        visibleAffectedTokenCount: 2,
         scopeIds: [uniqueIDForMove],
         parentScopeIds: {},
       },
@@ -264,6 +276,7 @@ describe('stores/modifications', () => {
         scopeId: uniqueID,
         flowNode: {id: '1', name: 'flow-node-1'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
         parentScopeIds: {},
       },
     });
@@ -274,6 +287,7 @@ describe('stores/modifications', () => {
         operation: 'CANCEL_TOKEN',
         flowNode: {id: '2', name: 'flow-node-2'},
         affectedTokenCount: 3,
+        visibleAffectedTokenCount: 3,
       },
     });
 
@@ -282,6 +296,7 @@ describe('stores/modifications', () => {
         operation: 'CANCEL_TOKEN',
         flowNode: {id: '2', name: 'flow-node-2'},
         affectedTokenCount: 3,
+        visibleAffectedTokenCount: 3,
       },
       type: 'token',
     });
@@ -294,6 +309,7 @@ describe('stores/modifications', () => {
         operation: 'ADD_TOKEN',
         flowNode: {id: '1', name: 'flow-node-1'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
         scopeId: uniqueID,
         parentScopeIds: {},
       },
@@ -345,6 +361,7 @@ describe('stores/modifications', () => {
         scopeId: generateUniqueID(),
         flowNode: {id: 'flowNode1', name: 'flow-node-1'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
         parentScopeIds: {},
       },
     });
@@ -356,6 +373,7 @@ describe('stores/modifications', () => {
         scopeId: generateUniqueID(),
         flowNode: {id: 'flowNode1', name: 'flow-node-1'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
         parentScopeIds: {},
       },
     });
@@ -366,6 +384,7 @@ describe('stores/modifications', () => {
         operation: 'CANCEL_TOKEN',
         flowNode: {id: 'flowNode2', name: 'flow-node-2'},
         affectedTokenCount: 3,
+        visibleAffectedTokenCount: 3,
       },
     });
 
@@ -376,6 +395,7 @@ describe('stores/modifications', () => {
         flowNode: {id: 'flowNode3', name: 'flow-node-3'},
         targetFlowNode: {id: 'flowNode4', name: 'flow-node-4'},
         affectedTokenCount: 3,
+        visibleAffectedTokenCount: 3,
         scopeIds: ['1', '2', '3'],
         parentScopeIds: {},
       },
@@ -388,6 +408,7 @@ describe('stores/modifications', () => {
         scopeId: generateUniqueID(),
         flowNode: {id: 'flowNode5', name: 'flow-node-5'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
         parentScopeIds: {},
       },
     });
@@ -399,6 +420,7 @@ describe('stores/modifications', () => {
         flowNode: {id: 'flowNode5', name: 'flow-node-5'},
         targetFlowNode: {id: 'flowNode6', name: 'flow-node-6'},
         affectedTokenCount: 2,
+        visibleAffectedTokenCount: 2,
         scopeIds: ['4', '5'],
         parentScopeIds: {},
       },
@@ -410,6 +432,7 @@ describe('stores/modifications', () => {
         operation: 'CANCEL_TOKEN',
         flowNode: {id: 'multi-instance-subprocess', name: 'flow-node-7'},
         affectedTokenCount: 0,
+        visibleAffectedTokenCount: 0,
       },
     });
 
@@ -418,51 +441,61 @@ describe('stores/modifications', () => {
         cancelledTokens: 0,
         newTokens: 2,
         cancelledChildTokens: 0,
+        visibleCancelledTokens: 0,
       },
       flowNode2: {
         cancelledTokens: 3,
         newTokens: 0,
         cancelledChildTokens: 0,
+        visibleCancelledTokens: 0,
       },
       flowNode3: {
         cancelledTokens: 3,
         newTokens: 0,
         cancelledChildTokens: 0,
+        visibleCancelledTokens: 0,
       },
       flowNode4: {
         cancelledTokens: 0,
         newTokens: 3,
         cancelledChildTokens: 0,
+        visibleCancelledTokens: 0,
       },
       flowNode5: {
         cancelledTokens: 2,
         newTokens: 1,
         cancelledChildTokens: 0,
+        visibleCancelledTokens: 0,
       },
       flowNode6: {
         cancelledTokens: 0,
         newTokens: 2,
         cancelledChildTokens: 0,
+        visibleCancelledTokens: 0,
       },
       'multi-instance-subprocess': {
         cancelledChildTokens: 3,
         cancelledTokens: 0,
         newTokens: 0,
+        visibleCancelledTokens: 0,
       },
       'subprocess-end-task': {
         cancelledChildTokens: 0,
         cancelledTokens: 0,
         newTokens: 0,
+        visibleCancelledTokens: 0,
       },
       'subprocess-service-task': {
         cancelledChildTokens: 0,
         cancelledTokens: 3,
         newTokens: 0,
+        visibleCancelledTokens: 3,
       },
       'subprocess-start-1': {
         cancelledChildTokens: 0,
         cancelledTokens: 0,
         newTokens: 0,
+        visibleCancelledTokens: 0,
       },
     });
   });
@@ -475,6 +508,7 @@ describe('stores/modifications', () => {
         scopeId: generateUniqueID(),
         flowNode: {id: 'flowNode1', name: 'flow-node-1'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
         parentScopeIds: {},
       },
     });
@@ -489,6 +523,7 @@ describe('stores/modifications', () => {
         operation: 'CANCEL_TOKEN',
         flowNode: {id: 'flowNode1', name: 'flow-node-1'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
       },
     });
     expect(
@@ -508,6 +543,7 @@ describe('stores/modifications', () => {
         flowNode: {id: 'flowNode2', name: 'flow-node-2'},
         targetFlowNode: {id: 'flowNode3', name: 'flow-node-3'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
         scopeIds: ['1'],
         parentScopeIds: {},
       },
@@ -558,11 +594,13 @@ describe('stores/modifications', () => {
         cancelledTokens: 2,
         newTokens: 0,
         cancelledChildTokens: 0,
+        visibleCancelledTokens: 0,
       },
       flowNode2: {
         cancelledTokens: 0,
         newTokens: 2,
         cancelledChildTokens: 0,
+        visibleCancelledTokens: 0,
       },
     });
 
@@ -621,11 +659,13 @@ describe('stores/modifications', () => {
         cancelledTokens: 2,
         newTokens: 0,
         cancelledChildTokens: 0,
+        visibleCancelledTokens: 0,
       },
       'service-task-7': {
         cancelledTokens: 0,
         newTokens: 1,
         cancelledChildTokens: 0,
+        visibleCancelledTokens: 0,
       },
     });
   });
@@ -1007,6 +1047,7 @@ describe('stores/modifications', () => {
         flowNode: {id: 'flow_node_0', name: 'flow node 0'},
         scopeId: 'random-scope-id-0',
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
         parentScopeIds: {},
       },
     });
@@ -1017,6 +1058,7 @@ describe('stores/modifications', () => {
         flowNode: {id: 'flow_node_1', name: 'flow node 1'},
         scopeId: 'random-scope-id-1',
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
         parentScopeIds: {
           'first-parent-scope': 'random-scope-id-first',
           'second-parent-scope': 'random-scope-id-second',
@@ -1029,6 +1071,7 @@ describe('stores/modifications', () => {
         operation: 'CANCEL_TOKEN',
         flowNode: {id: 'flow_node_2', name: 'flow node 2'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
       },
     });
     modificationsStore.addModification({
@@ -1038,6 +1081,7 @@ describe('stores/modifications', () => {
         flowNode: {id: 'flow_node_3', name: 'flow node 3'},
         targetFlowNode: {id: 'flow_node_4', name: 'flow node 4'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
         scopeIds: ['random-scope-id-2'],
         parentScopeIds: {
           'first-parent': 'random-scope-id-for-parent-1',

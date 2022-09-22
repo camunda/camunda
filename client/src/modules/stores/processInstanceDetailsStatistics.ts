@@ -23,6 +23,7 @@ import {modificationsStore} from './modifications';
 
 type Statistic = {
   activityId: string;
+  filteredActive: number;
   active: number;
   canceled: number;
   incidents: number;
@@ -159,7 +160,10 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
           flowNodeState: FlowNodeState;
         }[]
       >((states, flowNodeState) => {
-        const count = statistic[flowNodeState];
+        const count =
+          flowNodeState === 'active'
+            ? statistic['filteredActive']
+            : statistic[flowNodeState];
 
         if (count === 0) {
           return states;
@@ -185,7 +189,8 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
         processInstanceDetailsDiagramStore.getMetaData(activityId);
 
       statistics[activityId] = {
-        active:
+        active,
+        filteredActive:
           metaData?.type.elementType === undefined ||
           !['TASK_SUBPROCESS', 'EVENT_SUBPROCESS'].includes(
             metaData.type.elementType
@@ -209,6 +214,13 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
   getTotalRunningInstancesForFlowNode = (flowNodeId: string) => {
     return (
       (this.statisticsByFlowNode[flowNodeId]?.active ?? 0) +
+      (this.statisticsByFlowNode[flowNodeId]?.incidents ?? 0)
+    );
+  };
+
+  getTotalRunningInstancesVisibleForFlowNode = (flowNodeId: string) => {
+    return (
+      (this.statisticsByFlowNode[flowNodeId]?.filteredActive ?? 0) +
       (this.statisticsByFlowNode[flowNodeId]?.incidents ?? 0)
     );
   };

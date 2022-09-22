@@ -70,6 +70,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                       ),
                     },
                     affectedTokenCount: 1,
+                    visibleAffectedTokenCount: 1,
                     parentScopeIds:
                       modificationsStore.generateParentScopeIds(flowNodeId),
                   },
@@ -103,6 +104,10 @@ const ModificationDropdown: React.FC<Props> = observer(
                         },
                         affectedTokenCount:
                           processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
+                            flowNodeId
+                          ),
+                        visibleAffectedTokenCount:
+                          processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
                             flowNodeId
                           ),
                       },

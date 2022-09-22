@@ -31,8 +31,9 @@ type FlowNodeInstanceType = {
   flowNodeId: string;
   startDate: string;
   endDate: null | string;
-  treePath: string;
+  treePath: null | string;
   sortValues: [string, string] | [];
+  isPlaceholder?: boolean;
 };
 
 type FlowNodeInstances = {
@@ -157,9 +158,13 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
       return;
     }
 
+    const children = this.state.flowNodeInstances[treePath]?.children;
+    if (children === undefined) {
+      return;
+    }
+
     this.startFetchNext();
 
-    const children = this.state.flowNodeInstances[treePath]?.children;
     const sortValues = children && children[children.length - 1]?.sortValues;
 
     if (sortValues === undefined) {
@@ -203,6 +208,10 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     this.startFetchPrev();
 
     const children = this.state.flowNodeInstances[treePath]?.children;
+    if (children === undefined) {
+      return;
+    }
+
     const sortValues = children && children[0]?.sortValues;
 
     if (sortValues === undefined) {
@@ -456,7 +465,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
       endDate: null,
       startDate: '',
       sortValues: [],
-      flowNodeId: processInstance.processId,
+      flowNodeId: processInstance.bpmnProcessId,
     };
   }
 }

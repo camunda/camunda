@@ -149,6 +149,7 @@ describe('Modification Summary Modal', () => {
         flowNode: {id: 'flow-node-1', name: 'flow node 1'},
         targetFlowNode: {id: 'flow-node-2', name: 'flow node 2'},
         affectedTokenCount: 3,
+        visibleAffectedTokenCount: 3,
         scopeIds: ['1'],
         parentScopeIds: {},
       },
@@ -199,6 +200,7 @@ describe('Modification Summary Modal', () => {
         flowNode: {id: 'flow-node-1', name: 'flow node 1'},
         targetFlowNode: {id: 'flow-node-2', name: 'flow node 2'},
         affectedTokenCount: 3,
+        visibleAffectedTokenCount: 3,
         scopeIds: ['1'],
         parentScopeIds: {},
       },
@@ -340,6 +342,7 @@ describe('Modification Summary Modal', () => {
           name: 'multi instance subprocess',
         },
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
       },
     });
 
@@ -363,6 +366,7 @@ describe('Modification Summary Modal', () => {
         scopeId: '123',
         flowNode: {id: 'flow-node-1', name: 'flow node 1'},
         affectedTokenCount: 3,
+        visibleAffectedTokenCount: 3,
         parentScopeIds: {},
       },
     });
@@ -402,6 +406,7 @@ describe('Modification Summary Modal', () => {
         scopeId: '123',
         flowNode: {id: 'flow-node-1', name: 'flow node 1'},
         affectedTokenCount: 3,
+        visibleAffectedTokenCount: 3,
         parentScopeIds: {},
       },
     });

@@ -6,7 +6,6 @@
  */
 
 import styled, {css} from 'styled-components';
-
 import BasicFlowNodeIcon from 'modules/components/FlowNodeIcon';
 import {styles} from '@carbon/elements';
 
@@ -30,11 +29,10 @@ const Container = styled.div<ContainerProps>`
   ${({theme, $isSelected, $hasTopBorder}) => {
     return css`
       display: flex;
+      justify-content: space-between;
       height: 27px;
       ${styles.label02};
       min-width: 200px;
-      align-items: center;
-      flex-grow: 1;
       background: ${theme.colors.itemEven};
       border-color: ${theme.colors.borderColor};
       border-width: 1px 0px 0px 1px;
@@ -82,5 +80,10 @@ const NodeName = styled.span<NodeNameProps>`
     `;
   }}
 `;
+const LeftContainer = styled.div`
+  display: flex;
+  align-items: center;
+  flex: 1;
+`;
 
-export {NodeIcon, Container, NodeName};
+export {NodeIcon, Container, NodeName, LeftContainer};

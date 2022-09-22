@@ -14,6 +14,7 @@ import {
   autorun,
   IReactionDisposer,
   override,
+  reaction,
 } from 'mobx';
 import {
   applyOperation,
@@ -134,23 +135,26 @@ class Variables extends NetworkReconnectionHandler {
       }
     });
 
-    this.fetchVariablesDisposer = autorun(() => {
-      if (this.scopeId !== null) {
-        this.clearItems();
-        this.setPendingItem(null);
+    this.fetchVariablesDisposer = reaction(
+      () => this.scopeId,
+      (scopeId) => {
+        if (scopeId !== null) {
+          this.clearItems();
+          this.setPendingItem(null);
+          this.fetchAbortController?.abort();
 
-        this.fetchAbortController?.abort();
-
-        this.fetchVariables({
-          fetchType: 'initial',
-          instanceId,
-          payload: {
-            pageSize: MAX_VARIABLES_PER_REQUEST,
-            scopeId: this.scopeId ?? instanceId,
-          },
-        });
-      }
-    });
+          this.fetchVariables({
+            fetchType: 'initial',
+            instanceId,
+            payload: {
+              pageSize: MAX_VARIABLES_PER_REQUEST,
+              scopeId: scopeId ?? instanceId,
+            },
+          });
+        }
+      },
+      {fireImmediately: true}
+    );
   };
 
   clearItems = () => {
@@ -360,6 +364,7 @@ class Variables extends NetworkReconnectionHandler {
       }
 
       this.isPollRequestRunning = true;
+
       const response = await fetchVariables({
         instanceId,
         payload: {
@@ -444,6 +449,10 @@ class Variables extends NetworkReconnectionHandler {
       instanceId: ProcessInstanceEntity['id'];
       payload: VariablePayload;
     }) => {
+      if (flowNodeSelectionStore.state.selection?.isPlaceholder) {
+        return null;
+      }
+
       try {
         if (fetchType === 'initial') {
           this.startFetching();
@@ -660,6 +669,10 @@ class Variables extends NetworkReconnectionHandler {
 
     if (status === 'error') {
       return 'error';
+    }
+
+    if (flowNodeSelectionStore.state.selection?.isPlaceholder) {
+      return 'no-variables';
     }
 
     if (this.hasNoContent) {

@@ -51,6 +51,7 @@ describe('LastModification', () => {
         scopeId: generateUniqueID(),
         flowNode: {id: '1', name: 'flowNode1'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
         parentScopeIds: {},
       },
     });
@@ -63,6 +64,7 @@ describe('LastModification', () => {
         operation: 'CANCEL_TOKEN',
         flowNode: {id: '2', name: 'flowNode2'},
         affectedTokenCount: 2,
+        visibleAffectedTokenCount: 2,
       },
     });
 
@@ -75,6 +77,7 @@ describe('LastModification', () => {
         flowNode: {id: '3', name: 'flowNode3'},
         targetFlowNode: {id: '4', name: 'flowNode4'},
         affectedTokenCount: 2,
+        visibleAffectedTokenCount: 2,
         scopeIds: [generateUniqueID(), generateUniqueID()],
         parentScopeIds: {},
       },

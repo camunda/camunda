@@ -135,15 +135,18 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
       flowNodeId,
       flowNodeInstanceId,
       flowNodeType,
+      isPlaceholder,
     }: {
       flowNodeId?: string;
       flowNodeInstanceId?: FlowNodeInstance['id'];
       flowNodeType?: string;
+      isPlaceholder?: boolean;
     }) => {
       const processInstanceId =
         processInstanceDetailsStore.state.processInstance?.id;
 
       if (
+        isPlaceholder ||
         processInstanceId === undefined ||
         flowNodeId === undefined ||
         (modificationsStore.isModificationModeEnabled &&

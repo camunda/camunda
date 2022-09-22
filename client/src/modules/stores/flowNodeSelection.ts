@@ -17,6 +17,7 @@ type Selection = {
   flowNodeInstanceId?: FlowNodeInstance['id'];
   flowNodeType?: string;
   isMultiInstance?: boolean;
+  isPlaceholder?: boolean;
 };
 
 type State = {

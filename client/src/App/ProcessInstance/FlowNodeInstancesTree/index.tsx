@@ -21,6 +21,8 @@ import {Foldable, Details, Summary} from './Foldable';
 import {Li, NodeDetails, NodeStateIcon, Ul} from './styled';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {tracking} from 'modules/tracking';
+import {modificationsStore} from 'modules/stores/modifications';
+import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 
 type Props = {
   flowNodeInstance: FlowNodeInstance;
@@ -40,7 +42,26 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
     const {fetchSubTree, removeSubTree, getVisibleChildNodes} =
       flowNodeInstanceStore;
 
-    const visibleChildNodes = getVisibleChildNodes(flowNodeInstance);
+    const isProcessInstance =
+      flowNodeInstance.id ===
+      processInstanceDetailsStore.state.processInstance?.id;
+
+    const visibleChildPlaceholders: FlowNodeInstance[] =
+      modificationsStore.isModificationModeEnabled
+        ? isProcessInstance
+          ? instanceHistoryModificationStore.flowNodeInstancesByParent[
+              flowNodeInstance.flowNodeId
+            ] ?? []
+          : instanceHistoryModificationStore.getVisibleFlowNodeInstancesByParent(
+              flowNodeInstance.flowNodeId
+            )
+        : [];
+
+    const visibleChildNodes = [
+      ...getVisibleChildNodes(flowNodeInstance),
+      ...visibleChildPlaceholders,
+    ];
+
     const hasVisibleChildNodes = visibleChildNodes.length > 0;
 
     const metaData = processInstanceDetailsDiagramStore.getMetaData(
@@ -68,11 +89,33 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
 
     const rowRef = useRef<HTMLDivElement>(null);
 
+    const expandSubtree = (flowNodeInstance: FlowNodeInstance) => {
+      if (flowNodeInstance.treePath !== null) {
+        fetchSubTree({treePath: flowNodeInstance.treePath});
+        instanceHistoryModificationStore.appendPlaceholders(
+          flowNodeInstance.flowNodeId
+        );
+      }
+    };
+
+    const collapseSubtree = (flowNodeInstance: FlowNodeInstance) => {
+      if (flowNodeInstance.treePath !== null) {
+        removeSubTree({
+          treePath: flowNodeInstance.treePath,
+        });
+        instanceHistoryModificationStore.removePlaceholders(
+          flowNodeInstance.flowNodeId
+        );
+      }
+    };
+
     const handleEndReach = () => {
       if (flowNodeInstance?.treePath === undefined) {
         return;
       }
-      flowNodeInstanceStore.fetchNext(flowNodeInstance.treePath);
+      if (flowNodeInstance.treePath !== null) {
+        flowNodeInstanceStore.fetchNext(flowNodeInstance.treePath);
+      }
     };
 
     return (
@@ -84,10 +127,12 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
           showConnectionDot={treeDepth >= 3}
           data-testid={`node-details-${flowNodeInstance.id}`}
         >
-          <NodeStateIcon
-            state={flowNodeInstance.state}
-            $indentationMultiplier={treeDepth}
-          />
+          {flowNodeInstance.state !== undefined && (
+            <NodeStateIcon
+              state={flowNodeInstance.state}
+              $indentationMultiplier={treeDepth}
+            />
+          )}
         </NodeDetails>
         <Foldable
           isFolded={!hasVisibleChildNodes}
@@ -96,10 +141,8 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
             isFoldable
               ? () => {
                   !hasVisibleChildNodes
-                    ? fetchSubTree({treePath: flowNodeInstance.treePath})
-                    : removeSubTree({
-                        treePath: flowNodeInstance.treePath,
-                      });
+                    ? expandSubtree(flowNodeInstance)
+                    : collapseSubtree(flowNodeInstance);
                 }
               : undefined
           }
@@ -110,15 +153,13 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               data-testid={flowNodeInstance.id}
               onSelection={() => {
                 tracking.track({eventName: 'instance-history-item-clicked'});
-                const isProcessInstance =
-                  flowNodeInstance.id ===
-                  processInstanceDetailsStore.state.processInstance?.id;
                 flowNodeSelectionStore.selectFlowNode({
                   flowNodeId: isProcessInstance
                     ? undefined
                     : flowNodeInstance.flowNodeId,
                   flowNodeInstanceId: flowNodeInstance.id,
                   isMultiInstance,
+                  isPlaceholder: flowNodeInstance.isPlaceholder,
                 });
               }}
               isSelected={isSelected}
@@ -143,6 +184,9 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               <InfiniteScroller
                 onVerticalScrollEndReach={handleEndReach}
                 onVerticalScrollStartReach={async (scrollDown) => {
+                  if (flowNodeInstance.treePath === null) {
+                    return;
+                  }
                   const fetchedInstancesCount =
                     await flowNodeInstanceStore.fetchPrevious(
                       flowNodeInstance.treePath

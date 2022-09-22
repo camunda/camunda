@@ -28,7 +28,7 @@ import {getFlowNodes} from 'modules/utils/flowNodes';
 import {NON_APPENDABLE_FLOW_NODES} from 'modules/constants';
 import {modificationsStore} from './modifications';
 import {flowNodeStatesStore} from './flowNodeStates';
-import {BpmnElement, BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {isAttachedToAnEventBasedGateway} from 'modules/bpmn-js/isAttachedToAnEventBasedGateway';
 
 type FlowNodeMetaData = {
@@ -41,7 +41,7 @@ type FlowNodeMetaData = {
 };
 
 type State = {
-  diagramModel: {bpmnElements: BpmnElement[]} | null;
+  diagramModel: {bpmnElements: {[elementId: string]: unknown}} | null;
   xml: string | null;
   status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
   nodeMetaDataMap?: NodeMetaDataMap;
