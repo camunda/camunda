@@ -9,14 +9,14 @@ package io.camunda.zeebe.streamplatform;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.streamplatform.api.InterPartitionCommandSender;
 import io.camunda.zeebe.streamplatform.api.ProcessingScheduleService;
 import io.camunda.zeebe.streamplatform.api.RecordProcessorContext;
 import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.engine.state.KeyGenerator;
-import io.camunda.zeebe.engine.state.KeyGeneratorControls;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.streamplatform.api.state.KeyGenerator;
+import io.camunda.zeebe.streamplatform.api.state.KeyGeneratorControls;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;

@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
 import io.camunda.zeebe.engine.util.ZeebeStateRule;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.streamplatform.api.state.KeyGenerator;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

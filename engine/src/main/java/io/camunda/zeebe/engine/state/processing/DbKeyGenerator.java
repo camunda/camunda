@@ -9,10 +9,10 @@ package io.camunda.zeebe.engine.state.processing;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.NextValueManager;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.streamplatform.api.state.KeyGeneratorControls;
 
 public final class DbKeyGenerator implements KeyGeneratorControls {
 
