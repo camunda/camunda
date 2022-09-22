@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.ServiceUnavailableException;
 import javax.ws.rs.core.Response;
 
 import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
@@ -31,7 +30,7 @@ public class HealthRestService {
       && statusCheckingService.isConnectedToAtLeastOnePlatformEngineOrCloud()) {
       return Response.ok().build();
     }
-    throw new ServiceUnavailableException();
+    return Response.status(Response.Status.SERVICE_UNAVAILABLE).build();
   }
 
 }
