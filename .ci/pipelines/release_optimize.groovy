@@ -176,10 +176,22 @@ spec:
     env:
     - name: OPTIMIZE_JAVA_OPTS
       value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
-    - name: OPTIMIZE_CAMUNDABPM_REST_URL
-      value: http://cambpm:8080/engine-rest
     - name: OPTIMIZE_ELASTICSEARCH_HOST
       value: localhost
+    livenessProbe:
+      initialDelaySeconds: 50
+      periodSeconds: 10
+      failureThreshold: 10
+      httpGet:
+        path: /
+        port: 8090
+    readinessProbe:
+      initialDelaySeconds: 50
+      periodSeconds: 10
+      failureThreshold: 10
+      httpGet:
+        path: /api/readyz
+        port: 8090
     resources:
       limits:
         cpu: 1
@@ -231,6 +243,18 @@ spec:
         value: 9200
       - name: cluster.name
         value: elasticsearch
+  - name: gcloud
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    imagePullPolicy: Always
+    command: ["cat"]
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
 """
 }
 
@@ -469,9 +493,8 @@ pipeline {
         container('maven') {
           sh("""#!/bin/bash -eux
           echo Giving Optimize some time to start up
-          sleep 60
-          echo Smoke testing if Optimize API can be reached
-          curl -q -f http://localhost:8090/api/status | grep -q engineStatus
+          echo Smoke testing if Optimize is ready
+          curl -q -f -I http://localhost:8090/api/readyz | grep -q "200 OK"
           echo Smoke testing if Optimize Frontend resources are accessible
           curl -q -f http://localhost:8090/index.html | grep -q html
           """)
