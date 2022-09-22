@@ -74,3 +74,24 @@ it('should include a checkbox to allow custom values', () => {
 
   expect(postText.find('[type="checkbox"]')).toExist();
 });
+
+it('should disable edit button when there are no reports', () => {
+  const node = shallow(
+    <FiltersEdit
+      {...props}
+      availableFilters={[
+        {
+          type: 'assignee',
+          data: {
+            operator: 'in',
+            values: ['Ourief'],
+            allowCustomValues: false,
+          },
+        },
+      ]}
+      reports={[]}
+    />
+  );
+
+  expect(node.find('.editButton')).toBeDisabled();
+});
