@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.api;
 
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 
 public interface ReadonlyStreamProcessorContext {
@@ -19,11 +18,6 @@ public interface ReadonlyStreamProcessorContext {
    */
   @Deprecated // only used in EngineRule; TODO remove this
   LogStream getLogStream();
-
-  /**
-   * @return the state, where the data is stored during processing
-   */
-  MutableZeebeState getZeebeState();
 
   /**
    * Returns the partition ID

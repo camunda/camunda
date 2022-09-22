@@ -14,8 +14,8 @@ import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -318,7 +318,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             zeebeDb,
             streamProcessorContext.getTransactionContext(),
             eventApplierFactory,
-            streamProcessorContext.getPartitionCommandSender());
+            streamProcessorContext.getPartitionCommandSender(),
+            streamProcessorContext.getKeyGeneratorControls());
 
     recordProcessors.forEach(processor -> processor.init(processorContext));
 
@@ -328,7 +329,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private long recoverFromSnapshot() {
     final TransactionContext transactionContext = zeebeDb.createContext();
     streamProcessorContext.transactionContext(transactionContext);
-    recoverZeebeDbState(transactionContext);
+    streamProcessorContext.keyGeneratorControls(
+        new DbKeyGenerator(partitionId, zeebeDb, transactionContext));
 
     streamProcessorDbState = new StreamProcessorDbState(zeebeDb, transactionContext);
     streamProcessorContext.lastProcessedPositionState(
@@ -351,13 +353,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         partitionId,
         snapshotPosition);
     return snapshotPosition;
-  }
-
-  // TODO move ZeebeDbStateCreation/EventApplier into engine; decide whether transaction context is
-  // shared or not
-  private void recoverZeebeDbState(final TransactionContext transactionContext) {
-    final ZeebeDbState zeebeState = new ZeebeDbState(partitionId, zeebeDb, transactionContext);
-    streamProcessorContext.zeebeState(zeebeState);
   }
 
   private void onRecovered(final LastProcessingPositions lastProcessingPositions) {

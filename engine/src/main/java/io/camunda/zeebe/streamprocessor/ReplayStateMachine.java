@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.ReplayMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBatchReaderImpl;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
@@ -51,7 +50,6 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
       recordMetadata -> recordMetadata.getRecordType() == RecordType.EVENT;
 
   private final RecordMetadata metadata = new RecordMetadata();
-  private final MutableZeebeState zeebeState;
   private final KeyGeneratorControls keyGeneratorControls;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final ActorControl actor;
@@ -85,17 +83,18 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private final BooleanSupplier shouldPause;
   private final ReplayMetrics replayMetrics;
   private final List<RecordProcessor> recordProcessors;
+  private final int partitionId;
 
   public ReplayStateMachine(
       final List<RecordProcessor> recordProcessors,
       final StreamProcessorContext context,
       final BooleanSupplier shouldReplayNext) {
+    partitionId = context.getPartitionId();
     this.recordProcessors = recordProcessors;
     shouldPause = () -> !shouldReplayNext.getAsBoolean();
     actor = context.getActor();
     recordValues = context.getRecordValues();
     transactionContext = context.getTransactionContext();
-    zeebeState = context.getZeebeState();
     abortCondition = context.getAbortCondition();
     keyGeneratorControls = context.getKeyGeneratorControls();
     lastProcessedPositionState = context.getLastProcessedPositionState();
@@ -279,7 +278,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     batchSourceEventPosition = sourceEventPosition;
 
     // records from other partitions should not influence the key generator of this partition
-    if (Protocol.decodePartitionId(currentRecordKey) == zeebeState.getPartitionId()) {
+    if (Protocol.decodePartitionId(currentRecordKey) == partitionId) {
       keyGeneratorControls.setKeyIfHigher(currentRecordKey);
     }
   }
