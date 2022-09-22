@@ -6,6 +6,12 @@ on:
       - main
   workflow_dispatch: { }
 
+# Sequence deployment of artifacts on pushes to ensure ordering, e.g. SNAPSHOT is always the latest
+# commit
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   tests:
     name: Tests
