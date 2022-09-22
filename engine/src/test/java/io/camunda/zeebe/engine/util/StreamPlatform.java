@@ -11,6 +11,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.ZeebeDb;
@@ -19,7 +21,6 @@ import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.EmptyProcessingResult;
 import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
-import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
@@ -46,7 +47,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -73,6 +73,7 @@ public final class StreamPlatform {
 
   private final WriteActor writeActor = new WriteActor();
   private final ZeebeDbFactory zeebeDbFactory;
+  private StreamProcessorLifecycleAware mockProcessorLifecycleAware;
 
   public StreamPlatform(
       final Path dataDirectory,
@@ -183,19 +184,16 @@ public final class StreamPlatform {
     return buildStreamProcessor(stream, false);
   }
 
+  public StreamProcessorLifecycleAware getMockProcessorLifecycleAware() {
+    return mockProcessorLifecycleAware;
+  }
+
   public StreamProcessor buildStreamProcessor(
       final SynchronousLogStream stream, final boolean awaitOpening) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
 
-    final var recoveredLatch = new CountDownLatch(1);
-    final var recoveredAwaiter =
-        new StreamProcessorLifecycleAware() {
-          @Override
-          public void onRecovered(final ReadonlyStreamProcessorContext context) {
-            recoveredLatch.countDown();
-          }
-        };
+    mockProcessorLifecycleAware = mock(StreamProcessorLifecycleAware.class);
 
     final ZeebeDb<?> zeebeDb;
     if (snapshotWasTaken) {
@@ -215,17 +213,13 @@ public final class StreamPlatform {
             .streamProcessorMode(streamProcessorMode)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
-    builder.getLifecycleListeners().add(recoveredAwaiter);
+    builder.getLifecycleListeners().add(mockProcessorLifecycleAware);
 
     final StreamProcessor streamProcessor = builder.build();
     final var openFuture = streamProcessor.openAsync(false);
 
     if (awaitOpening) { // and recovery
-      try {
-        recoveredLatch.await(15, TimeUnit.SECONDS);
-      } catch (final InterruptedException e) {
-        Thread.interrupted();
-      }
+        verify(mockProcessorLifecycleAware, timeout(15 * 1000)).onRecovered(any());
     }
     openFuture.join(15, TimeUnit.SECONDS);
 
@@ -279,6 +273,10 @@ public final class StreamPlatform {
   public long writeBatch(final RecordToWrite... recordsToWrite) {
     final var batchWriter = setupBatchWriter(recordsToWrite);
     return writeActor.submit(batchWriter::tryWrite).join();
+  }
+
+  public void closeStreamProcessor() throws Exception {
+    processorContext.close();
   }
 
   /** Used to run writes within an actor thread. */
