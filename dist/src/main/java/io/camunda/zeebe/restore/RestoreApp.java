@@ -40,7 +40,6 @@ public class RestoreApp implements ApplicationRunner {
   }
 
   public static void main(final String[] args) {
-    System.setProperty("spring.banner.location", "classpath:/assets/zeebe_broker_banner.txt");
     final var application =
         new SpringApplicationBuilder(RestoreApp.class)
             .logStartupInfo(true)
