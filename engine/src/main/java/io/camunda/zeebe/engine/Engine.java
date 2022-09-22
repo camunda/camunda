@@ -70,7 +70,8 @@ public class Engine implements RecordProcessor {
         new ZeebeDbState(
             recordProcessorContext.getPartitionId(),
             recordProcessorContext.getZeebeDb(),
-            recordProcessorContext.getTransactionContext());
+            recordProcessorContext.getTransactionContext(),
+            recordProcessorContext.getKeyGenerator());
     eventApplier = recordProcessorContext.getEventApplierFactory().apply(zeebeState);
 
     writers = new Writers(resultBuilderMutex, eventApplier);

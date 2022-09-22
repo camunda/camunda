@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
 import io.camunda.zeebe.engine.util.ZeebeStateRule;
 import io.camunda.zeebe.protocol.Protocol;
 import org.junit.Before;
@@ -56,10 +56,8 @@ public final class KeyGeneratorTest {
     // given
     final ZeebeDb<ZbColumnFamilies> newDb = stateRule.createNewDb();
     final int secondPartitionId = Protocol.DEPLOYMENT_PARTITION + 1;
-    final MutableZeebeState otherZeebeState =
-        new ZeebeDbState(secondPartitionId, newDb, newDb.createContext());
-
-    final KeyGenerator keyGenerator2 = otherZeebeState.getKeyGenerator();
+    final KeyGenerator keyGenerator2 =
+        new DbKeyGenerator(secondPartitionId, newDb, newDb.createContext());
 
     final long keyOfFirstPartition = keyGenerator.nextKey();
 
