@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.streamprocessor;
+package io.camunda.zeebe.streamplatform;
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
@@ -13,7 +13,7 @@ import io.camunda.zeebe.engine.api.Task;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
-import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
+import io.camunda.zeebe.streamplatform.StreamProcessor.Phase;
 import java.time.Duration;
 import java.util.function.BiConsumer;
 

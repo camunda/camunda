@@ -31,7 +31,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
-import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamplatform.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import java.util.Collection;
 import java.util.List;

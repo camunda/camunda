@@ -15,7 +15,7 @@ import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.it.clustering.ClusteringRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
-import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
+import io.camunda.zeebe.streamplatform.StreamProcessor.Phase;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.Before;
