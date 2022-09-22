@@ -14,27 +14,31 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.gateway.admin.exporting.ExportingControlApi;
 import java.util.concurrent.CompletableFuture;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 
 final class ExportingEndpointTest {
-  @Test
-  void pauseFailsIfCallFailsDirectly() {
+  @ParameterizedTest
+  @ValueSource(strings = {ExportingEndpoint.PAUSE, ExportingEndpoint.RESUME})
+  void pauseAndResumeFailsIfCallFailsDirectly(final String operation) {
     // given
     final var service = mock(ExportingControlApi.class);
     final var endpoint = new ExportingEndpoint(service);
 
     // when
     when(service.pauseExporting()).thenThrow(new RuntimeException());
+    when(service.resumeExporting()).thenThrow(new RuntimeException());
 
     // then
-    assertThat(endpoint.post(ExportingEndpoint.PAUSE))
+    assertThat(endpoint.post(operation))
         .returns(
             WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR, from(WebEndpointResponse::getStatus));
   }
 
-  @Test
-  void pauseFailsIfCallReturnsFailedFuture() {
+  @ParameterizedTest
+  @ValueSource(strings = {ExportingEndpoint.PAUSE, ExportingEndpoint.RESUME})
+  void pauseAndResumeFailIfCallReturnsFailedFuture(final String operation) {
     // given
     final var service = mock(ExportingControlApi.class);
     final var endpoint = new ExportingEndpoint(service);
@@ -42,24 +46,28 @@ final class ExportingEndpointTest {
     // when
     when(service.pauseExporting())
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
+    when(service.resumeExporting())
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
 
     // then
-    assertThat(endpoint.post(ExportingEndpoint.PAUSE))
+    assertThat(endpoint.post(operation))
         .returns(
             WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR, from(WebEndpointResponse::getStatus));
   }
 
-  @Test
-  void pauseCanSucceed() {
+  @ParameterizedTest
+  @ValueSource(strings = {ExportingEndpoint.PAUSE, ExportingEndpoint.RESUME})
+  void pauseAndResumeCanSucceed(final String operation) {
     // given
     final var service = mock(ExportingControlApi.class);
     final var endpoint = new ExportingEndpoint(service);
 
     // when
     when(service.pauseExporting()).thenReturn(CompletableFuture.completedFuture(null));
+    when(service.resumeExporting()).thenReturn(CompletableFuture.completedFuture(null));
 
     // then
-    assertThat(endpoint.post(ExportingEndpoint.PAUSE))
+    assertThat(endpoint.post(operation))
         .returns(WebEndpointResponse.STATUS_NO_CONTENT, from(WebEndpointResponse::getStatus));
   }
 }
