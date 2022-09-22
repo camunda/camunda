@@ -41,6 +41,7 @@ public class ZeebeConstants {
 
   public static final String ATTRIBUTE_ASSIGNEE = "assignee";
   public static final String ATTRIBUTE_CANDIDATE_GROUPS = "candidateGroups";
+  public static final String ATTRIBUTE_CANDIDATE_USERS = "candidateUsers";
 
   public static final String ATTRIBUTE_DECISION_ID = "decisionId";
 
