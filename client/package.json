@@ -95,7 +95,7 @@
     "opn": "^6.0.0",
     "prettier": "2.7.1",
     "react-scripts": "4.0.3",
-    "sass": "^1.54.8",
+    "sass": "^1.55.0",
     "shelljs": "^0.8.5",
     "testcafe": "^2.0.0",
     "testcafe-browser-provider-browserstack": "^1.14.0",
