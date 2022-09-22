@@ -7,13 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.message.command;
 
-import io.camunda.zeebe.streamplatform.api.InterPartitionCommandSender;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.streamplatform.api.InterPartitionCommandSender;
 import org.agrona.DirectBuffer;
 
 /**

@@ -19,8 +19,8 @@ public interface TypedCommandWriter {
    *
    * @param intent the intent of the command
    * @param value the record of the command
-   * @throws RecordBatch.ExceededBatchRecordSizeException if the
-   *     appended command doesn't fit into the RecordBatch
+   * @throws RecordBatch.ExceededBatchRecordSizeException if the appended command doesn't fit into
+   *     the RecordBatch
    */
   void appendNewCommand(Intent intent, RecordValue value);
 
@@ -29,8 +29,8 @@ public interface TypedCommandWriter {
    *
    * @param intent the intent of the command
    * @param value the record of the command
-   * @throws RecordBatch.ExceededBatchRecordSizeException if the
-   *     appended command doesn't fit into the RecordBatch
+   * @throws RecordBatch.ExceededBatchRecordSizeException if the appended command doesn't fit into
+   *     the RecordBatch
    */
   void appendFollowUpCommand(long key, Intent intent, RecordValue value);
 }

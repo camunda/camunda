@@ -38,8 +38,7 @@ final class PendingProcessMessageSubscriptionState {
     }
   }
 
-  void updateSentTime(
-      final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
+  void updateSentTime(final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
 
     final var updatedEntry = buildCommandEntry(record, commandSentTime);
 

@@ -9,8 +9,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static java.util.function.Predicate.not;
 
-import io.camunda.zeebe.streamplatform.api.TypedRecord;
-import io.camunda.zeebe.streamplatform.api.records.RecordBatch.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
@@ -44,6 +42,8 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
+import io.camunda.zeebe.streamplatform.api.TypedRecord;
+import io.camunda.zeebe.streamplatform.api.records.RecordBatch.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;

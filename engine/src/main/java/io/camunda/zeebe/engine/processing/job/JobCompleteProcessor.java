@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import io.camunda.zeebe.streamplatform.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
@@ -21,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.streamplatform.api.TypedRecord;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 

@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
 
 public interface ZeebeState extends StreamProcessorLifecycleAware {
 

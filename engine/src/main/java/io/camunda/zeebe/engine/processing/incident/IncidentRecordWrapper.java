@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
-import io.camunda.zeebe.streamplatform.api.TypedRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -15,6 +14,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.streamplatform.api.TypedRecord;
 
 final class IncidentRecordWrapper implements TypedRecord<ProcessInstanceRecord> {
 

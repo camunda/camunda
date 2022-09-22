@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.camunda.zeebe.streamplatform.api.InterPartitionCommandSender;
-import io.camunda.zeebe.streamplatform.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.streamplatform.api.InterPartitionCommandSender;
+import io.camunda.zeebe.streamplatform.api.ProcessingScheduleService;
 
 public interface TypedRecordProcessorContext {
 

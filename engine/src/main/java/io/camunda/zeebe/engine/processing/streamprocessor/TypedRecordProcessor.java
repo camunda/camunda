@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.camunda.zeebe.streamplatform.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.streamplatform.api.TypedRecord;
 import java.util.function.Consumer;
 
 public interface TypedRecordProcessor<T extends UnifiedRecordValue> {

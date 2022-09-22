@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
-import io.camunda.zeebe.streamplatform.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.streamplatform.api.ProcessingResultBuilder;
 import java.util.function.Supplier;
 
 /**

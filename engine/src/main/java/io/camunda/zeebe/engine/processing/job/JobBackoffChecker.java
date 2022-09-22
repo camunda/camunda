@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import io.camunda.zeebe.streamplatform.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.streamplatform.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
 import java.time.Duration;
 
 public final class JobBackoffChecker implements StreamProcessorLifecycleAware {

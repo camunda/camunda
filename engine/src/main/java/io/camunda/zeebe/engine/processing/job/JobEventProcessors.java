@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import io.camunda.zeebe.streamplatform.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
@@ -18,6 +16,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.streamplatform.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
 import java.util.function.Consumer;
 
 public final class JobEventProcessors {

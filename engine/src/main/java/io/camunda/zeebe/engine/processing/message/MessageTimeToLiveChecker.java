@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import io.camunda.zeebe.streamplatform.api.Task;
-import io.camunda.zeebe.streamplatform.api.TaskResult;
-import io.camunda.zeebe.streamplatform.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.streamplatform.api.Task;
+import io.camunda.zeebe.streamplatform.api.TaskResult;
+import io.camunda.zeebe.streamplatform.api.TaskResultBuilder;
 
 public final class MessageTimeToLiveChecker implements Task {
 

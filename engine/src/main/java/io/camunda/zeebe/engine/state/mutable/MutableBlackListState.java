@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
-import io.camunda.zeebe.streamplatform.api.TypedRecord;
 import io.camunda.zeebe.engine.state.immutable.BlackListState;
+import io.camunda.zeebe.streamplatform.api.TypedRecord;
 import java.util.function.Consumer;
 
 public interface MutableBlackListState extends BlackListState {

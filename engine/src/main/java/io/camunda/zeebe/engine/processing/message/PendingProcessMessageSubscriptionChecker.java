@@ -7,13 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import io.camunda.zeebe.streamplatform.api.ProcessingScheduleService;
-import io.camunda.zeebe.streamplatform.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.streamplatform.api.ProcessingScheduleService;
+import io.camunda.zeebe.streamplatform.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
 import java.time.Duration;
 
 public final class PendingProcessMessageSubscriptionChecker

@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.timer;
 
-import io.camunda.zeebe.streamplatform.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.streamplatform.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
@@ -17,6 +14,9 @@ import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.streamplatform.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.streamplatform.api.TaskResultBuilder;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
 import java.util.function.Function;
