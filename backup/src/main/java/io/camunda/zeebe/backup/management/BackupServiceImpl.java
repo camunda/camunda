@@ -129,7 +129,7 @@ final class BackupServiceImpl {
     };
   }
 
-  public ActorFuture<Optional<BackupStatus>> getBackupStatus(
+  ActorFuture<Optional<BackupStatus>> getBackupStatus(
       final int partitionId, final long checkpointId, final ConcurrencyControl executor) {
     final var future = new CompletableActorFuture<Optional<BackupStatus>>();
     executor.run(
