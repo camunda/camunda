@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.streamplatform.impl;
 
-import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.TYPE_REGISTRY;
+import static io.camunda.zeebe.streamplatform.api.TypedEventRegistry.TYPE_REGISTRY;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.util;
 
-import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.EVENT_REGISTRY;
+import static io.camunda.zeebe.streamplatform.api.TypedEventRegistry.EVENT_REGISTRY;
 
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
