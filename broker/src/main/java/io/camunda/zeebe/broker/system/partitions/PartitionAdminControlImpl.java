@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
-import io.camunda.zeebe.streamplatform.StreamProcessor;
+import io.camunda.zeebe.streamplatform.impl.StreamProcessor;
 import java.io.IOException;
 import java.util.function.Supplier;
 

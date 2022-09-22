@@ -18,7 +18,7 @@ import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.streamplatform.state.DbKeyGenerator;
+import io.camunda.zeebe.streamplatform.impl.state.DbKeyGenerator;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;

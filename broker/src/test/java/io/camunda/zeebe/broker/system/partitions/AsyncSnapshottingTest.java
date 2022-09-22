@@ -26,7 +26,7 @@ import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
-import io.camunda.zeebe.streamplatform.StreamProcessor;
+import io.camunda.zeebe.streamplatform.impl.StreamProcessor;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import java.io.IOException;
 import java.time.Duration;

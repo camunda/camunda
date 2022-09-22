@@ -11,13 +11,13 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTI
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.streamplatform.api.EmptyProcessingResult;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamPlatform;
 import io.camunda.zeebe.engine.util.StreamPlatformExtension;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.camunda.zeebe.streamplatform.StreamProcessor;
+import io.camunda.zeebe.streamplatform.api.EmptyProcessingResult;
+import io.camunda.zeebe.streamplatform.impl.StreamProcessor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;

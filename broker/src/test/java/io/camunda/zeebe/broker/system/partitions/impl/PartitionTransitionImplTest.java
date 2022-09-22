@@ -30,7 +30,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTrans
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
-import io.camunda.zeebe.streamplatform.StreamProcessor;
+import io.camunda.zeebe.streamplatform.impl.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;

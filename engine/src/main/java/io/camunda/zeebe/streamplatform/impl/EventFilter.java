@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.streamplatform;
+package io.camunda.zeebe.streamplatform.impl;
 
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import java.util.Objects;

@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.util;
 
-import io.camunda.zeebe.streamplatform.api.TypedRecord;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
-import io.camunda.zeebe.streamplatform.StreamProcessorListener;
+import io.camunda.zeebe.streamplatform.api.TypedRecord;
+import io.camunda.zeebe.streamplatform.impl.StreamProcessorListener;
 import java.util.Collections;
 import java.util.List;
 

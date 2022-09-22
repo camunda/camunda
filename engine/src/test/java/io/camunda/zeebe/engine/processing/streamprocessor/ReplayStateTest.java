@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
-import io.camunda.zeebe.streamplatform.StreamProcessor.Phase;
+import io.camunda.zeebe.streamplatform.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.ArrayList;

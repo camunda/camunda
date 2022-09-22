@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.streamplatform;
+package io.camunda.zeebe.streamplatform.impl;
 
 import io.camunda.zeebe.streamplatform.api.PostCommitTask;
 import io.camunda.zeebe.streamplatform.api.ProcessingResponse;
 import io.camunda.zeebe.streamplatform.api.ProcessingResult;
 import io.camunda.zeebe.streamplatform.api.TaskResult;
 import io.camunda.zeebe.streamplatform.api.records.ImmutableRecordBatch;
-import io.camunda.zeebe.streamplatform.BufferedProcessingResultBuilder.ProcessingResponseImpl;
+import io.camunda.zeebe.streamplatform.impl.BufferedProcessingResultBuilder.ProcessingResponseImpl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

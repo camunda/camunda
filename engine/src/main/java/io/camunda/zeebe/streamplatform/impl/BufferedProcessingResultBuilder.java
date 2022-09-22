@@ -5,17 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.streamplatform;
+package io.camunda.zeebe.streamplatform.impl;
 
 import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.TYPE_REGISTRY;
 
-import io.camunda.zeebe.streamplatform.api.PostCommitTask;
-import io.camunda.zeebe.streamplatform.api.ProcessingResponse;
-import io.camunda.zeebe.streamplatform.api.ProcessingResult;
-import io.camunda.zeebe.streamplatform.api.ProcessingResultBuilder;
-import io.camunda.zeebe.streamplatform.api.records.RecordBatch;
-import io.camunda.zeebe.streamplatform.api.records.RecordBatchEntry;
-import io.camunda.zeebe.streamplatform.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -23,6 +16,13 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.streamplatform.api.PostCommitTask;
+import io.camunda.zeebe.streamplatform.api.ProcessingResponse;
+import io.camunda.zeebe.streamplatform.api.ProcessingResult;
+import io.camunda.zeebe.streamplatform.api.ProcessingResultBuilder;
+import io.camunda.zeebe.streamplatform.api.records.RecordBatch;
+import io.camunda.zeebe.streamplatform.api.records.RecordBatchEntry;
+import io.camunda.zeebe.streamplatform.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.StringUtil;
 import java.util.ArrayList;

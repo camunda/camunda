@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.it.clustering.ClusteringRule;
-import io.camunda.zeebe.streamplatform.StreamProcessor.Phase;
+import io.camunda.zeebe.streamplatform.impl.StreamProcessor.Phase;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;

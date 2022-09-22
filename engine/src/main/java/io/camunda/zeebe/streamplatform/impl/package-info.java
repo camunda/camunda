@@ -12,4 +12,4 @@
  * sources, but not for the test sources. The test sources can best be refactored after the engine
  * abstraction was fully introduced.
  */
-package io.camunda.zeebe.streamplatform;
+package io.camunda.zeebe.streamplatform.impl;

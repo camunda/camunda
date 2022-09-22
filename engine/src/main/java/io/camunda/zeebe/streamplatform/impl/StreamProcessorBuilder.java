@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.streamplatform;
+package io.camunda.zeebe.streamplatform.impl;
 
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.streamplatform.api.CommandResponseWriter;
-import io.camunda.zeebe.streamplatform.api.InterPartitionCommandSender;
-import io.camunda.zeebe.streamplatform.api.RecordProcessor;
-import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.streamplatform.api.CommandResponseWriter;
+import io.camunda.zeebe.streamplatform.api.InterPartitionCommandSender;
+import io.camunda.zeebe.streamplatform.api.RecordProcessor;
+import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

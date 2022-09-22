@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.streamplatform;
+package io.camunda.zeebe.streamplatform.impl;
 
 import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.TYPE_REGISTRY;
 
-import io.camunda.zeebe.streamplatform.api.TaskResult;
-import io.camunda.zeebe.streamplatform.api.TaskResultBuilder;
-import io.camunda.zeebe.streamplatform.api.records.MutableRecordBatch;
-import io.camunda.zeebe.streamplatform.api.records.RecordBatch;
-import io.camunda.zeebe.streamplatform.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.streamplatform.api.TaskResult;
+import io.camunda.zeebe.streamplatform.api.TaskResultBuilder;
+import io.camunda.zeebe.streamplatform.api.records.MutableRecordBatch;
+import io.camunda.zeebe.streamplatform.api.records.RecordBatch;
+import io.camunda.zeebe.streamplatform.api.records.RecordBatchSizePredicate;
 
 /**
  * Implementation of {@code TaskResultBuilder} that buffers the task results. After being done with

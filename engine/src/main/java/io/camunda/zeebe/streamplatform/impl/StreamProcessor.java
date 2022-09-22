@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.streamplatform;
+package io.camunda.zeebe.streamplatform.impl;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -25,8 +25,8 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.streamplatform.api.RecordProcessor;
 import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.streamplatform.state.DbKeyGenerator;
-import io.camunda.zeebe.streamplatform.state.StreamProcessorDbState;
+import io.camunda.zeebe.streamplatform.impl.state.DbKeyGenerator;
+import io.camunda.zeebe.streamplatform.impl.state.StreamProcessorDbState;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;

@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.streamplatform;
+package io.camunda.zeebe.streamplatform.impl;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
@@ -14,7 +14,6 @@ import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.scheduler.ActorControl;
-import io.camunda.zeebe.streamplatform.StreamProcessor.Phase;
 import io.camunda.zeebe.streamplatform.api.CommandResponseWriter;
 import io.camunda.zeebe.streamplatform.api.InterPartitionCommandSender;
 import io.camunda.zeebe.streamplatform.api.ProcessingScheduleService;
@@ -22,6 +21,7 @@ import io.camunda.zeebe.streamplatform.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.streamplatform.api.TypedRecord;
 import io.camunda.zeebe.streamplatform.api.state.KeyGeneratorControls;
 import io.camunda.zeebe.streamplatform.api.state.MutableLastProcessedPositionState;
+import io.camunda.zeebe.streamplatform.impl.StreamProcessor.Phase;
 import java.util.function.BooleanSupplier;
 
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {

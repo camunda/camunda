@@ -13,7 +13,7 @@ import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.it.clustering.ClusteringRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
-import io.camunda.zeebe.streamplatform.StreamProcessor.Phase;
+import io.camunda.zeebe.streamplatform.impl.StreamProcessor.Phase;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
