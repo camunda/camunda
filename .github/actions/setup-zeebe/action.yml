@@ -59,12 +59,7 @@ runs:
     - if: ${{ inputs.java == 'true' && inputs.maven == 'true' }}
       name: Set default maven options
       shell: bash
-      run: echo "MAVEN_OPTS=-Dhttp.keepAlive=false
-          -Dmaven.wagon.http.pool=false
-          -Dmaven.wagon.http.retryHandler.class=standard
-          -Dmaven.wagon.http.retryHandler.count=3
-          -Dmaven.wagon.httpconnectionManager.ttlSeconds=60
-          ${MAVEN_OPTS}" >> "${GITHUB_ENV}"
+      run: echo "MAVEN_OPTS=-Dmaven.wagon.httpconnectionManager.ttlSeconds=60 ${MAVEN_OPTS}" >> "${GITHUB_ENV}"
     - if: ${{ inputs.java == 'true' && inputs.maven == 'true' && inputs.nexus-cache == 'true' }}
       name: Use Camunda Nexus cache
       uses: ./.github/actions/use-ci-nexus-cache
