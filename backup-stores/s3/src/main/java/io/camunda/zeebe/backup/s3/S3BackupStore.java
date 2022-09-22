@@ -185,6 +185,9 @@ public final class S3BackupStore implements BackupStore {
     return readManifestObject(id).thenApply(Manifest::toStatus);
   }
 
+  /**
+   * @implNote Even if S3 is unavailable, the returned future may complete successfully.
+   */
   @Override
   public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
     LOG.info("Querying status of {}", wildcard);
