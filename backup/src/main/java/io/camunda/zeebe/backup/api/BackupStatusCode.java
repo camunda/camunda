@@ -12,9 +12,10 @@ import java.util.Comparator;
 public enum BackupStatusCode {
   // WARNING! Must be ordered from "worst" to "best" for comparator below!
   DOES_NOT_EXIST,
+  FAILED,
+
   IN_PROGRESS,
-  COMPLETED,
-  FAILED;
+  COMPLETED;
 
   public static final Comparator<BackupStatus> BY_STATUS =
       Comparator.comparing(BackupStatus::statusCode);
