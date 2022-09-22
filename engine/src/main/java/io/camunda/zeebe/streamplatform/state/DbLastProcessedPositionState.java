@@ -12,7 +12,6 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
-import io.camunda.zeebe.engine.state.processing.LastProcessedPosition;
 import io.camunda.zeebe.streamplatform.api.state.MutableLastProcessedPositionState;
 
 public final class DbLastProcessedPositionState implements MutableLastProcessedPositionState {
