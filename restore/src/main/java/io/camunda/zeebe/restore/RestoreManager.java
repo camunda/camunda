@@ -63,11 +63,7 @@ public class RestoreManager {
       final int localBrokerId) {
     return new PartitionRestoreService(backupStore, partition, brokerIds, localBrokerId)
         .restore(backupId)
-        .thenApply(
-            backup -> {
-              logSuccessfulRestore(backup, partition.id().id(), backupId);
-              return null;
-            });
+        .thenAccept(backup -> logSuccessfulRestore(backup, partition.id().id(), backupId));
   }
 
   private Set<RaftPartition> collectPartitions() {
