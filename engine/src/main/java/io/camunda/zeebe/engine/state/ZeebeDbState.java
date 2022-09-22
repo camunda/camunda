@@ -45,7 +45,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.state.processing.DbBlackListState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
-import io.camunda.zeebe.protocol.Protocol;
 import java.util.function.BiConsumer;
 
 public class ZeebeDbState implements MutableZeebeState {
@@ -71,11 +70,6 @@ public class ZeebeDbState implements MutableZeebeState {
   private final MutableDecisionState decisionState;
 
   private final int partitionId;
-
-  public ZeebeDbState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    this(Protocol.DEPLOYMENT_PARTITION, zeebeDb, transactionContext, null);
-  }
 
   public ZeebeDbState(
       final int partitionId,
