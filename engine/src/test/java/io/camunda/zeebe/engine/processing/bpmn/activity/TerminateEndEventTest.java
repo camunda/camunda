@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.builder.EndEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -284,6 +285,121 @@ public final class TerminateEndEventTest {
             tuple(BpmnElementType.SERVICE_TASK, "A", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
                 BpmnElementType.END_EVENT, "end_after_A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCancelElementInstanceInMultiInstance() {
+    // given
+    final Consumer<SubProcessBuilder> subprocessBuilder =
+        subprocess ->
+            subprocess
+                .embeddedSubProcess()
+                .startEvent()
+                .exclusiveGateway("split")
+                // first iteration of the multi-instance
+                .defaultFlow()
+                .parallelGateway("fork_1")
+                .userTask("A")
+                .endEvent("end_after_A")
+                .moveToNode("fork_1")
+                .serviceTask("B", serviceTask -> serviceTask.zeebeJobType("B"))
+                .endEvent("terminate_end_after_B", EndEventBuilder::terminate)
+                // second iteration of the multi-instance
+                .moveToNode("split")
+                .conditionExpression("x = 2")
+                .parallelGateway("fork_2")
+                .userTask("C")
+                .endEvent("end_after_C")
+                .moveToNode("fork_2")
+                .serviceTask("D", serviceTask -> serviceTask.zeebeJobType("D"))
+                .endEvent("terminate_end_after_D", EndEventBuilder::terminate);
+
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess("subprocess", subprocessBuilder)
+            .multiInstance(
+                multiInstance ->
+                    multiInstance
+                        .parallel()
+                        .zeebeInputCollectionExpression("[1,2]")
+                        .zeebeInputElement("x"))
+            .sequenceFlowId("to_end_after_subprocess")
+            .endEvent("end_after_subprocess")
+            .done();
+
+    ENGINE_RULE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    Assertions.assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(4))
+        .describedAs("Assume that four jobs are created, two for each subprocess instance")
+        .hasSize(4);
+
+    // when
+    ENGINE_RULE.job().ofInstance(processInstanceKey).withType("B").complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit("subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .extracting(
+            record -> record.getValue().getBpmnElementType(),
+            record -> record.getValue().getElementId(),
+            Record::getIntent)
+        .describedAs(
+            "Expect to terminate all element instances in the subprocess when reaching the terminate end event")
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, "B", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.END_EVENT,
+                "terminate_end_after_B",
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS, "subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs("Expect that the other instance of the subprocess is not terminated")
+        .doesNotContain(
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SERVICE_TASK, "D", ProcessInstanceIntent.ELEMENT_TERMINATED));
+
+    ENGINE_RULE.job().ofInstance(processInstanceKey).withType("D").complete();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            record -> record.getValue().getBpmnElementType(),
+            record -> record.getValue().getElementId(),
+            Record::getIntent)
+        .describedAs("Expect to complete the other subprocess instance")
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, "D", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS, "subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs(
+            "Expect to complete the multi-instance after all subprocess instances are completed")
+        .containsSubsequence(
+            tuple(
+                BpmnElementType.SUB_PROCESS, "subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.SUB_PROCESS, "subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                "subprocess",
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.END_EVENT,
+                "end_after_subprocess",
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
