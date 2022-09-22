@@ -30,6 +30,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.slf4j.Log4jLogger;
+import org.apache.logging.slf4j.Log4jMarkerFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,7 @@ final class GrpcErrorMapperTest {
   @BeforeEach
   void beforeEach() {
     log = (Logger) LogManager.getLogger(UUID.randomUUID().toString());
-    logger = new Log4jLogger(log, log.getName());
+    logger = new Log4jLogger(new Log4jMarkerFactory(), log, log.getName());
 
     recorder.start();
     log.addAppender(recorder);
