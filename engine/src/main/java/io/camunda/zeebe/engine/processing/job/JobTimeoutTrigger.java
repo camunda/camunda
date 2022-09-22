@@ -9,11 +9,11 @@ package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
 
-import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.engine.api.Task;
-import io.camunda.zeebe.engine.api.TaskResult;
-import io.camunda.zeebe.engine.api.TaskResultBuilder;
+import io.camunda.zeebe.streamplatform.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.streamplatform.api.Task;
+import io.camunda.zeebe.streamplatform.api.TaskResult;
+import io.camunda.zeebe.streamplatform.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import java.time.Duration;

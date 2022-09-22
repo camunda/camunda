@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.timer;
 
-import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.streamplatform.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;

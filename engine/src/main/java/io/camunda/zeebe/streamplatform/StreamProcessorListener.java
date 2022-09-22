@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.streamplatform;
 
-import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.streamplatform.api.TypedRecord;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 
 /**

@@ -18,9 +18,9 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.api.EmptyProcessingResult;
-import io.camunda.zeebe.engine.api.RecordProcessor;
-import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.streamplatform.api.EmptyProcessingResult;
+import io.camunda.zeebe.streamplatform.api.RecordProcessor;
+import io.camunda.zeebe.streamplatform.api.TypedRecord;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamPlatform;
 import io.camunda.zeebe.engine.util.StreamPlatformExtension;

@@ -17,7 +17,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.api.TaskResultBuilder;
+import io.camunda.zeebe.streamplatform.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.TriggerTimersSideEffect;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.YieldingDecorator;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;

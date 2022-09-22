@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.api;
+package io.camunda.zeebe.streamplatform.api;
 
-import io.camunda.zeebe.engine.api.records.RecordBatchEntry;
+import io.camunda.zeebe.streamplatform.api.records.RecordBatchEntry;
 
 /**
  * The response which has been created during processing, for a request which can be identified by

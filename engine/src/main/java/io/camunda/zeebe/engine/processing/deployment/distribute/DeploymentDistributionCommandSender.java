@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.distribute;
 
 import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 
-import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
+import io.camunda.zeebe.streamplatform.api.InterPartitionCommandSender;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.ValueType;

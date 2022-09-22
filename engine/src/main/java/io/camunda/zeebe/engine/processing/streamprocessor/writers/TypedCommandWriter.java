@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.streamplatform.api.records.RecordBatch;
 
 /** This interface is supposed to replace TypedCommandWriter */
 public interface TypedCommandWriter {
@@ -18,7 +19,7 @@ public interface TypedCommandWriter {
    *
    * @param intent the intent of the command
    * @param value the record of the command
-   * @throws io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException if the
+   * @throws RecordBatch.ExceededBatchRecordSizeException if the
    *     appended command doesn't fit into the RecordBatch
    */
   void appendNewCommand(Intent intent, RecordValue value);
@@ -28,7 +29,7 @@ public interface TypedCommandWriter {
    *
    * @param intent the intent of the command
    * @param value the record of the command
-   * @throws io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException if the
+   * @throws RecordBatch.ExceededBatchRecordSizeException if the
    *     appended command doesn't fit into the RecordBatch
    */
   void appendFollowUpCommand(long key, Intent intent, RecordValue value);

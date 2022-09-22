@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.backup.processing;
 
-import io.camunda.zeebe.engine.api.PostCommitTask;
-import io.camunda.zeebe.engine.api.ProcessingResponse;
-import io.camunda.zeebe.engine.api.ProcessingResult;
-import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
-import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
-import io.camunda.zeebe.engine.api.records.RecordBatch;
+import io.camunda.zeebe.streamplatform.api.PostCommitTask;
+import io.camunda.zeebe.streamplatform.api.ProcessingResponse;
+import io.camunda.zeebe.streamplatform.api.ProcessingResult;
+import io.camunda.zeebe.streamplatform.api.ProcessingResultBuilder;
+import io.camunda.zeebe.streamplatform.api.records.ImmutableRecordBatch;
+import io.camunda.zeebe.streamplatform.api.records.RecordBatch;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;

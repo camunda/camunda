@@ -9,10 +9,10 @@ package io.camunda.zeebe.streamplatform;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
-import io.camunda.zeebe.engine.api.ProcessingScheduleService;
-import io.camunda.zeebe.engine.api.RecordProcessorContext;
-import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.streamplatform.api.InterPartitionCommandSender;
+import io.camunda.zeebe.streamplatform.api.ProcessingScheduleService;
+import io.camunda.zeebe.streamplatform.api.RecordProcessorContext;
+import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;

@@ -12,7 +12,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.streamplatform.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;

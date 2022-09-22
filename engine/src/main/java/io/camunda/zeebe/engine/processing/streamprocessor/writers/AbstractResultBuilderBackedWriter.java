@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
-import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
+import io.camunda.zeebe.streamplatform.api.ProcessingResultBuilder;
 import java.util.function.Supplier;
 
 abstract class AbstractResultBuilderBackedWriter {

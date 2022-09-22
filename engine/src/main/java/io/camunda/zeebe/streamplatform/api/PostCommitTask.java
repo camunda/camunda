@@ -5,10 +5,8 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.api.records;
+package io.camunda.zeebe.streamplatform.api;
 
-/**
- * Represents an unmodifiable batch of records, which extends the {@link Iterable<
- * ImmutableRecordBatchEntry >} in order to make sure that the contained entries can be accessed.
- */
-public interface ImmutableRecordBatch extends Iterable<ImmutableRecordBatchEntry> {}
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+
+public interface PostCommitTask extends SideEffectProducer {}

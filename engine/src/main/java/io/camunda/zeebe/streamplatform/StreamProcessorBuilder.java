@@ -8,10 +8,10 @@
 package io.camunda.zeebe.streamplatform;
 
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.api.CommandResponseWriter;
-import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
-import io.camunda.zeebe.engine.api.RecordProcessor;
-import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.streamplatform.api.CommandResponseWriter;
+import io.camunda.zeebe.streamplatform.api.InterPartitionCommandSender;
+import io.camunda.zeebe.streamplatform.api.RecordProcessor;
+import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;

@@ -8,8 +8,8 @@
 package io.camunda.zeebe.streamplatform;
 
 import io.camunda.zeebe.engine.Loggers;
-import io.camunda.zeebe.engine.api.ProcessingScheduleService;
-import io.camunda.zeebe.engine.api.Task;
+import io.camunda.zeebe.streamplatform.api.ProcessingScheduleService;
+import io.camunda.zeebe.streamplatform.api.Task;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;

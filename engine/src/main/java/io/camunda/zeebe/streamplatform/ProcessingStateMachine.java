@@ -9,11 +9,11 @@ package io.camunda.zeebe.streamplatform;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
-import io.camunda.zeebe.engine.api.EmptyProcessingResult;
-import io.camunda.zeebe.engine.api.ProcessingResult;
-import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
-import io.camunda.zeebe.engine.api.RecordProcessor;
-import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.streamplatform.api.EmptyProcessingResult;
+import io.camunda.zeebe.streamplatform.api.ProcessingResult;
+import io.camunda.zeebe.streamplatform.api.ProcessingResultBuilder;
+import io.camunda.zeebe.streamplatform.api.RecordProcessor;
+import io.camunda.zeebe.streamplatform.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.logstreams.impl.Loggers;

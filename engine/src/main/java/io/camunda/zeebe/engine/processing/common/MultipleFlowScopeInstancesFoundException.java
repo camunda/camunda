@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.common;
 
-import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.streamplatform.api.TypedRecord;
 
 /**
  * Exception that can be thrown during processing of a command, in case the engine found more than

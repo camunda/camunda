@@ -5,10 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.api;
+package io.camunda.zeebe.streamplatform.api.records;
 
-/** Here the interface is just a suggestion. Can be whatever PDT team thinks is best to work with */
-public interface Task {
+import java.util.function.BiPredicate;
 
-  TaskResult execute(TaskResultBuilder taskResultBuilder);
-}
+/**
+ * Takes as argument the potential next batch entry count and the next potential batch size, in
+ * order to verify whether this next {@link RecordBatchEntry} can be added to the {@link
+ * RecordBatch}.
+ */
+public interface RecordBatchSizePredicate extends BiPredicate<Integer, Integer> {}

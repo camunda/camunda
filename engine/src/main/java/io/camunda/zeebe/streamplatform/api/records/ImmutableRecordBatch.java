@@ -5,13 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.api.records;
-
-import java.util.function.BiPredicate;
+package io.camunda.zeebe.streamplatform.api.records;
 
 /**
- * Takes as argument the potential next batch entry count and the next potential batch size, in
- * order to verify whether this next {@link RecordBatchEntry} can be added to the {@link
- * RecordBatch}.
+ * Represents an unmodifiable batch of records, which extends the {@link Iterable<
+ * ImmutableRecordBatchEntry >} in order to make sure that the contained entries can be accessed.
  */
-public interface RecordBatchSizePredicate extends BiPredicate<Integer, Integer> {}
+public interface ImmutableRecordBatch extends Iterable<ImmutableRecordBatchEntry> {}
