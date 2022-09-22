@@ -29,7 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +84,7 @@ public class PartitionRestoreService {
 
   private CompletionStage<Path> getTargetDirectory(final long backupId) {
     try {
-      if (!isEmpty(rootDirectory)) {
+      if (!FileUtil.isEmpty(rootDirectory)) {
         LOG.error(
             "Partition's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
             rootDirectory);
@@ -101,15 +100,6 @@ public class PartitionRestoreService {
     } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
     }
-  }
-
-  private boolean isEmpty(final Path path) throws IOException {
-    if (Files.isDirectory(path)) {
-      try (final Stream<Path> entries = Files.list(path)) {
-        return entries.findFirst().isEmpty();
-      }
-    }
-    return !Files.exists(path);
   }
 
   // While taking the backup, we add all log segments. But the backup must only have entries upto

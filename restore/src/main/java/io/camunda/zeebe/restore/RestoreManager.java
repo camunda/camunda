@@ -13,6 +13,10 @@ import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.partitioning.RaftPartitionGroupFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.util.FileUtil;
+import java.io.IOException;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.Path;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -31,6 +35,19 @@ public class RestoreManager {
   }
 
   public CompletableFuture<Void> restore(final long backupId) {
+    final Path dataDirectory = Path.of(configuration.getData().getDirectory());
+    try {
+      if (!FileUtil.isEmpty(dataDirectory)) {
+        LOG.error(
+            "Brokers's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
+            dataDirectory);
+        return CompletableFuture.failedFuture(
+            new DirectoryNotEmptyException(dataDirectory.toString()));
+      }
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(e);
+    }
+
     final var brokerIds =
         IntStream.range(0, configuration.getCluster().getClusterSize())
             .boxed()
@@ -42,9 +59,22 @@ public class RestoreManager {
     LOG.info("Restoring partitions {}", partitionIds);
 
     return CompletableFuture.allOf(
-        partitionToRestore.stream()
-            .map(partition -> restorePartition(partition, backupId, brokerIds, localBrokerId))
-            .toArray(CompletableFuture[]::new));
+            partitionToRestore.stream()
+                .map(partition -> restorePartition(partition, backupId, brokerIds, localBrokerId))
+                .toArray(CompletableFuture[]::new))
+        .exceptionallyComposeAsync(error -> logFailureAndDeleteDataDirectory(dataDirectory, error));
+  }
+
+  private CompletableFuture<Void> logFailureAndDeleteDataDirectory(
+      final Path dataDirectory, final Throwable error) {
+    LOG.error("Failed to restore broker. Deleting data directory {}", dataDirectory, error);
+    try {
+      FileUtil.deleteFolderIfExists(dataDirectory);
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(e);
+    }
+    // Must fail because restore failed
+    return CompletableFuture.failedFuture(error);
   }
 
   private void logSuccessfulRestore(
