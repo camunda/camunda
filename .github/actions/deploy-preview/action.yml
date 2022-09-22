@@ -103,6 +103,7 @@ runs:
       step: start
       token: "${{ github.token }}"
       env: ${{ env.APP_NAME }}
+      ref: ${{ inputs.revision }}
   - name: Deploy
     shell: bash
     if: ${{ inputs.step == 'start'}}
@@ -154,6 +155,7 @@ runs:
       status: ${{ job.status }}
       deployment_id: ${{ steps.deployment.outputs.deployment_id }}
       env_url: https://${{ inputs.deployment_id }}.zeebe-tasklist.camunda.cloud
+      ref: ${{ inputs.revision }}
     # When tearing down the deployment, also deactivate GitHub Deployment environment
   - uses: bobheadxi/deployments@26f1b13bf5048b2a8cf9c92af826742fefe2bc3a
     if: ${{ inputs.step == 'stop'  && always() }}
@@ -162,3 +164,4 @@ runs:
       step: deactivate-env
       token: "${{ github.token }}"
       env: ${{ env.APP_NAME }}
+      ref: ${{ inputs.revision }}
