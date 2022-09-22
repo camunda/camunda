@@ -137,15 +137,16 @@ jobs:
         if: always()
         with:
           name: Smoke Tests ${{ matrix.os }}
-  java-randomized-tests:
-    name: Java randomized tests
-    runs-on: ubuntu-latest
+  property-tests:
+    name: Property Tests
+    runs-on: "n1-standard-16-netssd-preempt"
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+      - uses: ./.github/actions/use-ci-nexus-cache
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -155,6 +156,7 @@ jobs:
         run: >
           mvn -T1C -B
           -P parallel-tests,include-random-tests
+          -D junitThreadCount=16
           -D skipChecks
           test
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -166,7 +168,7 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: always()
         with:
-          name: Java Randomized Tests
+          name: Property Tests
   go-client:
     name: Go client tests
     runs-on: ubuntu-latest
@@ -249,7 +251,7 @@ jobs:
       - integration-tests
       - unit-tests
       - smoke-tests
-      - java-randomized-tests
+      - property-tests
       - go-client
       - java-client
     steps:

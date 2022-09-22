@@ -1624,6 +1624,7 @@
             <configuration>
               <excludes>
                 <exclude>**/*RandomizedPropertyTest.java</exclude>
+                <exclude>**/*RandomizedRaftTest.java</exclude>
                 <!-- Re-add the default exclude for inner classes, see https://github.com/camunda/zeebe/issues/8637 -->
                 <exclude>**/*$*.java</exclude>
               </excludes>
@@ -1644,6 +1645,7 @@
             <configuration>
               <includes>
                 <include>**/*RandomizedPropertyTest.java</include>
+                <include>**/*RandomizedRaftTest.java</include>
               </includes>
               <systemPropertyVariables>
                 <processCount>10</processCount>
