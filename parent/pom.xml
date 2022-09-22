@@ -111,7 +111,7 @@
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.15</version.jnr-posix>
     <version.zpt>8.0.6</version.zpt>
-    <version.feign>11.9.1</version.feign>
+    <version.feign>11.10</version.feign>
     <version.awssdk>2.17.278</version.awssdk>
 
     <!-- maven plugins -->
@@ -945,7 +945,7 @@
       <dependency>
         <groupId>com.amazonaws</groupId>
         <artifactId>aws-java-sdk-core</artifactId>
-        <version>1.12.306</version>
+        <version>1.12.308</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>

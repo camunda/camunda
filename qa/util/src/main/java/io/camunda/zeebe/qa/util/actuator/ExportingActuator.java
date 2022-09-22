@@ -38,4 +38,11 @@ public interface ExportingActuator {
   @RequestLine("POST /pause")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   void pause();
+
+  /**
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /resume")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  void resume();
 }
