@@ -1,17 +1,13 @@
 .InstanceStateFilter {
-  .Popover {
-    .Popover__button {
-      .indicator {
-        display: inline-block;
-        width: 10px;
-        height: 10px;
-        background-color: var(--silver-darken-80);
-        border-radius: 50%;
-        margin-right: 0.7em;
-        &.active {
-          background-color: var(--blue-darken-55);
-        }
-      }
+  .Popover .buttonWrapper .Button .indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background-color: var(--silver-darken-80);
+    border-radius: 50%;
+    margin-right: 0.7em;
+    &.active {
+      background-color: var(--blue-darken-55);
     }
   }
 }

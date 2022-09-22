@@ -29,7 +29,7 @@ it('should render the provided title in the button', () => {
 it('should specify the open button as icon button if it has an icon, but no title', () => {
   const node = shallow(<Popover icon="open" />);
 
-  expect(node.find('.Popover__button').prop('icon')).toBe(true);
+  expect(node.find(Button).prop('icon')).toBe(true);
 });
 
 it('should do not display child content initially', () => {
@@ -144,7 +144,7 @@ it('should limit the height and show scrollbar when there is not space', () => {
   node.setState({open: true});
   node.update();
   expect(node.state().dialogStyles.height).toBe('80px');
-  expect(node.find('.Popover__dialog')).toHaveClassName('scrollable');
+  expect(node.find('.dialog')).toHaveClassName('scrollable');
 });
 
 it('should not crash on pages without a footer', () => {
@@ -166,7 +166,7 @@ it('should not crash on pages without a footer', () => {
   node.instance().calculateDialogStyle();
   node.setState({open: true});
   node.update();
-  expect(node.find('.Popover__dialog')).toExist();
+  expect(node.find('.dialog')).toExist();
 });
 
 it('should call optional onOpen and onClose handlers', () => {
@@ -232,5 +232,5 @@ it('should flip the popover vertically if there is no enough space below when us
   node.setState({open: true});
   node.update();
   expect(node.state().dialogStyles.bottom).toBe(60);
-  expect(node.find('.Popover__dialog')).toHaveClassName('scrollable');
+  expect(node.find('.dialog')).toHaveClassName('scrollable');
 });

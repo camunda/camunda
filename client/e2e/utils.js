@@ -58,7 +58,7 @@ export async function selectReportDefinition(t, name, version) {
     .click('.Modal .primary.Button');
 
   if (version) {
-    await t.click(Selector('.DefinitionList li').withText(name).find('.Popover__button'));
+    await t.click(Selector('.DefinitionList li').withText(name).find('.Popover .Button'));
     await t.click('.VersionPopover');
 
     if (typeof version === 'string') {
@@ -70,7 +70,7 @@ export async function selectReportDefinition(t, name, version) {
       }
     }
 
-    await t.click(Selector('.DefinitionList li').withText(name).find('.Popover__button'));
+    await t.click(Selector('.DefinitionList li').withText(name).find('.Popover .Button'));
   }
 }
 

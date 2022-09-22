@@ -165,16 +165,16 @@ export default class Popover extends React.Component {
         // stop propagating the events to the document
         onClickCapture={this.catchClick}
       >
-        <span className="Popover__dialog-arrow-border" style={arrowStyles}>
+        <span className="dialogArrowBorder" style={arrowStyles}>
           {' '}
         </span>
-        <span className="Popover__dialog-arrow" style={arrowStyles} />
+        <span className="dialogArrow" style={arrowStyles} />
         <div className="dialogContainer" style={this.state.dialogStyles}>
           <div
             ref={this.storePopoverDialogRef}
             onMouseDown={this.onPopoverDialogMouseDown}
             style={this.state.dialogStyles}
-            className={classnames('Popover__dialog', {scrollable: this.state.scrollable})}
+            className={classnames('dialog', {scrollable: this.state.scrollable})}
           >
             {this.props.children}
           </div>
@@ -231,7 +231,6 @@ export default class Popover extends React.Component {
               main={main}
               onClick={this.toggleOpen}
               ref={this.storeButtonRef}
-              className="Popover__button"
               disabled={disabled}
             >
               {icon ? <Icon type={icon} /> : ''}

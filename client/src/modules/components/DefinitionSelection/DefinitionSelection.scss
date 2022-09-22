@@ -1,11 +1,11 @@
 .DefinitionSelection {
   width: 100%;
 
-  > div > .dialogContainer > .Popover__dialog {
+  > div > .dialogContainer > .dialog {
     padding: 20px 40px;
   }
 
-  .Popover__button {
+  .Popover .buttonWrapper .Button {
     padding-left: 20px;
   }
 

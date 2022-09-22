@@ -80,7 +80,7 @@
         display: inline-block;
 
         > .buttonWrapper {
-          .Popover__button {
+          .Button {
             padding: 0;
             background: none;
             border: none;
@@ -110,7 +110,7 @@
       margin-right: -57px;
       width: 680px;
 
-      > .Popover__dialog {
+      > .dialog {
         padding: 0;
 
         .definitionLabel {
@@ -162,8 +162,8 @@
 
   .TenantPopover,
   .VersionPopover {
-    .Popover__dialog-arrow-border,
-    .Popover__dialog-arrow {
+    .dialogArrowBorder,
+    .dialogArrow {
       display: none;
     }
 
