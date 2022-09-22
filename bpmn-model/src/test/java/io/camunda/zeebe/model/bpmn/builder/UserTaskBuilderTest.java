@@ -66,11 +66,34 @@ class UserTaskBuilderTest {
   }
 
   @Test
-  void testUserTaskAssigneeAndCandidateGroupsCanBothBeSet() {
+  void testUserTaskCandidateUsersCanBeSet() {
     final BpmnModelInstance instance =
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .userTask("userTask1", b -> b.zeebeAssignee("user1").zeebeCandidateGroups("role1"))
+            .userTask("userTask1", task -> task.zeebeCandidateUsers("user1"))
+            .endEvent()
+            .done();
+
+    final ModelElementInstance userTask = instance.getModelElementById("userTask1");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) userTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeAssignmentDefinition.class))
+        .hasSize(1)
+        .extracting(ZeebeAssignmentDefinition::getCandidateUsers)
+        .containsExactly("user1");
+  }
+
+  @Test
+  void testUserTaskAssigneeAndCandidateGroupsAndCandidateUsersCanAllBeSet() {
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "userTask1",
+                b ->
+                    b.zeebeAssignee("user1")
+                        .zeebeCandidateGroups("role1")
+                        .zeebeCandidateUsers("user2"))
             .endEvent()
             .done();
 
@@ -80,8 +103,10 @@ class UserTaskBuilderTest {
     assertThat(extensionElements.getChildElementsByType(ZeebeAssignmentDefinition.class))
         .hasSize(1)
         .extracting(
-            ZeebeAssignmentDefinition::getAssignee, ZeebeAssignmentDefinition::getCandidateGroups)
-        .containsExactly(tuple("user1", "role1"));
+            ZeebeAssignmentDefinition::getAssignee,
+            ZeebeAssignmentDefinition::getCandidateGroups,
+            ZeebeAssignmentDefinition::getCandidateUsers)
+        .containsExactly(tuple("user1", "role1", "user2"));
   }
 
   @Test
