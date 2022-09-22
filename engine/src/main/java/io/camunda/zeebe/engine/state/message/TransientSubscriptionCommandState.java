@@ -22,18 +22,18 @@ public final class TransientSubscriptionCommandState {
 
   private final List<CommandEntry> transientState = new ArrayList<>();
 
-  public final void add(final CommandEntry commandEntryToAdd) {
+  public void add(final CommandEntry commandEntryToAdd) {
     removeEqualEntry(commandEntryToAdd);
     transientState.add(commandEntryToAdd);
   }
 
-  public final void updateCommandSentTime(final CommandEntry updatedCommandEntry) {
+  public void updateCommandSentTime(final CommandEntry updatedCommandEntry) {
     if (removeEqualEntry(updatedCommandEntry)) {
       add(updatedCommandEntry);
     }
   }
 
-  public final void remove(final CommandEntry templateOfCommandEntryToBeRemoved) {
+  public void remove(final CommandEntry templateOfCommandEntryToBeRemoved) {
     removeEqualEntry(templateOfCommandEntryToBeRemoved);
   }
 
@@ -41,7 +41,7 @@ public final class TransientSubscriptionCommandState {
     return transientState.removeIf(templateCommandEntry::equals);
   }
 
-  final Iterable<CommandEntry> getEntriesBefore(final long deadline) {
+  Iterable<CommandEntry> getEntriesBefore(final long deadline) {
     return transientState.stream()
         .sorted()
         .takeWhile(commandEntry -> commandEntry.getCommandSentTime() < deadline)

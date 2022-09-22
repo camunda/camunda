@@ -62,10 +62,9 @@ public class ExecutableProcess extends ExecutableFlowElementContainer {
       return null;
     }
 
-    if (element instanceof ExecutableMultiInstanceBody
+    if (element instanceof final ExecutableMultiInstanceBody multiInstanceBody
         && elementType != BpmnElementType.MULTI_INSTANCE_BODY) {
       // the multi-instance body and the inner activity have the same element id
-      final var multiInstanceBody = (ExecutableMultiInstanceBody) element;
       element = multiInstanceBody.getInnerActivity();
     }
 

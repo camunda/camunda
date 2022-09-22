@@ -102,7 +102,7 @@ public final class DeploymentTransformer {
       rejectionReason =
           String.format(
               "Expected to deploy new resources, but encountered the following errors:%s",
-              errors.toString());
+              errors);
     }
 
     return success;

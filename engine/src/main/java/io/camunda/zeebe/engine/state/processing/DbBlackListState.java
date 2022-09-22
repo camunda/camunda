@@ -13,7 +13,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.engine.Loggers;
-import io.camunda.zeebe.streamplatform.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.BlacklistMetrics;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.mutable.MutableBlackListState;
@@ -21,6 +20,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceRelatedIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import io.camunda.zeebe.streamplatform.api.TypedRecord;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
@@ -95,9 +95,7 @@ public final class DbBlackListState implements MutableBlackListState {
 
   public static boolean shouldBeBlacklisted(final Intent intent) {
 
-    if (intent instanceof ProcessInstanceRelatedIntent) {
-      final ProcessInstanceRelatedIntent processInstanceRelatedIntent =
-          (ProcessInstanceRelatedIntent) intent;
+    if (intent instanceof final ProcessInstanceRelatedIntent processInstanceRelatedIntent) {
 
       return processInstanceRelatedIntent.shouldBlacklistInstanceOnError();
     }

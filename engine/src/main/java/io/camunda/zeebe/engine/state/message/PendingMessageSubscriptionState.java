@@ -49,15 +49,15 @@ final class PendingMessageSubscriptionState implements MutablePendingMessageSubs
     transientState.updateCommandSentTime(updatedEntry);
   }
 
-  final void add(final MessageSubscriptionRecord record) {
+  void add(final MessageSubscriptionRecord record) {
     add(record, ActorClock.currentTimeMillis());
   }
 
-  final void add(final MessageSubscriptionRecord record, final long commandSentTime) {
+  void add(final MessageSubscriptionRecord record, final long commandSentTime) {
     transientState.add(buildCommandEntry(record, commandSentTime));
   }
 
-  final void remove(final MessageSubscriptionRecord record) {
+  void remove(final MessageSubscriptionRecord record) {
     transientState.remove(buildCommandEntry(record, 0));
   }
 

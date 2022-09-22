@@ -55,9 +55,8 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
       transformMessageEventDefinition(
           context, executableElement, (MessageEventDefinition) eventDefinition);
 
-    } else if (eventDefinition instanceof TimerEventDefinition) {
+    } else if (eventDefinition instanceof final TimerEventDefinition timerDefinition) {
       final var expressionLanguage = context.getExpressionLanguage();
-      final var timerDefinition = (TimerEventDefinition) eventDefinition;
       transformTimerEventDefinition(expressionLanguage, executableElement, timerDefinition);
 
     } else if (eventDefinition instanceof ErrorEventDefinition) {

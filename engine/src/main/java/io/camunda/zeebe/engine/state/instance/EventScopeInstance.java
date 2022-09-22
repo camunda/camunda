@@ -102,10 +102,9 @@ public final class EventScopeInstance extends UnpackedObject implements DbValue 
     if (this == o) {
       return true;
     }
-    if (!(o instanceof EventScopeInstance)) {
+    if (!(o instanceof final EventScopeInstance that)) {
       return false;
     }
-    final EventScopeInstance that = (EventScopeInstance) o;
     return Objects.equals(acceptingProp, that.acceptingProp)
         && Objects.equals(interruptingElementIdsProp, that.interruptingElementIdsProp)
         && Objects.equals(boundaryElementIdsProp, that.boundaryElementIdsProp)

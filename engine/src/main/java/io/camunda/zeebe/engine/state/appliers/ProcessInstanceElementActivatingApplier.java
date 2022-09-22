@@ -92,7 +92,6 @@ final class ProcessInstanceElementActivatingApplier
       elementInstanceState.decrementNumberOfTakenSequenceFlows(
           value.getFlowScopeKey(), gateway.getId());
     } else {
-      return;
     }
   }
 

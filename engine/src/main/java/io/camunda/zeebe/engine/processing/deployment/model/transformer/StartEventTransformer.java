@@ -35,8 +35,7 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
 
     startEvent.setInterrupting(element.isInterrupting());
 
-    if (element.getScope() instanceof FlowNode) {
-      final FlowNode scope = (FlowNode) element.getScope();
+    if (element.getScope() instanceof final FlowNode scope) {
 
       final ExecutableFlowElementContainer subprocess =
           process.getElementById(scope.getId(), ExecutableFlowElementContainer.class);

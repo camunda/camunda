@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.streamplatform.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.streamplatform.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import java.util.function.Function;
 
 public final class DbMigrationController implements StreamProcessorLifecycleAware {
@@ -30,7 +30,7 @@ public final class DbMigrationController implements StreamProcessorLifecycleAwar
   }
 
   @Override
-  public final void onRecovered(final ReadonlyStreamProcessorContext context) {
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
     final var migrator = migratorFactory.apply(mutableZeebeState);
 
     synchronized (this) {
@@ -46,12 +46,12 @@ public final class DbMigrationController implements StreamProcessorLifecycleAwar
   }
 
   @Override
-  public final void onClose() {
+  public void onClose() {
     abortMigrationIfRunning();
   }
 
   @Override
-  public final void onFailed() {
+  public void onFailed() {
     abortMigrationIfRunning();
   }
 

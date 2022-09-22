@@ -25,7 +25,7 @@ final class PendingProcessMessageSubscriptionState {
     this.persistentState = persistentState;
   }
 
-  final void visitSubscriptionBefore(
+  void visitSubscriptionBefore(
       final long deadline, final ProcessMessageSubscriptionVisitor visitor) {
 
     for (final CommandEntry commandEntry : transientState.getEntriesBefore(deadline)) {
@@ -38,7 +38,7 @@ final class PendingProcessMessageSubscriptionState {
     }
   }
 
-  final void updateSentTime(
+  void updateSentTime(
       final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
 
     final var updatedEntry = buildCommandEntry(record, commandSentTime);
@@ -46,15 +46,15 @@ final class PendingProcessMessageSubscriptionState {
     transientState.updateCommandSentTime(updatedEntry);
   }
 
-  final void add(final ProcessMessageSubscriptionRecord record) {
+  void add(final ProcessMessageSubscriptionRecord record) {
     add(record, ActorClock.currentTimeMillis());
   }
 
-  final void add(final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
+  void add(final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
     transientState.add(buildCommandEntry(record, commandSentTime));
   }
 
-  final void remove(final ProcessMessageSubscriptionRecord record) {
+  void remove(final ProcessMessageSubscriptionRecord record) {
     transientState.remove(buildCommandEntry(record, 0));
   }
 

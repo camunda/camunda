@@ -42,8 +42,7 @@ public final class SubProcessTransformer implements ModelElementTransformer<SubP
     // set the element type explicitly because the element name is equal to an embedded subprocess
     subprocess.setElementType(BpmnElementType.EVENT_SUB_PROCESS);
 
-    if (element.getScope() instanceof FlowNode) {
-      final FlowNode scope = (FlowNode) element.getScope();
+    if (element.getScope() instanceof final FlowNode scope) {
       final ExecutableFlowElementContainer parentSubProc =
           currentProcess.getElementById(scope.getId(), ExecutableFlowElementContainer.class);
 

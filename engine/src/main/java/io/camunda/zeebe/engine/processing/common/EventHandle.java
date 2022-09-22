@@ -151,8 +151,7 @@ public final class EventHandle {
   }
 
   private boolean isInterrupting(final ExecutableFlowElement catchEvent) {
-    if (catchEvent instanceof ExecutableCatchEvent) {
-      final var event = (ExecutableCatchEvent) catchEvent;
+    if (catchEvent instanceof final ExecutableCatchEvent event) {
       return event.isInterrupting();
     } else {
       return false;

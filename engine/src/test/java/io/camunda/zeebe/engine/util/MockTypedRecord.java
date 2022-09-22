@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.util;
 
-import io.camunda.zeebe.streamplatform.api.TypedRecord;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -16,6 +15,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.streamplatform.api.TypedRecord;
 
 public final class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecord<T> {
 

@@ -141,8 +141,7 @@ public final class BpmnVariableMappingBehavior {
   }
 
   private boolean isConnectedToEventBasedGateway(final ExecutableFlowNode element) {
-    if (element instanceof ExecutableCatchEventElement) {
-      final var catchEvent = (ExecutableCatchEventElement) element;
+    if (element instanceof final ExecutableCatchEventElement catchEvent) {
       return catchEvent.isConnectedToEventBasedGateway();
     } else {
       return false;
