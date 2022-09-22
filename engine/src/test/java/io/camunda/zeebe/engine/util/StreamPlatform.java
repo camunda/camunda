@@ -35,6 +35,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -74,6 +75,7 @@ public final class StreamPlatform {
   private final WriteActor writeActor = new WriteActor();
   private final ZeebeDbFactory zeebeDbFactory;
   private final StreamProcessorLifecycleAware mockProcessorLifecycleAware;
+  private final StreamProcessorListener mockStreamProcessorListener;
 
   public StreamPlatform(
       final Path dataDirectory,
@@ -106,6 +108,11 @@ public final class StreamPlatform {
     recordProcessors = List.of(defaultMockedRecordProcessor);
     closeables.add(() -> recordProcessors.clear());
     mockProcessorLifecycleAware = mock(StreamProcessorLifecycleAware.class);
+    mockStreamProcessorListener = mock(StreamProcessorListener.class);
+  }
+
+  public CommandResponseWriter getMockCommandResponseWriter() {
+    return mockCommandResponseWriter;
   }
 
   public void createLogStream() {
@@ -175,6 +182,10 @@ public final class StreamPlatform {
     return this;
   }
 
+  public StreamProcessorListener getMockStreamProcessorListener() {
+    return mockStreamProcessorListener;
+  }
+
   public StreamProcessor startStreamProcessor() {
     final SynchronousLogStream stream = getLogStream();
     return buildStreamProcessor(stream, true);
@@ -212,6 +223,7 @@ public final class StreamPlatform {
             .recordProcessors(recordProcessors)
             .eventApplierFactory(EventAppliers::new) // todo remove this soon
             .streamProcessorMode(streamProcessorMode)
+            .listener(mockStreamProcessorListener)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
     builder.getLifecycleListeners().add(mockProcessorLifecycleAware);
