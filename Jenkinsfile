@@ -70,6 +70,42 @@ pipeline {
         }
       }
     }
+    stage('Prepare Docker login') {
+      environment {
+        HARBOR_REGISTRY = credentials('camunda-nexus')
+        DOCKER_HUB = credentials('camunda-dockerhub')
+      }
+      steps {
+        container('docker') {
+          sh """
+            docker login --username ${DOCKER_HUB_USR} --password ${DOCKER_HUB_PSW}
+            docker login registry.camunda.cloud --username ${HARBOR_REGISTRY_USR} --password ${HARBOR_REGISTRY_PSW}
+          """
+        }
+      }
+    }
+    stage('Deploy - Docker Image') {
+      environment {
+        IMAGE_TAG = getImageTag()
+        CI_IMAGE_TAG = getCiImageTag()
+      }
+      steps {
+        lock('operate-dockerimage-upload') {
+          container('docker') {
+            sh """
+              docker build -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} .
+              docker push ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG}
+              docker push ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
+
+              if [ "${env.BRANCH_NAME}" = 'master' ]; then
+                docker tag ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} ${OPERATE_DOCKER_IMAGE()}:latest
+                docker push ${OPERATE_DOCKER_IMAGE()}:latest
+              fi
+            """
+          }
+        }
+      }
+    }
     stage('Unit tests') {
       when {
         not {
@@ -117,20 +153,6 @@ pipeline {
 //        }
       }
     }
-    stage('Prepare Docker login') {
-      environment {
-        HARBOR_REGISTRY = credentials('camunda-nexus')
-        DOCKER_HUB = credentials('camunda-dockerhub')
-      }
-      steps {
-        container('docker') {
-          sh """
-            docker login --username ${DOCKER_HUB_USR} --password ${DOCKER_HUB_PSW}
-            docker login registry.camunda.cloud --username ${HARBOR_REGISTRY_USR} --password ${HARBOR_REGISTRY_PSW}
-          """
-        }
-      }
-    }
     stage('Deploy') {
       parallel {
         stage('Deploy - Nexus Snapshot') {
@@ -147,33 +169,6 @@ pipeline {
                       -DaltStagingDirectory=$(pwd)/staging -DskipRemoteStaging=true -Dmaven.deploy.skip=true
                   '''
                 }
-              }
-            }
-          }
-        }
-        stage('Deploy - Docker Image') {
-          when {
-            not {
-                expression { BRANCH_NAME ==~ /(.*-nodeploy)/ }
-            }
-          }
-          environment {
-            IMAGE_TAG = getImageTag()
-            CI_IMAGE_TAG = getCiImageTag()
-          }
-          steps {
-            lock('operate-dockerimage-upload') {
-              container('docker') {
-                sh """
-                  docker build -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} .
-                  docker push ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG}
-                  docker push ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
-
-                  if [ "${env.BRANCH_NAME}" = 'master' ]; then
-                    docker tag ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} ${OPERATE_DOCKER_IMAGE()}:latest
-                    docker push ${OPERATE_DOCKER_IMAGE()}:latest
-                  fi
-                """
               }
             }
           }
@@ -197,21 +192,6 @@ pipeline {
             }
           }
         }
-      }
-    }
-    stage ('Deploy to K8s') {
-      when {
-        not {
-            expression { BRANCH_NAME ==~ /(.*-nodeploy)/ }
-        }
-      }
-      steps {
-        build job: '/deploy-branch-to-k8s-gha',
-          parameters: [
-              string(name: 'BRANCH', value: env.BRANCH_NAME),
-              string(name: 'DOCKER_TAG', value: getCiImageTag()),
-              string(name: 'REF', value: env.BRANCH_NAME),
-          ]
       }
     }
   }
