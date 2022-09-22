@@ -14,15 +14,15 @@ type ModificationPayload = {
   modifications: Array<
     | {
         modification: 'ADD_TOKEN' | 'CANCEL_TOKEN' | 'MOVE_TOKEN';
-        sourceFlowNodeId?: string;
-        targetFlowNodeId?: string;
+        toFlowNodeId?: string;
+        fromFlowNodeId?: string;
         newTokensCount?: number;
         variables?: FlowNodeVariables;
       }
     | {
         modification: 'ADD_VARIABLE' | 'EDIT_VARIABLE';
         scopeKey: string;
-        variables: Array<{[variableName: string]: string}>;
+        variables: {[variableName: string]: string};
       }
   >;
 };

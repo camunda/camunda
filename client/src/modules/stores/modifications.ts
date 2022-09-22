@@ -425,7 +425,7 @@ class Modifications {
 
     return variableModifications.reduce<{[key: string]: string}>(
       (accumulator, {name, newValue}) => {
-        accumulator[name] = newValue;
+        accumulator[name] = JSON.parse(newValue);
         return accumulator;
       },
       {}
@@ -484,7 +484,7 @@ class Modifications {
           ...modifications,
           {
             modification: payload.operation,
-            sourceFlowNodeId: payload.flowNode.id,
+            toFlowNodeId: payload.flowNode.id,
             variables:
               Object.keys(allVariables).length > 0 ? allVariables : undefined,
           },
@@ -496,7 +496,7 @@ class Modifications {
           ...modifications,
           {
             modification: payload.operation,
-            targetFlowNodeId: payload.flowNode.id,
+            fromFlowNodeId: payload.flowNode.id,
           },
         ];
       }
@@ -532,8 +532,8 @@ class Modifications {
           ...modifications,
           {
             modification: operation,
-            sourceFlowNodeId: flowNode.id,
-            targetFlowNodeId: targetFlowNode.id,
+            fromFlowNodeId: flowNode.id,
+            toFlowNodeId: targetFlowNode.id,
             newTokensCount: scopeIds.length,
             variables:
               Object.keys(allVariables).length > 0 ? allVariables : undefined,
@@ -550,7 +550,7 @@ class Modifications {
         return {
           modification: operation,
           scopeKey: scopeId,
-          variables: [{[name]: newValue}],
+          variables: {[name]: JSON.parse(newValue)},
         };
       });
 
