@@ -79,6 +79,7 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+      - uses: ./.github/actions/use-ci-nexus-cache
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
