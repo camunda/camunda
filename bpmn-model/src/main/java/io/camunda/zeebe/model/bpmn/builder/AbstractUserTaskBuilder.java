@@ -107,6 +107,19 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
     return zeebeCandidateGroups(asZeebeExpression(expression));
   }
 
+  @Override
+  public B zeebeCandidateUsers(final String candidateUsers) {
+    final ZeebeAssignmentDefinition assignment =
+        myself.getCreateSingleExtensionElement(ZeebeAssignmentDefinition.class);
+    assignment.setCandidateUsers(candidateUsers);
+    return myself;
+  }
+
+  @Override
+  public B zeebeCandidateUsersExpression(final String expression) {
+    return zeebeCandidateUsers(asZeebeExpression(expression));
+  }
+
   public B zeebeTaskHeader(final String key, final String value) {
     final ZeebeTaskHeaders taskHeaders = getCreateSingleExtensionElement(ZeebeTaskHeaders.class);
     final ZeebeHeader header = createChild(taskHeaders, ZeebeHeader.class);

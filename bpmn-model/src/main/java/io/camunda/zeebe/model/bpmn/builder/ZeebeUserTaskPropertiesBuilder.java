@@ -86,4 +86,20 @@ public interface ZeebeUserTaskPropertiesBuilder<B extends ZeebeUserTaskPropertie
    * @return the builder object
    */
   B zeebeCandidateGroupsExpression(String expression);
+
+  /**
+   * Sets a static candidateUsers for the user task
+   *
+   * @param candidateUsers the candidateUsers of the user task
+   * @return the builder object
+   */
+  B zeebeCandidateUsers(String candidateUsers);
+
+  /**
+   * Sets a dynamic candidateUsers for the user task that is retrieved from the given expression
+   *
+   * @param expression the expression for the candidateUsers of the user task
+   * @return the builder object
+   */
+  B zeebeCandidateUsersExpression(String expression);
 }
