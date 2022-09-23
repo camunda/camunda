@@ -11,7 +11,7 @@ import classnames from 'classnames';
 import useDeepCompareEffect from 'use-deep-compare-effect';
 import deepEqual from 'fast-deep-equal';
 
-import {Button, Icon, Popover} from 'components';
+import {Button, Icon, Popover, Tooltip} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getCollection, formatters} from 'services';
 import {t} from 'translation';
@@ -72,9 +72,14 @@ export function DefinitionList({
             )}
             <div className="actions">
               {!isDefinitionLimitReached && (
-                <Button icon onClick={() => onCopy(idx)}>
-                  <Icon type="copy-small" size="14px" />
-                </Button>
+                <Tooltip
+                  content={t('report.copyTooltip', {entity: t('common.process.label')})}
+                  position="bottom"
+                >
+                  <Button icon onClick={() => onCopy(idx)}>
+                    <Icon type="copy-small" size="14px" />
+                  </Button>
+                </Tooltip>
               )}
               <Popover
                 renderInPortal="DefinitionList"
@@ -82,6 +87,8 @@ export function DefinitionList({
                 onClose={() => setOpenPopover()}
                 title={<Icon type="edit-small" size="14px" />}
                 tabIndex="0"
+                tooltip={t('common.editName', {name: t('common.process.label')})}
+                tooltipPosition="bottom"
               >
                 <DefinitionEditor
                   collection={collection}
@@ -91,9 +98,14 @@ export function DefinitionList({
                   type={type}
                 />
               </Popover>
-              <Button icon onClick={() => onRemove(idx)}>
-                <Icon type="close-small" size="14px" />
-              </Button>
+              <Tooltip
+                content={t('common.removeEntity', {entity: t('common.process.label')})}
+                position="bottom"
+              >
+                <Button icon onClick={() => onRemove(idx)}>
+                  <Icon type="close-small" size="14px" />
+                </Button>
+              </Tooltip>
             </div>
           </li>
         );

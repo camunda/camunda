@@ -215,7 +215,7 @@ export default class Popover extends React.Component {
   };
 
   render() {
-    const {disabled, tooltip, icon, title, className, main} = this.props;
+    const {disabled, tooltip, icon, title, className, main, tooltipPosition} = this.props;
     const active = !disabled && this.state.open;
     return (
       <div
@@ -223,7 +223,7 @@ export default class Popover extends React.Component {
         ref={this.storePopoverRootRef}
         className={classnames('Popover', className)}
       >
-        <Tooltip content={tooltip}>
+        <Tooltip content={tooltip} position={tooltipPosition}>
           <div className="buttonWrapper">
             <Button
               icon={icon && !title}

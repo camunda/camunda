@@ -13,6 +13,7 @@ import {t} from 'translation';
 import {NodeListPreview, DateFilterPreview, VariablePreview} from './modals';
 import AssigneeFilterPreview from './AssigneeFilterPreview';
 import FlowNodeResolver from './FlowNodeResolver';
+import AppliedToInfo from './AppliedToInfo';
 
 import './FilterList.scss';
 
@@ -44,34 +45,12 @@ const stateFilters = [...instanceStateFilters, ...flowNodeStateFilters, ...incid
 export default class FilterList extends React.Component {
   createOperator = (name) => <span> {name} </span>;
 
-  appliedToSnippet = ({appliedTo}) => {
-    if (!this.props.definitions || this.props.definitions.length <= 1 || !appliedTo) {
-      return null;
-    }
-
-    if (appliedTo?.[0] === 'all') {
-      return (
-        <p className="appliedTo">
-          {t('common.filter.list.appliedTo')}: {t('common.all').toLowerCase()}{' '}
-          {t('common.process.label-plural')}
-        </p>
-      );
-    }
-
-    return (
-      <p className="appliedTo">
-        {t('common.filter.list.appliedTo')}: {appliedTo.length}{' '}
-        {t('common.process.label' + (appliedTo.length > 1 ? '-plural' : ''))}
-      </p>
-    );
-  };
-
   render() {
-    const {definitions} = this.props;
+    const {data, definitions, deleteFilter, openEditFilterModal, variables} = this.props;
     const list = [];
 
-    for (let i = 0; i < this.props.data.length; i++) {
-      const filter = this.props.data[i];
+    for (let i = 0; i < data.length; i++) {
+      const filter = data[i];
       if (
         filter.type === 'instanceStartDate' ||
         filter.type === 'instanceEndDate' ||
@@ -81,14 +60,14 @@ export default class FilterList extends React.Component {
           <li key={i} className="listItem">
             <ActionItem
               type={getFilterLevelText(filter.filterLevel)}
-              onEdit={this.props.openEditFilterModal(filter)}
+              onEdit={openEditFilterModal(filter)}
               onClick={(evt) => {
                 evt.stopPropagation();
-                this.props.deleteFilter(filter);
+                deleteFilter(filter);
               }}
             >
               <DateFilterPreview filterType={filter.type} filter={filter.data} />
-              {this.appliedToSnippet(filter)}
+              <AppliedToInfo filter={filter} definitions={definitions} />
               <span className="note">* {t('common.filter.list.totalInstanceWarning')}</span>
             </ActionItem>
           </li>
@@ -98,9 +77,7 @@ export default class FilterList extends React.Component {
           <li key={i} className="listItem">
             <FlowNodeResolver
               key={i}
-              definition={this.props.definitions.find(
-                ({identifier}) => identifier === filter.appliedTo[0]
-              )}
+              definition={definitions.find(({identifier}) => identifier === filter.appliedTo[0])}
               render={(flowNodeNames) => {
                 const allFlowNodesExist =
                   filter.data.flowNodeIds &&
@@ -120,10 +97,10 @@ export default class FilterList extends React.Component {
                   <ActionItem
                     type={getFilterLevelText(filter.filterLevel)}
                     warning={warning}
-                    onEdit={this.props.openEditFilterModal(filter)}
+                    onEdit={openEditFilterModal(filter)}
                     onClick={(evt) => {
                       evt.stopPropagation();
-                      this.props.deleteFilter(filter);
+                      deleteFilter(filter);
                     }}
                   >
                     <DateFilterPreview filterType={filter.type} filter={filter.data} />
@@ -139,7 +116,7 @@ export default class FilterList extends React.Component {
                         ))}
                       </>
                     )}
-                    {this.appliedToSnippet(filter)}
+                    <AppliedToInfo filter={filter} definitions={definitions} />
                     <span className="note">* {t('common.filter.list.totalInstanceWarning')}</span>
                   </ActionItem>
                 );
@@ -153,13 +130,13 @@ export default class FilterList extends React.Component {
           filter.type === 'multipleVariable' ? filter.data?.data : [filter.data];
 
         const variablesLoaded = isDecisionVariable(filter.type)
-          ? this.props.variables?.[filter.type]
-          : this.props.variables;
+          ? variables?.[filter.type]
+          : variables;
 
         const areVariablesMissing =
           variablesLoaded &&
           !filterVariables.every(({name, type}) =>
-            variableExists(name, type, filter.type, this.props.variables)
+            variableExists(name, type, filter.type, variables)
           );
 
         let warning;
@@ -173,16 +150,16 @@ export default class FilterList extends React.Component {
             <ActionItem
               type={getFilterLevelText(filter.filterLevel)}
               warning={warning}
-              onEdit={this.props.openEditFilterModal(filter)}
+              onEdit={openEditFilterModal(filter)}
               onClick={(evt) => {
                 evt.stopPropagation();
-                this.props.deleteFilter(filter);
+                deleteFilter(filter);
               }}
             >
               {filterVariables.map(({name, type, data}, idx) => {
                 const variableLabel = areVariablesMissing
                   ? t('report.missingVariable')
-                  : getVariableLabel(name, type, filter.type, this.props.variables);
+                  : getVariableLabel(name, type, filter.type, variables);
 
                 return (
                   <div key={idx}>
@@ -206,7 +183,7 @@ export default class FilterList extends React.Component {
                   </div>
                 );
               })}
-              {this.appliedToSnippet(filter)}
+              <AppliedToInfo filter={filter} definitions={definitions} />
             </ActionItem>
           </li>
         );
@@ -216,9 +193,7 @@ export default class FilterList extends React.Component {
         list.push(
           <FlowNodeResolver
             key={i}
-            definition={this.props.definitions.find(
-              ({identifier}) => identifier === filter.appliedTo[0]
-            )}
+            definition={definitions.find(({identifier}) => identifier === filter.appliedTo[0])}
             render={(flowNodeNames) => {
               const {values, operator} = filter.data;
 
@@ -238,10 +213,10 @@ export default class FilterList extends React.Component {
                   <ActionItem
                     type={getFilterLevelText(filter.filterLevel)}
                     warning={warning}
-                    onEdit={this.props.openEditFilterModal(filter)}
+                    onEdit={openEditFilterModal(filter)}
                     onClick={(evt) => {
                       evt.stopPropagation();
-                      this.props.deleteFilter(filter);
+                      deleteFilter(filter);
                     }}
                   >
                     {filter.filterLevel === 'view' ? (
@@ -260,7 +235,7 @@ export default class FilterList extends React.Component {
                         type={filter.type}
                       />
                     )}
-                    {this.appliedToSnippet(filter)}
+                    <AppliedToInfo filter={filter} definitions={definitions} />
                   </ActionItem>
                 </li>
               );
@@ -274,10 +249,10 @@ export default class FilterList extends React.Component {
           <li key={i} className="listItem">
             <ActionItem
               type={getFilterLevelText(filter.filterLevel)}
-              onEdit={this.props.openEditFilterModal(filter)}
+              onEdit={openEditFilterModal(filter)}
               onClick={(evt) => {
                 evt.stopPropagation();
-                this.props.deleteFilter(filter);
+                deleteFilter(filter);
               }}
             >
               <span className="parameterName">
@@ -291,7 +266,7 @@ export default class FilterList extends React.Component {
                   {t(`common.unit.${unit.slice(0, -1)}.label${value !== 1 ? '-plural' : ''}`)}
                 </b>
               </span>
-              {this.appliedToSnippet(filter)}
+              <AppliedToInfo filter={filter} definitions={definitions} />
             </ActionItem>
           </li>
         );
@@ -299,9 +274,7 @@ export default class FilterList extends React.Component {
         list.push(
           <FlowNodeResolver
             key={i}
-            definition={this.props.definitions.find(
-              ({identifier}) => identifier === filter.appliedTo[0]
-            )}
+            definition={definitions.find(({identifier}) => identifier === filter.appliedTo[0])}
             render={(flowNodeNames) => {
               const filters = filter.data;
               const definitionIsValid = checkDefinition(definitions, filter.appliedTo[0]);
@@ -343,17 +316,17 @@ export default class FilterList extends React.Component {
                   <ActionItem
                     type={getFilterLevelText(filter.filterLevel)}
                     warning={warning}
-                    onEdit={this.props.openEditFilterModal(filter)}
+                    onEdit={openEditFilterModal(filter)}
                     onClick={(evt) => {
                       evt.stopPropagation();
-                      this.props.deleteFilter(filter);
+                      deleteFilter(filter);
                     }}
                   >
                     <span className="parameterName">
                       {t('common.filter.types.flowNodeDuration')}
                     </span>
                     <span className="filterText">{filterValues}</span>
-                    {this.appliedToSnippet(filter)}
+                    <AppliedToInfo filter={filter} definitions={definitions} />
                   </ActionItem>
                 </li>
               );
@@ -367,7 +340,7 @@ export default class FilterList extends React.Component {
               type={getFilterLevelText(filter.filterLevel)}
               onClick={(evt) => {
                 evt.stopPropagation();
-                this.props.deleteFilter(filter);
+                deleteFilter(filter);
               }}
             >
               <span className="parameterName">{getStateFilterParameterName(filter)}</span>
@@ -375,7 +348,7 @@ export default class FilterList extends React.Component {
                 className="filterText"
                 dangerouslySetInnerHTML={{__html: getStateFilterFilterText(filter)}}
               />
-              {this.appliedToSnippet(filter)}
+              <AppliedToInfo filter={filter} definitions={definitions} />
             </ActionItem>
           </li>
         );
@@ -386,14 +359,14 @@ export default class FilterList extends React.Component {
             <ActionItem
               type={getFilterLevelText(filter.filterLevel)}
               warning={!definitionIsValid && t('common.filter.list.invalidDefinition')}
-              onEdit={this.props.openEditFilterModal(filter)}
+              onEdit={openEditFilterModal(filter)}
               onClick={(evt) => {
                 evt.stopPropagation();
-                this.props.deleteFilter(filter);
+                deleteFilter(filter);
               }}
             >
               <AssigneeFilterPreview filter={filter} />
-              {this.appliedToSnippet(filter)}
+              <AppliedToInfo filter={filter} definitions={definitions} />
             </ActionItem>
           </li>
         );

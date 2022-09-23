@@ -330,6 +330,7 @@
     "displayName": "Anzeigename",
     "displayNamePlaceholder": "Optionalen Anzeigenamen hinzufügen",
     "noSources": "Keine Datenquelle",
+    "copyTooltip": "{entity} kopieren, um Varianten zu vergleichen und zu analysieren.",
     "templates": {
       "blank": "Leerer Bericht",
       "p75Duration": "KPI: 75. Perzentil Dauer",

@@ -330,6 +330,7 @@
     "displayName": "Display Name",
     "displayNamePlaceholder": "Add optional display name",
     "noSources": "No Data Sources",
+    "copyTooltip": "Copy {entity} to compare and analyze variants.",
     "templates": {
       "blank": "Blank report",
       "p75Duration": "KPI: 75th Percentile Duration",
