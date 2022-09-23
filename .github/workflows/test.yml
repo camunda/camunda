@@ -263,10 +263,17 @@ jobs:
   event_file:
     name: "Event File"
     runs-on: ubuntu-latest
+    needs:
+      - integration-tests
+      - unit-tests
+      - smoke-tests
+      - property-tests
+      - go-client
+      - java-client
+    if: always()
     steps:
       - name: Upload
         uses: actions/upload-artifact@v3
-        if: always()
         with:
           name: Event File
           path: ${{ github.event_path }}
