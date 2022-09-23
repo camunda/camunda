@@ -24,10 +24,10 @@ defaults:
 jobs:
   integration-tests:
     name: Integration tests
-    runs-on: "n1-standard-16-netssd-preempt"
+    runs-on: [ self-hosted, linux, "16" ]
     timeout-minutes: 45
     env:
-      TC_CLOUD_TOKEN: "" # ${{ secrets.TC_CLOUD_TOKEN }}
+      TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
       TC_CLOUD_CONCURRENCY: 4
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
@@ -38,7 +38,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
-      - uses: ./.github/actions/use-ci-nexus-cache
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
       - uses: ./.github/actions/build-docker
@@ -77,14 +76,13 @@ jobs:
           name: Integration Tests
   unit-tests:
     name: Unit tests
-    runs-on: "n1-standard-16-netssd-preempt"
+    runs-on: [ self-hosted, linux, "16" ]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
-      - uses: ./.github/actions/use-ci-nexus-cache
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -144,14 +142,13 @@ jobs:
           name: Smoke Tests ${{ matrix.os }}
   property-tests:
     name: Property Tests
-    runs-on: "n1-standard-16-netssd-preempt"
+    runs-on: [ self-hosted, linux, "16" ]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
-      - uses: ./.github/actions/use-ci-nexus-cache
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -247,7 +244,7 @@ jobs:
           name: Java 8 Client
   codeql:
     name: CodeQL
-    runs-on: "n1-standard-8-netssd-preempt"
+    runs-on: [ self-hosted, linux, "16" ]
     permissions:
       security-events: write
     steps:
@@ -256,8 +253,6 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
-      - name: Use CI Nexus cache
-        uses: ./.github/actions/use-ci-nexus-cache
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
