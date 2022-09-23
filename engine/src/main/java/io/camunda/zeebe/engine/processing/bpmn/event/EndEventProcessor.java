@@ -100,9 +100,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
     @Override
     public boolean isSuitableForEvent(final ExecutableEndEvent element) {
-      return !element.hasError()
-          && element.getJobWorkerProperties() == null
-          && !element.isTerminateEndEvent();
+      return element.isNoneEndEvent();
     }
 
     @Override
@@ -119,7 +117,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
     @Override
     public boolean isSuitableForEvent(final ExecutableEndEvent element) {
-      return element.hasError();
+      return element.isErrorEndEvent();
     }
 
     @Override
@@ -149,7 +147,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
     @Override
     public boolean isSuitableForEvent(final ExecutableEndEvent element) {
-      return element.getJobWorkerProperties() != null;
+      return element.isMessageEventEvent();
     }
 
     @Override

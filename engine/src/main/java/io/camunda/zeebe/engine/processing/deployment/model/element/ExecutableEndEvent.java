@@ -26,10 +26,6 @@ public class ExecutableEndEvent extends ExecutableFlowNode implements Executable
     this.error = error;
   }
 
-  public boolean hasError() {
-    return error != null;
-  }
-
   @Override
   public JobWorkerProperties getJobWorkerProperties() {
     return jobWorkerProperties;
@@ -38,6 +34,18 @@ public class ExecutableEndEvent extends ExecutableFlowNode implements Executable
   @Override
   public void setJobWorkerProperties(final JobWorkerProperties jobWorkerProperties) {
     this.jobWorkerProperties = jobWorkerProperties;
+  }
+
+  public boolean isNoneEndEvent() {
+    return !isErrorEndEvent() && !isMessageEventEvent() && !isTerminateEndEvent;
+  }
+
+  public boolean isErrorEndEvent() {
+    return error != null;
+  }
+
+  public boolean isMessageEventEvent() {
+    return jobWorkerProperties != null;
   }
 
   public boolean isTerminateEndEvent() {
