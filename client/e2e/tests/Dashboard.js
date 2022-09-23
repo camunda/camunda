@@ -390,3 +390,38 @@ test('version selection', async (t) => {
   await t.click(e.alertsDropdown);
   await t.expect(e.option('Test alert').exists).notOk();
 });
+
+test('add a report from the dashboard', async (t) => {
+  await u.createNewDashboard(t);
+
+  await t
+    .click(e.addButton)
+    .click(e.reportModalOptionsButton)
+    .click(e.reportModalDropdownOption.withText('New Report from a template'))
+    .click(e.addReportButton)
+    .click(e.templateModalProcessField)
+    .click(e.option('Invoice Receipt with alternative correlation variable'))
+    .click(e.blankReportButton)
+    .click(e.modalConfirmbutton)
+    .click('.DashboardRenderer');
+
+  await t
+    .click(e.addButton)
+    .click(e.reportModalOptionsButton)
+    .click(e.reportModalDropdownOption.withText('New Report from a template'))
+    .click(e.addReportButton);
+
+  await t
+    .expect(
+      e.templateModalProcessTag.withText('Invoice Receipt with alternative correlation variable')
+        .exists
+    )
+    .ok();
+
+  await t.click(e.modalConfirmbutton).click('.DashboardRenderer');
+
+  await u.save(t);
+
+  await t.expect(e.reportTile.nth(0).textContent).contains('Blank report');
+  await t.expect(e.reportTile.nth(1).textContent).contains('KPI: 75th Percentile Duration');
+});
