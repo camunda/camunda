@@ -59,7 +59,7 @@ jobs:
         run: >
           mvn -B --no-snapshot-updates
           -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -D failsafe.rerunFailingTestsCount=0 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
