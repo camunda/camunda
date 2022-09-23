@@ -59,13 +59,14 @@ final class ExportingEndpointIT {
   }
 
   @BeforeAll
-  static void setupClient() {
+  static void setup() {
     client = CLUSTER.newClientBuilder().build();
   }
 
   @AfterAll
-  static void closeClient() {
+  static void teardown() {
     client.close();
+    DEBUG_RECEIVER.close();
   }
 
   @Test
