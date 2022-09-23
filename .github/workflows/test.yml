@@ -24,7 +24,7 @@ defaults:
 jobs:
   integration-tests:
     name: Integration tests
-    runs-on: "n1-standard-32-netssd-preempt"
+    runs-on: "n1-standard-16-netssd-preempt"
     timeout-minutes: 45
     env:
       TC_CLOUD_TOKEN: "" # ${{ secrets.TC_CLOUD_TOKEN }}
