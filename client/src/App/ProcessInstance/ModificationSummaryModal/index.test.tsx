@@ -459,6 +459,7 @@ describe('Modification Summary Modal', () => {
         operation: 'CANCEL_TOKEN',
         flowNode: {id: 'taskA', name: 'task a'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
       },
     });
 
@@ -474,6 +475,7 @@ describe('Modification Summary Modal', () => {
         operation: 'CANCEL_TOKEN',
         flowNode: {id: 'taskB', name: 'task b'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
       },
     });
 
@@ -489,6 +491,7 @@ describe('Modification Summary Modal', () => {
         operation: 'ADD_TOKEN',
         flowNode: {id: 'taskB', name: 'task b'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
         scopeId: 'some-scope-id',
         parentScopeIds: {},
       },
@@ -557,6 +560,7 @@ describe('Modification Summary Modal', () => {
         operation: 'CANCEL_TOKEN',
         flowNode: {id: 'taskA', name: 'task a'},
         affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
       },
     });
 

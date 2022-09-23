@@ -607,6 +607,7 @@ describe('stores/modifications', () => {
     expect(
       modificationsStore.state.sourceFlowNodeIdForMoveOperation
     ).toBeNull();
+    expect(modificationsStore.state.status).toBe('enabled');
   });
 
   it('should move tokens from multi instance process', async () => {

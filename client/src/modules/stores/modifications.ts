@@ -171,10 +171,9 @@ class Modifications {
           parentScopeIds: this.generateParentScopeIds(targetFlowNodeId),
         },
       });
-    } else {
-      this.state.status = 'enabled';
     }
 
+    this.state.status = 'enabled';
     this.state.sourceFlowNodeIdForMoveOperation = null;
   };
 
