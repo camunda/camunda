@@ -69,7 +69,7 @@ public final class StreamPlatform {
   private final StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private List<RecordProcessor> recordProcessors;
 
-  private final RecordProcessor defaultRecordProcessor;
+  private final RecordProcessor defaultMockedRecordProcessor;
 
   private final WriteActor writeActor = new WriteActor();
   private final ZeebeDbFactory zeebeDbFactory;
@@ -98,12 +98,12 @@ public final class StreamPlatform {
     when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     actorScheduler.submitActor(writeActor);
 
-    defaultRecordProcessor = mock(RecordProcessor.class);
-    when(defaultRecordProcessor.process(any(), any())).thenReturn(EmptyProcessingResult.INSTANCE);
-    when(defaultRecordProcessor.onProcessingError(any(), any(), any()))
+    defaultMockedRecordProcessor = mock(RecordProcessor.class);
+    when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(EmptyProcessingResult.INSTANCE);
+    when(defaultMockedRecordProcessor.onProcessingError(any(), any(), any()))
         .thenReturn(EmptyProcessingResult.INSTANCE);
-    when(defaultRecordProcessor.accepts(any())).thenReturn(true);
-    recordProcessors = List.of(defaultRecordProcessor);
+    when(defaultMockedRecordProcessor.accepts(any())).thenReturn(true);
+    recordProcessors = List.of(defaultMockedRecordProcessor);
     closeables.add(() -> recordProcessors.clear());
   }
 
@@ -245,8 +245,8 @@ public final class StreamPlatform {
     LOG.info("Snapshot database for processor {}", processorContext.streamProcessor.getName());
   }
 
-  public RecordProcessor getDefaultRecordProcessor() {
-    return defaultRecordProcessor;
+  public RecordProcessor getDefaultMockedRecordProcessor() {
+    return defaultMockedRecordProcessor;
   }
 
   public StreamProcessor getStreamProcessor() {
