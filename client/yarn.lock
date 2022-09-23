@@ -3851,7 +3851,23 @@ bowser@^2.8.1:
   resolved "https://registry.yarnpkg.com/bowser/-/bowser-2.11.0.tgz#5ca3c35757a7aa5771500c70a73a9f91ef420a8f"
   integrity sha512-AlcaJBi/pqqJBIQ8U9Mcpc9i8Aqxn88Skv5d+xBX006BY5u8N3mGLHa5Lgppa7L/HfwgwLgZ6NYs+Ag6uUmJRA==
 
-bpmn-js@9.4.1, bpmn-js@^9.0.3:
+bpmn-js@10.0.0:
+  version "10.0.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-10.0.0.tgz#8e1ef79b403fdc2dbea3b21f211c1486160ce1b0"
+  integrity sha512-H+4cn3HzbVPBpwks22cuSw+k6I6wwPJOm9sRifwpzgAS3zuv0XeWM8a6PQpsxfkUvJ77N3fpgBKlBEvWkTL6fA==
+  dependencies:
+    bpmn-moddle "^7.1.3"
+    css.escape "^1.5.1"
+    diagram-js "^8.9.0"
+    diagram-js-direct-editing "^1.7.0"
+    ids "^1.0.0"
+    inherits-browser "0.0.1"
+    min-dash "^3.5.2"
+    min-dom "^3.2.1"
+    object-refs "^0.3.0"
+    tiny-svg "^2.2.4"
+
+bpmn-js@^9.0.3:
   version "9.4.1"
   resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-9.4.1.tgz#f81af00a63f15ffb365037973be8bce72e18eb69"
   integrity sha512-uid1EctbT0c3dO5+Ghm9Qu8EQCSVjZS1Ff7z9qQ0ZoxRWayvbWaHUYSVdKlzXZi7911Pe7rkSqCuXpQ68ouPRw==
