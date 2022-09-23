@@ -90,7 +90,7 @@ jobs:
           mvn -B --no-snapshot-updates
           -D skipITs -D skipChecks
           -D junitThreadCount=16
-          -P parallel-tests
+          -P skip-random-tests,parallel-tests
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Normalize artifact name
