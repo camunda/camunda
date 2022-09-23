@@ -19,6 +19,7 @@ import io.camunda.zeebe.qa.util.actuator.BackupActuator.TakeBackupResponse;
 import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.ZeebeNode;
 import io.zeebe.containers.ZeebePort;
@@ -77,7 +78,11 @@ final class BackupApiIT {
 
   @Container
   private final ContainerEngine engine =
-      ContainerEngine.builder().withAutoAcknowledge(true).withCluster(cluster).build();
+      ContainerEngine.builder()
+          .withDebugReceiverPort(SocketUtil.getNextAddress().getPort())
+          .withAutoAcknowledge(true)
+          .withCluster(cluster)
+          .build();
 
   private S3BackupStore store;
 

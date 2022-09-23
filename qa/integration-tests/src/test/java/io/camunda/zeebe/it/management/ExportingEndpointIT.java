@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.containers.cluster.ZeebeCluster;
 import io.zeebe.containers.exporter.DebugReceiver;
 import java.time.Duration;
@@ -36,7 +37,7 @@ final class ExportingEndpointIT {
       new CopyOnWriteArrayList<>();
 
   private static final DebugReceiver DEBUG_RECEIVER =
-      new DebugReceiver(EXPORTED_RECORDS::add).start();
+      new DebugReceiver(EXPORTED_RECORDS::add, SocketUtil.getNextAddress()).start();
   private static ZeebeClient client;
 
   @Container
