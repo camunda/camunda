@@ -14,6 +14,7 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebeVolume;
 import io.zeebe.containers.engine.ContainerEngine;
@@ -74,7 +75,11 @@ final class DiskSpaceRecoveryIT {
   final class WithStandardContainerTest {
     @Container
     private final ContainerEngine engine =
-        ContainerEngine.builder().withContainer(container).withAutoAcknowledge(true).build();
+        ContainerEngine.builder()
+            .withDebugReceiverPort(SocketUtil.getNextAddress().getPort())
+            .withContainer(container)
+            .withAutoAcknowledge(true)
+            .build();
 
     @BeforeEach
     void beforeEach() {
@@ -120,6 +125,7 @@ final class DiskSpaceRecoveryIT {
     @Container
     private final ContainerEngine engine =
         ContainerEngine.builder()
+            .withDebugReceiverPort(SocketUtil.getNextAddress().getPort())
             .withContainer(
                 container.withEnv("ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK", "0.0001"))
             .build();

@@ -20,6 +20,7 @@ import io.camunda.zeebe.process.test.assertions.BpmnAssert;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.engine.ContainerEngine;
 import java.io.IOException;
@@ -60,6 +61,7 @@ final class ControlledActorClockEndpointIT {
   @Container
   private final ContainerEngine engine =
       ContainerEngine.builder()
+          .withDebugReceiverPort(SocketUtil.getNextAddress().getPort())
           .withContainer(container)
           .withIdlePeriod(Duration.ofSeconds(2))
           .build();
