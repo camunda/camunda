@@ -32,6 +32,7 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
   final AtomicReference<InMemorySnapshot> currentPersistedSnapshot;
   final List<InMemorySnapshot> receivedSnapshots = new CopyOnWriteArrayList<>();
   final List<PersistedSnapshotListener> listeners = new CopyOnWriteArrayList<>();
+  private Runnable interceptorOnNewSnapshot = () -> {};
 
   public TestSnapshotStore(final AtomicReference<InMemorySnapshot> persistedSnapshotRef) {
     currentPersistedSnapshot = persistedSnapshotRef;
@@ -103,7 +104,13 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
   public void close() {}
 
   public void newSnapshot(final InMemorySnapshot persistedSnapshot) {
+    interceptorOnNewSnapshot.run();
     currentPersistedSnapshot.set(persistedSnapshot);
     listeners.forEach(l -> l.onNewSnapshot(persistedSnapshot));
+  }
+
+  /** The given interceptor wil be executed before the snapshot is committed. */
+  public void interceptOnNewSnapshot(final Runnable interceptor) {
+    interceptorOnNewSnapshot = interceptor;
   }
 }
