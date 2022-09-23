@@ -40,6 +40,8 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestValidator;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.*;
@@ -48,6 +50,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.validation.ConstraintViolationException;
+
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -95,6 +99,9 @@ public class ProcessInstanceRestService {
   @Autowired
   private OperationReader operationReader;
 
+  @Autowired
+  private ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator;
+
   @Operation(summary = "Query process instances by different parameters")
   @PostMapping
   @Timed(value = Metrics.TIMER_NAME_QUERY, extraTags = {Metrics.TAG_KEY_NAME, Metrics.TAG_VALUE_PROCESSINSTANCES}, description = "How long does it take to retrieve the processinstances by query.")
@@ -114,11 +121,21 @@ public class ProcessInstanceRestService {
   @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity operation(@PathVariable @ValidLongId String id,
       @RequestBody CreateOperationRequestDto operationRequest) {
-    validateOperationRequest(operationRequest, id);
+    validate(operationRequest, id);
     return batchOperationWriter.scheduleSingleOperation(Long.valueOf(id), operationRequest);
   }
 
-  private void validateBatchOperationRequest(CreateBatchOperationRequestDto batchOperationRequest) {
+  @Operation(summary = "Perform modify process instance operation")
+  @PostMapping("/{id}/modify")
+  @PreAuthorize("hasPermission('write')")
+  public BatchOperationEntity modify(@PathVariable @ValidLongId String id,
+      @RequestBody ModifyProcessInstanceRequestDto modifyRequest) {
+    modifyRequest.setProcessInstanceKey(id);
+    modifyProcessInstanceRequestValidator.validate(modifyRequest);
+    return batchOperationWriter.scheduleModifyProcessInstance(modifyRequest);
+  }
+
+  private void validate(CreateBatchOperationRequestDto batchOperationRequest) {
     if (batchOperationRequest.getQuery() == null) {
       throw new InvalidRequestException("List view query must be defined.");
     }
@@ -131,7 +148,7 @@ public class ProcessInstanceRestService {
     }
   }
 
-  private void validateOperationRequest(CreateOperationRequestDto operationRequest,
+  private void validate(CreateOperationRequestDto operationRequest,
      @ValidLongId String processInstanceId) {
     if (operationRequest.getOperationType() == null) {
       throw new InvalidRequestException("Operation type must be defined.");
@@ -167,7 +184,7 @@ public class ProcessInstanceRestService {
   @PostMapping("/batch-operation")
   @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity createBatchOperation(@RequestBody CreateBatchOperationRequestDto batchOperationRequest) {
-    validateBatchOperationRequest(batchOperationRequest);
+    validate(batchOperationRequest);
     return batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
@@ -194,7 +211,7 @@ public class ProcessInstanceRestService {
   @PostMapping("/{processInstanceId}/variables")
   public List<VariableDto> getVariables(
       @PathVariable @ValidLongId String processInstanceId, @RequestBody VariableRequestDto variableRequest) {
-    validateRequest(variableRequest);
+    validate(variableRequest);
     return variableReader.getVariables(processInstanceId, variableRequest);
   }
 
@@ -214,17 +231,17 @@ public class ProcessInstanceRestService {
   @PostMapping("/{processInstanceId}/flow-node-metadata")
   public FlowNodeMetadataDto getFlowNodeMetadata(@PathVariable @ValidLongId String processInstanceId,
       @RequestBody FlowNodeMetadataRequestDto request) {
-    validateRequest(request);
+    validate(request);
     return flowNodeInstanceReader.getFlowNodeMetadata(processInstanceId, request);
   }
 
-  private void validateRequest(final VariableRequestDto request) {
+  private void validate(final VariableRequestDto request) {
     if (request.getScopeId() == null) {
       throw new InvalidRequestException("ScopeId must be specifies in the request.");
     }
   }
 
-  private void validateRequest(final FlowNodeMetadataRequestDto request) {
+  private void validate(final FlowNodeMetadataRequestDto request) {
     if (request.getFlowNodeId() == null && request.getFlowNodeType() ==null && request.getFlowNodeInstanceId()==null) {
       throw new InvalidRequestException("At least flowNodeId or flowNodeInstanceId must be specifies in the request.");
     }

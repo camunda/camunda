@@ -123,7 +123,10 @@ public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
     // and when
     tester.completeTask("taskA")
         .and().waitUntil()
-        .flowNodeIsCompleted("taskA");
+        .flowNodeIsCompleted("taskA")
+        .and()
+        .flowNodeIsActive("subprocess");
+
     flowNodeStatistics = getFlowNodeStatisticsForProcessInstance(processInstanceKey);
     // then now subprocesses or multi instances should be there
     assertThat(flowNodeStatistics.size()).as("flowNodeStatistics size should be 7").isEqualTo(7);

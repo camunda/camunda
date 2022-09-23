@@ -82,11 +82,10 @@ import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
-import org.elasticsearch.index.query.IdsQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.common.document.DocumentField;
+import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
@@ -920,6 +919,30 @@ public class FlowNodeInstanceReader extends AbstractReader {
       }
     }
     return result;
+  }
+
+  public List<Long> getFlowNodeInstanceKeysByIdAndStates(final Long processInstanceId, final String flowNodeId, List<FlowNodeState> states) {
+    final List<Long> flowNodeInstanceKeys = new ArrayList<>();
+    try {
+      final SearchRequest searchRequest =
+          new SearchRequest(flowNodeInstanceTemplate.getAlias()).source(
+          new SearchSourceBuilder()
+              .query(boolQuery()
+                  .must(termQuery(FLOW_NODE_ID, flowNodeId))
+                  .must(termQuery(PROCESS_INSTANCE_KEY,processInstanceId))
+                  .must(termsQuery(STATE, states.stream().map(Enum::name).collect(Collectors.toList()))))
+              .fetchField(ID));
+      final SearchHits searchHits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
+
+      for(SearchHit searchHit: searchHits){
+        final Map<String, DocumentField> documentFields = searchHit.getDocumentFields();
+        flowNodeInstanceKeys.add(Long.parseLong(documentFields.get(ID).getValue()));
+      }
+    } catch (IOException e) {
+      throw new OperateRuntimeException(
+          String.format("Could not retrieve flowNodeInstanceKey for flowNodeId %s ", flowNodeId), e);
+    }
+    return flowNodeInstanceKeys;
   }
 
   public Collection<FlowNodeStatisticsDto> getFlowNodeStatisticsForProcessInstance(final Long processInstanceId) {

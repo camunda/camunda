@@ -25,6 +25,8 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
   private Long zeebeCommandKey;
   private String username;
 
+  private String modifyInstructions;
+
   public Long getProcessInstanceKey() {
     return processInstanceKey;
   }
@@ -129,6 +131,15 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     this.username = username;
   }
 
+  public String getModifyInstructions() {
+    return modifyInstructions;
+  }
+
+  public OperationEntity setModifyInstructions(String modifyInstructions) {
+    this.modifyInstructions = modifyInstructions;
+    return this;
+  }
+
   public void generateId() {
     setId(UUID.randomUUID().toString());
   }
@@ -168,6 +179,8 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
       return false;
     if (zeebeCommandKey != null ? !zeebeCommandKey.equals(that.zeebeCommandKey) : that.zeebeCommandKey != null)
       return false;
+    if (modifyInstructions != null ? !modifyInstructions.equals(that.modifyInstructions) : that.modifyInstructions != null)
+      return false;
     return username != null ? username.equals(that.username) : that.username == null;
 
   }
@@ -187,6 +200,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
     result = 31 * result + (batchOperationId != null ? batchOperationId.hashCode() : 0);
     result = 31 * result + (zeebeCommandKey != null ? zeebeCommandKey.hashCode() : 0);
+    result = 31 * result + (modifyInstructions != null ? modifyInstructions.hashCode() : 0);
     result = 31 * result + (username != null ? username.hashCode() : 0);
     return result;
   }
@@ -196,6 +210,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return "OperationEntity{" + "processInstanceKey=" + processInstanceKey + ", incidentKey=" + incidentKey + ", scopeKey=" + scopeKey + ", variableName='"
         + variableName + '\'' + ", variableValue='" + variableValue + '\'' + ", type=" + type + ", lockExpirationTime=" + lockExpirationTime + ", lockOwner='"
         + lockOwner + '\'' + ", state=" + state + ", errorMessage='" + errorMessage + '\'' + ", batchOperationId='" + batchOperationId + '\''
+        + ", modifyInstructions='" + modifyInstructions +"'"
         + ", zeebeCommandKey=" + zeebeCommandKey + '}';
   }
 }

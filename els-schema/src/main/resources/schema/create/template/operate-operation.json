@@ -45,6 +45,9 @@
 			},
 			"username": {
 				"type": "keyword"
+			},
+			"modifyInstructions": {
+				"type": "text"
 			}
 		}
 	}

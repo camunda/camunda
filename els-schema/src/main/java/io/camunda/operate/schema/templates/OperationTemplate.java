@@ -28,10 +28,16 @@ public class OperationTemplate extends AbstractTemplateDescriptor implements Pro
   public static final String BATCH_OPERATION_ID = "batchOperationId";
   public static final String ZEEBE_COMMAND_KEY = "zeebeCommandKey";
   public static final String USERNAME = "username";
+  public static final String MODIFIY_INSTRUCTIONS = "modifyInstructions";
 
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public String getVersion() {
+    return "8.1.0";
   }
 
 }

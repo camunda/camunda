@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.*;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.templates.*;
@@ -48,6 +49,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.util.NullableUtils;
 
 @Configuration
 @ConditionalOnProperty(prefix = OperateProperties.PREFIX, name = "webappEnabled", havingValue = "true", matchIfMissing = true)
@@ -448,6 +450,44 @@ public class ElasticsearchChecks {
         List<VariableEntity> variables = getAllVariables(processInstanceKey);
         return variables.stream().anyMatch(v -> v.getName().equals(varName));
       } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
+  @Bean(name = "variableExistsInCheck")
+  public Predicate<Object[]> getVariableExistsInCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(3);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
+      assertThat(objects[2]).isInstanceOf(Long.class);
+      Long processInstanceKey = (Long)objects[0];
+      String varName = (String)objects[1];
+      Long scopeKey = (Long) objects[2];
+      try {
+        return null != variableReader
+            .getVariableByName(processInstanceKey+"", scopeKey+"", varName);
+      } catch (OperateRuntimeException ex) {
+        return false;
+      }
+    };
+  }
+
+  @Bean(name = "variableHasValue")
+  public Predicate<Object[]> getVariableHasValue() {
+    return objects -> {
+      assertThat(objects).hasSize(4);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
+      final Long processInstanceKey = (Long)objects[0];
+      final String varName = (String)objects[1];
+      final Object value = objects[2];
+      final Long scopeKey = (Long) objects[3];
+      try {
+        return value.equals(variableReader
+            .getVariableByName(processInstanceKey+"", "" + scopeKey , varName));
+      } catch (OperateRuntimeException ex) {
         return false;
       }
     };

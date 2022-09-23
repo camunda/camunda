@@ -9,6 +9,7 @@ package io.camunda.operate.rest;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -26,6 +27,9 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.*;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestValidator;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,10 +38,17 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import javax.validation.ConstraintViolationException;
 
-import static org.mockito.Mockito.when;
+import java.util.List;
+
+import static org.mockito.Mockito.*;
 
 @SpringBootTest(
-    classes = {TestApplicationWithNoBeans.class, ProcessInstanceRestService.class, JacksonConfig.class, OperateProperties.class}
+    classes = {
+        TestApplicationWithNoBeans.class,
+        ProcessInstanceRestService.class,
+        ModifyProcessInstanceRequestValidator.class,
+        JacksonConfig.class, OperateProperties.class
+    }
 )
 public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
 
@@ -202,6 +213,64 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
     // then
     ListViewProcessInstanceDto actualResult = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     Assert.assertEquals(expectedDto, actualResult);
+  }
+
+  @Test
+  public void testModifyFailsForNotExistingProcessInstance() throws Exception {
+    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(null);
+    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify", new ModifyProcessInstanceRequestDto());
+    assertErrorMessageContains( mvcResult,"Process instance with key 123 does not exist");
+  }
+
+  @Test
+  public void testModifyFailsForNotExistingModifications() throws Exception {
+    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
+    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
+        new ModifyProcessInstanceRequestDto().setProcessInstanceKey("123").setModifications(null));
+    assertErrorMessageContains( mvcResult,"No modifications given for process instance with key 123");
+  }
+
+  @Test
+  public void testModifyFailsForMissingAddParameters() throws Exception {
+    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
+    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
+        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
+            .setModification(Modification.Type.ADD_TOKEN))));
+    assertErrorMessageContains( mvcResult,"No toFlowNodeId given for process instance with key 123");
+  }
+
+  @Test
+  public void testModifyFailsForMissingCancelParameters() throws Exception {
+    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
+    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
+        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
+            .setModification(Modification.Type.CANCEL_TOKEN))));
+    assertErrorMessageContains( mvcResult,"No fromFlowNodeId given for process instance with key 123");
+  }
+
+  @Test
+  public void testModifyFailsForMissingMoveParameters() throws Exception {
+    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
+    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
+        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
+            .setModification(Modification.Type.MOVE_TOKEN))));
+    assertErrorMessageContains( mvcResult,"MOVE_TOKEN needs fromFlowNodeId and toFlowNodeId for process instance with key 123");
+  }
+
+  @Test
+  public void testModifyFailsForMissingAddOrEditVariableParameters() throws Exception {
+    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
+    // ADD_VARIABLE
+    MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
+        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
+            .setModification(Modification.Type.ADD_VARIABLE))));
+    assertErrorMessageContains( mvcResult,"No variables given for process instance with key 123");
+
+    // EDIT_VARIABLE
+    mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
+        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
+            .setModification(Modification.Type.EDIT_VARIABLE))));
+    assertErrorMessageContains( mvcResult,"No variables given for process instance with key 123");
   }
 
   public String getBatchOperationUrl() {

@@ -34,6 +34,7 @@ import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.es.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.UserService;
@@ -269,6 +270,33 @@ public class BatchOperationWriter {
       return batchOperation;
     } catch (Exception ex) {
       throw new OperateRuntimeException(String.format("Exception occurred, while scheduling operation: %s", ex.getMessage()), ex);
+    }
+  }
+
+  public BatchOperationEntity scheduleModifyProcessInstance(ModifyProcessInstanceRequestDto modifyRequest) {
+    logger.debug("Creating modify process instance operation: processInstanceKey [{}]", modifyRequest.getProcessInstanceKey());
+    try {
+      final int operationsCount = modifyRequest.getModifications().size();
+      final Long processInstanceKey = Long.parseLong(modifyRequest.getProcessInstanceKey());
+      final BatchOperationEntity batchOperation = createBatchOperationEntity(OperationType.MODIFY_PROCESS_INSTANCE, null)
+          .setOperationsTotalCount(operationsCount)
+          .setInstancesCount(1);
+
+      final OperationEntity operationEntity = createOperationEntity(
+          processInstanceKey, OperationType.MODIFY_PROCESS_INSTANCE, batchOperation.getId())
+          .setModifyInstructions(objectMapper.writeValueAsString(modifyRequest));
+
+      final BulkRequest bulkRequest = new BulkRequest()
+          .add(createIndexRequest(operationEntity, processInstanceKey))
+          .add(getUpdateProcessInstanceRequest(processInstanceKey,
+              getListViewIndicesForProcessInstances(
+                  List.of(processInstanceKey)), batchOperation.getId()))
+          .add(getIndexBatchOperationRequest(batchOperation));
+
+      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
+      return batchOperation;
+    } catch (Exception ex) {
+      throw new OperateRuntimeException(String.format("Exception occurred, while scheduling 'modify process instance' operation: %s", ex.getMessage()), ex);
     }
   }
 
