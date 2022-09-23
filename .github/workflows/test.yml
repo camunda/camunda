@@ -12,7 +12,7 @@ on:
   workflow_call: { }
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ (github.event_name == 'workflow_call' && 'tests') || (github.event_name == 'workflow_dispatch' && github.run_id) || '' }}-${{ github.ref }}
   cancel-in-progress: true
 
 defaults:
