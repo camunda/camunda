@@ -23,7 +23,7 @@ jobs:
     runs-on: "n1-standard-32-netssd-preempt"
     timeout-minutes: 45
     env:
-      TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
+      TC_CLOUD_TOKEN: "" # ${{ secrets.TC_CLOUD_TOKEN }}
       TC_CLOUD_CONCURRENCY: 4
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
