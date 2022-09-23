@@ -40,6 +40,8 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        with:
+          maven-extra-args: -T1C
       - uses: ./.github/actions/build-docker
         with:
           repository: localhost:5000/camunda/zeebe
@@ -86,6 +88,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
+          maven-extra-args: -T1C
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -127,7 +130,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -am -pl qa/integration-tests
+          maven-extra-args: -am -pl qa/integration-tests -T1C
       - name: Run smoke test
         run: >
           mvn -B --no-snapshot-updates
@@ -152,6 +155,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
+          maven-extra-args: -T1C
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -213,7 +217,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -am -pl clients/java
+          maven-extra-args: -am -pl clients/java -T1C
       # This is a workaround for java 8, which does not support the --add-exports options
       - run: rm .mvn/jvm.config
       # Then run client tests with JDK 8
