@@ -116,10 +116,14 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
 
   get hasMultipleInstances() {
     const {metaData} = this.state;
+
+    if (!flowNodeSelectionStore.hasRunningOrFinishedTokens) {
+      return flowNodeSelectionStore.newTokenCountForSelectedNode > 1;
+    }
+
     return (
-      metaData !== null &&
-      metaData.instanceCount !== null &&
-      metaData.instanceCount > 1
+      (metaData?.instanceCount ?? 0) > 1 ||
+      flowNodeSelectionStore.newTokenCountForSelectedNode > 0
     );
   }
 

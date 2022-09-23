@@ -6,7 +6,6 @@
  */
 
 import {useEffect} from 'react';
-import Variables from '../Variables';
 import {variablesStore} from 'modules/stores/variables';
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
@@ -15,22 +14,14 @@ import {Form as ReactFinalForm} from 'react-final-form';
 import {useNotifications} from 'modules/notifications';
 import {VariableFormValues} from 'modules/types/variables';
 
-import {
-  Content,
-  AddVariableButton,
-  Form,
-  VariablesContainer,
-  EmptyPanel,
-} from './styled';
+import {Content, EmptyPanel} from './styled';
 import arrayMutators from 'final-form-arrays';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
-import {modificationsStore} from 'modules/stores/modifications';
-import {generateUniqueID} from 'modules/utils/generateUniqueID';
+import {VariablesForm} from './VariablesForm';
 
 const VariablesContent: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const notifications = useNotifications();
-  const {isModificationModeEnabled} = modificationsStore;
 
   useEffect(() => {
     variablesStore.init(processInstanceId);
@@ -42,27 +33,29 @@ const VariablesContent: React.FC = observer(() => {
 
   const {displayStatus} = variablesStore;
 
-  const hasEmptyNewVariable = (values: VariableFormValues) =>
-    values.newVariables?.some(
-      (variable) =>
-        variable === undefined ||
-        variable.name === undefined ||
-        variable.value === undefined
-    );
-
-  return (
-    <Content>
-      {displayStatus === 'error' && (
+  if (displayStatus === 'error') {
+    return (
+      <Content>
         <StatusMessage variant="error">
           Variables could not be fetched
         </StatusMessage>
-      )}
-      {displayStatus === 'multi-instances' && (
+      </Content>
+    );
+  }
+
+  if (displayStatus === 'multi-instances') {
+    return (
+      <Content>
         <StatusMessage variant="default">
           To view the Variables, select a single Flow Node Instance in the
           Instance History.
         </StatusMessage>
-      )}
+      </Content>
+    );
+  }
+
+  return (
+    <Content>
       {displayStatus === 'spinner' && (
         <EmptyPanel
           data-testid="variables-spinner"
@@ -81,6 +74,7 @@ const VariablesContent: React.FC = observer(() => {
           },
         }}
         key={variablesStore.scopeId}
+        render={(props) => <VariablesForm {...props} />}
         onSubmit={async (values, form) => {
           const {initialValues} = form.getState();
 
@@ -118,32 +112,7 @@ const VariablesContent: React.FC = observer(() => {
             form.reset({});
           }
         }}
-      >
-        {({form, handleSubmit, values}) => {
-          return (
-            <Form onSubmit={handleSubmit}>
-              {isModificationModeEnabled && !variablesStore.hasNoContent && (
-                <AddVariableButton
-                  onClick={() => {
-                    form.mutators.push?.('newVariables', {
-                      id: generateUniqueID(),
-                    });
-                  }}
-                  disabled={
-                    form.getState().submitting ||
-                    form.getState().hasValidationErrors ||
-                    form.getState().validating ||
-                    hasEmptyNewVariable(values)
-                  }
-                />
-              )}
-              <VariablesContainer>
-                <Variables />
-              </VariablesContainer>
-            </Form>
-          );
-        }}
-      </ReactFinalForm>
+      />
     </Content>
   );
 });

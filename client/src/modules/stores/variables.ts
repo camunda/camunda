@@ -609,7 +609,11 @@ class Variables extends NetworkReconnectionHandler {
   }
 
   get hasNoContent() {
-    return flowNodeSelectionStore.hasSelectedNodeTokens;
+    return (
+      !flowNodeSelectionStore.isRootNodeSelected &&
+      !flowNodeSelectionStore.hasRunningOrFinishedTokens &&
+      flowNodeSelectionStore.newTokenCountForSelectedNode === 0
+    );
   }
 
   removeVariablesWithActiveOperations = () => {

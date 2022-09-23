@@ -112,14 +112,28 @@ class FlowNodeSelection {
     );
   }
 
-  get hasSelectedNodeTokens() {
+  get hasRunningOrFinishedTokens() {
     const currentFlowNodeSelection = this.state.selection;
 
     return (
       currentFlowNodeSelection?.flowNodeId !== undefined &&
       flowNodeStatesStore.state.flowNodes[
         currentFlowNodeSelection.flowNodeId
-      ] === undefined
+      ] !== undefined
+    );
+  }
+
+  get newTokenCountForSelectedNode() {
+    const currentFlowNodeSelection = this.state.selection;
+
+    if (currentFlowNodeSelection?.flowNodeId === undefined) {
+      return 0;
+    }
+
+    return (
+      modificationsStore.modificationsByFlowNode[
+        currentFlowNodeSelection.flowNodeId
+      ]?.newTokens ?? 0
     );
   }
 
