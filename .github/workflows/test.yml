@@ -92,7 +92,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -B --no-snapshot-updates
+          mvn -T2 -B --no-snapshot-updates
           -D skipITs -D skipChecks
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests
