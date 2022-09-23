@@ -73,7 +73,7 @@ public final class StreamPlatform {
 
   private final WriteActor writeActor = new WriteActor();
   private final ZeebeDbFactory zeebeDbFactory;
-  private StreamProcessorLifecycleAware mockProcessorLifecycleAware;
+  private final StreamProcessorLifecycleAware mockProcessorLifecycleAware;
 
   public StreamPlatform(
       final Path dataDirectory,
@@ -105,6 +105,7 @@ public final class StreamPlatform {
     when(defaultMockedRecordProcessor.accepts(any())).thenReturn(true);
     recordProcessors = List.of(defaultMockedRecordProcessor);
     closeables.add(() -> recordProcessors.clear());
+    mockProcessorLifecycleAware = mock(StreamProcessorLifecycleAware.class);
   }
 
   public void createLogStream() {
@@ -193,7 +194,7 @@ public final class StreamPlatform {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
 
-    mockProcessorLifecycleAware = mock(StreamProcessorLifecycleAware.class);
+
 
     final ZeebeDb<?> zeebeDb;
     if (snapshotWasTaken) {
