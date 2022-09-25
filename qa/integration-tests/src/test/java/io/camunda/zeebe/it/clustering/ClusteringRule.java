@@ -283,7 +283,7 @@ public class ClusteringRule extends ExternalResource {
         brokers.values().parallelStream().map(Broker::start).toArray(CompletableFuture[]::new);
     CompletableFuture.allOf(brokerStartFutures).get(120, TimeUnit.SECONDS);
 
-    partitionLatch.await(15, TimeUnit.SECONDS);
+    assertThat(partitionLatch.await(60, TimeUnit.SECONDS)).isTrue();
   }
 
   private Broker createBroker(final int nodeId) {
