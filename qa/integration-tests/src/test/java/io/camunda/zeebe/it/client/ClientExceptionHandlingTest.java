@@ -27,7 +27,7 @@ public final class ClientExceptionHandlingTest {
 
   public final GrpcClientRule clientRule =
       new GrpcClientRule(
-          brokerRule, zeebeClientBuilder -> zeebeClientBuilder.gatewayAddress("localhost:1234"));
+          brokerRule, zeebeClientBuilder -> zeebeClientBuilder.gatewayAddress("localhost:49151"));
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
@@ -35,7 +35,7 @@ public final class ClientExceptionHandlingTest {
 
   @Test
   public void shouldContainRootCauses() {
-    final Throwable throwable = catchThrowable(() -> clientRule.getPartitions());
+    final Throwable throwable = catchThrowable(clientRule::getPartitions);
 
     assertThat(throwable).isInstanceOf(ClientException.class).hasMessageContaining("io exception");
 
@@ -54,6 +54,6 @@ public final class ClientExceptionHandlingTest {
         .hasCauseInstanceOf(ConnectException.class)
         .hasMessageContaining("Connection refused:")
         .hasMessageContaining("localhost")
-        .hasMessageContaining(":1234");
+        .hasMessageContaining(":49151");
   }
 }
