@@ -78,18 +78,6 @@
       }
     }
 
-    .ownerInfo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-
-      .ownerName {
-        max-width: 100px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-    }
-
     .setGoalBtn {
       margin: 4px;
     }

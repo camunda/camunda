@@ -149,11 +149,7 @@ export function Processes({mightFail, user}) {
             }
 
             if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
-              meta.unshift(
-                <Tooltip content={owner?.name} overflowOnly>
-                  <div className="ownerName">{owner?.name}</div>
-                </Tooltip>
-              );
+              meta.unshift(owner?.name);
 
               meta.push(
                 <Button
