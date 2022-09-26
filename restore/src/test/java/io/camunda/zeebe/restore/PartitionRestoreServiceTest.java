@@ -46,11 +46,11 @@ import org.junit.jupiter.api.io.TempDir;
 @Timeout(value = 60)
 class PartitionRestoreServiceTest {
 
-  private static TestRestorableBackupStore backupStore;
   private static ActorScheduler actorScheduler;
   private static final String SNAPSHOT_FILE_NAME = "file1";
   @TempDir Path dataDirectory;
   @TempDir Path dataDirectoryToRestore;
+  private TestRestorableBackupStore backupStore;
   private SegmentedJournal journal;
   private PartitionRestoreService restoreService;
   private FileBasedSnapshotStore snapshotStore;
@@ -62,7 +62,6 @@ class PartitionRestoreServiceTest {
   static void beforeAll() {
     actorScheduler = ActorScheduler.newActorScheduler().build();
     actorScheduler.start();
-    backupStore = new TestRestorableBackupStore();
   }
 
   @AfterAll
@@ -72,6 +71,7 @@ class PartitionRestoreServiceTest {
 
   @BeforeEach
   void setUp() {
+    backupStore = new TestRestorableBackupStore();
 
     snapshotStore =
         (FileBasedSnapshotStore)
