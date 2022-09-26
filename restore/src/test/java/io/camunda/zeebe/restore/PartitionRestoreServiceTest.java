@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.management.BackupService;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -30,8 +31,8 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterAll;
@@ -39,8 +40,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
+@Timeout(value = 60)
 class PartitionRestoreServiceTest {
 
   private static TestRestorableBackupStore backupStore;
@@ -52,6 +55,8 @@ class PartitionRestoreServiceTest {
   private PartitionRestoreService restoreService;
   private FileBasedSnapshotStore snapshotStore;
   private BackupService backupService;
+  private final int nodeId = 1;
+  private final int partitionId = 1;
 
   @BeforeAll
   static void beforeAll() {
@@ -68,8 +73,6 @@ class PartitionRestoreServiceTest {
   @BeforeEach
   void setUp() {
 
-    final int nodeId = 1;
-    final int partitionId = 1;
     snapshotStore =
         (FileBasedSnapshotStore)
             new FileBasedSnapshotStoreFactory(actorScheduler, nodeId)
@@ -207,9 +210,10 @@ class PartitionRestoreServiceTest {
   }
 
   private Backup takeBackup(final long backupId, final long checkpointPosition) {
-    backupStore.setBackupFuture(new CompletableFuture<>());
+    final var backup =
+        backupStore.waitForBackup(new BackupIdentifierImpl(nodeId, partitionId, backupId));
     backupService.takeBackup(backupId, checkpointPosition);
-    return backupStore.getBackupFuture().join();
+    return backup.orTimeout(30, TimeUnit.SECONDS).join();
   }
 
   private void appendRecord(final long asqn, final String data) {
