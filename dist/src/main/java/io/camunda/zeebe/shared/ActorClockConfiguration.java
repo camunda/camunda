@@ -9,7 +9,6 @@ package io.camunda.zeebe.shared;
 
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
-import io.camunda.zeebe.scheduler.clock.DefaultActorClock;
 import io.camunda.zeebe.shared.management.ActorClockService;
 import io.camunda.zeebe.shared.management.ControlledActorClockService;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -31,8 +30,8 @@ public final class ActorClockConfiguration {
       service = new ControlledActorClockService(controlledClock);
       clock = controlledClock;
     } else {
-      clock = new DefaultActorClock();
-      service = clock::getTimeMillis;
+      clock = null;
+      service = System::currentTimeMillis;
     }
   }
 
