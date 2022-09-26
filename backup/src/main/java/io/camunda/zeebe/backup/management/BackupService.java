@@ -11,6 +11,7 @@ import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.metrics.BackupManagerMetrics;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -33,6 +34,7 @@ public final class BackupService extends Actor implements BackupManager {
   private final Path segmentsDirectory;
   private final Predicate<Path> isSegmentsFile;
   private final List<Integer> partitionMembers;
+  private final BackupManagerMetrics metrics;
 
   public BackupService(
       final int nodeId,
@@ -50,6 +52,7 @@ public final class BackupService extends Actor implements BackupManager {
     this.snapshotStore = snapshotStore;
     this.segmentsDirectory = segmentsDirectory;
     this.isSegmentsFile = isSegmentsFile;
+    metrics = new BackupManagerMetrics(partitionId);
     internalBackupManager = new BackupServiceImpl(backupStore);
     actorName = buildActorName(nodeId, "BackupService", partitionId);
   }
@@ -77,35 +80,50 @@ public final class BackupService extends Actor implements BackupManager {
                   actor,
                   segmentsDirectory,
                   isSegmentsFile);
-          internalBackupManager
-              .takeBackup(inProgressBackup, actor)
-              .onComplete(
-                  (ignore, error) -> {
-                    if (error != null) {
-                      LOG.warn(
-                          "Failed to take backup {} at position {}",
-                          inProgressBackup.checkpointId(),
-                          inProgressBackup.checkpointPosition(),
-                          error);
-                    } else {
-                      LOG.info(
-                          "Backup {} at position {} completed",
-                          inProgressBackup.checkpointId(),
-                          inProgressBackup.checkpointPosition());
-                    }
-                  });
+
+          final var opMetrics = metrics.startTakingBackup();
+          final var backupResult = internalBackupManager.takeBackup(inProgressBackup, actor);
+          backupResult.onComplete(opMetrics::complete);
+
+          backupResult.onComplete(
+              (ignore, error) -> {
+                if (error != null) {
+                  LOG.warn(
+                      "Failed to take backup {} at position {}",
+                      inProgressBackup.checkpointId(),
+                      inProgressBackup.checkpointPosition(),
+                      error);
+                } else {
+                  LOG.info(
+                      "Backup {} at position {} completed",
+                      inProgressBackup.checkpointId(),
+                      inProgressBackup.checkpointPosition());
+                }
+              });
         });
   }
 
   @Override
   public ActorFuture<BackupStatus> getBackupStatus(final long checkpointId) {
-    return internalBackupManager.getBackupStatus(getBackupId(checkpointId), actor);
+    final var operationMetrics = metrics.startQueryingStatus();
+
+    final var backupStatus =
+        internalBackupManager.getBackupStatus(getBackupId(checkpointId), actor);
+    backupStatus.onComplete(operationMetrics::complete);
+    return backupStatus;
   }
 
   @Override
   public ActorFuture<Void> deleteBackup(final long checkpointId) {
-    return CompletableActorFuture.completedExceptionally(
-        new UnsupportedOperationException("Not implemented"));
+    final var operationMetrics = metrics.startDeleting();
+
+    final CompletableActorFuture<Void> backupDeleted =
+        CompletableActorFuture.completedExceptionally(
+            new UnsupportedOperationException("Not implemented"));
+
+    backupDeleted.onComplete(operationMetrics::complete);
+
+    return backupDeleted;
   }
 
   @Override
