@@ -5,12 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {
-  formatTooltip,
-  formatTooltipTitle,
-  calculateLinePosition,
-  getTooltipLabelColor,
-} from './service';
+import {formatTooltip, formatTooltipTitle, getTooltipLabelColor} from './service';
 
 describe('formatTooltip', () => {
   it('should include the relative value in tooltips', () => {
@@ -90,23 +85,6 @@ it('should generate correct colors in label tooltips for bar charts', () => {
     borderColor: 'testColor2',
     backgroundColor: 'testColor2',
   });
-});
-
-it('should calculate the correct position for the target value line', () => {
-  expect(
-    calculateLinePosition({
-      scales: {
-        'axis-0': {
-          max: 100,
-          height: 100,
-          top: 0,
-        },
-      },
-      options: {
-        lineAt: 20,
-      },
-    })
-  ).toBe(80); // inverted y axis: height - lineAt = 100 - 20 = 80
 });
 
 describe('formatTooltipTitle', () => {

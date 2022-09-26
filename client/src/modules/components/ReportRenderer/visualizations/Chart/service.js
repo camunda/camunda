@@ -105,7 +105,7 @@ export function drawHorizentalLine(chart) {
 export function calculateLinePosition(chart) {
   const yAxis = chart.scales['axis-0'];
 
-  return (1 - chart.options.lineAt / yAxis.max) * yAxis.height + yAxis.top;
+  return yAxis.getPixelForValue(chart.options.lineAt);
 }
 
 export function canBeInterpolated({type, value}, xml, decisionDefinitionKey) {
