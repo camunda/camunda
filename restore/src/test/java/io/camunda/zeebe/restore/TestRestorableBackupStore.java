@@ -113,6 +113,9 @@ final class TestRestorableBackupStore implements BackupStore {
   @Override
   public CompletableFuture<BackupStatusCode> markFailed(
       final BackupIdentifier id, final String failureReason) {
+    backupFuture.completeExceptionally(
+        new RuntimeException(
+            "Backup was explicitly marked as failed: %s".formatted(failureReason)));
     return null;
   }
 

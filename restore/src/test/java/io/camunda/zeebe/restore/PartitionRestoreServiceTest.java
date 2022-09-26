@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterAll;
@@ -209,7 +210,11 @@ class PartitionRestoreServiceTest {
   private Backup takeBackup(final long backupId, final long checkpointPosition) {
     backupStore.setBackupFuture(new CompletableFuture<>());
     backupService.takeBackup(backupId, checkpointPosition);
-    return backupStore.getBackupFuture().join();
+    try {
+      return backupStore.getBackupFuture().get(30, TimeUnit.SECONDS);
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private void appendRecord(final long asqn, final String data) {
