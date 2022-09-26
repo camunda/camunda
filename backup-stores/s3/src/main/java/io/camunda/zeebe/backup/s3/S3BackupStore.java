@@ -164,17 +164,20 @@ public final class S3BackupStore implements BackupStore {
             status -> {
               final var snapshot = saveSnapshotFiles(backup);
               final var segments = saveSegmentFiles(backup);
-              return CompletableFuture.allOf(snapshot, segments);
+              return CompletableFuture.allOf(snapshot, segments)
+                  .thenComposeAsync(
+                      ignored ->
+                          updateManifestObject(
+                              backup.id(),
+                              Manifest::expectInProgress,
+                              InProgressBackupManifest::asCompleted))
+                  .exceptionallyComposeAsync(
+                      throwable ->
+                          updateManifestObject(
+                                  backup.id(), manifest -> manifest.asFailed(throwable))
+                              // Mark the returned future as failed.
+                              .thenCompose(ignore -> CompletableFuture.failedStage(throwable)));
             })
-        .thenComposeAsync(
-            ignored ->
-                updateManifestObject(
-                    backup.id(), Manifest::expectInProgress, InProgressBackupManifest::asCompleted))
-        .exceptionallyComposeAsync(
-            throwable ->
-                updateManifestObject(backup.id(), manifest -> manifest.asFailed(throwable))
-                    // Mark the returned future as failed.
-                    .thenCompose(status -> CompletableFuture.failedStage(throwable)))
         // Discard status, it's either COMPLETED or the future is completed exceptionally
         .thenApply(ignored -> null);
   }

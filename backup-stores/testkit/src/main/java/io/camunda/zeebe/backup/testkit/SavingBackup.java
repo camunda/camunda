@@ -7,13 +7,18 @@
  */
 package io.camunda.zeebe.backup.testkit;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -55,5 +60,25 @@ public interface SavingBackup {
         .withThrowableOfType(Throwable.class)
         .withRootCauseInstanceOf(NoSuchFileException.class)
         .withMessageContaining(deletedFile.toString());
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(TestBackupProvider.class)
+  default void shouldNotOverwriteCompletedBackup(final Backup backup) {
+    // given
+    getStore().save(backup).join();
+    final var firstStatus = getStore().getStatus(backup.id()).join();
+
+    // when
+    final CompletableFuture<Void> saveAttempt = getStore().save(backup);
+
+    // then
+    assertThat(saveAttempt)
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableOfType(ExecutionException.class);
+
+    final var status = getStore().getStatus(backup.id()).join();
+    assertThat(status.statusCode()).isEqualTo(BackupStatusCode.COMPLETED);
+    assertThat(status.lastModified()).isEqualTo(firstStatus.lastModified());
   }
 }
