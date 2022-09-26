@@ -5,9 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.system.restore;
-
-import static io.camunda.zeebe.util.FileUtil.ensureDirectoryExists;
+package io.camunda.zeebe.restore;
 
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.Backup;
@@ -91,13 +89,14 @@ public class PartitionRestoreService {
         LOG.error(
             "Partition's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
             rootDirectory);
-        CompletableFuture.failedFuture(new DirectoryNotEmptyException(rootDirectory.toString()));
+        return CompletableFuture.failedFuture(
+            new DirectoryNotEmptyException(rootDirectory.toString()));
       }
 
       // First download the contents to a temporary directory and then move it to the correct
       // locations.
       final var tempTargetDirectory = rootDirectory.resolve("restoring-" + backupId);
-      ensureDirectoryExists(tempTargetDirectory);
+      FileUtil.ensureDirectoryExists(tempTargetDirectory);
       return CompletableFuture.completedFuture(tempTargetDirectory);
     } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
@@ -110,7 +109,7 @@ public class PartitionRestoreService {
         return entries.findFirst().isEmpty();
       }
     }
-    return false;
+    return !Files.exists(path);
   }
 
   // While taking the backup, we add all log segments. But the backup must only have entries upto

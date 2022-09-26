@@ -17,6 +17,8 @@ import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
+import io.camunda.zeebe.protocol.Protocol;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -150,7 +152,11 @@ public class ZeebeStateExtension implements BeforeEachCallback {
         tempFolder = Files.createTempDirectory(null);
         zeebeDb = factory.createDb(tempFolder.toFile());
         transactionContext = zeebeDb.createContext();
-        zeebeState = new ZeebeDbState(zeebeDb, transactionContext);
+        final var keyGenerator =
+            new DbKeyGenerator(Protocol.DEPLOYMENT_PARTITION, zeebeDb, transactionContext);
+        zeebeState =
+            new ZeebeDbState(
+                Protocol.DEPLOYMENT_PARTITION, zeebeDb, transactionContext, keyGenerator);
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);
       }

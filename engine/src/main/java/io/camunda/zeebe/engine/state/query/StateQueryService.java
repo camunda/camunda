@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import java.util.Optional;
@@ -64,7 +65,9 @@ public final class StateQueryService implements QueryService {
     }
     if (state == null) {
       // service is used for the first time, create state now
-      state = new ZeebeDbState(zeebeDb, zeebeDb.createContext());
+      // we don't need a key generator here, so we set it to null
+      state =
+          new ZeebeDbState(Protocol.DEPLOYMENT_PARTITION, zeebeDb, zeebeDb.createContext(), null);
     }
   }
 }

@@ -16,18 +16,22 @@ public final class DbMigrationController implements StreamProcessorLifecycleAwar
 
   private DbMigrator dbMigrator;
   private final Function<MutableZeebeState, DbMigrator> migratorFactory;
+  private final MutableZeebeState mutableZeebeState;
 
-  public DbMigrationController() {
-    this(DbMigratorImpl::new);
+  public DbMigrationController(final MutableZeebeState mutableZeebeState) {
+    this(mutableZeebeState, DbMigratorImpl::new);
   }
 
-  DbMigrationController(final Function<MutableZeebeState, DbMigrator> migratorFactory) {
+  DbMigrationController(
+      final MutableZeebeState mutableZeebeState,
+      final Function<MutableZeebeState, DbMigrator> migratorFactory) {
+    this.mutableZeebeState = mutableZeebeState;
     this.migratorFactory = migratorFactory;
   }
 
   @Override
   public final void onRecovered(final ReadonlyStreamProcessorContext context) {
-    final var migrator = migratorFactory.apply(context.getZeebeState());
+    final var migrator = migratorFactory.apply(mutableZeebeState);
 
     synchronized (this) {
       dbMigrator = migrator;

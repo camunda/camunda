@@ -9,10 +9,10 @@ package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
 import io.camunda.zeebe.protocol.Protocol;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
@@ -37,7 +37,9 @@ public final class ZeebeStateRule extends ExternalResource {
     tempFolder.create();
     db = createNewDb();
 
-    zeebeState = new ZeebeDbState(partition, db, db.createContext());
+    final var context = db.createContext();
+    final var keyGenerator = new DbKeyGenerator(partition, db, context);
+    zeebeState = new ZeebeDbState(partition, db, context, keyGenerator);
   }
 
   @Override
@@ -52,10 +54,6 @@ public final class ZeebeStateRule extends ExternalResource {
 
   public MutableZeebeState getZeebeState() {
     return zeebeState;
-  }
-
-  public KeyGenerator getKeyGenerator() {
-    return zeebeState.getKeyGenerator();
   }
 
   public ZeebeDb<ZbColumnFamilies> createNewDb() {

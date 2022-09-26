@@ -15,8 +15,6 @@ import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
-import io.camunda.zeebe.engine.state.ZeebeDbState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -41,7 +39,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private LogStream logStream;
   private LogStreamReader logStreamReader;
   private RecordValues recordValues;
-  private ZeebeDbState zeebeState;
   private TransactionContext transactionContext;
 
   private BooleanSupplier abortCondition;
@@ -57,6 +54,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   // this is accessed outside, which is why we need to make sure that it is thread-safe
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
+  private KeyGeneratorControls keyGeneratorControls;
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -76,11 +74,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   @Override
   public LogStream getLogStream() {
     return logStream;
-  }
-
-  @Override
-  public MutableZeebeState getZeebeState() {
-    return zeebeState;
   }
 
   @Override
@@ -112,8 +105,9 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return this;
   }
 
-  public StreamProcessorContext zeebeState(final ZeebeDbState zeebeState) {
-    this.zeebeState = zeebeState;
+  public StreamProcessorContext keyGeneratorControls(
+      final KeyGeneratorControls keyGeneratorControls) {
+    this.keyGeneratorControls = keyGeneratorControls;
     return this;
   }
 
@@ -145,7 +139,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   }
 
   public KeyGeneratorControls getKeyGeneratorControls() {
-    return zeebeState.getKeyGeneratorControls();
+    return keyGeneratorControls;
   }
 
   public ActorControl getActor() {
