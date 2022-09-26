@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {evaluateReport, processResult} from './reportService';
+import {processResult, getReportResult} from './reportService';
 
 import {post} from 'request';
 
@@ -94,22 +94,20 @@ it('should convert group by none distribute by process hypermap report to normal
 
   post.mockReturnValueOnce({json: () => hyperMapReport});
 
-  expect(await evaluateReport()).toEqual({
-    data: {
-      groupBy: {type: 'none'},
-      distributedBy: {type: 'process'},
-    },
-    result: {
-      type: 'map',
-      measures: [
-        {
-          type: 'map',
-          data: [
-            {key: 'definition1', value: 12, label: 'Definition 1'},
-            {key: 'definition2', value: 34, label: 'Definition 2'},
-          ],
-        },
-      ],
-    },
+  expect(await getReportResult(hyperMapReport)).toEqual({
+    data: [
+      {key: 'definition1', value: 12, label: 'Definition 1'},
+      {key: 'definition2', value: 34, label: 'Definition 2'},
+    ],
+    type: 'map',
+    measures: [
+      {
+        type: 'map',
+        data: [
+          {key: 'definition1', value: 12, label: 'Definition 1'},
+          {key: 'definition2', value: 34, label: 'Definition 2'},
+        ],
+      },
+    ],
   });
 });
