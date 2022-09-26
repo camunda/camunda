@@ -65,9 +65,10 @@ public final class StateQueryService implements QueryService {
     }
     if (state == null) {
       // service is used for the first time, create state now
-      // we don't need a key generator here, so we set it to null
+      // we don't need a key generator here, so we set it to unsupported
       state =
-          new ZeebeDbState(Protocol.DEPLOYMENT_PARTITION, zeebeDb, zeebeDb.createContext(), null);
+          new ZeebeDbState(Protocol.DEPLOYMENT_PARTITION, zeebeDb, zeebeDb.createContext(),
+              () -> { throw new UnsupportedOperationException("Not allowed to generate a new key"); });
     }
   }
 }
