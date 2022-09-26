@@ -199,7 +199,7 @@ public class ImportPositionHolder {
 
       return Either.right(true);
     } catch (final Throwable e) {
-      LOGGER.error(String.format("Error occurred while persisting latest loaded position", e));
+      LOGGER.error("Error occurred while persisting latest loaded position", e);
       return Either.left(e);
     }
   }
@@ -248,7 +248,8 @@ public class ImportPositionHolder {
       LOGGER.error(
           String.format(
               "Error occurred while preparing request to update processed position for %s",
-              position.getAliasName(), e));
+              position.getAliasName()),
+          e);
       return Either.left(e);
     }
   }
