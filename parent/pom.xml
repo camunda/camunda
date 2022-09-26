@@ -40,7 +40,7 @@
     <version.awaitility>4.2.0</version.awaitility>
     <version.bouncycastle>1.70</version.bouncycastle>
     <version.camunda>7.17.0</version.camunda>
-    <version.checkstyle>10.3.3</version.checkstyle>
+    <version.checkstyle>10.3.4</version.checkstyle>
     <version.commons-lang>3.12.0</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
@@ -89,7 +89,7 @@
     <version.dmn-scala>1.7.3</version.dmn-scala>
     <version.rest-assured>5.2.0</version.rest-assured>
     <version.spring>5.3.23</version.spring>
-    <version.spring-boot>2.7.3</version.spring-boot>
+    <version.spring-boot>2.7.4</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.3.0</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
@@ -112,7 +112,7 @@
     <version.jnr-posix>3.1.15</version.jnr-posix>
     <version.zpt>8.0.6</version.zpt>
     <version.feign>11.10</version.feign>
-    <version.awssdk>2.17.278</version.awssdk>
+    <version.awssdk>2.17.281</version.awssdk>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -945,7 +945,7 @@
       <dependency>
         <groupId>com.amazonaws</groupId>
         <artifactId>aws-java-sdk-core</artifactId>
-        <version>1.12.308</version>
+        <version>1.12.310</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>
