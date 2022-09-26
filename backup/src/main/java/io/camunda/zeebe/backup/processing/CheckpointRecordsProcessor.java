@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.CheckpointListener;
+import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.engine.api.ProcessingResult;
@@ -42,12 +43,13 @@ public final class CheckpointRecordsProcessor
   //  Can be accessed concurrently by other threads to add new listeners. Hence we have to use a
   // thread safe collection
   private final Set<CheckpointListener> checkpointListeners = new CopyOnWriteArraySet<>();
-
+  private final CheckpointMetrics metrics;
   private DbCheckpointState checkpointState;
   private ProcessingScheduleService executor;
 
-  public CheckpointRecordsProcessor(final BackupManager backupManager) {
+  public CheckpointRecordsProcessor(final BackupManager backupManager, final int partitionId) {
     this.backupManager = backupManager;
+    metrics = new CheckpointMetrics(partitionId);
   }
 
   @Override
@@ -58,13 +60,14 @@ public final class CheckpointRecordsProcessor
             recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
 
     checkpointCreateProcessor =
-        new CheckpointCreateProcessor(checkpointState, backupManager, checkpointListeners);
+        new CheckpointCreateProcessor(checkpointState, backupManager, checkpointListeners, metrics);
     checkpointCreatedEventApplier =
-        new CheckpointCreatedEventApplier(checkpointState, checkpointListeners);
+        new CheckpointCreatedEventApplier(checkpointState, checkpointListeners, metrics);
 
-    if (checkpointState.getCheckpointId() != CheckpointState.NO_CHECKPOINT) {
-      checkpointListeners.forEach(
-          listener -> listener.onNewCheckpointCreated(checkpointState.getCheckpointId()));
+    final long checkpointId = checkpointState.getCheckpointId();
+    if (checkpointId != CheckpointState.NO_CHECKPOINT) {
+      checkpointListeners.forEach(listener -> listener.onNewCheckpointCreated(checkpointId));
+      metrics.setCheckpointId(checkpointId, checkpointState.getCheckpointPosition());
     }
 
     recordProcessorContext.addLifecycleListeners(List.of(this));

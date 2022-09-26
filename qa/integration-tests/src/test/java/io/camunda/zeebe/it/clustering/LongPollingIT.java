@@ -21,6 +21,7 @@ import io.camunda.zeebe.qa.util.actuator.LoggersActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.record.RecordStream;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.containers.ZeebeGatewayNode;
 import io.zeebe.containers.ZeebePort;
 import io.zeebe.containers.cluster.ZeebeCluster;
@@ -60,7 +61,11 @@ final class LongPollingIT {
 
   @Container
   private final ContainerEngine engine =
-      ContainerEngine.builder().withCluster(cluster).withIdlePeriod(Duration.ofSeconds(5)).build();
+      ContainerEngine.builder()
+          .withDebugReceiverPort(SocketUtil.getNextAddress().getPort())
+          .withCluster(cluster)
+          .withIdlePeriod(Duration.ofSeconds(5))
+          .build();
 
   @BeforeEach
   void beforeEach() {

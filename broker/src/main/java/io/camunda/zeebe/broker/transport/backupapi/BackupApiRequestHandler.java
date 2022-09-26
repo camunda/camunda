@@ -40,17 +40,20 @@ public final class BackupApiRequestHandler
   private final BackupManager backupManager;
   private final AtomixServerTransport transport;
   private final int partitionId;
+  private final boolean backupFeatureEnabled;
 
   public BackupApiRequestHandler(
       final AtomixServerTransport transport,
       final LogStreamRecordWriter logStreamRecordWriter,
       final BackupManager backupManager,
-      final int partitionId) {
+      final int partitionId,
+      final boolean backupFeatureEnabled) {
     super(BackupApiRequestReader::new, BackupApiResponseWriter::new);
     this.logStreamRecordWriter = logStreamRecordWriter;
     this.transport = transport;
     this.backupManager = backupManager;
     this.partitionId = partitionId;
+    this.backupFeatureEnabled = backupFeatureEnabled;
     transport.unsubscribe(partitionId, RequestType.BACKUP);
     transport.subscribe(partitionId, RequestType.BACKUP, this);
   }
@@ -70,6 +73,10 @@ public final class BackupApiRequestHandler
       final BackupApiRequestReader requestReader,
       final BackupApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
+
+    if (!backupFeatureEnabled) {
+      return CompletableActorFuture.completed(backupFeatureDisabledError(errorWriter));
+    }
 
     return switch (requestReader.type()) {
       case TAKE_BACKUP -> CompletableActorFuture.completed(
@@ -160,6 +167,15 @@ public final class BackupApiRequestHandler
   private Either<ErrorResponseWriter, BackupApiResponseWriter> unknownRequest(
       final ErrorResponseWriter errorWriter, final BackupRequestType type) {
     errorWriter.unsupportedMessage(type, AdminRequestType.values());
+    return Either.left(errorWriter);
+  }
+
+  private Either<ErrorResponseWriter, BackupApiResponseWriter> backupFeatureDisabledError(
+      final ErrorResponseWriter errorWriter) {
+    errorWriter
+        .errorCode(ErrorCode.UNSUPPORTED_MESSAGE)
+        .errorMessage(
+            "Backup feature is disabled for this cluster. To use this feature, enable it in the broker configuration and restart the cluster.");
     return Either.left(errorWriter);
   }
 

@@ -60,7 +60,7 @@
     <version.jackson>2.13.4</version.jackson>
     <version.java-grpc-prometheus>0.5.0</version.java-grpc-prometheus>
     <version.jna>5.12.1</version.jna>
-    <version.junit>5.9.0</version.junit>
+    <version.junit>5.9.1</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.18.0</version.log4j>
     <version.minlog>1.3.1</version.minlog>
@@ -71,11 +71,11 @@
     <version.objenesis>3.3</version.objenesis>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.21.6</version.protobuf>
-    <version.protobuf-common>2.9.2</version.protobuf-common>
+    <version.protobuf-common>2.9.3</version.protobuf-common>
     <version.micrometer>1.9.4</version.micrometer>
     <version.rocksdbjni>7.5.3</version.rocksdbjni>
     <version.sbe>1.26.0</version.sbe>
-    <version.scala>2.13.8</version.scala>
+    <version.scala>2.13.9</version.scala>
     <version.slf4j>1.7.36</version.slf4j>
     <version.snakeyaml>1.32</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
@@ -84,19 +84,19 @@
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.17.3</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
-    <version.zeebe-test-container>3.5.0</version.zeebe-test-container>
-    <version.feel-scala>1.15.1</version.feel-scala>
+    <version.zeebe-test-container>3.5.1</version.zeebe-test-container>
+    <version.feel-scala>1.15.2</version.feel-scala>
     <version.dmn-scala>1.7.3</version.dmn-scala>
-    <version.rest-assured>5.1.1</version.rest-assured>
+    <version.rest-assured>5.2.0</version.rest-assured>
     <version.spring>5.3.23</version.spring>
-    <version.spring-boot>2.7.3</version.spring-boot>
+    <version.spring-boot>2.7.4</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.3.0</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
     <version.jqwik>1.6.5</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.8</version.json-smart>
-    <version.byte-buddy>1.12.16</version.byte-buddy>
+    <version.byte-buddy>1.12.17</version.byte-buddy>
     <version.revapi>0.27.0</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.9.2</version.immutables>
@@ -111,8 +111,8 @@
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.15</version.jnr-posix>
     <version.zpt>8.0.6</version.zpt>
-    <version.feign>11.9.1</version.feign>
-    <version.awssdk>2.17.276</version.awssdk>
+    <version.feign>11.10</version.feign>
+    <version.awssdk>2.17.281</version.awssdk>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -929,6 +929,32 @@
         <version>${version.jnr-posix}</version>
       </dependency>
 
+      <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>bom</artifactId>
+        <version>${version.awssdk}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!--
+        Sad workaround for https://github.com/testcontainers/testcontainers-java/issues/4279; when
+        this is not needed and removed, make sure to remove it from child modules including this as
+        well
+      -->
+      <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-core</artifactId>
+        <version>1.12.310</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>*</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
       <!-- Dependencies present for convergence only -->
       <!-- between log4j2 and commons-compress (from testcontainers) -->
       <dependency>
@@ -985,14 +1011,6 @@
         <groupId>com.cronutils</groupId>
         <artifactId>cron-utils</artifactId>
         <version>${version.cron-utils}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>software.amazon.awssdk</groupId>
-        <artifactId>bom</artifactId>
-        <version>${version.awssdk}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
 
     </dependencies>
@@ -1606,6 +1624,7 @@
             <configuration>
               <excludes>
                 <exclude>**/*RandomizedPropertyTest.java</exclude>
+                <exclude>**/*RandomizedRaftTest.java</exclude>
                 <!-- Re-add the default exclude for inner classes, see https://github.com/camunda/zeebe/issues/8637 -->
                 <exclude>**/*$*.java</exclude>
               </excludes>
@@ -1626,6 +1645,7 @@
             <configuration>
               <includes>
                 <include>**/*RandomizedPropertyTest.java</include>
+                <include>**/*RandomizedRaftTest.java</include>
               </includes>
               <systemPropertyVariables>
                 <processCount>10</processCount>

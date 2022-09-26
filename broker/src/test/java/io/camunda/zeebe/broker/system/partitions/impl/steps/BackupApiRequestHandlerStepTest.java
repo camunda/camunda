@@ -9,10 +9,12 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -42,6 +45,9 @@ final class BackupApiRequestHandlerStepTest {
 
   @Mock ActorSchedulingService actorSchedulingService;
 
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  BrokerCfg brokerCfg;
+
   private final TestPartitionTransitionContext transitionContext =
       new TestPartitionTransitionContext();
   private BackupApiRequestHandlerStep step;
@@ -53,6 +59,9 @@ final class BackupApiRequestHandlerStepTest {
     transitionContext.setConcurrencyControl(new TestConcurrencyControl());
     transitionContext.setDiskSpaceUsageMonitor(diskSpaceUsageMonitor);
     transitionContext.setActorSchedulingService(actorSchedulingService);
+    transitionContext.setBrokerCfg(brokerCfg);
+
+    lenient().when(brokerCfg.getExperimental().getFeatures().isEnableBackup()).thenReturn(true);
 
     step = new BackupApiRequestHandlerStep();
   }

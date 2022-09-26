@@ -139,17 +139,23 @@ final class AdminApiRequestHandlerTest {
 
     private final PartitionAdminAccess adminAccess;
     private final AdminApiRequestHandler handler;
+    private final AdminRequest request;
 
     public PauseExportingRequest(
         @Mock final PartitionAdminAccess adminAccess,
         @Mock final PartitionManagerImpl partitionManager,
         @Mock final AtomixServerTransport transport) {
       this.adminAccess = adminAccess;
-      when(adminAccess.forPartition(anyInt())).thenReturn(Optional.of(adminAccess));
+      final int partitionId = 1;
+      when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
       when(partitionManager.getPartitionGroup()).thenReturn(mock(ManagedPartitionGroup.class));
       when(partitionManager.getPartitions()).thenReturn(List.of());
       when(partitionManager.createAdminAccess(any())).thenReturn(adminAccess);
       handler = new AdminApiRequestHandler(transport, partitionManager);
+
+      request = new AdminRequest();
+      request.setPartitionId(partitionId);
+      request.setType(AdminRequestType.PAUSE_EXPORTING);
     }
 
     @BeforeEach
@@ -161,10 +167,6 @@ final class AdminApiRequestHandlerTest {
     @Test
     void shouldPauseExportingForGivenPartition() {
       when(adminAccess.pauseExporting()).thenReturn(CompletableActorFuture.completed(null));
-
-      final var request = new AdminRequest();
-      request.setPartitionId(1);
-      request.setType(AdminRequestType.PAUSE_EXPORTING);
 
       // when
       final var responseFuture = handleRequest(request, handler);
@@ -184,9 +186,95 @@ final class AdminApiRequestHandlerTest {
               CompletableActorFuture.completedExceptionally(
                   new RuntimeException("Exporting fails")));
 
-      final var request = new AdminRequest();
-      request.setPartitionId(1);
-      request.setType(AdminRequestType.PAUSE_EXPORTING);
+      // when
+      final var responseFuture = handleRequest(request, handler);
+      scheduler.workUntilDone();
+
+      // then
+      assertErrorCode(responseFuture, ErrorCode.INTERNAL_ERROR);
+    }
+
+    @Test
+    void shouldRespondWithFailureIfPartitionNotFound() {
+      // given
+      request.setPartitionId(5);
+
+      // when
+      final var responseFuture = handleRequest(request, handler);
+      scheduler.workUntilDone();
+
+      // then
+      assertErrorCode(responseFuture, ErrorCode.INTERNAL_ERROR);
+    }
+  }
+
+  @Nested
+  @ExtendWith(MockitoExtension.class)
+  final class ResumeExportingRequest {
+    @RegisterExtension
+    final ControlledActorSchedulerExtension scheduler = new ControlledActorSchedulerExtension();
+
+    final AdminRequest request;
+    private final PartitionAdminAccess adminAccess;
+    private final AdminApiRequestHandler handler;
+
+    public ResumeExportingRequest(
+        @Mock final PartitionAdminAccess adminAccess,
+        @Mock final PartitionManagerImpl partitionManager,
+        @Mock final AtomixServerTransport transport) {
+      this.adminAccess = adminAccess;
+      final int partitionId = 1;
+      when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
+      when(partitionManager.getPartitionGroup()).thenReturn(mock(ManagedPartitionGroup.class));
+      when(partitionManager.getPartitions()).thenReturn(List.of());
+      when(partitionManager.createAdminAccess(any())).thenReturn(adminAccess);
+      handler = new AdminApiRequestHandler(transport, partitionManager);
+
+      request = new AdminRequest();
+      request.setPartitionId(partitionId);
+      request.setType(AdminRequestType.RESUME_EXPORTING);
+    }
+
+    @BeforeEach
+    void startHandler() {
+      scheduler.submitActor(handler);
+      scheduler.workUntilDone();
+    }
+
+    @Test
+    void shouldResumeExportingForGivenPartition() {
+      when(adminAccess.resumeExporting()).thenReturn(CompletableActorFuture.completed(null));
+
+      // when
+      final var responseFuture = handleRequest(request, handler);
+      scheduler.workUntilDone();
+
+      // then
+      assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
+      verify(adminAccess).forPartition(request.getPartitionId());
+      verify(adminAccess).resumeExporting();
+    }
+
+    @Test
+    void shouldRespondWithFailureIfPausingFails() {
+      // given
+      when(adminAccess.resumeExporting())
+          .thenReturn(
+              CompletableActorFuture.completedExceptionally(
+                  new RuntimeException("Exporting fails")));
+
+      // when
+      final var responseFuture = handleRequest(request, handler);
+      scheduler.workUntilDone();
+
+      // then
+      assertErrorCode(responseFuture, ErrorCode.INTERNAL_ERROR);
+    }
+
+    @Test
+    void shouldRespondWithFailureIfPartitionNotFound() {
+      // given
+      request.setPartitionId(5);
 
       // when
       final var responseFuture = handleRequest(request, handler);

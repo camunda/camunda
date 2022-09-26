@@ -60,6 +60,7 @@
       <validValue name="ALREADY_EXISTS">2</validValue>
       <validValue name="INVALID_STATE">3</validValue>
       <validValue name="PROCESSING_ERROR">4</validValue>
+      <validValue name="EXCEEDED_BATCH_RECORD_SIZE">5</validValue>
     </enum>
 
     <enum name="PartitionRole" encodingType="uint8">

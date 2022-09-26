@@ -14,6 +14,7 @@ import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
+import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -45,9 +46,13 @@ public final class FileBasedSnapshotStoreFactory implements ReceivableSnapshotSt
     this.nodeId = nodeId;
   }
 
-  @Override
-  public ReceivableSnapshotStore createReceivableSnapshotStore(
-      final Path root, final int partitionId) {
+  public static RestorableSnapshotStore createRestorableSnapshotStore(
+      final Path root, final int partitionId, final int nodeId) {
+    return createSnapshotStoreWithoutOpening(root, partitionId, nodeId);
+  }
+
+  private static FileBasedSnapshotStore createSnapshotStoreWithoutOpening(
+      final Path root, final int partitionId, final int nodeId) {
     final var snapshotDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
     final var pendingDirectory = root.resolve(PENDING_DIRECTORY);
 
@@ -58,22 +63,25 @@ public final class FileBasedSnapshotStoreFactory implements ReceivableSnapshotSt
       throw new UncheckedIOException("Failed to create snapshot directories", e);
     }
 
-    return partitionSnapshotStores.computeIfAbsent(
+    return new FileBasedSnapshotStore(
+        nodeId,
         partitionId,
-        p -> createAndOpenNewSnapshotStore(partitionId, snapshotDirectory, pendingDirectory));
+        new SnapshotMetrics(Integer.toString(partitionId)),
+        snapshotDirectory,
+        pendingDirectory);
   }
 
-  private FileBasedSnapshotStore createAndOpenNewSnapshotStore(
-      final int partitionId, final Path snapshotDirectory, final Path pendingDirectory) {
-    final var snapshotStore =
-        new FileBasedSnapshotStore(
-            nodeId,
-            partitionId,
-            new SnapshotMetrics(Integer.toString(partitionId)),
-            snapshotDirectory,
-            pendingDirectory);
-    actorScheduler.submitActor(snapshotStore, SchedulingHints.ioBound()).join();
-    return snapshotStore;
+  @Override
+  public ReceivableSnapshotStore createReceivableSnapshotStore(
+      final Path root, final int partitionId) {
+
+    return partitionSnapshotStores.computeIfAbsent(
+        partitionId,
+        p -> {
+          final var snapshotStore = createSnapshotStoreWithoutOpening(root, partitionId, nodeId);
+          actorScheduler.submitActor(snapshotStore, SchedulingHints.ioBound()).join();
+          return snapshotStore;
+        });
   }
 
   public ConstructableSnapshotStore getConstructableSnapshotStore(final int partitionId) {

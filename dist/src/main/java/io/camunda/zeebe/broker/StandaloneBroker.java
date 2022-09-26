@@ -17,7 +17,6 @@ import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -97,12 +96,6 @@ public class StandaloneBroker
   public void onApplicationEvent(final ContextClosedEvent event) {
     try {
       broker.close();
-      actorScheduler.stop().get();
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-      LOGGER.warn("Shutdown interrupted, most likely harmless", e);
-    } catch (final ExecutionException e) {
-      LOGGER.error("Failed to shutdown broker gracefully", e);
     } finally {
       cleanupWorkingDirectory();
       LogManager.shutdown();

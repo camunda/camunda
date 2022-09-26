@@ -24,23 +24,23 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.StringUtil;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Implementation of {@code ProcessingResultBuilder} that uses direct access to the stream and to
- * response writer. This implementation is here to support a bridge for legacy code. Legacy code can
- * first be shaped into the interfaces defined in engine abstraction, and subseqeently the
- * interfaces can be re-implemented to allow for buffered writing to stream and response writer
+ * Implementation of {@code ProcessingResultBuilder} that buffers the processing results. After
+ * being done with processing the build can be turned into a immutable {@link ProcessingResult},
+ * which allows to process the result further.
  */
-final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
+final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
   private final List<PostCommitTask> postCommitTasks = new ArrayList<>();
 
   private final RecordBatch mutableRecordBatch;
   private ProcessingResponseImpl processingResponse;
 
-  DirectProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
+  BufferedProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
     mutableRecordBatch = new RecordBatch(predicate);
   }
 
@@ -68,7 +68,9 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
       }
     } else {
       throw new IllegalStateException(
-          String.format("The record value %s is not a UnifiedRecordValue", value));
+          String.format(
+              "The record value %s is not a UnifiedRecordValue",
+              StringUtil.limitString(value.toString(), 1024)));
     }
 
     return Either.right(this);
@@ -106,7 +108,7 @@ final class DirectProcessingResultBuilder implements ProcessingResultBuilder {
 
   @Override
   public ProcessingResult build() {
-    return new DirectProcessingResult(mutableRecordBatch, processingResponse, postCommitTasks);
+    return new BufferedResult(mutableRecordBatch, processingResponse, postCommitTasks);
   }
 
   @Override

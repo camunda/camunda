@@ -69,7 +69,8 @@ public final class BackupApiRequestHandlerStep implements PartitionTransitionSte
             context.getGatewayBrokerTransport(),
             logStreamRecordWriter,
             context.getBackupManager(),
-            context.getPartitionId());
+            context.getPartitionId(),
+            context.getBrokerCfg().getExperimental().getFeatures().isEnableBackup());
     context.getActorSchedulingService().submitActor(requestHandler).onComplete(installed);
     installed.onComplete(
         (ignore, error) -> {

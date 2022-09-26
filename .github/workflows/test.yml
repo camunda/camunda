@@ -7,14 +7,20 @@ on:
       - release-*
       - trying
       - staging
-  pull_request: {}
-  workflow_dispatch: {}
-  workflow_call: {}
+  pull_request: { }
+  workflow_dispatch: { }
+  workflow_call: { }
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
 
 jobs:
   integration-tests:
     name: Integration tests
-    runs-on: "n1-standard-32-netssd-preempt"
+    runs-on: [ self-hosted, linux, "16" ]
     timeout-minutes: 45
     env:
       TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
@@ -28,9 +34,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
-      - uses: ./.github/actions/use-ci-nexus-cache
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        with:
+          maven-extra-args: -T1C
       - uses: ./.github/actions/build-docker
         with:
           repository: localhost:5000/camunda/zeebe
@@ -44,64 +51,85 @@ jobs:
           chmod +x agent
           ./agent --private-registry-url=http://localhost:5000 '--private-registry-allowed-image-name-globs=*,*/*' &
           ./agent wait
-      - run: >
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Maven Test Build
+        run: >
           mvn -B -T2 --no-snapshot-updates
-          -D junitThreadCount=12
+          -D forkCount=5
+          -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests
-          -pl !:zeebe-elasticsearch-exporter
+          -pl '!qa/update-tests'
           verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Duplicate Test Check
+        uses: ./.github/actions/check-duplicate-tests
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: always()
         with:
           name: Integration Tests
-  exporter-tests:
-    name: Exporter tests
-    runs-on: "n1-standard-8-netssd-preempt"
+  qa-update-tests:
+    name: QA Update tests
+    runs-on: [ self-hosted, linux, "16" ]
     timeout-minutes: 45
+    env:
+      TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
+      TC_CLOUD_CONCURRENCY: 4
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
-        with:
-          go: false
-      - uses: ./.github/actions/use-ci-nexus-cache
       - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
         with:
-          go: false
-      - run: >
-          mvn -B --no-snapshot-updates
-          -D skipUTs -D skipChecks -D failsafe.rerunFailingTestsCount=3
-          -pl :zeebe-elasticsearch-exporter
+          maven-extra-args: -T1C
+      - uses: ./.github/actions/build-docker
+        with:
+          repository: localhost:5000/camunda/zeebe
+          version: current-test
+          push: true
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+      - name: Prepare Testcontainers Cloud agent
+        if: env.TC_CLOUD_TOKEN != ''
+        run: |
+          curl -L -o agent https://app.testcontainers.cloud/download/testcontainers-cloud-agent_linux_x86-64
+          chmod +x agent
+          ./agent --private-registry-url=http://localhost:5000 '--private-registry-allowed-image-name-globs=*,*/*' &
+          ./agent wait
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Maven Test Build
+        run: >
+          mvn -B -T2 --no-snapshot-updates
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P parallel-tests,extract-flaky-tests
+          -pl qa/update-tests
           verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Duplicate Test Check
+        uses: ./.github/actions/check-duplicate-tests
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: always()
         with:
-          name: Exporter Tests
-  project-list:
-    # Builds a list of projects where unit tests can be run on hosted runners
-    name: List projects
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - run: sudo apt-get -y install jq
-      - name: Get Project List
-        id: list-projects
-        # Build a json array of module names that can be used for the matrix in `unit-tests`
-        run: >
-          echo "::set-output name=projects::$(find -not -path "./engine/pom.xml" -wholename "./*/pom.xml" -exec dirname {} \; | cut -c 3- | jq -cnR [inputs])"
-    outputs:
-      projects: ${{ steps.list-projects.outputs.projects }}
+          name: QA Update Tests
   unit-tests:
     name: Unit tests
-    needs: project-list
-    strategy:
-      fail-fast: false
-      matrix:
-        project: ${{ fromJson(needs.project-list.outputs.projects) }}
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted, linux, "16" ]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
@@ -111,43 +139,28 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -am -pl ${{ matrix.project }}
-      - run: >
-          mvn -B --no-snapshot-updates
-          -D skipITs -D skipChecks
-          -pl ${{ matrix.project }}
-          verify
+          maven-extra-args: -T1C
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Maven Test Build
+        run: >
+          mvn -T2 -B --no-snapshot-updates
+          -D skipChecks
+          -D junitThreadCount=16
+          -P skip-random-tests,parallel-tests
+          test
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Normalize artifact name
         run: echo "ARTIFACT_NAME=$(echo ${{ matrix.project }} | sed 's/\//-/g')" >> $GITHUB_ENV
+      - name: Duplicate Test Check
+        uses: ./.github/actions/check-duplicate-tests
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: always()
         with:
-          name: ${{ env.ARTIFACT_NAME }}
-  slow-unit-tests:
-    name: Slow unit tests
-    runs-on: "n1-standard-8-netssd-preempt"
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          go: false
-      - uses: ./.github/actions/use-ci-nexus-cache
-      - uses: ./.github/actions/build-zeebe
-        with:
-          go: false
-          maven-extra-args: -am -pl engine/
-      - run: >
-          mvn -B --no-snapshot-updates
-          -D skipITs -D skipChecks
-          -pl :zeebe-workflow-engine
-          verify
-      - name: Upload test artifacts
-        uses: ./.github/actions/collect-test-artifacts
-        if: always()
-        with:
-          name: Slow Unit Tests
+          name: "unit tests"
   smoke-tests:
     name: Smoke tests on ${{ matrix.os }}
     timeout-minutes: 20
@@ -168,7 +181,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -am -pl qa/integration-tests
+          maven-extra-args: -am -pl qa/integration-tests -T1C
       - name: Run smoke test
         run: >
           mvn -B --no-snapshot-updates
@@ -181,9 +194,9 @@ jobs:
         if: always()
         with:
           name: Smoke Tests ${{ matrix.os }}
-  java-randomized-tests:
-    name: Java randomized tests
-    runs-on: ubuntu-latest
+  property-tests:
+    name: Property Tests
+    runs-on: [ self-hosted, linux, "16" ]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
@@ -193,12 +206,26 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-      - run: mvn -T1C -B -D skipChecks -P parallel-tests,include-random-tests test
+          maven-extra-args: -T1C
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Maven Test Build
+        run: >
+          mvn -T1C -B
+          -P parallel-tests,include-random-tests
+          -D junitThreadCount=16
+          -D skipChecks
+          test
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Duplicate Test Check
+        uses: ./.github/actions/check-duplicate-tests
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: always()
         with:
-          name: Java Randomized Tests
+          name: Property Tests
   go-client:
     name: Go client tests
     runs-on: ubuntu-latest
@@ -241,7 +268,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -am -pl clients/java
+          maven-extra-args: -am -pl clients/java -T1C
       # This is a workaround for java 8, which does not support the --add-exports options
       - run: rm .mvn/jvm.config
       # Then run client tests with JDK 8
@@ -250,19 +277,114 @@ jobs:
           java-version: '8'
           distribution: 'temurin'
           cache: maven
-      - run: >
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Maven Test Build
+        run: >
           mvn -B
           -P disableCheckstyle,extract-flaky-tests
           -D skipChecks -D skipITs
           -D surefire.rerunFailingTestsCount=3
           -pl clients/java
           verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Duplicate Test Check
+        uses: ./.github/actions/check-duplicate-tests
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
         if: always()
         with:
           name: Java 8 Client
-
+  codeql:
+    name: CodeQL
+    runs-on: [ self-hosted, linux, "16" ]
+    permissions:
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          go: false
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: java
+          queries: +security-and-quality
+      - uses: ./.github/actions/build-zeebe
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          upload: False
+          output: sarif-results
+      - name: Remove results for generated code
+        uses: advanced-security/filter-sarif@main
+        with:
+          patterns: |
+            +**/*.java
+            -**/generated-sources/**/*.java
+            -**/generated-test-sources/**/*.java
+          input: sarif-results/java.sarif
+          output: sarif-results/java.sarif
+      - name: Upload CodeQL Results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: sarif-results/java.sarif
+  go-lint:
+    name: Go linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          java: false
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.32
+          working-directory: clients/go
+  java-checks:
+    name: Java checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          go: false
+      - run: mvn -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
+  docker-checks:
+    name: Docker checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: hadolint/hadolint-action@v2.1.0
+        with:
+          config: ./.hadolint.yaml
+          dockerfile: ./Dockerfile
+          format: sarif
+          output-file: ./hadolint.sarif
+          no-color: true
+      - name: Upload Hadolint Results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: ./hadolint.sarif
+      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+      - uses: ./.github/actions/build-docker
+        id: build-docker
+        with:
+          # give it a fake name to ensure we never try pushing it
+          repository: localhost:5000/camunda/zeebe
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+      - name: Verify Docker image
+        env:
+          DATE: ${{ steps.build-docker.outputs.date }}
+          REVISION: ${{ github.sha }}
+          VERSION: ${{ steps.build-docker.outputs.version }}
+        run: ${PWD}/docker/test/verify.sh '${{ steps.build-docker.outputs.image }}'
   # Used by bors to check all tests, including the unit test matrix.
   # New test jobs must be added to the `needs` lists!
   # This name is hard-referenced from bors.toml; remember to update that if this name changes
@@ -271,13 +393,15 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - integration-tests
-      - exporter-tests
       - unit-tests
-      - slow-unit-tests
       - smoke-tests
-      - java-randomized-tests
+      - property-tests
       - go-client
       - java-client
+      - codeql
+      - java-checks
+      - go-lint
+      - docker-checks
     steps:
       - run: exit 0
 
@@ -287,10 +411,17 @@ jobs:
   event_file:
     name: "Event File"
     runs-on: ubuntu-latest
+    needs:
+      - integration-tests
+      - unit-tests
+      - smoke-tests
+      - property-tests
+      - go-client
+      - java-client
+    if: always()
     steps:
       - name: Upload
         uses: actions/upload-artifact@v3
-        if: always()
         with:
           name: Event File
           path: ${{ github.event_path }}

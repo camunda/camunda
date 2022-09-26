@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.admin.backup;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
+import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
@@ -52,7 +53,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     assertThat(future)
         .failsWithin(Duration.ofMillis(500))
         .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(BackupOperationFailedException.class);
+        .withCauseInstanceOf(BrokerErrorException.class);
   }
 
   @Test
@@ -149,6 +150,6 @@ public class BackupRequestHandlerTest extends GatewayTest {
     assertThat(future)
         .failsWithin(Duration.ofMillis(500))
         .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(BackupOperationFailedException.class);
+        .withCauseInstanceOf(BrokerErrorException.class);
   }
 }

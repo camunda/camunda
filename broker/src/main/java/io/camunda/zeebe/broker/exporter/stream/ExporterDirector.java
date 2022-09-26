@@ -112,6 +112,12 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   public ActorFuture<Void> pauseExporting() {
+    if (actor.isClosed()) {
+      // Actor can be closed when there are no exporters. In that case pausing is a no-op.
+      // This is safe because the pausing state is persisted and will be applied later if exporters
+      // are added.
+      return CompletableActorFuture.completed(null);
+    }
     return actor.call(
         () -> {
           isPaused = true;
@@ -120,6 +126,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   public ActorFuture<Void> resumeExporting() {
+    if (actor.isClosed()) {
+      // Actor can be closed when there are no exporters. In that case resuming is a no-op.
+      // This is safe because adding exporters requires a restart where the persisted non-pause
+      // state will be applied and exporting "resumes".
+      return CompletableActorFuture.completed(null);
+    }
+
     return actor.call(
         () -> {
           isPaused = false;

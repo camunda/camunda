@@ -45,7 +45,7 @@ public final class GatewayClusterConfiguration {
         .setProtocolConfig(membership);
   }
 
-  @Bean(destroyMethod = "") // disable automatically calling close as we will take care of this
+  @Bean(destroyMethod = "stop")
   public AtomixCluster atomixCluster(final GatewayCfg config) {
     return new AtomixCluster(clusterConfig(config), Version.from(VersionUtil.getVersion()));
   }

@@ -51,7 +51,7 @@ final class ControlledActorClockEndpointTest {
     assertThat(response.getStatus()).isEqualTo(200);
     assertThat(response.getBody())
         .asInstanceOf(responseType)
-        .satisfies((body) -> assertThat(body.epochMilli).isEqualTo(millis))
+        .satisfies((body) -> assertThat(body.epochMilli()).isEqualTo(millis))
         .isNotNull();
   }
 
@@ -77,7 +77,7 @@ final class ControlledActorClockEndpointTest {
         .asInstanceOf(responseType)
         // This can be flaky, but only if the test thread is sleeping for more than the margin of
         // error.
-        .satisfies((body) -> assertThat(body.instant).isBetween(offsetMinimum, offsetMaximum));
+        .satisfies((body) -> assertThat(body.instant()).isBetween(offsetMinimum, offsetMaximum));
   }
 
   @Test
@@ -86,13 +86,13 @@ final class ControlledActorClockEndpointTest {
     final var offset = 10000L;
     final var firstResponse = endpoint.modify("add", null, offset);
     assertThat(firstResponse.getBody()).isNotNull();
-    final var firstMillis = ((Response) firstResponse.getBody()).epochMilli;
+    final var firstMillis = ((Response) firstResponse.getBody()).epochMilli();
 
     // when
     Thread.sleep(100);
     final var secondResponse = endpoint.getCurrentClock();
     assertThat(secondResponse.getBody()).isNotNull();
-    final var secondMillis = secondResponse.getBody().epochMilli;
+    final var secondMillis = secondResponse.getBody().epochMilli();
 
     // then
     assertThat(firstMillis).isLessThan(secondMillis);
@@ -107,7 +107,7 @@ final class ControlledActorClockEndpointTest {
     assertThat(firstResponse.getBody())
         .isNotNull()
         .asInstanceOf(responseType)
-        .satisfies((body) -> assertThat(body.epochMilli).isEqualTo(millis));
+        .satisfies((body) -> assertThat(body.epochMilli()).isEqualTo(millis));
 
     // when
     Thread.sleep(100);
@@ -115,7 +115,7 @@ final class ControlledActorClockEndpointTest {
 
     // then
     assertThat(secondResponse.getBody()).isNotNull();
-    assertThat(secondResponse.getBody().epochMilli).isEqualTo(millis);
+    assertThat(secondResponse.getBody().epochMilli()).isEqualTo(millis);
   }
 
   @Test
@@ -123,8 +123,8 @@ final class ControlledActorClockEndpointTest {
     // when
     final var response = endpoint.getCurrentClock();
     assertThat(response.getBody()).isNotNull();
-    final var millis = response.getBody().epochMilli;
-    final var instant = response.getBody().instant;
+    final var millis = response.getBody().epochMilli();
+    final var instant = response.getBody().instant();
 
     // then
     assertThat(Instant.ofEpochMilli(millis)).isEqualTo(instant);

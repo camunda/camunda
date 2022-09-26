@@ -32,7 +32,7 @@ final class BrokerClientComponent {
     this.actorScheduler = actorScheduler;
   }
 
-  @Bean
+  @Bean(destroyMethod = "close")
   BrokerClient brokerClient() {
     return new BrokerClientImpl(
         config.getCluster().getRequestTimeout(),

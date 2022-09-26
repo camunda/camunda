@@ -30,4 +30,10 @@ public class SnapshotException extends RuntimeException {
       super(message);
     }
   }
+
+  public static class CorruptedSnapshotException extends SnapshotException {
+    public CorruptedSnapshotException(final String message) {
+      super(message);
+    }
+  }
 }

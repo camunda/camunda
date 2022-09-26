@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.CheckpointListener;
+import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
@@ -26,13 +27,17 @@ public final class CheckpointCreateProcessor {
 
   private final Set<CheckpointListener> listeners;
 
+  private final CheckpointMetrics metrics;
+
   public CheckpointCreateProcessor(
       final CheckpointState checkpointState,
       final BackupManager backupManager,
-      final Set<CheckpointListener> listeners) {
+      final Set<CheckpointListener> listeners,
+      final CheckpointMetrics metrics) {
     this.checkpointState = checkpointState;
     this.backupManager = backupManager;
     this.listeners = listeners;
+    this.metrics = metrics;
   }
 
   public ProcessingResult process(
@@ -49,6 +54,8 @@ public final class CheckpointCreateProcessor {
       // Notify listeners immediately
       listeners.forEach(l -> l.onNewCheckpointCreated(checkpointId));
 
+      metrics.created(checkpointId, checkpointPosition);
+
       final var followupRecord =
           new CheckpointRecord()
               .setCheckpointId(checkpointId)
@@ -56,6 +63,7 @@ public final class CheckpointCreateProcessor {
       return createFollowUpAndResponse(
           record, CheckpointIntent.CREATED, followupRecord, resultBuilder);
     } else {
+      metrics.ignored();
       // A checkpoint already exists. Hence ignore the command. Note:- this is not an error, so not
       // considered as a "rejection"
       return createFollowUpAndResponse(

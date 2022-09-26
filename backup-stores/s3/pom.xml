@@ -118,18 +118,10 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- Sad workaround for https://github.com/testcontainers/testcontainers-java/issues/4279 -->
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-core</artifactId>
-      <version>1.12.305</version>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
   </dependencies>
 

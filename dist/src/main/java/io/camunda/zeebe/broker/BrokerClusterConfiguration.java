@@ -24,7 +24,7 @@ public final class BrokerClusterConfiguration {
     return configFactory.mapConfiguration(config);
   }
 
-  @Bean(destroyMethod = "") // disable automatically calling close as we will take care of this
+  @Bean(destroyMethod = "stop")
   public AtomixCluster atomixCluster(final ClusterConfig config) {
     return new AtomixCluster(config, Version.from(VersionUtil.getVersion()));
   }

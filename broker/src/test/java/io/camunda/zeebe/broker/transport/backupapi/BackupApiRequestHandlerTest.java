@@ -64,7 +64,7 @@ final class BackupApiRequestHandlerTest {
 
   @BeforeEach
   void setup() {
-    handler = new BackupApiRequestHandler(transport, logStreamRecordWriter, backupManager, 1);
+    handler = new BackupApiRequestHandler(transport, logStreamRecordWriter, backupManager, 1, true);
     scheduler.submitActor(handler);
     scheduler.workUntilDone();
 

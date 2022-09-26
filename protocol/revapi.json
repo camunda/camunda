@@ -31,6 +31,11 @@
           "justification": "Ignore Enum order for ValueType as ordinal() is not used",
           "code": "java.field.enumConstantOrderChanged",
           "classQualifiedName": "io.camunda.zeebe.protocol.record.ValueType"
+        },
+        {
+          "justification": "Ignore Enum order for RejectionType as ordinal() is not used",
+          "code": "java.field.enumConstantOrderChanged",
+          "match": "io.camunda.zeebe.protocol.record.RejectionType"
         }
       ]
     }

@@ -5,11 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.gateway.admin.backup;
+package io.camunda.zeebe.gateway.admin.exporting;
 
-public class IncompleteTopologyException extends RuntimeException {
+import java.util.concurrent.CompletableFuture;
 
-  public IncompleteTopologyException(final String message) {
-    super(message);
-  }
+public interface ExportingControlApi {
+  CompletableFuture<Void> pauseExporting();
+
+  CompletableFuture<Void> resumeExporting();
 }
