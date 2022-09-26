@@ -393,6 +393,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - integration-tests
+      - qa-update-tests
       - unit-tests
       - smoke-tests
       - property-tests
@@ -413,6 +414,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - integration-tests
+      - qa-update-tests
       - unit-tests
       - smoke-tests
       - property-tests
