@@ -5,15 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {RequestHandler, rest} from 'msw';
+import {RequestHandler} from 'msw';
 
-const handlers: RequestHandler[] = [
-  rest.post(
-    '/api/process-instances/:processInstanceId/modify',
-    async (_, res, ctx) => {
-      return res(ctx.delay(1000), ctx.json({}));
-    }
-  ),
-];
+const handlers: RequestHandler[] = [];
 
 export {handlers};
