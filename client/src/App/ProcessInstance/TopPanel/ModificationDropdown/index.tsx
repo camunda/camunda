@@ -21,6 +21,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
+import {isMultiInstance} from 'modules/bpmn-js/isMultiInstance';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -38,8 +39,20 @@ const ModificationDropdown: React.FC<Props> = observer(
       return null;
     }
 
+    const element = processInstanceDetailsDiagramStore.getFlowNode(flowNodeId);
+
+    const canSelectedFlowNodeBeModified =
+      !processInstanceDetailsDiagramStore.nonModifiableFlowNodes.includes(
+        flowNodeId
+      ) &&
+      !(
+        isMultiInstance(element) &&
+        !flowNodeSelectionStore.state.selection?.isMultiInstance
+      );
+
     return (
       <Popover
+        key={flowNodeSelectionStore.state.selection?.flowNodeInstanceId}
         referenceElement={selectedFlowNodeRef}
         offsetOptions={[10]}
         flipOptions={[
@@ -52,90 +65,93 @@ const ModificationDropdown: React.FC<Props> = observer(
       >
         <Title>Flow Node Modifications</Title>
         <Options>
-          {processInstanceDetailsDiagramStore.appendableFlowNodes.includes(
-            flowNodeId
-          ) && (
-            <Option
-              title="Add single flow node instance"
-              onClick={() => {
-                modificationsStore.addModification({
-                  type: 'token',
-                  payload: {
-                    operation: 'ADD_TOKEN',
-                    scopeId: generateUniqueID(),
-                    flowNode: {
-                      id: flowNodeId,
-                      name: processInstanceDetailsDiagramStore.getFlowNodeName(
-                        flowNodeId
-                      ),
-                    },
-                    affectedTokenCount: 1,
-                    visibleAffectedTokenCount: 1,
-                    parentScopeIds:
-                      modificationsStore.generateParentScopeIds(flowNodeId),
-                  },
-                });
-                flowNodeSelectionStore.clearSelection();
-              }}
-            >
-              <AddIcon />
-              Add
-            </Option>
-          )}
-          {processInstanceDetailsDiagramStore.cancellableFlowNodes.includes(
-            flowNodeId
-          ) &&
-            !modificationsStore.isCancelModificationAppliedOnFlowNode(
-              flowNodeId
-            ) && (
-              <>
+          {!canSelectedFlowNodeBeModified ? (
+            <Unsupported>Unsupported flow node type</Unsupported>
+          ) : (
+            <>
+              {processInstanceDetailsDiagramStore.appendableFlowNodes.includes(
+                flowNodeId
+              ) && (
                 <Option
-                  title="Cancel all running flow node instances in this flow node"
+                  title="Add single flow node instance"
                   onClick={() => {
                     modificationsStore.addModification({
                       type: 'token',
                       payload: {
-                        operation: 'CANCEL_TOKEN',
+                        operation: 'ADD_TOKEN',
+                        scopeId: generateUniqueID(),
                         flowNode: {
                           id: flowNodeId,
                           name: processInstanceDetailsDiagramStore.getFlowNodeName(
                             flowNodeId
                           ),
                         },
-                        affectedTokenCount:
-                          processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-                            flowNodeId
-                          ),
-                        visibleAffectedTokenCount:
-                          processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
-                            flowNodeId
-                          ),
+                        affectedTokenCount: 1,
+                        visibleAffectedTokenCount: 1,
+                        parentScopeIds:
+                          modificationsStore.generateParentScopeIds(flowNodeId),
                       },
                     });
                     flowNodeSelectionStore.clearSelection();
                   }}
                 >
-                  <CancelIcon />
-                  Cancel
+                  <AddIcon />
+                  Add
                 </Option>
-                {processInstanceDetailsDiagramStore.getFlowNode(flowNodeId)
-                  ?.$type !== 'bpmn:SubProcess' && (
-                  <Option
-                    title="Move all running instances in this flow node to another target"
-                    onClick={() => {
-                      modificationsStore.startMovingToken(flowNodeId);
-                      flowNodeSelectionStore.clearSelection();
-                    }}
-                  >
-                    <MoveIcon />
-                    Move
-                  </Option>
+              )}
+              {processInstanceDetailsDiagramStore.cancellableFlowNodes.includes(
+                flowNodeId
+              ) &&
+                !modificationsStore.isCancelModificationAppliedOnFlowNode(
+                  flowNodeId
+                ) && (
+                  <>
+                    <Option
+                      title="Cancel all running flow node instances in this flow node"
+                      onClick={() => {
+                        modificationsStore.addModification({
+                          type: 'token',
+                          payload: {
+                            operation: 'CANCEL_TOKEN',
+                            flowNode: {
+                              id: flowNodeId,
+                              name: processInstanceDetailsDiagramStore.getFlowNodeName(
+                                flowNodeId
+                              ),
+                            },
+                            affectedTokenCount:
+                              processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
+                                flowNodeId
+                              ),
+                            visibleAffectedTokenCount:
+                              processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
+                                flowNodeId
+                              ),
+                          },
+                        });
+                        flowNodeSelectionStore.clearSelection();
+                      }}
+                    >
+                      <CancelIcon />
+                      Cancel
+                    </Option>
+                    {processInstanceDetailsDiagramStore.getFlowNode(flowNodeId)
+                      ?.$type !== 'bpmn:SubProcess' && (
+                      <Option
+                        title="Move all running instances in this flow node to another target"
+                        onClick={() => {
+                          modificationsStore.startMovingToken(flowNodeId);
+                          flowNodeSelectionStore.clearSelection();
+                        }}
+                      >
+                        <MoveIcon />
+                        Move
+                      </Option>
+                    )}
+                  </>
                 )}
-              </>
-            )}
-          {processInstanceDetailsDiagramStore.nonModifiableFlowNodes.includes(
-            flowNodeId
-          ) && <Unsupported>Unsupported flow node type</Unsupported>}
+            </>
+          )}
         </Options>
       </Popover>
     );

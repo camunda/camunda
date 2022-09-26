@@ -693,6 +693,10 @@ describe('Instance', () => {
       mockServer.use(
         rest.get('/api/process-instances/:id', (_, res, ctx) =>
           res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
+        ),
+        rest.post(
+          '/api/process-instances/:instanceId/flow-node-metadata',
+          (_, res, ctx) => res.once(ctx.json(undefined))
         )
       );
 
@@ -729,7 +733,7 @@ describe('Instance', () => {
       expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
 
       flowNodeSelectionStore.setSelection({
-        flowNodeId: 'test',
+        flowNodeId: 'taskD',
         flowNodeInstanceId: 'test-id',
       });
 

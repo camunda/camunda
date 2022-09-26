@@ -5,13 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import {BpmnElement} from 'bpmn-js/lib/NavigatedViewer';
+import {BpmnElement, BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
-function isMultiInstance(element: BpmnElement) {
-  return (
-    element.businessObject.loopCharacteristics?.$type ===
-    'bpmn:MultiInstanceLoopCharacteristics'
-  );
+function isMultiInstance(element: BpmnElement | BusinessObject) {
+  function isBpmnElement(
+    element: BpmnElement | BusinessObject
+  ): element is BpmnElement {
+    return 'businessObject' in element;
+  }
+
+  return isBpmnElement(element)
+    ? element.businessObject.loopCharacteristics?.$type ===
+        'bpmn:MultiInstanceLoopCharacteristics'
+    : element.loopCharacteristics?.$type ===
+        'bpmn:MultiInstanceLoopCharacteristics';
 }
 
 export {isMultiInstance};

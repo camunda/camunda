@@ -89,6 +89,7 @@ describe('Modification Dropdown', () => {
     processInstanceDetailsStore.reset();
     modificationsStore.reset();
     flowNodeStatesStore.reset();
+    processInstanceDetailsDiagramStore.reset();
   });
 
   it('should not render dropdown when no flow node is selected', async () => {
@@ -332,11 +333,21 @@ describe('Modification Dropdown', () => {
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'multi-instance-subprocess',
+      isMultiInstance: true,
     });
 
     expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
     expect(await screen.findByText(/Add/)).toBeInTheDocument();
     expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
     expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'multi-instance-subprocess',
+      isMultiInstance: false,
+    });
+
+    expect(
+      await screen.findByText(/Unsupported flow node type/)
+    ).toBeInTheDocument();
   });
 });
