@@ -21,32 +21,31 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 final class TestRestorableBackupStore implements BackupStore {
 
-  final Map<BackupIdentifier, Backup> backups = new HashMap<>();
-  CompletableFuture<Backup> backupFuture;
+  final Map<BackupIdentifier, Backup> backups = new ConcurrentHashMap<>();
+  final Map<BackupIdentifier, CompletableFuture<Backup>> waiters = new ConcurrentHashMap<>();
 
-  CompletableFuture<Backup> getBackupFuture() {
-    return backupFuture;
-  }
-
-  void setBackupFuture(final CompletableFuture<Backup> backupFuture) {
-    this.backupFuture = backupFuture;
+  /**
+   * Must be called before a backup is saved or marked as failed.
+   *
+   * @return A future that completes with the backup that was taken.
+   */
+  CompletableFuture<Backup> waitForBackup(final BackupIdentifier id) {
+    return waiters.computeIfAbsent(id, (ignored) -> new CompletableFuture<>());
   }
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
     backups.put(backup.id(), backup);
-    if (backupFuture != null) {
-      backupFuture.complete(backup);
-    }
+    Optional.ofNullable(waiters.remove(backup.id())).ifPresent(waiter -> waiter.complete(backup));
     return CompletableFuture.completedFuture(null);
   }
 
@@ -113,14 +112,19 @@ final class TestRestorableBackupStore implements BackupStore {
   @Override
   public CompletableFuture<BackupStatusCode> markFailed(
       final BackupIdentifier id, final String failureReason) {
-    backupFuture.completeExceptionally(
-        new RuntimeException(
-            "Backup was explicitly marked as failed: %s".formatted(failureReason)));
+    Optional.ofNullable(waiters.remove(id))
+        .ifPresent(
+            waiter ->
+                waiter.completeExceptionally(
+                    new RuntimeException("Backup failed: %s".formatted(failureReason))));
     return null;
   }
 
   @Override
   public CompletableFuture<Void> closeAsync() {
+    waiters
+        .values()
+        .forEach(waiter -> waiter.completeExceptionally(new RuntimeException("Store was closed")));
     return null;
   }
 
