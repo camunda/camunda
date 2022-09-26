@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.api;
 
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 /** A store where the backup is stored * */
@@ -18,6 +19,12 @@ public interface BackupStore {
 
   /** Returns the status of the backup */
   CompletableFuture<BackupStatus> getStatus(BackupIdentifier id);
+
+  /**
+   * Uses the given wildcard to list all backups matching this wildcard. The result may be
+   * incomplete.
+   */
+  CompletableFuture<Collection<BackupStatus>> list(BackupIdentifierWildcard wildcard);
 
   /** Delete all state related to the backup from the storage */
   CompletableFuture<Void> delete(BackupIdentifier id);

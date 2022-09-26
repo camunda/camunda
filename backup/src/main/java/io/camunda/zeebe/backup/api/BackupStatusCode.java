@@ -7,9 +7,16 @@
  */
 package io.camunda.zeebe.backup.api;
 
+import java.util.Comparator;
+
 public enum BackupStatusCode {
+  // WARNING! Must be ordered from "worst" to "best" for comparator below!
   DOES_NOT_EXIST,
-  IN_PROGRESS,
-  COMPLETED,
   FAILED,
+
+  IN_PROGRESS,
+  COMPLETED;
+
+  public static final Comparator<BackupStatus> BY_STATUS =
+      Comparator.comparing(BackupStatus::statusCode);
 }
