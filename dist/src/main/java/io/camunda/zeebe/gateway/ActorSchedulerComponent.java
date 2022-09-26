@@ -33,7 +33,7 @@ final class ActorSchedulerComponent {
         .setCpuBoundActorThreadCount(config.getThreads().getManagementThreads())
         .setIoBoundActorThreadCount(0)
         .setSchedulerName("gateway-scheduler")
-        .setActorClock(clockConfiguration.getClock())
+        .setActorClock(clockConfiguration.getClock().orElse(null))
         .build();
   }
 }
