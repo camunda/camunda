@@ -40,18 +40,18 @@ public final class InclusiveGatewayTest {
           .inclusiveGateway("inclusive")
           .sequenceFlowId("s1")
           .conditionExpression("= contains(str,\"a\")")
-          .serviceTask("task1", b -> b.zeebeJobType("type1"))
+          .manualTask("task1")
           .endEvent("end1")
           .moveToNode("inclusive")
           .sequenceFlowId("s2")
           .conditionExpression("= contains(str,\"b\")")
-          .serviceTask("task2", b -> b.zeebeJobType("type2"))
+          .manualTask("task2")
           .endEvent("end2")
           .moveToLastInclusiveGateway()
           .defaultFlow()
           .sequenceFlowId("s3")
           .conditionExpression("= contains(str,\"c\")")
-          .serviceTask("task3", b -> b.zeebeJobType("type3"))
+          .manualTask("task3")
           .endEvent("end3")
           .done();
 
@@ -354,130 +354,114 @@ public final class InclusiveGatewayTest {
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("str", "a,b,c").create();
 
     // then
-    List<Record<ProcessInstanceRecordValue>> taskEvents =
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey1)
-            .limitToProcessInstanceCompleted()
-            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .filter(e -> isServiceTaskInProcess(e.getValue().getElementId(), INCLUSIVE_PROCESS))
-            .asList();
-
-    assertThat(taskEvents).hasSize(2);
-    assertThat(taskEvents)
-        .extracting(e -> e.getValue().getElementId())
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey1)
+                .limitToProcessInstanceCompleted()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementType(BpmnElementType.MANUAL_TASK))
+        .extracting(record -> record.getValue().getElementId())
         .containsExactlyInAnyOrder("task1", "task2");
-    assertThat(taskEvents.get(0).getKey()).isNotEqualTo(taskEvents.get(1).getKey());
 
     // when
     final long processInstanceKey2 =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("str", "a,c").create();
 
     // then
-    taskEvents =
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey2)
-            .limitToProcessInstanceCompleted()
-            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .filter(e -> isServiceTaskInProcess(e.getValue().getElementId(), INCLUSIVE_PROCESS))
-            .asList();
-
-    assertThat(taskEvents).hasSize(1);
-    assertThat(taskEvents).extracting(e -> e.getValue().getElementId()).containsExactly("task1");
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey2)
+                .limitToProcessInstanceCompleted()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementType(BpmnElementType.MANUAL_TASK))
+        .extracting(record -> record.getValue().getElementId())
+        .containsExactly("task1");
 
     // when
     final long processInstanceKey3 =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("str", "d").create();
 
     // then
-    taskEvents =
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey3)
-            .limitToProcessInstanceCompleted()
-            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .filter(e -> isServiceTaskInProcess(e.getValue().getElementId(), INCLUSIVE_PROCESS))
-            .asList();
-
-    assertThat(taskEvents).hasSize(1);
-    assertThat(taskEvents).extracting(e -> e.getValue().getElementId()).containsExactly("task3");
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey3)
+                .limitToProcessInstanceCompleted()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementType(BpmnElementType.MANUAL_TASK))
+        .extracting(record -> record.getValue().getElementId())
+        .containsExactly("task3");
   }
 
   @Test
   public void shouldCompleteScopeWhenForkingPathsCompleted() {
     // given
     ENGINE.deployment().withXmlResource(INCLUSIVE_PROCESS).deploy();
-    final long processInstanceKey1 =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("str", "a,b,c").create();
-    ENGINE.job().ofInstance(processInstanceKey1).withType("type1").complete();
 
     // when
-    ENGINE.job().ofInstance(processInstanceKey1).withType("type2").complete();
+    final long processInstanceKey1 =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("str", "a,b,c").create();
 
     // then
-    List<Record<ProcessInstanceRecordValue>> completedEvents =
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey1)
-            .limitToProcessInstanceCompleted()
-            .withElementType(BpmnElementType.END_EVENT)
-            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-            .asList();
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey1)
+                .limitToProcessInstanceCompleted()
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withElementType(BpmnElementType.END_EVENT))
+        .extracting(record -> record.getValue().getElementId())
+        .containsExactlyInAnyOrder("end1", "end2");
 
-    assertThat(completedEvents)
-        .extracting(e -> e.getValue().getElementId())
-        .containsExactly("end1", "end2");
-
-    RecordingExporter.processInstanceRecords()
-        .withElementId(PROCESS_ID)
-        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-        .getFirst();
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey1)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .describedAs("Expect to complete the process instance")
+        .isTrue();
 
     // when
     final long processInstanceKey2 =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("str", "a,b").create();
-    ENGINE.job().ofInstance(processInstanceKey2).withType("type1").complete();
-
-    ENGINE.job().ofInstance(processInstanceKey2).withType("type2").complete();
 
     // then
-    completedEvents =
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey2)
-            .limitToProcessInstanceCompleted()
-            .withElementType(BpmnElementType.END_EVENT)
-            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-            .asList();
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey2)
+                .limitToProcessInstanceCompleted()
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withElementType(BpmnElementType.END_EVENT))
+        .extracting(record -> record.getValue().getElementId())
+        .containsExactlyInAnyOrder("end1", "end2");
 
-    assertThat(completedEvents)
-        .extracting(e -> e.getValue().getElementId())
-        .containsExactly("end1", "end2");
-
-    RecordingExporter.processInstanceRecords()
-        .withElementId(PROCESS_ID)
-        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-        .getFirst();
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey2)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .describedAs("Expect to complete the process instance")
+        .isTrue();
 
     // when
     final long processInstanceKey3 =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("str", "d").create();
 
-    ENGINE.job().ofInstance(processInstanceKey3).withType("type3").complete();
-
     // then
-    completedEvents =
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey3)
-            .limitToProcessInstanceCompleted()
-            .withElementType(BpmnElementType.END_EVENT)
-            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-            .asList();
-
-    assertThat(completedEvents)
-        .extracting(e -> e.getValue().getElementId())
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey3)
+                .limitToProcessInstanceCompleted()
+                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withElementType(BpmnElementType.END_EVENT))
+        .extracting(record -> record.getValue().getElementId())
         .containsExactly("end3");
 
-    RecordingExporter.processInstanceRecords()
-        .withElementId(PROCESS_ID)
-        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-        .getFirst();
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey3)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .describedAs("Expect to complete the process instance")
+        .isTrue();
   }
 
   @Test
