@@ -110,6 +110,7 @@ public final class SubProcessProcessor
       final BpmnElementContext subProcessContext,
       final BpmnElementContext childContext) {
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(subProcessContext);
+    final var subProcessInstance = stateBehavior.getElementInstance(subProcessContext);
 
     if (stateBehavior.isInterrupted(subProcessContext)) {
       // an interrupting event subprocess was triggered
@@ -139,9 +140,17 @@ public final class SubProcessProcessor
                     terminated);
               },
               () -> {
-                final var terminated =
-                    stateTransitionBehavior.transitionToTerminated(subProcessContext);
-                stateTransitionBehavior.onElementTerminated(element, terminated);
+                if (subProcessInstance.isTerminating()) {
+                  // the subprocess was terminated by its flow scope
+                  final var terminated =
+                      stateTransitionBehavior.transitionToTerminated(subProcessContext);
+                  stateTransitionBehavior.onElementTerminated(element, terminated);
+
+                } else if (subProcessInstance.isActive()) {
+                  // the child element instances were terminated by a terminate end event in the
+                  // subprocess
+                  stateTransitionBehavior.completeElement(subProcessContext);
+                }
               });
     }
   }

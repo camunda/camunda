@@ -148,10 +148,19 @@ public final class ProcessProcessor
                       flowScopeContext));
 
     } else if (stateBehavior.canBeTerminated(childContext)) {
-      transitionTo(
-          element,
-          flowScopeContext,
-          context -> Either.right(stateTransitionBehavior.transitionToTerminated(context)));
+
+      final var flowScopeInstance = stateBehavior.getElementInstance(flowScopeContext);
+      if (flowScopeInstance.isTerminating()) {
+        // the process instance was canceled, or interrupted by a parent process instance
+        transitionTo(
+            element,
+            flowScopeContext,
+            context -> Either.right(stateTransitionBehavior.transitionToTerminated(context)));
+
+      } else if (flowScopeInstance.isActive()) {
+        // the child element instances were terminated by a terminate end event in the process
+        stateTransitionBehavior.completeElement(flowScopeContext);
+      }
     }
   }
 

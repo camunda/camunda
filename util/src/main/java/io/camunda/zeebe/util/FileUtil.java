@@ -23,6 +23,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
+import java.util.stream.Stream;
 import org.agrona.SystemUtil;
 import org.slf4j.Logger;
 
@@ -123,6 +124,19 @@ public final class FileUtil {
   public static void copySnapshot(final Path snapshotDirectory, final Path runtimeDirectory)
       throws Exception {
     Files.walkFileTree(snapshotDirectory, new SnapshotCopier(snapshotDirectory, runtimeDirectory));
+  }
+
+  /**
+   * Return true if directory does not exists, or if it is empty. Returns false if the path is not a
+   * directory
+   */
+  public static boolean isEmpty(final Path path) throws IOException {
+    if (Files.isDirectory(path)) {
+      try (final Stream<Path> entries = Files.list(path)) {
+        return entries.findFirst().isEmpty();
+      }
+    }
+    return !Files.exists(path);
   }
 
   public static final class SnapshotCopier extends SimpleFileVisitor<Path> {

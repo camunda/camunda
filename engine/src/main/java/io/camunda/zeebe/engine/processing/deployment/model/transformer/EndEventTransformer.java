@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.Transf
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.TerminateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 
 public final class EndEventTransformer implements ModelElementTransformer<EndEvent> {
@@ -49,6 +50,9 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
     if (eventDefinition instanceof ErrorEventDefinition) {
       transformErrorEventDefinition(
           context, executableElement, (ErrorEventDefinition) eventDefinition);
+
+    } else if (eventDefinition instanceof TerminateEventDefinition) {
+      executableElement.setTerminateEndEvent(true);
     }
   }
 

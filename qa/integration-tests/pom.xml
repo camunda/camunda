@@ -393,12 +393,6 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-backup</artifactId>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
 
   <profiles>

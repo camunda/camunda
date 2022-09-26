@@ -90,4 +90,31 @@ final class FileUtilTest {
     // then
     assertThat(Files.list(target)).contains(target.resolve(snapshotFile));
   }
+
+  @Test
+  void isEmptyReturnsTrueWhenDirectoryEmpty() throws IOException {
+    // given
+    final Path emptyDirectory = Files.createDirectory(tmpDir.resolve("src"));
+
+    // when - then
+    assertThat(FileUtil.isEmpty(emptyDirectory)).isTrue();
+  }
+
+  @Test
+  void isEmptyReturnsTrueWhenDirectoryDoesNotExist() throws IOException {
+    // given
+    final Path notExistingDirectory = tmpDir.resolve("src");
+
+    // when - then
+    assertThat(FileUtil.isEmpty(notExistingDirectory)).isTrue();
+  }
+
+  @Test
+  void isEmptyReturnsFalseWhenPathIsNotDirectory() throws IOException {
+    // given
+    final Path regularFile = Files.createFile(tmpDir.resolve("file"));
+
+    // when - then
+    assertThat(FileUtil.isEmpty(regularFile)).isFalse();
+  }
 }

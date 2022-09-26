@@ -175,6 +175,11 @@
       <artifactId>agrona</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+
     <!-- /end -->
 
     <dependency>
@@ -248,6 +253,10 @@
               <id>gateway</id>
               <mainClass>io.camunda.zeebe.gateway.StandaloneGateway</mainClass>
             </program>
+            <program>
+              <id>restore</id>
+              <mainClass>io.camunda.zeebe.restore.RestoreApp</mainClass>
+            </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
           <repositoryName>lib</repositoryName>
@@ -313,6 +322,7 @@
           <ignoredNonTestScopedDependencies>
             <ignoredNonTestScopedDependency>org.agrona:agrona</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.netty:netty-handler</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>io.camunda:zeebe-protocol</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
