@@ -70,6 +70,6 @@ public class ZeebeImportIT extends TasklistZeebeIntegrationTest {
 
   protected void processAllRecordsAndWait(TestCheck testCheck, Object... arguments) {
     elasticsearchTestRule.processRecordsAndWaitFor(
-        recordsReaderHolder.getActiveRecordsReaders(), testCheck, null, arguments);
+        recordsReaderHolder.getAllRecordsReaders(), testCheck, null, arguments);
   }
 }

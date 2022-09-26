@@ -31,7 +31,7 @@ public class ImportConfig {
   @Bean("recordsReaderThreadPoolExecutor")
   public ThreadPoolTaskScheduler getRecordsReaderTaskExecutor() {
     final var executor = new ThreadPoolTaskScheduler();
-    executor.setPoolSize(1);
+    executor.setPoolSize(tasklistProperties.getImporter().getReaderThreadsCount());
     executor.setThreadNamePrefix("records_reader_");
     executor.initialize();
     return executor;

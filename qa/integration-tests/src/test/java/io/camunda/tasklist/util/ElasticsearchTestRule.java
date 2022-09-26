@@ -133,13 +133,13 @@ public class ElasticsearchTestRule extends TestWatcher {
 
   public void processAllRecordsAndWait(TestCheck testCheck, Object... arguments) {
     processRecordsAndWaitFor(
-        recordsReaderHolder.getActiveRecordsReaders(), testCheck, null, arguments);
+        recordsReaderHolder.getAllRecordsReaders(), testCheck, null, arguments);
   }
 
   public void processAllRecordsAndWait(
       TestCheck testCheck, Supplier<Object> supplier, Object... arguments) {
     processRecordsAndWaitFor(
-        recordsReaderHolder.getActiveRecordsReaders(), testCheck, supplier, arguments);
+        recordsReaderHolder.getAllRecordsReaders(), testCheck, supplier, arguments);
   }
 
   public void processRecordsWithTypeAndWait(

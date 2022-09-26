@@ -20,7 +20,6 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.ImportPositionIndex;
 import io.camunda.tasklist.zeebe.ImportValueType;
-import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -57,7 +56,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Scope(SCOPE_PROTOTYPE)
-public class RecordsReader {
+public class RecordsReader implements Runnable {
 
   public static final String PARTITION_ID_FIELD_NAME = ImportPositionIndex.PARTITION_ID;
   private static final Logger LOGGER = LoggerFactory.getLogger(RecordsReader.class);
@@ -72,9 +71,6 @@ public class RecordsReader {
 
   /** The job that we are currently busy with. */
   private Callable<Boolean> active;
-
-  /** Time, when the reader must be activated again after backoff. */
-  private OffsetDateTime activateDateTime = OffsetDateTime.now().minusMinutes(1L);
 
   private ImportJob pendingImportJob;
   private ReentrantLock schedulingImportJobLock;
@@ -107,23 +103,62 @@ public class RecordsReader {
     this.schedulingImportJobLock = new ReentrantLock();
   }
 
-  public int readAndScheduleNextBatch() throws IOException {
+  @Override
+  public void run() {
+    readAndScheduleNextBatch();
+  }
+
+  public int readAndScheduleNextBatch() {
+    return readAndScheduleNextBatch(true);
+  }
+
+  public int readAndScheduleNextBatch(boolean autoContinue) {
+    final var readerBackoff = tasklistProperties.getImporter().getReaderBackoff();
     try {
-      final ImportPositionEntity latestPosition =
+      final var latestPosition =
           importPositionHolder.getLatestScheduledPosition(
               importValueType.getAliasTemplate(), partitionId);
-      final ImportBatch importBatch = readNextBatch(latestPosition.getPosition(), null);
+      final var importBatch = readNextBatch(latestPosition.getPosition(), null);
+      Integer nextRunDelay = null;
       if (importBatch.getHits().size() == 0) {
-        doBackoff();
+        nextRunDelay = readerBackoff;
       } else {
-        final var job = createImportJob(latestPosition, importBatch);
-        scheduleImportJob(job);
+        final var importJob = createImportJob(latestPosition, importBatch);
+        if (!scheduleImportJob(importJob, !autoContinue)) {
+          // didn't succeed to schedule import job ->
+          // reader gets scheduled once the queue has capacity
+          // if autoContinue == false, the reader is controlled
+          // outside the readers thread pool, in that case, the
+          // one who is controlling the reader will/must trigger
+          // another round to read the next batch.
+          return 0;
+        }
+      }
+      if (autoContinue) {
+        rescheduleReader(nextRunDelay);
       }
       return importBatch.getHits().size();
     } catch (NoSuchIndexException ex) {
       // if no index found, we back off current reader
-      doBackoff();
-      return 0;
+      if (autoContinue) {
+        rescheduleReader(readerBackoff);
+      }
+    } catch (Exception ex) {
+      LOGGER.error(ex.getMessage(), ex);
+      if (autoContinue) {
+        rescheduleReader(null);
+      }
+    }
+
+    return 0;
+  }
+
+  private void rescheduleReader(final Integer readerDelay) {
+    if (readerDelay != null) {
+      readersExecutor.schedule(
+          this, OffsetDateTime.now().plus(readerDelay, ChronoUnit.MILLIS).toInstant());
+    } else {
+      readersExecutor.submit(this);
     }
   }
 
@@ -206,32 +241,17 @@ public class RecordsReader {
     return metrics.getTimer(Metrics.TIMER_NAME_IMPORT_QUERY).recordCallable(callable);
   }
 
-  public boolean isActive() {
-    return activateDateTime.isBefore(OffsetDateTime.now());
-  }
-
-  /** Backoff for this specific reader. */
-  public void doBackoff() {
-    final int readerBackoff = tasklistProperties.getImporter().getReaderBackoff();
-    if (readerBackoff > 0) {
-      this.activateDateTime = OffsetDateTime.now().plus(readerBackoff, ChronoUnit.MILLIS);
-    }
-  }
-
   private ImportJob createImportJob(
       final ImportPositionEntity latestPosition, final ImportBatch importBatch) {
     return beanFactory.getBean(ImportJob.class, importBatch, latestPosition);
   }
 
-  private void scheduleImportJob(final ImportJob job) {
-    // if loading data on startup is disabled, then someone outside
-    // the zeebe importer scheduler is controlling the readers
-    // in that case, pending jobs are ignored and the "controller"
-    // needs to do another round of importing
-    final var skipPendingJob = !tasklistProperties.getImporter().isStartLoadingDataOnStartup();
+  private boolean scheduleImportJob(final ImportJob job, final boolean skipPendingJob) {
     if (tryToScheduleImportJob(job, skipPendingJob)) {
       importJobScheduledSucceeded(job);
+      return true;
     }
+    return false;
   }
 
   private void importJobScheduledSucceeded(final ImportJob job) {
@@ -257,14 +277,9 @@ public class RecordsReader {
             retries = retries - 1;
           }
 
-          if (scheduled) {
-            pendingImportJob = null;
-            if (active == null) {
-              executeNext();
-            }
-          } else if (!skipPendingJob) {
-            pendingImportJob = importJob;
-            activateDateTime = OffsetDateTime.MAX;
+          pendingImportJob = skipPendingJob || scheduled ? null : importJob;
+          if (scheduled && active == null) {
+            executeNext();
           }
 
           return scheduled;
@@ -321,7 +336,7 @@ public class RecordsReader {
 
   private void reschedulePendingImportJob() {
     try {
-      scheduleImportJob(pendingImportJob);
+      scheduleImportJob(pendingImportJob, false);
     } finally {
       // whatever happened (exception or not),
       // reset state and schedule reader so that
@@ -330,8 +345,8 @@ public class RecordsReader {
       withReschedulingImportJobLock(
           () -> {
             pendingImportJob = null;
-            activateDateTime = OffsetDateTime.now().minusMinutes(1L);
             completeRescheduling();
+            rescheduleReader(null);
           });
     }
   }

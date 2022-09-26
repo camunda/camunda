@@ -7,8 +7,6 @@
 package io.camunda.tasklist.zeebeimport;
 
 import io.camunda.tasklist.property.TasklistProperties;
-import java.io.IOException;
-import java.time.OffsetDateTime;
 import java.util.Collection;
 import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -38,43 +36,29 @@ public class ZeebeImporter {
   @PostConstruct
   public void startImportingData() {
     if (tasklistProperties.getImporter().isStartLoadingDataOnStartup()) {
-      LOGGER.info("INIT: Start importing data...");
-      readersExecutor.submit(this::run);
+      scheduleReaders();
     }
   }
 
-  public void run() {
-    try {
-      final int countRecords = performOneRoundOfImport();
-      if (countRecords == 0) {
-        doBackoff();
-      } else {
-        readersExecutor.submit(this::run);
-      }
-    } catch (Exception ex) {
-      // retry
-      LOGGER.error("Error occurred while importing Zeebe data. Will be retried.", ex);
-      doBackoff();
-    }
+  public void scheduleReaders() {
+    LOGGER.info("INIT: Start importing data...");
+    recordsReaderHolder.getAllRecordsReaders().stream()
+        .forEach(recordsReader -> readersExecutor.submit(recordsReader));
   }
 
-  public int performOneRoundOfImportFor(Collection<RecordsReader> readers) throws IOException {
+  public int performOneRoundOfImportFor(Collection<RecordsReader> readers) {
     int countRecords = 0;
     for (RecordsReader recordsReader : readers) {
-      countRecords += importOneBatch(recordsReader);
+      countRecords += importOneBatch(recordsReader, false);
     }
     return countRecords;
   }
 
-  public int performOneRoundOfImport() throws IOException {
-    return performOneRoundOfImportFor(recordsReaderHolder.getActiveRecordsReaders());
+  public int performOneRoundOfImport() {
+    return performOneRoundOfImportFor(recordsReaderHolder.getAllRecordsReaders());
   }
 
-  public int importOneBatch(RecordsReader recordsReader) throws IOException {
-    return recordsReader.readAndScheduleNextBatch();
-  }
-
-  private void doBackoff() {
-    readersExecutor.schedule(this::run, OffsetDateTime.now().plusSeconds(2).toInstant());
+  public int importOneBatch(RecordsReader recordsReader, final boolean autoContinue) {
+    return recordsReader.readAndScheduleNextBatch(autoContinue);
   }
 }

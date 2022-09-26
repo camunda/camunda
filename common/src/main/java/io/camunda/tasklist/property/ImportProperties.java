@@ -12,6 +12,8 @@ public class ImportProperties {
 
   private static final int DEFAULT_IMPORT_THREADS_COUNT = 3;
 
+  private static final int DEFAULT_READER_THREADS_COUNT = 3;
+
   private static final int DEFAULT_IMPORT_QUEUE_SIZE = 5;
 
   private static final int DEFAULT_READER_BACKOFF = 5000;
@@ -25,6 +27,8 @@ public class ImportProperties {
   private int queueSize = DEFAULT_IMPORT_QUEUE_SIZE;
 
   private int readerBackoff = DEFAULT_READER_BACKOFF;
+
+  private int readerThreadsCount = DEFAULT_READER_THREADS_COUNT;
 
   /**
    * The property is not used anymore. Instead of a backoff, the records reader gets rescheduled
@@ -55,6 +59,15 @@ public class ImportProperties {
 
   public void setThreadsCount(int threadsCount) {
     this.threadsCount = threadsCount;
+  }
+
+  public int getReaderThreadsCount() {
+    return readerThreadsCount;
+  }
+
+  public ImportProperties setReaderThreadsCount(final int readerThreadsCount) {
+    this.readerThreadsCount = readerThreadsCount;
+    return this;
   }
 
   public int getQueueSize() {
