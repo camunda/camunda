@@ -40,8 +40,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
+@Timeout(value = 60)
 class PartitionRestoreServiceTest {
 
   private static TestRestorableBackupStore backupStore;
