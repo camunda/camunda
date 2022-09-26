@@ -26,7 +26,8 @@ public class ActorClockConfigurationTest {
     // then
     assertThat(actorClockConfiguration.getClock()).isNotNull();
     assertThat(actorClockConfiguration.getClock().getClass()).isEqualTo(ControlledActorClock.class);
-    assertThat(actorClockConfiguration.getClockService().epochMilli()).isGreaterThanOrEqualTo(currentTimeMillis);
+    assertThat(actorClockConfiguration.getClockService().epochMilli())
+        .isGreaterThanOrEqualTo(currentTimeMillis);
   }
 
   @Test
@@ -41,6 +42,7 @@ public class ActorClockConfigurationTest {
     // then
     assertThat(actorClockConfiguration.getClock()).isNull();
     assertThat(actorClockConfiguration.getClockService()).isNotNull();
-    assertThat(actorClockConfiguration.getClockService().epochMilli()).isGreaterThanOrEqualTo(currentTimeMillis);
+    assertThat(actorClockConfiguration.getClockService().epochMilli())
+        .isGreaterThanOrEqualTo(currentTimeMillis);
   }
 }
