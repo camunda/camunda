@@ -40,7 +40,7 @@ public class ActorClockConfigurationTest {
     final var actorClockConfiguration = new ActorClockConfiguration(controlled);
 
     // then
-    assertThat(actorClockConfiguration.getClock()).isNull();
+    assertThat(actorClockConfiguration.getClock()).isEmpty();
     assertThat(actorClockConfiguration.getClockService()).isNotNull();
     assertThat(actorClockConfiguration.getClockService().epochMilli())
         .isGreaterThanOrEqualTo(currentTimeMillis);
