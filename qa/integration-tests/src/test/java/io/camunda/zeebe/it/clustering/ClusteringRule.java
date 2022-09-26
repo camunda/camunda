@@ -283,7 +283,7 @@ public class ClusteringRule extends ExternalResource {
         brokers.values().parallelStream().map(Broker::start).toArray(CompletableFuture[]::new);
     CompletableFuture.allOf(brokerStartFutures).get(120, TimeUnit.SECONDS);
 
-    partitionLatch.await(15, TimeUnit.SECONDS);
+    assertThat(partitionLatch.await(60, TimeUnit.SECONDS)).isTrue();
   }
 
   private Broker createBroker(final int nodeId) {
@@ -427,9 +427,9 @@ public class ClusteringRule extends ExternalResource {
             actorScheduler);
     brokerClient.start();
     final Gateway gateway = new Gateway(gatewayCfg, brokerClient, actorScheduler);
-    closeables.manage(actorScheduler::stop);
+    closeables.manage(actorScheduler);
     closeables.manage(gateway::stop);
-    closeables.manage(atomixCluster::stop);
+    closeables.manage(() -> atomixCluster.stop().join());
     closeables.manage(brokerClient);
     return gateway;
   }

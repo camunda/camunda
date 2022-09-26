@@ -11,10 +11,6 @@ on:
   workflow_dispatch: { }
   workflow_call: { }
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 defaults:
   run:
     # use bash shell by default to ensure pipefail behavior is the default
@@ -40,6 +36,8 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        with:
+          maven-extra-args: -T1C
       - uses: ./.github/actions/build-docker
         with:
           repository: localhost:5000/camunda/zeebe
@@ -58,11 +56,12 @@ jobs:
       - name: Maven Test Build
         run: >
           mvn -B -T2 --no-snapshot-updates
-          -D junitThreadCount=12
+          -D forkCount=5
+          -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
-          -D failsafe.skipAfterFailure=1
           -P parallel-tests,extract-flaky-tests
+          -pl '!qa/update-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Duplicate Test Check
@@ -74,6 +73,60 @@ jobs:
         if: always()
         with:
           name: Integration Tests
+  qa-update-tests:
+    name: QA Update tests
+    runs-on: [ self-hosted, linux, "16" ]
+    timeout-minutes: 45
+    env:
+      TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
+      TC_CLOUD_CONCURRENCY: 4
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C
+      - uses: ./.github/actions/build-docker
+        with:
+          repository: localhost:5000/camunda/zeebe
+          version: current-test
+          push: true
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+      - name: Prepare Testcontainers Cloud agent
+        if: env.TC_CLOUD_TOKEN != ''
+        run: |
+          curl -L -o agent https://app.testcontainers.cloud/download/testcontainers-cloud-agent_linux_x86-64
+          chmod +x agent
+          ./agent --private-registry-url=http://localhost:5000 '--private-registry-allowed-image-name-globs=*,*/*' &
+          ./agent wait
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Maven Test Build
+        run: >
+          mvn -B -T2 --no-snapshot-updates
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P parallel-tests,extract-flaky-tests
+          -pl qa/update-tests
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Duplicate Test Check
+        uses: ./.github/actions/check-duplicate-tests
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: always()
+        with:
+          name: QA Update Tests
   unit-tests:
     name: Unit tests
     runs-on: [ self-hosted, linux, "16" ]
@@ -86,15 +139,16 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
+          maven-extra-args: -T1C
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
           mvn -T2 -B --no-snapshot-updates
-          -D skipITs -D skipChecks
+          -D skipChecks
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests
-          verify
+          test
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Normalize artifact name
         run: echo "ARTIFACT_NAME=$(echo ${{ matrix.project }} | sed 's/\//-/g')" >> $GITHUB_ENV
@@ -127,7 +181,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -am -pl qa/integration-tests
+          maven-extra-args: -am -pl qa/integration-tests -T1C
       - name: Run smoke test
         run: >
           mvn -B --no-snapshot-updates
@@ -152,6 +206,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
+          maven-extra-args: -T1C
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -213,7 +268,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -am -pl clients/java
+          maven-extra-args: -am -pl clients/java -T1C
       # This is a workaround for java 8, which does not support the --add-exports options
       - run: rm .mvn/jvm.config
       # Then run client tests with JDK 8
