@@ -56,7 +56,7 @@ jobs:
       - name: Maven Test Build
         run: >
           mvn -B -T2 --no-snapshot-updates
-          -D forkCount=5
+          -D forkCount=8
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
