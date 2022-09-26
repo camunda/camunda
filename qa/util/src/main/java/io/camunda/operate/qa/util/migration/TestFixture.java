@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.qa.util.migration;
 
+import io.camunda.operate.qa.util.TestContext;
+
 /**
  * Test fixture to create test data for given version of Operate.
  * Prerequisites: Elasticsearch is running - it is either empty or contains indices of one of previous versions of Operate.

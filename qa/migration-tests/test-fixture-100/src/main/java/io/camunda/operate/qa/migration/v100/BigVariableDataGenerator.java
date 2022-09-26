@@ -17,7 +17,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.property.ImportProperties;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
-import io.camunda.operate.qa.util.migration.TestContext;
+import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ThreadUtil;
 import io.camunda.zeebe.client.ZeebeClient;

@@ -7,7 +7,7 @@
 package io.camunda.operate.qa.migration.util;
 
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
-import io.camunda.operate.qa.util.migration.TestContext;
+import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.schema.templates.*;
@@ -23,10 +23,11 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
+
 import static org.junit.Assume.assumeTrue;
 
 @RunWith(SpringRunner.class)
-@ContextConfiguration
+@ContextConfiguration(classes = TestConfig.class)
 @TestPropertySource(locations = "/test.properties")
 @TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 public abstract class AbstractMigrationTest {

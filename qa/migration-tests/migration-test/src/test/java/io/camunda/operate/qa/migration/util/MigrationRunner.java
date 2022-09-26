@@ -12,7 +12,7 @@ import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
-import io.camunda.operate.qa.util.migration.TestContext;
+import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.qa.util.migration.TestFixture;
 import io.camunda.operate.schema.migration.SchemaMigration;
 import org.slf4j.Logger;
@@ -78,7 +78,7 @@ public class MigrationRunner {
       args[1] = "--camunda.operate.elasticsearch.port=" + testContext.getExternalElsPort();
       args[2] = "--camunda.operate.zeebeelasticsearch.host=" + testContext.getExternalElsHost();
       args[3] = "--camunda.operate.zeebeelasticsearch.port=" + testContext.getExternalElsPort();
-      SchemaMigration.main(args);        
+      SchemaMigration.main(args);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

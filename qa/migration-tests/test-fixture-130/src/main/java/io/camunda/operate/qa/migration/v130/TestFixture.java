@@ -7,7 +7,7 @@
 package io.camunda.operate.qa.migration.v130;
 
 import io.camunda.operate.qa.util.migration.AbstractTestFixture;
-import io.camunda.operate.qa.util.migration.TestContext;
+import io.camunda.operate.qa.util.TestContext;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -20,7 +20,7 @@ public class TestFixture extends AbstractTestFixture {
     super.setup(testContext);
     startZeebeAndOperate();
     //no additional data is needed
-    stopZeebeAndOperate();
+    stopZeebeAndOperate(testContext);
   }
 
   @Override

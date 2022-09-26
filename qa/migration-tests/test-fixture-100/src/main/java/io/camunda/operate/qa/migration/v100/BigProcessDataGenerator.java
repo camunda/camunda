@@ -21,7 +21,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
-import io.camunda.operate.qa.util.migration.TestContext;
+import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ThreadUtil;
 import org.elasticsearch.action.search.SearchRequest;

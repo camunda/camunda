@@ -8,8 +8,10 @@ package io.camunda.operate.qa.migration.util;
 
 import java.io.File;
 import java.io.IOException;
+
+import io.camunda.operate.qa.util.TestContainerUtil;
 import org.apache.http.HttpHost;
-import io.camunda.operate.qa.util.migration.TestContext;
+import io.camunda.operate.qa.util.TestContext;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -19,7 +21,7 @@ import org.springframework.context.annotation.Configuration;
 public class ConnectionHolder {
 
   @Autowired
-  private ElasticsearchContainerUtil testContainerUtil;
+  private TestContainerUtil testContainerUtil;
 
   @Bean
   public RestHighLevelClient getEsClient(TestContext testContext){

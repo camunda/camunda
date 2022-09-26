@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Random;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
-import io.camunda.operate.qa.util.migration.TestContext;
+import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.CollectionUtil;

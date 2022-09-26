@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.zeebeimport.severalversions;
 
-import static io.camunda.operate.qa.util.migration.AbstractTestFixture.PROPERTIES_PREFIX;
+import static io.camunda.operate.qa.util.TestContainerUtil.PROPERTIES_PREFIX;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.util.ZeebeVersionsUtil.VERSIONS_DELIMITER;
 import static io.camunda.operate.util.ZeebeVersionsUtil.ZEEBE_VERSIONS_PROPERTY_NAME;
