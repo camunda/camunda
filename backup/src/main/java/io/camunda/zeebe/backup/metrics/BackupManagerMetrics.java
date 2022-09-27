@@ -21,14 +21,14 @@ public class BackupManagerMetrics {
   private static final Counter TOTAL_OPERATIONS =
       Counter.build()
           .namespace(NAMESPACE)
-          .name("operations_total")
+          .name("backup_operations_total")
           .help("Total number of backup operations")
           .labelNames(LABEL_NAME_PARTITION, LABEL_NAME_OPERATION, LABEL_NAME_RESULT)
           .register();
   private static final Gauge OPERATIONS_IN_PROGRESS =
       Gauge.build()
           .namespace(NAMESPACE)
-          .name("operations_in_progress")
+          .name("backup_operations_in_progress")
           .help("Number of backup operations that are in progress")
           .labelNames(LABEL_NAME_PARTITION, LABEL_NAME_OPERATION)
           .register();
@@ -36,7 +36,7 @@ public class BackupManagerMetrics {
   private static final Histogram BACKUP_OPERATION_LATENCY =
       Histogram.build()
           .namespace(NAMESPACE)
-          .name("backup_operation_latency")
+          .name("backup_operations_latency")
           .help("Latency of backup operations")
           .labelNames(LABEL_NAME_PARTITION, LABEL_NAME_OPERATION)
           .buckets(0.01, 0.1, 1, 10, 60, 5 * 60)
