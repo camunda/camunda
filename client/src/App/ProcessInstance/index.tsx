@@ -28,7 +28,6 @@ import {
   ModificationFooter,
   Button,
   Buttons,
-  SecondaryButton,
 } from './styled';
 import {Locations} from 'modules/routes';
 import {
@@ -48,6 +47,8 @@ import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
+import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
+import Modal from 'modules/components/Modal';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -68,6 +69,10 @@ const ProcessInstance: React.FC = observer(() => {
     isModificationSummaryModalVisible,
     setIsModificationSummaryModalVisible,
   ] = useState(false);
+
+  const {showPrompt, confirmNavigation, cancelNavigation} = useCallbackPrompt(
+    modificationsStore.isModificationModeEnabled
+  );
 
   useEffect(() => {
     setClientHeight(containerRef?.current?.clientHeight ?? 0);
@@ -282,7 +287,7 @@ const ProcessInstance: React.FC = observer(() => {
                 }
                 footer={
                   <>
-                    <SecondaryButton
+                    <Modal.SecondaryButton
                       title="Cancel"
                       onClick={() =>
                         setIsDiscardModificationsModalVisible(false)
@@ -290,8 +295,8 @@ const ProcessInstance: React.FC = observer(() => {
                       data-testid="cancel-button"
                     >
                       Cancel
-                    </SecondaryButton>
-                    <CmButton
+                    </Modal.SecondaryButton>
+                    <Button
                       appearance="danger"
                       label="Discard"
                       onCmPress={() => {
@@ -300,6 +305,35 @@ const ProcessInstance: React.FC = observer(() => {
                       }}
                       data-testid="discard-button"
                     />
+                  </>
+                }
+              />
+              <InformationModal
+                isVisible={showPrompt}
+                onClose={cancelNavigation}
+                title="Leave Modification Mode"
+                body={
+                  <>
+                    <p>
+                      By leaving this page, all planned modification will be
+                      discarded.
+                    </p>
+                  </>
+                }
+                footer={
+                  <>
+                    <Modal.SecondaryButton
+                      title="Stay"
+                      onClick={cancelNavigation}
+                    >
+                      Stay
+                    </Modal.SecondaryButton>
+                    <Modal.PrimaryButton
+                      title="Leave"
+                      onClick={confirmNavigation}
+                    >
+                      Leave
+                    </Modal.PrimaryButton>
                   </>
                 }
               />

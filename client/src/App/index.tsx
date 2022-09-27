@@ -5,7 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {BrowserRouter, Route, Routes} from 'react-router-dom';
+import {
+  unstable_HistoryRouter as HistoryRouter,
+  Route,
+  Routes,
+} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {NotificationProvider} from 'modules/notifications';
 import {Login} from './Login';
@@ -26,6 +30,7 @@ import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {useEffect} from 'react';
 import {tracking} from 'modules/tracking';
 import {currentTheme} from 'modules/stores/currentTheme';
+import {createBrowserHistory} from 'history';
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -41,7 +46,10 @@ const App: React.FC = () => {
         <GlobalStyles />
         <NetworkStatusWatcher />
         <CommonUiContext />
-        <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
+        <HistoryRouter
+          history={createBrowserHistory({window})}
+          basename={window.clientConfig?.contextPath ?? '/'}
+        >
           <RedirectDeprecatedRoutes />
           <SessionWatcher />
           <TrackPagination />
@@ -68,7 +76,7 @@ const App: React.FC = () => {
               />
             </Route>
           </Routes>
-        </BrowserRouter>
+        </HistoryRouter>
       </NotificationProvider>
     </ThemeProvider>
   );

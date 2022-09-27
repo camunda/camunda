@@ -5,7 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {Route, MemoryRouter, Routes} from 'react-router-dom';
+import {
+  Route,
+  unstable_HistoryRouter as HistoryRouter,
+  Routes,
+} from 'react-router-dom';
 import {
   render,
   waitForElementToBeRemoved,
@@ -36,6 +40,7 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
+import {createMemoryHistory} from 'history';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -70,13 +75,15 @@ function getWrapper(initialPath: string = '/processes/4294980768') {
   const Wrapper: React.FC<Props> = ({children}) => {
     return (
       <ThemeProvider>
-        <MemoryRouter initialEntries={[initialPath]}>
+        <HistoryRouter
+          history={createMemoryHistory({initialEntries: [initialPath]})}
+        >
           <Routes>
             <Route path="/processes/:processInstanceId" element={children} />
             <Route path="/processes" element={<>instances page</>} />
           </Routes>
           <LocationLog />
-        </MemoryRouter>
+        </HistoryRouter>
       </ThemeProvider>
     );
   };
@@ -746,6 +753,67 @@ describe('Instance', () => {
 
       jest.clearAllTimers();
       jest.useRealTimers();
+    }
+  );
+
+  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
+    'should block navigation when modification mode is enabled',
+    async () => {
+      mockServer.use(
+        rest.get('/api/process-instances/:id', (_, res, ctx) =>
+          res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
+        )
+      );
+
+      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+      await waitForElementToBeRemoved(
+        screen.getByTestId('instance-header-skeleton')
+      );
+
+      storeStateLocally({
+        [`hideModificationHelperModal`]: true,
+      });
+
+      await user.click(
+        screen.getByRole('button', {
+          name: /modify instance/i,
+        })
+      );
+
+      await user.click(
+        screen.getByRole('link', {
+          name: /View process someProcessName version 1 instances/,
+        })
+      );
+
+      expect(
+        await screen.findByText(
+          'By leaving this page, all planned modification will be discarded.'
+        )
+      ).toBeInTheDocument();
+      await user.click(screen.getByRole('button', {name: 'Stay'}));
+
+      await waitForElementToBeRemoved(() =>
+        screen.queryByText(
+          'By leaving this page, all planned modification will be discarded.'
+        )
+      );
+
+      await user.click(
+        screen.getByRole('link', {
+          name: /View process someProcessName version 1 instances/,
+        })
+      );
+
+      expect(
+        await screen.findByText(
+          'By leaving this page, all planned modification will be discarded.'
+        )
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', {name: 'Leave'}));
+
+      expect(await screen.findByText('instances page')).toBeInTheDocument();
     }
   );
 });

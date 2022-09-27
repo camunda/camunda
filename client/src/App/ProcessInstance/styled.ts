@@ -9,7 +9,6 @@ import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 import {CmButton} from '@camunda-cloud/common-ui-react';
 import {styles} from '@carbon/elements';
 import {zModificationFrame} from 'modules/constants/componentHierarchy';
-import Modal from 'modules/components/Modal';
 import {MODIFICATION_HEADER_HEIGHT} from 'modules/constants';
 
 type ContainerProps = {
@@ -104,10 +103,6 @@ const Buttons = styled.div`
   flex: 1;
 `;
 
-const SecondaryButton = styled(Modal.SecondaryButton)`
-  margin-right: 15px;
-`;
-
 export {
   Container,
   PanelContainer,
@@ -116,5 +111,4 @@ export {
   ModificationFooter,
   Button,
   Buttons,
-  SecondaryButton,
 };
