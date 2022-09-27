@@ -338,6 +338,21 @@ describe('Modification Summary Modal', () => {
     modificationsStore.addModification({
       type: 'token',
       payload: {
+        operation: 'ADD_TOKEN',
+        flowNode: {
+          id: 'multi-instance-subprocess',
+          name: 'multi instance subprocess',
+        },
+        scopeId: 'multi-instance-subprocess-scope',
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
         operation: 'CANCEL_TOKEN',
         flowNode: {
           id: 'multi-instance-subprocess',
@@ -348,7 +363,12 @@ describe('Modification Summary Modal', () => {
       },
     });
 
-    expect(screen.getByTestId('affected-token-count')).toHaveTextContent('7');
+    const [
+      addModificationAffectedTokenCount,
+      cancelModificationAfectedTokenCount,
+    ] = screen.getAllByTestId('affected-token-count');
+    expect(addModificationAffectedTokenCount).toHaveTextContent('1');
+    expect(cancelModificationAfectedTokenCount).toHaveTextContent('7');
   });
 
   it('should display success notification when modifications are applied with success', async () => {
