@@ -1230,8 +1230,16 @@
               <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
               <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
             </statelessTestsetReporter>
+            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>
             <skip>${skipUTs}</skip>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>io.camunda</groupId>
+              <artifactId>zeebe-build-tools</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
 
         <!-- Integration tests -->
@@ -1262,8 +1270,16 @@
               <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
               <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
             </statelessTestsetReporter>
+            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>
             <skip>${skipITs}</skip>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>io.camunda</groupId>
+              <artifactId>zeebe-build-tools</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+          </dependencies>
           <executions>
             <execution>
               <goals>
