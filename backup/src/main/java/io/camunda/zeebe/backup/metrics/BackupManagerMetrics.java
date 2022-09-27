@@ -73,6 +73,7 @@ public class BackupManagerMetrics {
 
     private static OperationMetrics start(final String partitionId, final String operation) {
       final var timer = BACKUP_OPERATION_LATENCY.labels(partitionId, operation).startTimer();
+      OPERATIONS_IN_PROGRESS.labels(partitionId, operation).inc();
       return new OperationMetrics(partitionId, timer, operation);
     }
 
