@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import java.util.List;
 import java.util.Map;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -94,6 +95,13 @@ public final class ExporterDirectorPauseTest {
   public void canPauseAndResumeWithoutAnyExporter() {
     // given
     activeExporter.startExporterDirector(List.of());
+
+    // when -- exporter is closed
+    // Wait for exporter to properly close before submitting pause/resume jobs.
+    // Needed to prevent flaky test https://github.com/camunda/zeebe/issues/10439
+    Awaitility.await()
+        .alias("Exporter is closed")
+        .until(() -> activeExporter.getDirector().getPhase().join() == ExporterPhase.CLOSED);
 
     // then
     assertThatCode(() -> activeExporter.getDirector().pauseExporting().join())
