@@ -146,11 +146,20 @@ spec:
         }
 
         stage('Docker Image') {
+            environment {
+                // Retrieve the git commit hash from the checked out tag of the release
+                // as when maven performs the perform-release step it will checkout the created tag
+                // to the workingDirectory that defaults to target/checkout, see
+                // https://maven.apache.org/maven-release/maven-release-plugin/examples/perform-release.html
+                // The runners main workdir will already contain next release commits that
+                // maven creates once the release is finished, thus the rev would not match the release.
+                REVISION = sh(returnStdout: true, script: "git --git-dir target/checkout/.git log -n 1 --pretty=format:'%h'").trim()
+            }
             steps {
                 build job: 'zeebe-docker', parameters: [
                         string(name: 'BRANCH', value: env.RELEASE_BRANCH),
                         string(name: 'VERSION', value: params.RELEASE_VERSION),
-                        string(name: 'REVISION', value: env.GIT_COMMIT),
+                        string(name: 'REVISION', value: env.REVISION),
                         string(name: 'DATE', value: java.time.Instant.now().toString()),
                         booleanParam(name: 'IS_LATEST', value: params.IS_LATEST),
                         booleanParam(name: 'PUSH', value: params.PUSH_DOCKER),
