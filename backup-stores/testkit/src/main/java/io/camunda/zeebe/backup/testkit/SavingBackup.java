@@ -74,7 +74,7 @@ public interface SavingBackup {
 
     // then
     assertThat(saveAttempt)
-        .failsWithin(Duration.ofSeconds(1))
+        .failsWithin(Duration.ofMinutes(1))
         .withThrowableOfType(ExecutionException.class);
 
     final var status = getStore().getStatus(backup.id()).join();
