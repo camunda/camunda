@@ -13,9 +13,10 @@ import {ActionButton} from 'modules/components/ActionButton';
 
 type Props = {
   className?: string;
+  onExitEditMode?: () => void;
 };
 
-const EditButtons: React.FC<Props> = ({className}) => {
+const EditButtons: React.FC<Props> = ({className, onExitEditMode}) => {
   const form = useForm();
   const {values, initialValues, validating, hasValidationErrors} =
     useFormState();
@@ -31,7 +32,10 @@ const EditButtons: React.FC<Props> = ({className}) => {
     <Container className={className}>
       <ActionButton
         title="Exit edit mode"
-        onClick={() => form.reset({})}
+        onClick={() => {
+          onExitEditMode?.();
+          form.reset({});
+        }}
         icon={<CloseIcon />}
       />
       <ActionButton

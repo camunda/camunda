@@ -28,6 +28,7 @@ import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {authenticationStore} from 'modules/stores/authentication';
 import arrayMutators from 'final-form-arrays';
 import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
+import {modificationsStore} from 'modules/stores/modifications';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
@@ -74,6 +75,7 @@ describe('Variables', () => {
     variablesStore.reset();
     flowNodeSelectionStore.reset();
     flowNodeStatesStore.reset();
+    modificationsStore.reset();
   });
 
   describe('Skeleton', () => {
@@ -743,12 +745,14 @@ describe('Variables', () => {
       await user.clear(screen.getByTestId('edit-variable-value'));
       await user.type(screen.getByTestId('edit-variable-value'), '123');
 
-      expect(
-        screen.queryByText('Value has to be JSON')
-      ).not.toBeInTheDocument();
       await waitFor(() =>
         expect(screen.getByTitle(/save variable/i)).toBeEnabled()
       );
+
+      expect(
+        screen.queryByText('Value has to be JSON')
+      ).not.toBeInTheDocument();
+
       jest.clearAllTimers();
       jest.useRealTimers();
     });
@@ -923,6 +927,129 @@ describe('Variables', () => {
       );
 
       expect(screen.queryByTestId('variable-backdrop')).not.toBeInTheDocument();
+    });
+
+    it('should load full value on focus during modification mode if it was truncated', async () => {
+      jest.useFakeTimers();
+      modificationsStore.enableModificationMode();
+      processInstanceDetailsStore.setProcessInstance(instanceMock);
+      mockServer.use(
+        rest.post(
+          '/api/process-instances/:instanceId/variables',
+          (_, res, ctx) =>
+            res.once(
+              ctx.json([
+                {
+                  id: '2251799813686037-clientNo',
+                  name: 'clientNo',
+                  value: '123',
+                  hasActiveOperation: false,
+                  isFirst: true,
+                  isPreview: true,
+                  sortValues: ['clientNo'],
+                },
+              ])
+            )
+        )
+      );
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
+
+      const {user} = render(<Variables />, {wrapper: Wrapper});
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
+      mockServer.use(
+        rest.get('/api/variables/:variableId', (_, res, ctx) =>
+          res.once(
+            ctx.status(200),
+            ctx.json({
+              id: '2251799813686037-clientNo',
+              name: 'clientNo',
+              value: '123456',
+              isPreview: false,
+              hasActiveOperation: false,
+              isFirst: false,
+              sortValues: null,
+            })
+          )
+        )
+      );
+
+      await user.click(screen.getByTestId('edit-variable-value'));
+
+      expect(screen.getByTestId('variable-backdrop')).toBeInTheDocument();
+
+      jest.runOnlyPendingTimers();
+
+      await waitForElementToBeRemoved(() =>
+        screen.getByTestId('variable-backdrop')
+      );
+
+      expect(screen.getByTestId('edit-variable-value')).toHaveValue('123456');
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    });
+
+    it('should load full value on json viewer click during modification mode if it was truncated', async () => {
+      modificationsStore.enableModificationMode();
+      processInstanceDetailsStore.setProcessInstance(instanceMock);
+      mockServer.use(
+        rest.post(
+          '/api/process-instances/:instanceId/variables',
+          (_, res, ctx) =>
+            res.once(
+              ctx.json([
+                {
+                  id: '2251799813686037-clientNo',
+                  name: 'clientNo',
+                  value: '123',
+                  hasActiveOperation: false,
+                  isFirst: true,
+                  isPreview: true,
+                  sortValues: ['clientNo'],
+                },
+              ])
+            )
+        )
+      );
+
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
+
+      const {user} = render(<Variables />, {wrapper: Wrapper});
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
+      mockServer.use(
+        rest.get('/api/variables/:variableId', (_, res, ctx) =>
+          res.once(
+            ctx.status(200),
+            ctx.json({
+              id: '2251799813686037-clientNo',
+              name: 'clientNo',
+              value: '123456',
+              isPreview: false,
+              hasActiveOperation: false,
+              isFirst: false,
+              sortValues: null,
+            })
+          )
+        )
+      );
+
+      await user.click(screen.getByTitle(/open json editor modal/i));
+
+      await waitFor(() =>
+        expect(screen.getByTestId('monaco-editor')).toHaveValue('123456')
+      );
     });
   });
 

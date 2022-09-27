@@ -205,8 +205,42 @@ const Variables: React.FC = observer(() => {
                           processInstanceDetailsStore.isRunning) ||
                         isModificationModeEnabled ? (
                           <ExistingVariable
+                            id={id}
                             variableName={variableName}
-                            variableValue={variableValue}
+                            variableValue={
+                              variablesStore.getFullVariableValue(id) ??
+                              variableValue
+                            }
+                            pauseValidation={
+                              isPreview &&
+                              variablesStore.getFullVariableValue(id) ===
+                                undefined
+                            }
+                            onFocus={() => {
+                              if (
+                                isPreview &&
+                                variablesStore.getFullVariableValue(id) ===
+                                  undefined
+                              ) {
+                                variablesStore.fetchVariable({
+                                  id,
+                                  onSuccess: (variable: VariableEntity) => {
+                                    variablesStore.setFullVariableValue(
+                                      id,
+                                      variable.value
+                                    );
+                                  },
+                                  onError: () => {
+                                    notifications.displayNotification('error', {
+                                      headline: 'Variable could not be fetched',
+                                    });
+                                  },
+                                });
+                              }
+                            }}
+                            onExitEditMode={() => {
+                              variablesStore.deleteFullVariableValue(id);
+                            }}
                           />
                         ) : (
                           <>
@@ -263,6 +297,11 @@ const Variables: React.FC = observer(() => {
                                                 if (variable === null) {
                                                   return;
                                                 }
+
+                                                variablesStore.setFullVariableValue(
+                                                  id,
+                                                  variable.value
+                                                );
 
                                                 value = variable.value;
                                               }

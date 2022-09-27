@@ -52,6 +52,7 @@ type State = {
     fetchType: FetchType | null;
     itemsCount: number;
   };
+  fullVariableValues: {[key: string]: string};
 };
 
 const DEFAULT_STATE: State = {
@@ -60,6 +61,7 @@ const DEFAULT_STATE: State = {
   pendingItem: null,
   status: 'initial',
   latestFetch: {fetchType: null, itemsCount: 0},
+  fullVariableValues: {},
 };
 
 class Variables extends NetworkReconnectionHandler {
@@ -78,6 +80,7 @@ class Variables extends NetworkReconnectionHandler {
   pollingAbortController: AbortController | undefined;
   fetchAbortController: AbortController | undefined;
   onPollingOperationSuccess: (() => void) | null = null;
+  deleteFullVariablesDisposer: null | IReactionDisposer = null;
 
   constructor() {
     super();
@@ -104,6 +107,9 @@ class Variables extends NetworkReconnectionHandler {
       setAreVariablesLoadedOnce: action,
       areVariablesLoadedOnce: observable,
       hasNoContent: computed,
+      setFullVariableValue: action,
+      deleteFullVariableValue: action,
+      clearFullVariableValues: action,
     });
 
     this.pollingAbortController = new AbortController();
@@ -154,6 +160,15 @@ class Variables extends NetworkReconnectionHandler {
         }
       },
       {fireImmediately: true}
+    );
+
+    this.deleteFullVariablesDisposer = reaction(
+      () => modificationsStore.isModificationModeEnabled,
+      (isModification, prevIsModification) => {
+        if (!isModification && prevIsModification) {
+          this.clearFullVariableValues();
+        }
+      }
     );
   };
 
@@ -230,10 +245,12 @@ class Variables extends NetworkReconnectionHandler {
 
   fetchVariable = async ({
     id,
+    onSuccess,
     onError,
     enableLoading = true,
   }: {
     id: VariableEntity['id'];
+    onSuccess?: (variable: VariableEntity) => void;
     onError: () => void;
     enableLoading?: boolean;
   }): Promise<null | VariableEntity> => {
@@ -247,6 +264,7 @@ class Variables extends NetworkReconnectionHandler {
         const variable = await response.json();
 
         this.handleFetchVariableSuccess();
+        onSuccess?.(variable);
         return variable;
       } else {
         this.handleFetchVariableFailure();
@@ -709,6 +727,37 @@ class Variables extends NetworkReconnectionHandler {
     return 'error';
   }
 
+  setFullVariableValue = (
+    id: VariableEntity['id'],
+    value: VariableEntity['value']
+  ) => {
+    if (id === undefined) {
+      return undefined;
+    }
+
+    this.state.fullVariableValues[id] = value;
+  };
+
+  deleteFullVariableValue = (id: VariableEntity['id']) => {
+    if (id === undefined) {
+      return undefined;
+    }
+
+    delete this.state.fullVariableValues[id];
+  };
+
+  getFullVariableValue = (id: VariableEntity['id']) => {
+    if (id === undefined) {
+      return undefined;
+    }
+
+    return this.state.fullVariableValues[id];
+  };
+
+  clearFullVariableValues = () => {
+    this.state.fullVariableValues = {};
+  };
+
   reset() {
     this.pollingAbortController?.abort();
     this.fetchAbortController?.abort();
@@ -723,6 +772,7 @@ class Variables extends NetworkReconnectionHandler {
     this.disposer?.();
     this.variablesWithActiveOperationsDisposer?.();
     this.fetchVariablesDisposer?.();
+    this.deleteFullVariablesDisposer?.();
     this.instanceId = null;
     this.onPollingOperationSuccess = null;
   }

@@ -10,6 +10,7 @@ import {DiffEditorModal} from 'modules/components/DiffEditorModal';
 import {Container, ModalIconButton} from './styled';
 import {ReactComponent as ModalIcon} from 'modules/components/Icon/modal.svg';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
+import {TruncatedValue} from '../styled';
 
 type Props = {
   operation: 'ADD_VARIABLE' | 'EDIT_VARIABLE';
@@ -28,7 +29,7 @@ const VariableModification: React.FC<Props> = ({
 
   return (
     <Container>
-      {`${name}: ${newValue}`}
+      <TruncatedValue>{`${name}: ${newValue}`}</TruncatedValue>
       <ModalIconButton
         title="Open JSON Editor Modal"
         icon={<ModalIcon />}

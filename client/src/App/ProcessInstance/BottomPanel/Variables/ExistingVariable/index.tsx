@@ -26,8 +26,12 @@ import {variablesStore} from 'modules/stores/variables';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 
 type Props = {
+  id?: string;
   variableName: string;
   variableValue: string;
+  pauseValidation?: boolean;
+  onFocus?: () => void;
+  onExitEditMode?: () => void;
 };
 
 const createModification = ({
@@ -82,12 +86,19 @@ const createModification = ({
 };
 
 const ExistingVariable: React.FC<Props> = observer(
-  ({variableName, variableValue}) => {
+  ({
+    id,
+    variableName,
+    variableValue,
+    pauseValidation = false,
+    onFocus,
+    onExitEditMode,
+  }) => {
     const {isModificationModeEnabled} = modificationsStore;
+    const {loadingItemId} = variablesStore.state;
     const formState = useFormState();
     const [isModalVisible, setIsModalVisible] = useState(false);
     const form = useForm();
-
     const editInputTDRef = useRef<HTMLTableCellElement | null>(null);
 
     const fieldName = isModificationModeEnabled
@@ -122,13 +133,14 @@ const ExistingVariable: React.FC<Props> = observer(
             <Field
               name={fieldName}
               initialValue={initialValue}
-              validate={mergeValidators(
-                validateValueComplete,
-                validateValueValid
-              )}
+              validate={
+                pauseValidation
+                  ? () => undefined
+                  : mergeValidators(validateValueComplete, validateValueValid)
+              }
               parse={(value) => value}
             >
-              {({input}) => (
+              {({input, meta}) => (
                 <ValueField
                   {...input}
                   type="text"
@@ -138,6 +150,7 @@ const ExistingVariable: React.FC<Props> = observer(
                     type: 'icon',
                     icon: 'window',
                     press: () => {
+                      onFocus?.();
                       setIsModalVisible(true);
                       tracking.track({
                         eventName: 'json-editor-opened',
@@ -147,8 +160,15 @@ const ExistingVariable: React.FC<Props> = observer(
                     tooltip: 'Open JSON editor modal',
                   }}
                   shouldDebounceError={false}
-                  autoFocus={!isModificationModeEnabled}
-                  onBlur={(e) => {
+                  autoFocus={!isModificationModeEnabled || meta.active}
+                  isLoading={loadingItemId === id}
+                  onFocus={(event) => {
+                    if (!meta.active) {
+                      onFocus?.();
+                      input.onFocus(event);
+                    }
+                  }}
+                  onBlur={(event) => {
                     createModification({
                       scopeId: variablesStore.scopeId,
                       name: variableName,
@@ -158,12 +178,14 @@ const ExistingVariable: React.FC<Props> = observer(
                       isValid: isValid ?? false,
                     });
 
-                    input.onBlur(e);
+                    input.onBlur(event);
                   }}
                 />
               )}
             </Field>
-            {!isModificationModeEnabled && <EditButtons />}
+            {!isModificationModeEnabled && (
+              <EditButtons onExitEditMode={onExitEditMode} />
+            )}
           </EditInputContainer>
         </EditInputTD>
         <JSONEditorModal

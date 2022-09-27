@@ -11,7 +11,7 @@ import {OperationSpinner} from 'modules/components/OperationSpinner';
 import Modal from 'modules/components/Modal';
 import {ReactComponent as DefaultEdit} from 'modules/components/Icon/edit.svg';
 import {ReactComponent as DefaultPlus} from 'modules/components/Icon/plus.svg';
-import {TextField} from 'modules/components/TextField';
+import {LoadingTextfield} from './LoadingTextField';
 import {styles} from '@carbon/elements';
 
 const Spinner = styled(OperationSpinner)`
@@ -185,7 +185,7 @@ const Footer = styled(Panel.Footer)<FooterProps>`
   }}
 `;
 
-const ValueField = styled(TextField)`
+const ValueField = styled(LoadingTextfield)`
   display: block;
 `;
 
