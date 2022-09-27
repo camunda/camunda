@@ -45,6 +45,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.state.processing.DbBlackListState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 
 public class ZeebeDbState implements MutableZeebeState {
@@ -78,7 +79,7 @@ public class ZeebeDbState implements MutableZeebeState {
       final KeyGenerator keyGenerator) {
     this.partitionId = partitionId;
     this.zeebeDb = zeebeDb;
-    this.keyGenerator = keyGenerator;
+    this.keyGenerator = Objects.requireNonNull(keyGenerator);
 
     variableState = new DbVariableState(zeebeDb, transactionContext);
     processState = new DbProcessState(zeebeDb, transactionContext);
