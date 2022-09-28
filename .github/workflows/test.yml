@@ -145,7 +145,7 @@ jobs:
       - name: Maven Test Build
         run: >
           mvn -T2 -B --no-snapshot-updates
-          -D skipChecks
+          -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests
           test
@@ -185,7 +185,7 @@ jobs:
       - name: Run smoke test
         run: >
           mvn -B --no-snapshot-updates
-          -DskipUTs -DskipChecks
+          -DskipUTs -DskipChecks -Dsurefire.rerunFailingTestsCount=3
           -pl qa/integration-tests
           -P smoke-test
           verify
