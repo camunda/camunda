@@ -8,6 +8,7 @@
 import {Container, Button, ModificationDetail} from './styled';
 import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
+import {tracking} from 'modules/tracking';
 
 const TOKEN_TEMPLATES = {
   ADD_TOKEN: (flowNode: string) => `Add "${flowNode}"`,
@@ -52,6 +53,11 @@ const LastModification: React.FC = observer(() => {
       </div>
       <Button
         onClick={() => {
+          tracking.track({
+            eventName: 'undo-modification',
+            modificationType: lastModification.payload.operation,
+          });
+
           modificationsStore.removeLastModification();
         }}
       >

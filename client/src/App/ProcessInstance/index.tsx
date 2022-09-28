@@ -49,6 +49,7 @@ import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import Modal from 'modules/components/Modal';
+import {tracking} from 'modules/tracking';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -223,6 +224,11 @@ const ProcessInstance: React.FC = observer(() => {
                 appearance="danger"
                 label="Discard All"
                 onCmPress={() => {
+                  tracking.track({
+                    eventName: 'discard-all-summary',
+                    hasPendingModifications:
+                      modificationsStore.state.modifications.length > 0,
+                  });
                   setIsDiscardModificationsModalVisible(true);
                 }}
                 data-testid="discard-all-button"
@@ -231,6 +237,11 @@ const ProcessInstance: React.FC = observer(() => {
                 appearance="primary"
                 label="Apply Modifications"
                 onCmPress={() => {
+                  tracking.track({
+                    eventName: 'apply-modifications-summary',
+                    hasPendingModifications: modifications.length > 0,
+                  });
+
                   if (modifications.length === 0) {
                     setIsNoPlannedModificationsModalVisible(true);
                   } else {
@@ -300,6 +311,11 @@ const ProcessInstance: React.FC = observer(() => {
                       appearance="danger"
                       label="Discard"
                       onCmPress={() => {
+                        tracking.track({
+                          eventName: 'discard-modifications',
+                          hasPendingModifications:
+                            modificationsStore.state.modifications.length > 0,
+                        });
                         modificationsStore.reset();
                         setIsDiscardModificationsModalVisible(false);
                       }}
@@ -330,7 +346,10 @@ const ProcessInstance: React.FC = observer(() => {
                     </Modal.SecondaryButton>
                     <Modal.PrimaryButton
                       title="Leave"
-                      onClick={confirmNavigation}
+                      onClick={() => {
+                        tracking.track({eventName: 'leave-modification-mode'});
+                        confirmNavigation();
+                      }}
                     >
                       Leave
                     </Modal.PrimaryButton>

@@ -31,6 +31,7 @@ import {useNotifications} from 'modules/notifications';
 import {Warning} from './Messages/Warning';
 import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {Error} from './Messages/Error';
+import {tracking} from 'modules/tracking';
 
 type Props = {
   isVisible: boolean;
@@ -304,14 +305,37 @@ const ModificationSummaryModal: React.FC<Props> = observer(
             <Modal.PrimaryButton
               title="Apply"
               onClick={() => {
+                tracking.track({
+                  eventName: 'apply-modifications',
+                  addToken: modificationsStore.flowNodeModifications.filter(
+                    ({operation}) => operation === 'ADD_TOKEN'
+                  ).length,
+                  cancelToken: modificationsStore.flowNodeModifications.filter(
+                    ({operation}) => operation === 'CANCEL_TOKEN'
+                  ).length,
+                  moveToken: modificationsStore.flowNodeModifications.filter(
+                    ({operation}) => operation === 'MOVE_TOKEN'
+                  ).length,
+                  addVariable: modificationsStore.variableModifications.filter(
+                    ({operation}) => operation === 'ADD_VARIABLE'
+                  ).length,
+                  editVariable: modificationsStore.variableModifications.filter(
+                    ({operation}) => operation === 'EDIT_VARIABLE'
+                  ).length,
+                  isProcessCanceled:
+                    flowNodeStatesStore.willAllFlowNodesBeCanceled,
+                });
+
                 modificationsStore.applyModifications({
                   processInstanceId,
                   onSuccess: () => {
+                    tracking.track({eventName: 'modification-successful'});
                     notifications.displayNotification('success', {
                       headline: 'Modifications applied',
                     });
                   },
                   onError: () => {
+                    tracking.track({eventName: 'modification-failed'});
                     notifications.displayNotification('error', {
                       headline: 'Modification failed',
                       description:

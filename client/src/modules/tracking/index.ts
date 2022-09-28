@@ -143,7 +143,59 @@ type Events =
     }
   | {
       eventName: 'instance-history-item-clicked';
+    }
+  | {
+      eventName: 'enable-modification-mode';
+    }
+  | {
+      eventName: 'apply-modifications-summary';
+      hasPendingModifications: boolean;
+    }
+  | {
+      eventName: 'apply-modifications';
+      isProcessCanceled: boolean;
+      addToken: number;
+      cancelToken: number;
+      moveToken: number;
+      addVariable: number;
+      editVariable: number;
+    }
+  | {
+      eventName: 'discard-all-summary';
+      hasPendingModifications: boolean;
+    }
+  | {
+      eventName: 'discard-modifications';
+      hasPendingModifications: boolean;
+    }
+  | {
+      eventName: 'undo-modification';
+      modificationType:
+        | 'ADD_TOKEN'
+        | 'CANCEL_TOKEN'
+        | 'MOVE_TOKEN'
+        | 'ADD_VARIABLE'
+        | 'EDIT_VARIABLE';
+    }
+  | {
+      eventName: 'add-token';
+    }
+  | {
+      eventName: 'cancel-token';
+    }
+  | {
+      eventName: 'move-token';
+    }
+  | {
+      eventName: 'modification-successful';
+    }
+  | {
+      eventName: 'modification-failed';
+    }
+  | {
+      eventName: 'leave-modification-mode';
     };
+
 const STAGE_ENV = getStage(window.location.host);
 
 function injectScript(src: string): Promise<void> {

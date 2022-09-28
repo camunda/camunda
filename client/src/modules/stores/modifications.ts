@@ -17,6 +17,7 @@ import {
   FlowNodeVariables,
 } from 'modules/api/modifications';
 import {logger} from 'modules/logger';
+import {tracking} from 'modules/tracking';
 
 type FlowNodeModificationPayload =
   | {
@@ -129,6 +130,10 @@ class Modifications {
   };
 
   finishMovingToken = (targetFlowNodeId?: string) => {
+    tracking.track({
+      eventName: 'move-token',
+    });
+
     if (
       targetFlowNodeId !== undefined &&
       this.state.sourceFlowNodeIdForMoveOperation !== null
@@ -178,6 +183,9 @@ class Modifications {
   };
 
   enableModificationMode = () => {
+    tracking.track({
+      eventName: 'enable-modification-mode',
+    });
     this.state.status = 'enabled';
   };
 

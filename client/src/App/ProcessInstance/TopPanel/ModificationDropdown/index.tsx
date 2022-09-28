@@ -22,6 +22,7 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {isMultiInstance} from 'modules/bpmn-js/isMultiInstance';
+import {tracking} from 'modules/tracking';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -75,6 +76,10 @@ const ModificationDropdown: React.FC<Props> = observer(
                 <Option
                   title="Add single flow node instance"
                   onClick={() => {
+                    tracking.track({
+                      eventName: 'add-token',
+                    });
+
                     modificationsStore.addModification({
                       type: 'token',
                       payload: {
@@ -109,6 +114,10 @@ const ModificationDropdown: React.FC<Props> = observer(
                     <Option
                       title="Cancel all running flow node instances in this flow node"
                       onClick={() => {
+                        tracking.track({
+                          eventName: 'cancel-token',
+                        });
+
                         modificationsStore.addModification({
                           type: 'token',
                           payload: {
