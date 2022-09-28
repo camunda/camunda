@@ -1038,7 +1038,7 @@ describe('VariablePanel', () => {
         (_, res, ctx) =>
           res.once(
             ctx.json({
-              flowNodeInstanceId: null,
+              flowNodeInstanceId: '2251799813695856',
               instanceCount: 1,
               instanceMetadata: {endDate: null},
             })
@@ -1068,7 +1068,7 @@ describe('VariablePanel', () => {
 
     await waitFor(() =>
       expect(flowNodeMetaDataStore.state.metaData).toEqual({
-        flowNodeInstanceId: null,
+        flowNodeInstanceId: '2251799813695856',
         instanceCount: 1,
         instanceMetadata: {
           endDate: null,
@@ -1154,5 +1154,46 @@ describe('VariablePanel', () => {
     expect(
       screen.queryByRole('button', {name: /add variable/i})
     ).not.toBeInTheDocument();
+
+    // select existing scope
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'Activity_0qtp1k6',
+      flowNodeInstanceId: '2251799813695856',
+    });
+
+    expect(
+      screen.queryByText(
+        'To view the Variables, select a single Flow Node Instance in the Instance History.'
+      )
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.getByText('The Flow Node has no Variables')
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /add variable/i})
+    ).toBeInTheDocument();
+
+    // select new scope
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'Activity_0qtp1k6',
+      flowNodeInstanceId: 'some-new-scope-id',
+      isPlaceholder: true,
+    });
+
+    expect(
+      screen.queryByText(
+        'To view the Variables, select a single Flow Node Instance in the Instance History.'
+      )
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.getByText('The Flow Node has no Variables')
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /add variable/i})
+    ).toBeInTheDocument();
   });
 });
