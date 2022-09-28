@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dispatcher.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.dispatcher.BlockPeek;
 import io.camunda.zeebe.dispatcher.ClaimedFragment;
 import io.camunda.zeebe.dispatcher.Dispatcher;
@@ -18,10 +20,15 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.util.ByteValue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.agrona.DirectBuffer;
 import org.junit.Rule;
 import org.junit.Test;
 
+/**
+ * NOTE: make sure that all actors which will close over the dispatcher buffers are closed before
+ * closing the dispatcher, as that will free the underlying buffer.
+ */
 public final class ActorFrameworkIntegrationTest {
   @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
 
@@ -32,12 +39,15 @@ public final class ActorFrameworkIntegrationTest {
             .actorSchedulingService(actorSchedulerRule.get())
             .bufferSize((int) ByteValue.ofMegabytes(10))
             .build();
-
-    actorSchedulerRule.submitActor(new Consumer(dispatcher));
+    final Consumer consumer = new Consumer(dispatcher);
     final ClaimingProducer producer = new ClaimingProducer(dispatcher);
+
+    actorSchedulerRule.submitActor(consumer);
     actorSchedulerRule.submitActor(producer);
 
-    producer.latch.await();
+    assertThat(producer.latch.await(10, TimeUnit.SECONDS)).isTrue();
+    producer.close();
+    consumer.close();
     dispatcher.close();
   }
 
@@ -48,12 +58,15 @@ public final class ActorFrameworkIntegrationTest {
             .actorSchedulingService(actorSchedulerRule.get())
             .bufferSize((int) ByteValue.ofMegabytes(10))
             .build();
-
-    actorSchedulerRule.submitActor(new PeekingConsumer(dispatcher));
+    final PeekingConsumer consumer = new PeekingConsumer(dispatcher);
     final ClaimingProducer producer = new ClaimingProducer(dispatcher);
+
+    actorSchedulerRule.submitActor(consumer);
     actorSchedulerRule.submitActor(producer);
 
-    producer.latch.await();
+    assertThat(producer.latch.await(10, TimeUnit.SECONDS)).isTrue();
+    producer.close();
+    consumer.close();
     dispatcher.close();
   }
 
