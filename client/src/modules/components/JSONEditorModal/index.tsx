@@ -36,6 +36,7 @@ const JSONEditorModal: React.FC<Props> = observer(
         setEditedValue(beautifyJSON(value));
       } else {
         setEditedValue('');
+        setIsValid(true);
       }
     }, [isVisible, value]);
 
