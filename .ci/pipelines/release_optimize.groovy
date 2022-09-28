@@ -401,7 +401,8 @@ pipeline {
         GCR_REGISTRY_CREDENTIALS = credentials('docker-registry-ci3')
         REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
         MAJOR_OR_MINOR = isMajorOrMinorRelease(params.RELEASE_VERSION)
-        REVISION = "${env.GIT_COMMIT}"
+        // retrieve the git commit hash from the checked out tag of the release
+        REVISION = sh(returnStdout: true, script: "git --git-dir target/checkout/.git log -n 1 --pretty=format:'%h'").trim()
         DATE = java.time.Instant.now().toString()
       }
       steps {
