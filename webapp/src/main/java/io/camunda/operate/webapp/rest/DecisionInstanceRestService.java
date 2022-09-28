@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.rest;
 
 import static io.camunda.operate.webapp.rest.DecisionInstanceRestService.DECISION_INSTANCE_URL;
 
+import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.es.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.rest.dto.dmn.DRDDataEntryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
@@ -32,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = DECISION_INSTANCE_URL)
 @Validated
-public class DecisionInstanceRestService {
+public class DecisionInstanceRestService extends InternalAPIErrorController {
 
   public static final String DECISION_INSTANCE_URL = "/api/decision-instances";
 

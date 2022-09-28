@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.rest;
 
+import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Collection;
@@ -21,7 +22,7 @@ import static io.camunda.operate.webapp.rest.IncidentRestService.INCIDENT_URL;
 @Tag(name = "Incidents statistics")
 @RestController
 @RequestMapping(value = INCIDENT_URL)
-public class IncidentRestService {
+public class IncidentRestService extends InternalAPIErrorController {
 
   public static final String INCIDENT_URL = "/api/incidents";
 

@@ -27,6 +27,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.*;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestValidator;
@@ -46,8 +47,12 @@ import static org.mockito.Mockito.*;
     classes = {
         TestApplicationWithNoBeans.class,
         ProcessInstanceRestService.class,
+        JacksonConfig.class,
+        OperateProperties.class,
+        OperateProfileService.class,
         ModifyProcessInstanceRequestValidator.class,
-        JacksonConfig.class, OperateProperties.class
+        JacksonConfig.class, 
+        OperateProperties.class
     }
 )
 public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {

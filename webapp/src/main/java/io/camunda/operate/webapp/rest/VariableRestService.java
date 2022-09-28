@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.rest;
 
+import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.es.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Variables")
 @RestController
 @RequestMapping(value = VariableRestService.VARIABLE_URL)
-public class VariableRestService {
+public class VariableRestService extends InternalAPIErrorController {
 
   public static final String VARIABLE_URL = "/api/variables";
 

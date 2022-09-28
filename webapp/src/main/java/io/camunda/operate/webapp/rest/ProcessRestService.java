@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.rest;
 
 import static io.camunda.operate.webapp.rest.ProcessRestService.PROCESS_URL;
 
+import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Processes")
 @RestController
 @RequestMapping(value = PROCESS_URL)
-public class ProcessRestService {
+public class ProcessRestService extends InternalAPIErrorController {
 
   @Autowired
   protected ProcessReader processReader;

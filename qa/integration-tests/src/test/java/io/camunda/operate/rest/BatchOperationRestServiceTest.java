@@ -11,13 +11,14 @@ import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.es.reader.BatchOperationReader;
 import io.camunda.operate.webapp.rest.BatchOperationRestService;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
+import io.camunda.operate.webapp.security.OperateProfileService;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest(
-  classes = {TestApplicationWithNoBeans.class, BatchOperationRestService.class}
+  classes = {TestApplicationWithNoBeans.class, BatchOperationRestService.class, OperateProfileService.class}
 )
 public class BatchOperationRestServiceTest extends OperateIntegrationTest {
 

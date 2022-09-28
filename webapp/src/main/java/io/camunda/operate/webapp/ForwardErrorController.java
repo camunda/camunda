@@ -28,7 +28,7 @@ public class ForwardErrorController {
   private static final Logger LOGGER = LoggerFactory.getLogger(ForwardErrorController.class);
 
   @Autowired
-    private OperateProfileService operateProfileService;
+  private OperateProfileService operateProfileService;
 
   @GetMapping(value = {"/{regex:[\\w-]+}", "/**/{regex:[\\w-]+}"})
   public String forward404(HttpServletRequest request) {
@@ -54,6 +54,7 @@ public class ForwardErrorController {
     }
     return "forward:" + LOGIN_RESOURCE;
   }
+
   private boolean isNotLoggedIn() {
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     return (authentication instanceof AnonymousAuthenticationToken)

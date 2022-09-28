@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.rest;
 
 import static io.camunda.operate.util.CollectionUtil.countNonNullObjects;
 
+import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Map;
@@ -25,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Flow node instances")
 @RestController
 @RequestMapping(value = FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL)
-public class FlowNodeInstanceRestService {
+public class FlowNodeInstanceRestService extends InternalAPIErrorController {
 
   public static final String FLOW_NODE_INSTANCE_URL = "/api/flow-node-instances";
 

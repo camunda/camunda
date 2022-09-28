@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.rest;
 
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.es.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Decisions")
 @RestController
 @RequestMapping(value = DecisionRestService.DECISION_URL)
-public class DecisionRestService {
+public class DecisionRestService extends InternalAPIErrorController {
 
   @Autowired
   protected DecisionReader decisionReader;

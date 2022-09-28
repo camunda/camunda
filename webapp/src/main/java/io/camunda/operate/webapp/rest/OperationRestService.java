@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.rest;
 
 import static io.camunda.operate.webapp.rest.OperationRestService.OPERATION_URL;
 
+import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Operations")
 @RestController
 @RequestMapping(value = OPERATION_URL)
-public class OperationRestService {
+public class OperationRestService extends InternalAPIErrorController {
 
   public static final String OPERATION_URL = "/api/operations";
 
