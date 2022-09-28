@@ -3,9 +3,10 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.upgrade.migrate39preview1to39.indices;
 
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
@@ -13,9 +14,9 @@ import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
 
-public class ProcessDefinitionIndex extends AbstractDefinitionIndex {
+public class ProcessDefinitionIndex39preview1 extends AbstractDefinitionIndex {
 
-  public static final int VERSION = 6;
+  public static final int VERSION = 5;
 
   public static final String PROCESS_DEFINITION_ID = DEFINITION_ID;
   public static final String PROCESS_DEFINITION_KEY = DEFINITION_KEY;
@@ -54,11 +55,7 @@ public class ProcessDefinitionIndex extends AbstractDefinitionIndex {
         .field("type", ElasticsearchConstants.TYPE_TEXT)
         .field("index", true)
         .field("analyzer", "is_present_analyzer")
-      .endObject()
-      .startObject(ONBOARDED)
-        .field("type", ElasticsearchConstants.TYPE_BOOLEAN)
       .endObject();
     // @formatter:on
   }
-
 }

@@ -28,11 +28,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,14 +44,12 @@ public class CustomerOnboardingDataImportService {
   private final ConfigurationService configurationService;
   private final CompletedProcessInstanceWriter completedProcessInstanceWriter;
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
-  private Set<String> importedDemoProcessDefinitionKeys;
   private static final String CUSTOMER_ONBOARDING_DEFINITION = "customer_onboarding_definition.json";
   private static final String PROCESSED_INSTANCES = "customer_onboarding_process_instances.json";
   private static final int BATCH_SIZE = 5000;
 
   @PostConstruct
   public void importData() {
-    importedDemoProcessDefinitionKeys = new HashSet<>();
     importData(PROCESSED_INSTANCES, CUSTOMER_ONBOARDING_DEFINITION, BATCH_SIZE);
   }
 
@@ -63,11 +59,8 @@ public class CustomerOnboardingDataImportService {
     }
   }
 
-  public Set<String> getImportedDemoProcessDefinitionKeys() {
-    return importedDemoProcessDefinitionKeys;
-  }
-
-  private void importCustomerOnboardingDefinition(final String processDefinition, final String pathToProcessInstances, final int batchSize) {
+  private void importCustomerOnboardingDefinition(final String processDefinition, final String pathToProcessInstances,
+                                                  final int batchSize) {
     try {
       if (processDefinition != null) {
         InputStream customerOnboardingDefinition = this.getClass()
@@ -85,7 +78,6 @@ public class CustomerOnboardingDataImportService {
               if (processDefinitionKey.isPresent()) {
                 processDefinitionWriter.importProcessDefinitions(List.of(processDefinitionDto));
                 readProcessInstanceJson(pathToProcessInstances, batchSize);
-                importedDemoProcessDefinitionKeys.add(processDefinitionKey.get());
               } else {
                 log.error("Process definition data are invalid. Please cheeck your json file.");
               }
@@ -114,8 +106,9 @@ public class CustomerOnboardingDataImportService {
         .getResourceAsStream(pathToProcessInstances);
       if (customerOnboardingProcessInstances != null) {
         String result = IOUtils.toString(customerOnboardingProcessInstances, StandardCharsets.UTF_8);
-        if(result != null) {
-          List<ProcessInstanceDto> rawProcessInstanceDtos = objectMapper.readValue(result, new TypeReference<>(){});
+        if (result != null) {
+          List<ProcessInstanceDto> rawProcessInstanceDtos = objectMapper.readValue(result, new TypeReference<>() {
+          });
           for (ProcessInstanceDto processInstance : rawProcessInstanceDtos) {
             if (processInstance != null) {
               Optional<Long> processInstanceDuration = Optional.ofNullable(processInstance.getDuration());
@@ -127,10 +120,14 @@ public class CustomerOnboardingDataImportService {
             }
           }
           loadProcessInstancesToElasticSearch(processInstanceDtos, batchSize);
-          } else { log.error("Could not load input stream of process instances to String. Please validate the process instance json file.");
+        } else {
+          log.error("Could not load input stream of process instances to String. Please validate the process instance json file" +
+                      ".");
         }
-        }
-        else {log.error("Could not load customer onboarding process instances to input stream. Please validate the process instance json file.");
+      } else {
+        log.error(
+          "Could not load customer onboarding process instances to input stream. Please validate the process instance json file" +
+            ".");
       }
     } catch (IOException e) {
       log.error("Could not parse customer onboarding process instances file.", e);

@@ -108,10 +108,12 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
 
     // when
     importAllEngineEntitiesFromScratch();
+    assertDefinitionHasOnboardedState(false);
     onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
 
     // then
     assertThat(processTriggeredOnboarding).containsExactly(processKey);
+    assertDefinitionHasOnboardedState(true);
   }
 
   @Test
@@ -123,7 +125,6 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     Set<String> processTriggeredOnboarding = new HashSet<>();
     deployAndStartUserTaskProcess(processKey);
 
-
     // when
     restartOnboardingSchedulingService(onboardingSchedulerService);
     onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
@@ -133,6 +134,7 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     // then
     // Make sure notification was not triggered
     assertThat(processTriggeredOnboarding).isEmpty();
+    assertDefinitionHasOnboardedState(false);
 
     // when
     // Now let's complete that task
@@ -142,6 +144,7 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
 
     // then
     assertThat(processTriggeredOnboarding).containsExactly(processKey);
+    assertDefinitionHasOnboardedState(true);
   }
 
   @Test
@@ -160,6 +163,7 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
 
     // then
     assertThat(processTriggeredOnboarding).containsExactly(processKey);
+    assertDefinitionHasOnboardedState(true);
 
     // First instance was completed and notified, now let's start with the 2nd instance
     // Clear our result array to check whether something new will be written on it
@@ -175,6 +179,7 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     // then
     // Make sure our function was not triggered
     assertThat(processTriggeredOnboarding).isEmpty();
+    assertDefinitionHasOnboardedState(true);
   }
 
   @Test
@@ -188,15 +193,18 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     deployAndStartSimpleServiceTaskProcess(processKey1);
     deployAndStartSimpleServiceTaskProcess(processKey2);
 
-
     // when
     restartOnboardingSchedulingService(onboardingSchedulerService);
     onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
     importAllEngineEntitiesFromScratch();
+    assertDefinitionHasOnboardedStateForDefinition(false, processKey1);
+    assertDefinitionHasOnboardedStateForDefinition(false, processKey2);
     onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
 
     // then
     assertThat(processTriggeredOnboarding).containsExactlyInAnyOrder(processKey1, processKey2);
+    assertDefinitionHasOnboardedStateForDefinition(true, processKey1);
+    assertDefinitionHasOnboardedStateForDefinition(true, processKey2);
   }
 
   @Test
@@ -209,11 +217,11 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
     Set<String> processTriggeredOnboarding = new HashSet<>();
     final ProcessDefinitionEngineDto processOne = deployAndStartSimpleServiceTaskProcess(processKey1);
 
-
     // when
     restartOnboardingSchedulingService(onboardingSchedulerService);
     onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
     importAllEngineEntitiesFromScratch();
+    assertDefinitionHasOnboardedStateForDefinition(false, processKey1);
     onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
 
     // then
@@ -231,11 +239,14 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
 
     // when
     importAllEngineEntitiesFromScratch();
+    assertDefinitionHasOnboardedStateForDefinition(false, processKey2);
     onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
 
     // then
     // Only the 2nd process should trigger onboarding
     assertThat(processTriggeredOnboarding).containsExactly(processKey2);
+    assertDefinitionHasOnboardedStateForDefinition(true, processKey1);
+    assertDefinitionHasOnboardedStateForDefinition(true, processKey2);
   }
 
   @Test
@@ -281,30 +292,31 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
   }
 
   @Test
-  public void oldProcessesDoNotTriggerNotifications() {
-    // given
+  public void oldOnboardedProcessesAreNotOnboardedTwice() {
+    // Given
     final String processKey1 = "old_process1";
     final String processKey2 = "old_process2";
     final OnboardingSchedulerService onboardingSchedulerService =
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
-    Set<String> processTriggeredOnboarding = new HashSet<>();
     final ProcessDefinitionEngineDto processOne = deployAndStartSimpleServiceTaskProcess(processKey1);
     final ProcessDefinitionEngineDto processTwo = deployAndStartSimpleServiceTaskProcess(processKey2);
     importAllEngineEntitiesFromScratch();
+    assertDefinitionHasOnboardedStateForDefinition(false, processKey1);
+    assertDefinitionHasOnboardedStateForDefinition(false, processKey2);
     restartOnboardingSchedulingService(onboardingSchedulerService); // Reinitialize the service to simulate the first start
     // when Optimize is booted
-    onboardingSchedulerService.setNotificationHandler(processTriggeredOnboarding::add);
     onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
 
-    // when
+    // When
     engineIntegrationExtension.startProcessInstance(processOne.getId());
     engineIntegrationExtension.startProcessInstance(processTwo.getId());
-    importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromLastIndex();
     onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
 
-    // then
+    // Then
     // No onboarding was triggered
-    assertThat(processTriggeredOnboarding).isEmpty();
+    assertDefinitionHasOnboardedStateForDefinition(true, processKey1);
+    assertDefinitionHasOnboardedStateForDefinition(true, processKey2);
   }
 
   @Test
@@ -480,10 +492,9 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
       definitionKey));
   }
 
-  private ProcessDefinitionEngineDto deployAndStartUserTaskProcess(final String definitionKey) {
+  private void deployAndStartUserTaskProcess(final String definitionKey) {
     ProcessDefinitionEngineDto processDefinition = deployUserTaskProcess(definitionKey);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    return processDefinition;
   }
 
   private ProcessDefinitionEngineDto deployUserTaskProcess(String definitionKey) {
@@ -522,6 +533,19 @@ public class OnboardingSchedulerServiceIT extends AbstractIT {
       .email(email)
       .build();
     return new EngineUserDto(kermitProfile, new UserCredentialsDto(KERMIT_USER));
+  }
+
+  private static void assertDefinitionHasOnboardedState(final boolean onboardedState) {
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+      .singleElement()
+      .satisfies(definition -> assertThat(definition.isOnboarded()).isEqualTo(onboardedState));
+  }
+
+  private static void assertDefinitionHasOnboardedStateForDefinition(final boolean onboardedState, final String defKey) {
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+      .filteredOn(definition -> definition.getKey().equals(defKey))
+      .singleElement()
+      .satisfies(definition -> assertThat(definition.isOnboarded()).isEqualTo(onboardedState));
   }
 
 }

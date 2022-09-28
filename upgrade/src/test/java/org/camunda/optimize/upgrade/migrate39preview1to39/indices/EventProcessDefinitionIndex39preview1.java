@@ -3,14 +3,13 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.es.schema.index.events;
+package org.camunda.optimize.upgrade.migrate39preview1to39.indices;
 
-import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 
-public class EventProcessDefinitionIndex extends ProcessDefinitionIndex {
+public class EventProcessDefinitionIndex39preview1 extends ProcessDefinitionIndex39preview1 {
 
-  public static final int VERSION = 5;
+  public static final int VERSION = 4;
 
   @Override
   public String getIndexName() {

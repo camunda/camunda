@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessGoalIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessOverviewIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
@@ -25,6 +27,8 @@ public class Upgrade39Preview1To39PlanFactory implements UpgradePlanFactory {
           "ctx._source.digest.remove(\"checkInterval\");"
       ))
       .addUpgradeStep(new DeleteIndexIfExistsStep(new ProcessGoalIndex()))
+      .addUpgradeStep(new UpdateIndexStep(new ProcessDefinitionIndex(), "ctx._source.onboarded = true"))
+      .addUpgradeStep(new UpdateIndexStep(new EventProcessDefinitionIndex(), "ctx._source.onboarded = true"))
       .build();
   }
 

@@ -27,10 +27,10 @@ public class EventProcessDefinitionDto extends ProcessDefinitionOptimizeDto {
                                    @NonNull final String version,
                                    final String versionTag, @NonNull final String name,
                                    final String tenantId, @NonNull final String bpmn20Xml, final boolean deleted,
-                                   @NonNull final List<FlowNodeDataDto> flowNodeData,
+                                   final boolean onboarded, @NonNull final List<FlowNodeDataDto> flowNodeData,
                                    @NonNull final Map<String, String> userTaskNames) {
     super(id, key, version, versionTag, name, new EventsDataSourceDto(),
-          tenantId, bpmn20Xml, deleted, flowNodeData, userTaskNames
+          tenantId, bpmn20Xml, deleted, onboarded, flowNodeData, userTaskNames
     );
   }
 }

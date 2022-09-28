@@ -56,6 +56,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
           .tenantId(null)
           .bpmn20Xml(simpleEventProcessMappingDto.getXml())
           .deleted(false)
+          .onboarded(true)
           .userTaskNames(ImmutableMap.of(USER_TASK_ID_ONE, USER_TASK_ID_ONE))
           .flowNodeData(ImmutableList.of(
             new FlowNodeDataDto(BPMN_END_EVENT_ID, BPMN_END_EVENT_ID, END_EVENT_TYPE),
