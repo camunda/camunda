@@ -35,6 +35,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
+      - name: Cache local Maven repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-integration-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-integration-
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -91,6 +98,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
+      - name: Cache local Maven repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-qa-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-qa-
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -138,6 +152,13 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+      - name: Cache local Maven repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-unit-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-unit-
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -180,6 +201,13 @@ jobs:
           go: false
           # setting up maven often times out on macOS
           maven: ${{ matrix.os != 'macos-latest' }}
+      - name: Cache local Maven repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-smoke-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-smoke-
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -205,6 +233,13 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+      - name: Cache local Maven repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-property-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-property-
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -267,6 +302,13 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+      - name: Cache local Maven repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-client-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-client-
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -315,6 +357,13 @@ jobs:
         with:
           languages: java
           queries: +security-and-quality
+      - name: Cache local Maven repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-codeql-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-codeql-
       - uses: ./.github/actions/build-zeebe
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
@@ -355,6 +404,13 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+      - name: Cache local Maven repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-java-checks-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-java-checks-
       - run: mvn -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
   docker-checks:
     name: Docker checks
@@ -373,6 +429,13 @@ jobs:
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-zeebe
+      - name: Cache local Maven repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-docker-checks-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-docker-checks-
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
       - uses: ./.github/actions/build-docker
