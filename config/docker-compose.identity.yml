@@ -110,6 +110,8 @@ services:
       - CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID=tasklist
       - CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET=the-cake-is-alive
       - CAMUNDA_TASKLIST_IDENTITY_AUDIENCE=tasklist-api
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://localhost:18080/auth/realms/camunda-platform
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/certs
     ports:
       - 8082:8082
     depends_on:
