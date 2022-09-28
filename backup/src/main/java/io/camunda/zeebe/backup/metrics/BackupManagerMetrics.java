@@ -18,6 +18,12 @@ public class BackupManagerMetrics {
   private static final String LABEL_NAME_OPERATION = "operation";
   private static final String LABEL_NAME_RESULT = "result";
 
+  private static final String FAILED = "failed";
+  private static final String COMPLETED = "completed";
+  private static final String TAKE_OPERATION = "take";
+  private static final String STATUS_OPERATION = "status";
+  private static final String DELETE_OPERATION = "delete";
+
   private static final Counter TOTAL_OPERATIONS =
       Counter.build()
           .namespace(NAMESPACE)
@@ -49,15 +55,21 @@ public class BackupManagerMetrics {
   }
 
   public OperationMetrics startTakingBackup() {
-    return OperationMetrics.start(partitionId, "take");
+    return OperationMetrics.start(partitionId, TAKE_OPERATION);
   }
 
   public OperationMetrics startQueryingStatus() {
-    return OperationMetrics.start(partitionId, "status");
+    return OperationMetrics.start(partitionId, STATUS_OPERATION);
   }
 
   public OperationMetrics startDeleting() {
-    return OperationMetrics.start(partitionId, "delete");
+    return OperationMetrics.start(partitionId, DELETE_OPERATION);
+  }
+
+  public void cancelInProgressOperations() {
+    OPERATIONS_IN_PROGRESS.labels(partitionId, TAKE_OPERATION).set(0);
+    OPERATIONS_IN_PROGRESS.labels(partitionId, DELETE_OPERATION).set(0);
+    OPERATIONS_IN_PROGRESS.labels(partitionId, STATUS_OPERATION).set(0);
   }
 
   public static final class OperationMetrics {
@@ -81,9 +93,9 @@ public class BackupManagerMetrics {
       timer.close();
       OPERATIONS_IN_PROGRESS.labels(partitionId, operation).dec();
       if (throwable != null) {
-        TOTAL_OPERATIONS.labels(partitionId, operation, "failed").inc();
+        TOTAL_OPERATIONS.labels(partitionId, operation, FAILED).inc();
       } else {
-        TOTAL_OPERATIONS.labels(partitionId, operation, "completed").inc();
+        TOTAL_OPERATIONS.labels(partitionId, operation, COMPLETED).inc();
       }
     }
   }
