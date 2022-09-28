@@ -211,7 +211,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -T1C -B
+          mvn -T1C -B --no-snapshot-updates
           -P parallel-tests,include-random-tests
           -D junitThreadCount=16
           -D skipChecks
@@ -281,7 +281,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -B
+          mvn -B --no-snapshot-updates
           -P disableCheckstyle,extract-flaky-tests
           -D skipChecks -D skipITs
           -D surefire.rerunFailingTestsCount=3
