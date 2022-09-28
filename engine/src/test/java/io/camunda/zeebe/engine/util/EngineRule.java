@@ -32,11 +32,11 @@ import io.camunda.zeebe.engine.util.client.JobClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
-import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
+import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -69,6 +69,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -195,7 +197,9 @@ public final class EngineRule extends ExternalResource {
                               partitionId, interPartitionCommandSender),
                           jobsAvailableCallback,
                           featureFlags)
-                      .withListener(new ProcessingExporterTransistor())
+                      .withListener(
+                          new ProcessingExporterTransistor(
+                              environmentRule.getLogStream(partitionId)))
                       .withListener(reprocessingCompletedListener),
               Optional.of(
                   new StreamProcessorListener() {
@@ -423,28 +427,43 @@ public final class EngineRule extends ExternalResource {
 
     private LogStreamReader logStreamReader;
     private TypedRecordImpl typedEvent;
+    private final SynchronousLogStream synchronousLogStream;
+    private final ExecutorService executorService;
+
+    public ProcessingExporterTransistor(final SynchronousLogStream synchronousLogStream) {
+      this.synchronousLogStream = synchronousLogStream;
+      executorService = Executors.newSingleThreadExecutor();
+    }
 
     @Override
     public void onRecovered(final ReadonlyStreamProcessorContext context) {
-      final int partitionId = context.getPartitionId();
-      typedEvent = new TypedRecordImpl(partitionId);
-      final var scheduleService = context.getScheduleService();
+      executorService.submit(
+          () -> {
+            final int partitionId = context.getPartitionId();
+            typedEvent = new TypedRecordImpl(partitionId);
+            final var asyncLogStream = synchronousLogStream.getAsyncLogStream();
+            asyncLogStream.registerRecordAvailableListener(this::onNewEventCommitted);
+            logStreamReader = asyncLogStream.newLogStreamReader().join();
+            exportEvents();
+          });
+    }
 
-      final LogStream logStream = context.getLogStream();
-      logStream.registerRecordAvailableListener(
-          () -> scheduleService.runDelayed(Duration.ZERO, this::onNewEventCommitted));
-      logStream
-          .newLogStreamReader()
-          .onComplete(
-              ((reader, throwable) -> {
-                if (throwable == null) {
-                  logStreamReader = reader;
-                  onNewEventCommitted();
-                }
-              }));
+    @Override
+    public void onClose() {
+      executorService.shutdownNow();
     }
 
     private void onNewEventCommitted() {
+      // this is called from outside (LogStream), so we need to enqueue the task
+      if (executorService.isShutdown()) {
+        return;
+      }
+
+      executorService.submit(this::exportEvents);
+    }
+
+    private void exportEvents() {
+      // to always run in the same thread
       if (logStreamReader == null) {
         return;
       }

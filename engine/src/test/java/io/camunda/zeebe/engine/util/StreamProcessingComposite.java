@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFa
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -54,6 +55,10 @@ public class StreamProcessingComposite {
   public LogStreamRecordWriter getLogStreamRecordWriter(final int partitionId) {
     final String logName = getLogName(partitionId);
     return streams.getLogStreamRecordWriter(logName);
+  }
+
+  public SynchronousLogStream getLogStream(final int partitionId) {
+    return streams.getLogStream(getLogName(partitionId));
   }
 
   public LogStreamRecordWriter newLogStreamRecordWriter(final int partitionId) {
