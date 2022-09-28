@@ -147,7 +147,7 @@ jobs:
           mvn -T2 -B --no-snapshot-updates
           -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
-          -P skip-random-tests,parallel-tests
+          -P skip-random-tests,parallel-tests,extract-flaky-tests
           test
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Normalize artifact name
@@ -187,7 +187,7 @@ jobs:
           mvn -B --no-snapshot-updates
           -DskipUTs -DskipChecks -Dsurefire.rerunFailingTestsCount=3
           -pl qa/integration-tests
-          -P smoke-test
+          -P smoke-test,extract-flaky-tests
           verify
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
