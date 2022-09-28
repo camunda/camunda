@@ -16,7 +16,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.agrona.LangUtil;
 import org.apache.maven.plugin.surefire.booterclient.output.InPluginProcessDumpSingleton;
 import org.apache.maven.plugin.surefire.report.ConsoleOutputFileReporter;
 import org.apache.maven.plugin.surefire.report.FileReporter;
@@ -105,7 +104,7 @@ public final class ZeebeConsoleOutputFileReporter implements ConsoleOutputReport
 
     } catch (final Exception e) {
       dumpException(e);
-      LangUtil.rethrowUnchecked(e);
+      sneakyThrow(e);
     }
   }
 
@@ -154,5 +153,10 @@ public final class ZeebeConsoleOutputFileReporter implements ConsoleOutputReport
   private boolean filterTestOutputFiles(final String fileName, final Path path) {
     return path.getFileName().toString().startsWith(fileName)
         && path.getFileName().toString().endsWith(OUTPUT_FILE_EXTENSION);
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T extends Throwable> void sneakyThrow(final Throwable t) throws T {
+    throw (T) t;
   }
 }
