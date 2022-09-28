@@ -103,10 +103,7 @@ public final class ZeebeConsoleOutputFileReporter implements ConsoleOutputReport
         Files.move(reportPath, backupPath);
       }
 
-    } catch (final InvocationTargetException
-        | IllegalAccessException
-        | IOException
-        | NoSuchMethodException e) {
+    } catch (final Exception e) {
       dumpException(e);
       LangUtil.rethrowUnchecked(e);
     }
