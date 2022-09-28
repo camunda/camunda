@@ -51,26 +51,33 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
 
   @PostConstruct
   public void init() {
-    // Check no more often than every 60s, recommended 180 (3min)
-    setIntervalToCheckForOnboardingDataInSeconds(
-      Math.max(60, configurationService.getOnboarding().getIntervalForCheckingTriggerForOnboardingEmails()));
-    log.info("Initializing OnboardingScheduler");
-    onboardedProcessDefinitions = new HashSet<>();
-    for (String processToBeEvaluated : getAllProcessDefinitionKeys()) {
-      if (processHasCompletedInstance(processToBeEvaluated)) {
-        onboardedProcessDefinitions.add(processToBeEvaluated);
+    setUpScheduler();
+  }
+
+  public void setUpScheduler() {
+    if (configurationService.getOnboarding().isScheduleProcessOnboardingChecks()) {
+      // Check no more often than every 60s, recommended 180 (3min)
+      setIntervalToCheckForOnboardingDataInSeconds(
+        Math.max(60, configurationService.getOnboarding().getIntervalForCheckingTriggerForOnboardingEmails()));
+      log.info("Initializing OnboardingScheduler");
+      onboardedProcessDefinitions = new HashSet<>();
+      for (String processToBeEvaluated : getAllProcessDefinitionKeys()) {
+        if (processHasCompletedInstance(processToBeEvaluated)) {
+          onboardedProcessDefinitions.add(processToBeEvaluated);
+        }
       }
+      if (configurationService.getOnboarding().isEnableOnboardingEmails()) {
+        this.setNotificationHandler(processKey -> {
+          onboardingNotificationService.notifyOnboardingWithErrorHandling(processKey);
+          return processKey;
+        });
+      } else {
+        log.info("Onboarding E-Mails deactivated by configuration");
+      }
+      startOnboardingScheduling();
+    } else {
+      log.info("Will not schedule checks for process onboarding state as this is disabled by configuration");
     }
-    if (configurationService.getOnboarding().isEnableOnboardingEmails()) {
-      this.setNotificationHandler(processKey -> {
-        onboardingNotificationService.notifyOnboardingWithErrorHandling(processKey);
-        return processKey;
-      });
-    }
-    else {
-      log.info("Onboarding E-Mails deactivated by configuration");
-    }
-    startOnboardingScheduling();
   }
 
   public void checkIfNewOnboardingDataIsPresent() {
