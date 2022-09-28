@@ -1208,6 +1208,7 @@
               </property>
             </properties>
             <reportNameSuffix>${env.SUREFIRE_REPORT_NAME_SUFFIX}</reportNameSuffix>
+            <runOrder>balanced</runOrder>
             <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
               <disable>false</disable>
               <version>3.0</version>
@@ -1236,6 +1237,7 @@
               </property>
             </properties>
             <reportNameSuffix>${env.SUREFIRE_REPORT_NAME_SUFFIX}</reportNameSuffix>
+            <runOrder>balanced</runOrder>
             <!--
               ensure junit5 display names are properly reported; see the documentation for more
               https://maven.apache.org/surefire/maven-failsafe-plugin/examples/junit-platform.html
