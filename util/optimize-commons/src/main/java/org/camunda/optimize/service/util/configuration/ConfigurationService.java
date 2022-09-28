@@ -44,7 +44,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationParse
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ANALYTICS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.AVAILABLE_LOCALES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CACHES_CONFIGURATION;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_BASED_PROCESS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EXTERNAL_VARIABLE_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
@@ -106,6 +106,9 @@ public class ConfigurationService {
   private String esRefreshInterval;
   private String esIndexPrefix;
   private Integer esNestedDocumentsLimit;
+
+  // elasticsearch snapshot settings
+  private String esSnapshotRepositoryName;
 
   // elastic query settings
   private Integer esAggregationBucketLimit;
@@ -298,7 +301,7 @@ public class ConfigurationService {
         new TypeRef<>() {};
       // @formatter:on
       elasticsearchConnectionNodes = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTIC_SEARCH_CONNECTION_NODES, typeRef
+        ConfigurationServiceConstants.ELASTICSEARCH_CONNECTION_NODES, typeRef
       );
     }
     return elasticsearchConnectionNodes;
@@ -369,7 +372,7 @@ public class ConfigurationService {
   public int getEsScrollTimeoutInSeconds() {
     if (esScrollTimeoutInSeconds == null) {
       esScrollTimeoutInSeconds = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTIC_SEARCH_SCROLL_TIMEOUT_IN_SECONDS, Integer.class
+        ConfigurationServiceConstants.ELASTICSEARCH_SCROLL_TIMEOUT_IN_SECONDS, Integer.class
       );
     }
     return esScrollTimeoutInSeconds;
@@ -378,7 +381,7 @@ public class ConfigurationService {
   public int getElasticsearchConnectionTimeout() {
     if (elasticsearchConnectionTimeout == null) {
       elasticsearchConnectionTimeout = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTIC_SEARCH_CONNECTION_TIMEOUT, Integer.class
+        ConfigurationServiceConstants.ELASTICSEARCH_CONNECTION_TIMEOUT, Integer.class
       );
     }
     return elasticsearchConnectionTimeout;
@@ -387,7 +390,7 @@ public class ConfigurationService {
   public int getElasticsearchResponseConsumerBufferLimitInMb() {
     if (elasticsearchResponseConsumerBufferLimitInMb == null) {
       elasticsearchResponseConsumerBufferLimitInMb = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTIC_SEARCH_RESPONSE_CONSUMER_BUFFER_LIMIT_MB, Integer.class
+        ConfigurationServiceConstants.ELASTICSEARCH_RESPONSE_CONSUMER_BUFFER_LIMIT_MB, Integer.class
       );
     }
     return elasticsearchResponseConsumerBufferLimitInMb;
@@ -396,7 +399,7 @@ public class ConfigurationService {
   public ProxyConfiguration getElasticSearchProxyConfig() {
     if (elasticSearchProxyConfig == null) {
       elasticSearchProxyConfig = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTIC_SEARCH_PROXY, ProxyConfiguration.class
+        ConfigurationServiceConstants.ELASTICSEARCH_PROXY, ProxyConfiguration.class
       );
       elasticSearchProxyConfig.validate();
     }
@@ -406,7 +409,7 @@ public class ConfigurationService {
   public String getElasticsearchPathPrefix() {
     if (elasticsearchPathPrefix == null) {
       elasticsearchPathPrefix = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTIC_SEARCH_PATH_PREFIX, String.class
+        ConfigurationServiceConstants.ELASTICSEARCH_PATH_PREFIX, String.class
       );
     }
     return elasticsearchPathPrefix;
@@ -511,6 +514,13 @@ public class ConfigurationService {
     }
     ensureGreaterThanZero(esNestedDocumentsLimit);
     return esNestedDocumentsLimit;
+  }
+
+  public String getEsSnapshotRepositoryName() {
+    if (esSnapshotRepositoryName == null) {
+      esSnapshotRepositoryName = configJsonContext.read(ConfigurationServiceConstants.ELASTICSEARCH_SNAPSHOT_REPO, String.class);
+    }
+    return esSnapshotRepositoryName;
   }
 
   public int getEngineImportProcessDefinitionXmlMaxPageSize() {
@@ -1009,7 +1019,7 @@ public class ConfigurationService {
   public String getElasticsearchSecurityUsername() {
     if (elasticsearchSecurityUsername == null) {
       elasticsearchSecurityUsername =
-        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_USERNAME);
+        configJsonContext.read(ConfigurationServiceConstants.ELASTICSEARCH_SECURITY_USERNAME);
     }
     return elasticsearchSecurityUsername;
   }
@@ -1017,7 +1027,7 @@ public class ConfigurationService {
   public String getElasticsearchSecurityPassword() {
     if (elasticsearchSecurityPassword == null) {
       elasticsearchSecurityPassword =
-        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_PASSWORD);
+        configJsonContext.read(ConfigurationServiceConstants.ELASTICSEARCH_SECURITY_PASSWORD);
     }
     return elasticsearchSecurityPassword;
   }
@@ -1025,7 +1035,7 @@ public class ConfigurationService {
   public Boolean getElasticsearchSecuritySSLEnabled() {
     if (elasticsearchSecuritySSLEnabled == null) {
       elasticsearchSecuritySSLEnabled =
-        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_ENABLED, Boolean.class);
+        configJsonContext.read(ConfigurationServiceConstants.ELASTICSEARCH_SECURITY_SSL_ENABLED, Boolean.class);
     }
     return elasticsearchSecuritySSLEnabled;
   }
@@ -1033,7 +1043,7 @@ public class ConfigurationService {
   public String getElasticsearchSecuritySSLCertificate() {
     if (elasticsearchSecuritySSLCertificate == null && getElasticsearchSecuritySSLEnabled()) {
       elasticsearchSecuritySSLCertificate = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE
+        ConfigurationServiceConstants.ELASTICSEARCH_SECURITY_SSL_CERTIFICATE
       );
       if (elasticsearchSecuritySSLCertificate != null) {
         elasticsearchSecuritySSLCertificate = resolvePathAsAbsoluteUrl(elasticsearchSecuritySSLCertificate).getPath();
@@ -1045,7 +1055,7 @@ public class ConfigurationService {
   public List<String> getElasticsearchSecuritySSLCertificateAuthorities() {
     if (elasticsearchSecuritySSLCertificateAuthorities == null && getElasticsearchSecuritySSLEnabled()) {
       List<String> authoritiesAsList = configJsonContext.read(
-        ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES, LIST_OF_STRINGS_TYPE_REF
+        ELASTICSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES, LIST_OF_STRINGS_TYPE_REF
       );
       elasticsearchSecuritySSLCertificateAuthorities = authoritiesAsList.stream()
         .map(a -> resolvePathAsAbsoluteUrl(a).getPath())

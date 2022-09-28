@@ -335,6 +335,8 @@ es:
       port: null
       # whether this proxy is using a secured connection
       sslEnabled: false
+  backup:
+      repositoryName: ${CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME:}
 
 
   # Elasticsearch security settings
