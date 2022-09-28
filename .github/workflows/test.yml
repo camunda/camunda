@@ -53,6 +53,11 @@ jobs:
           ./agent wait
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Cache test runtimes
+        uses: actions/cache@v3
+        with:
+          path: ./**/.surefire-*
+          key: integration-test-runtimes
       - name: Maven Test Build
         run: >
           mvn -B -T2 --no-snapshot-updates
@@ -108,6 +113,11 @@ jobs:
           ./agent wait
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Cache test runtimes
+        uses: actions/cache@v3
+        with:
+          path: ./**/.surefire-*
+          key: qa-tests-runtimes
       - name: Maven Test Build
         run: >
           mvn -B -T2 --no-snapshot-updates
@@ -142,6 +152,11 @@ jobs:
           maven-extra-args: -T1C
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Cache test runtimes
+        uses: actions/cache@v3
+        with:
+          path: ./**/.surefire-*
+          key: unit-tests-runtimes
       - name: Maven Test Build
         run: >
           mvn -T2 -B --no-snapshot-updates
@@ -209,6 +224,11 @@ jobs:
           maven-extra-args: -T1C
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Cache test runtimes
+        uses: actions/cache@v3
+        with:
+          path: ./**/.surefire-*
+          key: property-test-runtimes
       - name: Maven Test Build
         run: >
           mvn -T1C -B
