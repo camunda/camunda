@@ -105,10 +105,13 @@ public class BackupManager {
     for (int index = 0; index < count; index++) {
       String[] indexPattern = getIndexPatternsOrdered()[index];
       String snapshotName = getSnapshotName(request.getBackupId(), index + 1, count);
-      requestsQueue.offer(new CreateSnapshotRequest().repository(repositoryName).snapshot(snapshotName).indices(indexPattern)
-          //ignoreUnavailable = false - indices defined by their exact name MUST be present
-          //allowNoIndices = true - indices defined by wildcards, e.g. archived, MIGHT BE absent
-          .indicesOptions(IndicesOptions.fromOptions(false, true, true, true)).waitForCompletion(true));
+      requestsQueue.offer(
+          new CreateSnapshotRequest().repository(repositoryName).snapshot(snapshotName).indices(indexPattern)
+              //ignoreUnavailable = false - indices defined by their exact name MUST be present
+              //allowNoIndices = true - indices defined by wildcards, e.g. archived, MIGHT BE absent
+              .indicesOptions(IndicesOptions.fromOptions(false, true, true, true))
+              .featureStates(new String[]{"none"})
+              .waitForCompletion(true));
       logger.debug("Snapshot scheduled: " + snapshotName);
       snapshotNames.add(snapshotName);
     }
