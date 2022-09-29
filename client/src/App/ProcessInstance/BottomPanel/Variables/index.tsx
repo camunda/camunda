@@ -35,356 +35,378 @@ import {VariableFormValues} from 'modules/types/variables';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {OnLastVariableModificationRemoved} from './OnLastVariableModificationRemoved';
 
-const Variables: React.FC = observer(() => {
-  const {
-    state: {items, pendingItem, loadingItemId, status},
-    displayStatus,
-    scopeId,
-  } = variablesStore;
+type Props = {
+  isVariableModificationAllowed?: boolean;
+};
 
-  const scrollableContentRef = useRef<HTMLDivElement>(null);
-  const variablesContentRef = useRef<HTMLDivElement>(null);
-  const variableRowRef = useRef<HTMLTableRowElement>(null);
-  const {processInstanceId = ''} = useProcessInstancePageParams();
-  const notifications = useNotifications();
-  const {isModificationModeEnabled} = modificationsStore;
+const Variables: React.FC<Props> = observer(
+  ({isVariableModificationAllowed = false}) => {
+    const {
+      state: {items, pendingItem, loadingItemId, status},
+      displayStatus,
+      scopeId,
+    } = variablesStore;
 
-  const form = useForm<VariableFormValues>();
+    const scrollableContentRef = useRef<HTMLDivElement>(null);
+    const variablesContentRef = useRef<HTMLDivElement>(null);
+    const variableRowRef = useRef<HTMLTableRowElement>(null);
+    const {processInstanceId = ''} = useProcessInstancePageParams();
+    const notifications = useNotifications();
+    const {isModificationModeEnabled} = modificationsStore;
 
-  const addVariableModifications = useMemo(
-    () => modificationsStore.getAddVariableModifications(scopeId),
-    [scopeId]
-  );
+    const form = useForm<VariableFormValues>();
 
-  useEffect(() => {
-    const disposer = reaction(
-      () => modificationsStore.isModificationModeEnabled,
-      (isModificationModeEnabled) => {
-        if (!isModificationModeEnabled) {
-          form.reset({});
-        }
-      }
+    const addVariableModifications = useMemo(
+      () => modificationsStore.getAddVariableModifications(scopeId),
+      [scopeId]
     );
 
-    return disposer;
-  }, [isModificationModeEnabled, form]);
+    useEffect(() => {
+      const disposer = reaction(
+        () => modificationsStore.isModificationModeEnabled,
+        (isModificationModeEnabled) => {
+          if (!isModificationModeEnabled) {
+            form.reset({});
+          }
+        }
+      );
 
-  const {initialValues} = useFormState();
+      return disposer;
+    }, [isModificationModeEnabled, form]);
 
-  const fieldArray = useFieldArray('newVariables');
+    const {initialValues} = useFormState();
 
-  const isViewMode = isModificationModeEnabled
-    ? fieldArray.fields.length === 0 &&
-      modificationsStore.getAddVariableModifications(scopeId).length === 0
-    : initialValues === undefined || Object.values(initialValues).length === 0;
+    const fieldArray = useFieldArray('newVariables');
 
-  const isAddMode = initialValues?.name === '' && initialValues?.value === '';
+    const isViewMode = isModificationModeEnabled
+      ? fieldArray.fields.length === 0 &&
+        modificationsStore.getAddVariableModifications(scopeId).length === 0
+      : initialValues === undefined ||
+        Object.values(initialValues).length === 0;
 
-  function fetchFullVariable({
-    id,
-    enableLoading = true,
-  }: {
-    id: VariableEntity['id'];
-    enableLoading?: boolean;
-  }) {
-    return variablesStore.fetchVariable({
+    const isAddMode = initialValues?.name === '' && initialValues?.value === '';
+
+    function fetchFullVariable({
       id,
-      onError: () => {
-        notifications.displayNotification('error', {
-          headline: 'Variable could not be fetched',
-        });
-      },
-      enableLoading,
-    });
-  }
+      enableLoading = true,
+    }: {
+      id: VariableEntity['id'];
+      enableLoading?: boolean;
+    }) {
+      return variablesStore.fetchVariable({
+        id,
+        onError: () => {
+          notifications.displayNotification('error', {
+            headline: 'Variable could not be fetched',
+          });
+        },
+        enableLoading,
+      });
+    }
 
-  if (displayStatus === 'no-content') {
-    return null;
-  }
+    if (displayStatus === 'no-content') {
+      return null;
+    }
 
-  return (
-    <Styled.VariablesContent ref={variablesContentRef}>
-      {isViewMode && displayStatus === 'skeleton' && (
-        <Skeleton type="skeleton" rowHeight={32} />
-      )}
-      {isViewMode && displayStatus === 'no-variables' && (
-        <Skeleton type="info" label="The Flow Node has no Variables" />
-      )}
-      {(!isViewMode || displayStatus === 'variables') && (
-        <>
-          <Styled.TableScroll ref={scrollableContentRef}>
-            <Table data-testid="variables-list">
-              <Styled.THead
-                scrollBarWidth={
-                  (scrollableContentRef?.current?.offsetWidth ?? 0) -
-                  (scrollableContentRef?.current?.scrollWidth ?? 0)
-                }
-              >
-                <TR>
-                  <TH>Name</TH>
-                  <TH>Value</TH>
-                </TR>
-              </Styled.THead>
-              <InfiniteScroller
-                onVerticalScrollStartReach={async (scrollDown) => {
-                  if (variablesStore.shouldFetchPreviousVariables() === false) {
-                    return;
+    return (
+      <Styled.VariablesContent ref={variablesContentRef}>
+        {isViewMode && displayStatus === 'skeleton' && (
+          <Skeleton type="skeleton" rowHeight={32} />
+        )}
+        {isViewMode && displayStatus === 'no-variables' && (
+          <Skeleton type="info" label="The Flow Node has no Variables" />
+        )}
+        {(!isViewMode || displayStatus === 'variables') && (
+          <>
+            <Styled.TableScroll ref={scrollableContentRef}>
+              <Table data-testid="variables-list">
+                <Styled.THead
+                  scrollBarWidth={
+                    (scrollableContentRef?.current?.offsetWidth ?? 0) -
+                    (scrollableContentRef?.current?.scrollWidth ?? 0)
                   }
-                  await variablesStore.fetchPreviousVariables(
-                    processInstanceId
-                  );
-
-                  if (
-                    variablesStore.state.items.length ===
-                      MAX_VARIABLES_STORED &&
-                    variablesStore.state.latestFetch.itemsCount !== 0
-                  ) {
-                    scrollDown(
-                      variablesStore.state.latestFetch.itemsCount *
-                        (variableRowRef.current?.offsetHeight ?? 0)
+                >
+                  <TR>
+                    <TH>Name</TH>
+                    <TH>Value</TH>
+                  </TR>
+                </Styled.THead>
+                <InfiniteScroller
+                  onVerticalScrollStartReach={async (scrollDown) => {
+                    if (
+                      variablesStore.shouldFetchPreviousVariables() === false
+                    ) {
+                      return;
+                    }
+                    await variablesStore.fetchPreviousVariables(
+                      processInstanceId
                     );
-                  }
-                }}
-                onVerticalScrollEndReach={() => {
-                  if (variablesStore.shouldFetchNextVariables() === false) {
-                    return;
-                  }
-                  variablesStore.fetchNextVariables(processInstanceId);
-                }}
-                scrollableContainerRef={scrollableContentRef}
-              >
-                <tbody>
-                  {isModificationModeEnabled && (
-                    <>
-                      <OnLastVariableModificationRemoved />
-                      <FieldArray
-                        name="newVariables"
-                        initialValue={
-                          addVariableModifications.length > 0
-                            ? addVariableModifications
-                            : undefined
-                        }
-                      >
-                        {({fields}) =>
-                          fields
-                            .map((variableName, index) => {
-                              return (
-                                <TR
-                                  key={variableName}
-                                  data-testid={`newVariables[${index}]`}
-                                >
-                                  <NewVariableModification
-                                    variableName={variableName}
-                                    onRemove={() => {
-                                      fields.remove(index);
-                                    }}
-                                  />
-                                </TR>
-                              );
-                            })
-                            .reverse()
-                        }
-                      </FieldArray>
-                    </>
-                  )}
-                  {items.map(
-                    ({
-                      name: variableName,
-                      value: variableValue,
-                      hasActiveOperation,
-                      isPreview,
-                      id,
-                    }) => (
-                      <TR
-                        ref={variableRowRef}
-                        key={variableName}
-                        data-testid={variableName}
-                        hasActiveOperation={hasActiveOperation}
-                      >
-                        {(initialValues?.name === variableName &&
-                          processInstanceDetailsStore.isRunning) ||
-                        isModificationModeEnabled ? (
-                          <ExistingVariable
-                            id={id}
-                            variableName={variableName}
-                            variableValue={
-                              variablesStore.getFullVariableValue(id) ??
-                              variableValue
-                            }
-                            pauseValidation={
-                              isPreview &&
-                              variablesStore.getFullVariableValue(id) ===
-                                undefined
-                            }
-                            onFocus={() => {
-                              if (
+
+                    if (
+                      variablesStore.state.items.length ===
+                        MAX_VARIABLES_STORED &&
+                      variablesStore.state.latestFetch.itemsCount !== 0
+                    ) {
+                      scrollDown(
+                        variablesStore.state.latestFetch.itemsCount *
+                          (variableRowRef.current?.offsetHeight ?? 0)
+                      );
+                    }
+                  }}
+                  onVerticalScrollEndReach={() => {
+                    if (variablesStore.shouldFetchNextVariables() === false) {
+                      return;
+                    }
+                    variablesStore.fetchNextVariables(processInstanceId);
+                  }}
+                  scrollableContainerRef={scrollableContentRef}
+                >
+                  <tbody>
+                    {isModificationModeEnabled && (
+                      <>
+                        <OnLastVariableModificationRemoved />
+                        <FieldArray
+                          name="newVariables"
+                          initialValue={
+                            addVariableModifications.length > 0
+                              ? addVariableModifications
+                              : undefined
+                          }
+                        >
+                          {({fields}) =>
+                            fields
+                              .map((variableName, index) => {
+                                return (
+                                  <TR
+                                    key={variableName}
+                                    data-testid={`newVariables[${index}]`}
+                                  >
+                                    <NewVariableModification
+                                      variableName={variableName}
+                                      onRemove={() => {
+                                        fields.remove(index);
+                                      }}
+                                    />
+                                  </TR>
+                                );
+                              })
+                              .reverse()
+                          }
+                        </FieldArray>
+                      </>
+                    )}
+                    {items.map(
+                      ({
+                        name: variableName,
+                        value: variableValue,
+                        hasActiveOperation,
+                        isPreview,
+                        id,
+                      }) => (
+                        <TR
+                          ref={variableRowRef}
+                          key={variableName}
+                          data-testid={variableName}
+                          hasActiveOperation={hasActiveOperation}
+                        >
+                          {(initialValues?.name === variableName &&
+                            processInstanceDetailsStore.isRunning) ||
+                          (isModificationModeEnabled &&
+                            isVariableModificationAllowed) ? (
+                            <ExistingVariable
+                              id={id}
+                              variableName={variableName}
+                              variableValue={
+                                variablesStore.getFullVariableValue(id) ??
+                                variableValue
+                              }
+                              pauseValidation={
                                 isPreview &&
                                 variablesStore.getFullVariableValue(id) ===
                                   undefined
-                              ) {
-                                variablesStore.fetchVariable({
-                                  id,
-                                  onSuccess: (variable: VariableEntity) => {
-                                    variablesStore.setFullVariableValue(
-                                      id,
-                                      variable.value
-                                    );
-                                  },
-                                  onError: () => {
-                                    notifications.displayNotification('error', {
-                                      headline: 'Variable could not be fetched',
-                                    });
-                                  },
-                                });
                               }
-                            }}
-                            onExitEditMode={() => {
-                              variablesStore.deleteFullVariableValue(id);
-                            }}
-                          />
-                        ) : (
-                          <>
-                            <Styled.TD>
-                              <Styled.VariableName title={variableName}>
-                                {variableName}
-                              </Styled.VariableName>
-                            </Styled.TD>
-
-                            <Styled.DisplayTextTD>
-                              <Styled.DisplayTextContainer>
-                                <Styled.DisplayText
-                                  hasBackdrop={loadingItemId === id}
-                                >
-                                  {loadingItemId === id && <VariableBackdrop />}
-                                  {variableValue}
-                                </Styled.DisplayText>
-
-                                {processInstanceDetailsStore.isRunning ? (
-                                  <>
-                                    {hasActiveOperation ? (
-                                      <Styled.Spinner data-testid="edit-variable-spinner" />
-                                    ) : (
-                                      <Restricted
-                                        scopes={['write']}
-                                        fallback={
-                                          isPreview ? (
-                                            <ViewFullVariableButton
-                                              variableName={variableName}
-                                              onClick={async () => {
-                                                const variable =
-                                                  await fetchFullVariable({
-                                                    id,
-                                                    enableLoading: false,
-                                                  });
-
-                                                return variable?.value ?? null;
-                                              }}
-                                            />
-                                          ) : null
+                              onFocus={() => {
+                                if (
+                                  isPreview &&
+                                  variablesStore.getFullVariableValue(id) ===
+                                    undefined
+                                ) {
+                                  variablesStore.fetchVariable({
+                                    id,
+                                    onSuccess: (variable: VariableEntity) => {
+                                      variablesStore.setFullVariableValue(
+                                        id,
+                                        variable.value
+                                      );
+                                    },
+                                    onError: () => {
+                                      notifications.displayNotification(
+                                        'error',
+                                        {
+                                          headline:
+                                            'Variable could not be fetched',
                                         }
-                                      >
-                                        <ActionButtons>
-                                          <ActionButton
-                                            title="Enter edit mode"
-                                            data-testid="edit-variable-button"
-                                            disabled={loadingItemId !== null}
-                                            onClick={async () => {
-                                              let value = variableValue;
-                                              if (isPreview) {
-                                                const variable =
-                                                  await fetchFullVariable({id});
+                                      );
+                                    },
+                                  });
+                                }
+                              }}
+                              onExitEditMode={() => {
+                                variablesStore.deleteFullVariableValue(id);
+                              }}
+                            />
+                          ) : (
+                            <>
+                              <Styled.TD>
+                                <Styled.VariableName title={variableName}>
+                                  {variableName}
+                                </Styled.VariableName>
+                              </Styled.TD>
 
-                                                if (variable === null) {
-                                                  return;
+                              <Styled.DisplayTextTD>
+                                <Styled.DisplayTextContainer>
+                                  <Styled.DisplayText
+                                    hasBackdrop={loadingItemId === id}
+                                  >
+                                    {loadingItemId === id && (
+                                      <VariableBackdrop />
+                                    )}
+                                    {variableValue}
+                                  </Styled.DisplayText>
+
+                                  {processInstanceDetailsStore.isRunning &&
+                                  (!isModificationModeEnabled ||
+                                    isVariableModificationAllowed) ? (
+                                    <>
+                                      {hasActiveOperation ? (
+                                        <Styled.Spinner data-testid="edit-variable-spinner" />
+                                      ) : (
+                                        <Restricted
+                                          scopes={['write']}
+                                          fallback={
+                                            isPreview ? (
+                                              <ViewFullVariableButton
+                                                variableName={variableName}
+                                                onClick={async () => {
+                                                  const variable =
+                                                    await fetchFullVariable({
+                                                      id,
+                                                      enableLoading: false,
+                                                    });
+
+                                                  return (
+                                                    variable?.value ?? null
+                                                  );
+                                                }}
+                                              />
+                                            ) : null
+                                          }
+                                        >
+                                          <ActionButtons>
+                                            <ActionButton
+                                              title="Enter edit mode"
+                                              data-testid="edit-variable-button"
+                                              disabled={loadingItemId !== null}
+                                              onClick={async () => {
+                                                let value = variableValue;
+                                                if (isPreview) {
+                                                  const variable =
+                                                    await fetchFullVariable({
+                                                      id,
+                                                    });
+
+                                                  if (variable === null) {
+                                                    return;
+                                                  }
+
+                                                  variablesStore.setFullVariableValue(
+                                                    id,
+                                                    variable.value
+                                                  );
+
+                                                  value = variable.value;
                                                 }
 
-                                                variablesStore.setFullVariableValue(
-                                                  id,
-                                                  variable.value
-                                                );
-
-                                                value = variable.value;
-                                              }
-
-                                              form.reset({
-                                                name: variableName,
-                                                value,
+                                                form.reset({
+                                                  name: variableName,
+                                                  value,
+                                                });
+                                                form.change('value', value);
+                                              }}
+                                              icon={<Styled.EditIcon />}
+                                            />
+                                          </ActionButtons>
+                                        </Restricted>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <>
+                                      {isPreview ? (
+                                        <ViewFullVariableButton
+                                          variableName={variableName}
+                                          onClick={async () => {
+                                            const variable =
+                                              await fetchFullVariable({
+                                                id,
+                                                enableLoading: false,
                                               });
-                                              form.change('value', value);
-                                            }}
-                                            icon={<Styled.EditIcon />}
-                                          />
-                                        </ActionButtons>
-                                      </Restricted>
-                                    )}
-                                  </>
-                                ) : (
-                                  <>
-                                    {isPreview ? (
-                                      <ViewFullVariableButton
-                                        variableName={variableName}
-                                        onClick={async () => {
-                                          const variable =
-                                            await fetchFullVariable({
-                                              id,
-                                              enableLoading: false,
-                                            });
 
-                                          return variable?.value ?? null;
-                                        }}
-                                      />
-                                    ) : null}
-                                  </>
-                                )}
-                              </Styled.DisplayTextContainer>
-                            </Styled.DisplayTextTD>
-                          </>
-                        )}
-                      </TR>
-                    )
-                  )}
-                </tbody>
-              </InfiniteScroller>
-            </Table>
-          </Styled.TableScroll>
-        </>
-      )}
-      {!isModificationModeEnabled && (
-        <Restricted scopes={['write']}>
-          <Styled.Footer
-            scrollBarWidth={
-              (scrollableContentRef?.current?.offsetWidth ?? 0) -
-              (scrollableContentRef?.current?.scrollWidth ?? 0)
-            }
-            hasPendingVariable={pendingItem !== null}
-          >
-            {processInstanceDetailsStore.isRunning && (
-              <>
-                {pendingItem !== null && <PendingVariable />}
-                {isAddMode && pendingItem === null && <NewVariable />}
-              </>
-            )}
+                                            return variable?.value ?? null;
+                                          }}
+                                        />
+                                      ) : null}
+                                    </>
+                                  )}
+                                </Styled.DisplayTextContainer>
+                              </Styled.DisplayTextTD>
+                            </>
+                          )}
+                        </TR>
+                      )
+                    )}
+                  </tbody>
+                </InfiniteScroller>
+              </Table>
+            </Styled.TableScroll>
+          </>
+        )}
+        {!isModificationModeEnabled && (
+          <Restricted scopes={['write']}>
+            <Styled.Footer
+              scrollBarWidth={
+                (scrollableContentRef?.current?.offsetWidth ?? 0) -
+                (scrollableContentRef?.current?.scrollWidth ?? 0)
+              }
+              hasPendingVariable={pendingItem !== null}
+            >
+              {processInstanceDetailsStore.isRunning && (
+                <>
+                  {pendingItem !== null && <PendingVariable />}
+                  {isAddMode && pendingItem === null && <NewVariable />}
+                </>
+              )}
 
-            {!isAddMode && pendingItem === null && (
-              <AddVariableButton
-                onClick={() => {
-                  form.reset({name: '', value: ''});
-                }}
-                disabled={
-                  status === 'first-fetch' ||
-                  !isViewMode ||
-                  (flowNodeSelectionStore.isRootNodeSelected
-                    ? !processInstanceDetailsStore.isRunning
-                    : !flowNodeMetaDataStore.isSelectedInstanceRunning) ||
-                  loadingItemId !== null
-                }
-              />
-            )}
-          </Styled.Footer>
-        </Restricted>
-      )}
-    </Styled.VariablesContent>
-  );
-});
+              {!isAddMode && pendingItem === null && (
+                <AddVariableButton
+                  onClick={() => {
+                    form.reset({name: '', value: ''});
+                  }}
+                  disabled={
+                    status === 'first-fetch' ||
+                    !isViewMode ||
+                    (flowNodeSelectionStore.isRootNodeSelected
+                      ? !processInstanceDetailsStore.isRunning
+                      : !flowNodeMetaDataStore.isSelectedInstanceRunning) ||
+                    loadingItemId !== null
+                  }
+                />
+              )}
+            </Styled.Footer>
+          </Restricted>
+        )}
+      </Styled.VariablesContent>
+    );
+  }
+);
 
 export default Variables;

@@ -1196,4 +1196,302 @@ describe('VariablePanel', () => {
       screen.getByRole('button', {name: /add variable/i})
     ).toBeInTheDocument();
   });
+
+  it('should be readonly if flow node has variables but no running instances', async () => {
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              flowNodeInstanceId: null,
+              instanceCount: 0,
+              instanceMetadata: {endDate: '2022-09-08T12:44:45.406+0000'},
+            })
+          )
+      )
+    );
+
+    modificationsStore.enableModificationMode();
+
+    render(<VariablePanel />, {wrapper: Wrapper});
+    expect(await screen.findByText('test')).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /add variable/i})
+    ).toBeInTheDocument();
+    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
+
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              flowNodeInstanceId: '9007199254742797',
+              instanceCount: 0,
+              instanceMetadata: {endDate: '2022-09-15T12:44:45.406+0000'},
+            })
+          )
+      ),
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              id: '9007199254742796-test',
+              name: 'some-other-variable',
+              value: '123',
+              scopeId: '9007199254742797',
+              processInstanceId: '9007199254742797',
+              hasActiveOperation: false,
+            },
+          ])
+        )
+      )
+    );
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'TEST_FLOW_NODE',
+    });
+
+    expect(await screen.findByText('some-other-variable')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /add variable/i})
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /enter edit mode/i})
+    ).not.toBeInTheDocument();
+  });
+
+  it('should be readonly if flow node has variables and running instances', async () => {
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              flowNodeInstanceId: null,
+              instanceCount: 0,
+              instanceMetadata: {endDate: null},
+            })
+          )
+      )
+    );
+
+    modificationsStore.enableModificationMode();
+
+    render(<VariablePanel />, {wrapper: Wrapper});
+    expect(await screen.findByText('test')).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /add variable/i})
+    ).toBeInTheDocument();
+    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
+
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              flowNodeInstanceId: '9007199254742797',
+              instanceCount: 0,
+              instanceMetadata: {endDate: null},
+            })
+          )
+      ),
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              id: '9007199254742796-test',
+              name: 'some-other-variable',
+              value: '123',
+              scopeId: '9007199254742797',
+              processInstanceId: '9007199254742797',
+              hasActiveOperation: false,
+            },
+          ])
+        )
+      )
+    );
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'Activity_0qtp1k6',
+    });
+
+    // initial state
+    expect(await screen.findByText('some-other-variable')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /add variable/i})
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
+
+    // cancel the running token
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'CANCEL_TOKEN',
+        flowNode: {
+          id: 'Activity_0qtp1k6',
+          name: 'Flow Node with running tokens',
+        },
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+      },
+    });
+
+    expect(screen.getByText('some-other-variable')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /add variable/i})
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /enter edit mode/i})
+    ).not.toBeInTheDocument();
+  });
+
+  it('should be readonly if root node is selected and applying modifications will cancel the whole process', async () => {
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              flowNodeInstanceId: null,
+              instanceCount: 0,
+              instanceMetadata: {endDate: null},
+            })
+          )
+      )
+    );
+
+    modificationsStore.enableModificationMode();
+
+    render(<VariablePanel />, {wrapper: Wrapper});
+    expect(await screen.findByText('test')).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /add variable/i})
+    ).toBeInTheDocument();
+    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'CANCEL_TOKEN',
+        flowNode: {id: 'Activity_0qtp1k6', name: 'Activity_0qtp1k6'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+      },
+    });
+
+    expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
+  });
+
+  it('should display readonly state for existing node if all running tokens on the flow node are canceled and one new token is added', async () => {
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              flowNodeInstanceId: '2251799813695856',
+              instanceCount: 1,
+              instanceMetadata: {endDate: null},
+            })
+          )
+      )
+    );
+
+    modificationsStore.enableModificationMode();
+
+    render(<VariablePanel />, {wrapper: Wrapper});
+    expect(await screen.findByText('test')).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /add variable/i})
+    ).toBeInTheDocument();
+    expect(screen.getByText('test')).toBeInTheDocument();
+
+    mockServer.use(
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json([]))
+      )
+    );
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'Activity_0qtp1k6',
+      flowNodeInstanceId: '2251799813695856',
+    });
+
+    await waitFor(() =>
+      expect(flowNodeMetaDataStore.state.metaData).toEqual({
+        flowNodeInstanceId: '2251799813695856',
+        instanceCount: 1,
+        instanceMetadata: {
+          endDate: null,
+          startDate: null,
+          jobDeadline: null,
+          incidentErrorType: undefined,
+        },
+      })
+    );
+
+    // initial state
+    expect(
+      await screen.findByText('The Flow Node has no Variables')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /add variable/i})
+    ).toBeInTheDocument();
+
+    // cancel the running token
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'CANCEL_TOKEN',
+        flowNode: {
+          id: 'Activity_0qtp1k6',
+          name: 'Flow Node with running tokens',
+        },
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+      },
+    });
+
+    expect(
+      screen.queryByRole('button', {name: /add variable/i})
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText('The Flow Node has no Variables')
+    ).toBeInTheDocument();
+
+    // add a new token
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        flowNode: {
+          id: 'Activity_0qtp1k6',
+          name: 'Flow Node with running tokens',
+        },
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        scopeId: 'some-new-scope-id',
+        parentScopeIds: {},
+      },
+    });
+
+    expect(
+      screen.queryByRole('button', {name: /add variable/i})
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText('The Flow Node has no Variables')
+    ).toBeInTheDocument();
+  });
 });

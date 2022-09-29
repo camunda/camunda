@@ -9,6 +9,7 @@ import {computed} from 'mobx';
 import {observer} from 'mobx-react';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {modificationsStore} from 'modules/stores/modifications';
 import {variablesStore} from 'modules/stores/variables';
 import {VariableFormValues} from 'modules/types/variables';
@@ -42,7 +43,7 @@ const VariablesForm: React.FC<
       flowNodeSelectionStore.isRootNodeSelected ||
       currentFlowNodeSelection?.flowNodeId === undefined
     ) {
-      return true;
+      return !flowNodeStatesStore.willAllFlowNodesBeCanceled;
     }
 
     return (
@@ -50,8 +51,8 @@ const VariablesForm: React.FC<
       (!modificationsStore.isCancelModificationAppliedOnFlowNode(
         currentFlowNodeSelection.flowNodeId
       ) &&
-        flowNodeMetaDataStore.isSelectedInstanceRunning) ||
-      flowNodeSelectionStore.newTokenCountForSelectedNode === 1
+        (flowNodeMetaDataStore.isSelectedInstanceRunning ||
+          flowNodeSelectionStore.newTokenCountForSelectedNode === 1))
     );
   });
 
@@ -73,7 +74,9 @@ const VariablesForm: React.FC<
         />
       )}
       <VariablesContainer>
-        <Variables />
+        <Variables
+          isVariableModificationAllowed={isVariableModificationAllowed.get()}
+        />
       </VariablesContainer>
     </Form>
   );

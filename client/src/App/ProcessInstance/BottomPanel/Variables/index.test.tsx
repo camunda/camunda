@@ -958,7 +958,9 @@ describe('Variables', () => {
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      const {user} = render(<Variables />, {wrapper: Wrapper});
+      const {user} = render(<Variables isVariableModificationAllowed />, {
+        wrapper: Wrapper,
+      });
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
@@ -1024,7 +1026,9 @@ describe('Variables', () => {
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      const {user} = render(<Variables />, {wrapper: Wrapper});
+      const {user} = render(<Variables isVariableModificationAllowed />, {
+        wrapper: Wrapper,
+      });
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
