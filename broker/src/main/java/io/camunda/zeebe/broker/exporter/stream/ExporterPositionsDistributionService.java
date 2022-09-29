@@ -9,7 +9,9 @@ package io.camunda.zeebe.broker.exporter.stream;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -18,10 +20,10 @@ public class ExporterPositionsDistributionService implements AutoCloseable {
 
   private final PartitionMessagingService partitionMessagingService;
   private final String exporterPositionsTopic;
-  private final BiConsumer<String, Long> exporterPositionConsumer;
+  private final BiConsumer<String, Tuple<Long, Map<String, Long>>> exporterPositionConsumer;
 
   public ExporterPositionsDistributionService(
-      final BiConsumer<String, Long> exporterPositionConsumer,
+      final BiConsumer<String, Tuple<Long, Map<String, Long>>> exporterPositionConsumer,
       final PartitionMessagingService partitionMessagingService,
       final String exporterTopic) {
     this.exporterPositionConsumer = exporterPositionConsumer;
@@ -40,10 +42,16 @@ public class ExporterPositionsDistributionService implements AutoCloseable {
     exportPositionsMessage.wrap(readBuffer, 0, readBuffer.capacity());
 
     final var exporterPositions = exportPositionsMessage.getExporterPositions();
+    final var exporterSequence = exportPositionsMessage.getExporterSequences();
 
-    Loggers.EXPORTER_LOGGER.debug("Received new exporter state {}", exporterPositions);
+    Loggers.EXPORTER_LOGGER.debug(
+        "Received new exporter state {} and buckets {}", exporterPositions, exporterSequence);
 
-    exporterPositions.forEach(exporterPositionConsumer);
+    exporterSequence.forEach(
+        (id, seq) -> {
+          final var position = exporterPositions.get(id);
+          exporterPositionConsumer.accept(id, Tuple.of(position, seq));
+        });
   }
 
   public void distributeExporterPositions(final ExporterPositionsMessage exporterPositionsMessage) {

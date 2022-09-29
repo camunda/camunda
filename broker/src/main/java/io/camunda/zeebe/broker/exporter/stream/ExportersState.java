@@ -12,6 +12,9 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.record.ValueType;
+import java.util.ArrayList;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.LongArrayList;
@@ -33,8 +36,9 @@ public final class ExportersState {
   }
 
   public void setPosition(final String exporterId, final long position) {
-    this.exporterId.wrapString(exporterId);
-    setPosition(position);
+    final var exporter = getExporter(exporterId).orElseGet(ExporterPosition::new);
+    exporter.setPosition(position);
+    updateExporter(exporterId, exporter);
   }
 
   public long getPosition(final String exporterId) {
@@ -49,17 +53,47 @@ public final class ExportersState {
 
   private long getPosition() {
     final ExporterPosition pos = exporterPositionColumnFamily.get(exporterId);
-    return pos == null ? VALUE_NOT_FOUND : pos.get();
+    return pos == null ? VALUE_NOT_FOUND : pos.getPosition();
   }
 
-  private void setPosition(final long position) {
-    this.position.set(position);
-    exporterPositionColumnFamily.upsert(exporterId, this.position);
+  public Optional<ExporterPosition> getExporter(final String exporterId) {
+    this.exporterId.wrapString(exporterId);
+    return Optional.ofNullable(exporterPositionColumnFamily.get(this.exporterId));
   }
 
   public void visitPositions(final BiConsumer<String, Long> consumer) {
     exporterPositionColumnFamily.forEach(
-        (exporterId, position) -> consumer.accept(exporterId.toString(), position.get()));
+        (exporterId, position) -> consumer.accept(exporterId.toString(), position.getPosition()));
+  }
+
+  public void visitSequences(final String exporterId, final BiConsumer<ValueType, Long> consumer) {
+    final var exporter = getExporter(exporterId);
+    if (exporter.isPresent()) {
+      final var valueTypes = ValueType.values();
+
+      final var exclude = new ArrayList<ValueType>();
+      exclude.add(ValueType.TIMER);
+      exclude.add(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION);
+      exclude.add(ValueType.PROCESS_INSTANCE_RESULT);
+      exclude.add(ValueType.DEPLOYMENT_DISTRIBUTION);
+      exclude.add(ValueType.PROCESS_EVENT);
+      exclude.add(ValueType.SBE_UNKNOWN);
+      exclude.add(ValueType.NULL_VAL);
+
+      for (var i = 0; i < valueTypes.length; i++) {
+        final var valueType = valueTypes[i];
+        if (!exclude.contains(valueType)) {
+          final var sequence = exporter.get().getSequence(valueType);
+          consumer.accept(valueType, sequence);
+        }
+      }
+    }
+  }
+
+  public void updateExporter(final String exporterId, final ExporterPosition exporterPosition) {
+    this.exporterId.wrapString(exporterId);
+    this.position.wrap(exporterPosition);
+    exporterPositionColumnFamily.upsert(this.exporterId, this.position);
   }
 
   public long getLowestPosition() {

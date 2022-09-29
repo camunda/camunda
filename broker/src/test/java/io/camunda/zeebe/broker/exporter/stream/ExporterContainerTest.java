@@ -80,7 +80,7 @@ final class ExporterContainerTest {
     exporterContainer.configureExporter();
 
     // when
-    exporterContainer.initPosition();
+    exporterContainer.initExporter();
 
     // then
     assertThat(exporterContainer.getPosition()).isEqualTo(-1);
@@ -94,7 +94,7 @@ final class ExporterContainerTest {
     runtime.getState().setPosition("fakeExporter", 0xCAFE);
 
     // when
-    exporterContainer.initPosition();
+    exporterContainer.initExporter();
 
     // then
     assertThat(exporterContainer.getPosition()).isEqualTo(0xCAFE);
@@ -106,7 +106,7 @@ final class ExporterContainerTest {
     // given
     exporterContainer.configureExporter();
     runtime.getState().setPosition("fakeExporter", 0xCAFE);
-    exporterContainer.initPosition();
+    exporterContainer.initExporter();
 
     final var mockedRecord = mock(TypedRecord.class);
     when(mockedRecord.getPosition()).thenReturn(1L);
@@ -124,7 +124,7 @@ final class ExporterContainerTest {
     // given
     exporterContainer.configureExporter();
     runtime.getState().setPosition("fakeExporter", 0);
-    exporterContainer.initPosition();
+    exporterContainer.initExporter();
 
     final var mockedRecord = mock(TypedRecord.class);
     when(mockedRecord.getPosition()).thenReturn(1L);
@@ -145,7 +145,7 @@ final class ExporterContainerTest {
     // given
     exporterContainer.configureExporter();
     runtime.getState().setPosition("fakeExporter", 0);
-    exporterContainer.initPosition();
+    exporterContainer.initExporter();
 
     final var mockedRecord = mock(TypedRecord.class);
     when(mockedRecord.getPosition()).thenReturn(1L);
@@ -169,7 +169,7 @@ final class ExporterContainerTest {
     // given
     exporterContainer.configureExporter();
     runtime.getState().setPosition("fakeExporter", 0);
-    exporterContainer.initPosition();
+    exporterContainer.initExporter();
     exporterContainer.openExporter();
 
     final var mockedRecord = mock(TypedRecord.class);
@@ -192,7 +192,7 @@ final class ExporterContainerTest {
     // given
     exporterContainer.configureExporter();
     runtime.getState().setPosition("fakeExporter", 0);
-    exporterContainer.initPosition();
+    exporterContainer.initExporter();
     exporterContainer.openExporter();
 
     final var mockedRecord = mock(TypedRecord.class);
@@ -215,7 +215,7 @@ final class ExporterContainerTest {
     // given
     exporterContainer.configureExporter();
     runtime.getState().setPosition("fakeExporter", 0);
-    exporterContainer.initPosition();
+    exporterContainer.initExporter();
     exporterContainer.openExporter();
 
     final var mockedRecord = mock(TypedRecord.class);
@@ -242,7 +242,7 @@ final class ExporterContainerTest {
     exporterContainer.configureExporter();
     exporter.getContext().setFilter(new AlwaysRejectingFilter());
     runtime.getState().setPosition("fakeExporter", 0);
-    exporterContainer.initPosition();
+    exporterContainer.initExporter();
 
     final var mockedRecord = mock(TypedRecord.class);
     when(mockedRecord.getPosition()).thenReturn(1L);
@@ -262,7 +262,7 @@ final class ExporterContainerTest {
     // given
     exporterContainer.configureExporter();
     runtime.getState().setPosition("fakeExporter", 0);
-    exporterContainer.initPosition();
+    exporterContainer.initExporter();
 
     final var mockedRecord = mock(TypedRecord.class);
     when(mockedRecord.getPosition()).thenReturn(1L);
@@ -288,7 +288,7 @@ final class ExporterContainerTest {
     // given
     exporterContainer.configureExporter();
     runtime.getState().setPosition("fakeExporter", 0);
-    exporterContainer.initPosition();
+    exporterContainer.initExporter();
 
     final var firstRecord = mock(TypedRecord.class);
     when(firstRecord.getPosition()).thenReturn(1L);
@@ -313,7 +313,7 @@ final class ExporterContainerTest {
     // given
     exporterContainer.configureExporter();
     runtime.getState().setPosition("fakeExporter", 0);
-    exporterContainer.initPosition();
+    exporterContainer.initExporter();
 
     // when
     exporterContainer.close();

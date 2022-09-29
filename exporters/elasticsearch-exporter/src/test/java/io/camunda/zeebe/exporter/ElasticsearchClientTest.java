@@ -131,12 +131,12 @@ final class ElasticsearchClientTest {
 
       // when - index a single record, then set the memory limit specifically to be its size + 1
       // this decouples the test from whatever is used to serialize the record
-      client.index(firstRecord);
+      client.index(firstRecord, 0);
       config.bulk.memoryLimit = bulkRequest.memoryUsageBytes() + 1;
       assertThat(client.shouldFlush()).isFalse();
 
       // when - then
-      client.index(secondRecord);
+      client.index(secondRecord, 0);
       assertThat(client.shouldFlush()).isTrue();
     }
 
@@ -148,11 +148,11 @@ final class ElasticsearchClientTest {
       final var secondRecord = factory.generateRecord();
 
       // when
-      client.index(firstRecord);
+      client.index(firstRecord, 0);
       assertThat(client.shouldFlush()).isFalse();
 
       // when - then
-      client.index(secondRecord);
+      client.index(secondRecord, 0);
       assertThat(client.shouldFlush()).isTrue();
     }
 
@@ -175,7 +175,7 @@ final class ElasticsearchClientTest {
           mockClientResponse(new BulkIndexResponse(false, List.of()));
 
       // when
-      client.index(factory.generateRecord());
+      client.index(factory.generateRecord(), 0);
       client.flush();
 
       // then
@@ -195,7 +195,7 @@ final class ElasticsearchClientTest {
       mockClientResponse(new BulkIndexResponse(false, List.of()));
 
       // when
-      client.index(factory.generateRecord());
+      client.index(factory.generateRecord(), 0);
       client.flush();
 
       // then
@@ -210,7 +210,7 @@ final class ElasticsearchClientTest {
       doThrow(failure).when(restClient).performRequest(any());
 
       // when
-      client.index(factory.generateRecord());
+      client.index(factory.generateRecord(), 0);
       assertThatCode(client::flush).isEqualTo(failure);
 
       // then

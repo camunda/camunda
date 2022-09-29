@@ -15,7 +15,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.http.entity.ContentProducer;
 
 /**
@@ -40,7 +42,7 @@ final class BulkIndexRequest implements ContentProducer {
    * @param action the bulk action to take
    * @param record the record that will be the source of the document
    */
-  void index(final BulkIndexAction action, final Record<?> record) {
+  void index(final BulkIndexAction action, final Record<?> record, final long sequence) {
     // exit early in case we're retrying the last indexed record again
     if (lastIndexedMetadata != null && lastIndexedMetadata.equals(action)) {
       return;
@@ -48,7 +50,10 @@ final class BulkIndexRequest implements ContentProducer {
 
     final byte[] source;
     try {
-      source = MAPPER.writer().writeValueAsBytes(record);
+      final Map<String, Object> sourceAsMap = MAPPER.readValue(record.toJson(), HashMap.class);
+      final var partition = record.getPartitionId();
+      sourceAsMap.put("sequence", encodePartitionId(partition, sequence));
+      source = MAPPER.writer().writeValueAsBytes(sourceAsMap);
     } catch (final IOException e) {
       throw new ElasticsearchExporterException(
           String.format("Failed to serialize record to JSON for indexing action %s", action), e);
@@ -58,6 +63,10 @@ final class BulkIndexRequest implements ContentProducer {
     memoryUsageBytes += command.source().length;
     lastIndexedMetadata = action;
     operations.add(command);
+  }
+
+  private static long encodePartitionId(final int partitionId, final long sequence) {
+    return ((long) partitionId << 51) + sequence;
   }
 
   /** Returns the number of operations indexed so far. */

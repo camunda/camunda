@@ -16,6 +16,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +34,7 @@ public class ElasticsearchExporter implements Exporter {
   private ElasticsearchClient client;
 
   private long lastPosition = -1;
+  private Map<ValueType, Long> lastSequences = new HashMap<>();
   private boolean indexTemplatesCreated;
 
   @Override
@@ -74,13 +77,16 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   @Override
-  public void export(final Record<?> record) {
+  public void export(final Record<?> record, final long sequence) {
     if (!indexTemplatesCreated) {
       createIndexTemplates();
     }
 
-    client.index(record);
+    client.index(record, sequence);
+
+    final var valueType = record.getValueType();
     lastPosition = record.getPosition();
+    lastSequences.put(valueType, sequence);
 
     if (client.shouldFlush()) {
       flush();
@@ -137,7 +143,8 @@ public class ElasticsearchExporter implements Exporter {
 
   private void flush() {
     client.flush();
-    controller.updateLastExportedRecordPosition(lastPosition);
+    controller.updateExporterState(lastPosition, lastSequences);
+    lastSequences = new HashMap<>();
   }
 
   private void createIndexTemplates() {

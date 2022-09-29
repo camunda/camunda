@@ -72,5 +72,9 @@ public interface Exporter {
    *
    * @param record the record to export
    */
-  void export(Record<?> record);
+  default void export(Record<?> record) {}
+
+  default void export(Record<?> record, long sequence) {
+    export(record);
+  }
 }

@@ -79,7 +79,7 @@ final class ElasticsearchClientIT {
     // date, which must be a positive number of milliseconds since the UNIX epoch
     final var invalidRecord =
         recordFactory.generateRecord(ValueType.VARIABLE, b -> b.withTimestamp(Long.MIN_VALUE));
-    client.index(invalidRecord);
+    client.index(invalidRecord, 0);
     client.putComponentTemplate();
     client.putIndexTemplate(ValueType.VARIABLE);
 

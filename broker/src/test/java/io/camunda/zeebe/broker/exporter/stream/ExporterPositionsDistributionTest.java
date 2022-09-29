@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.exporter.stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.util.collection.Tuple;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Before;
@@ -26,7 +27,12 @@ public class ExporterPositionsDistributionTest {
     partitionMessagingService = new SimplePartitionMessageService();
     exporterPositionsDistributionService =
         new ExporterPositionsDistributionService(
-            exporterPositions::put, partitionMessagingService, "topic");
+            this::consumeExporterPositions, partitionMessagingService, "topic");
+  }
+
+  private void consumeExporterPositions(
+      final String exporterId, final Tuple<Long, Map<String, Long>> state) {
+    exporterPositions.put(exporterId, state.getLeft());
   }
 
   @Test

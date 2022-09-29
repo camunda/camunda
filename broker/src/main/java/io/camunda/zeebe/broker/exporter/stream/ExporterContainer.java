@@ -17,9 +17,12 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.util.jar.ThreadContextUtil;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import org.slf4j.Logger;
 
 @SuppressWarnings("java:S112") // allow generic exception when calling Exporter#configure
@@ -38,6 +41,8 @@ final class ExporterContainer implements Controller {
   private ExporterMetrics metrics;
   private ActorControl actor;
 
+  private final Map<ValueType, Long> sequences = new HashMap<>();
+
   ExporterContainer(final ExporterDescriptor descriptor) {
     context =
         new ExporterContext(
@@ -53,12 +58,22 @@ final class ExporterContainer implements Controller {
     exportersState = state;
   }
 
-  void initPosition() {
-    position = exportersState.getPosition(getId());
-    lastUnacknowledgedPosition = position;
-    if (position == ExportersState.VALUE_NOT_FOUND) {
+  void initExporter() {
+    final var exporterValue = exportersState.getExporter(getId());
+
+    if (!exporterValue.isPresent()) {
+      position = -1L;
       exportersState.setPosition(getId(), -1L);
+    } else {
+      position = exporterValue.get().getPosition();
     }
+
+    lastUnacknowledgedPosition = position;
+    exportersState.visitSequences(
+        getId(),
+        (v, s) -> {
+          sequences.put(v, s);
+        });
   }
 
   void openExporter() {
@@ -114,6 +129,21 @@ final class ExporterContainer implements Controller {
   }
 
   @Override
+  public void updateExporterState(final long eventPosition, final Map<ValueType, Long> sequences) {
+    actor.run(
+        () -> {
+          if (position < eventPosition) {
+            final var exporter =
+                exportersState.getExporter(getId()).orElseGet(ExporterPosition::new);
+            exporter.setPosition(eventPosition);
+            sequences.forEach(exporter::setSequence);
+            exportersState.updateExporter(getId(), exporter);
+            position = eventPosition;
+          }
+        });
+  }
+
+  @Override
   public ScheduledTask scheduleCancellableTask(final Duration delay, final Runnable task) {
     final var scheduledTimer = actor.runDelayed(delay, task);
     return scheduledTimer::cancel;
@@ -152,9 +182,13 @@ final class ExporterContainer implements Controller {
   }
 
   private void export(final Record<?> record) {
+    final var valueType = record.getValueType();
+    final var sequence = sequences.getOrDefault(valueType, 0L) + 1L;
+
     ThreadContextUtil.runWithClassLoader(
-        () -> exporter.export(record), exporter.getClass().getClassLoader());
+        () -> exporter.export(record, sequence), exporter.getClass().getClassLoader());
     lastUnacknowledgedPosition = record.getPosition();
+    sequences.put(valueType, sequence);
   }
 
   public void close() {

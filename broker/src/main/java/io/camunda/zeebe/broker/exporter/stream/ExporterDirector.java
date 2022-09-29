@@ -31,6 +31,7 @@ import io.camunda.zeebe.scheduler.retry.EndlessRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.streamprocessor.EventFilter;
 import io.camunda.zeebe.streamprocessor.TypedRecordImpl;
+import io.camunda.zeebe.util.collection.Tuple;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -264,9 +265,15 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void consumeExporterPositionFromLeader(
-      final String exporterId, final long receivedPosition) {
-    if (state.getPosition(exporterId) < receivedPosition) {
-      state.setPosition(exporterId, receivedPosition);
+      final String exporterId, final Tuple<Long, Map<String, Long>> exporterState) {
+    final var exporter = state.getExporter(exporterId).orElseGet(ExporterPosition::new);
+    final var receivedPosition = exporterState.getLeft();
+    final var receivedSequences = exporterState.getRight();
+
+    if (exporter.getPosition() < receivedPosition) {
+      exporter.setPosition(receivedPosition);
+      receivedSequences.forEach(exporter::setSequence);
+      state.updateExporter(exporterId, exporter);
     }
   }
 
@@ -321,7 +328,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
     // start reading
     for (final ExporterContainer container : containers) {
-      container.initPosition();
+      container.initExporter();
       container.openExporter();
     }
 
@@ -349,7 +356,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private void startPassiveExportingMode() {
     // Only initialize the positions, do not open and start exporting
     for (final ExporterContainer container : containers) {
-      container.initPosition();
+      container.initExporter();
     }
 
     if (state.hasExporters()) {
@@ -361,7 +368,17 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private void distributeExporterPositions() {
     final var exportPositionsMessage = new ExporterPositionsMessage();
-    state.visitPositions(exportPositionsMessage::putExporter);
+
+    state.visitPositions(
+        (e, p) -> {
+          exportPositionsMessage.putExporter(e, p);
+          state.visitSequences(
+              e,
+              (v, s) -> {
+                exportPositionsMessage.putSequence(e, v.name(), s);
+              });
+        });
+
     exporterDistributionService.distributeExporterPositions(exportPositionsMessage);
   }
 

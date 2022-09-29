@@ -15,7 +15,9 @@
  */
 package io.camunda.zeebe.exporter.api.context;
 
+import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
+import java.util.Map;
 
 /** Controls various aspect of the exporting process. */
 public interface Controller {
@@ -26,6 +28,10 @@ public interface Controller {
    * @param position the latest successfully exported record position
    */
   void updateLastExportedRecordPosition(long position);
+
+  default void updateExporterState(long position, Map<ValueType, Long> sequences) {
+    updateLastExportedRecordPosition(position);
+  }
 
   /**
    * Schedules a cancellable {@param task} to be ran after {@param delay} has expired.
