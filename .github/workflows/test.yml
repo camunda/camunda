@@ -185,7 +185,6 @@ jobs:
           go: false
           # setting up maven often times out on macOS
           maven: ${{ matrix.os != 'macos-latest' }}
-          maven-cache: true
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -242,8 +241,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
-        with:
-          maven-cache: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
       # Once we're on Go 1.18, use the official gorelease to do this
@@ -389,8 +386,6 @@ jobs:
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-zeebe
-        with:
-          maven-cache: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
       - uses: ./.github/actions/build-docker
