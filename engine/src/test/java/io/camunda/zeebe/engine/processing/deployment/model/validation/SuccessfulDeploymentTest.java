@@ -39,7 +39,7 @@ import org.mockito.verification.VerificationWithTimeout;
 public final class SuccessfulDeploymentTest {
 
   private static final VerificationWithTimeout VERIFICATION_TIMEOUT =
-      timeout(Duration.ofSeconds(10).toMillis());
+      timeout(Duration.ofSeconds(1).toMillis());
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
@@ -97,10 +97,11 @@ public final class SuccessfulDeploymentTest {
     final var deployment = performDeployment.apply(engine.deployment());
 
     // then
-    verify(engine.getCommandResponseWriter()).recordType(RecordType.EVENT);
-    verify(engine.getCommandResponseWriter()).valueType(ValueType.DEPLOYMENT);
-    verify(engine.getCommandResponseWriter()).intent(DeploymentIntent.CREATED);
-    verify(engine.getCommandResponseWriter()).key(deployment.getKey());
+    verify(engine.getCommandResponseWriter(), VERIFICATION_TIMEOUT).recordType(RecordType.EVENT);
+    verify(engine.getCommandResponseWriter(), VERIFICATION_TIMEOUT).valueType(ValueType.DEPLOYMENT);
+    verify(engine.getCommandResponseWriter(), VERIFICATION_TIMEOUT)
+        .intent(DeploymentIntent.CREATED);
+    verify(engine.getCommandResponseWriter(), VERIFICATION_TIMEOUT).key(deployment.getKey());
     verify(engine.getCommandResponseWriter(), VERIFICATION_TIMEOUT)
         .tryWriteResponse(anyInt(), anyLong());
   }
