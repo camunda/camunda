@@ -1837,6 +1837,13 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetBackupStateRequest(final String backupId) {
+    setActuatorWebTarget();
+    this.path = BACKUP_ENDPOINT + backupId;
+    this.method = GET;
+    return this;
+  }
+
   private void setAccessToken(final String accessToken) {
     Optional.ofNullable(accessToken)
       .ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));

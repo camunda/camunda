@@ -9,6 +9,7 @@ import com.github.dockerjava.api.exception.ConflictException;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.rest.BackupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.BackupResponseDto;
+import org.camunda.optimize.dto.optimize.rest.BackupStateResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.service.BackupService;
 import org.camunda.optimize.service.LocalizationService;
@@ -23,6 +24,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -46,6 +49,11 @@ public class BackupRestService {
   @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE})
   public BackupResponseDto takeBackup(final @RequestBody @Valid BackupRequestDto backupRequestDto) {
     return backupService.triggerBackup(backupRequestDto.getBackupId());
+  }
+
+  @GetMapping(value = "/{backupId}")
+  public BackupStateResponseDto state(final @PathVariable String backupId) {
+    return backupService.getBackupState(backupId);
   }
 
   @ExceptionHandler(OptimizeRuntimeException.class)
@@ -78,6 +86,13 @@ public class BackupRestService {
 
   @ExceptionHandler(BadRequestException.class)
   public ResponseEntity<ErrorResponseDto> handleBadRequestException(final BadRequestException exception) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+      .contentType(MediaType.APPLICATION_JSON)
+      .body(getErrorResponseDto(exception));
+  }
+
+  @ExceptionHandler(NotFoundException.class)
+  public ResponseEntity<ErrorResponseDto> handleNotFoundException(final NotFoundException exception) {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
       .contentType(MediaType.APPLICATION_JSON)
       .body(getErrorResponseDto(exception));

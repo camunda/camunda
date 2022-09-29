@@ -106,7 +106,7 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
           createApiPath(UI_CONFIGURATION_PATH),
           createApiPath(LOCALIZATION_PATH)
         ).permitAll()
-      .antMatchers(ACTUATOR_ENDPOINT + "/*").permitAll()
+      .antMatchers(ACTUATOR_ENDPOINT + "/**").permitAll()
       .anyRequest().authenticated()
       .and()
       .addFilterBefore(authenticationCookieFilter(), AbstractPreAuthenticatedProcessingFilter.class)

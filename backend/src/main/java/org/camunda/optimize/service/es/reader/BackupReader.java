@@ -86,7 +86,7 @@ public class BackupReader {
     }
   }
 
-  private List<SnapshotInfo> getAllOptimizeSnapshots(final String backupId) {
+  public List<SnapshotInfo> getAllOptimizeSnapshots(final String backupId) {
     final GetSnapshotsRequest snapshotsStatusRequest = new GetSnapshotsRequest()
       .repository(getRepositoryName())
       .snapshots(new String[]{getSnapshotPrefixWithBackupId(backupId) + "*"});
