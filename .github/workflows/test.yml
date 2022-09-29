@@ -147,9 +147,9 @@ jobs:
       - name: Maven Test Build
         run: >
           mvn -T2 -B --no-snapshot-updates
-          -D skipChecks
+          -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
-          -P skip-random-tests,parallel-tests
+          -P skip-random-tests,parallel-tests,extract-flaky-tests
           test
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Normalize artifact name
@@ -187,9 +187,9 @@ jobs:
       - name: Run smoke test
         run: >
           mvn -B --no-snapshot-updates
-          -DskipUTs -DskipChecks
+          -DskipUTs -DskipChecks -Dsurefire.rerunFailingTestsCount=3
           -pl qa/integration-tests
-          -P smoke-test
+          -P smoke-test,extract-flaky-tests
           verify
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
@@ -213,7 +213,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -T1C -B
+          mvn -T1C -B --no-snapshot-updates
           -P parallel-tests,include-random-tests
           -D junitThreadCount=16
           -D skipChecks
@@ -283,7 +283,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -B
+          mvn -B --no-snapshot-updates
           -P disableCheckstyle,extract-flaky-tests
           -D skipChecks -D skipITs
           -D surefire.rerunFailingTestsCount=3
