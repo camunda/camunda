@@ -27,7 +27,7 @@ import {Form} from 'react-final-form';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {authenticationStore} from 'modules/stores/authentication';
 import arrayMutators from 'final-form-arrays';
-import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {modificationsStore} from 'modules/stores/modifications';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
@@ -74,7 +74,7 @@ describe('Variables', () => {
     processInstanceDetailsStore.reset();
     variablesStore.reset();
     flowNodeSelectionStore.reset();
-    flowNodeStatesStore.reset();
+    processInstanceDetailsStatisticsStore.reset();
     modificationsStore.reset();
   });
 
@@ -1143,20 +1143,32 @@ describe('Variables', () => {
     });
 
     it('should disable add variable button when selected flow node is not running', async () => {
-      flowNodeStatesStore.init(instanceMock.id);
+      processInstanceDetailsStatisticsStore.init(instanceMock.id);
       mockServer.use(
         rest.post(
           '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json([]))
         ),
         rest.get(
-          '/api/process-instances/:instanceId/flow-node-states',
+          '/api/process-instances/:instanceId/statistics',
           (_, res, ctx) =>
             res.once(
-              ctx.json({
-                start: 'COMPLETED',
-                neverFails: 'COMPLETED',
-              })
+              ctx.json([
+                {
+                  activityId: 'start',
+                  active: 0,
+                  canceled: 0,
+                  incidents: 0,
+                  completed: 1,
+                },
+                {
+                  activityId: 'neverFails',
+                  active: 0,
+                  canceled: 0,
+                  incidents: 0,
+                  completed: 1,
+                },
+              ])
             )
         )
       );

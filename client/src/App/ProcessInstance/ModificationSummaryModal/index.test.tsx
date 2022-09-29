@@ -8,7 +8,6 @@
 import {createAddVariableModification} from 'modules/mocks/modifications';
 import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 import {mockServer} from 'modules/mock-server/node';
-import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
@@ -38,7 +37,7 @@ describe('Modification Summary Modal', () => {
   afterEach(() => {
     modificationsStore.reset();
     processInstanceDetailsStore.reset();
-    flowNodeStatesStore.reset();
+    processInstanceDetailsStatisticsStore.reset();
   });
 
   it('should render information message', async () => {
@@ -456,12 +455,30 @@ describe('Modification Summary Modal', () => {
   it('should display/hide warning message if all modifications are about to be canceled', async () => {
     mockServer.use(
       rest.get(
-        '/api/process-instances/:instanceId/flow-node-states',
-        (_, rest, ctx) => rest(ctx.json({taskA: 'INCIDENT', taskB: 'ACTIVE'}))
+        '/api/process-instances/:instanceId/statistics',
+        (_, rest, ctx) =>
+          rest(
+            ctx.json([
+              {
+                activityId: 'taskA',
+                active: 0,
+                canceled: 0,
+                incidents: 1,
+                completed: 0,
+              },
+              {
+                activityId: 'taskB',
+                active: 1,
+                canceled: 0,
+                incidents: 0,
+                completed: 0,
+              },
+            ])
+          )
       )
     );
 
-    await flowNodeStatesStore.fetchFlowNodeStates('id');
+    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics('id');
 
     render(<ModificationSummaryModal isVisible onClose={jest.fn()} />, {
       wrapper: ThemeProvider,
@@ -538,12 +555,23 @@ describe('Modification Summary Modal', () => {
 
     mockServer.use(
       rest.get(
-        '/api/process-instances/:instanceId/flow-node-states',
-        (_, rest, ctx) => rest(ctx.json({taskA: 'INCIDENT'}))
+        '/api/process-instances/:instanceId/statistics',
+        (_, rest, ctx) =>
+          rest(
+            ctx.json([
+              {
+                activityId: 'taskA',
+                active: 0,
+                canceled: 0,
+                incidents: 1,
+                completed: 0,
+              },
+            ])
+          )
       )
     );
 
-    await flowNodeStatesStore.fetchFlowNodeStates('id');
+    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics('id');
 
     render(<ModificationSummaryModal isVisible onClose={jest.fn()} />, {
       wrapper: ThemeProvider,

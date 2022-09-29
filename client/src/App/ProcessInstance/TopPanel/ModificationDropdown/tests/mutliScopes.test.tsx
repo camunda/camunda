@@ -12,7 +12,6 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockServer} from 'modules/mock-server/node';
-import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {open} from 'modules/mocks/diagrams';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {initializeStores, renderPopover} from './mocks';
@@ -23,16 +22,32 @@ describe('Modification Dropdown - Multi Scopes', () => {
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(open('multipleInstanceSubProcess.bpmn')))
       ),
-      rest.get(
-        '/api/process-instances/:processId/flow-node-states',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              OuterSubProcess: 'ACTIVE',
-              InnerSubProcess: 'ACTIVE',
-              TaskB: 'ACTIVE',
-            })
-          )
+      rest.get('/api/process-instances/:processId/statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              activityId: 'OuterSubProcess',
+              active: 1,
+              canceled: 0,
+              incidents: 0,
+              completed: 0,
+            },
+            {
+              activityId: 'InnerSubProcess',
+              active: 1,
+              canceled: 0,
+              incidents: 0,
+              completed: 0,
+            },
+            {
+              activityId: 'TaskB',
+              active: 1,
+              canceled: 0,
+              incidents: 0,
+              completed: 0,
+            },
+          ])
+        )
       )
     );
   });
@@ -41,7 +56,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
     flowNodeSelectionStore.reset();
     processInstanceDetailsStore.reset();
     modificationsStore.reset();
-    flowNodeStatesStore.reset();
+    processInstanceDetailsStatisticsStore.reset();
     processInstanceDetailsDiagramStore.reset();
   });
 

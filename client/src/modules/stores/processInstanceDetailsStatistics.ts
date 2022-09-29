@@ -54,6 +54,8 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
       handleFetchFailure: action,
       flowNodeStatistics: computed,
       statisticsByFlowNode: computed,
+      willAllFlowNodesBeCanceled: computed,
+      selectableFlowNodes: computed,
       reset: override,
     });
   }
@@ -224,6 +226,26 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
       (this.statisticsByFlowNode[flowNodeId]?.incidents ?? 0)
     );
   };
+
+  get selectableFlowNodes() {
+    return this.state.statistics.map(({activityId}) => activityId);
+  }
+
+  get willAllFlowNodesBeCanceled() {
+    if (
+      modificationsStore.flowNodeModifications.filter(({operation}) =>
+        ['ADD_TOKEN', 'MOVE_TOKEN'].includes(operation)
+      ).length > 0
+    ) {
+      return false;
+    }
+
+    return this.state.statistics.every(
+      ({activityId, active, incidents}) =>
+        (active === 0 && incidents === 0) ||
+        modificationsStore.isCancelModificationAppliedOnFlowNode(activityId)
+    );
+  }
 
   reset() {
     super.reset();

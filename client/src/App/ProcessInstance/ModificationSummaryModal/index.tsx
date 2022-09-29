@@ -29,7 +29,7 @@ import {ActionButton} from 'modules/components/ActionButton';
 import {VariableModification} from './VariableModification';
 import {useNotifications} from 'modules/notifications';
 import {Warning} from './Messages/Warning';
-import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {Error} from './Messages/Error';
 import {tracking} from 'modules/tracking';
 
@@ -90,7 +90,8 @@ const ModificationSummaryModal: React.FC<Props> = observer(
     const hasParentProcess = processInstance.parentInstanceId !== null;
 
     const areModificationsInvalid =
-      flowNodeStatesStore.willAllFlowNodesBeCanceled && hasParentProcess;
+      processInstanceDetailsStatisticsStore.willAllFlowNodesBeCanceled &&
+      hasParentProcess;
 
     return (
       <InformationModal
@@ -111,7 +112,7 @@ const ModificationSummaryModal: React.FC<Props> = observer(
               }
               . Click "Apply" to proceed.
             </Info>
-            {flowNodeStatesStore.willAllFlowNodesBeCanceled &&
+            {processInstanceDetailsStatisticsStore.willAllFlowNodesBeCanceled &&
               !hasParentProcess && <Warning />}
             {areModificationsInvalid && <Error />}
 
@@ -323,7 +324,7 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                     ({operation}) => operation === 'EDIT_VARIABLE'
                   ).length,
                   isProcessCanceled:
-                    flowNodeStatesStore.willAllFlowNodesBeCanceled,
+                    processInstanceDetailsStatisticsStore.willAllFlowNodesBeCanceled,
                 });
 
                 modificationsStore.applyModifications({

@@ -9,8 +9,8 @@ import {computed} from 'mobx';
 import {observer} from 'mobx-react';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {modificationsStore} from 'modules/stores/modifications';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {variablesStore} from 'modules/stores/variables';
 import {VariableFormValues} from 'modules/types/variables';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
@@ -43,7 +43,7 @@ const VariablesForm: React.FC<
       flowNodeSelectionStore.isRootNodeSelected ||
       currentFlowNodeSelection?.flowNodeId === undefined
     ) {
-      return !flowNodeStatesStore.willAllFlowNodesBeCanceled;
+      return !processInstanceDetailsStatisticsStore.willAllFlowNodesBeCanceled;
     }
 
     return (

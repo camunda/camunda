@@ -11,7 +11,6 @@ import {rest} from 'msw';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
-import {flowNodeStatesStore} from './flowNodeStates';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {
   createAddVariableModification,
@@ -29,7 +28,6 @@ describe('stores/modifications', () => {
     modificationsStore.reset();
     processInstanceDetailsDiagramStore.reset();
     processInstanceDetailsStatisticsStore.reset();
-    flowNodeStatesStore.reset();
   });
 
   it('should enable/disable modification mode', async () => {
@@ -620,30 +618,64 @@ describe('stores/modifications', () => {
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessForModifications))
       ),
-      rest.get(
-        '/api/process-instances/:processId/flow-node-states',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              StartEvent_1: 'COMPLETED',
-              'service-task-1': 'COMPLETED',
-              'multi-instance-subprocess': 'INCIDENT',
-              'subprocess-start-1': 'COMPLETED',
-              'subprocess-service-task': 'INCIDENT',
-              'service-task-7': 'ACTIVE',
-              'multi-instance-service-task': 'ACTIVE',
-              'message-boundary': 'ACTIVE',
-            })
-          )
-      ),
+
       rest.get(
         '/api/process-instances/:processInstanceId/statistics',
         (_, res, ctx) =>
           res.once(
             ctx.json([
               {
+                activityId: 'StartEvent_1',
+                active: 0,
+                incidents: 0,
+                completed: 1,
+                canceled: 0,
+              },
+              {
+                activityId: 'service-task-1',
+                active: 0,
+                incidents: 0,
+                completed: 1,
+                canceled: 0,
+              },
+              {
+                activityId: 'multi-instance-subprocess',
+                active: 0,
+                incidents: 1,
+                completed: 0,
+                canceled: 0,
+              },
+              {
+                activityId: 'subprocess-start-1',
+                active: 0,
+                incidents: 0,
+                completed: 0,
+                canceled: 1,
+              },
+              {
+                activityId: 'subprocess-service-task',
+                active: 0,
+                incidents: 1,
+                completed: 0,
+                canceled: 0,
+              },
+              {
+                activityId: 'service-task-7',
+                active: 1,
+                incidents: 0,
+                completed: 0,
+                canceled: 0,
+              },
+              {
                 activityId: 'multi-instance-service-task',
                 active: 2,
+                incidents: 0,
+                completed: 0,
+                canceled: 0,
+              },
+              {
+                activityId: 'message-boundary',
+                active: 1,
                 incidents: 0,
                 completed: 0,
                 canceled: 0,
@@ -652,10 +684,10 @@ describe('stores/modifications', () => {
           )
       )
     );
+
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'
     );
-    await flowNodeStatesStore.fetchFlowNodeStates('processInstanceId');
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
     modificationsStore.startMovingToken('multi-instance-service-task');
     modificationsStore.finishMovingToken('service-task-7');

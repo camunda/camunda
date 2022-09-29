@@ -8,7 +8,6 @@
 import {render} from 'modules/testing-library';
 import {PROCESS_INSTANCE_ID} from 'modules/mocks/metadata';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {createInstance} from 'modules/testUtils';
@@ -16,6 +15,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {createRef} from 'react';
 import {MemoryRouter} from 'react-router-dom';
 import {ModificationDropdown} from '..';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
@@ -42,7 +42,7 @@ const renderPopover = () => {
 
 const initializeStores = () => {
   flowNodeSelectionStore.init();
-  flowNodeStatesStore.init('processId');
+  processInstanceDetailsStatisticsStore.init('processId');
   processInstanceDetailsDiagramStore.init();
   processInstanceDetailsStore.setProcessInstance(
     createInstance({

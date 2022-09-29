@@ -27,7 +27,7 @@ import {
 } from 'modules/testUtils';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
-import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -69,15 +69,25 @@ describe('VariablePanel', () => {
         '/api/process-instances/:instanceId/flow-node-metadata',
         (_, res, ctx) => res.once(ctx.json(undefined))
       ),
-      rest.get(
-        '/api/process-instances/:instanceId/flow-node-states',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              TEST_FLOW_NODE: 'COMPLETED',
-              Activity_0qtp1k6: 'INCIDENT',
-            })
-          )
+      rest.get('/api/process-instances/:instanceId/statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              activityId: 'TEST_FLOW_NODE',
+              active: 0,
+              canceled: 0,
+              incidents: 0,
+              completed: 1,
+            },
+            {
+              activityId: 'Activity_0qtp1k6',
+              active: 0,
+              canceled: 0,
+              incidents: 1,
+              completed: 0,
+            },
+          ])
+        )
       )
     );
 
@@ -89,7 +99,10 @@ describe('VariablePanel', () => {
         state: 'ACTIVE',
       })
     );
-    flowNodeStatesStore.fetchFlowNodeStates('instance_id');
+
+    processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
+      'instance_id'
+    );
   });
 
   afterEach(() => {
@@ -98,7 +111,7 @@ describe('VariablePanel', () => {
     flowNodeMetaDataStore.reset();
     processInstanceDetailsDiagramStore.reset();
     modificationsStore.reset();
-    flowNodeStatesStore.reset();
+    processInstanceDetailsStatisticsStore.reset();
   });
 
   it.each([true, false])(

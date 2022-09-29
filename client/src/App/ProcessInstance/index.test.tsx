@@ -37,7 +37,6 @@ import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {incidentsStore} from 'modules/stores/incidents';
-import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {createMemoryHistory} from 'history';
@@ -67,7 +66,6 @@ const clearPollingStates = () => {
   sequenceFlowsStore.isPollRequestRunning = false;
   processInstanceDetailsStore.isPollRequestRunning = false;
   incidentsStore.isPollRequestRunning = false;
-  flowNodeStatesStore.isPollRequestRunning = false;
   flowNodeInstanceStore.isPollRequestRunning = false;
 };
 
@@ -103,10 +101,6 @@ describe('Instance', () => {
       ),
       rest.post('/api/flow-node-instances', (_, res, ctx) =>
         res(ctx.json(processInstancesMock.level1))
-      ),
-      rest.get(
-        '/api/process-instances/:instanceId/flow-node-states',
-        (_, rest, ctx) => rest(ctx.json({taskD: 'INCIDENT'}))
       ),
       rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
         res(ctx.json(statistics))
@@ -498,10 +492,6 @@ describe('Instance', () => {
         incidentsStore,
         'handlePolling'
       );
-      const handlePollingFlowNodeStatesSpy = jest.spyOn(
-        flowNodeStatesStore,
-        'handlePolling'
-      );
 
       const handlePollingFlowNodeInstanceSpy = jest.spyOn(
         flowNodeInstanceStore,
@@ -531,7 +521,6 @@ describe('Instance', () => {
       expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(0);
       expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
       expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
-      expect(handlePollingFlowNodeStatesSpy).toHaveBeenCalledTimes(0);
       expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
       expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
       expect(
@@ -543,7 +532,6 @@ describe('Instance', () => {
       expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingFlowNodeStatesSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
       expect(
@@ -553,7 +541,6 @@ describe('Instance', () => {
       await waitFor(() => {
         expect(variablesStore.state.status).toBe('fetched');
         expect(processInstanceDetailsStore.state.status).toBe('fetched');
-        expect(flowNodeStatesStore.state.status).toBe('fetched');
         expect(flowNodeInstanceStore.state.status).toBe('fetched');
       });
 
@@ -569,7 +556,6 @@ describe('Instance', () => {
       expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingFlowNodeStatesSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
       expect(
@@ -582,7 +568,6 @@ describe('Instance', () => {
       expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingFlowNodeStatesSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
       expect(
@@ -598,14 +583,12 @@ describe('Instance', () => {
       await waitFor(() => {
         expect(variablesStore.state.status).toBe('fetched');
         expect(processInstanceDetailsStore.state.status).toBe('fetched');
-        expect(flowNodeStatesStore.state.status).toBe('fetched');
         expect(flowNodeInstanceStore.state.status).toBe('fetched');
       });
 
       expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(2);
       expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(2);
       expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(2);
-      expect(handlePollingFlowNodeStatesSpy).toHaveBeenCalledTimes(2);
       expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(2);
       expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(2);
       expect(

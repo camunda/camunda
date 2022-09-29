@@ -45,7 +45,6 @@ import {ModificationLoadingOverlay} from './ModificationLoadingOverlay';
 import {variablesStore} from 'modules/stores/variables';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {incidentsStore} from 'modules/stores/incidents';
-import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import Modal from 'modules/components/Modal';
@@ -89,7 +88,6 @@ const ProcessInstance: React.FC = observer(() => {
           sequenceFlowsStore.stopPolling();
           processInstanceDetailsStore.stopPolling();
           incidentsStore.stopPolling();
-          flowNodeStatesStore.stopPolling();
           flowNodeInstanceStore.stopPolling();
           processInstanceDetailsStatisticsStore.stopPolling();
         } else {
@@ -98,7 +96,6 @@ const ProcessInstance: React.FC = observer(() => {
           sequenceFlowsStore.startPolling(processInstanceId);
           processInstanceDetailsStore.startPolling(processInstanceId);
           incidentsStore.startPolling(processInstanceId);
-          flowNodeStatesStore.startPolling(processInstanceId);
           flowNodeInstanceStore.startPolling();
           processInstanceDetailsStatisticsStore.startPolling(processInstanceId);
         }

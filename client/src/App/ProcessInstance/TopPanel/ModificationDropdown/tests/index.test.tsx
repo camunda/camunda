@@ -14,31 +14,69 @@ import {mockProcessWithEventBasedGateway} from 'modules/mocks/mockProcessWithEve
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockServer} from 'modules/mock-server/node';
-import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {initializeStores, renderPopover} from './mocks';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 
 describe('Modification Dropdown', () => {
   beforeEach(() => {
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessForModifications))
-      )
-    );
-    mockServer.use(
-      rest.get(
-        '/api/process-instances/:processId/flow-node-states',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              StartEvent_1: 'COMPLETED',
-              'service-task-1': 'COMPLETED',
-              'multi-instance-subprocess': 'INCIDENT',
-              'subprocess-start-1': 'COMPLETED',
-              'subprocess-service-task': 'INCIDENT',
-              'service-task-7': 'ACTIVE',
-              'message-boundary': 'ACTIVE',
-            })
-          )
+      ),
+      rest.get('/api/process-instances/:processId/statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              activityId: 'StartEvent_1',
+              active: 0,
+              canceled: 0,
+              incidents: 0,
+              completed: 1,
+            },
+            {
+              activityId: 'service-task-1',
+              active: 0,
+              canceled: 0,
+              incidents: 0,
+              completed: 1,
+            },
+            {
+              activityId: 'multi-instance-subprocess',
+              active: 0,
+              canceled: 0,
+              incidents: 1,
+              completed: 0,
+            },
+            {
+              activityId: 'subprocess-start-1',
+              active: 0,
+              canceled: 0,
+              incidents: 0,
+              completed: 1,
+            },
+            {
+              activityId: 'subprocess-service-task',
+              active: 0,
+              canceled: 0,
+              incidents: 1,
+              completed: 0,
+            },
+            {
+              activityId: 'service-task-7',
+              active: 1,
+              canceled: 0,
+              incidents: 0,
+              completed: 0,
+            },
+            {
+              activityId: 'message-boundary',
+              active: 1,
+              canceled: 0,
+              incidents: 0,
+              completed: 0,
+            },
+          ])
+        )
       )
     );
   });
@@ -47,7 +85,7 @@ describe('Modification Dropdown', () => {
     flowNodeSelectionStore.reset();
     processInstanceDetailsStore.reset();
     modificationsStore.reset();
-    flowNodeStatesStore.reset();
+    processInstanceDetailsStatisticsStore.reset();
     processInstanceDetailsDiagramStore.reset();
   });
 
@@ -193,18 +231,46 @@ describe('Modification Dropdown', () => {
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessWithEventBasedGateway))
       ),
-      rest.get(
-        '/api/process-instances/:processId/flow-node-states',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              message_intermediate_catch_non_selectable: 'INCIDENT',
-              message_intermediate_catch_selectable: 'ACTIVE',
-              timer_intermediate_catch_non_selectable: 'ACTIVE',
-              message_intermediate_throw_selectable: 'ACTIVE',
-              timer_intermediate_catch_selectable: 'INCIDENT',
-            })
-          )
+      rest.get('/api/process-instances/:processId/statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              activityId: 'message_intermediate_catch_non_selectable',
+              active: 0,
+              canceled: 0,
+              incidents: 1,
+              completed: 0,
+            },
+            {
+              activityId: 'message_intermediate_catch_selectable',
+              active: 1,
+              canceled: 0,
+              incidents: 0,
+              completed: 0,
+            },
+            {
+              activityId: 'timer_intermediate_catch_non_selectable',
+              active: 1,
+              canceled: 0,
+              incidents: 0,
+              completed: 0,
+            },
+            {
+              activityId: 'message_intermediate_throw_selectable',
+              active: 1,
+              canceled: 0,
+              incidents: 0,
+              completed: 0,
+            },
+            {
+              activityId: 'timer_intermediate_catch_selectable',
+              active: 0,
+              canceled: 0,
+              incidents: 1,
+              completed: 0,
+            },
+          ])
+        )
       )
     );
 
@@ -269,14 +335,18 @@ describe('Modification Dropdown', () => {
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessForModifications))
       ),
-      rest.get(
-        '/api/process-instances/:processId/flow-node-states',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              'multi-instance-subprocess': 'INCIDENT',
-            })
-          )
+      rest.get('/api/process-instances/:processId/statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              activityId: 'multi-instance-subprocess',
+              active: 0,
+              canceled: 0,
+              incidents: 1,
+              completed: 0,
+            },
+          ])
+        )
       )
     );
 

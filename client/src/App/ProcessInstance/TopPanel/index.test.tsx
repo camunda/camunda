@@ -26,7 +26,7 @@ import {
   PROCESS_INSTANCE_ID,
 } from 'modules/mocks/metadata';
 import {createInstance, mockCallActivityProcessXML} from 'modules/testUtils';
-import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -93,17 +93,28 @@ describe('TopPanel', () => {
         '/api/process-instances/:instanceId/sequence-flows',
         (_, res, ctx) => res.once(ctx.json(mockSequenceFlows))
       ),
-      rest.get(
-        '/api/process-instances/:instanceId/flow-node-states',
-        (_, res, ctx) => res.once(ctx.json({taskD: 'INCIDENT'}))
+      rest.get('/api/process-instances/:instanceId/statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              activityId: 'taskD',
+              active: 0,
+              canceled: 0,
+              incidents: 1,
+              completed: 0,
+            },
+          ])
+        )
       )
     );
+
+    processInstanceDetailsStatisticsStore.init('id');
   });
 
   afterEach(() => {
     processInstanceDetailsDiagramStore.reset();
     processInstanceDetailsStore.reset();
-    flowNodeStatesStore.reset();
+    processInstanceDetailsStatisticsStore.reset();
   });
 
   it('should render spinner while loading', async () => {
@@ -209,7 +220,7 @@ describe('TopPanel', () => {
     });
 
     await waitFor(() =>
-      expect(flowNodeStatesStore.state.status).toBe('fetched')
+      expect(processInstanceDetailsStatisticsStore.state.status).toBe('fetched')
     );
 
     flowNodeSelectionStore.selectFlowNode({

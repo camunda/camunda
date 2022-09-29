@@ -335,4 +335,39 @@ describe('stores/processInstanceDetailsStatistics', () => {
       {count: 2, flowNodeId: 'service-task-2', flowNodeState: 'incidents'},
     ]);
   });
+
+  it('should return selectable flow nodes', async () => {
+    mockServer.use(
+      rest.get(
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/statistics`,
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              {
+                activityId: 'startEvent1',
+                active: 0,
+                canceled: 0,
+                incidents: 0,
+                completed: 1,
+              },
+              {
+                activityId: 'serviceTask1',
+                active: 1,
+                canceled: 0,
+                incidents: 0,
+                completed: 0,
+              },
+            ])
+          )
+      )
+    );
+
+    processInstanceDetailsStatisticsStore.init(PROCESS_INSTANCE_ID);
+
+    await waitFor(() => {
+      expect(processInstanceDetailsStatisticsStore.selectableFlowNodes).toEqual(
+        ['startEvent1', 'serviceTask1']
+      );
+    });
+  });
 });

@@ -27,7 +27,6 @@ import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {getFlowNodes} from 'modules/utils/flowNodes';
 import {NON_APPENDABLE_FLOW_NODES} from 'modules/constants';
 import {modificationsStore} from './modifications';
-import {flowNodeStatesStore} from './flowNodeStates';
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {isAttachedToAnEventBasedGateway} from 'modules/bpmn-js/isAttachedToAnEventBasedGateway';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
@@ -201,13 +200,16 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
     );
 
     return allFlowNodes.map((flowNode) => {
-      const flowNodeState = flowNodeStatesStore.state.flowNodes[flowNode.id];
+      const flowNodeState =
+        processInstanceDetailsStatisticsStore.state.statistics.find(
+          ({activityId}) => activityId === flowNode.id
+        );
 
       return {
         id: flowNode.id,
         isCancellable:
           flowNodeState !== undefined &&
-          ['ACTIVE', 'INCIDENT'].includes(flowNodeState),
+          (flowNodeState.active > 0 || flowNodeState.incidents > 0),
         isAppendable: !NON_APPENDABLE_FLOW_NODES.includes(flowNode.$type),
         hasMultiInstanceParent: isWithinMultiInstance(flowNode),
         isAttachedToAnEventBasedGateway:

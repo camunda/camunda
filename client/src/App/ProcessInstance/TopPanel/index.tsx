@@ -14,7 +14,6 @@ import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstan
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
-import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
@@ -55,7 +54,7 @@ type ModificationBadgePayload = {
 };
 
 const TopPanel: React.FC = observer(() => {
-  const {selectableFlowNodes} = flowNodeStatesStore;
+  const {selectableFlowNodes} = processInstanceDetailsStatisticsStore;
 
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
@@ -64,11 +63,9 @@ const TopPanel: React.FC = observer(() => {
   useEffect(() => {
     sequenceFlowsStore.init();
     flowNodeMetaDataStore.init();
-    flowNodeStatesStore.init(processInstanceId);
 
     return () => {
       sequenceFlowsStore.reset();
-      flowNodeStatesStore.reset();
       flowNodeMetaDataStore.reset();
       diagramOverlaysStore.reset();
     };

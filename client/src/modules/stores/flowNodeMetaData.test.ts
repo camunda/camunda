@@ -11,8 +11,8 @@ import {processInstanceDetailsStore} from './processInstanceDetails';
 import {flowNodeSelectionStore} from './flowNodeSelection';
 import {flowNodeMetaDataStore, MetaDataEntity} from './flowNodeMetaData';
 import {waitFor} from 'modules/testing-library';
-import {flowNodeStatesStore} from './flowNodeStates';
 import {modificationsStore} from './modifications';
+import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 
 const PROCESS_INSTANCE_ID = '2251799813689404';
 
@@ -53,7 +53,7 @@ describe('stores/flowNodeMetaData', () => {
   afterEach(() => {
     flowNodeSelectionStore.reset();
     flowNodeMetaDataStore.reset();
-    flowNodeStatesStore.reset();
+    processInstanceDetailsStatisticsStore.reset();
     modificationsStore.reset();
   });
 
@@ -134,18 +134,26 @@ describe('stores/flowNodeMetaData', () => {
   it('should not fetch metadata in modification mode if flow node does not have any running/finished instances', async () => {
     mockServer.use(
       rest.get(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-states`,
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/statistics`,
         (_, res, ctx) =>
           res.once(
-            ctx.json({
-              ServiceTask_1: 'ACTIVE',
-            })
+            ctx.json([
+              {
+                activityId: 'ServiceTask_1',
+                active: 1,
+                canceled: 0,
+                incidents: 0,
+                completed: 0,
+              },
+            ])
           )
       )
     );
 
     modificationsStore.enableModificationMode();
-    await flowNodeStatesStore.fetchFlowNodeStates(PROCESS_INSTANCE_ID);
+    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
+      PROCESS_INSTANCE_ID
+    );
 
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.setSelection({

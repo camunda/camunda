@@ -17,9 +17,9 @@ import {
 } from 'modules/testUtils';
 import {waitFor} from 'modules/testing-library';
 import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
-import {flowNodeStatesStore} from './flowNodeStates';
 import {modificationsStore} from './modifications';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
+import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 
 describe('stores/processInstanceDiagram', () => {
   beforeEach(() => {
@@ -288,26 +288,69 @@ describe('stores/processInstanceDiagram', () => {
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessForModifications))
       ),
-      rest.get(
-        '/api/process-instances/:processId/flow-node-states',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              StartEvent_1: 'COMPLETED',
-              'service-task-1': 'COMPLETED',
-              'multi-instance-subprocess': 'INCIDENT',
-              'subprocess-start-1': 'COMPLETED',
-              'subprocess-service-task': 'INCIDENT',
-              'service-task-7': 'ACTIVE',
-              'message-boundary': 'ACTIVE',
-            })
-          )
+      rest.get('/api/process-instances/:processId/statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              activityId: 'StartEvent_1',
+              active: 0,
+              canceled: 0,
+              incidents: 0,
+              completed: 1,
+            },
+            {
+              activityId: 'service-task-1',
+              active: 0,
+              canceled: 0,
+              incidents: 0,
+              completed: 1,
+            },
+            {
+              activityId: 'multi-instance-subprocess',
+              active: 0,
+              canceled: 0,
+              incidents: 1,
+              completed: 0,
+            },
+            {
+              activityId: 'subprocess-start-1',
+              active: 0,
+              canceled: 0,
+              incidents: 0,
+              completed: 1,
+            },
+            {
+              activityId: 'subprocess-service-task',
+              active: 0,
+              canceled: 0,
+              incidents: 1,
+              completed: 0,
+            },
+            {
+              activityId: 'service-task-7',
+              active: 1,
+              canceled: 0,
+              incidents: 0,
+              completed: 0,
+            },
+            {
+              activityId: 'message-boundary',
+              active: 1,
+              canceled: 0,
+              incidents: 0,
+              completed: 0,
+            },
+          ])
+        )
       )
     );
+
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'
     );
-    await flowNodeStatesStore.fetchFlowNodeStates('processInstanceId');
+    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
+      'processInstanceId'
+    );
 
     expect(processInstanceDetailsDiagramStore.appendableFlowNodes).toEqual([
       'service-task-1',
