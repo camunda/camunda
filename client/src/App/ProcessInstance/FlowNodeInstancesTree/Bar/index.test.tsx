@@ -28,6 +28,7 @@ describe('<Bar />', () => {
       <Bar
         flowNodeInstance={mockStartNode}
         metaData={mockStartMetaData}
+        nodeName={mockStartMetaData.name}
         isBold={false}
         isSelected={false}
         hasTopBorder={false}
@@ -43,30 +44,12 @@ describe('<Bar />', () => {
     expect(screen.getByText(mockStartMetaData.name)).toBeInTheDocument();
   });
 
-  it('should show the correct name for multi instance nodes', () => {
-    render(
-      <Bar
-        flowNodeInstance={mockMultiInstanceBodyNode}
-        metaData={mockMultiInstanceBodyMetaData}
-        isBold={false}
-        isSelected={false}
-        hasTopBorder={false}
-      />,
-      {
-        wrapper: ThemeProvider,
-      }
-    );
-
-    expect(
-      screen.getByText(`${mockMultiInstanceBodyMetaData.name} (Multi Instance)`)
-    ).toBeInTheDocument();
-  });
-
   it('should toggle the timestamp', () => {
     render(
       <Bar
         flowNodeInstance={mockMultiInstanceBodyNode}
         metaData={mockMultiInstanceBodyMetaData}
+        nodeName={mockMultiInstanceBodyMetaData.name}
         isBold={false}
         isSelected={false}
         hasTopBorder={false}

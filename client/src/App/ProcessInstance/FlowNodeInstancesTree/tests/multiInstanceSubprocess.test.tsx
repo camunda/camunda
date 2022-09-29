@@ -16,7 +16,7 @@ import {multiInstanceProcess} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {FlowNodeInstancesTree} from '..';
 import {
-  CURRENT_INSTANCE,
+  multiInstanceProcessInstance,
   flowNodeInstances,
   mockFlowNodeInstance,
   processId,
@@ -27,7 +27,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {
     mockServer.use(
       rest.get(`/api/process-instances/:processInstanceId`, (_, res, ctx) =>
-        res.once(ctx.json(CURRENT_INSTANCE))
+        res.once(ctx.json(multiInstanceProcessInstance))
       ),
       rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
         res.once(ctx.text(multiInstanceProcess))
@@ -187,7 +187,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     // poll request
     mockServer.use(
       rest.get(`/api/process-instances/:processInstanceId`, (_, res, ctx) =>
-        res.once(ctx.json({...CURRENT_INSTANCE}))
+        res.once(ctx.json({...multiInstanceProcessInstance}))
       ),
       rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
         res.once(ctx.json(flowNodeInstances.level1Poll))

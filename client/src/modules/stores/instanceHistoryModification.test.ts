@@ -99,6 +99,7 @@ describe('stores/instanceHistoryModification', () => {
 
   afterEach(() => {
     modificationsStore.reset();
+    instanceHistoryModificationStore.reset();
   });
 
   it('should add and remove multiple flownodes', () => {
@@ -116,7 +117,7 @@ describe('stores/instanceHistoryModification', () => {
         endDate: null,
         sortValues: [],
         startDate: '',
-        treePath: null,
+        treePath: '',
         isPlaceholder: true,
       },
     ]);
@@ -131,7 +132,7 @@ describe('stores/instanceHistoryModification', () => {
         endDate: null,
         sortValues: [],
         startDate: '',
-        treePath: null,
+        treePath: '',
         isPlaceholder: true,
       },
       {
@@ -141,7 +142,7 @@ describe('stores/instanceHistoryModification', () => {
         endDate: null,
         sortValues: [],
         startDate: '',
-        treePath: null,
+        treePath: '',
         isPlaceholder: true,
       },
     ]);
@@ -168,7 +169,7 @@ describe('stores/instanceHistoryModification', () => {
         endDate: null,
         sortValues: [],
         startDate: '',
-        treePath: null,
+        treePath: '',
         isPlaceholder: true,
       },
       {
@@ -178,7 +179,7 @@ describe('stores/instanceHistoryModification', () => {
         endDate: null,
         sortValues: [],
         startDate: '',
-        treePath: null,
+        treePath: '',
         isPlaceholder: true,
       },
     ]);
@@ -197,7 +198,7 @@ describe('stores/instanceHistoryModification', () => {
         endDate: null,
         sortValues: [],
         startDate: '',
-        treePath: null,
+        treePath: '',
         isPlaceholder: true,
       },
     ]);
@@ -222,7 +223,7 @@ describe('stores/instanceHistoryModification', () => {
         endDate: null,
         sortValues: [],
         startDate: '',
-        treePath: null,
+        treePath: '',
         isPlaceholder: true,
       },
     ]);

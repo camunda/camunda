@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {IReactionDisposer, makeAutoObservable} from 'mobx';
 import {FlowNodeInstance} from './flowNodeInstance';
 import {modificationsStore, FlowNodeModification} from './modifications';
@@ -12,8 +13,9 @@ import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagra
 
 type ModificationPlaceholder = {
   flowNodeInstance: FlowNodeInstance;
-  parentFlowNodeId: string;
+  parentFlowNodeId?: string;
   operation: FlowNodeModification['payload']['operation'];
+  parentPlaceholerInstanceId: string | null;
 };
 
 const getScopeIds = (modificationPayload: FlowNodeModification['payload']) => {
@@ -29,6 +31,48 @@ const getScopeIds = (modificationPayload: FlowNodeModification['payload']) => {
   }
 };
 
+const generateParentPlaceholders = (
+  modificationPayload: FlowNodeModification['payload'],
+  flowNode?: BusinessObject
+): ModificationPlaceholder[] => {
+  if (
+    flowNode === undefined ||
+    modificationPayload.operation === 'CANCEL_TOKEN'
+  ) {
+    return [];
+  }
+
+  const scopeId = modificationPayload.parentScopeIds[flowNode.id];
+  if (scopeId === undefined) {
+    return [];
+  }
+
+  const parentFlowNode = flowNode?.$parent;
+  const parentScopeId =
+    parentFlowNode !== undefined
+      ? modificationPayload.parentScopeIds[parentFlowNode.id] ?? null
+      : null;
+
+  return [
+    ...generateParentPlaceholders(modificationPayload, parentFlowNode),
+    {
+      flowNodeInstance: {
+        flowNodeId: flowNode.id,
+        id: scopeId,
+        type: 'SUB_PROCESS',
+        startDate: '',
+        endDate: null,
+        sortValues: [],
+        treePath: '',
+        isPlaceholder: true,
+      },
+      parentFlowNodeId: parentFlowNode?.id,
+      operation: modificationPayload.operation,
+      parentPlaceholerInstanceId: parentScopeId,
+    },
+  ];
+};
+
 const createModificationPlaceholders = ({
   modificationPayload,
   flowNode,
@@ -39,7 +83,10 @@ const createModificationPlaceholders = ({
 }): ModificationPlaceholder[] => {
   const parentFlowNodeId = flowNode.$parent?.id;
 
-  if (parentFlowNodeId === undefined) {
+  if (
+    parentFlowNodeId === undefined ||
+    modificationPayload.operation === 'CANCEL_TOKEN'
+  ) {
     return [];
   }
 
@@ -51,19 +98,22 @@ const createModificationPlaceholders = ({
       startDate: '',
       endDate: null,
       sortValues: [],
-      treePath: null,
+      treePath: '',
       isPlaceholder: true,
     },
     parentFlowNodeId,
     operation: modificationPayload.operation,
+    parentPlaceholerInstanceId:
+      modificationsStore.getParentScopeId(parentFlowNodeId),
   }));
 };
 
 type State = {
-  expandedFlowNodeIds: string[];
+  expandedFlowNodeInstanceIds: string[];
 };
+
 const DEFAULT_STATE: State = {
-  expandedFlowNodeIds: [],
+  expandedFlowNodeInstanceIds: [],
 };
 
 class InstanceHistoryModification {
@@ -78,17 +128,38 @@ class InstanceHistoryModification {
     return modificationsStore.flowNodeModifications.reduce<
       ModificationPlaceholder[]
     >((modificationPlaceHolders, modificationPayload) => {
+      const {operation} = modificationPayload;
+      if (operation === 'CANCEL_TOKEN') {
+        return modificationPlaceHolders;
+      }
+
       const flowNodeId =
-        modificationPayload.operation === 'MOVE_TOKEN'
+        operation === 'MOVE_TOKEN'
           ? modificationPayload.targetFlowNode.id
           : modificationPayload.flowNode.id;
 
+      const flowNode =
+        processInstanceDetailsDiagramStore.getFlowNode(flowNodeId);
+
+      if (flowNode === undefined) {
+        return modificationPlaceHolders;
+      }
+
+      const newParentModificationPlaceholders = generateParentPlaceholders(
+        modificationPayload,
+        flowNode.$parent
+      );
+
       const newModificationPlaceholders = createModificationPlaceholders({
         modificationPayload,
-        flowNode: processInstanceDetailsDiagramStore.getFlowNode(flowNodeId),
+        flowNode,
       });
 
-      return [...modificationPlaceHolders, ...newModificationPlaceholders];
+      return [
+        ...modificationPlaceHolders,
+        ...newModificationPlaceholders,
+        ...newParentModificationPlaceholders,
+      ];
     }, []);
   }
 
@@ -108,27 +179,42 @@ class InstanceHistoryModification {
     }, {});
   }
 
-  appendPlaceholders = (flowNodeId: string) => {
+  appendExpandedFlowNodeInstanceIds = (id: FlowNodeInstance['id']) => {
     if (
-      !this.state.expandedFlowNodeIds.some((id: string) => id === flowNodeId)
+      !this.modificationPlaceholders.some(
+        ({parentPlaceholerInstanceId}) => parentPlaceholerInstanceId === id
+      )
     ) {
-      this.state.expandedFlowNodeIds.push(flowNodeId);
+      return;
     }
+
+    this.state.expandedFlowNodeInstanceIds.push(id);
   };
 
-  removePlaceholders = (flowNodeId: string) => {
-    const index = this.state.expandedFlowNodeIds.indexOf(flowNodeId);
-
-    if (index >= 0) {
-      this.state.expandedFlowNodeIds.splice(index, 1);
-    }
+  removeFromExpandedFlowNodeInstanceIds = (id: FlowNodeInstance['id']) => {
+    this.state.expandedFlowNodeInstanceIds =
+      this.state.expandedFlowNodeInstanceIds.filter(
+        (expandedFlowNodeInstanceId) => expandedFlowNodeInstanceId !== id
+      );
   };
 
-  getVisibleFlowNodeInstancesByParent(flowNodeId: string) {
-    return this.state.expandedFlowNodeIds.includes(flowNodeId)
-      ? this.flowNodeInstancesByParent[flowNodeId] ?? []
-      : [];
-  }
+  getVisibleChildPlaceholders = (id: FlowNodeInstance['id']) => {
+    if (!this.state.expandedFlowNodeInstanceIds.includes(id)) {
+      return [];
+    }
+
+    return this.modificationPlaceholders
+      .filter(
+        ({parentPlaceholerInstanceId}) => parentPlaceholerInstanceId === id
+      )
+      .map(({flowNodeInstance}) => flowNodeInstance);
+  };
+
+  hasChildPlaceholders = (id: FlowNodeInstance['id']) => {
+    return this.modificationPlaceholders.some(
+      ({parentPlaceholerInstanceId}) => parentPlaceholerInstanceId === id
+    );
+  };
 
   reset = () => {
     this.state = {...DEFAULT_STATE};

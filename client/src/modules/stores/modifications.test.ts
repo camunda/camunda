@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {modificationsStore} from './modifications';
+import {FlowNodeModification, modificationsStore} from './modifications';
 import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
@@ -18,6 +18,11 @@ import {
   createEditVariableModification,
 } from 'modules/mocks/modifications';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
+
+type AddModificationPayload = Extract<
+  FlowNodeModification['payload'],
+  {operation: 'ADD_TOKEN'}
+>;
 
 describe('stores/modifications', () => {
   afterEach(() => {
@@ -815,6 +820,50 @@ describe('stores/modifications', () => {
     expect(
       modificationsStore.generateParentScopeIds('parent_sub_process')
     ).toEqual({});
+  });
+
+  it('should not generate parent scope id twice', async () => {
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockNestedSubprocess))
+      )
+    );
+    await processInstanceDetailsDiagramStore.fetchProcessXml(
+      'processInstanceId'
+    );
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        flowNode: {id: 'user_task', name: 'User Task'},
+        scopeId: 'random-scope-id-0',
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: modificationsStore.generateParentScopeIds('user_task'),
+      },
+    });
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        flowNode: {id: 'user_task', name: 'User Task'},
+        scopeId: 'random-scope-id-1',
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: modificationsStore.generateParentScopeIds('user_task'),
+      },
+    });
+
+    const [firstModification, secondModification] =
+      modificationsStore.flowNodeModifications as AddModificationPayload[];
+
+    expect(firstModification?.parentScopeIds).toEqual({
+      inner_sub_process: expect.any(String),
+      parent_sub_process: expect.any(String),
+    });
+
+    expect(secondModification?.parentScopeIds).toEqual({});
   });
 
   it('should retrieve "edit variable" modifications', async () => {

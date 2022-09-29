@@ -50,6 +50,7 @@ import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInsta
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import Modal from 'modules/components/Modal';
 import {tracking} from 'modules/tracking';
+import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -92,6 +93,7 @@ const ProcessInstance: React.FC = observer(() => {
           flowNodeInstanceStore.stopPolling();
           processInstanceDetailsStatisticsStore.stopPolling();
         } else {
+          instanceHistoryModificationStore.reset();
           variablesStore.startPolling(processInstanceId);
           sequenceFlowsStore.startPolling(processInstanceId);
           processInstanceDetailsStore.startPolling(processInstanceId);
@@ -143,6 +145,7 @@ const ProcessInstance: React.FC = observer(() => {
 
   useEffect(() => {
     return () => {
+      instanceHistoryModificationStore.reset();
       processInstanceDetailsStore.reset();
       processInstanceDetailsStatisticsStore.reset();
       flowNodeInstanceStore.reset();

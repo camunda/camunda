@@ -7,7 +7,6 @@
 
 import React from 'react';
 
-import {TYPE} from 'modules/constants';
 import {TimeStampLabel} from '../TimeStampLabel';
 import {Container, NodeIcon, NodeName, LeftContainer} from './styled';
 
@@ -20,13 +19,21 @@ import {ModificationIcons} from './ModificationIcons';
 type Props = {
   flowNodeInstance: FlowNodeInstance;
   metaData: FlowNodeMetaData;
+  nodeName: string;
   isSelected: boolean;
   isBold: boolean;
   hasTopBorder: boolean;
 };
 
 const Bar: React.FC<Props> = observer(
-  ({flowNodeInstance, metaData, isSelected, isBold, hasTopBorder}) => {
+  ({
+    flowNodeInstance,
+    metaData,
+    nodeName,
+    isSelected,
+    isBold,
+    hasTopBorder,
+  }) => {
     return (
       <Container $isSelected={isSelected} $hasTopBorder={hasTopBorder}>
         <LeftContainer>
@@ -37,11 +44,7 @@ const Bar: React.FC<Props> = observer(
             data-testid={`flow-node-icon-${metaData.type.elementType}`}
           />
           <NodeName isSelected={isSelected} isBold={isBold}>
-            {`${metaData.name || flowNodeInstance.flowNodeId}${
-              flowNodeInstance.type === TYPE.MULTI_INSTANCE_BODY
-                ? ` (Multi Instance)`
-                : ''
-            }`}
+            {nodeName}
           </NodeName>
           {!modificationsStore.isModificationModeEnabled && (
             <TimeStampLabel

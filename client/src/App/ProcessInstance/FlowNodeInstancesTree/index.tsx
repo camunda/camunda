@@ -32,6 +32,31 @@ type Props = {
   scrollableContainerRef: React.RefObject<HTMLElement>;
 };
 
+const getVisibleChildPlaceholders = ({
+  isModificationModeEnabled,
+  flowNodeInstance,
+}: {
+  isModificationModeEnabled: boolean;
+  flowNodeInstance: FlowNodeInstance;
+}) => {
+  const {state, isPlaceholder, flowNodeId, id} = flowNodeInstance;
+  if (
+    !isModificationModeEnabled ||
+    (!isPlaceholder &&
+      (state === undefined || !['ACTIVE', 'INCIDENT'].includes(state)))
+  ) {
+    return [];
+  }
+
+  if (isPlaceholder) {
+    return instanceHistoryModificationStore.getVisibleChildPlaceholders(id);
+  }
+
+  return (
+    instanceHistoryModificationStore.flowNodeInstancesByParent[flowNodeId] ?? []
+  );
+};
+
 const FlowNodeInstancesTree: React.FC<Props> = observer(
   ({
     flowNodeInstance,
@@ -46,22 +71,19 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
       flowNodeInstance.id ===
       processInstanceDetailsStore.state.processInstance?.id;
 
+    const visibleChildNodes = getVisibleChildNodes(flowNodeInstance);
+
     const visibleChildPlaceholders: FlowNodeInstance[] =
-      modificationsStore.isModificationModeEnabled
-        ? isProcessInstance
-          ? instanceHistoryModificationStore.flowNodeInstancesByParent[
-              flowNodeInstance.flowNodeId
-            ] ?? []
-          : instanceHistoryModificationStore.getVisibleFlowNodeInstancesByParent(
-              flowNodeInstance.flowNodeId
-            )
-        : [];
+      getVisibleChildPlaceholders({
+        isModificationModeEnabled: modificationsStore.isModificationModeEnabled,
+        flowNodeInstance,
+      });
 
-    const visibleChildNodes = [
-      ...getVisibleChildNodes(flowNodeInstance),
-      ...visibleChildPlaceholders,
-    ];
+    const visibleChildren = [...visibleChildNodes, ...visibleChildPlaceholders];
+    const hasVisibleChildren =
+      visibleChildPlaceholders.length > 0 || visibleChildNodes.length > 0;
 
+    const hasVisibleChildPlaceholders = visibleChildPlaceholders.length > 0;
     const hasVisibleChildNodes = visibleChildNodes.length > 0;
 
     const metaData = processInstanceDetailsDiagramStore.getMetaData(
@@ -75,6 +97,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
     };
 
     const isMultiInstance = flowNodeInstance.type === TYPE.MULTI_INSTANCE_BODY;
+
     const isSubProcess =
       flowNodeInstance.type === 'SUB_PROCESS' ||
       flowNodeInstance.type === 'EVENT_SUB_PROCESS';
@@ -90,21 +113,23 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
     const rowRef = useRef<HTMLDivElement>(null);
 
     const expandSubtree = (flowNodeInstance: FlowNodeInstance) => {
-      if (flowNodeInstance.treePath !== null) {
+      if (!flowNodeInstance.isPlaceholder) {
         fetchSubTree({treePath: flowNodeInstance.treePath});
-        instanceHistoryModificationStore.appendPlaceholders(
-          flowNodeInstance.flowNodeId
+      } else {
+        instanceHistoryModificationStore.appendExpandedFlowNodeInstanceIds(
+          flowNodeInstance.id
         );
       }
     };
 
     const collapseSubtree = (flowNodeInstance: FlowNodeInstance) => {
-      if (flowNodeInstance.treePath !== null) {
+      if (!flowNodeInstance.isPlaceholder) {
         removeSubTree({
           treePath: flowNodeInstance.treePath,
         });
-        instanceHistoryModificationStore.removePlaceholders(
-          flowNodeInstance.flowNodeId
+      } else {
+        instanceHistoryModificationStore.removeFromExpandedFlowNodeInstanceIds(
+          flowNodeInstance.id
         );
       }
     };
@@ -117,6 +142,12 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         flowNodeInstanceStore.fetchNext(flowNodeInstance.treePath);
       }
     };
+
+    const nodeName = `${metaData.name || flowNodeInstance.flowNodeId}${
+      flowNodeInstance.type === TYPE.MULTI_INSTANCE_BODY
+        ? ` (Multi Instance)`
+        : ''
+    }`;
 
     return (
       <Li
@@ -135,14 +166,27 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
           )}
         </NodeDetails>
         <Foldable
-          isFolded={!hasVisibleChildNodes}
-          isFoldable={isFoldable}
+          isFolded={
+            flowNodeInstance.isPlaceholder
+              ? !hasVisibleChildPlaceholders
+              : !hasVisibleChildNodes
+          }
+          isFoldable={
+            flowNodeInstance.isPlaceholder
+              ? isFoldable &&
+                instanceHistoryModificationStore.hasChildPlaceholders(
+                  flowNodeInstance.id
+                )
+              : isFoldable
+          }
           onToggle={
             isFoldable
               ? () => {
-                  !hasVisibleChildNodes
-                    ? expandSubtree(flowNodeInstance)
-                    : collapseSubtree(flowNodeInstance);
+                  (flowNodeInstance.isPlaceholder &&
+                    hasVisibleChildPlaceholders) ||
+                  (!flowNodeInstance.isPlaceholder && hasVisibleChildNodes)
+                    ? collapseSubtree(flowNodeInstance)
+                    : expandSubtree(flowNodeInstance);
                 }
               : undefined
           }
@@ -164,22 +208,19 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               }}
               isSelected={isSelected}
               isLastChild={isLastChild}
-              nodeName={`${metaData.name}${
-                flowNodeInstance.type === TYPE.MULTI_INSTANCE_BODY
-                  ? ` (Multi Instance)`
-                  : ''
-              }`}
+              nodeName={nodeName}
             >
               <Bar
                 flowNodeInstance={flowNodeInstance}
                 metaData={metaData}
+                nodeName={nodeName}
                 isSelected={isSelected}
                 isBold={isFoldable || metaData.type.elementType === 'PROCESS'}
                 hasTopBorder={treeDepth > 1}
               />
             </Summary>
           )}
-          {hasVisibleChildNodes && (
+          {hasVisibleChildren && (
             <Details>
               <InfiniteScroller
                 onVerticalScrollEndReach={handleEndReach}
@@ -205,13 +246,13 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
                   showConnectionLine={treeDepth >= 2}
                   data-testid={`treeDepth:${treeDepth}`}
                 >
-                  {visibleChildNodes.map(
+                  {visibleChildren.map(
                     (childNode: FlowNodeInstance, index: number) => {
                       return (
                         <FlowNodeInstancesTree
                           flowNodeInstance={childNode}
                           treeDepth={treeDepth + 1}
-                          isLastChild={visibleChildNodes.length === index + 1}
+                          isLastChild={visibleChildren.length === index + 1}
                           key={childNode.id}
                           scrollableContainerRef={scrollableContainerRef}
                         />

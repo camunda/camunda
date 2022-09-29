@@ -27,7 +27,7 @@ type FlowNodeModificationPayload =
       affectedTokenCount: number;
       visibleAffectedTokenCount: number;
       parentScopeIds: {
-        [key: string]: string;
+        [flowNodeId: string]: string;
       };
     }
   | {
@@ -44,7 +44,7 @@ type FlowNodeModificationPayload =
       targetFlowNode: {id: string; name: string};
       scopeIds: string[];
       parentScopeIds: {
-        [key: string]: string;
+        [flowNodeId: string]: string;
       };
     };
 
@@ -120,9 +120,23 @@ class Modifications {
     const parentFlowNodeIds =
       processInstanceDetailsDiagramStore.getFlowNodeParents(flowNode);
 
-    return parentFlowNodeIds.reduce<{[key: string]: string}>(
+    return parentFlowNodeIds.reduce<{[flowNodeId: string]: string}>(
       (parentFlowNodeScopes, flowNodeId) => {
-        parentFlowNodeScopes[flowNodeId] = generateUniqueID();
+        const hasExistingParentScopeId =
+          this.flowNodeModifications.some(
+            (modification) =>
+              (modification.operation === 'ADD_TOKEN' ||
+                modification.operation === 'MOVE_TOKEN') &&
+              Object.keys(modification.parentScopeIds).includes(flowNodeId)
+          ) ||
+          processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
+            flowNodeId
+          ) === 1;
+
+        if (!hasExistingParentScopeId) {
+          parentFlowNodeScopes[flowNodeId] = generateUniqueID();
+        }
+
         return parentFlowNodeScopes;
       },
       {}
@@ -607,6 +621,20 @@ class Modifications {
     } finally {
       this.reset();
     }
+  };
+
+  getParentScopeId = (flowNodeId: string) => {
+    const parentScope = this.flowNodeModifications.find(
+      (modification) =>
+        modification.operation !== 'CANCEL_TOKEN' &&
+        modification.parentScopeIds[flowNodeId] !== undefined
+    );
+
+    if (parentScope === undefined || !('parentScopeIds' in parentScope)) {
+      return null;
+    }
+
+    return parentScope.parentScopeIds[flowNodeId] ?? null;
   };
 
   reset = () => {

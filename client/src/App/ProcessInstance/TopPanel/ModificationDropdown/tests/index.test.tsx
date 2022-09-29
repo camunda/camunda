@@ -6,57 +6,16 @@
  */
 
 import {rest} from 'msw';
-import {createRef} from 'react';
-import {render, screen, waitFor} from 'modules/testing-library';
+import {screen, waitFor} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {ModificationDropdown} from './';
-import {createInstance} from 'modules/testUtils';
 import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 import {mockProcessWithEventBasedGateway} from 'modules/mocks/mockProcessWithEventBasedGateway';
-import {MemoryRouter} from 'react-router-dom';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {PROCESS_INSTANCE_ID} from 'modules/mocks/metadata';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockServer} from 'modules/mock-server/node';
 import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
-
-const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  return (
-    <ThemeProvider>
-      <MemoryRouter initialEntries={['/processes/1']}>{children}</MemoryRouter>
-    </ThemeProvider>
-  );
-};
-
-const renderPopover = () => {
-  const {container} = render(<svg />);
-  const ref = createRef<HTMLDivElement>();
-
-  return render(
-    <ModificationDropdown
-      selectedFlowNodeRef={container.querySelector('svg') ?? undefined}
-      diagramCanvasRef={ref}
-    />,
-    {
-      wrapper: Wrapper,
-    }
-  );
-};
-
-const initializeStores = () => {
-  flowNodeSelectionStore.init();
-  flowNodeStatesStore.init('processId');
-  processInstanceDetailsDiagramStore.init();
-  processInstanceDetailsStore.setProcessInstance(
-    createInstance({
-      id: PROCESS_INSTANCE_ID,
-      state: 'ACTIVE',
-      processId: 'processId',
-    })
-  );
-};
+import {initializeStores, renderPopover} from './mocks';
 
 describe('Modification Dropdown', () => {
   beforeEach(() => {

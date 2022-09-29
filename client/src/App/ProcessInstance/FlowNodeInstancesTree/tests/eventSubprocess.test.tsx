@@ -15,7 +15,7 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {FlowNodeInstancesTree} from '../index';
 
 import {
-  CURRENT_INSTANCE,
+  multiInstanceProcessInstance,
   eventSubProcessFlowNodeInstances,
   mockFlowNodeInstance,
   processId,
@@ -28,7 +28,7 @@ describe('FlowNodeInstancesTree - Event Subprocess', () => {
   beforeEach(async () => {
     mockServer.use(
       rest.get(`/api/process-instances/:processInstanceId`, (_, res, ctx) =>
-        res.once(ctx.json(CURRENT_INSTANCE))
+        res.once(ctx.json(multiInstanceProcessInstance))
       ),
       rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
         res.once(ctx.text(eventSubProcess))

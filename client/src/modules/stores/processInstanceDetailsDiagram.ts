@@ -30,6 +30,7 @@ import {modificationsStore} from './modifications';
 import {flowNodeStatesStore} from './flowNodeStates';
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {isAttachedToAnEventBasedGateway} from 'modules/bpmn-js/isAttachedToAnEventBasedGateway';
+import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 
 type FlowNodeMetaData = {
   name: string;
@@ -177,6 +178,23 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
     return [flowNode.$parent.id, ...this.getFlowNodeParents(flowNode.$parent)];
   };
 
+  hasMultipleScopes = (flowNode: BusinessObject): boolean => {
+    const scopeCount =
+      processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
+        flowNode.id
+      );
+
+    if (scopeCount > 1) {
+      return true;
+    }
+
+    if (flowNode.$parent?.$type !== 'bpmn:SubProcess') {
+      return false;
+    }
+
+    return this.hasMultipleScopes(flowNode.$parent);
+  };
+
   get flowNodes() {
     const allFlowNodes: BusinessObject[] = getFlowNodes(
       this.state.diagramModel?.bpmnElements
@@ -184,6 +202,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
 
     return allFlowNodes.map((flowNode) => {
       const flowNodeState = flowNodeStatesStore.state.flowNodes[flowNode.id];
+
       return {
         id: flowNode.id,
         isCancellable:
@@ -193,6 +212,10 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
         hasMultiInstanceParent: isWithinMultiInstance(flowNode),
         isAttachedToAnEventBasedGateway:
           isAttachedToAnEventBasedGateway(flowNode),
+        hasMultipleScopes:
+          flowNode.$parent !== undefined
+            ? this.hasMultipleScopes(flowNode.$parent)
+            : false,
       };
     });
   }
@@ -203,7 +226,8 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
         (flowNode) =>
           !flowNode.hasMultiInstanceParent &&
           !flowNode.isAttachedToAnEventBasedGateway &&
-          flowNode.isAppendable
+          flowNode.isAppendable &&
+          !flowNode.hasMultipleScopes
       )
       .map(({id}) => id);
   }

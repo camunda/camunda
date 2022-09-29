@@ -31,7 +31,7 @@ type FlowNodeInstanceType = {
   flowNodeId: string;
   startDate: string;
   endDate: null | string;
-  treePath: null | string;
+  treePath: string;
   sortValues: [string, string] | [];
   isPlaceholder?: boolean;
 };

@@ -11,7 +11,7 @@ import {
   createMultiInstanceFlowNodeInstances,
 } from 'modules/testUtils';
 
-const CURRENT_INSTANCE = Object.freeze({
+const multiInstanceProcessInstance = Object.freeze({
   id: '2251799813686118',
   processId: '2251799813686038',
   processName: 'Multi-Instance Process',
@@ -24,8 +24,60 @@ const CURRENT_INSTANCE = Object.freeze({
   operations: [],
 });
 
+const nestedSubProcessesInstance = Object.freeze({
+  id: '227539842356787',
+  processId: '39480256723678',
+  processName: 'Nested Sub Processes',
+  version: 1,
+  startDate: '2020-08-18T12:07:33.854+0000',
+  endDate: null,
+  state: 'ACTIVE',
+  bpmnProcessId: 'NestedSubProcesses',
+  hasActiveOperation: false,
+  operations: [],
+});
+
+const nestedSubProcessFlowNodeInstances = {
+  [nestedSubProcessesInstance.id]: {
+    running: null,
+    children: [
+      {
+        id: '2251799813686130',
+        type: 'START_EVENT',
+        state: 'COMPLETED',
+        flowNodeId: 'StartEvent_1',
+        startDate: '2020-08-18T12:07:33.953+0000',
+        endDate: '2020-08-18T12:07:34.034+0000',
+        treePath: `${nestedSubProcessesInstance.id}/2251799813686130`,
+        sortValues: ['1606300828415', '2251799813686130'],
+      },
+      {
+        id: '2251799813686156',
+        type: 'SERVICE_TASK',
+        state: 'ACTIVE',
+        flowNodeId: 'ServiceTask',
+        startDate: '2020-08-18T12:07:33.953+0000',
+        endDate: null,
+        treePath: `${nestedSubProcessesInstance.id}/2251799813686156`,
+        sortValues: ['1606300828415', '2251799813686156'],
+      },
+    ],
+  },
+};
+
+const nestedSubProcessFlowNodeInstance: FlowNodeInstance = {
+  id: nestedSubProcessesInstance.id,
+  type: 'PROCESS',
+  state: 'ACTIVE',
+  flowNodeId: nestedSubProcessesInstance.bpmnProcessId,
+  treePath: nestedSubProcessesInstance.id,
+  startDate: '',
+  endDate: null,
+  sortValues: [],
+};
+
 const processId = 'multiInstanceProcess';
-const processInstanceId = CURRENT_INSTANCE.id;
+const processInstanceId = multiInstanceProcessInstance.id;
 
 const flowNodeInstances =
   createMultiInstanceFlowNodeInstances(processInstanceId);
@@ -72,12 +124,353 @@ const mockFlowNodeInstance: FlowNodeInstance = {
   sortValues: [],
 };
 
+const multipleSubprocessesWithOneRunningScopeMock = {
+  firstLevel: {
+    [processInstanceId]: {
+      children: [
+        {
+          id: '1',
+          type: 'SUB_PROCESS',
+          state: 'COMPLETED',
+          flowNodeId: 'parent_sub_process',
+          startDate: '2022-09-23T10:59:43.096+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/1`,
+          sortValues: [1664017183097, '6755399441065192'],
+        },
+        {
+          id: '2',
+          type: 'SUB_PROCESS',
+          state: 'ACTIVE',
+          flowNodeId: 'parent_sub_process',
+          startDate: '2022-09-23T10:59:43.822+0000',
+          endDate: null,
+          treePath: `${processInstanceId}/2`,
+          sortValues: [1664017183823, '6755399441065673'],
+        },
+      ],
+      running: null,
+    },
+  },
+  secondLevel1: {
+    [`${processInstanceId}/1`]: {
+      children: [
+        {
+          id: '1_1',
+          type: 'START_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'Event_0oi4pw0',
+          startDate: '2022-09-23T10:59:43.096+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/1/1_1`,
+          sortValues: [1664017183097, '6755399441065192'],
+        },
+        {
+          id: '1_2',
+          type: 'SUB_PROCESS',
+          state: 'COMPLETED',
+          flowNodeId: 'inner_sub_process',
+          startDate: '2022-09-23T10:59:43.822+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/1/1_2`,
+          sortValues: [1664017183823, '6755399441065673'],
+        },
+        {
+          id: '1_3',
+          type: 'END_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'Event_1k2dpf7',
+          startDate: '2022-09-23T10:59:43.822+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/1/1_3`,
+          sortValues: [1664017183823, '6755399441065673'],
+        },
+      ],
+      running: null,
+    },
+  },
+  secondLevel2: {
+    [`${processInstanceId}/2`]: {
+      children: [
+        {
+          id: '2_1',
+          type: 'START_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'Event_0oi4pw0',
+          startDate: '2022-09-23T10:59:43.096+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/2/2_1`,
+          sortValues: [1664017183097, '6755399441065192'],
+        },
+        {
+          id: '2_2',
+          type: 'SUB_PROCESS',
+          state: 'ACTIVE',
+          flowNodeId: 'inner_sub_process',
+          startDate: null,
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/2/2_2`,
+          sortValues: [1664017183823, '6755399441065673'],
+        },
+      ],
+      running: null,
+    },
+  },
+  thirdLevel1: {
+    [`${processInstanceId}/1/1_2`]: {
+      children: [
+        {
+          id: '1_2_1',
+          type: 'START_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'Event_1rw6vny',
+          startDate: '2022-09-23T10:59:43.096+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/1/1_2/1_2_1`,
+          sortValues: [1664017183097, '6755399441065192'],
+        },
+        {
+          id: '1_2_2',
+          type: 'USER_TASK',
+          state: 'COMPLETED',
+          flowNodeId: 'user_task',
+          startDate: '2022-09-23T10:59:43.822+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/1/1_2/1_2_2`,
+          sortValues: [1664017183823, '6755399441065673'],
+        },
+        {
+          id: '1_2_3',
+          type: 'END_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'Event_0ypvz5p',
+          startDate: '2022-09-23T10:59:43.822+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/1/1_2/1_2_3`,
+          sortValues: [1664017183823, '6755399441065673'],
+        },
+      ],
+      running: null,
+    },
+  },
+  thirdLevel2: {
+    [`${processInstanceId}/2/2_2`]: {
+      children: [
+        {
+          id: '2_2_1',
+          type: 'START_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'Event_1rw6vny',
+          startDate: '2022-09-23T10:59:43.096+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/2/2_2/2_2_1`,
+          sortValues: [1664017183097, '6755399441065192'],
+        },
+        {
+          id: '2_2_2',
+          type: 'USER_TASK',
+          state: 'ACTIVE',
+          flowNodeId: 'user_task',
+          startDate: '2022-09-23T10:59:43.822+0000',
+          endDate: null,
+          treePath: `${processInstanceId}/2/2_2/2_2_2`,
+          sortValues: [1664017183823, '6755399441065673'],
+        },
+      ],
+      running: null,
+    },
+  },
+};
+
+const multipleSubprocessesWithNoRunningScopeMock = {
+  firstLevel: {
+    [processInstanceId]: {
+      children: [
+        {
+          id: '1',
+          type: 'SUB_PROCESS',
+          state: 'COMPLETED',
+          flowNodeId: 'parent_sub_process',
+          startDate: '2022-09-23T10:59:43.096+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/1`,
+          sortValues: [1664017183097, '6755399441065192'],
+        },
+        {
+          id: '2',
+          type: 'SUB_PROCESS',
+          state: 'COMPLETED',
+          flowNodeId: 'parent_sub_process',
+          startDate: '2022-09-23T10:59:43.822+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/2`,
+          sortValues: [1664017183823, '6755399441065673'],
+        },
+      ],
+      running: null,
+    },
+  },
+  secondLevel1: {
+    [`${processInstanceId}/1`]: {
+      children: [
+        {
+          id: '1_1',
+          type: 'START_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'Event_0oi4pw0',
+          startDate: '2022-09-23T10:59:43.096+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/1/1_1`,
+          sortValues: [1664017183097, '6755399441065192'],
+        },
+        {
+          id: '1_2',
+          type: 'SUB_PROCESS',
+          state: 'COMPLETED',
+          flowNodeId: 'inner_sub_process',
+          startDate: '2022-09-23T10:59:43.822+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/1/1_2`,
+          sortValues: [1664017183823, '6755399441065673'],
+        },
+        {
+          id: '1_3',
+          type: 'END_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'Event_1k2dpf7',
+          startDate: '2022-09-23T10:59:43.822+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/1/1_3`,
+          sortValues: [1664017183823, '6755399441065673'],
+        },
+      ],
+      running: null,
+    },
+  },
+  secondLevel2: {
+    [`${processInstanceId}/2`]: {
+      children: [
+        {
+          id: '2_1',
+          type: 'START_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'Event_0oi4pw0',
+          startDate: '2022-09-23T10:59:43.096+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/2/2_1`,
+          sortValues: [1664017183097, '6755399441065192'],
+        },
+        {
+          id: '2_2',
+          type: 'SUB_PROCESS',
+          state: 'COMPLETED',
+          flowNodeId: 'inner_sub_process',
+          startDate: '2022-09-23T10:59:43.822+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/2/2_2`,
+          sortValues: [1664017183823, '6755399441065673'],
+        },
+        {
+          id: '2_3',
+          type: 'END_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'Event_1k2dpf7',
+          startDate: '2022-09-23T10:59:43.822+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/2/2_3`,
+          sortValues: [1664017183823, '6755399441065673'],
+        },
+      ],
+      running: null,
+    },
+  },
+  thirdLevel1: {
+    [`${processInstanceId}/1/1_2`]: {
+      children: [
+        {
+          id: '1_2_1',
+          type: 'START_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'Event_1rw6vny',
+          startDate: '2022-09-23T10:59:43.096+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/1/1_2/1_2_1`,
+          sortValues: [1664017183097, '6755399441065192'],
+        },
+        {
+          id: '1_2_2',
+          type: 'USER_TASK',
+          state: 'COMPLETED',
+          flowNodeId: 'user_task',
+          startDate: '2022-09-23T10:59:43.822+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/1/1_2/1_2_2`,
+          sortValues: [1664017183823, '6755399441065673'],
+        },
+        {
+          id: '1_2_3',
+          type: 'END_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'Event_0ypvz5p',
+          startDate: '2022-09-23T10:59:43.822+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/1/1_2/1_2_3`,
+          sortValues: [1664017183823, '6755399441065673'],
+        },
+      ],
+      running: null,
+    },
+  },
+  thirdLevel2: {
+    [`${processInstanceId}/2/2_2`]: {
+      children: [
+        {
+          id: '2_2_1',
+          type: 'START_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'Event_1rw6vny',
+          startDate: '2022-09-23T10:59:43.096+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/2/2_2/2_2_1`,
+          sortValues: [1664017183097, '6755399441065192'],
+        },
+        {
+          id: '2_2_2',
+          type: 'USER_TASK',
+          state: 'COMPLETED',
+          flowNodeId: 'user_task',
+          startDate: '2022-09-23T10:59:43.822+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/2/2_2/2_2_2`,
+          sortValues: [1664017183823, '6755399441065673'],
+        },
+        {
+          id: '2_2_3',
+          type: 'END_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'Event_0ypvz5p',
+          startDate: '2022-09-23T10:59:43.822+0000',
+          endDate: '2022-09-23T11:00:42.508+0000',
+          treePath: `${processInstanceId}/2/2_2/2_2_3`,
+          sortValues: [1664017183823, '6755399441065673'],
+        },
+      ],
+      running: null,
+    },
+  },
+};
+
 export {
-  CURRENT_INSTANCE,
+  multiInstanceProcessInstance,
+  nestedSubProcessesInstance,
   processId,
   processInstanceId,
   flowNodeInstances,
   eventSubProcessFlowNodeInstances,
+  nestedSubProcessFlowNodeInstances,
+  nestedSubProcessFlowNodeInstance,
   mockFlowNodeInstance,
   multipleFlowNodeInstances,
+  multipleSubprocessesWithOneRunningScopeMock,
+  multipleSubprocessesWithNoRunningScopeMock,
 };
