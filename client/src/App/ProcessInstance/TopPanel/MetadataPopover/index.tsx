@@ -7,7 +7,7 @@
 
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {LinkButton} from 'modules/components/LinkButton';
-import {Fragment, useState} from 'react';
+import {useState} from 'react';
 import {
   SummaryDataKey,
   SummaryDataValue,
@@ -19,6 +19,7 @@ import {
   Popover,
   CalledProcessValue,
   CalledProcessName,
+  LinkContainer,
 } from './styled';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -31,6 +32,8 @@ import {Paths} from 'modules/routes';
 import {Link} from 'modules/components/Link';
 import {tracking} from 'modules/tracking';
 import {getExecutionDuration} from './getExecutionDuration';
+import {isNil} from 'lodash';
+import {Anchor} from 'modules/components/Anchor/styled';
 
 const NULL_METADATA = {
   flowNodeInstanceId: null,
@@ -102,18 +105,29 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
         <>
           <Header>
             <Title>Details</Title>
-            <LinkButton
-              size="small"
-              onClick={() => {
-                setIsModalVisible(true);
-                tracking.track({
-                  eventName: 'flow-node-instance-details-opened',
-                });
-              }}
-              title="Show more metadata"
-            >
-              View
-            </LinkButton>
+            <LinkContainer>
+              {!isNil(window.clientConfig?.tasklistUrl) &&
+                flowNodeType === 'USER_TASK' && (
+                  <Anchor
+                    href={window.clientConfig?.tasklistUrl}
+                    target="_blank"
+                  >
+                    Open Tasklist
+                  </Anchor>
+                )}
+              <LinkButton
+                size="small"
+                onClick={() => {
+                  setIsModalVisible(true);
+                  tracking.track({
+                    eventName: 'flow-node-instance-details-opened',
+                  });
+                }}
+                title="Show more metadata"
+              >
+                View
+              </LinkButton>
+            </LinkContainer>
           </Header>
 
           <SummaryDataKey>Flow Node Instance Key</SummaryDataKey>

@@ -23,6 +23,12 @@ const Header = styled.div`
   margin-bottom: 10px;
 `;
 
+const LinkContainer = styled.span`
+  & > :not(:first-child) {
+    margin-left: 5px;
+  }
+`;
+
 type TitleProps = {
   $variant?: 'default' | 'incident';
 };
@@ -127,4 +133,5 @@ export {
   SummaryDataValue,
   CalledProcessValue,
   CalledProcessName,
+  LinkContainer,
 };

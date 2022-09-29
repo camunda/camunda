@@ -5,6 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
+/* istanbul ignore file */
+
 type Appcues = {
   debug: () => void;
   page: () => void;
@@ -26,6 +28,7 @@ export declare global {
       isLoginDelegated?: null | boolean;
       mixpanelToken?: null | string;
       mixpanelAPIHost?: null | string;
+      tasklistUrl?: null | string;
     };
     Osano?: {
       cm?: {
