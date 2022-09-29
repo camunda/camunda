@@ -35,13 +35,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
-      - name: Cache local Maven repository
-        uses: actions/cache@v3
         with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-integration-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-integration-
+          maven-cache: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -98,13 +93,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
-      - name: Cache local Maven repository
-        uses: actions/cache@v3
         with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-qa-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-qa-
+          maven-cache: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -152,13 +142,7 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
-      - name: Cache local Maven repository
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-unit-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-unit-
+          maven-cache: true
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -201,13 +185,7 @@ jobs:
           go: false
           # setting up maven often times out on macOS
           maven: ${{ matrix.os != 'macos-latest' }}
-      - name: Cache local Maven repository
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-smoke-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-smoke-
+          maven-cache: true
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -233,13 +211,7 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
-      - name: Cache local Maven repository
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-property-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-property-
+          maven-cache: true
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -270,6 +242,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
+        with:
+          maven-cache: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
       # Once we're on Go 1.18, use the official gorelease to do this
@@ -302,13 +276,8 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
-      - name: Cache local Maven repository
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-client-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-client-
+          maven-cache: true
+          maven-cache-key-modifier: java-client
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -352,19 +321,15 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+          maven-cache: true
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
           languages: java
           queries: +security-and-quality
-      - name: Cache local Maven repository
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-codeql-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-codeql-
       - uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: -T1C
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
         with:
@@ -404,13 +369,8 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
-      - name: Cache local Maven repository
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-java-checks-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-java-checks-
+          maven-cache: true
+          maven-cache-key-modifier: java-checks
       - run: mvn -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
   docker-checks:
     name: Docker checks
@@ -429,13 +389,8 @@ jobs:
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-zeebe
-      - name: Cache local Maven repository
-        uses: actions/cache@v3
         with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-docker-checks-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-docker-checks-
+          maven-cache: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
       - uses: ./.github/actions/build-docker

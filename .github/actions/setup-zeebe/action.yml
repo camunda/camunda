@@ -22,6 +22,14 @@ inputs:
     description: If true, will set up Maven; defaults to true
     default: "true"
     required: false
+  maven-cache:
+    description: A modifier key used to toggle the usage of a maven repo cache.
+    default: "false"
+    required: false
+  maven-cache-key-modifier:
+    description: A modifier key used for the maven cache, can be used to create isolated caches for certain jobs.
+    default: "default"
+    required: false
 
 outputs: {}
 
@@ -37,6 +45,14 @@ runs:
       uses: stCarolas/setup-maven@v4.4
       with:
         maven-version: '3.8.5'
+    - if: ${{ inputs.maven-cache == 'true' }}
+      name: Cache local Maven repository
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ inputs.maven-cache-key-modifier }}-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-${{ inputs.maven-cache-key-modifier }}-
     - if: ${{ inputs.go == 'true' }}
       uses: actions/setup-go@v3
       with:
