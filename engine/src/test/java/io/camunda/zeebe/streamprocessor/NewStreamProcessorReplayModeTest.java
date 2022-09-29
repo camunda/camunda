@@ -51,7 +51,7 @@ public final class NewStreamProcessorReplayModeTest {
         event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
 
     // then
-    final RecordProcessor recordProcessor = streamPlatform.getDefaultRecordProcessor();
+    final RecordProcessor recordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     final InOrder inOrder = inOrder(recordProcessor);
     inOrder.verify(recordProcessor, TIMEOUT).replay(any());
     inOrder.verify(recordProcessor, TIMEOUT).process(any(), any());
