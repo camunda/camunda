@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -35,7 +36,6 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -151,11 +151,10 @@ class PartitionManagerStepTest {
       sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
 
       // then
-      assertThat(startupFuture)
-          .failsWithin(Duration.ZERO)
-          .withThrowableOfType(ExecutionException.class)
-          .withCauseInstanceOf(CompletionException.class)
-          .withRootCauseInstanceOf(IllegalStateException.class);
+      assertThatThrownBy(() -> startupFuture.get())
+          .isInstanceOf(CompletionException.class)
+          .hasCauseInstanceOf(CompletionException.class)
+          .hasRootCauseInstanceOf(IllegalStateException.class);
     }
   }
 
