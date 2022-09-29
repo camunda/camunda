@@ -44,7 +44,7 @@ runs:
     - if: ${{ inputs.java == 'true' && inputs.maven == 'true' }}
       uses: stCarolas/setup-maven@v4.4
       with:
-        maven-version: '3.8.5'
+        maven-version: '3.8.6'
     - if: ${{ inputs.maven-cache == 'true' }}
       name: Cache local Maven repository
       uses: actions/cache@v3
