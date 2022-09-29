@@ -7,17 +7,9 @@
  */
 package io.camunda.zeebe.engine.api;
 
-import io.camunda.zeebe.logstreams.log.LogStream;
-
 public interface ReadonlyStreamProcessorContext {
 
   ProcessingScheduleService getScheduleService();
-
-  /**
-   * @return the logstream, on which the processor runs
-   */
-  @Deprecated // only used in EngineRule; TODO remove this
-  LogStream getLogStream();
 
   /**
    * Returns the partition ID

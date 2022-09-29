@@ -72,13 +72,12 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   }
 
   @Override
-  public LogStream getLogStream() {
-    return logStream;
-  }
-
-  @Override
   public int getPartitionId() {
     return getLogStream().getPartitionId();
+  }
+
+  public LogStream getLogStream() {
+    return logStream;
   }
 
   public MutableLastProcessedPositionState getLastProcessedPositionState() {
