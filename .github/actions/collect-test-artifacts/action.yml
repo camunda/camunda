@@ -35,6 +35,6 @@ runs:
       path: |
         **/target/failsafe-reports/
         **/target/surefire-reports/
-        **/hs_err_*.log
+        **/*.log
       retention-days: 7
       if-no-files-found: ignore
