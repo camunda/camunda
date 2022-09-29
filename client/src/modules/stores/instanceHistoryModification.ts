@@ -7,9 +7,11 @@
 
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {IReactionDisposer, makeAutoObservable} from 'mobx';
+import {TYPE} from 'modules/constants';
 import {FlowNodeInstance} from './flowNodeInstance';
 import {modificationsStore, FlowNodeModification} from './modifications';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
+import {isMultiInstance} from 'modules/bpmn-js/isMultiInstance';
 
 type ModificationPlaceholder = {
   flowNodeInstance: FlowNodeInstance;
@@ -94,7 +96,9 @@ const createModificationPlaceholders = ({
     flowNodeInstance: {
       flowNodeId: flowNode.id,
       id: scopeId,
-      type: flowNode.$type,
+      type: isMultiInstance(flowNode)
+        ? TYPE.MULTI_INSTANCE_BODY
+        : flowNode.$type,
       startDate: '',
       endDate: null,
       sortValues: [],
