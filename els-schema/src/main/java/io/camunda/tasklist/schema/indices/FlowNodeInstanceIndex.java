@@ -6,11 +6,12 @@
  */
 package io.camunda.tasklist.schema.indices;
 
+import io.camunda.tasklist.schema.backup.Prio3Backup;
 import org.springframework.stereotype.Component;
 
 @Component
 public class FlowNodeInstanceIndex extends AbstractIndexDescriptor
-    implements ProcessInstanceDependant {
+    implements ProcessInstanceDependant, Prio3Backup {
 
   public static final String INDEX_NAME = "flownode-instance";
 

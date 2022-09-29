@@ -9,13 +9,14 @@ package io.camunda.tasklist.schema.templates;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 
+import io.camunda.tasklist.schema.backup.Prio3Backup;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TaskVariableTemplate extends AbstractTemplateDescriptor {
+public class TaskVariableTemplate extends AbstractTemplateDescriptor implements Prio3Backup {
 
   public static final String INDEX_NAME = "task-variable";
 

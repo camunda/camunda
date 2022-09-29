@@ -6,17 +6,21 @@
  */
 package io.camunda.tasklist.webapp.rest.exception;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import java.util.UUID;
 
-@ResponseStatus(HttpStatus.BAD_REQUEST)
-public class InvalidRequestException extends InternalAPIException {
+public abstract class InternalAPIException extends RuntimeException {
 
-  public InvalidRequestException(String message) {
+  private final String instance = UUID.randomUUID().toString();
+
+  protected InternalAPIException(final String message) {
     super(message);
   }
 
-  public InvalidRequestException(String message, Throwable cause) {
+  protected InternalAPIException(final String message, final Throwable cause) {
     super(message, cause);
+  }
+
+  public String getInstance() {
+    return instance;
   }
 }

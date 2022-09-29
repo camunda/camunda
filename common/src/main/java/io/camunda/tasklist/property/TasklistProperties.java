@@ -62,6 +62,8 @@ public class TasklistProperties {
 
   @NestedConfigurationProperty private IdentityProperties identity = new IdentityProperties();
 
+  @NestedConfigurationProperty private BackupProperties backup = new BackupProperties();
+
   public boolean isImporterEnabled() {
     return importerEnabled;
   }
@@ -232,5 +234,14 @@ public class TasklistProperties {
 
   public void setCloud(final CloudProperties cloud) {
     this.cloud = cloud;
+  }
+
+  public BackupProperties getBackup() {
+    return backup;
+  }
+
+  public TasklistProperties setBackup(BackupProperties backup) {
+    this.backup = backup;
+    return this;
   }
 }

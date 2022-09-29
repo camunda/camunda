@@ -6,11 +6,13 @@
  */
 package io.camunda.tasklist.schema.templates;
 
+import io.camunda.tasklist.schema.backup.Prio2Backup;
 import io.camunda.tasklist.schema.indices.ProcessInstanceDependant;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TaskTemplate extends AbstractTemplateDescriptor implements ProcessInstanceDependant {
+public class TaskTemplate extends AbstractTemplateDescriptor
+    implements ProcessInstanceDependant, Prio2Backup {
 
   public static final String INDEX_NAME = "task";
 

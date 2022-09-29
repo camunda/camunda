@@ -6,10 +6,11 @@
  */
 package io.camunda.tasklist.schema.indices;
 
+import io.camunda.tasklist.schema.backup.Prio4Backup;
 import org.springframework.stereotype.Component;
 
 @Component
-public class MetricIndex extends AbstractIndexDescriptor {
+public class MetricIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
   public static final String INDEX_NAME = "metric";
   public static final String ID = "id";

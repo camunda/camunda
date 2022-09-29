@@ -14,6 +14,7 @@ services:
       - bootstrap.memory_lock=true
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
+      - path.repo=/usr/local/els-snapshots
     ulimits:
       memlock:
         soft: -1
@@ -24,6 +25,8 @@ services:
     networks:
       - zeebe_network
     restart: always
+    volumes:
+      - ./els-snapshots:/usr/local/els-snapshots
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.12.0

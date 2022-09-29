@@ -9,13 +9,15 @@ package io.camunda.tasklist.schema.indices;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 
+import io.camunda.tasklist.schema.backup.Prio3Backup;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 @Component
-public class VariableIndex extends AbstractIndexDescriptor implements ProcessInstanceDependant {
+public class VariableIndex extends AbstractIndexDescriptor
+    implements ProcessInstanceDependant, Prio3Backup {
 
   public static final String INDEX_NAME = "variable";
 

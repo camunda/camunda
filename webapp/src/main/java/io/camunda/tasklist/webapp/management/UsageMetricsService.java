@@ -9,6 +9,7 @@ package io.camunda.tasklist.webapp.management;
 import io.camunda.tasklist.webapp.es.MetricReaderWriter;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricDTO;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricQueryDTO;
+import io.camunda.tasklist.webapp.rest.InternalAPIErrorController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.http.MediaType;
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 @Component
 @RestControllerEndpoint(id = "usage-metrics")
-public class UsageMetricsService {
+public class UsageMetricsService extends InternalAPIErrorController {
 
   @Autowired private MetricReaderWriter metricReaderWriter;
 

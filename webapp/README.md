@@ -59,3 +59,9 @@ JAVA_OPTS=-Dspring.profiles.active=dev-data ./tasklist.bat
 The GraphQL endpoint is `/graphql`.
 
 For development, the inspection tool GraphQL Playground is embedded and can be accesses under http://localhost:8080/playground.
+
+# Webapp module
+
+This module contains:
+* GraphQL API
+* Management (Actuator) endpoints: Usage metrics and [Backup API](docs/backup.md)
