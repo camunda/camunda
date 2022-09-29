@@ -132,8 +132,9 @@ public class ModifyProcessInstanceRequestDto {
       return newTokensCount;
     }
 
-    public void setNewTokensCount(Integer newTokensCount) {
+    public Modification setNewTokensCount(Integer newTokensCount) {
       this.newTokensCount = newTokensCount;
+      return this;
     }
 
     @Override public boolean equals(Object o) {

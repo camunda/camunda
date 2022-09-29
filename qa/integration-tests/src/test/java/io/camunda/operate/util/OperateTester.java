@@ -21,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.dto.activity.*;
@@ -352,6 +353,7 @@ public class OperateTester {
 
   public OperateTester flowNodesAreActive(String activityId, int count) {
     elasticsearchTestRule.processAllRecordsAndWait(flowNodesAreActiveCheck, processInstanceKey, activityId, count);
+    logger.debug("{} FlowNodes {} are active.", count, activityId);
     return this;
   }
 
@@ -362,6 +364,7 @@ public class OperateTester {
 
   public OperateTester flowNodeIsCompleted(String activityId) {
     elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsCompletedCheck, processInstanceKey, activityId);
+    logger.debug("FlowNode {} is completed.", activityId);
     return this;
   }
 
@@ -371,6 +374,7 @@ public class OperateTester {
         new FlowNodeMetadataRequestDto().setFlowNodeId(flowNodeId)).getFlowNodeInstanceId());
   }
   public Map<String, FlowNodeStateDto> getFlowNodeStates(){
+    elasticsearchTestRule.refreshOperateESIndices();
     return flowNodeInstanceReader.getFlowNodeStates("" + processInstanceKey);
   }
 
@@ -380,6 +384,7 @@ public class OperateTester {
 
   public OperateTester flowNodeIsTerminated(final String activityId) {
     elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsTerminatedCheck, processInstanceKey, activityId);
+    logger.debug("FlowNode {} is terminated.", activityId);
     return this;
   }
 
@@ -389,6 +394,7 @@ public class OperateTester {
 
   public OperateTester flowNodesAreTerminated(final String activityId, final int count) {
     elasticsearchTestRule.processAllRecordsAndWait(flowNodesAreTerminatedCheck, processInstanceKey, activityId, count);
+    logger.debug("{} FlowNodes {} are active.", count, activityId);
     return this;
   }
   public OperateTester flowNodesAreCanceled(final String activityId, final int count) {
@@ -627,6 +633,10 @@ public class OperateTester {
         new VariableRequestDto().setScopeId(String.valueOf(scopeKey)));
   }
 
+  public List<VariableDto> getVariablesForScope(final Long scopeKey){
+    return getVariables(processInstanceKey, scopeKey);
+  }
+
   public boolean hasVariable(String name, String value) {
     String variableValue = getVariable(name);
     return value==null? (variableValue == null): value.contains(variableValue);
@@ -740,4 +750,8 @@ public class OperateTester {
         .andReturn();
   }
 
+  public List<Long> getFlowNodeInstanceKeysFor(final String flowNodeId) {
+    return flowNodeInstanceReader.getFlowNodeInstanceKeysByIdAndStates(processInstanceKey, flowNodeId,
+        List.of(FlowNodeState.ACTIVE, FlowNodeState.COMPLETED, FlowNodeState.TERMINATED));
+  }
 }

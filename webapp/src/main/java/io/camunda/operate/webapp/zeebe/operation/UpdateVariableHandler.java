@@ -12,9 +12,7 @@ import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
 import java.util.Set;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.SetVariablesResponse;
 
 /**
@@ -22,9 +20,6 @@ import io.camunda.zeebe.client.api.response.SetVariablesResponse;
  */
 @Component
 public class UpdateVariableHandler extends AbstractOperationHandler implements OperationHandler {
-
-  @Autowired
-  private ZeebeClient zeebeClient;
 
   @Override
   public void handleWithException(OperationEntity operation) throws Exception {
@@ -47,7 +42,4 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
     return Set.of(UPDATE_VARIABLE, ADD_VARIABLE);
   }
 
-  public void setZeebeClient(final ZeebeClient zeebeClient) {
-    this.zeebeClient = zeebeClient;
-  }
 }

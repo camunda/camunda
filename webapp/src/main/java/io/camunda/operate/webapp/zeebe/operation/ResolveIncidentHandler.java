@@ -14,7 +14,6 @@ import io.camunda.operate.webapp.es.reader.IncidentReader;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import io.camunda.zeebe.client.ZeebeClient;
 import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.operate.entities.OperationType.RESOLVE_INCIDENT;
 
@@ -26,9 +25,6 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
 
   @Autowired
   private IncidentReader incidentReader;
-
-  @Autowired
-  private ZeebeClient zeebeClient;
 
   @Override
   public void handleWithException(OperationEntity operation) throws Exception {
@@ -58,8 +54,5 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
   @Override
   public Set<OperationType> getTypes() {
     return Set.of(RESOLVE_INCIDENT);
-  }
-  public void setZeebeClient(final ZeebeClient zeebeClient) {
-    this.zeebeClient = zeebeClient;
   }
 }

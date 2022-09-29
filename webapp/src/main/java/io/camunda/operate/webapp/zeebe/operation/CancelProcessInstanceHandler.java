@@ -16,7 +16,6 @@ import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import io.camunda.zeebe.client.ZeebeClient;
 
 /**
  * Operation handler to cancel process instances.
@@ -26,9 +25,6 @@ public class CancelProcessInstanceHandler extends AbstractOperationHandler imple
 
   @Autowired
   private ProcessInstanceReader processInstanceReader;
-
-  @Autowired
-  private ZeebeClient zeebeClient;
 
   @Override
   public void handleWithException(OperationEntity operation) throws Exception {
@@ -54,7 +50,4 @@ public class CancelProcessInstanceHandler extends AbstractOperationHandler imple
     return Set.of(CANCEL_PROCESS_INSTANCE);
   }
 
-  public void setZeebeClient(final ZeebeClient zeebeClient) {
-    this.zeebeClient = zeebeClient;
-  }
 }

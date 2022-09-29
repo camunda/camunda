@@ -15,6 +15,7 @@ import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.es.writer.BatchOperationWriter;
+import io.camunda.zeebe.client.ZeebeClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,8 @@ public abstract class AbstractOperationHandler implements OperationHandler {
       .asList(Status.UNAVAILABLE.getCode(), Status.RESOURCE_EXHAUSTED.getCode(), Status.DEADLINE_EXCEEDED.getCode());
 
   @Autowired
+  protected ZeebeClient zeebeClient;
+  @Autowired
   protected BatchOperationWriter batchOperationWriter;
 
   @Autowired
@@ -39,6 +42,12 @@ public abstract class AbstractOperationHandler implements OperationHandler {
 
   @Autowired
   protected Metrics metrics;
+
+  // Needed for tests
+  public void setZeebeClient(final ZeebeClient zeebeClient) {
+    this.zeebeClient = zeebeClient;
+  }
+
 
   @Override
   public void handle(OperationEntity operation) {
