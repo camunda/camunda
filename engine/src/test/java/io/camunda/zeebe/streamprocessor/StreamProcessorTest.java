@@ -89,7 +89,9 @@ public final class StreamProcessorTest {
   public void shouldCallStreamProcessorLifecycleOnFail() {
     // given
     final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
-    doThrow(new RuntimeException("force fail")).when(mockProcessorLifecycleAware).onRecovered(any());
+    doThrow(new RuntimeException("force fail"))
+        .when(mockProcessorLifecycleAware)
+        .onRecovered(any());
 
     // when
     streamPlatform.startStreamProcessor();
@@ -140,7 +142,9 @@ public final class StreamProcessorTest {
     inOrder.verify(defaultRecordProcessor, TIMEOUT).init(any());
     inOrder.verify(defaultRecordProcessor, TIMEOUT).accepts(ValueType.PROCESS_INSTANCE);
     inOrder.verify(defaultRecordProcessor, TIMEOUT).process(any(), any());
-    inOrder.verify(defaultRecordProcessor, TIMEOUT).onProcessingError(eq(processingError), any(), any());
+    inOrder
+        .verify(defaultRecordProcessor, TIMEOUT)
+        .onProcessingError(eq(processingError), any(), any());
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -163,7 +167,9 @@ public final class StreamProcessorTest {
     inOrder.verify(defaultRecordProcessor, TIMEOUT).init(any());
     inOrder.verify(defaultRecordProcessor, TIMEOUT).accepts(ValueType.PROCESS_INSTANCE);
     inOrder.verify(defaultRecordProcessor, TIMEOUT).process(any(), any());
-    inOrder.verify(defaultRecordProcessor, TIMEOUT.atLeast(5)).onProcessingError(eq(processingError), any(), any());
+    inOrder
+        .verify(defaultRecordProcessor, TIMEOUT.atLeast(5))
+        .onProcessingError(eq(processingError), any(), any());
   }
 
   @Test
@@ -221,14 +227,14 @@ public final class StreamProcessorTest {
     // given
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     final var firstResultBuilder = new BufferedProcessingResultBuilder((c, v) -> true);
-    firstResultBuilder.appendRecordReturnEither(1, RecordType.EVENT,
-        ACTIVATE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
-    firstResultBuilder.appendRecordReturnEither(2, RecordType.COMMAND,
-        ACTIVATE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
+    firstResultBuilder.appendRecordReturnEither(
+        1, RecordType.EVENT, ACTIVATE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
+    firstResultBuilder.appendRecordReturnEither(
+        2, RecordType.COMMAND, ACTIVATE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
 
     final var secondResultBuilder = new BufferedProcessingResultBuilder((c, v) -> true);
-    secondResultBuilder.appendRecordReturnEither(3, RecordType.EVENT,
-        ACTIVATE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
+    secondResultBuilder.appendRecordReturnEither(
+        3, RecordType.EVENT, ACTIVATE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
 
     when(defaultRecordProcessor.process(any(), any()))
         .thenReturn(firstResultBuilder.build())
@@ -238,17 +244,21 @@ public final class StreamProcessorTest {
     streamPlatform.startStreamProcessor();
 
     // when
-    streamPlatform.writeBatch(
-        command().processInstance(ACTIVATE_ELEMENT, RECORD));
+    streamPlatform.writeBatch(command().processInstance(ACTIVATE_ELEMENT, RECORD));
 
     // then
     verify(defaultRecordProcessor, TIMEOUT.times(2)).process(any(), any());
-    await("Last written position should be updated").untilAsserted(() ->
-    assertThat(streamPlatform.getLogStream().getLastWrittenPosition()).isEqualTo(4)
-    );
-    await("Last processed position should be updated").untilAsserted(() ->
-    assertThat(streamPlatform.getStreamProcessor().getLastProcessedPositionAsync().join()).isEqualTo(3));
+    await("Last written position should be updated")
+        .untilAsserted(
+            () -> assertThat(streamPlatform.getLogStream().getLastWrittenPosition()).isEqualTo(4));
+    await("Last processed position should be updated")
+        .untilAsserted(
+            () ->
+                assertThat(
+                        streamPlatform.getStreamProcessor().getLastProcessedPositionAsync().join())
+                    .isEqualTo(3));
   }
+
   @Test
   public void shouldExecutePostCommitTask() {
     // given
@@ -261,8 +271,7 @@ public final class StreamProcessorTest {
     streamPlatform.startStreamProcessor();
 
     // when
-    streamPlatform.writeBatch(
-        command().processInstance(ACTIVATE_ELEMENT, RECORD));
+    streamPlatform.writeBatch(command().processInstance(ACTIVATE_ELEMENT, RECORD));
 
     // then
     verify(mockPostCommitTask, TIMEOUT).flush();
@@ -282,8 +291,7 @@ public final class StreamProcessorTest {
     streamPlatform.startStreamProcessor();
 
     // when
-    streamPlatform.writeBatch(
-        command().processInstance(ACTIVATE_ELEMENT, RECORD));
+    streamPlatform.writeBatch(command().processInstance(ACTIVATE_ELEMENT, RECORD));
 
     // then
     verify(mockPostCommitTask, TIMEOUT.atLeast(5)).flush();
@@ -318,18 +326,20 @@ public final class StreamProcessorTest {
   public void shouldUpdateStateOnSuccessfulProcessing() {
     // given
     final var testProcessor = spy(new TestProcessor());
-    testProcessor.processingAction = (ctx) -> {
-      final var zeebeDb = ctx.getZeebeDb();
-      final var keyGenerator = new DbKeyGenerator(1, zeebeDb, ctx.getTransactionContext());
-      keyGenerator.nextKey();
-      keyGenerator.nextKey();
-      keyGenerator.nextKey();
-    };
+    testProcessor.processingAction =
+        (ctx) -> {
+          final var zeebeDb = ctx.getZeebeDb();
+          final var keyGenerator = new DbKeyGenerator(1, zeebeDb, ctx.getTransactionContext());
+          keyGenerator.nextKey();
+          keyGenerator.nextKey();
+          keyGenerator.nextKey();
+        };
     // in order to not mark the processing as skipped we need to return a result
     testProcessor.processingResult = new BufferedProcessingResultBuilder((c, s) -> true).build();
     doCallRealMethod()
         .doReturn(EmptyProcessingResult.INSTANCE)
-        .when(testProcessor).process(any(), any());
+        .when(testProcessor)
+        .process(any(), any());
     streamPlatform.withRecordProcessors(List.of(testProcessor)).startStreamProcessor();
 
     final var zeebeDb = testProcessor.recordProcessorContext.getZeebeDb();
@@ -352,20 +362,22 @@ public final class StreamProcessorTest {
   public void shouldNotUpdateStateOnExceptionInProcessing() {
     // given
     final var testProcessor = spy(new TestProcessor());
-    testProcessor.processingAction = (ctx) -> {
-      final var zeebeDb = ctx.getZeebeDb();
-      final var keyGenerator = new DbKeyGenerator(1, zeebeDb, ctx.getTransactionContext());
-      keyGenerator.nextKey();
-      keyGenerator.nextKey();
-      keyGenerator.nextKey();
+    testProcessor.processingAction =
+        (ctx) -> {
+          final var zeebeDb = ctx.getZeebeDb();
+          final var keyGenerator = new DbKeyGenerator(1, zeebeDb, ctx.getTransactionContext());
+          keyGenerator.nextKey();
+          keyGenerator.nextKey();
+          keyGenerator.nextKey();
 
-      throw new RuntimeException("expected");
-    };
+          throw new RuntimeException("expected");
+        };
     // in order to not mark the processing as skipped we need to return a result
     testProcessor.processingResult = new BufferedProcessingResultBuilder((c, s) -> true).build();
     doCallRealMethod()
         .doReturn(EmptyProcessingResult.INSTANCE)
-        .when(testProcessor).process(any(), any());
+        .when(testProcessor)
+        .process(any(), any());
     streamPlatform.withRecordProcessors(List.of(testProcessor)).startStreamProcessor();
 
     final var zeebeDb = testProcessor.recordProcessorContext.getZeebeDb();
@@ -388,19 +400,22 @@ public final class StreamProcessorTest {
   public void shouldUpdateStateOnProcessingErrorCall() {
     // given
     final var testProcessor = spy(new TestProcessor());
-    testProcessor.processingAction = (ctx) -> {
-      throw new RuntimeException("expected");
-    };
-    testProcessor.onProcessingErrorAction = (ctx) -> {
-      final var zeebeDb = ctx.getZeebeDb();
-      final var keyGenerator = new DbKeyGenerator(1, zeebeDb, ctx.getTransactionContext());
-      keyGenerator.nextKey();
-      keyGenerator.nextKey();
-      keyGenerator.nextKey();
-    };
+    testProcessor.processingAction =
+        (ctx) -> {
+          throw new RuntimeException("expected");
+        };
+    testProcessor.onProcessingErrorAction =
+        (ctx) -> {
+          final var zeebeDb = ctx.getZeebeDb();
+          final var keyGenerator = new DbKeyGenerator(1, zeebeDb, ctx.getTransactionContext());
+          keyGenerator.nextKey();
+          keyGenerator.nextKey();
+          keyGenerator.nextKey();
+        };
     doCallRealMethod()
         .doReturn(EmptyProcessingResult.INSTANCE)
-        .when(testProcessor).process(any(), any());
+        .when(testProcessor)
+        .process(any(), any());
     streamPlatform.withRecordProcessors(List.of(testProcessor)).startStreamProcessor();
 
     final var zeebeDb = testProcessor.recordProcessorContext.getZeebeDb();
@@ -423,24 +438,28 @@ public final class StreamProcessorTest {
   public void shouldNotUpdateStateOnExceptionOnProcessingErrorCall() {
     // given
     final var testProcessor = spy(new TestProcessor());
-    testProcessor.processingAction = (ctx) -> {
-      throw new RuntimeException("expected");
-    };
-    testProcessor.onProcessingErrorAction = (ctx) -> {
-      final var zeebeDb = ctx.getZeebeDb();
-      final var keyGenerator = new DbKeyGenerator(1, zeebeDb, ctx.getTransactionContext());
-      keyGenerator.nextKey();
-      keyGenerator.nextKey();
-      keyGenerator.nextKey();
+    testProcessor.processingAction =
+        (ctx) -> {
+          throw new RuntimeException("expected");
+        };
+    testProcessor.onProcessingErrorAction =
+        (ctx) -> {
+          final var zeebeDb = ctx.getZeebeDb();
+          final var keyGenerator = new DbKeyGenerator(1, zeebeDb, ctx.getTransactionContext());
+          keyGenerator.nextKey();
+          keyGenerator.nextKey();
+          keyGenerator.nextKey();
 
-      throw new RuntimeException("expected");
-    };
+          throw new RuntimeException("expected");
+        };
     doCallRealMethod()
         .doReturn(EmptyProcessingResult.INSTANCE)
-        .when(testProcessor).process(any(), any());
+        .when(testProcessor)
+        .process(any(), any());
     doCallRealMethod()
         .doReturn(EmptyProcessingResult.INSTANCE)
-        .when(testProcessor).onProcessingError(any(), any(), any());
+        .when(testProcessor)
+        .onProcessingError(any(), any(), any());
     streamPlatform.withRecordProcessors(List.of(testProcessor)).startStreamProcessor();
 
     final var zeebeDb = testProcessor.recordProcessorContext.getZeebeDb();
@@ -465,7 +484,16 @@ public final class StreamProcessorTest {
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
 
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
-    resultBuilder.withResponse(RecordType.EVENT, 3, ELEMENT_ACTIVATING, RECORD, ValueType.PROCESS_INSTANCE, RejectionType.NULL_VAL, "", 1, 12);
+    resultBuilder.withResponse(
+        RecordType.EVENT,
+        3,
+        ELEMENT_ACTIVATING,
+        RECORD,
+        ValueType.PROCESS_INSTANCE,
+        RejectionType.NULL_VAL,
+        "",
+        1,
+        12);
     when(defaultMockedRecordProcessor.process(any(), any()))
         .thenReturn(resultBuilder.build())
         .thenReturn(EmptyProcessingResult.INSTANCE);
@@ -480,8 +508,7 @@ public final class StreamProcessorTest {
     // then
     verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
 
-    final var commandResponseWriter =
-        streamPlatform.getMockCommandResponseWriter();
+    final var commandResponseWriter = streamPlatform.getMockCommandResponseWriter();
 
     verify(commandResponseWriter, TIMEOUT.times(1)).key(3);
     verify(commandResponseWriter, TIMEOUT.times(1))
@@ -500,7 +527,16 @@ public final class StreamProcessorTest {
         .thenReturn(EmptyProcessingResult.INSTANCE);
 
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
-    resultBuilder.withResponse(RecordType.EVENT, 3, ELEMENT_ACTIVATING, RECORD, ValueType.PROCESS_INSTANCE, RejectionType.NULL_VAL, "", 1, 12);
+    resultBuilder.withResponse(
+        RecordType.EVENT,
+        3,
+        ELEMENT_ACTIVATING,
+        RECORD,
+        ValueType.PROCESS_INSTANCE,
+        RejectionType.NULL_VAL,
+        "",
+        1,
+        12);
     when(defaultMockedRecordProcessor.onProcessingError(any(), any(), any()))
         .thenReturn(resultBuilder.build())
         .thenReturn(EmptyProcessingResult.INSTANCE);
@@ -516,8 +552,7 @@ public final class StreamProcessorTest {
     verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
     verify(defaultMockedRecordProcessor, TIMEOUT.times(1)).onProcessingError(any(), any(), any());
 
-    final var commandResponseWriter =
-        streamPlatform.getMockCommandResponseWriter();
+    final var commandResponseWriter = streamPlatform.getMockCommandResponseWriter();
 
     verify(commandResponseWriter, TIMEOUT.times(1)).key(3);
     verify(commandResponseWriter, TIMEOUT.times(1))
@@ -534,8 +569,7 @@ public final class StreamProcessorTest {
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
 
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
-    when(defaultMockedRecordProcessor.process(any(), any()))
-        .thenReturn(resultBuilder.build());
+    when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
     streamPlatform.startStreamProcessor();
 
     // when
@@ -623,12 +657,14 @@ public final class StreamProcessorTest {
 
     // then
     verify(defaultRecordProcessor, TIMEOUT.times(2)).process(any(), any());
-    await("Last written position should be updated").untilAsserted(() ->
-        assertThat(streamPlatform.getStreamProcessor().getLastWrittenPositionAsync().join()).isEqualTo(-1)
-    );
+    await("Last written position should be updated")
+        .untilAsserted(
+            () ->
+                assertThat(streamPlatform.getStreamProcessor().getLastWrittenPositionAsync().join())
+                    .isEqualTo(-1));
   }
 
-  private final static class TestProcessor implements RecordProcessor {
+  private static final class TestProcessor implements RecordProcessor {
 
     ProcessingResult processingResult = EmptyProcessingResult.INSTANCE;
     ProcessingResult processingResultOnError = EmptyProcessingResult.INSTANCE;
@@ -647,18 +683,18 @@ public final class StreamProcessorTest {
     }
 
     @Override
-    public void replay(final TypedRecord record) {
-    }
+    public void replay(final TypedRecord record) {}
 
     @Override
-    public ProcessingResult process(final TypedRecord record,
-        final ProcessingResultBuilder processingResultBuilder) {
+    public ProcessingResult process(
+        final TypedRecord record, final ProcessingResultBuilder processingResultBuilder) {
       processingAction.accept(recordProcessorContext);
       return processingResult;
     }
 
     @Override
-    public ProcessingResult onProcessingError(final Throwable processingException,
+    public ProcessingResult onProcessingError(
+        final Throwable processingException,
         final TypedRecord record,
         final ProcessingResultBuilder processingResultBuilder) {
       onProcessingErrorAction.accept(recordProcessorContext);

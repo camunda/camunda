@@ -101,7 +101,8 @@ public final class StreamPlatform {
     actorScheduler.submitActor(writeActor);
 
     defaultMockedRecordProcessor = mock(RecordProcessor.class);
-    when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(EmptyProcessingResult.INSTANCE);
+    when(defaultMockedRecordProcessor.process(any(), any()))
+        .thenReturn(EmptyProcessingResult.INSTANCE);
     when(defaultMockedRecordProcessor.onProcessingError(any(), any(), any()))
         .thenReturn(EmptyProcessingResult.INSTANCE);
     when(defaultMockedRecordProcessor.accepts(any())).thenReturn(true);
@@ -205,8 +206,6 @@ public final class StreamPlatform {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
 
-
-
     final ZeebeDb<?> zeebeDb;
     if (snapshotWasTaken) {
       zeebeDb = zeebeDbFactory.createDb(snapshot.toFile());
@@ -232,7 +231,7 @@ public final class StreamPlatform {
     final var openFuture = streamProcessor.openAsync(false);
 
     if (awaitOpening) { // and recovery
-        verify(mockProcessorLifecycleAware, timeout(15 * 1000)).onRecovered(any());
+      verify(mockProcessorLifecycleAware, timeout(15 * 1000)).onRecovered(any());
     }
     openFuture.join(15, TimeUnit.SECONDS);
 
