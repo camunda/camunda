@@ -8,7 +8,7 @@
 package io.atomix.raft.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
 
 import java.time.Duration;
@@ -28,11 +28,11 @@ class StateUtilTest {
   @MethodSource("provideInconsistentState")
   void shouldThrowException(
       final long snapshotIndex, final long firstIndex, final boolean isLogEmpty) {
-    assertThatException()
-        .isThrownBy(
+    assertThatThrownBy(
             () ->
                 StateUtil.verifySnapshotLogConsistent(
-                    snapshotIndex, firstIndex, isLogEmpty, i -> {}, LOG));
+                    snapshotIndex, firstIndex, isLogEmpty, i -> {}, LOG))
+        .isInstanceOf(IllegalStateException.class);
   }
 
   @ParameterizedTest
