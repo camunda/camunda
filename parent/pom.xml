@@ -84,7 +84,7 @@
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.17.3</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
-    <version.zeebe-test-container>3.5.1</version.zeebe-test-container>
+    <version.zeebe-test-container>3.5.2</version.zeebe-test-container>
     <version.feel-scala>1.15.2</version.feel-scala>
     <version.dmn-scala>1.7.3</version.dmn-scala>
     <version.rest-assured>5.2.0</version.rest-assured>
