@@ -150,12 +150,14 @@ jobs:
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
+        # we use the verify goal here as flaky test extraction is bound to the post-integration-test
+        # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
           mvn -T2 -B --no-snapshot-updates
-          -D skipChecks -D surefire.rerunFailingTestsCount=3
+          -D skipITs -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests
-          test
+          verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Normalize artifact name
         run: echo "ARTIFACT_NAME=$(echo ${{ matrix.project }} | sed 's/\//-/g')" >> $GITHUB_ENV
