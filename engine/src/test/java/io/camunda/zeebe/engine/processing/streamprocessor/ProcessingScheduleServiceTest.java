@@ -273,7 +273,7 @@ public class ProcessingScheduleServiceTest {
 
     inOrder.verify(batchWriter, TIMEOUT).event();
     inOrder.verify(logEntryBuilder, TIMEOUT).key(1);
-    inOrder.verify(batchWriter, TIMEOUT).tryWrite();
+    inOrder.verify(batchWriter, TIMEOUT.times(5000)).tryWrite();
     inOrder.verify(batchWriter, TIMEOUT).event();
     inOrder.verify(logEntryBuilder, TIMEOUT).key(2);
     inOrder.verify(batchWriter, TIMEOUT).tryWrite();
