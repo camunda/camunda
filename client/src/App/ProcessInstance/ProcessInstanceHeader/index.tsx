@@ -21,7 +21,6 @@ import {Restricted} from 'modules/components/Restricted';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {modificationsStore} from 'modules/stores/modifications';
 import {tracking} from 'modules/tracking';
-import {IS_MODIFICATION_MODE_ENABLED} from 'modules/feature-flags';
 
 const ProcessInstanceHeader: React.FC = observer(() => {
   const {processInstance} = processInstanceDetailsStore.state;
@@ -169,7 +168,6 @@ const ProcessInstanceHeader: React.FC = observer(() => {
               processInstance?.hasActiveOperation
             }
             isInstanceModificationVisible={
-              IS_MODIFICATION_MODE_ENABLED &&
               !modificationsStore.isModificationModeEnabled
             }
           />

@@ -33,7 +33,6 @@ import {mockCallActivityProcessXML, mockProcessXML} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {IS_MODIFICATION_MODE_ENABLED} from 'modules/feature-flags';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -404,11 +403,9 @@ describe('InstanceHeader', () => {
       screen.getByRole('button', {name: /Cancel Instance/})
     ).toBeInTheDocument();
 
-    if (IS_MODIFICATION_MODE_ENABLED) {
-      expect(
-        screen.getByRole('button', {name: /Modify Instance/})
-      ).toBeInTheDocument();
-    }
+    expect(
+      screen.getByRole('button', {name: /Modify Instance/})
+    ).toBeInTheDocument();
   });
 
   it('should hide operation buttons when user has no permission', async () => {
@@ -447,11 +444,9 @@ describe('InstanceHeader', () => {
       screen.queryByRole('button', {name: /Cancel Instance/})
     ).not.toBeInTheDocument();
 
-    if (IS_MODIFICATION_MODE_ENABLED) {
-      expect(
-        screen.queryByRole('button', {name: /Modify Instance/})
-      ).not.toBeInTheDocument();
-    }
+    expect(
+      screen.queryByRole('button', {name: /Modify Instance/})
+    ).not.toBeInTheDocument();
   });
 
   it('should call onPollingFailure if delete operation is performed', async () => {

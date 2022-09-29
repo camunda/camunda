@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-const IS_MODIFICATION_MODE_ENABLED = false;
 const IS_DATE_RANGE_FILTERS_ENABLED = false;
 
-export {IS_MODIFICATION_MODE_ENABLED, IS_DATE_RANGE_FILTERS_ENABLED};
+export {IS_DATE_RANGE_FILTERS_ENABLED};

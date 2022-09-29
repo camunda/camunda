@@ -21,33 +21,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(open('multipleInstanceSubProcess.bpmn')))
-      ),
-      rest.get('/api/process-instances/:processId/statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              activityId: 'OuterSubProcess',
-              active: 1,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-            {
-              activityId: 'InnerSubProcess',
-              active: 1,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-            {
-              activityId: 'TaskB',
-              active: 1,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-          ])
-        )
       )
     );
   });
@@ -87,7 +60,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
       )
     );
 
-    processInstanceDetailsStatisticsStore.init('processId');
     initializeStores();
     renderPopover();
 
@@ -110,32 +82,29 @@ describe('Modification Dropdown - Multi Scopes', () => {
 
   it('should not support add modification for task with multiple inner parent scopes', async () => {
     mockServer.use(
-      rest.get(
-        'http://localhost/api/process-instances/:processId/statistics',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                activityId: 'OuterSubProcess',
-                active: 1,
-                incidents: 0,
-              },
-              {
-                activityId: 'InnerSubProcess',
-                active: 10,
-                incidents: 0,
-              },
-              {
-                activityId: 'TaskB',
-                active: 1,
-                incidents: 0,
-              },
-            ])
-          )
+      rest.get('/api/process-instances/:processId/statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              activityId: 'OuterSubProcess',
+              active: 1,
+              incidents: 0,
+            },
+            {
+              activityId: 'InnerSubProcess',
+              active: 10,
+              incidents: 0,
+            },
+            {
+              activityId: 'TaskB',
+              active: 1,
+              incidents: 0,
+            },
+          ])
+        )
       )
     );
 
-    processInstanceDetailsStatisticsStore.init('processId');
     initializeStores();
     renderPopover();
 
@@ -158,32 +127,29 @@ describe('Modification Dropdown - Multi Scopes', () => {
 
   it('should not support add modification for task with multiple outer parent scopes', async () => {
     mockServer.use(
-      rest.get(
-        'http://localhost/api/process-instances/:processId/statistics',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                activityId: 'OuterSubProcess',
-                active: 10,
-                incidents: 0,
-              },
-              {
-                activityId: 'InnerSubProcess',
-                active: 1,
-                incidents: 0,
-              },
-              {
-                activityId: 'TaskB',
-                active: 1,
-                incidents: 0,
-              },
-            ])
-          )
+      rest.get('/api/process-instances/:processId/statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              activityId: 'OuterSubProcess',
+              active: 10,
+              incidents: 0,
+            },
+            {
+              activityId: 'InnerSubProcess',
+              active: 1,
+              incidents: 0,
+            },
+            {
+              activityId: 'TaskB',
+              active: 1,
+              incidents: 0,
+            },
+          ])
+        )
       )
     );
 
-    processInstanceDetailsStatisticsStore.init('processId');
     initializeStores();
     renderPopover();
 

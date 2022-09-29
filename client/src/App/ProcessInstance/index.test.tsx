@@ -30,7 +30,6 @@ import {statistics} from 'modules/mocks/statistics';
 import {useNotifications} from 'modules/notifications';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {modificationsStore} from 'modules/stores/modifications';
-import {IS_MODIFICATION_MODE_ENABLED} from 'modules/feature-flags';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
@@ -265,538 +264,504 @@ describe('Instance', () => {
     jest.useRealTimers();
   });
 
-  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
-    'should display the modifications header and footer when modification mode is enabled',
-    async () => {
-      mockServer.use(
-        rest.get('/api/process-instances/:id', (_, res, ctx) =>
-          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
-        )
-      );
-
-      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(
-        screen.getByTestId('instance-header-skeleton')
-      );
-
-      expect(
-        screen.queryByText('Process Instance Modification Mode')
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByTestId('discard-all-button')
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByTestId('apply-modifications-button')
-      ).not.toBeInTheDocument();
-
-      storeStateLocally({
-        [`hideModificationHelperModal`]: true,
-      });
-      await user.click(
-        screen.getByRole('button', {
-          name: /modify instance/i,
-        })
-      );
-
-      expect(
-        screen.getByText('Process Instance Modification Mode')
-      ).toBeInTheDocument();
-      expect(screen.getByTestId('discard-all-button')).toBeInTheDocument();
-      expect(
-        screen.getByTestId('apply-modifications-button')
-      ).toBeInTheDocument();
-
-      await user.click(screen.getByTestId('discard-all-button'));
-      await user.click(await screen.findByTestId('discard-button'));
-
-      expect(
-        screen.queryByText('Process Instance Modification Mode')
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByTestId('discard-all-button')
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByTestId('apply-modifications-button')
-      ).not.toBeInTheDocument();
-    }
-  );
-
-  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
-    'should display confirmation modal when discard all is clicked during the modification mode',
-    async () => {
-      mockServer.use(
-        rest.get('/api/process-instances/:id', (_, res, ctx) =>
-          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
-        )
-      );
-
-      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(
-        screen.getByTestId('instance-header-skeleton')
-      );
-
-      storeStateLocally({
-        [`hideModificationHelperModal`]: true,
-      });
-      await user.click(
-        screen.getByRole('button', {
-          name: /modify instance/i,
-        })
-      );
-      await user.click(screen.getByTestId('discard-all-button'));
-
-      expect(
-        await screen.findByText(
-          /about to discard all added modifications for instance/i
-        )
-      ).toBeInTheDocument();
-
-      expect(
-        screen.getByText(/click "discard" to proceed\./i)
-      ).toBeInTheDocument();
-
-      await user.click(screen.getByTestId('cancel-button'));
-
-      await waitForElementToBeRemoved(() =>
-        screen.queryByText(
-          /About to discard all added modifications for instance/
-        )
-      );
-      expect(
-        screen.queryByText(/click "discard" to proceed\./i)
-      ).not.toBeInTheDocument();
-    }
-  );
-
-  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
-    'should display no planned modifications modal when apply modifications is clicked during the modification mode',
-    async () => {
-      mockServer.use(
-        rest.get('/api/process-instances/:id', (_, res, ctx) =>
-          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
-        )
-      );
-
-      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(
-        screen.getByTestId('instance-header-skeleton')
-      );
-
-      storeStateLocally({
-        [`hideModificationHelperModal`]: true,
-      });
-      await user.click(
-        screen.getByRole('button', {
-          name: /modify instance/i,
-        })
-      );
-      await user.click(screen.getByTestId('apply-modifications-button'));
-
-      expect(
-        await screen.findByText(
-          /no planned modifications for process instance/i
-        )
-      ).toBeInTheDocument();
-
-      expect(
-        screen.getByText(/click "ok" to return to the modification mode\./i)
-      ).toBeInTheDocument();
-
-      await user.click(screen.getByTestId('ok-button'));
-
-      await waitForElementToBeRemoved(() =>
-        screen.queryByText(/no planned modifications for process instance/i)
-      );
-      expect(
-        screen.queryByText(/click "ok" to return to the modification mode\./i)
-      ).not.toBeInTheDocument();
-    }
-  );
-
-  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
-    'should display summary modifications modal when apply modifications is clicked during the modification mode',
-    async () => {
-      mockServer.use(
-        rest.get('/api/process-instances/:id', (_, res, ctx) =>
-          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
-        ),
-        rest.post(
-          '/api/process-instances/:instanceId/flow-node-metadata',
-          (_, res, ctx) => res.once(ctx.json(undefined))
-        )
-      );
-
-      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(
-        screen.getByTestId('instance-header-skeleton')
-      );
-
-      storeStateLocally({
-        [`hideModificationHelperModal`]: true,
-      });
-      await user.click(
-        screen.getByRole('button', {
-          name: /modify instance/i,
-        })
-      );
-
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'taskD',
-      });
-
-      await user.click(
-        screen.getByRole('button', {name: /add single flow node instance/i})
-      );
-
-      await user.click(screen.getByTestId('apply-modifications-button'));
-
-      expect(
-        await screen.findByText(/Planned modifications for Process Instance/i)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/Click "Apply" to proceed./i)
-      ).toBeInTheDocument();
-
-      expect(screen.getByText(/flow node modifications/i)).toBeInTheDocument();
-
-      expect(screen.getByText(/variable modifications/gi)).toBeInTheDocument();
-
-      await user.click(screen.getByRole('button', {name: 'Cancel'}));
-
-      await waitForElementToBeRemoved(() =>
-        screen.queryByText(/Planned modifications for Process Instance/i)
-      );
-    }
-  );
-
-  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
-    'should stop polling during the modification mode',
-    async () => {
-      jest.useFakeTimers();
-
-      const handlePollingVariablesSpy = jest.spyOn(
-        variablesStore,
-        'handlePolling'
-      );
-      const handlePollingSequenceFlowsSpy = jest.spyOn(
-        sequenceFlowsStore,
-        'handlePolling'
-      );
-
-      const handlePollingInstanceDetailsSpy = jest.spyOn(
-        processInstanceDetailsStore,
-        'handlePolling'
-      );
-
-      const handlePollingIncidentsSpy = jest.spyOn(
-        incidentsStore,
-        'handlePolling'
-      );
-
-      const handlePollingFlowNodeInstanceSpy = jest.spyOn(
-        flowNodeInstanceStore,
-        'pollInstances'
-      );
-
-      const handlePollingProcessInstanceDetailStatisticsSpy = jest.spyOn(
-        processInstanceDetailsStatisticsStore,
-        'handlePolling'
-      );
-
-      mockServer.use(
-        rest.get('/api/process-instances/:id', (_, res, ctx) =>
-          res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
-        )
-      );
-
-      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(
-        screen.getByTestId('instance-header-skeleton')
-      );
-
-      storeStateLocally({
-        [`hideModificationHelperModal`]: true,
-      });
-
-      expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(0);
-      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
-      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
-      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
-      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
-      expect(
-        handlePollingProcessInstanceDetailStatisticsSpy
-      ).toHaveBeenCalledTimes(0);
-
-      clearPollingStates();
-      jest.runOnlyPendingTimers();
-      expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
-      expect(
-        handlePollingProcessInstanceDetailStatisticsSpy
-      ).toHaveBeenCalledTimes(1);
-
-      await waitFor(() => {
-        expect(variablesStore.state.status).toBe('fetched');
-        expect(processInstanceDetailsStore.state.status).toBe('fetched');
-        expect(flowNodeInstanceStore.state.status).toBe('fetched');
-      });
-
-      await user.click(
-        screen.getByRole('button', {
-          name: /modify instance/i,
-        })
-      );
-
-      clearPollingStates();
-      jest.runOnlyPendingTimers();
-
-      expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
-      expect(
-        handlePollingProcessInstanceDetailStatisticsSpy
-      ).toHaveBeenCalledTimes(1);
-
-      clearPollingStates();
-      jest.runOnlyPendingTimers();
-
-      expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
-      expect(
-        handlePollingProcessInstanceDetailStatisticsSpy
-      ).toHaveBeenCalledTimes(1);
-
-      await user.click(screen.getByTestId('discard-all-button'));
-      await user.click(screen.getByTestId('discard-button'));
-
-      clearPollingStates();
-      jest.runOnlyPendingTimers();
-
-      await waitFor(() => {
-        expect(variablesStore.state.status).toBe('fetched');
-        expect(processInstanceDetailsStore.state.status).toBe('fetched');
-        expect(flowNodeInstanceStore.state.status).toBe('fetched');
-      });
-
-      expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(2);
-      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(2);
-      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(2);
-      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(2);
-      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(2);
-      expect(
-        handlePollingProcessInstanceDetailStatisticsSpy
-      ).toHaveBeenCalledTimes(2);
-
-      jest.clearAllTimers();
-      jest.useRealTimers();
-    }
-  );
-
-  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
-    'should display loading overlay when modifications are applied',
-    async () => {
-      mockServer.use(
-        rest.get('/api/process-instances/:id', (_, res, ctx) =>
-          res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
-        ),
-        rest.post(
-          '/api/process-instances/:instanceId/flow-node-metadata',
-          (_, res, ctx) => res.once(ctx.json(undefined))
-        ),
-
-        rest.post(
-          '/api/process-instances/:processInstanceId/modify',
-          (_, res, ctx) => res.once(ctx.delay(1000), ctx.json({}))
-        )
-      );
-
-      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(
-        screen.getByTestId('instance-header-skeleton')
-      );
-
-      storeStateLocally({
-        [`hideModificationHelperModal`]: true,
-      });
-      await user.click(
-        screen.getByRole('button', {
-          name: /modify instance/i,
-        })
-      );
-
-      expect(
-        screen.getByText('Process Instance Modification Mode')
-      ).toBeInTheDocument();
-
-      jest.useFakeTimers();
-
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'taskD',
-      });
-
-      await user.click(
-        screen.getByRole('button', {name: /add single flow node instance/i})
-      );
-
-      expect(await screen.findByTestId('badge-plus-icon')).toBeInTheDocument();
-
-      await user.click(screen.getByTestId('apply-modifications-button'));
-      await user.click(screen.getByRole('button', {name: 'Apply'}));
-      expect(
-        screen.getByText(/applying modifications.../i)
-      ).toBeInTheDocument();
-
-      processInstanceDetailsStore.stopPolling();
-      jest.runOnlyPendingTimers();
-
-      await waitForElementToBeRemoved(() =>
-        screen.getByText(/applying modifications.../i)
-      );
-
-      expect(
-        screen.queryByText('Process Instance Modification Mode')
-      ).not.toBeInTheDocument();
-
-      jest.clearAllTimers();
-      jest.useRealTimers();
-    }
-  );
-
-  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
-    'should not trigger polling for variables when scope id changed',
-    async () => {
-      jest.useFakeTimers();
-
-      const handlePollingVariablesSpy = jest.spyOn(
-        variablesStore,
-        'handlePolling'
-      );
-
-      mockServer.use(
-        rest.get('/api/process-instances/:id', (_, res, ctx) =>
-          res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
-        ),
-        rest.post(
-          '/api/process-instances/:instanceId/flow-node-metadata',
-          (_, res, ctx) => res.once(ctx.json(undefined))
-        )
-      );
-
-      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(
-        screen.getByTestId('instance-header-skeleton')
-      );
-
-      storeStateLocally({
-        [`hideModificationHelperModal`]: true,
-      });
-
-      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
-
-      clearPollingStates();
-      jest.runOnlyPendingTimers();
-
-      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
-
-      await user.click(
-        screen.getByRole('button', {
-          name: /modify instance/i,
-        })
-      );
-
-      clearPollingStates();
-      jest.runOnlyPendingTimers();
-
-      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
-
-      clearPollingStates();
-      jest.runOnlyPendingTimers();
-
-      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
-
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'taskD',
-        flowNodeInstanceId: 'test-id',
-      });
-
-      clearPollingStates();
-      jest.runOnlyPendingTimers();
-
-      await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
-
-      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
-
-      jest.clearAllTimers();
-      jest.useRealTimers();
-    }
-  );
-
-  (IS_MODIFICATION_MODE_ENABLED ? it : it.skip)(
-    'should block navigation when modification mode is enabled',
-    async () => {
-      mockServer.use(
-        rest.get('/api/process-instances/:id', (_, res, ctx) =>
-          res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
-        )
-      );
-
-      const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(
-        screen.getByTestId('instance-header-skeleton')
-      );
-
-      storeStateLocally({
-        [`hideModificationHelperModal`]: true,
-      });
-
-      await user.click(
-        screen.getByRole('button', {
-          name: /modify instance/i,
-        })
-      );
-
-      await user.click(
-        screen.getByRole('link', {
-          name: /View process someProcessName version 1 instances/,
-        })
-      );
-
-      expect(
-        await screen.findByText(
-          'By leaving this page, all planned modification will be discarded.'
-        )
-      ).toBeInTheDocument();
-      await user.click(screen.getByRole('button', {name: 'Stay'}));
-
-      await waitForElementToBeRemoved(() =>
-        screen.queryByText(
-          'By leaving this page, all planned modification will be discarded.'
-        )
-      );
-
-      await user.click(
-        screen.getByRole('link', {
-          name: /View process someProcessName version 1 instances/,
-        })
-      );
-
-      expect(
-        await screen.findByText(
-          'By leaving this page, all planned modification will be discarded.'
-        )
-      ).toBeInTheDocument();
-
-      await user.click(screen.getByRole('button', {name: 'Leave'}));
-
-      expect(await screen.findByText('instances page')).toBeInTheDocument();
-    }
-  );
+  it('should display the modifications header and footer when modification mode is enabled', async () => {
+    mockServer.use(
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
+      )
+    );
+
+    const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    expect(
+      screen.queryByText('Process Instance Modification Mode')
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('discard-all-button')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('apply-modifications-button')
+    ).not.toBeInTheDocument();
+
+    storeStateLocally({
+      [`hideModificationHelperModal`]: true,
+    });
+    await user.click(
+      screen.getByRole('button', {
+        name: /modify instance/i,
+      })
+    );
+
+    expect(
+      screen.getByText('Process Instance Modification Mode')
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('discard-all-button')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('apply-modifications-button')
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('discard-all-button'));
+    await user.click(await screen.findByTestId('discard-button'));
+
+    expect(
+      screen.queryByText('Process Instance Modification Mode')
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('discard-all-button')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('apply-modifications-button')
+    ).not.toBeInTheDocument();
+  });
+
+  it('should display confirmation modal when discard all is clicked during the modification mode', async () => {
+    mockServer.use(
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
+      )
+    );
+
+    const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    storeStateLocally({
+      [`hideModificationHelperModal`]: true,
+    });
+    await user.click(
+      screen.getByRole('button', {
+        name: /modify instance/i,
+      })
+    );
+    await user.click(screen.getByTestId('discard-all-button'));
+
+    expect(
+      await screen.findByText(
+        /about to discard all added modifications for instance/i
+      )
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(/click "discard" to proceed\./i)
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('cancel-button'));
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByText(
+        /About to discard all added modifications for instance/
+      )
+    );
+    expect(
+      screen.queryByText(/click "discard" to proceed\./i)
+    ).not.toBeInTheDocument();
+  });
+
+  it('should display no planned modifications modal when apply modifications is clicked during the modification mode', async () => {
+    mockServer.use(
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
+      )
+    );
+
+    const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    storeStateLocally({
+      [`hideModificationHelperModal`]: true,
+    });
+    await user.click(
+      screen.getByRole('button', {
+        name: /modify instance/i,
+      })
+    );
+    await user.click(screen.getByTestId('apply-modifications-button'));
+
+    expect(
+      await screen.findByText(/no planned modifications for process instance/i)
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(/click "ok" to return to the modification mode\./i)
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('ok-button'));
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByText(/no planned modifications for process instance/i)
+    );
+    expect(
+      screen.queryByText(/click "ok" to return to the modification mode\./i)
+    ).not.toBeInTheDocument();
+  });
+
+  it('should display summary modifications modal when apply modifications is clicked during the modification mode', async () => {
+    mockServer.use(
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
+      ),
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) => res.once(ctx.json(undefined))
+      )
+    );
+
+    const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    storeStateLocally({
+      [`hideModificationHelperModal`]: true,
+    });
+    await user.click(
+      screen.getByRole('button', {
+        name: /modify instance/i,
+      })
+    );
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'taskD',
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: /add single flow node instance/i})
+    );
+
+    await user.click(screen.getByTestId('apply-modifications-button'));
+
+    expect(
+      await screen.findByText(/Planned modifications for Process Instance/i)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Click "Apply" to proceed./i)).toBeInTheDocument();
+
+    expect(screen.getByText(/flow node modifications/i)).toBeInTheDocument();
+
+    expect(screen.getByText(/variable modifications/gi)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Cancel'}));
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByText(/Planned modifications for Process Instance/i)
+    );
+  });
+
+  it('should stop polling during the modification mode', async () => {
+    jest.useFakeTimers();
+
+    const handlePollingVariablesSpy = jest.spyOn(
+      variablesStore,
+      'handlePolling'
+    );
+    const handlePollingSequenceFlowsSpy = jest.spyOn(
+      sequenceFlowsStore,
+      'handlePolling'
+    );
+
+    const handlePollingInstanceDetailsSpy = jest.spyOn(
+      processInstanceDetailsStore,
+      'handlePolling'
+    );
+
+    const handlePollingIncidentsSpy = jest.spyOn(
+      incidentsStore,
+      'handlePolling'
+    );
+
+    const handlePollingFlowNodeInstanceSpy = jest.spyOn(
+      flowNodeInstanceStore,
+      'pollInstances'
+    );
+
+    const handlePollingProcessInstanceDetailStatisticsSpy = jest.spyOn(
+      processInstanceDetailsStatisticsStore,
+      'handlePolling'
+    );
+
+    mockServer.use(
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
+      )
+    );
+
+    const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    storeStateLocally({
+      [`hideModificationHelperModal`]: true,
+    });
+
+    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
+    expect(
+      handlePollingProcessInstanceDetailStatisticsSpy
+    ).toHaveBeenCalledTimes(0);
+
+    clearPollingStates();
+    jest.runOnlyPendingTimers();
+    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+    expect(
+      handlePollingProcessInstanceDetailStatisticsSpy
+    ).toHaveBeenCalledTimes(1);
+
+    await waitFor(() => {
+      expect(variablesStore.state.status).toBe('fetched');
+      expect(processInstanceDetailsStore.state.status).toBe('fetched');
+      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+    });
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /modify instance/i,
+      })
+    );
+
+    clearPollingStates();
+    jest.runOnlyPendingTimers();
+
+    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+    expect(
+      handlePollingProcessInstanceDetailStatisticsSpy
+    ).toHaveBeenCalledTimes(1);
+
+    clearPollingStates();
+    jest.runOnlyPendingTimers();
+
+    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+    expect(
+      handlePollingProcessInstanceDetailStatisticsSpy
+    ).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByTestId('discard-all-button'));
+    await user.click(screen.getByTestId('discard-button'));
+
+    clearPollingStates();
+    jest.runOnlyPendingTimers();
+
+    await waitFor(() => {
+      expect(variablesStore.state.status).toBe('fetched');
+      expect(processInstanceDetailsStore.state.status).toBe('fetched');
+      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+    });
+
+    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(2);
+    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(2);
+    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(2);
+    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(2);
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(2);
+    expect(
+      handlePollingProcessInstanceDetailStatisticsSpy
+    ).toHaveBeenCalledTimes(2);
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  it('should display loading overlay when modifications are applied', async () => {
+    mockServer.use(
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
+      ),
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) => res.once(ctx.json(undefined))
+      ),
+
+      rest.post(
+        '/api/process-instances/:processInstanceId/modify',
+        (_, res, ctx) => res.once(ctx.delay(1000), ctx.json({}))
+      )
+    );
+
+    const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    storeStateLocally({
+      [`hideModificationHelperModal`]: true,
+    });
+    await user.click(
+      screen.getByRole('button', {
+        name: /modify instance/i,
+      })
+    );
+
+    expect(
+      screen.getByText('Process Instance Modification Mode')
+    ).toBeInTheDocument();
+
+    jest.useFakeTimers();
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'taskD',
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: /add single flow node instance/i})
+    );
+
+    expect(await screen.findByTestId('badge-plus-icon')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('apply-modifications-button'));
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
+    expect(screen.getByText(/applying modifications.../i)).toBeInTheDocument();
+
+    processInstanceDetailsStore.stopPolling();
+    jest.runOnlyPendingTimers();
+
+    await waitForElementToBeRemoved(() =>
+      screen.getByText(/applying modifications.../i)
+    );
+
+    expect(
+      screen.queryByText('Process Instance Modification Mode')
+    ).not.toBeInTheDocument();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  it('should not trigger polling for variables when scope id changed', async () => {
+    jest.useFakeTimers();
+
+    const handlePollingVariablesSpy = jest.spyOn(
+      variablesStore,
+      'handlePolling'
+    );
+
+    mockServer.use(
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
+      ),
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) => res.once(ctx.json(undefined))
+      )
+    );
+
+    const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    storeStateLocally({
+      [`hideModificationHelperModal`]: true,
+    });
+
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
+
+    clearPollingStates();
+    jest.runOnlyPendingTimers();
+
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /modify instance/i,
+      })
+    );
+
+    clearPollingStates();
+    jest.runOnlyPendingTimers();
+
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+
+    clearPollingStates();
+    jest.runOnlyPendingTimers();
+
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'taskD',
+      flowNodeInstanceId: 'test-id',
+    });
+
+    clearPollingStates();
+    jest.runOnlyPendingTimers();
+
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  it('should block navigation when modification mode is enabled', async () => {
+    mockServer.use(
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
+      )
+    );
+
+    const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    storeStateLocally({
+      [`hideModificationHelperModal`]: true,
+    });
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /modify instance/i,
+      })
+    );
+
+    await user.click(
+      screen.getByRole('link', {
+        name: /View process someProcessName version 1 instances/,
+      })
+    );
+
+    expect(
+      await screen.findByText(
+        'By leaving this page, all planned modification will be discarded.'
+      )
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Stay'}));
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByText(
+        'By leaving this page, all planned modification will be discarded.'
+      )
+    );
+
+    await user.click(
+      screen.getByRole('link', {
+        name: /View process someProcessName version 1 instances/,
+      })
+    );
+
+    expect(
+      await screen.findByText(
+        'By leaving this page, all planned modification will be discarded.'
+      )
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Leave'}));
+
+    expect(await screen.findByText('instances page')).toBeInTheDocument();
+  });
 });
