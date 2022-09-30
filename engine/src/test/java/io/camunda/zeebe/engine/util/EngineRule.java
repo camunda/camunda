@@ -463,7 +463,7 @@ public final class EngineRule extends ExternalResource {
     }
 
     private void exportEvents() {
-      // to always run in the same thread
+      // we need to skip until onRecovered happened
       if (logStreamReader == null) {
         return;
       }
