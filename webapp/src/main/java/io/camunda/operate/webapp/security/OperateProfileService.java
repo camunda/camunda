@@ -43,6 +43,10 @@ public class OperateProfileService {
     return List.of(environment.getActiveProfiles()).contains("dev");
   }
 
+  public boolean isDevelopmentDataProfileActive() {
+    return List.of(environment.getActiveProfiles()).contains("dev-data");
+  }
+
   public boolean isSSOProfile() {
     return Arrays.asList(environment.getActiveProfiles()).contains(SSO_AUTH_PROFILE);
   }

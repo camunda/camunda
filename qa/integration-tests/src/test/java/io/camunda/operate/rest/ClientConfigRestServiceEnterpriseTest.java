@@ -60,7 +60,8 @@ public class ClientConfigRestServiceEnterpriseTest extends OperateIntegrationTes
             + "\"clusterId\":null,"
             + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
             + "\"mixpanelToken\":\"i-am-a-token\","
-            + "\"isLoginDelegated\":false"
+            + "\"isLoginDelegated\":false,"
+            + "\"tasklistUrl\":null"
             + "};");
   }
 

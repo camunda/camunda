@@ -41,6 +41,8 @@ public class ClientConfig {
 
   public boolean isLoginDelegated;
 
+  public String tasklistUrl;
+
   public String asJson(){
     isEnterprise = operateProperties.isEnterprise();
     clusterId = operateProperties.getCloud().getClusterId();
@@ -50,6 +52,7 @@ public class ClientConfig {
     contextPath = context.getContextPath();
     canLogout = profileService.currentProfileCanLogout();
     isLoginDelegated = profileService.isLoginDelegated();
+    tasklistUrl = operateProperties.getTasklistUrl();
     try {
       return String.format("window.clientConfig = %s;",
           new ObjectMapper().writeValueAsString(this));

@@ -35,6 +35,8 @@ camunda-platform:
       value: "-XX:MaxRAMFraction=1"
     - name: SPRING_PROFILES_ACTIVE
       value: dev-data
+    - name: CAMUNDA_OPERATE_TASKLIST_URL
+      value: https://stage.zeebe-tasklist.camunda.cloud/
     resources:
       limits:
         cpu: 1

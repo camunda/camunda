@@ -4,7 +4,8 @@
 env-up:
 	docker-compose up -d elasticsearch zeebe \
 	&& mvn install -DskipTests=true -Dskip.fe.build=true \
-	&& mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,auth
+	&& CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8081 \
+	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,auth
 
 # Look up for users (bender/bender etc) in: https://github.com/rroemhild/docker-test-openldap
 .PHONY: env-ldap-up

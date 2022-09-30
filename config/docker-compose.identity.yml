@@ -90,6 +90,7 @@ services:
       - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
       - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
       - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
+      - CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8082
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://localhost:18080/auth/realms/camunda-platform
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
 

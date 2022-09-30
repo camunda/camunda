@@ -51,6 +51,7 @@ public class OperateProperties {
 
   private boolean enterprise = false;
 
+  private String tasklistUrl = null;
   @NestedConfigurationProperty
   private OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();
 
@@ -292,5 +293,13 @@ public class OperateProperties {
   public OperateProperties setBackup(BackupProperties backup) {
     this.backup = backup;
     return this;
+  }
+
+  public String getTasklistUrl() {
+    return tasklistUrl;
+  }
+
+  public void setTasklistUrl(String tasklistUrl) {
+    this.tasklistUrl = tasklistUrl;
   }
 }
