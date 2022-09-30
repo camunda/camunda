@@ -58,6 +58,7 @@ import io.atomix.raft.storage.StorageException;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.system.MetaStore;
+import io.atomix.raft.utils.StateUtil;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.utils.concurrent.ComposableFuture;
 import io.atomix.utils.concurrent.ThreadContext;
@@ -200,7 +201,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     persistedSnapshotStore
         .getLatestSnapshot()
         .ifPresent(persistedSnapshot -> currentSnapshot = persistedSnapshot);
-    verifySnapshotLogConsistent();
+    StateUtil.verifySnapshotLogConsistent(
+        getCurrentSnapshotIndex(), raftLog.getFirstIndex(), raftLog.isEmpty(), raftLog::reset, log);
 
     logCompactor = new LogCompactor(this);
 
@@ -214,19 +216,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     // Register protocol listeners.
     registerHandlers(protocol);
     started = true;
-  }
-
-  private void verifySnapshotLogConsistent() {
-    final long currentSnapshotIndex = getCurrentSnapshotIndex();
-    if ((currentSnapshotIndex <= 0L && raftLog.getFirstIndex() != 1)
-        || (currentSnapshotIndex > 0L
-            && currentSnapshot.getIndex() + 1 < raftLog.getFirstIndex())) {
-      // There is no snapshot, but the log has been compacted!
-      throw new IllegalStateException(
-          String.format(
-              "Expected to find a snapshot at index >= log's first index %d, but found snapshot %d. A previous snapshot is most likely corrupted.",
-              raftLog.getFirstIndex(), currentSnapshotIndex));
-    }
   }
 
   private void setSnapshot(final PersistedSnapshot persistedSnapshot) {
