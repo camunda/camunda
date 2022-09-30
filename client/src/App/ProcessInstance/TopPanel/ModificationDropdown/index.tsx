@@ -51,6 +51,17 @@ const ModificationDropdown: React.FC<Props> = observer(
         !flowNodeSelectionStore.state.selection?.isMultiInstance
       );
 
+    const canNewTokensBeAdded =
+      processInstanceDetailsDiagramStore.appendableFlowNodes.includes(
+        flowNodeId
+      );
+
+    const canBeCanceled =
+      processInstanceDetailsDiagramStore.cancellableFlowNodes.includes(
+        flowNodeId
+      ) &&
+      !modificationsStore.isCancelModificationAppliedOnFlowNode(flowNodeId);
+
     return (
       <Popover
         key={flowNodeSelectionStore.state.selection?.flowNodeInstanceId}
@@ -68,11 +79,11 @@ const ModificationDropdown: React.FC<Props> = observer(
         <Options>
           {!canSelectedFlowNodeBeModified ? (
             <Unsupported>Unsupported flow node type</Unsupported>
+          ) : !canNewTokensBeAdded && !canBeCanceled ? (
+            <Unsupported>No modifications available</Unsupported>
           ) : (
             <>
-              {processInstanceDetailsDiagramStore.appendableFlowNodes.includes(
-                flowNodeId
-              ) && (
+              {canNewTokensBeAdded && (
                 <Option
                   title="Add single flow node instance"
                   onClick={() => {
@@ -104,61 +115,56 @@ const ModificationDropdown: React.FC<Props> = observer(
                   Add
                 </Option>
               )}
-              {processInstanceDetailsDiagramStore.cancellableFlowNodes.includes(
-                flowNodeId
-              ) &&
-                !modificationsStore.isCancelModificationAppliedOnFlowNode(
-                  flowNodeId
-                ) && (
-                  <>
-                    <Option
-                      title="Cancel all running flow node instances in this flow node"
-                      onClick={() => {
-                        tracking.track({
-                          eventName: 'cancel-token',
-                        });
+              {canBeCanceled && (
+                <>
+                  <Option
+                    title="Cancel all running flow node instances in this flow node"
+                    onClick={() => {
+                      tracking.track({
+                        eventName: 'cancel-token',
+                      });
 
-                        modificationsStore.addModification({
-                          type: 'token',
-                          payload: {
-                            operation: 'CANCEL_TOKEN',
-                            flowNode: {
-                              id: flowNodeId,
-                              name: processInstanceDetailsDiagramStore.getFlowNodeName(
-                                flowNodeId
-                              ),
-                            },
-                            affectedTokenCount:
-                              processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-                                flowNodeId
-                              ),
-                            visibleAffectedTokenCount:
-                              processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
-                                flowNodeId
-                              ),
+                      modificationsStore.addModification({
+                        type: 'token',
+                        payload: {
+                          operation: 'CANCEL_TOKEN',
+                          flowNode: {
+                            id: flowNodeId,
+                            name: processInstanceDetailsDiagramStore.getFlowNodeName(
+                              flowNodeId
+                            ),
                           },
-                        });
+                          affectedTokenCount:
+                            processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
+                              flowNodeId
+                            ),
+                          visibleAffectedTokenCount:
+                            processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
+                              flowNodeId
+                            ),
+                        },
+                      });
+                      flowNodeSelectionStore.clearSelection();
+                    }}
+                  >
+                    <CancelIcon />
+                    Cancel
+                  </Option>
+                  {processInstanceDetailsDiagramStore.getFlowNode(flowNodeId)
+                    ?.$type !== 'bpmn:SubProcess' && (
+                    <Option
+                      title="Move all running instances in this flow node to another target"
+                      onClick={() => {
+                        modificationsStore.startMovingToken(flowNodeId);
                         flowNodeSelectionStore.clearSelection();
                       }}
                     >
-                      <CancelIcon />
-                      Cancel
+                      <MoveIcon />
+                      Move
                     </Option>
-                    {processInstanceDetailsDiagramStore.getFlowNode(flowNodeId)
-                      ?.$type !== 'bpmn:SubProcess' && (
-                      <Option
-                        title="Move all running instances in this flow node to another target"
-                        onClick={() => {
-                          modificationsStore.startMovingToken(flowNodeId);
-                          flowNodeSelectionStore.clearSelection();
-                        }}
-                      >
-                        <MoveIcon />
-                        Move
-                      </Option>
-                    )}
-                  </>
-                )}
+                  )}
+                </>
+              )}
             </>
           )}
         </Options>

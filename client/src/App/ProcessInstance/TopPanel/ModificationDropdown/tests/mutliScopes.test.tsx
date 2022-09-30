@@ -169,4 +169,64 @@ describe('Modification Dropdown - Multi Scopes', () => {
     expect(screen.getByText(/Move/)).toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
   });
+
+  it('should render no modifications available', async () => {
+    mockServer.use(
+      rest.get(
+        'http://localhost/api/process-instances/:processId/statistics',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              {
+                activityId: 'OuterSubProcess',
+                active: 1,
+                incidents: 0,
+              },
+              {
+                activityId: 'InnerSubProcess',
+                active: 10,
+                incidents: 0,
+              },
+              {
+                activityId: 'TaskB',
+                active: 1,
+                incidents: 0,
+              },
+            ])
+          )
+      )
+    );
+
+    initializeStores();
+    renderPopover();
+
+    await waitFor(() =>
+      expect(
+        processInstanceDetailsDiagramStore.state.diagramModel
+      ).not.toBeNull()
+    );
+    modificationsStore.enableModificationMode();
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'CANCEL_TOKEN',
+        flowNode: {id: 'TaskB', name: 'Task B'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+      },
+    });
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'TaskB',
+    });
+
+    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/No modifications available/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
+  });
 });
