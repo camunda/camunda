@@ -58,6 +58,8 @@ import {ReactComponent as FlowNodeEventErrorEnd} from 'modules/components/Icon/f
 
 import {ReactComponent as FlowNodeEventSubprocess} from 'modules/components/Icon/flow-node-subprocess-event.svg';
 
+import {ReactComponent as FlowNodeEventTerminateEnd} from 'modules/components/Icon/flow-node-event-terminate-end.svg';
+
 const newIconStyle: ThemedInterpolationFunction = ({theme}) => {
   return css`
     position: relative;
@@ -251,6 +253,10 @@ const EVENT_TIMER_BOUNDARY_INTERRUPTING = styled(
   ${newIconStyle}
 `;
 
+const EVENT_TERMINATE_END = styled(FlowNodeEventTerminateEnd)`
+  ${newIconStyle}
+`;
+
 export {
   PROCESS,
   GATEWAY_EXCLUSIVE,
@@ -285,4 +291,5 @@ export {
   EVENT_TIMER_INTERMEDIATE_CATCH,
   EVENT_TIMER_BOUNDARY_NON_INTERRUPTING,
   EVENT_TIMER_BOUNDARY_INTERRUPTING,
+  EVENT_TERMINATE_END,
 };

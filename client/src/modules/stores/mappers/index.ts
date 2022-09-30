@@ -81,6 +81,7 @@ const createNodeMetaDataMap = (bpmnElements: {
             bpmnElement?.$parent?.$type === 'bpmn:Process',
         },
       };
+
       return map;
     },
     {}

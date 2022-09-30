@@ -11,7 +11,11 @@ import * as Styled from './styled';
 import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 
 const getEventFlowNode = (
-  eventType: 'EVENT_TIMER' | 'EVENT_MESSAGE' | 'EVENT_ERROR',
+  eventType:
+    | 'EVENT_TIMER'
+    | 'EVENT_MESSAGE'
+    | 'EVENT_ERROR'
+    | 'EVENT_TERMINATE',
   elementType: string
 ) => {
   const map = {
@@ -21,6 +25,8 @@ const getEventFlowNode = (
     [TYPE.EVENT_MESSAGE]: Styled[TYPE.EVENT_MESSAGE + `_${elementType}`],
     // @ts-expect-error ts-migrate(7053) FIXME: No index signature with a parameter of type 'strin... Remove this comment to see the full error message
     [TYPE.EVENT_ERROR]: Styled[TYPE.EVENT_ERROR + `_${elementType}`],
+    // @ts-expect-error ts-migrate(7053) FIXME: No index signature with a parameter of type 'strin... Remove this comment to see the full error message
+    [TYPE.EVENT_TERMINATE]: Styled[TYPE.EVENT_TERMINATE + `_${elementType}`],
   };
 
   return map[eventType];
@@ -56,7 +62,11 @@ function getFlowNodeTypeIcon({
   flowNodeInstanceType,
 }: {
   elementType: string;
-  eventType: 'EVENT_TIMER' | 'EVENT_MESSAGE' | 'EVENT_ERROR';
+  eventType:
+    | 'EVENT_TIMER'
+    | 'EVENT_MESSAGE'
+    | 'EVENT_ERROR'
+    | 'EVENT_TERMINATE';
   multiInstanceType: string;
   flowNodeInstanceType: FlowNodeInstance['type'];
 }) {
@@ -80,17 +90,18 @@ type FlowNodeIconProps = {
   isSelected?: boolean;
 };
 
-function FlowNodeIcon({
+const FlowNodeIcon: React.FC<FlowNodeIconProps> = ({
   types,
   flowNodeInstanceType,
   isSelected,
   ...props
-}: FlowNodeIconProps) {
+}) => {
   const TargetFlowNodeTypeIcon = getFlowNodeTypeIcon({
     ...types,
     flowNodeInstanceType,
   });
+
   return <TargetFlowNodeTypeIcon {...props} />;
-}
+};
 
 export default FlowNodeIcon;
