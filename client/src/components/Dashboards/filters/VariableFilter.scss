@@ -1,3 +1,7 @@
 .VariableFilter__Dashboard {
-  width: max-content;
+  .title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }

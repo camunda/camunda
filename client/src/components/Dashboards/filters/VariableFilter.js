@@ -9,6 +9,7 @@ import React, {useEffect, useState} from 'react';
 
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
+import {Tooltip} from 'components';
 
 import SelectionFilter from './SelectionFilter';
 import DateFilter from './DateFilter';
@@ -55,12 +56,16 @@ export function VariableFilter({
       TypeComponent = SelectionFilter;
   }
 
+  const title = variableLabel || config.name;
+
   return (
     <div className="VariableFilter__Dashboard">
-      <div className="title">
-        {variableLabel || config.name}
-        {children}
-      </div>
+      <Tooltip content={title}>
+        <div className="title">
+          {title}
+          {children}
+        </div>
+      </Tooltip>
       <TypeComponent
         filter={filter}
         type={config.type}
