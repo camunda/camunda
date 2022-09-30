@@ -32,6 +32,7 @@ class FlowNodeSelection {
   state: State = {...DEFAULT_STATE};
   rootNodeSelectionDisposer: null | IReactionDisposer = null;
   modificationModeChangeDisposer: null | IReactionDisposer = null;
+  lastModificationRemovedDisposer: null | IReactionDisposer = null;
 
   constructor() {
     makeAutoObservable(this, {init: false, selectFlowNode: false});
@@ -46,6 +47,50 @@ class FlowNodeSelection {
     this.modificationModeChangeDisposer = reaction(
       () => modificationsStore.isModificationModeEnabled,
       this.clearSelection
+    );
+    this.lastModificationRemovedDisposer = reaction(
+      () => modificationsStore.flowNodeModifications,
+      (modificationsNext, modificationsPrev) => {
+        if (
+          this.state.selection === null ||
+          this.isRootNodeSelected ||
+          modificationsNext.length >= modificationsPrev.length
+        ) {
+          return;
+        }
+
+        const {flowNodeInstanceId} = this.state.selection;
+
+        if (flowNodeInstanceId === undefined) {
+          return;
+        }
+
+        const newScopeIds = modificationsStore.flowNodeModifications.reduce<
+          string[]
+        >((scopeIds, modification) => {
+          if (modification.operation === 'ADD_TOKEN') {
+            return [
+              ...scopeIds,
+              ...Object.values(modification.parentScopeIds),
+              ...[modification.scopeId],
+            ];
+          }
+
+          if (modification.operation === 'MOVE_TOKEN') {
+            return [
+              ...scopeIds,
+              ...Object.values(modification.parentScopeIds),
+              ...modification.scopeIds,
+            ];
+          }
+
+          return scopeIds;
+        }, []);
+
+        if (!newScopeIds.includes(flowNodeInstanceId)) {
+          this.clearSelection();
+        }
+      }
     );
   };
 
@@ -167,6 +212,7 @@ class FlowNodeSelection {
     this.state = {...DEFAULT_STATE};
     this.rootNodeSelectionDisposer?.();
     this.modificationModeChangeDisposer?.();
+    this.lastModificationRemovedDisposer?.();
   };
 }
 

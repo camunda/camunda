@@ -193,4 +193,329 @@ describe('stores/flowNodeSelection', () => {
     flowNodeSelectionStore.selectFlowNode(selection);
     expect(flowNodeSelectionStore.selectedFlowNodeName).toBe('startEvent');
   });
+
+  it('should clear selection when last modification is removed which results in selected scope being removed', () => {
+    const rootNode = {
+      flowNodeInstanceId: PROCESS_INSTANCE_ID,
+      isMultiInstance: false,
+    };
+
+    const selectionForNewAddedTokenScope = {
+      flowNodeId: 'someFlowNode',
+      flowNodeInstanceId: 'scope-for-add-token',
+    };
+
+    const selectionForNewAddedTokenParentScope = {
+      flowNodeId: 'someFlowNode',
+      flowNodeInstanceId: 'some-parent-scope-for-add-token',
+    };
+
+    const selectionForNewMovedTokenFirstScope = {
+      flowNodeId: 'someTargetFlowNode',
+      flowNodeInstanceId: 'scope-for-move-token-1',
+    };
+
+    const selectionForNewMovedTokenSecondScope = {
+      flowNodeId: 'someTargetFlowNode',
+      flowNodeInstanceId: 'scope-for-move-token-2',
+    };
+
+    const selectionForNewMovedTokenParentScope = {
+      flowNodeId: 'someParentFlowNode',
+      flowNodeInstanceId: 'some-parent-scope-for-move-token',
+    };
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId: 'scope-for-add-token',
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        flowNode: {id: 'someFlowNode', name: 'some flow node'},
+        parentScopeIds: {},
+      },
+    });
+
+    flowNodeSelectionStore.selectFlowNode(selectionForNewAddedTokenScope);
+    expect(flowNodeSelectionStore.state.selection).toEqual(
+      selectionForNewAddedTokenScope
+    );
+
+    modificationsStore.removeLastModification();
+    expect(flowNodeSelectionStore.state.selection).toEqual(rootNode);
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId: 'scope-for-add-token',
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        flowNode: {id: 'someFlowNode', name: 'some flow node'},
+        parentScopeIds: {someParentFlowNode: 'some-parent-scope-for-add-token'},
+      },
+    });
+
+    flowNodeSelectionStore.selectFlowNode(selectionForNewAddedTokenParentScope);
+    expect(flowNodeSelectionStore.state.selection).toEqual(
+      selectionForNewAddedTokenParentScope
+    );
+
+    modificationsStore.removeLastModification();
+    expect(flowNodeSelectionStore.state.selection).toEqual(rootNode);
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'MOVE_TOKEN',
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        flowNode: {id: 'someFlowNode', name: 'some flow node'},
+        targetFlowNode: {
+          id: 'someTargetFlowNode',
+          name: 'some target flow node',
+        },
+        scopeIds: ['scope-for-move-token-1', 'scope-for-move-token-2'],
+        parentScopeIds: {},
+      },
+    });
+
+    flowNodeSelectionStore.selectFlowNode(selectionForNewMovedTokenFirstScope);
+    expect(flowNodeSelectionStore.state.selection).toEqual(
+      selectionForNewMovedTokenFirstScope
+    );
+    modificationsStore.removeLastModification();
+    expect(flowNodeSelectionStore.state.selection).toEqual(rootNode);
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'MOVE_TOKEN',
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        flowNode: {id: 'someFlowNode', name: 'some flow node'},
+        targetFlowNode: {
+          id: 'someTargetFlowNode',
+          name: 'some target flow node',
+        },
+        scopeIds: ['scope-for-move-token-1', 'scope-for-move-token-2'],
+        parentScopeIds: {},
+      },
+    });
+
+    flowNodeSelectionStore.selectFlowNode(selectionForNewMovedTokenSecondScope);
+    expect(flowNodeSelectionStore.state.selection).toEqual(
+      selectionForNewMovedTokenSecondScope
+    );
+    modificationsStore.removeLastModification();
+    expect(flowNodeSelectionStore.state.selection).toEqual(rootNode);
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'MOVE_TOKEN',
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        flowNode: {id: 'someFlowNode', name: 'some flow node'},
+        targetFlowNode: {
+          id: 'someTargetFlowNode',
+          name: 'some target flow node',
+        },
+        scopeIds: ['scope-for-move-token-1', 'scope-for-move-token-2'],
+        parentScopeIds: {
+          someParentFlowNode: 'some-parent-scope-for-move-token',
+        },
+      },
+    });
+
+    flowNodeSelectionStore.selectFlowNode(selectionForNewMovedTokenParentScope);
+    expect(flowNodeSelectionStore.state.selection).toEqual(
+      selectionForNewMovedTokenParentScope
+    );
+    modificationsStore.removeLastModification();
+    expect(flowNodeSelectionStore.state.selection).toEqual(rootNode);
+  });
+
+  it('should clear selection when specific flow node modification is removed which results in selected scope being removed', () => {
+    const rootNode = {
+      flowNodeInstanceId: PROCESS_INSTANCE_ID,
+      isMultiInstance: false,
+    };
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId: 'scope-for-add-token',
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        flowNode: {id: 'someFlowNode', name: 'some flow node'},
+        parentScopeIds: {},
+      },
+    });
+
+    let selection = {
+      flowNodeId: 'someFlowNode',
+      flowNodeInstanceId: 'scope-for-add-token',
+    };
+
+    flowNodeSelectionStore.selectFlowNode(selection);
+    expect(flowNodeSelectionStore.state.selection).toEqual(selection);
+
+    modificationsStore.removeFlowNodeModification({
+      operation: 'ADD_TOKEN',
+      scopeId: 'scope-for-add-token',
+      affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
+      flowNode: {id: 'someFlowNode', name: 'some flow node'},
+      parentScopeIds: {},
+    });
+    expect(flowNodeSelectionStore.state.selection).toEqual(rootNode);
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId: 'scope-for-add-token',
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        flowNode: {id: 'someFlowNode', name: 'some flow node'},
+        parentScopeIds: {someParentFlowNode: 'some-parent-scope-for-add-token'},
+      },
+    });
+
+    selection = {
+      flowNodeId: 'someFlowNode',
+      flowNodeInstanceId: 'some-parent-scope-for-add-token',
+    };
+
+    flowNodeSelectionStore.selectFlowNode(selection);
+    expect(flowNodeSelectionStore.state.selection).toEqual(selection);
+
+    modificationsStore.removeFlowNodeModification({
+      operation: 'ADD_TOKEN',
+      scopeId: 'scope-for-add-token',
+      affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
+      flowNode: {id: 'someFlowNode', name: 'some flow node'},
+      parentScopeIds: {someParentFlowNode: 'some-parent-scope-for-add-token'},
+    });
+    expect(flowNodeSelectionStore.state.selection).toEqual(rootNode);
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'MOVE_TOKEN',
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        flowNode: {id: 'someFlowNode', name: 'some flow node'},
+        targetFlowNode: {
+          id: 'someTargetFlowNode',
+          name: 'some target flow node',
+        },
+        scopeIds: ['scope-for-move-token-1', 'scope-for-move-token-2'],
+        parentScopeIds: {},
+      },
+    });
+
+    selection = {
+      flowNodeId: 'someTargetFlowNode',
+      flowNodeInstanceId: 'scope-for-move-token-1',
+    };
+
+    flowNodeSelectionStore.selectFlowNode(selection);
+    expect(flowNodeSelectionStore.state.selection).toEqual(selection);
+    modificationsStore.removeFlowNodeModification({
+      operation: 'MOVE_TOKEN',
+      affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
+      flowNode: {id: 'someFlowNode', name: 'some flow node'},
+      targetFlowNode: {
+        id: 'someTargetFlowNode',
+        name: 'some target flow node',
+      },
+      scopeIds: ['scope-for-move-token-1', 'scope-for-move-token-2'],
+      parentScopeIds: {},
+    });
+    expect(flowNodeSelectionStore.state.selection).toEqual(rootNode);
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'MOVE_TOKEN',
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        flowNode: {id: 'someFlowNode', name: 'some flow node'},
+        targetFlowNode: {
+          id: 'someTargetFlowNode',
+          name: 'some target flow node',
+        },
+        scopeIds: ['scope-for-move-token-1', 'scope-for-move-token-2'],
+        parentScopeIds: {},
+      },
+    });
+
+    selection = {
+      flowNodeId: 'someTargetFlowNode',
+      flowNodeInstanceId: 'scope-for-move-token-2',
+    };
+
+    flowNodeSelectionStore.selectFlowNode(selection);
+    expect(flowNodeSelectionStore.state.selection).toEqual(selection);
+    modificationsStore.removeFlowNodeModification({
+      operation: 'MOVE_TOKEN',
+      affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
+      flowNode: {id: 'someFlowNode', name: 'some flow node'},
+      targetFlowNode: {
+        id: 'someTargetFlowNode',
+        name: 'some target flow node',
+      },
+      scopeIds: ['scope-for-move-token-1', 'scope-for-move-token-2'],
+      parentScopeIds: {},
+    });
+    expect(flowNodeSelectionStore.state.selection).toEqual(rootNode);
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'MOVE_TOKEN',
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        flowNode: {id: 'someFlowNode', name: 'some flow node'},
+        targetFlowNode: {
+          id: 'someTargetFlowNode',
+          name: 'some target flow node',
+        },
+        scopeIds: ['scope-for-move-token-1', 'scope-for-move-token-2'],
+        parentScopeIds: {
+          someParentFlowNode: 'some-parent-scope-for-move-token',
+        },
+      },
+    });
+
+    selection = {
+      flowNodeId: 'someParentFlowNode',
+      flowNodeInstanceId: 'some-parent-scope-for-move-token',
+    };
+
+    flowNodeSelectionStore.selectFlowNode(selection);
+    expect(flowNodeSelectionStore.state.selection).toEqual(selection);
+    modificationsStore.removeFlowNodeModification({
+      operation: 'MOVE_TOKEN',
+      affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
+      flowNode: {id: 'someFlowNode', name: 'some flow node'},
+      targetFlowNode: {
+        id: 'someTargetFlowNode',
+        name: 'some target flow node',
+      },
+      scopeIds: ['scope-for-move-token-1', 'scope-for-move-token-2'],
+      parentScopeIds: {
+        someParentFlowNode: 'some-parent-scope-for-move-token',
+      },
+    });
+    expect(flowNodeSelectionStore.state.selection).toEqual(rootNode);
+  });
 });
