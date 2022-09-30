@@ -1,7 +1,8 @@
 status = [
     "Test summary",
     "Java checks",
-    "Go linting"
+    "Go linting",
+    "Docker checks"
 ]
 
 required_approvals = 1
