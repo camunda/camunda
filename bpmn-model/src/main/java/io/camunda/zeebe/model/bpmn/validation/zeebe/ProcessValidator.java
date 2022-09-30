@@ -43,6 +43,9 @@ public class ProcessValidator implements ModelElementValidator<Process> {
 
     ModelUtil.verifyNoDuplicatedEventSubprocesses(
         element, error -> validationResultCollector.addError(0, error));
+
+    ModelUtil.verifyNoDuplicateSignalStartEvents(
+        element, error -> validationResultCollector.addError(0, error));
   }
 
   private boolean isNoneEvent(final StartEvent startEvent) {
