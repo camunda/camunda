@@ -225,6 +225,7 @@ export function SourcesModal({onClose, onConfirm, mightFail, confirmText, preSel
           disablePagination
           noHighlight
           loading={!definitions}
+          allowLocalSorting
         />
       </Modal.Content>
       <Modal.Actions>

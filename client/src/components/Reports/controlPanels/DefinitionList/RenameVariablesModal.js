@@ -108,7 +108,7 @@ export function RenameVariablesModal({
           head={[
             {label: t('report.definition.variables.variableName'), id: 'name'},
             {label: t('report.definition.variables.type'), id: 'type'},
-            {label: t('report.definition.variables.newName'), id: 'newName'},
+            {label: t('report.definition.variables.newName'), id: 'newName', sortable: false},
           ]}
           body={filteredVariables.map((variable) => [
             variable.name,
@@ -138,6 +138,7 @@ export function RenameVariablesModal({
               t('events.table.noResults')) ||
             undefined
           }
+          allowLocalSorting
         />
       </Modal.Content>
       <Modal.Actions>

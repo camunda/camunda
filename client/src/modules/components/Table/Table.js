@@ -34,6 +34,7 @@ export default function Table({
   defaultPage = 0,
   totalEntries,
   loading,
+  allowLocalSorting = false,
 }) {
   const columnWidths = useRef({});
   const columns = React.useMemo(() => Table.formatColumns(head, '', columnWidths.current), [head]);
@@ -61,7 +62,7 @@ export default function Table({
     {
       columns,
       data,
-      manualSortBy: true,
+      manualSortBy: !allowLocalSorting,
       disableMultiSort: true,
       disableSortRemove: true,
       autoResetPage: false,
@@ -86,7 +87,7 @@ export default function Table({
   const lastRowIndex = maxLastRow > totalRows ? totalRows : maxLastRow;
 
   function getSortingProps(column) {
-    if (!updateSorting) {
+    if (!updateSorting && !allowLocalSorting) {
       return {};
     }
     const props = column.getSortByToggleProps();
@@ -106,7 +107,7 @@ export default function Table({
               sortColumn = 'value';
             }
           }
-          updateSorting(sortColumn, sorting?.order === 'asc' ? 'desc' : 'asc');
+          updateSorting && updateSorting(sortColumn, sorting?.order === 'asc' ? 'desc' : 'asc');
         }
       },
     };
@@ -154,6 +155,8 @@ export default function Table({
     );
   });
 
+  const isSortedDesc = (column) => (sorting ? sorting?.order === 'desc' : column.isSortedDesc);
+
   return (
     <div className={classnames('Table', className, {highlight: !noHighlight, loading})}>
       <table {...getTableProps()}>
@@ -173,9 +176,7 @@ export default function Table({
                     <Tooltip content={column.title} overflowOnly>
                       <span className="text">{column.render('Header')}</span>
                     </Tooltip>
-                    {column.isSorted && sorting && (
-                      <Icon type={sorting?.order === 'asc' ? 'up' : 'down'} />
-                    )}
+                    {column.isSorted && <Icon type={isSortedDesc(column) ? 'down' : 'up'} />}
                   </div>
                   <div {...column.getResizerProps()} className="resizer" />
                 </th>
