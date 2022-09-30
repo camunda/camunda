@@ -368,6 +368,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     ZeebeTestUtil.deployProcess(client, "develop/errorProcess.bpmn");
 
     ZeebeTestUtil.deployProcess(client, "develop/error-end-event.bpmn");
+
+    ZeebeTestUtil.deployProcess(client, "develop/terminateEndEvent.bpmn");
+
   }
 
   @Override
@@ -398,6 +401,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         processInstanceKeys.add(ZeebeTestUtil
             .startProcessInstance(client, "errorProcess", "{\"errorCode\": \"unknown\"}"));
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "error-end-process", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "terminateEndEvent", null));
       }
 
       if (version == 2) {
