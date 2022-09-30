@@ -84,6 +84,7 @@ public class PartitionStartupAndTransitionContextImpl
   private ZeebeDb zeebeDb;
   private ActorControl actorControl;
   private ScheduledTimer metricsTimer;
+  private ScheduledTimer statisticsTimer;
   private ExporterDirector exporterDirector;
   private AtomixLogStorage logStorage;
   private QueryService queryService;
@@ -439,6 +440,16 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setMetricsTimer(final ScheduledTimer metricsTimer) {
     this.metricsTimer = metricsTimer;
+  }
+
+  @Override
+  public ScheduledTimer getStatisticsTimer() {
+    return statisticsTimer;
+  }
+
+  @Override
+  public void setStatisticsTimer(ScheduledTimer statisticsTimer) {
+    this.statisticsTimer = statisticsTimer;
   }
 
   @Override

@@ -9,6 +9,7 @@ package io.camunda.zeebe.db;
 
 import java.io.File;
 import java.util.Optional;
+import org.rocksdb.TickerType;
 
 /**
  * The zeebe database, to store key value pairs in different column families. The column families
@@ -50,6 +51,8 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extend
   void createSnapshot(File snapshotDir);
 
   Optional<String> getProperty(String propertyName);
+
+  Optional<Long> getStatistics(final TickerType type);
 
   TransactionContext createContext();
 

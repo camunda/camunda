@@ -28,6 +28,8 @@ import org.rocksdb.Options;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksObject;
+import org.rocksdb.Statistics;
+import org.rocksdb.TickerType;
 import org.rocksdb.Transaction;
 import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
@@ -46,18 +48,21 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   private final ColumnFamilyHandle defaultHandle;
   private final long defaultNativeHandle;
   private final ConsistencyChecksSettings consistencyChecksSettings;
+  private final Statistics statistics;
 
   protected ZeebeTransactionDb(
       final ColumnFamilyHandle defaultHandle,
       final OptimisticTransactionDB optimisticTransactionDB,
       final List<AutoCloseable> closables,
       final RocksDbConfiguration rocksDbConfiguration,
-      final ConsistencyChecksSettings consistencyChecksSettings) {
+      final ConsistencyChecksSettings consistencyChecksSettings,
+      final Statistics statistics) {
     this.defaultHandle = defaultHandle;
     defaultNativeHandle = getNativeHandle(defaultHandle);
     this.optimisticTransactionDB = optimisticTransactionDB;
     this.closables = closables;
     this.consistencyChecksSettings = consistencyChecksSettings;
+    this.statistics = statistics;
 
     prefixReadOptions =
         new ReadOptions()
@@ -87,12 +92,14 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
     closables.add(optimisticTransactionDB);
     final var defaultColumnFamilyHandle = optimisticTransactionDB.getDefaultColumnFamily();
 
+    final var statistics = options.statistics();
     return new ZeebeTransactionDb<>(
         defaultColumnFamilyHandle,
         optimisticTransactionDB,
         closables,
         rocksDbConfiguration,
-        consistencyChecksSettings);
+        consistencyChecksSettings,
+        statistics);
   }
 
   static long getNativeHandle(final RocksObject object) {
@@ -152,6 +159,17 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
       LOG.debug(rde.getMessage(), rde);
     }
     return Optional.ofNullable(propertyValue);
+  }
+
+  @Override
+  public Optional<Long> getStatistics(final TickerType type) {
+    Long value = null;
+    try {
+      value = statistics.getAndResetTickerCount(type);
+    } catch (final Throwable t) {
+      LOG.debug(t.getMessage(), t);
+    }
+    return Optional.ofNullable(value);
   }
 
   @Override
