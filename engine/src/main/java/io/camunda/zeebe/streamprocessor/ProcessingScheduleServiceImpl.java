@@ -81,7 +81,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
       LOG.debug("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
       return;
     }
-    actorControl.submit(task);
+    task.run();
   }
 
   public ActorFuture<Void> open(final ActorControl control) {

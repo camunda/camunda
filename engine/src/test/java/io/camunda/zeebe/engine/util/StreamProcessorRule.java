@@ -192,6 +192,10 @@ public final class StreamProcessorRule implements TestRule {
     return streamProcessingComposite.getStreamProcessor(partitionId);
   }
 
+  public SynchronousLogStream getLogStream(final int partitionId) {
+    return streamProcessingComposite.getLogStream(partitionId);
+  }
+
   public CommandResponseWriter getCommandResponseWriter() {
     return streams.getMockedResponseWriter();
   }
