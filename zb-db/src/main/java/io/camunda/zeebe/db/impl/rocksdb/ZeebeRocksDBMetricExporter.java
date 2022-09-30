@@ -10,7 +10,9 @@ package io.camunda.zeebe.db.impl.rocksdb;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.prometheus.client.Gauge;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
+import org.rocksdb.TickerType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +72,62 @@ public final class ZeebeRocksDBMetricExporter<ColumnFamilyType extends Enum<Colu
     new RocksDBMetric("rocksdb.num-running-compactions", WRITE_METRICS_PREFIX, WRITE_METRICS_HELP),
   };
 
+  private static final Gauge MEM_TABLE_HIT_RATIO =
+      Gauge.build()
+          .namespace(ZEEBE_NAMESPACE)
+          .name("rocksdb_mem_table_hit_ratio")
+          .help("MEM_TABLE_HIT_RATIO")
+          .labelNames(PARTITION)
+          .register();
+
+  private static final Gauge BLOCK_DATA_CACHE_HIT_RATIO =
+      Gauge.build()
+          .namespace(ZEEBE_NAMESPACE)
+          .name("rocksdb_block_data_cache_hit_ratio")
+          .help("BLOCK_DATA_CACHE_HIT_RATIO")
+          .labelNames(PARTITION)
+          .register();
+
+  private static final Gauge BLOCK_CACHE_INDEX_HIT_RATIO =
+      Gauge.build()
+          .namespace(ZEEBE_NAMESPACE)
+          .name("rocksdb_block_cache_index_hit_ratio")
+          .help("BLOCK_CACHE_INDEX_HIT_RATIO")
+          .labelNames(PARTITION)
+          .register();
+
+  private static final Gauge BLOCK_CACHE_FILTER_HIT_RATIO =
+      Gauge.build()
+          .namespace(ZEEBE_NAMESPACE)
+          .name("rocksdb_block_cache_filter_hit_ratio")
+          .help("BLOCK_CACHE_FILTER_HIT_RATIO")
+          .labelNames(PARTITION)
+          .register();
+
+  private static final Gauge L0_HIT_COUNT =
+      Gauge.build()
+          .namespace(ZEEBE_NAMESPACE)
+          .name("rocksdb_l0_hit_count")
+          .help("L0 Hit Count")
+          .labelNames(PARTITION)
+          .register();
+
+  private static final Gauge L1_HIT_COUNT =
+      Gauge.build()
+          .namespace(ZEEBE_NAMESPACE)
+          .name("rocksdb_l1_hit_count")
+          .help("L1 Hit Count")
+          .labelNames(PARTITION)
+          .register();
+
+  private static final Gauge L2_AND_UP_HIT_COUNT =
+      Gauge.build()
+          .namespace(ZEEBE_NAMESPACE)
+          .name("rocksdb_l2_and_up_hit_count")
+          .help("L2 and up Hit Count")
+          .labelNames(PARTITION)
+          .register();
+
   private final String partition;
   private final Supplier<ZeebeDb<ColumnFamilyType>> databaseSupplier;
 
@@ -77,6 +135,52 @@ public final class ZeebeRocksDBMetricExporter<ColumnFamilyType extends Enum<Colu
       final String partition, final Supplier<ZeebeDb<ColumnFamilyType>> databaseSupplier) {
     this.partition = Objects.requireNonNull(partition);
     this.databaseSupplier = databaseSupplier;
+  }
+
+  public void exportStatistics() {
+    final var database = databaseSupplier.get();
+
+    if (database == null) {
+      return;
+    }
+
+    final var memtableHits = database.getStatistics(TickerType.MEMTABLE_HIT);
+    final var memtableMisses = database.getStatistics(TickerType.MEMTABLE_MISS);
+    final var memtableHitRatio = computeHitRatio(memtableHits, memtableMisses);
+    MEM_TABLE_HIT_RATIO.labels(partition).set(memtableHitRatio);
+
+    final var blockCacheDataHits = database.getStatistics(TickerType.BLOCK_CACHE_DATA_HIT);
+    final var blockCacheDataMisses = database.getStatistics(TickerType.BLOCK_CACHE_DATA_MISS);
+    final var blockCacheDataHitRatio = computeHitRatio(blockCacheDataHits, blockCacheDataMisses);
+    BLOCK_DATA_CACHE_HIT_RATIO.labels(partition).set(blockCacheDataHitRatio);
+
+    final var blockCacheIndexHits = database.getStatistics(TickerType.BLOCK_CACHE_INDEX_HIT);
+    final var blockCacheIndexMisses = database.getStatistics(TickerType.BLOCK_CACHE_INDEX_MISS);
+    final var blockCacheIndexHitRatio = computeHitRatio(blockCacheIndexHits, blockCacheIndexMisses);
+    BLOCK_CACHE_INDEX_HIT_RATIO.labels(partition).set(blockCacheIndexHitRatio);
+
+    final var blockCacheFilterHits = database.getStatistics(TickerType.BLOCK_CACHE_FILTER_HIT);
+    final var blockCacheFilterMisses = database.getStatistics(TickerType.BLOCK_CACHE_FILTER_MISS);
+    final var blockCacheFilterHitRatio =
+        computeHitRatio(blockCacheFilterHits, blockCacheFilterMisses);
+    BLOCK_CACHE_FILTER_HIT_RATIO.labels(partition).set(blockCacheFilterHitRatio);
+
+    database
+        .getStatistics(TickerType.GET_HIT_L0)
+        .ifPresent((v) -> L0_HIT_COUNT.labels(partition).set(v));
+    database
+        .getStatistics(TickerType.GET_HIT_L1)
+        .ifPresent((v) -> L1_HIT_COUNT.labels(partition).set(v));
+    database
+        .getStatistics(TickerType.GET_HIT_L2_AND_UP)
+        .ifPresent((v) -> L2_AND_UP_HIT_COUNT.labels(partition).set(v));
+  }
+
+  private double computeHitRatio(final Optional<Long> hits, final Optional<Long> misses) {
+    if (!(hits.isPresent() && misses.isPresent()) || hits.get() == 0) {
+      return 0;
+    }
+    return (double) hits.get() / (hits.get() + misses.get());
   }
 
   public void exportMetrics() {

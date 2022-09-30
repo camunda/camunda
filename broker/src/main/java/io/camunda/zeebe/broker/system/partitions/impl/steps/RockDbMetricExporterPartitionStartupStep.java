@@ -40,6 +40,20 @@ public class RockDbMetricExporterPartitionStartupStep implements PartitionStartu
                 });
 
     partitionStartupContext.setMetricsTimer(metricsTimer);
+
+    final var statisticsTimer =
+        partitionStartupContext
+            .getActorControl()
+            .runAtFixedRate(
+                Duration.ofSeconds(30),
+                () -> {
+                  if (partitionStartupContext.getZeebeDb() != null) {
+                    metricExporter.exportStatistics();
+                  }
+                });
+
+    partitionStartupContext.setStatisticsTimer(statisticsTimer);
+
     return CompletableActorFuture.completed(partitionStartupContext);
   }
 

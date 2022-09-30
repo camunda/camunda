@@ -47,6 +47,10 @@ public interface PartitionStartupContext {
 
   void setMetricsTimer(final ScheduledTimer metricsTimer);
 
+  ScheduledTimer getStatisticsTimer();
+
+  void setStatisticsTimer(final ScheduledTimer statisticsTimer);
+
   ZeebeDb<ZbColumnFamilies> getZeebeDb();
 
   // can be called any time after bootstrap has completed
