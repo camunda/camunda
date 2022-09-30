@@ -8,6 +8,8 @@
 package io.camunda.zeebe.it.clustering;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.test.util.record.RecordLogger;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
@@ -17,14 +19,11 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.TestWatcher;
 
-/**
- * This is a wrapper over {@link ClusteringRule}. NOTE: {@link
- * io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher} is not available when using this
- * extension.
- */
+/** This is a wrapper over {@link ClusteringRule}. */
 public class ClusteringRuleExtension extends ClusteringRule
-    implements BeforeEachCallback, AfterEachCallback {
+    implements BeforeEachCallback, AfterEachCallback, TestWatcher {
 
   private Path tempDir;
 
@@ -38,12 +37,13 @@ public class ClusteringRuleExtension extends ClusteringRule
 
   @Override
   public void afterEach(final ExtensionContext context) throws Exception {
-    FileUtil.deleteFolderIfExists(tempDir);
     super.after();
+    FileUtil.deleteFolderIfExists(tempDir);
   }
 
   @Override
   public void beforeEach(final ExtensionContext context) throws Exception {
+    RecordingExporter.reset();
     tempDir = Files.createTempDirectory("clustered-tests");
     super.before();
   }
@@ -52,7 +52,8 @@ public class ClusteringRuleExtension extends ClusteringRule
   protected File getBrokerBase(final int nodeId) {
     final Path base;
     try {
-      base = Files.createDirectory(tempDir.resolve(String.valueOf(nodeId)));
+      base = tempDir.resolve(String.valueOf(nodeId));
+      FileUtil.ensureDirectoryExists(base);
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
@@ -62,5 +63,10 @@ public class ClusteringRuleExtension extends ClusteringRule
 
   public ClusteringRule getCluster() {
     return this;
+  }
+
+  @Override
+  public void testFailed(final ExtensionContext context, final Throwable cause) {
+    RecordLogger.logRecords();
   }
 }
