@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Flow node instances")
 @RestController
 @RequestMapping(value = FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL)
-public class FlowNodeInstanceRestService extends InternalAPIErrorController {
+public class FlowNodeInstanceRestService {
 
   public static final String FLOW_NODE_INSTANCE_URL = "/api/flow-node-instances";
 

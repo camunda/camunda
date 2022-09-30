@@ -206,6 +206,8 @@ public class BatchOperationWriter {
       persistBatchOperationEntity(batchOperation);
 
       return batchOperation;
+    } catch (InvalidRequestException ex) {
+      throw ex;
     } catch (Exception ex) {
       throw new OperateRuntimeException(String.format("Exception occurred, while scheduling operation: %s", ex.getMessage()), ex);
     }

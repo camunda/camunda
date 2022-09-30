@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Variables")
 @RestController
 @RequestMapping(value = VariableRestService.VARIABLE_URL)
-public class VariableRestService extends InternalAPIErrorController {
+public class VariableRestService {
 
   public static final String VARIABLE_URL = "/api/variables";
 

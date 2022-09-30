@@ -93,7 +93,7 @@ services:
       - CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8082
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://localhost:18080/auth/realms/camunda-platform
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
-
+      - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
     ports:
       - 8081:8081
     depends_on:
@@ -119,6 +119,7 @@ services:
       - CAMUNDA_TASKLIST_IDENTITY_AUDIENCE=tasklist-api
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://localhost:18080/auth/realms/camunda-platform
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
+      - CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME=test
     ports:
       - 8082:8082
     depends_on:

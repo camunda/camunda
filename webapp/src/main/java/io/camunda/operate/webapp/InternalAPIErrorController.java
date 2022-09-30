@@ -6,8 +6,9 @@
  */
 package io.camunda.operate.webapp;
 
-import io.camunda.operate.webapp.rest.exception.InternalAPIException;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.webapp.rest.exception.Error;
+import io.camunda.operate.webapp.rest.exception.InternalAPIException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import org.slf4j.Logger;
@@ -16,17 +17,29 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-@Controller
+@ControllerAdvice
 public class InternalAPIErrorController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(InternalAPIErrorController.class);
 
   @Autowired
   private OperateProfileService operateProfileService;
+
+  @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+  @ExceptionHandler(OperateRuntimeException.class)
+  public ResponseEntity<Error> handleInternalAPIException(OperateRuntimeException exception) {
+    LOGGER.warn(exception.getMessage(), exception);
+    final Error error = new Error()
+        .setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
+        .setMessage(operateProfileService.getMessageByProfileFor(exception));
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(error);
+  }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(InternalAPIException.class)
@@ -49,7 +62,7 @@ public class InternalAPIErrorController {
         .setStatus(HttpStatus.NOT_FOUND.value())
         .setInstance(exception.getInstance())
         .setMessage(operateProfileService.getMessageByProfileFor(exception));
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);
   }

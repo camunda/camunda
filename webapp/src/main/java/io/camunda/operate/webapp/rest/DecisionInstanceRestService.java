@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = DECISION_INSTANCE_URL)
 @Validated
-public class DecisionInstanceRestService extends InternalAPIErrorController {
+public class DecisionInstanceRestService {
 
   public static final String DECISION_INSTANCE_URL = "/api/decision-instances";
 

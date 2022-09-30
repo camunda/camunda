@@ -69,7 +69,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = PROCESS_INSTANCE_URL)
 @Validated
-public class ProcessInstanceRestService extends InternalAPIErrorController {
+public class ProcessInstanceRestService {
 
   public static final String PROCESS_INSTANCE_URL = "/api/process-instances";
 

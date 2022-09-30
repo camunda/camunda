@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Decisions")
 @RestController
 @RequestMapping(value = DecisionRestService.DECISION_URL)
-public class DecisionRestService extends InternalAPIErrorController {
+public class DecisionRestService {
 
   @Autowired
   protected DecisionReader decisionReader;
