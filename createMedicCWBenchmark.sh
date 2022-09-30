@@ -5,11 +5,14 @@ set -euxo pipefail
 cw=$(date +%V)
 if [ $cw -gt 4 ]
 then
-  nameOfOldestBenchmark=$(ls | grep medic-cw- | sort | head -n 1)
-  ./deleteBenchmark.sh $nameOfOldestBenchmark
+  cw_to_delete=$((cw-4))
+  namesOfOldestBenchmarks=$(ls | grep "medic-cw-$cw_to_delete")
+  for oldBenchmarkName in $namesOfOldestBenchmarks; do
+    ./deleteBenchmark.sh $oldBenchmarkName
+    # commit that change
+    git commit -am "test(benchmark): rm $oldBenchmarkName"
+  done
 
-  # commit that change
-  git commit -am "test(benchmark): rm $nameOfOldestBenchmark"
   git push origin medic-cw-benchmarks
 
 else
@@ -21,6 +24,8 @@ else
 fi
 
 
-# print out the name of the new benchmark so it can be easily copied
-nameOfNewestBenchmark=$(ls | grep medic-cw- | sort | tail -n 1)
-echo "Finished creating new medic benchmark: $nameOfNewestBenchmark"
+# print out the names of the new benchmarks so they can be easily copied
+namesOfNewestBenchmarks=$(ls | grep "medic-cw-$cw")
+for newBenchmarkName in $namesOfNewestBenchmarks; do
+  echo "Finished creating new medic benchmark: $newBenchmarkName"
+done
