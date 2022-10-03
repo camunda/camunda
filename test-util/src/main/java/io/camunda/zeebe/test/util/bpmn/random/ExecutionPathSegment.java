@@ -29,6 +29,10 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  */
 public final class ExecutionPathSegment {
 
+  // If we have reached a terminate end event we want to stop generating execution steps for a
+  // specific flow scope. By setting this flag to true no new execution steps will be added for the
+  // flow scope this segment is in.
+  private boolean reachedTerminateEndEvent = false;
   private final List<ScheduledExecutionStep> scheduledSteps = new ArrayList<>();
   private final Map<String, Object> variableDefaults = new HashMap<>();
 
@@ -87,10 +91,28 @@ public final class ExecutionPathSegment {
         new ScheduledExecutionStep(logicalPredecessor, executionPredecessor, executionStep));
   }
 
+  /**
+   * Appends the steps of the passed execution path segment to the current segment.
+   *
+   * @param pathToAdd execution path segment to append to this segment
+   */
   public void append(final ExecutionPathSegment pathToAdd) {
+    append(pathToAdd, false);
+  }
+
+  /**
+   * Appends the step of the passed execution path segment to the current segment if the current
+   *
+   * @param pathToAdd
+   * @param changesFlowScope
+   */
+  public void append(final ExecutionPathSegment pathToAdd, final boolean changesFlowScope) {
     mergeVariableDefaults(pathToAdd);
 
-    pathToAdd.getScheduledSteps().forEach(this::append);
+    if (!hasReachedTerminateEndEvent() || changesFlowScope) {
+      pathToAdd.getScheduledSteps().forEach(this::append);
+    }
+    reachedTerminateEndEvent = pathToAdd.hasReachedTerminateEndEvent() && !changesFlowScope;
   }
 
   public void append(final ScheduledExecutionStep scheduledExecutionStep) {
@@ -257,6 +279,14 @@ public final class ExecutionPathSegment {
   @Override
   public String toString() {
     return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+  }
+
+  public boolean hasReachedTerminateEndEvent() {
+    return reachedTerminateEndEvent;
+  }
+
+  public void setReachedTerminateEndEvent(final boolean reachedTerminateEndEvent) {
+    this.reachedTerminateEndEvent = reachedTerminateEndEvent;
   }
 
   /**
