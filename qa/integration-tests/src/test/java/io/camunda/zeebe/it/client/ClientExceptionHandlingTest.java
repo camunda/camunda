@@ -13,29 +13,30 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.grpc.StatusRuntimeException;
 import java.net.ConnectException;
+import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public final class ClientExceptionHandlingTest {
 
   public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  private final InetSocketAddress invalidGatewayAddress = SocketUtil.getNextAddress();
 
   public final GrpcClientRule clientRule =
       new GrpcClientRule(
-          brokerRule, zeebeClientBuilder -> zeebeClientBuilder.gatewayAddress("localhost:1234"));
+          brokerRule,
+          zeebeClientBuilder -> zeebeClientBuilder.gatewayAddress(getInvalidGatewayHostAndPort()));
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
-  @Rule public ExpectedException exception = ExpectedException.none();
-
   @Test
   public void shouldContainRootCauses() {
-    final Throwable throwable = catchThrowable(() -> clientRule.getPartitions());
+    final Throwable throwable = catchThrowable(clientRule::getPartitions);
 
     assertThat(throwable).isInstanceOf(ClientException.class).hasMessageContaining("io exception");
 
@@ -53,7 +54,11 @@ public final class ClientExceptionHandlingTest {
     assertThat(thirdCause)
         .hasCauseInstanceOf(ConnectException.class)
         .hasMessageContaining("Connection refused:")
-        .hasMessageContaining("localhost")
-        .hasMessageContaining(":1234");
+        .hasMessageContaining(invalidGatewayAddress.getHostName())
+        .hasMessageContaining(":" + invalidGatewayAddress.getPort());
+  }
+
+  private String getInvalidGatewayHostAndPort() {
+    return invalidGatewayAddress.getHostName() + ":" + invalidGatewayAddress.getPort();
   }
 }

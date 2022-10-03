@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
@@ -31,6 +32,8 @@ import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -40,12 +43,21 @@ class BackupServiceImplTest {
   @Mock InProgressBackup inProgressBackup;
   @Mock BackupStore backupStore;
 
+  @Mock BackupStatus notExistingBackupStatus;
+
   private BackupServiceImpl backupService;
   private final ConcurrencyControl concurrencyControl = new TestConcurrencyControl();
 
   @BeforeEach
   void setup() {
     backupService = new BackupServiceImpl(backupStore);
+
+    lenient()
+        .when(notExistingBackupStatus.statusCode())
+        .thenReturn(BackupStatusCode.DOES_NOT_EXIST);
+    lenient()
+        .when(backupStore.getStatus(any()))
+        .thenReturn(CompletableFuture.completedFuture(notExistingBackupStatus));
   }
 
   @Test
@@ -175,31 +187,51 @@ class BackupServiceImplTest {
   void shouldGetBackupStatus() {
     // given
     final BackupStatus status = mock(BackupStatus.class);
-    when(backupStore.getStatus(any())).thenReturn(CompletableFuture.completedFuture(status));
+    when(backupStore.list(any())).thenReturn(CompletableFuture.completedFuture(List.of(status)));
 
     // when
-    final var result =
-        backupService.getBackupStatus(new BackupIdentifierImpl(1, 1, 1), concurrencyControl);
+    final var result = backupService.getBackupStatus(1, 1, concurrencyControl);
 
     // then
-    assertThat(result).succeedsWithin(Duration.ofMillis(100)).isEqualTo(status);
+    assertThat(result).succeedsWithin(Duration.ofMillis(100)).isEqualTo(Optional.of(status));
   }
 
   @Test
   void shouldCompleteFutureWhenBackupStatusFailed() {
     // given
-    when(backupStore.getStatus(any()))
+    when(backupStore.list(any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")));
 
     // when
-    final var result =
-        backupService.getBackupStatus(new BackupIdentifierImpl(1, 1, 1), concurrencyControl);
+    final var result = backupService.getBackupStatus(1, 1, concurrencyControl);
 
     // then
     assertThat(result)
         .failsWithin(Duration.ofMillis(100))
         .withThrowableOfType(ExecutionException.class)
         .withMessageContaining("Expected");
+  }
+
+  @Test
+  void shouldReturnBestStatusCode() {
+    // given
+    final BackupStatus status1 = mock(BackupStatus.class);
+    when(status1.statusCode()).thenReturn(BackupStatusCode.IN_PROGRESS);
+    final BackupStatus status2 = mock(BackupStatus.class);
+    when(status2.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
+
+    when(backupStore.list(any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of(status1, status2)));
+
+    // when
+    final var result = backupService.getBackupStatus(1, 1, concurrencyControl);
+
+    // then
+    assertThat(result)
+        .succeedsWithin(Duration.ofMillis(100))
+        .returns(
+            Optional.of(BackupStatusCode.COMPLETED),
+            backupStatus -> backupStatus.map(BackupStatus::statusCode));
   }
 
   @Test
@@ -273,6 +305,40 @@ class BackupServiceImplTest {
     // then
     verify(backupStore, timeout(1000))
         .markFailed(inProgressBackup, "Backup is cancelled due to leader change.");
+  }
+
+  @Test
+  void shouldNotTakeNewBackupIfBackupAlreadyCompleted() {
+    // given
+    final BackupStatus status = mock(BackupStatus.class);
+    when(status.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
+    when(backupStore.getStatus(any())).thenReturn(CompletableFuture.completedFuture(status));
+
+    // when
+    backupService.takeBackup(inProgressBackup, concurrencyControl).join();
+
+    // then
+    verify(backupStore, never()).save(any());
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = BackupStatusCode.class,
+      names = {"IN_PROGRESS", "FAILED"})
+  void shouldNotTakeNewBackupIfBackupAlreadyExists(final BackupStatusCode statusCode) {
+    // given
+    final BackupStatus status = mock(BackupStatus.class);
+    when(status.statusCode()).thenReturn(statusCode);
+    when(backupStore.getStatus(any())).thenReturn(CompletableFuture.completedFuture(status));
+
+    // when
+    assertThat(backupService.takeBackup(inProgressBackup, concurrencyControl))
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(BackupAlreadyExistsException.class);
+
+    // then
+    verify(backupStore, never()).save(any());
   }
 
   private ActorFuture<Void> failedFuture() {

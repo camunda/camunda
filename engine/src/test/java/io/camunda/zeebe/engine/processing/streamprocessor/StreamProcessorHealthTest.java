@@ -48,7 +48,7 @@ public class StreamProcessorHealthTest {
     // given
     streamProcessor = streamPlatform.startStreamProcessor();
 
-    final var mockProcessor = streamPlatform.getDefaultRecordProcessor();
+    final var mockProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     when(mockProcessor.process(any(), any())).thenThrow(new RuntimeException("expected"));
     when(mockProcessor.onProcessingError(any(), any(), any()))
         .thenThrow(new RuntimeException("expected"));
@@ -70,7 +70,7 @@ public class StreamProcessorHealthTest {
     streamProcessor = streamPlatform.startStreamProcessor();
     final var shouldFail = new AtomicBoolean(true);
 
-    final var mockProcessor = streamPlatform.getDefaultRecordProcessor();
+    final var mockProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     when(mockProcessor.process(any(), any())).thenThrow(new RuntimeException("expected"));
     when(mockProcessor.onProcessingError(any(), any(), any()))
         .thenAnswer(

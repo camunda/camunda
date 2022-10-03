@@ -57,9 +57,10 @@ import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.shared.ActorClockConfiguration;
+import io.camunda.zeebe.shared.management.ActorClockService.MutableClock;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
@@ -125,7 +126,6 @@ public class ClusteringRule extends ExternalResource {
   private final Map<Integer, BrokerCfg> brokerCfgs;
   private final List<Integer> partitionIds;
   private final String clusterName;
-  private final ControlledActorClock controlledClock;
   private final Map<Integer, LogStream> logstreams;
 
   // cluster
@@ -135,6 +135,7 @@ public class ClusteringRule extends ExternalResource {
   private final Map<Integer, Leader> partitionLeader;
   private final Map<Integer, SpringBrokerBridge> springBrokerBridge;
   private final Map<Integer, SystemContext> systemContexts;
+  private final ActorClockConfiguration actorClockConfiguration;
 
   public ClusteringRule() {
     this(3);
@@ -177,7 +178,7 @@ public class ClusteringRule extends ExternalResource {
     this.gatewayConfigurator = gatewayConfigurator;
     this.clientConfigurator = clientConfigurator;
 
-    controlledClock = new ControlledActorClock();
+    actorClockConfiguration = new ActorClockConfiguration(true);
     brokers = new HashMap<>();
     brokerCfgs = new HashMap<>();
     systemContexts = new HashMap<>();
@@ -295,7 +296,8 @@ public class ClusteringRule extends ExternalResource {
         new AtomixCluster(
             new BrokerClusterConfiguration().clusterConfig(brokerCfg),
             Version.from(VersionUtil.getVersion()));
-    final var scheduler = new ActorSchedulerConfiguration(brokerCfg, controlledClock).scheduler();
+    final var scheduler =
+        new ActorSchedulerConfiguration(brokerCfg, actorClockConfiguration).scheduler();
     final var systemContext = new SystemContext(brokerCfg, scheduler, atomixCluster);
     systemContexts.put(nodeId, systemContext);
 
@@ -692,8 +694,8 @@ public class ClusteringRule extends ExternalResource {
     return client;
   }
 
-  public ControlledActorClock getClock() {
-    return controlledClock;
+  public MutableClock getClock() {
+    return actorClockConfiguration.getClockService().mutable().orElseThrow();
   }
 
   public List<Integer> getPartitionIds() {

@@ -44,15 +44,14 @@ import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.state.processing.DbBlackListState;
-import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
-import io.camunda.zeebe.protocol.Protocol;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 
 public class ZeebeDbState implements MutableZeebeState {
 
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
-  private final DbKeyGenerator keyGenerator;
+  private final KeyGenerator keyGenerator;
 
   private final MutableProcessState processState;
   private final MutableTimerInstanceState timerInstanceState;
@@ -74,17 +73,13 @@ public class ZeebeDbState implements MutableZeebeState {
   private final int partitionId;
 
   public ZeebeDbState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    this(Protocol.DEPLOYMENT_PARTITION, zeebeDb, transactionContext);
-  }
-
-  public ZeebeDbState(
       final int partitionId,
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final TransactionContext transactionContext) {
+      final TransactionContext transactionContext,
+      final KeyGenerator keyGenerator) {
     this.partitionId = partitionId;
     this.zeebeDb = zeebeDb;
-    keyGenerator = new DbKeyGenerator(partitionId, zeebeDb, transactionContext);
+    this.keyGenerator = Objects.requireNonNull(keyGenerator);
 
     variableState = new DbVariableState(zeebeDb, transactionContext);
     processState = new DbProcessState(zeebeDb, transactionContext);
@@ -237,9 +232,5 @@ public class ZeebeDbState implements MutableZeebeState {
     zeebeDb
         .createColumnFamily(columnFamily, newContext, keyInstance, valueInstance)
         .forEach(visitor);
-  }
-
-  public KeyGeneratorControls getKeyGeneratorControls() {
-    return keyGenerator;
   }
 }

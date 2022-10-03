@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration;
 import io.camunda.zeebe.shared.Profile;
 import java.nio.file.Path;
 import java.util.Properties;

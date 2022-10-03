@@ -12,12 +12,14 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -44,34 +46,70 @@ final class BackupServiceImpl {
 
     backupsInProgress.add(inProgressBackup);
 
-    final ActorFuture<Void> snapshotFound = concurrencyControl.createFuture();
-    final ActorFuture<Void> snapshotReserved = concurrencyControl.createFuture();
-    final ActorFuture<Void> snapshotFilesCollected = concurrencyControl.createFuture();
+    final var checkCurrentBackup = backupStore.getStatus(inProgressBackup.id());
+
     final ActorFuture<Void> backupSaved = concurrencyControl.createFuture();
 
-    final ActorFuture<Void> segmentFilesCollected = inProgressBackup.findSegmentFiles();
+    checkCurrentBackup.whenCompleteAsync(
+        (status, error) -> {
+          if (error != null) {
+            backupSaved.completeExceptionally(error);
+          } else {
+            takeBackupIfDoesNotExist(status, inProgressBackup, concurrencyControl, backupSaved);
+          }
+        },
+        concurrencyControl::run);
 
-    segmentFilesCollected.onComplete(
-        proceed(
-            snapshotFound::completeExceptionally,
-            () -> inProgressBackup.findValidSnapshot().onComplete(snapshotFound)));
-
-    snapshotFound.onComplete(
-        proceed(
-            snapshotReserved::completeExceptionally,
-            () -> inProgressBackup.reserveSnapshot().onComplete(snapshotReserved)));
-
-    snapshotReserved.onComplete(
-        proceed(
-            snapshotFilesCollected::completeExceptionally,
-            () -> inProgressBackup.findSnapshotFiles().onComplete(snapshotFilesCollected)));
-
-    snapshotFilesCollected.onComplete(
-        proceed(
-            error -> failBackup(inProgressBackup, backupSaved, error),
-            () -> saveBackup(inProgressBackup, backupSaved)));
-
+    backupSaved.onComplete((ignore, error) -> closeInProgressBackup(inProgressBackup));
     return backupSaved;
+  }
+
+  private void takeBackupIfDoesNotExist(
+      final BackupStatus status,
+      final InProgressBackup inProgressBackup,
+      final ConcurrencyControl concurrencyControl,
+      final ActorFuture<Void> backupSaved) {
+
+    switch (status.statusCode()) {
+      case COMPLETED -> {
+        LOG.debug("Backup {} is already completed, will not take a new one", inProgressBackup.id());
+        backupSaved.complete(null);
+      }
+      case FAILED, IN_PROGRESS -> {
+        LOG.error(
+            "Backup {} already exists with status {}, will not take a new one",
+            inProgressBackup.id(),
+            status);
+        backupSaved.completeExceptionally(
+            new BackupAlreadyExistsException(inProgressBackup.id(), status));
+      }
+      default -> {
+        final ActorFuture<Void> snapshotFound = concurrencyControl.createFuture();
+        final ActorFuture<Void> snapshotReserved = concurrencyControl.createFuture();
+        final ActorFuture<Void> snapshotFilesCollected = concurrencyControl.createFuture();
+        final ActorFuture<Void> segmentFilesCollected = inProgressBackup.findSegmentFiles();
+
+        segmentFilesCollected.onComplete(
+            proceed(
+                snapshotFound::completeExceptionally,
+                () -> inProgressBackup.findValidSnapshot().onComplete(snapshotFound)));
+
+        snapshotFound.onComplete(
+            proceed(
+                snapshotReserved::completeExceptionally,
+                () -> inProgressBackup.reserveSnapshot().onComplete(snapshotReserved)));
+
+        snapshotReserved.onComplete(
+            proceed(
+                snapshotFilesCollected::completeExceptionally,
+                () -> inProgressBackup.findSnapshotFiles().onComplete(snapshotFilesCollected)));
+
+        snapshotFilesCollected.onComplete(
+            proceed(
+                error -> failBackup(inProgressBackup, backupSaved, error),
+                () -> saveBackup(inProgressBackup, backupSaved)));
+      }
+    }
   }
 
   private void saveBackup(
@@ -80,10 +118,7 @@ final class BackupServiceImpl {
         .onComplete(
             proceed(
                 error -> failBackup(inProgressBackup, backupSaved, error),
-                () -> {
-                  backupSaved.complete(null);
-                  closeInProgressBackup(inProgressBackup);
-                }));
+                () -> backupSaved.complete(null)));
   }
 
   private ActorFuture<Void> saveBackup(final InProgressBackup inProgressBackup) {
@@ -108,7 +143,6 @@ final class BackupServiceImpl {
       final Throwable error) {
     backupSaved.completeExceptionally(error);
     backupStore.markFailed(inProgressBackup.id(), error.getMessage());
-    closeInProgressBackup(inProgressBackup);
   }
 
   private void closeInProgressBackup(final InProgressBackup inProgressBackup) {
@@ -127,19 +161,21 @@ final class BackupServiceImpl {
     };
   }
 
-  ActorFuture<BackupStatus> getBackupStatus(
-      final BackupIdentifier backupId, final ConcurrencyControl executor) {
-    final var future = new CompletableActorFuture<BackupStatus>();
+  ActorFuture<Optional<BackupStatus>> getBackupStatus(
+      final int partitionId, final long checkpointId, final ConcurrencyControl executor) {
+    final var future = new CompletableActorFuture<Optional<BackupStatus>>();
     executor.run(
         () ->
             backupStore
-                .getStatus(backupId)
+                .list(
+                    new BackupIdentifierWildcardImpl(
+                        Optional.empty(), Optional.of(partitionId), Optional.of(checkpointId)))
                 .whenComplete(
-                    (status, error) -> {
-                      if (error == null) {
-                        future.complete(status);
+                    (backupStatuses, throwable) -> {
+                      if (throwable != null) {
+                        future.completeExceptionally(throwable);
                       } else {
-                        future.completeExceptionally(error);
+                        future.complete(backupStatuses.stream().max(BackupStatusCode.BY_STATUS));
                       }
                     }));
     return future;

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.qa.util.actuator;
 
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import feign.Feign;
 import feign.FeignException;
 import feign.FeignException.InternalServerError;
@@ -20,11 +21,13 @@ import feign.Target.HardCodedTarget;
 import feign.codec.ErrorDecoder;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
-import io.camunda.zeebe.qa.util.actuator.BackupActuator.TakeBackupError.Payload;
+import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
+import io.camunda.zeebe.qa.util.actuator.BackupActuator.ErrorResponse.Payload;
 import io.zeebe.containers.ZeebeNode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -58,7 +61,7 @@ public interface BackupActuator {
   @SuppressWarnings("JavadocLinkAsPlainText")
   static BackupActuator of(final String endpoint) {
     final var target = new HardCodedTarget<>(BackupActuator.class, endpoint);
-    final var decoder = new JacksonDecoder();
+    final var decoder = new JacksonDecoder(List.of(new Jdk8Module()));
 
     return Feign.builder()
         .encoder(new JacksonEncoder())
@@ -77,6 +80,10 @@ public interface BackupActuator {
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   TakeBackupResponse take(@Param final long id);
 
+  @RequestLine("GET /{id}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  BackupStatus status(@Param final long id);
+
   /**
    * Custom error handler, mapping errors with body to custom types for easier
    * verification/handling. This is somewhat verbose, so any suggestions for improvements are
@@ -94,7 +101,7 @@ public interface BackupActuator {
       if (response.status() == 500) {
         try {
           final var payload = (Payload) decoder.decode(response, Payload.class);
-          return new TakeBackupError(
+          return new ErrorResponse(
               payload.failure(),
               response.request(),
               response.body().asInputStream().readAllBytes(),
@@ -111,10 +118,10 @@ public interface BackupActuator {
 
   record TakeBackupResponse(long id) {}
 
-  final class TakeBackupError extends InternalServerError {
+  final class ErrorResponse extends InternalServerError {
     private final Payload payload;
 
-    private TakeBackupError(
+    private ErrorResponse(
         final String message,
         final Request request,
         final byte[] body,

@@ -11,6 +11,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.ZeebeDb;
@@ -19,7 +21,6 @@ import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.EmptyProcessingResult;
 import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
-import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -46,7 +48,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -69,10 +70,12 @@ public final class StreamPlatform {
   private final StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private List<RecordProcessor> recordProcessors;
 
-  private final RecordProcessor defaultRecordProcessor;
+  private final RecordProcessor defaultMockedRecordProcessor;
 
   private final WriteActor writeActor = new WriteActor();
   private final ZeebeDbFactory zeebeDbFactory;
+  private final StreamProcessorLifecycleAware mockProcessorLifecycleAware;
+  private final StreamProcessorListener mockStreamProcessorListener;
 
   public StreamPlatform(
       final Path dataDirectory,
@@ -97,13 +100,20 @@ public final class StreamPlatform {
     when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     actorScheduler.submitActor(writeActor);
 
-    defaultRecordProcessor = mock(RecordProcessor.class);
-    when(defaultRecordProcessor.process(any(), any())).thenReturn(EmptyProcessingResult.INSTANCE);
-    when(defaultRecordProcessor.onProcessingError(any(), any(), any()))
+    defaultMockedRecordProcessor = mock(RecordProcessor.class);
+    when(defaultMockedRecordProcessor.process(any(), any()))
         .thenReturn(EmptyProcessingResult.INSTANCE);
-    when(defaultRecordProcessor.accepts(any())).thenReturn(true);
-    recordProcessors = List.of(defaultRecordProcessor);
+    when(defaultMockedRecordProcessor.onProcessingError(any(), any(), any()))
+        .thenReturn(EmptyProcessingResult.INSTANCE);
+    when(defaultMockedRecordProcessor.accepts(any())).thenReturn(true);
+    recordProcessors = List.of(defaultMockedRecordProcessor);
     closeables.add(() -> recordProcessors.clear());
+    mockProcessorLifecycleAware = mock(StreamProcessorLifecycleAware.class);
+    mockStreamProcessorListener = mock(StreamProcessorListener.class);
+  }
+
+  public CommandResponseWriter getMockCommandResponseWriter() {
+    return mockCommandResponseWriter;
   }
 
   public void createLogStream() {
@@ -173,6 +183,10 @@ public final class StreamPlatform {
     return this;
   }
 
+  public StreamProcessorListener getMockStreamProcessorListener() {
+    return mockStreamProcessorListener;
+  }
+
   public StreamProcessor startStreamProcessor() {
     final SynchronousLogStream stream = getLogStream();
     return buildStreamProcessor(stream, true);
@@ -183,19 +197,14 @@ public final class StreamPlatform {
     return buildStreamProcessor(stream, false);
   }
 
+  public StreamProcessorLifecycleAware getMockProcessorLifecycleAware() {
+    return mockProcessorLifecycleAware;
+  }
+
   public StreamProcessor buildStreamProcessor(
       final SynchronousLogStream stream, final boolean awaitOpening) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
-
-    final var recoveredLatch = new CountDownLatch(1);
-    final var recoveredAwaiter =
-        new StreamProcessorLifecycleAware() {
-          @Override
-          public void onRecovered(final ReadonlyStreamProcessorContext context) {
-            recoveredLatch.countDown();
-          }
-        };
 
     final ZeebeDb<?> zeebeDb;
     if (snapshotWasTaken) {
@@ -213,19 +222,16 @@ public final class StreamPlatform {
             .recordProcessors(recordProcessors)
             .eventApplierFactory(EventAppliers::new) // todo remove this soon
             .streamProcessorMode(streamProcessorMode)
+            .listener(mockStreamProcessorListener)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
-    builder.getLifecycleListeners().add(recoveredAwaiter);
+    builder.getLifecycleListeners().add(mockProcessorLifecycleAware);
 
     final StreamProcessor streamProcessor = builder.build();
     final var openFuture = streamProcessor.openAsync(false);
 
     if (awaitOpening) { // and recovery
-      try {
-        recoveredLatch.await(15, TimeUnit.SECONDS);
-      } catch (final InterruptedException e) {
-        Thread.interrupted();
-      }
+      verify(mockProcessorLifecycleAware, timeout(15 * 1000)).onRecovered(any());
     }
     openFuture.join(15, TimeUnit.SECONDS);
 
@@ -251,8 +257,8 @@ public final class StreamPlatform {
     LOG.info("Snapshot database for processor {}", processorContext.streamProcessor.getName());
   }
 
-  public RecordProcessor getDefaultRecordProcessor() {
-    return defaultRecordProcessor;
+  public RecordProcessor getDefaultMockedRecordProcessor() {
+    return defaultMockedRecordProcessor;
   }
 
   public StreamProcessor getStreamProcessor() {
@@ -279,6 +285,10 @@ public final class StreamPlatform {
   public long writeBatch(final RecordToWrite... recordsToWrite) {
     final var batchWriter = setupBatchWriter(recordsToWrite);
     return writeActor.submit(batchWriter::tryWrite).join();
+  }
+
+  public void closeStreamProcessor() throws Exception {
+    processorContext.close();
   }
 
   /** Used to run writes within an actor thread. */

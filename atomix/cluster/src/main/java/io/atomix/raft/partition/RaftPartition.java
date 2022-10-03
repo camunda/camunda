@@ -96,9 +96,7 @@ public class RaftPartition implements Partition, HealthMonitorable {
   }
 
   /** Opens the partition. */
-  CompletableFuture<Partition> open(
-      final PartitionMetadata metadata, final PartitionManagementService managementService) {
-    partitionMetadata = metadata;
+  CompletableFuture<Partition> open(final PartitionManagementService managementService) {
     if (partitionMetadata
         .members()
         .contains(managementService.getMembershipService().getLocalMember().id())) {
@@ -250,5 +248,13 @@ public class RaftPartition implements Partition, HealthMonitorable {
 
   public CompletableFuture<Void> goInactive() {
     return server.goInactive();
+  }
+
+  public PartitionMetadata getMetadata() {
+    return partitionMetadata;
+  }
+
+  public void setMetadata(final PartitionMetadata partitionMetadata) {
+    this.partitionMetadata = partitionMetadata;
   }
 }

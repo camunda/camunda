@@ -71,6 +71,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.reactivestreams</groupId>
+      <artifactId>reactive-streams</artifactId>
+      <version>1.0.3</version>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-backup-testkit</artifactId>
       <scope>test</scope>

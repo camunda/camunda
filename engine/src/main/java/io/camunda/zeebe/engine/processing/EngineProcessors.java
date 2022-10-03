@@ -40,6 +40,8 @@ import java.util.function.Consumer;
 
 public final class EngineProcessors {
 
+  private EngineProcessors() {}
+
   public static TypedRecordProcessors createEngineProcessors(
       final TypedRecordProcessorContext typedRecordProcessorContext,
       final int partitionsCount,
@@ -54,7 +56,7 @@ public final class EngineProcessors {
         TypedRecordProcessors.processors(zeebeState.getKeyGenerator(), writers);
 
     // register listener that handles migrations immediately, so it is the first to be called
-    typedRecordProcessors.withListener(new DbMigrationController());
+    typedRecordProcessors.withListener(new DbMigrationController(zeebeState));
 
     typedRecordProcessors.withListener(zeebeState);
 

@@ -9,9 +9,9 @@ package io.camunda.zeebe.shared;
 
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
-import io.camunda.zeebe.scheduler.clock.DefaultActorClock;
 import io.camunda.zeebe.shared.management.ActorClockService;
 import io.camunda.zeebe.shared.management.ControlledActorClockService;
+import java.util.Optional;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.ConstructorBinding;
 import org.springframework.boot.context.properties.bind.DefaultValue;
@@ -21,7 +21,7 @@ import org.springframework.context.annotation.Bean;
 @ConfigurationProperties("zeebe.clock")
 public final class ActorClockConfiguration {
 
-  private final ActorClock clock;
+  private final Optional<ActorClock> clock;
   private final ActorClockService service;
 
   @ConstructorBinding
@@ -29,15 +29,15 @@ public final class ActorClockConfiguration {
     if (controlled) {
       final var controlledClock = new ControlledActorClock();
       service = new ControlledActorClockService(controlledClock);
-      clock = controlledClock;
+      clock = Optional.of(controlledClock);
     } else {
-      clock = new DefaultActorClock();
-      service = clock::getTimeMillis;
+      clock = Optional.empty();
+      service = System::currentTimeMillis;
     }
   }
 
   @Bean
-  public ActorClock getClock() {
+  public Optional<ActorClock> getClock() {
     return clock;
   }
 

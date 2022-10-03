@@ -11,7 +11,7 @@ if hash apk 2> /dev/null; then
 else
     mkdir -p /usr/share/man/man1
     apt-get update
-    apt-get install -y openjdk-11-jdk openjdk-11-dbg
+    apt-get install -y openjdk-17-jdk openjdk-17-dbg
     apt-get install -y wget
 fi
 

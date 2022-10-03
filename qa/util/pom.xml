@@ -55,5 +55,15 @@
       <groupId>com.github.docker-java</groupId>
       <artifactId>docker-java-api</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jdk8</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway</artifactId>
+    </dependency>
   </dependencies>
 </project>

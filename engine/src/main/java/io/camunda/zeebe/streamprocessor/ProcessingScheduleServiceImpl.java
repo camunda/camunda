@@ -81,7 +81,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
       LOG.debug("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
       return;
     }
-    actorControl.submit(task);
+    task.run();
   }
 
   public ActorFuture<Void> open(final ActorControl control) {
@@ -142,6 +142,18 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
           new BufferedTaskResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
       final var result = task.execute(builder);
 
+      logStreamBatchWriter.reset();
+      result
+          .getRecordBatch()
+          .forEach(
+              entry ->
+                  logStreamBatchWriter
+                      .event()
+                      .key(entry.key())
+                      .metadataWriter(entry.recordMetadata())
+                      .sourceIndex(entry.sourceIndex())
+                      .valueWriter(entry.recordValue())
+                      .done());
       // we need to retry the writing if the dispatcher return zero or negative position (this means
       // it was full during writing)
       // it will be freed from the LogStorageAppender concurrently, which means we might be able to
@@ -150,19 +162,6 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
           writeRetryStrategy.runWithRetry(
               () -> {
                 LOG.trace("Write scheduled TaskResult to dispatcher!");
-                logStreamBatchWriter.reset();
-                result
-                    .getRecordBatch()
-                    .forEach(
-                        entry ->
-                            logStreamBatchWriter
-                                .event()
-                                .key(entry.key())
-                                .metadataWriter(entry.recordMetadata())
-                                .sourceIndex(entry.sourceIndex())
-                                .valueWriter(entry.recordValue())
-                                .done());
-
                 return logStreamBatchWriter.tryWrite() >= 0;
               },
               abortCondition);
