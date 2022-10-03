@@ -118,7 +118,7 @@ public class JobWorkerTaskBlockBuilder extends AbstractBlockBuilder {
     result.append(buildStepsForFailedExecutions(context.getRandom()));
 
     result.appendExecutionSuccessor(
-        buildStepForSuccessfulExecution(context.getRandom()), activateStep);
+        buildStepForSuccessfulExecution(context.getRandom(), result), activateStep);
 
     return result;
   }
@@ -147,13 +147,18 @@ public class JobWorkerTaskBlockBuilder extends AbstractBlockBuilder {
    * Successful execution is any execution which moves the token past the service task, so that the
    * process can continue.
    */
-  private AbstractExecutionStep buildStepForSuccessfulExecution(final Random random) {
+  private AbstractExecutionStep buildStepForSuccessfulExecution(
+      final Random random, final ExecutionPathSegment executionPathSegment) {
     final AbstractExecutionStep result;
 
     if (hasBoundaryErrorEvent && random.nextBoolean()) {
       result = new StepActivateJobAndThrowError(jobType, errorCode, getElementId());
+      executionPathSegment.setReachedTerminateEndEvent(
+          boundaryEventBuilder.errorEventHasTerminateEndEvent());
     } else if (hasBoundaryTimerEvent && random.nextBoolean()) {
       result = new StepTriggerTimerBoundaryEvent(boundaryTimerEventId);
+      executionPathSegment.setReachedTerminateEndEvent(
+          boundaryEventBuilder.timerEventHasTerminateEndEvent());
     } else {
       result = new StepActivateAndCompleteJob(jobType, getElementId());
     }

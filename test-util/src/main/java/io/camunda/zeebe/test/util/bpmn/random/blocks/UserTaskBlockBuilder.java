@@ -87,8 +87,10 @@ public class UserTaskBlockBuilder extends AbstractBlockBuilder {
     if (hasBoundaryTimerEvent && random.nextBoolean()) {
       result.appendExecutionSuccessor(
           new StepTriggerTimerBoundaryEvent(boundaryTimerEventId), activateStep);
+      result.setReachedTerminateEndEvent(boundaryEventBuilder.timerEventHasTerminateEndEvent());
     } else if (hasBoundaryErrorEvent && random.nextBoolean()) {
       result.appendExecutionSuccessor(new StepThrowError(getElementId(), errorCode), activateStep);
+      result.setReachedTerminateEndEvent(boundaryEventBuilder.errorEventHasTerminateEndEvent());
     } else {
       result.appendExecutionSuccessor(new StepCompleteUserTask(getElementId()), activateStep);
     }

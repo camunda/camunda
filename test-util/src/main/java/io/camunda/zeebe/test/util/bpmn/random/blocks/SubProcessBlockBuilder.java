@@ -122,6 +122,7 @@ public class SubProcessBlockBuilder extends AbstractBlockBuilder {
       if (hasBoundaryTimerEvent) {
         result.appendExecutionSuccessor(
             new StepTriggerTimerBoundaryEvent(subProcessBoundaryTimerEventId), activateSubProcess);
+        result.setReachedTerminateEndEvent(boundaryEventBuilder.timerEventHasTerminateEndEvent());
       } // extend here for other boundary events
     }
 

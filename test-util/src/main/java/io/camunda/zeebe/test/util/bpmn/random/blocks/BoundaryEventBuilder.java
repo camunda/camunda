@@ -14,11 +14,11 @@ import io.camunda.zeebe.test.util.bpmn.random.RandomProcessGenerator;
 
 public class BoundaryEventBuilder {
 
+  private final boolean timerEventHasTerminateEndEvent;
+  private final boolean errorEventHasTerminateEndEvent;
   private final String taskId;
   private final String joinGatewayId;
   private boolean joinGatewayCreated;
-  private final boolean timerEventHasTerminateEndEvent;
-  private final boolean errorEventHasTerminateEndEvent;
 
   public BoundaryEventBuilder(final ConstructionContext context, final String taskId) {
     this.taskId = taskId;
@@ -71,5 +71,13 @@ public class BoundaryEventBuilder {
     } else {
       return boundaryEventBuilder.connectTo(joinGatewayId);
     }
+  }
+
+  public boolean timerEventHasTerminateEndEvent() {
+    return timerEventHasTerminateEndEvent;
+  }
+
+  public boolean errorEventHasTerminateEndEvent() {
+    return errorEventHasTerminateEndEvent;
   }
 }
