@@ -4,50 +4,92 @@ exports[`should create two Charts 1`] = `
 <div
   className="Statistics"
 >
-  <p
-    dangerouslySetInnerHTML={
-      Object {
-        "__html": "Of all <b>3 instances</b> that passed the Gateway <i class=\\"gatewayName\\"></i>",
-      }
-    }
-  />
+  <p>
+    Of all 
+    <b
+      key="1"
+    >
+      3 instances
+    </b>
+     that passed the Gateway 
+    <i
+      class="gatewayName"
+      key="3"
+    />
+  </p>
   <ul>
     <li
-      dangerouslySetInnerHTML={
-        Object {
-          "__html": "<b>1</b> (33%) took the <i class=\\"branchName\\"></i> branch, <b>3</b> (300%) of those then continued to reach the end event <i class=\\"endEventName\\"></i>",
-        }
-      }
       key="a"
-    />
+    >
+      <b
+        key="0"
+      >
+        1
+      </b>
+       (33%) took the 
+      <i
+        class="branchName"
+        key="2"
+      />
+       branch, 
+      <b
+        key="4"
+      >
+        3
+      </b>
+       (300%) of those then continued to reach the end event 
+      <i
+        class="endEventName"
+        key="6"
+      />
+    </li>
     <li
-      dangerouslySetInnerHTML={
-        Object {
-          "__html": "<b>2</b> (67%) took the <i class=\\"branchName\\"></i> branch, <b>2</b> (100%) of those then continued to reach the end event <i class=\\"endEventName\\"></i>",
-        }
-      }
       key="b"
-    />
+    >
+      <b
+        key="0"
+      >
+        2
+      </b>
+       (67%) took the 
+      <i
+        class="branchName"
+        key="2"
+      />
+       branch, 
+      <b
+        key="4"
+      >
+        2
+      </b>
+       (100%) of those then continued to reach the end event 
+      <i
+        class="endEventName"
+        key="6"
+      />
+    </li>
   </ul>
-  <p
-    dangerouslySetInnerHTML={
-      Object {
-        "__html": "Distribution of Instances at the Gateway <i class=\\"gatewayName\\"></i>:",
-      }
-    }
-  />
+  <p>
+    Distribution of Instances at the Gateway 
+    <i
+      class="gatewayName"
+      key="1"
+    />
+    :
+  </p>
   <div
     className="diagram-container"
   >
     <canvas />
   </div>
-  <p
-    dangerouslySetInnerHTML={
-      Object {
-        "__html": "Probability to reach the end event <i class=\\"endEventName\\"></i> after taking a branch:",
-      }
-    }
-  />
+  <p>
+    Probability to reach the end event 
+    <i
+      class="endEventName"
+      key="1"
+    />
+     after taking a branch:
+  </p>
   <div
     className="diagram-container"
   >
@@ -92,50 +134,92 @@ exports[`should show a summary after loading is complete 1`] = `
 <div
   className="Statistics"
 >
-  <p
-    dangerouslySetInnerHTML={
-      Object {
-        "__html": "Of all <b>3 instances</b> that passed the Gateway <i class=\\"gatewayName\\"></i>",
-      }
-    }
-  />
+  <p>
+    Of all 
+    <b
+      key="1"
+    >
+      3 instances
+    </b>
+     that passed the Gateway 
+    <i
+      class="gatewayName"
+      key="3"
+    />
+  </p>
   <ul>
     <li
-      dangerouslySetInnerHTML={
-        Object {
-          "__html": "<b>1</b> (33%) took the <i class=\\"branchName\\"></i> branch, <b>3</b> (300%) of those then continued to reach the end event <i class=\\"endEventName\\"></i>",
-        }
-      }
       key="testLabel"
-    />
+    >
+      <b
+        key="0"
+      >
+        1
+      </b>
+       (33%) took the 
+      <i
+        class="branchName"
+        key="2"
+      />
+       branch, 
+      <b
+        key="4"
+      >
+        3
+      </b>
+       (300%) of those then continued to reach the end event 
+      <i
+        class="endEventName"
+        key="6"
+      />
+    </li>
     <li
-      dangerouslySetInnerHTML={
-        Object {
-          "__html": "<b>2</b> (67%) took the <i class=\\"branchName\\"></i> branch, <b>2</b> (100%) of those then continued to reach the end event <i class=\\"endEventName\\"></i>",
-        }
-      }
       key="bar"
-    />
+    >
+      <b
+        key="0"
+      >
+        2
+      </b>
+       (67%) took the 
+      <i
+        class="branchName"
+        key="2"
+      />
+       branch, 
+      <b
+        key="4"
+      >
+        2
+      </b>
+       (100%) of those then continued to reach the end event 
+      <i
+        class="endEventName"
+        key="6"
+      />
+    </li>
   </ul>
-  <p
-    dangerouslySetInnerHTML={
-      Object {
-        "__html": "Distribution of Instances at the Gateway <i class=\\"gatewayName\\"></i>:",
-      }
-    }
-  />
+  <p>
+    Distribution of Instances at the Gateway 
+    <i
+      class="gatewayName"
+      key="1"
+    />
+    :
+  </p>
   <div
     className="diagram-container"
   >
     <canvas />
   </div>
-  <p
-    dangerouslySetInnerHTML={
-      Object {
-        "__html": "Probability to reach the end event <i class=\\"endEventName\\"></i> after taking a branch:",
-      }
-    }
-  />
+  <p>
+    Probability to reach the end event 
+    <i
+      class="endEventName"
+      key="1"
+    />
+     after taking a branch:
+  </p>
   <div
     className="diagram-container"
   >

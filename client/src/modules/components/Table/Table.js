@@ -221,12 +221,9 @@ export default function Table({
               <Select.Option value={1000}>1000</Select.Option>
             </Select>
           </div>
-          <div
-            className="info"
-            dangerouslySetInnerHTML={{
-              __html: t('report.table.info', {firstRowIndex, lastRowIndex, totalRows}),
-            }}
-          />
+          <div className="info">
+            {t('report.table.info', {firstRowIndex, lastRowIndex, totalRows})}
+          </div>
           <div className="controls">
             <Button className="first" icon onClick={() => gotoPage(0)} disabled={!canPreviousPage}>
               <Icon type="expand" />

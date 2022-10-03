@@ -5,8 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {t, initTranslation} from './translation';
 import * as request from 'request';
+import {shallow} from 'enzyme';
+
+import {t, initTranslation} from './translation';
 
 let languageGetter;
 languageGetter = jest.spyOn(window.navigator, 'languages', 'get');
@@ -24,6 +26,7 @@ beforeAll(async () => {
       entity: {
         create: 'Create a new {label}',
       },
+      htmlString: 'This is an html <b>string</b> linking to <a href="testUrl" >{linkText}</a><br/>',
     }),
   });
   await initTranslation();
@@ -49,4 +52,14 @@ it('return an error message if key does not exist', async () => {
 
 it('should get the language file depending on the browser language', async () => {
   expect(request.get.mock.calls[0][1]).toEqual({localeCode: 'de', version: '2.7.0'});
+});
+
+it('should convert html string to JSX', async () => {
+  const translationJSX = t('htmlString', {linkText: 'foo'});
+  const node = shallow(<div>{translationJSX}</div>);
+
+  expect(node.find('b').text()).toBe('string');
+  expect(node.find('a').text()).toBe('foo');
+  expect(node.find('a').prop('href')).toBe('testUrl');
+  expect(node.find('br')).toExist();
 });

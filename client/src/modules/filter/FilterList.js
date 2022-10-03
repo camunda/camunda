@@ -344,10 +344,7 @@ export default class FilterList extends React.Component {
               }}
             >
               <span className="parameterName">{getStateFilterParameterName(filter)}</span>
-              <span
-                className="filterText"
-                dangerouslySetInnerHTML={{__html: getStateFilterFilterText(filter)}}
-              />
+              <span className="filterText">{getStateFilterFilterText(filter)}</span>
               <AppliedToInfo filter={filter} definitions={definitions} />
             </ActionItem>
           </li>

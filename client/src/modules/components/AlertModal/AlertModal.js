@@ -257,16 +257,13 @@ export class AlertModal extends React.Component {
         <Modal.Content>
           <Form horizontal autoComplete="off">
             {!emailNotificationIsEnabled && (
-              <MessageBox
-                type="warning"
-                dangerouslySetInnerHTML={{
-                  __html: t('alert.emailWarning', {
-                    docsLink:
-                      this.props.docsLink +
-                      'self-managed/optimize-deployment/configuration/system-configuration/#email',
-                  }),
-                }}
-              />
+              <MessageBox type="warning">
+                {t('alert.emailWarning', {
+                  docsLink:
+                    this.props.docsLink +
+                    'self-managed/optimize-deployment/configuration/system-configuration/#email',
+                })}
+              </MessageBox>
             )}
             {inactive && (
               <MessageBox type="warning">

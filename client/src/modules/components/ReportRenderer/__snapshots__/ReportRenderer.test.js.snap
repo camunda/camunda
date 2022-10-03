@@ -15,61 +15,71 @@ exports[`NoDataNotice should display a notice based on error type if evaluation 
 
 exports[`SetupNotice should instruct to add a process definition key if not available 1`] = `
 <SetupNotice>
-  <p
-    dangerouslySetInnerHTML={
-      Object {
-        "__html": "Select a <b>Process Definition</b>.",
-      }
-    }
-  />
+  <p>
+    Select a 
+    <b
+      key="1"
+    >
+      Process Definition
+    </b>
+    .
+  </p>
 </SetupNotice>
 `;
 
 exports[`SetupNotice should instruct to add a process definition version if not available 1`] = `
 <SetupNotice>
-  <p
-    dangerouslySetInnerHTML={
-      Object {
-        "__html": "Select a <b>Process Definition</b>.",
-      }
-    }
-  />
+  <p>
+    Select a 
+    <b
+      key="1"
+    >
+      Process Definition
+    </b>
+    .
+  </p>
 </SetupNotice>
 `;
 
 exports[`SetupNotice should instruct to add group by option if not available 1`] = `
 <SetupNotice>
-  <p
-    dangerouslySetInnerHTML={
-      Object {
-        "__html": "Select what to <b>Group By</b>.",
-      }
-    }
-  />
+  <p>
+    Select what to 
+    <b
+      key="1"
+    >
+      Group By
+    </b>
+    .
+  </p>
 </SetupNotice>
 `;
 
 exports[`SetupNotice should instruct to add view option if not available 1`] = `
 <SetupNotice>
-  <p
-    dangerouslySetInnerHTML={
-      Object {
-        "__html": "Select an option for <b>View</b>.",
-      }
-    }
-  />
+  <p>
+    Select an option for 
+    <b
+      key="1"
+    >
+      View
+    </b>
+    .
+  </p>
 </SetupNotice>
 `;
 
 exports[`SetupNotice should instruct to add visualization option if not available 1`] = `
 <SetupNotice>
-  <p
-    dangerouslySetInnerHTML={
-      Object {
-        "__html": "Select an option for <b>Visualization</b> above.",
-      }
-    }
-  />
+  <p>
+    Select an option for 
+    <b
+      key="1"
+    >
+      Visualization
+    </b>
+     above.
+  </p>
 </SetupNotice>
 `;
 

@@ -22,26 +22,14 @@ export default function UndefinedOptions({
         <Switch
           checked={includeUndefined}
           onChange={({target: {checked}}) => changeIncludeUndefined(checked)}
-          label={
-            <span
-              dangerouslySetInnerHTML={{
-                __html: t(`common.filter.variableModal.includeUndefined`),
-              }}
-            />
-          }
+          label={t('common.filter.variableModal.includeUndefined')}
         />
       </Form.Group>
       <Form.Group noSpacing>
         <Switch
           checked={excludeUndefined}
           onChange={({target: {checked}}) => changeExcludeUndefined(checked)}
-          label={
-            <span
-              dangerouslySetInnerHTML={{
-                __html: t(`common.filter.variableModal.excludeUndefined`),
-              }}
-            />
-          }
+          label={t('common.filter.variableModal.excludeUndefined')}
         />
       </Form.Group>
     </>

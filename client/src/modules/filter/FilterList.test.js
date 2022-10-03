@@ -355,9 +355,7 @@ it('should display a running instances only filter', () => {
 
   const node = shallow(<FilterList {...props} data={data} />);
 
-  expect(node.find('.filterText').prop('dangerouslySetInnerHTML').__html).toBe(
-    '<b>Running</b> Instances only'
-  );
+  expect(node.find('.filterText').text()).toBe('Running Instances only');
 });
 
 it('should display a completed instances only filter', () => {
@@ -371,9 +369,7 @@ it('should display a completed instances only filter', () => {
 
   const node = shallow(<FilterList {...props} data={data} />);
 
-  expect(node.find('.filterText').prop('dangerouslySetInnerHTML').__html).toBe(
-    '<b>Completed</b> Instances only'
-  );
+  expect(node.find('.filterText').text()).toBe('Completed Instances only');
 });
 
 it('should display node date filter preview', () => {

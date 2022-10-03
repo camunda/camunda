@@ -82,11 +82,9 @@ export function Processes({mightFail, user}) {
         {t('processes.processOverview')}
         {processes && (
           <div className="info">
-            <span
-              dangerouslySetInnerHTML={{
-                __html: t('processes.analysing', {count: processes.length, label: processesLabel}),
-              }}
-            />{' '}
+            <span>
+              {t('processes.analysing', {count: processes.length, label: processesLabel})}
+            </span>{' '}
             <DocsLink location="components/optimize/userguide/processes">
               {t('events.sources.learnMore')}
             </DocsLink>

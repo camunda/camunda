@@ -65,14 +65,11 @@ function ReportRenderer(props) {
         <div className="ReportRenderer">
           <View {...props} />
           {report.data.configuration.showInstanceCount && (
-            <div
-              className="additionalInfo"
-              dangerouslySetInnerHTML={{
-                __html: t(`report.totalCount.${isDecision ? 'evaluation' : 'instance'}`, {
-                  count: formatters.frequency(report.result.instanceCount || 0),
-                }),
-              }}
-            />
+            <div className="additionalInfo">
+              {t(`report.totalCount.${isDecision ? 'evaluation' : 'instance'}`, {
+                count: formatters.frequency(report.result.instanceCount || 0),
+              })}
+            </div>
           )}
         </div>
       </ErrorBoundary>
@@ -109,7 +106,7 @@ function checkDecisionReport(data) {
     isEmpty(data.definitions?.[0].key) ||
     isEmpty(data.definitions?.[0].versions)
   ) {
-    return <p dangerouslySetInnerHTML={{__html: t('report.noDefinitionMessage.decision')}} />;
+    return <p>{t('report.noDefinitionMessage.decision')}</p>;
   } else {
     return checkSingleReport(data);
   }
@@ -122,7 +119,7 @@ function checkProcessReport(data) {
     isEmpty(data.definitions?.[0].versions) ||
     isEmpty(data.definitions?.[0].tenantIds)
   ) {
-    return <p dangerouslySetInnerHTML={{__html: t('report.noDefinitionMessage.process')}} />;
+    return <p>{t('report.noDefinitionMessage.process')}</p>;
   } else {
     return checkSingleReport(data);
   }
@@ -130,11 +127,11 @@ function checkProcessReport(data) {
 
 function checkSingleReport(data) {
   if (!data.view) {
-    return <p dangerouslySetInnerHTML={{__html: t('report.noViewMessage')}} />;
+    return <p>{t('report.noViewMessage')}</p>;
   } else if (!data.groupBy) {
-    return <p dangerouslySetInnerHTML={{__html: t('report.noGroupByMessage')}} />;
+    return <p>{t('report.noGroupByMessage')}</p>;
   } else if (!data.visualization) {
-    return <p dangerouslySetInnerHTML={{__html: t('report.noVisualizationMessage')}} />;
+    return <p>{t('report.noVisualizationMessage')}</p>;
   } else {
     return;
   }
