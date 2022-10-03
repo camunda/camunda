@@ -115,10 +115,10 @@ public class SubProcessBlockBuilder extends AbstractBlockBuilder {
     final var internalExecutionPath = embeddedSubProcessBuilder.findRandomExecutionPath(context);
 
     if (!hasBoundaryEvents || !internalExecutionPath.canBeInterrupted() || random.nextBoolean()) {
-      result.append(internalExecutionPath);
+      result.append(internalExecutionPath, true);
     } else {
       internalExecutionPath.cutAtRandomPosition(random);
-      result.append(internalExecutionPath);
+      result.append(internalExecutionPath, true);
       if (hasBoundaryTimerEvent) {
         result.appendExecutionSuccessor(
             new StepTriggerTimerBoundaryEvent(subProcessBoundaryTimerEventId), activateSubProcess);

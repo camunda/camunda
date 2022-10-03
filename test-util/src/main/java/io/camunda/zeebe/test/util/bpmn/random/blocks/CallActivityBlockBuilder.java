@@ -64,7 +64,7 @@ public class CallActivityBlockBuilder extends AbstractBlockBuilder {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
     if (calledProcessBuilder != null) {
-      result.append(calledProcessBuilder.findRandomExecutionPath(context));
+      result.append(calledProcessBuilder.findRandomExecutionPath(context), true);
     }
 
     return result;
