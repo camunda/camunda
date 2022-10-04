@@ -6,6 +6,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    open-pull-requests-limit: 10
     target-branch: "master"
     commit-message:
       prefix: "chore"
@@ -19,12 +20,14 @@ updates:
       - "camunda/optimize"
     labels:
       - "dependencies"
+      - "backend"
 
 
   - package-ecosystem: "npm"
     directory: "/client"
     schedule:
       interval: "daily"
+    open-pull-requests-limit: 10
     target-branch: "master"
     commit-message:
       prefix: "chore"
@@ -33,12 +36,14 @@ updates:
       - "camunda/optimize"
     labels:
       - "dependencies"
+      - "frontend"
 
 
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "daily"
+    open-pull-requests-limit: 10
     target-branch: "master"
     commit-message:
       prefix: "chore"
@@ -53,6 +58,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    open-pull-requests-limit: 10
     target-branch: "release/3.9.0"
     commit-message:
       prefix: "chore"
@@ -68,12 +74,14 @@ updates:
       - "camunda/optimize"
     labels:
       - "dependencies"
+      - "backend"
 
 
   - package-ecosystem: "npm"
     directory: "/client"
     schedule:
       interval: "daily"
+    open-pull-requests-limit: 10
     target-branch: "release/3.9.0"
     commit-message:
       prefix: "chore"
@@ -85,12 +93,14 @@ updates:
       - "camunda/optimize"
     labels:
       - "dependencies"
+      - "frontend"
 
 
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "daily"
+    open-pull-requests-limit: 10
     target-branch: "release/3.9.0"
     commit-message:
       prefix: "chore"
