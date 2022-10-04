@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {ReactComponent as IncidentIcon} from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
+import {ReactComponent as IncidentIcon} from 'modules/components/Icon/diagram-badge-dmn-incident.svg';
 import {ReactComponent as CompletedIcon} from 'modules/components/Icon/diagram-badge-single-instance-completed.svg';
 import {createPortal} from 'react-dom';
 
