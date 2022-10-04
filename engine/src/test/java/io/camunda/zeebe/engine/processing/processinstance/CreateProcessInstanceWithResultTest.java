@@ -36,24 +36,27 @@ public final class CreateProcessInstanceWithResultTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess("PROCESS").startEvent().endEvent().done();
+  private static ProcessInstanceResultRecord response;
+  private static CommandResponseWriter mockCommandResponseWriter;
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
-
-  private ProcessInstanceResultRecord response;
-  private CommandResponseWriter mockCommandResponseWriter;
 
   @BeforeClass
   public static void init() {
     ENGINE.deployment().withXmlResource(PROCESS).deploy();
   }
 
-  @Before
-  public void setUp() {
+  @BeforeClass
+  public static void setUp() {
     mockCommandResponseWriter = ENGINE.getCommandResponseWriter();
-    Mockito.clearInvocations(mockCommandResponseWriter);
     interceptResponseWriter(mockCommandResponseWriter);
+  }
+
+  @Before
+  public void reset() {
+    Mockito.clearInvocations(mockCommandResponseWriter);
   }
 
   @Test
@@ -159,7 +162,8 @@ public final class CreateProcessInstanceWithResultTest {
     verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1)).tryWriteResponse(3, 3);
   }
 
-  private void interceptResponseWriter(final CommandResponseWriter mockCommandResponseWriter) {
+  private static void interceptResponseWriter(
+      final CommandResponseWriter mockCommandResponseWriter) {
     doAnswer(
             (Answer<CommandResponseWriter>)
                 (invocation -> {
