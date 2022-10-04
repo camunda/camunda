@@ -450,13 +450,13 @@ describe('stores/modifications', () => {
         cancelledTokens: 3,
         newTokens: 0,
         cancelledChildTokens: 0,
-        visibleCancelledTokens: 0,
+        visibleCancelledTokens: 3,
       },
       flowNode3: {
         cancelledTokens: 3,
         newTokens: 0,
         cancelledChildTokens: 0,
-        visibleCancelledTokens: 0,
+        visibleCancelledTokens: 3,
       },
       flowNode4: {
         cancelledTokens: 0,
@@ -468,7 +468,7 @@ describe('stores/modifications', () => {
         cancelledTokens: 2,
         newTokens: 1,
         cancelledChildTokens: 0,
-        visibleCancelledTokens: 0,
+        visibleCancelledTokens: 2,
       },
       flowNode6: {
         cancelledTokens: 0,
@@ -597,7 +597,7 @@ describe('stores/modifications', () => {
         cancelledTokens: 2,
         newTokens: 0,
         cancelledChildTokens: 0,
-        visibleCancelledTokens: 0,
+        visibleCancelledTokens: 2,
       },
       flowNode2: {
         cancelledTokens: 0,
@@ -697,7 +697,7 @@ describe('stores/modifications', () => {
         cancelledTokens: 2,
         newTokens: 0,
         cancelledChildTokens: 0,
-        visibleCancelledTokens: 0,
+        visibleCancelledTokens: 2,
       },
       'service-task-7': {
         cancelledTokens: 0,

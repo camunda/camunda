@@ -299,7 +299,12 @@ class Modifications {
       if (type === 'variable') {
         return modificationsByFlowNode;
       }
-      const {flowNode, operation, affectedTokenCount} = payload;
+      const {
+        flowNode,
+        operation,
+        affectedTokenCount,
+        visibleAffectedTokenCount,
+      } = payload;
 
       if (modificationsByFlowNode[flowNode.id] === undefined) {
         modificationsByFlowNode[flowNode.id] = {...EMPTY_MODIFICATION};
@@ -314,6 +319,8 @@ class Modifications {
 
         modificationsByFlowNode[flowNode.id]!.cancelledTokens =
           affectedTokenCount;
+        modificationsByFlowNode[flowNode.id]!.visibleCancelledTokens =
+          visibleAffectedTokenCount;
 
         modificationsByFlowNode[payload.targetFlowNode.id]!.newTokens =
           isFlowNodeMultiInstance(flowNode.id) ? 1 : affectedTokenCount;
@@ -322,6 +329,8 @@ class Modifications {
       if (operation === 'CANCEL_TOKEN') {
         modificationsByFlowNode[flowNode.id]!.cancelledTokens =
           affectedTokenCount;
+        modificationsByFlowNode[flowNode.id]!.visibleCancelledTokens =
+          visibleAffectedTokenCount;
 
         // set cancel token counts for child elements if flow node has any
         const elementIds = getFlowElementIds(
@@ -342,6 +351,7 @@ class Modifications {
             (processInstanceDetailsStatisticsStore.statisticsByFlowNode[
               elementId
             ]?.incidents ?? 0);
+
           modificationsByFlowNode[elementId]!.visibleCancelledTokens =
             (processInstanceDetailsStatisticsStore.statisticsByFlowNode[
               elementId
