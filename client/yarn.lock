@@ -1852,10 +1852,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@ibm/plex@^6.1.0":
-  version "6.1.0"
-  resolved "https://registry.yarnpkg.com/@ibm/plex/-/plex-6.1.0.tgz#7427d7bb3a74cf75346c9b11ecae5eb9f5476af5"
-  integrity sha512-vpas+icVWspK+++ecDT5sUYZ759Ex+37/mTgZYUguZUYM/1Vn6KvDJQJStuCTa0Xv5tMZLGhNSeuR2ZFrIb26w==
+"@ibm/plex@^6.1.1":
+  version "6.1.1"
+  resolved "https://registry.yarnpkg.com/@ibm/plex/-/plex-6.1.1.tgz#eddfd98fe86ecafc74bc8ec7595e7615bb88eb34"
+  integrity sha512-b2z/Gsc8KHOVrYo/yPauRvRDNMwF6zhEZZsvogs1rCmmyfVXBTY9uUkf6TyplhQs/L4UcjBus8R/RDp7yASTBA==
 
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.1.0"
