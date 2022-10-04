@@ -1,6 +1,6 @@
 global:
   image:
-    tag: 8.0.6
+    tag: 8.0.7
     pullPolicy: Always
 
 zeebe:
