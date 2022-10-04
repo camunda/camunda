@@ -28,7 +28,12 @@ public class AccountsUserAccessTokenProvider {
   private Optional<String> retrieveServiceTokenFromFramework() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication != null) {
-      return Optional.ofNullable(((JwtAuthenticationToken) authentication).getToken().getTokenValue());
+      if (authentication instanceof JwtAuthenticationToken) {
+        return Optional.ofNullable(((JwtAuthenticationToken) authentication).getToken().getTokenValue());
+      } else {
+        log.info("Could not retrieve Jwt Token. Provided token has type " + authentication.getClass().getTypeName());
+        return Optional.empty();
+      }
     }
     return Optional.empty();
   }
