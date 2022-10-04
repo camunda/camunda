@@ -4071,10 +4071,10 @@ bpmn-js-disable-collapsed-subprocess@^0.1.5:
   dependencies:
     min-dash "^3.5.2"
 
-bpmn-js@9.4.0:
-  version "9.4.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-9.4.0.tgz#3f0898fc811a6dfd913293743c1570d1437deffc"
-  integrity sha512-7dusZBYCFognA0TmspWaKZ47UjFhyRT+//hMdyLtPCKY1M0uAPXHoFv73MohlsEa7a75h0q6zjCj5W0/RHBwvg==
+bpmn-js@9.4.1:
+  version "9.4.1"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-9.4.1.tgz#f81af00a63f15ffb365037973be8bce72e18eb69"
+  integrity sha512-uid1EctbT0c3dO5+Ghm9Qu8EQCSVjZS1Ff7z9qQ0ZoxRWayvbWaHUYSVdKlzXZi7911Pe7rkSqCuXpQ68ouPRw==
   dependencies:
     bpmn-moddle "^7.1.3"
     css.escape "^1.5.1"
@@ -5740,22 +5740,7 @@ diagram-js@^7.8.2:
     path-intersection "^2.2.1"
     tiny-svg "^2.2.2"
 
-diagram-js@^8.8.0:
-  version "8.8.0"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-8.8.0.tgz#409bcb9ea39daccc539519cef4693b09a307b149"
-  integrity sha512-isDblySC/k8dOUA1yevLPa0rdXT6Zv6+S6ZFv4CUZBk4Bgtv+3MJdnL+hVzeKPVuvlYGsEM42AyXHCW+35QJQg==
-  dependencies:
-    css.escape "^1.5.1"
-    didi "^8.0.0"
-    hammerjs "^2.0.1"
-    inherits-browser "0.0.1"
-    min-dash "^3.5.2"
-    min-dom "^3.2.0"
-    object-refs "^0.3.0"
-    path-intersection "^2.2.1"
-    tiny-svg "^2.2.2"
-
-diagram-js@^8.9.0:
+diagram-js@^8.8.0, diagram-js@^8.9.0:
   version "8.9.0"
   resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-8.9.0.tgz#851e8bda1a97d0e2995a3c853691cd4261a1777b"
   integrity sha512-577bUEbkwZ7id4SCXcD2qrlKoRPXry2SDSPt5T6tEOjwKrTllKr5d1HZoJzGws4VMQq5fmY51Gce1iFT9S4Dlw==
@@ -5775,7 +5760,7 @@ didi@^5.2.1:
   resolved "https://registry.yarnpkg.com/didi/-/didi-5.2.1.tgz#1a0b1336be8baa0b068a72036eedd9fb94135bff"
   integrity sha512-IKNnajUlD4lWMy/Q9Emkk7H1qnzREgY4UyE3IhmOi/9IKua0JYtYldk928bOdt1yNxN8EiOy1sqtSozEYsmjCg==
 
-didi@^8.0.0, didi@^8.0.1:
+didi@^8.0.1:
   version "8.0.1"
   resolved "https://registry.yarnpkg.com/didi/-/didi-8.0.1.tgz#c49d2daaa041e535c916daaf90cb1381cafb0492"
   integrity sha512-7oXiXbp8DHE3FfQsVBkc2pwePo3Jy2uyGS9trAeBmfxiZAP4WV23LWokRpMmyl3hlu8OEAsyMxx19i5P6TVaJQ==
