@@ -53,7 +53,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    target-branch: "release/3.9"
+    target-branch: "release/3.9.0"
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -74,7 +74,7 @@ updates:
     directory: "/client"
     schedule:
       interval: "daily"
-    target-branch: "maintenance/3.9"
+    target-branch: "release/3.9.0"
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -91,7 +91,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    target-branch: "maintenance/3.9"
+    target-branch: "release/3.9.0"
     commit-message:
       prefix: "chore"
       include: "scope"
