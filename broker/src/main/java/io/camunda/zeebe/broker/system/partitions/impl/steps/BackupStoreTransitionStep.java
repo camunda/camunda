@@ -87,7 +87,8 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
               s3Config.getEndpoint(),
               s3Config.getRegion(),
               s3Config.getAccessKey(),
-              s3Config.getSecretKey());
+              s3Config.getSecretKey(),
+              s3Config.getApiCallTimeout());
       final S3BackupStore backupStore = new S3BackupStore(storeConfig);
       context.setBackupStore(backupStore);
       installed.complete(null);

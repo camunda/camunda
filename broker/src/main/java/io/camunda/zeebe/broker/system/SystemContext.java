@@ -188,7 +188,8 @@ public final class SystemContext {
               s3Config.getEndpoint(),
               s3Config.getRegion(),
               s3Config.getAccessKey(),
-              s3Config.getSecretKey());
+              s3Config.getSecretKey(),
+              s3Config.getApiCallTimeout());
       try {
         S3BackupStore.validateConfig(storeConfig);
       } catch (final Exception e) {

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.configuration.backup;
 
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
+import java.time.Duration;
 import java.util.Objects;
 
 public class S3BackupStoreConfig implements ConfigurationEntry {
@@ -17,6 +18,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
   private String region;
   private String accessKey;
   private String secretKey;
+  private Duration apiCallTimeout;
 
   public String getBucketName() {
     return bucketName;
@@ -58,6 +60,14 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     this.secretKey = secretKey;
   }
 
+  public Duration getApiCallTimeout() {
+    return apiCallTimeout;
+  }
+
+  public void setApiCallTimeout(final Duration apiCallTimeout) {
+    this.apiCallTimeout = apiCallTimeout;
+  }
+
   @Override
   public int hashCode() {
     int result = bucketName != null ? bucketName.hashCode() : 0;
@@ -65,6 +75,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     result = 31 * result + (region != null ? region.hashCode() : 0);
     result = 31 * result + (accessKey != null ? accessKey.hashCode() : 0);
     result = 31 * result + (secretKey != null ? secretKey.hashCode() : 0);
+    result = 31 * result + (apiCallTimeout != null ? apiCallTimeout.hashCode() : 0);
     return result;
   }
 
@@ -91,7 +102,10 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     if (!Objects.equals(accessKey, that.accessKey)) {
       return false;
     }
-    return Objects.equals(secretKey, that.secretKey);
+    if (!Objects.equals(secretKey, that.secretKey)) {
+      return false;
+    }
+    return Objects.equals(apiCallTimeout, that.apiCallTimeout);
   }
 
   @Override
@@ -111,6 +125,9 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
         + '\''
         + ", secretKey='"
         + "<redacted>"
+        + '\''
+        + ", apiCallTimeout='"
+        + apiCallTimeout
         + '\''
         + '}';
   }
