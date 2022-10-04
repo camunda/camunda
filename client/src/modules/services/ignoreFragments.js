@@ -7,7 +7,7 @@
 
 import React from 'react';
 
-export function ignoreFragments(children) {
+export default function ignoreFragments(children) {
   if (isFragment(children)) {
     return ignoreFragments(children.props.children);
   }

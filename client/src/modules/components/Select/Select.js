@@ -8,10 +8,9 @@
 import React from 'react';
 
 import {Dropdown} from 'components';
+import {ignoreFragments} from 'services';
 import classnames from 'classnames';
 import {t} from 'translation';
-
-import {ignoreFragments} from './service';
 
 export default class Select extends React.Component {
   renderChildrenWithProps = (children) => {

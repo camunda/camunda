@@ -7,7 +7,7 @@
 
 import React from 'react';
 
-import {ignoreFragments} from './service';
+import ignoreFragments from './ignoreFragments';
 
 it('should remove all fragments from children', () => {
   const result = ignoreFragments(
