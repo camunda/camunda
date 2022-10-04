@@ -207,6 +207,8 @@ describe('Modification Summary Modal', () => {
       },
     });
 
+    expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled();
+
     await user.click(
       screen.getByRole('button', {name: 'Delete flow node modification'})
     );
@@ -215,6 +217,7 @@ describe('Modification Summary Modal', () => {
       screen.getByText('No planned flow node modifications')
     ).toBeInTheDocument();
     expect(modificationsStore.flowNodeModifications).toEqual([]);
+    expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
   });
 
   it('should handle modal close', async () => {
@@ -600,7 +603,7 @@ describe('Modification Summary Modal', () => {
     expect(
       screen.queryByText(/needs to be canceled./gi)
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled();
+    expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
 
     modificationsStore.addModification({
       type: 'token',

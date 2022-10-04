@@ -347,7 +347,10 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                 onClose();
               }}
               data-testid="apply-button"
-              disabled={areModificationsInvalid}
+              disabled={
+                areModificationsInvalid ||
+                modificationsStore.state.modifications.length === 0
+              }
             >
               Apply
             </Modal.PrimaryButton>
