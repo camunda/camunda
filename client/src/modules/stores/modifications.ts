@@ -263,16 +263,21 @@ class Modifications {
       return;
     }
 
-    const index = this.state.modifications.findIndex(
+    this.state.modifications = this.state.modifications.filter(
       ({type, payload}) =>
-        type === 'variable' &&
-        payload.scopeId === lastModification.scopeId &&
-        payload.id === lastModification.id &&
-        payload.operation === lastModification.operation
+        !(
+          type === 'variable' &&
+          payload.scopeId === lastModification.scopeId &&
+          payload.id === lastModification.id &&
+          payload.operation === lastModification.operation
+        )
     );
 
     this.state.lastRemovedModification = {
-      modification: this.state.modifications.splice(index, 1)[0],
+      modification: {
+        type: 'variable',
+        payload: lastModification,
+      },
       source,
     };
   };

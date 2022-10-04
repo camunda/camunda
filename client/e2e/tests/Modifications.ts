@@ -159,11 +159,17 @@ test('Should apply/remove edit variable modifications', async (t) => {
     {replace: true}
   );
 
+  await ProcessInstancePage.typeText(
+    ProcessInstancePage.getEditVariableFieldSelector('foo'),
+    '2',
+    {replace: true}
+  );
+
   await t
     .pressKey('tab')
     .click(screen.getByTestId('apply-modifications-button'));
 
-  await t.expect(screen.queryByText('foo: 1').exists).ok();
+  await t.expect(screen.queryByText('foo: 2').exists).ok();
   await t.click(
     screen.getByRole('button', {name: 'Delete variable modification'})
   );
@@ -387,4 +393,31 @@ test('Should apply/remove add variable modifications', async (t) => {
   );
 
   await t.expect(screen.queryByTestId('newVariables[0]').exists).ok();
+
+  // should change the new added variables value, remove one it from the summary modal, see it disappeared from the variables panel and footer
+
+  await ProcessInstancePage.typeText(
+    ProcessInstancePage.getNewVariableValueFieldSelector('newVariables[0]'),
+    '2'
+  );
+
+  await t
+    .pressKey('tab')
+    .click(screen.getByTestId('apply-modifications-button'));
+
+  await t.expect(screen.queryByText(/test2: 12/gi).exists).ok();
+
+  await t.click(
+    screen.getByRole('button', {
+      name: 'Delete variable modification',
+    })
+  );
+
+  await t.click(screen.getByRole('button', {name: 'Cancel'}));
+
+  await t
+    .expect(screen.queryByText('Last added modification:').exists)
+    .notOk()
+    .expect(screen.queryByTestId('newVariables[0]').exists)
+    .notOk();
 });
