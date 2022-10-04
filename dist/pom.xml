@@ -97,6 +97,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.opentelemetry.javaagent</groupId>
+      <artifactId>opentelemetry-javaagent</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api</artifactId>
     </dependency>
@@ -238,7 +243,8 @@
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <extraJvmArguments>-Xms128m
             -XX:+ExitOnOutOfMemoryError
-            -Dfile.encoding=UTF-8</extraJvmArguments>
+            -Dfile.encoding=UTF-8
+            -javaagent:@BASEDIR@/lib/opentelemetry-javaagent-${version.opentelemetry}.jar</extraJvmArguments>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
           <platforms>
             <platform>windows</platform>
@@ -333,6 +339,8 @@
             <dependency>io.micrometer:micrometer-core</dependency>
             <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
 
+            <!-- Needed for OpenTelemetry Support !-->
+            <dependency>io.opentelemetry.javaagent:opentelemetry-javaagent</dependency>
           </usedDependencies>
         </configuration>
       </plugin>

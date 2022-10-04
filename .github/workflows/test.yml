@@ -236,6 +236,28 @@ jobs:
         if: always()
         with:
           name: Property Tests
+  opentelemetry-tests:
+    name: Java randomized tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          go: false
+      - uses: ./.github/actions/build-zeebe
+        with:
+          go: false
+      - run: >
+          mvn -B
+          -DskipUTs -DskipChecks
+          -P opentelemetry-tests
+          verify
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: always()
+        with:
+          name: OpenTelemetry Tests
   go-client:
     name: Go client tests
     runs-on: "n1-standard-8-netssd-preempt"

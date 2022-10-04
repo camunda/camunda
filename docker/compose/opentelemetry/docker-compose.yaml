@@ -1,0 +1,118 @@
+version: '3'
+
+volumes:
+  broker_1: {}
+  broker_2: {}
+  broker_3: {}
+
+services:
+  zeebe-gateway:
+    image: camunda/zeebe:${ZEEBE_VERSION:-current-test}
+    ports:
+      - 26500:26500
+      - 5005:5005
+      - 26502:26502
+    environment:
+      - ZEEBE_STANDALONE_GATEWAY=true
+      - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
+      - ATOMIX_LOG_LEVEL=${ATOMIX_LOG_LEVEL:-info}
+      - ZEEBE_BROKER_CLUSTER_NODEID=zeebe-gateway
+      - ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS=broker-1:26502,broker-2:26502,broker-3:26502
+      - ZEEBE_GATEWAY_LONGPOLLING_ENABLED=false
+      # Opentelemetry settings
+      - OTEL_SERVICE_NAME=zeebe-gateway
+      - OTEL_JAVAAGENT_ENABLED=true
+      - OTEL_JAVAAGENT_DEBUG=false
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://opentelemetry-collector:4317
+  broker-1:
+    image: camunda/zeebe:${ZEEBE_VERSION:-current-test}
+    environment:
+      - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
+      - ATOMIX_LOG_LEVEL=${ATOMIX_LOG_LEVEL:-info}
+      - ZEEBE_BROKER_CLUSTER_NODEID=0
+      - ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT=3
+      - ZEEBE_BROKER_CLUSTER_CLUSTERSIZE=3
+      - ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR=3
+      - ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS=broker-1:26502,broker-2:26502,broker-3:26502
+      - ZEEBE_BROKER_GATEWAY_ENABLE=false
+      # Opentelemetry settings
+      - OTEL_SERVICE_NAME=zeebe-broker-1
+      - OTEL_JAVAAGENT_ENABLED=true
+      - OTEL_JAVAAGENT_DEBUG=false
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://opentelemetry-collector:4317
+    volumes:
+      - broker_1:/usr/local/zeebe/data
+    ports:
+      - 5006:5006
+      - 27502:26502
+
+  broker-2:
+    image: camunda/zeebe:${ZEEBE_VERSION:-current-test}
+    environment:
+      - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
+      - ZEEBE_BROKER_CLUSTER_NODEID=1
+      - ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT=3
+      - ZEEBE_BROKER_CLUSTER_CLUSTERSIZE=3
+      - ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR=3
+      - ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS=broker-1:26502,broker-2:26502,broker-3:26502
+      - ZEEBE_BROKER_GATEWAY_ENABLE=false
+      # Opentelemetry settings
+      - OTEL_SERVICE_NAME=zeebe-broker-2
+      - OTEL_JAVAAGENT_ENABLED=true
+      - OTEL_JAVAAGENT_DEBUG=false
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://opentelemetry-collector:4317
+    volumes:
+      - broker_2:/usr/local/zeebe/data
+
+  broker-3:
+    image: camunda/zeebe:${ZEEBE_VERSION:-current-test}
+    environment:
+      - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
+      - ZEEBE_BROKER_CLUSTER_NODEID=2
+      - ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT=3
+      - ZEEBE_BROKER_CLUSTER_CLUSTERSIZE=3
+      - ZEEBE_BROKER_CLUSTER_REPLICATIONFACTOR=3
+      - ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS=broker-1:26502,broker-2:26502,broker-3:26502
+      - ZEEBE_BROKER_GATEWAY_ENABLE=false
+      # Opentelemetry settings
+      - OTEL_SERVICE_NAME=zeebe-broker-3
+      - OTEL_JAVAAGENT_ENABLED=true
+      - OTEL_JAVAAGENT_DEBUG=false
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://opentelemetry-collector:4317
+    volumes:
+      - broker_3:/usr/local/zeebe/data
+
+  opentelemetry-collector:
+    image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.56.0
+    volumes:
+      - ./opentelemetry-collector-config.yml:/etc/otelcol-contrib/config.yaml
+    ports:
+      - "1888:1888"   # pprof extension
+      - "8888:8888"   # Prometheus metrics exposed by the collector
+      - "8889:8889"   # Prometheus exporter metrics
+      - "13133:13133" # health_check extension
+      - "9411"   # Zipkin receiver
+      - "55679:55679" # zpages extension
+      - "4317"
+      - "4318"
+    depends_on:
+      - jaeger
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "16685:16685"
+      - "14250"

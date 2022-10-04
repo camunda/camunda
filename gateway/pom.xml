@@ -291,6 +291,19 @@
       <artifactId>bcprov-jdk15on</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.opentelemetry.proto</groupId>
+      <artifactId>opentelemetry-proto</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mock-server</groupId>
+      <artifactId>mockserver-netty</artifactId>
+      <classifier>shaded</classifier>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -310,4 +323,76 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>opentelemetry-tests</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <configuration combine.children="append" combine.self="append">
+              <artifactItems>
+                <artifactItem>
+                  <groupId>io.opentelemetry.javaagent</groupId>
+                  <artifactId>opentelemetry-javaagent</artifactId>
+                  <version>${version.opentelemetry}</version>
+                  <type>jar</type>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${project.build.directory}/libs</outputDirectory>
+                  <destFileName>opentelemetry-javaagent.jar</destFileName>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}/libs</outputDirectory>
+              <overWriteReleases>false</overWriteReleases>
+              <overWriteSnapshots>true</overWriteSnapshots>
+            </configuration>
+            <executions>
+              <execution>
+                <id>copy-otel-javaagent</id>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <phase>test-compile</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>reserve-network-port</id>
+                <goals>
+                  <goal>reserve-network-port</goal>
+                </goals>
+                <phase>test-compile</phase>
+                <configuration>
+                  <portNames>
+                    <portName>mockserver.http.port</portName>
+                  </portNames>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration combine.children="append" combine.self="append">
+              <argLine combine.children="append" combine.self="append">-javaagent:${basedir}/target/libs/opentelemetry-javaagent.jar
+                -Dotel.javaagent.enabled=true -Dotel.javaagent.debug=true
+                -Dotel.exporter.otlp.protocol=http/protobuf
+                -Dotel.exporter.otlp.endpoint=http://localhost:${mockserver.http.port}
+                -Dotel.metric.export.interval=5000</argLine>
+              <systemPropertyVariables>
+                <mockserver.http.port>${mockserver.http.port}</mockserver.http.port>
+              </systemPropertyVariables>
+              <groups>io.camunda.zeebe.test.util.opentelemetry.OpenTelemetryTests</groups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
