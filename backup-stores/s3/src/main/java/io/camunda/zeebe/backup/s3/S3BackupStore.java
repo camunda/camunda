@@ -48,9 +48,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.core.async.SdkPublisher;
+import software.amazon.awssdk.core.retry.RetryMode;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
@@ -429,6 +432,19 @@ public final class S3BackupStore implements BackupStore {
 
   public static S3AsyncClient buildClient(final S3BackupConfig config) {
     final var builder = S3AsyncClient.builder();
+
+    // Enable auto-tuning of various parameters based on the environment
+    builder.defaultsMode(DefaultsMode.AUTO);
+
+    builder.httpClient(
+        NettyNioAsyncHttpClient.builder()
+            // We'd rather wait longer for a connection than have a failed backup. This helps in
+            // smoothing out spikes when taking a backup.
+            // Default is 10s: `SdkHttpConfigurationOption.DEFAULT_CONNECTION_ACQUIRE_TIMEOUT`.
+            .connectionAcquisitionTimeout(Duration.ofSeconds(45))
+            .build());
+
+    builder.overrideConfiguration(cfg -> cfg.retryPolicy(RetryMode.ADAPTIVE));
     config.endpoint().ifPresent(endpoint -> builder.endpointOverride(URI.create(endpoint)));
     config.region().ifPresent(region -> builder.region(Region.of(region)));
     config
