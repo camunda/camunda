@@ -126,14 +126,6 @@ describe('validators', () => {
     expect(
       validateModifiedNameComplete(
         undefined,
-        {newVariables: [{value: '123'}]},
-        {...MOCK_FIELD_META_STATE, name: 'newVariables[0]', active: true}
-      )
-    ).toBeUndefined();
-
-    expect(
-      validateModifiedNameComplete(
-        undefined,
         {newVariables: [{}]},
         {...MOCK_FIELD_META_STATE, name: 'newVariables[0]'}
       )

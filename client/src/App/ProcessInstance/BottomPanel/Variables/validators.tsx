@@ -27,9 +27,6 @@ const validateModifiedNameComplete: FieldValidator<string | undefined> = (
   allValues: {value?: string} | undefined,
   meta
 ) => {
-  if (meta?.active) {
-    return undefined;
-  }
   const fieldName = meta?.name ?? '';
 
   const variableValue =
