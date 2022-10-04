@@ -45,7 +45,16 @@ export function useCallbackPrompt(when: boolean) {
 
   useEffect(() => {
     if (confirmedNavigation && lastLocation) {
-      navigate(lastLocation.location);
+      const contextPath = window.clientConfig?.contextPath;
+
+      if (contextPath !== undefined) {
+        navigate({
+          ...lastLocation.location,
+          pathname: lastLocation.location.pathname.replace(contextPath, ''),
+        });
+      } else {
+        navigate(lastLocation.location);
+      }
     }
   }, [confirmedNavigation, lastLocation, navigate]);
 

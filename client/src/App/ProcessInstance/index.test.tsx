@@ -68,12 +68,18 @@ const clearPollingStates = () => {
   flowNodeInstanceStore.isPollRequestRunning = false;
 };
 
-function getWrapper(initialPath: string = '/processes/4294980768') {
+function getWrapper(
+  initialPath: string = '/processes/4294980768',
+  contextPath?: string
+) {
   const Wrapper: React.FC<Props> = ({children}) => {
     return (
       <ThemeProvider>
         <HistoryRouter
-          history={createMemoryHistory({initialEntries: [initialPath]})}
+          history={createMemoryHistory({
+            initialEntries: [initialPath],
+          })}
+          basename={contextPath ?? ''}
         >
           <Routes>
             <Route path="/processes/:processInstanceId" element={children} />
@@ -88,38 +94,40 @@ function getWrapper(initialPath: string = '/processes/4294980768') {
   return Wrapper;
 }
 
-describe('Instance', () => {
-  beforeEach(() => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res(ctx.text(''))
-      ),
-      rest.get(
-        '/api/process-instances/:instanceId/sequence-flows',
-        (_, res, ctx) => res(ctx.json(mockSequenceFlows))
-      ),
-      rest.post('/api/flow-node-instances', (_, res, ctx) =>
-        res(ctx.json(processInstancesMock.level1))
-      ),
-      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res(ctx.json(statistics))
-      ),
-      rest.get(
-        '/api/process-instances/:processInstanceId/statistics',
-        (_, res, ctx) =>
-          res(
-            ctx.json([
-              {
-                activityId: 'taskD',
-                active: 1,
-                incidents: 1,
-                completed: 0,
-                canceled: 0,
-              },
-            ])
-          )
-      ),
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+const mockRequests = (contextPath: string = '') => {
+  mockServer.use(
+    rest.get(`${contextPath}/api/processes/:processId/xml`, (_, res, ctx) =>
+      res(ctx.text(''))
+    ),
+    rest.get(
+      `${contextPath}/api/process-instances/:instanceId/sequence-flows`,
+      (_, res, ctx) => res(ctx.json(mockSequenceFlows))
+    ),
+    rest.post(`${contextPath}/api/flow-node-instances`, (_, res, ctx) =>
+      res(ctx.json(processInstancesMock.level1))
+    ),
+    rest.get(
+      `${contextPath}/api/process-instances/core-statistics`,
+      (_, res, ctx) => res(ctx.json(statistics))
+    ),
+    rest.get(
+      `${contextPath}/api/process-instances/:processInstanceId/statistics`,
+      (_, res, ctx) =>
+        res(
+          ctx.json([
+            {
+              activityId: 'taskD',
+              active: 1,
+              incidents: 1,
+              completed: 0,
+              canceled: 0,
+            },
+          ])
+        )
+    ),
+    rest.post(
+      `${contextPath}/api/process-instances/:instanceId/variables`,
+      (_, res, ctx) =>
         res(
           ctx.json([
             {
@@ -132,17 +140,28 @@ describe('Instance', () => {
             },
           ])
         )
-      ),
-      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
+    ),
+    rest.get(
+      `${contextPath}/api/process-instances/:instanceId/incidents`,
+      (_, res, ctx) =>
         res(
           ctx.json({
             count: 2,
           })
         )
-      )
-    );
+    )
+  );
+};
+
+describe('Instance', () => {
+  beforeEach(() => {
+    mockRequests();
 
     modificationsStore.reset();
+  });
+
+  afterEach(() => {
+    window.clientConfig = undefined;
   });
 
   it('should render and set the page title', async () => {
@@ -715,6 +734,73 @@ describe('Instance', () => {
     );
 
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    storeStateLocally({
+      [`hideModificationHelperModal`]: true,
+    });
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /modify instance/i,
+      })
+    );
+
+    await user.click(
+      screen.getByRole('link', {
+        name: /View process someProcessName version 1 instances/,
+      })
+    );
+
+    expect(
+      await screen.findByText(
+        'By leaving this page, all planned modification will be discarded.'
+      )
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Stay'}));
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByText(
+        'By leaving this page, all planned modification will be discarded.'
+      )
+    );
+
+    await user.click(
+      screen.getByRole('link', {
+        name: /View process someProcessName version 1 instances/,
+      })
+    );
+
+    expect(
+      await screen.findByText(
+        'By leaving this page, all planned modification will be discarded.'
+      )
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Leave'}));
+
+    expect(await screen.findByText('instances page')).toBeInTheDocument();
+  });
+
+  it('should block navigation when modification mode is enabled - with context path', async () => {
+    const contextPath = '/custom';
+    window.clientConfig = {
+      contextPath,
+    };
+
+    mockRequests(contextPath);
+
+    mockServer.use(
+      rest.get('/custom/api/process-instances/:id', (_, res, ctx) =>
+        res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
+      )
+    );
+
+    const {user} = render(<ProcessInstance />, {
+      wrapper: getWrapper(`${contextPath}/processes/4294980768`, contextPath),
+    });
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
     );
