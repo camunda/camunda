@@ -1004,13 +1004,14 @@ public class ModifyProcessInstanceTerminationTest {
             .withElementId("A")
             .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
             .getFirst();
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId("B")
-        .withElementType(BpmnElementType.USER_TASK)
-        .limit(3)
-        .map(Record::getKey)
-        .toList();
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("B")
+                .withElementType(BpmnElementType.USER_TASK)
+                .limit(3))
+        .describedAs("Expect that all 3 user tasks are activated")
+        .hasSize(3);
     final var elements =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
