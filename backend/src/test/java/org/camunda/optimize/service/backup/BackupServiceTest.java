@@ -71,7 +71,7 @@ public class BackupServiceTest {
       () -> backupService.triggerBackup("backupid")
     );
     assertThat(thrown.getMessage()).isEqualTo(
-      "Cannot trigger backup because no Elasticsearch snapshot repository name found in Optimize " +
+      "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize " +
         "configuration.");
   }
 
@@ -124,7 +124,7 @@ public class BackupServiceTest {
       () -> backupService.getBackupState("backupid")
     );
     assertThat(thrown.getMessage()).isEqualTo(
-      "Cannot trigger backup because no Elasticsearch snapshot repository name found in Optimize " +
+      "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize " +
         "configuration.");
   }
 

@@ -97,7 +97,7 @@ public class BackupService {
   private void validateRepositoryExists() {
     if (StringUtils.isEmpty(configurationService.getEsSnapshotRepositoryName())) {
       final String reason =
-        "Cannot trigger backup because no Elasticsearch snapshot repository name found in Optimize configuration.";
+        "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize configuration.";
       log.error(reason);
       throw new OptimizeConfigurationException(reason);
     } else {
