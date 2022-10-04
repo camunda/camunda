@@ -7,6 +7,7 @@ package org.camunda.optimize.util;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.EndEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -21,10 +22,10 @@ public class ZeebeBpmnModels {
   public static final String USER_TASK = "user_task";
   public static final String END_EVENT = "end";
   public static final String END_EVENT_2 = "end2";
-  public static final String END_EVENT_3 = "end3";
+  public static final String TERMINATE_END_EVENT = "terminate-end";
   public static final String CATCH_EVENT = "catchEvent";
-  private static final String CONVERGING_GATEWAY = "converging_gateway";
-  private static final String DIVERGING_GATEWAY = "diverging_gateway";
+  public static final String CONVERGING_GATEWAY = "converging_gateway";
+  public static final String DIVERGING_GATEWAY = "diverging_gateway";
 
   public static BpmnModelInstance createStartEndProcess(final String processName) {
     return createStartEndProcess(processName, null);
@@ -51,6 +52,25 @@ public class ZeebeBpmnModels {
       .done();
   }
 
+  public static BpmnModelInstance createSingleStartDoubleEndEventProcess(final String processName) {
+    return Bpmn.createExecutableProcess(processName)
+      .name(processName)
+      .startEvent(START_EVENT)
+      .parallelGateway()
+      .endEvent(END_EVENT)
+      .moveToLastGateway()
+      .endEvent(END_EVENT_2)
+      .done();
+  }
+
+  public static BpmnModelInstance createTerminateEndEventProcess(final String processName) {
+    return Bpmn.createExecutableProcess(processName)
+      .name(processName)
+      .startEvent()
+      .endEvent(TERMINATE_END_EVENT, EndEventBuilder::terminate)
+      .done();
+  }
+
   public static BpmnModelInstance createIncidentProcess(final String processName) {
     return Bpmn.createExecutableProcess()
       .name(processName)
@@ -59,7 +79,7 @@ public class ZeebeBpmnModels {
         CATCH_EVENT,
         e -> e.message(m -> m.name("catch").zeebeCorrelationKeyExpression("orderId"))
       )
-      .endEvent(END_EVENT_3).name(null)
+      .endEvent(END_EVENT_2).name(null)
       .done();
   }
 
@@ -82,6 +102,21 @@ public class ZeebeBpmnModels {
       .endEvent(END_EVENT)
       .moveToNode(DIVERGING_GATEWAY).condition("Do Loop", "=loop=true")
       .connectTo(CONVERGING_GATEWAY)
+      .done();
+  }
+
+  public static BpmnModelInstance createInclusiveGatewayProcess(final String processName) {
+    return Bpmn.createExecutableProcess()
+      .name(processName)
+      .startEvent(START_EVENT)
+      .inclusiveGateway(DIVERGING_GATEWAY)
+      .sequenceFlowId("s1")
+      .conditionExpression("= contains(varName,\"a\")")
+      .endEvent(END_EVENT)
+      .moveToLastGateway()
+      .sequenceFlowId("s2")
+      .conditionExpression("= contains(varName,\"b\")")
+      .endEvent(END_EVENT_2)
       .done();
   }
 
