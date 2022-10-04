@@ -33,6 +33,7 @@ import io.camunda.zeebe.backup.s3.manifest.ValidBackupManifest;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -438,6 +439,9 @@ public final class S3BackupStore implements BackupStore {
                     StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(
                             credentials.accessKey(), credentials.secretKey()))));
+    config
+        .apiCallTimeout()
+        .ifPresent(timeout -> builder.overrideConfiguration(cfg -> cfg.apiCallTimeout(timeout)));
     return builder.build();
   }
 }
