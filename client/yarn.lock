@@ -7235,10 +7235,10 @@ forwarded@~0.1.2:
   resolved "https://registry.yarnpkg.com/forwarded/-/forwarded-0.1.2.tgz#98c23dab1175657b8c0573e8ceccd91b0ff18c84"
   integrity sha1-mMI9qxF1ZXuMBXPozszZGw/xjIQ=
 
-fp-ts@^2.12.1:
-  version "2.12.1"
-  resolved "https://registry.yarnpkg.com/fp-ts/-/fp-ts-2.12.1.tgz#e389488bfd1507af06bd5965e97367edcd4fabad"
-  integrity sha512-oxvgqUYR6O9VkKXrxkJ0NOyU0FrE705MeqgBUMEPWyTu6Pwn768cJbHChw2XOBlgFLKfIHxjr2OOBFpv2mUGZw==
+fp-ts@^2.9.5:
+  version "2.12.3"
+  resolved "https://registry.yarnpkg.com/fp-ts/-/fp-ts-2.12.3.tgz#d991b1e8467d325dadbb6b0ab9524f773e9c3c49"
+  integrity sha512-8m0XvW8kZbfnJOA4NvSVXu95mLbPf4LQGwQyqVukIYS4KzSNJiyKSmuZUmbVHteUi6MGkAJGPb0goPZqI+Tsqg==
 
 fragment-cache@^0.2.1:
   version "0.2.1"
@@ -8041,6 +8041,11 @@ http-signature@~1.2.0:
     assert-plus "^1.0.0"
     jsprim "^1.2.2"
     sshpk "^1.7.0"
+
+http-status-codes@^2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/http-status-codes/-/http-status-codes-2.2.0.tgz#bb2efe63d941dfc2be18e15f703da525169622be"
+  integrity sha512-feERVo9iWxvnejp3SEfm/+oNG517npqL2/PIA8ORjyOZjGC7TwCRQsZylciLS64i6pJ0wRYz3rkXLRwbtFa8Ng==
 
 https-browserify@^1.0.0:
   version "1.0.0"
@@ -15298,10 +15303,10 @@ testcafe-browser-tools@2.0.23:
     read-file-relative "^1.2.0"
     which-promise "^1.0.0"
 
-testcafe-hammerhead@24.7.3, testcafe-hammerhead@>=19.4.0:
-  version "24.7.3"
-  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-24.7.3.tgz#d3e3db345026364f738b20c2714cd049d8c1a307"
-  integrity sha512-3VfGuFLoh9selCk88zqDG5KxN2A73nBzYRaymQHlh3fFcaQ6XH1gkOGEn0MWaly+aDcG2snBFlK82n1i/vz2jA==
+testcafe-hammerhead@24.7.4, testcafe-hammerhead@>=19.4.0:
+  version "24.7.4"
+  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-24.7.4.tgz#b32f7bccc4e5593a178c509934744e5f7e514cf1"
+  integrity sha512-0fWktWkn6QcKGfXobu297EMKyTrDEFFyK+2qEUv9ldG9PMaZ6ZmXicckidTWtIao+ACFL8KlFC5DzXH2MZVhcg==
   dependencies:
     acorn-hammerhead "0.6.1"
     asar "^2.0.1"
@@ -15348,13 +15353,13 @@ testcafe-legacy-api@5.1.5:
     strip-bom "^2.0.0"
     testcafe-hammerhead ">=19.4.0"
 
-testcafe-reporter-dashboard@1.0.0-rc.3:
-  version "1.0.0-rc.3"
-  resolved "https://registry.yarnpkg.com/testcafe-reporter-dashboard/-/testcafe-reporter-dashboard-1.0.0-rc.3.tgz#9065f7265ea2d63c171f867f23b6d8d9e5d9f1ae"
-  integrity sha512-F4gphX9/KlZzEz26I9LwUw7DKdKFQEpsU4Pr04ssBOJCyZh4ST7kuOyB+JMqr4iJfE9zu6+g6aaXumM+ad61JA==
+testcafe-reporter-dashboard@^0.2.7-rc.1:
+  version "0.2.7-rc.1"
+  resolved "https://registry.yarnpkg.com/testcafe-reporter-dashboard/-/testcafe-reporter-dashboard-0.2.7-rc.1.tgz#e7320eb27147b26b3215e92d0e48398a91956673"
+  integrity sha512-Cc8wk71p4WlRcNu1bYsTm7dB0JDCCzf1NDuOTua1caJ0cG7Ov6eanE/e1dpzAnBOCgz/uEM50GJhuE4iBBxykw==
   dependencies:
     es6-promise "^4.2.8"
-    fp-ts "^2.12.1"
+    fp-ts "^2.9.5"
     io-ts "^2.2.14"
     io-ts-types "^0.5.15"
     isomorphic-fetch "^3.0.0"
@@ -15394,10 +15399,10 @@ testcafe-safe-storage@^1.1.1:
   resolved "https://registry.yarnpkg.com/testcafe-safe-storage/-/testcafe-safe-storage-1.1.2.tgz#dacfda9a51c77f61f11b13506d4004dd7f27eb73"
   integrity sha512-6km7D26+KCQGeFlSQ9fVEU7tD8qdioSpqzxU8CCZkd2KzBS0jTFkqaJ54rPaLdd5+wdhgO3+as3LMm4F0EDeYA==
 
-testcafe@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-2.0.0.tgz#fad02f73d8ae6bee14f4d1922420beaa28b728de"
-  integrity sha512-8VZTGBnEQUzFRAFg67vETGFB1DyE3Q/Vmx3BpHz3r6PosRAoTOUNBJiLUAe9mpbs4cjoF5kzqSXbCbdF4tL1UQ==
+testcafe@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-2.0.1.tgz#6edd34edcd2c7569a774e140ce80944f632a9d29"
+  integrity sha512-ICGHFBQTNRKiaS4mAkh2Y6ZR/iVi/TqKxoQNQHnIslK1++HNlb8bsFC7AHsqiAN3cMXrsa8qPawJYN4zj0FqMQ==
   dependencies:
     "@babel/core" "^7.12.1"
     "@babel/plugin-proposal-async-generator-functions" "^7.12.1"
@@ -15444,6 +15449,7 @@ testcafe@^2.0.0:
     globby "^11.0.4"
     graceful-fs "^4.1.11"
     graphlib "^2.1.5"
+    http-status-codes "^2.2.0"
     humanize-duration "^3.25.0"
     import-lazy "^3.1.0"
     indent-string "^1.2.2"
@@ -15478,9 +15484,9 @@ testcafe@^2.0.0:
     source-map-support "^0.5.16"
     strip-bom "^2.0.0"
     testcafe-browser-tools "2.0.23"
-    testcafe-hammerhead "24.7.3"
+    testcafe-hammerhead "24.7.4"
     testcafe-legacy-api "5.1.5"
-    testcafe-reporter-dashboard "1.0.0-rc.3"
+    testcafe-reporter-dashboard "^0.2.7-rc.1"
     testcafe-reporter-json "^2.1.0"
     testcafe-reporter-list "^2.1.0"
     testcafe-reporter-minimal "^2.1.0"
