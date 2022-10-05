@@ -1168,11 +1168,41 @@ describe('VariablePanel', () => {
       screen.queryByRole('button', {name: /add variable/i})
     ).not.toBeInTheDocument();
 
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              flowNodeInstanceId: '2251799813695856',
+              instanceCount: 1,
+              instanceMetadata: {
+                endDate: null,
+                startDate: '2022-09-30T15:00:31.772+0000',
+              },
+            })
+          )
+      )
+    );
+
     // select existing scope
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'Activity_0qtp1k6',
       flowNodeInstanceId: '2251799813695856',
     });
+
+    await waitFor(() =>
+      expect(flowNodeMetaDataStore.state.metaData).toEqual({
+        flowNodeInstanceId: '2251799813695856',
+        instanceCount: 1,
+        instanceMetadata: {
+          endDate: null,
+          startDate: '2018-12-12 00:00:00',
+          jobDeadline: null,
+          incidentErrorType: undefined,
+        },
+      })
+    );
 
     expect(
       screen.queryByText(
@@ -1406,7 +1436,7 @@ describe('VariablePanel', () => {
     expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
   });
 
-  it('should display readonly state for existing node if all running tokens on the flow node are canceled and one new token is added', async () => {
+  it('should display readonly state for existing node if cancel modification is applied on the flow node and one new token is added', async () => {
     mockServer.use(
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
@@ -1496,6 +1526,88 @@ describe('VariablePanel', () => {
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         scopeId: 'some-new-scope-id',
+        parentScopeIds: {},
+      },
+    });
+
+    expect(
+      screen.queryByRole('button', {name: /add variable/i})
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText('The Flow Node has no Variables')
+    ).toBeInTheDocument();
+  });
+
+  it('should display readonly state for existing node if it has finished state and one new token is added on the same flow node', async () => {
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              flowNodeInstanceId: '2251799813695856',
+              instanceCount: 1,
+              instanceMetadata: {endDate: '2022-04-10T15:01:31.794+0000'},
+            })
+          )
+      )
+    );
+
+    modificationsStore.enableModificationMode();
+
+    render(<VariablePanel />, {wrapper: Wrapper});
+    expect(await screen.findByText('test')).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /add variable/i})
+    ).toBeInTheDocument();
+    expect(screen.getByText('test')).toBeInTheDocument();
+
+    mockServer.use(
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json([]))
+      )
+    );
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'Activity_0qtp1k6',
+      flowNodeInstanceId: '2251799813695856',
+    });
+
+    await waitFor(() =>
+      expect(flowNodeMetaDataStore.state.metaData).toEqual({
+        flowNodeInstanceId: '2251799813695856',
+        instanceCount: 1,
+        instanceMetadata: {
+          endDate: '2018-12-12 00:00:00',
+          startDate: null,
+          jobDeadline: null,
+          incidentErrorType: undefined,
+        },
+      })
+    );
+
+    // initial state
+    expect(
+      await screen.findByText('The Flow Node has no Variables')
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole('button', {name: /add variable/i})
+    ).not.toBeInTheDocument();
+
+    // add one new token
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        flowNode: {
+          id: 'Activity_0qtp1k6',
+          name: 'Flow Node with running tokens',
+        },
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        scopeId: 'new-scope',
         parentScopeIds: {},
       },
     });

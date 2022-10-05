@@ -51,8 +51,9 @@ const VariablesForm: React.FC<
       (!modificationsStore.isCancelModificationAppliedOnFlowNode(
         currentFlowNodeSelection.flowNodeId
       ) &&
-        (flowNodeMetaDataStore.isSelectedInstanceRunning ||
-          flowNodeSelectionStore.newTokenCountForSelectedNode === 1))
+        flowNodeMetaDataStore.isSelectedInstanceRunning) ||
+      (!flowNodeSelectionStore.hasRunningOrFinishedTokens &&
+        flowNodeSelectionStore.newTokenCountForSelectedNode === 1)
     );
   });
 
