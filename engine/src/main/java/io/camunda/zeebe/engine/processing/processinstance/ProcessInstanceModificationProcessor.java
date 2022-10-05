@@ -198,6 +198,12 @@ public final class ProcessInstanceModificationProcessor
             instruction -> {
               final var elementInstance =
                   elementInstanceState.getInstance(instruction.getElementInstanceKey());
+              if (elementInstance == null) {
+                // at this point this element instance has already been terminated as a result of
+                // one of the previous terminate instructions. As a result we no longer need to
+                // terminate it.
+                return;
+              }
               final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
 
               terminateElement(elementInstance, sideEffectQueue);
