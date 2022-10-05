@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -732,6 +734,79 @@ public class ModifyProcessInstanceTest {
     verifyThatElementIsCompleted(processInstanceKey, "B");
     verifyThatElementIsCompleted(processInstanceKey, "sp");
     verifyThatProcessInstanceIsCompleted(processInstanceKey);
+  }
+
+  @Test
+  public void shouldActivateElementInInterruptedFlowScope() {
+    // given
+    final Consumer<EventSubProcessBuilder> eventSubProcess =
+        eventSubprocess ->
+            eventSubprocess
+                .startEvent()
+                .interrupting(true)
+                .message(message -> message.name("interrupt").zeebeCorrelationKeyExpression("key"))
+                .userTask("A")
+                .endEvent();
+
+    final Consumer<SubProcessBuilder> subProcess =
+        subprocess -> subprocess.embeddedSubProcess().startEvent().userTask("C").endEvent();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .eventSubProcess("event-subprocess", eventSubProcess)
+                .startEvent()
+                .userTask("B")
+                .subProcess("subprocess", subProcess)
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "key-1").create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("B")
+        .await();
+
+    ENGINE
+        .message()
+        .withName("interrupt")
+        .withCorrelationKey("key-1")
+        .withTimeToLive(Duration.ofMinutes(1))
+        .publish();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("C")
+        .activateElement("subprocess")
+        .modify();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("C")
+                .exists())
+        .isTrue();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("subprocess")
+                .limit(2)
+                .count())
+        .isEqualTo(2);
   }
 
   private static void verifyThatRootElementIsActivated(
