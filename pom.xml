@@ -28,7 +28,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <version.zeebe>8.1.0</version.zeebe>
-    <version.identity>8.1.0-alpha5</version.identity>
+    <version.identity>8.1.0</version.identity>
     <version.elasticsearch>7.17.6</version.elasticsearch>
     <version.spring.boot>2.6.7</version.spring.boot>
     <version.spring.session.bom>2021.2.0</version.spring.session.bom>

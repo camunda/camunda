@@ -39,7 +39,7 @@ services:
       - keycloak
     restart: on-failure
     container_name: identity
-    image: camunda/identity:8.1.0-alpha5
+    image: camunda/identity:8.1.0
     ports:
       - "8084:8084"
     environment:
