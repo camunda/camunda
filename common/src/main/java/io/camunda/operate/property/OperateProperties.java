@@ -7,9 +7,11 @@
 package io.camunda.operate.property;
 
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,10 +20,13 @@ import org.springframework.stereotype.Component;
 @Component
 @Configuration
 @ConfigurationProperties(OperateProperties.PREFIX)
+@PropertySource("classpath:version.properties")
 public class OperateProperties {
 
   public static final String PREFIX = "camunda.operate";
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 1_000_000L;
+
+  private static final String UNKNOWN_VERSION = "unknown-version";
 
   private boolean importerEnabled = true;
   private boolean archiverEnabled = true;
@@ -52,6 +57,10 @@ public class OperateProperties {
   private boolean enterprise = false;
 
   private String tasklistUrl = null;
+
+  @Value("${camunda.operate.internal.version.current}")
+  private String version = UNKNOWN_VERSION;
+
   @NestedConfigurationProperty
   private OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();
 
@@ -302,5 +311,14 @@ public class OperateProperties {
 
   public void setTasklistUrl(String tasklistUrl) {
     this.tasklistUrl = tasklistUrl;
+  }
+
+  public String getVersion() {
+    return version;
+  }
+
+  public OperateProperties setVersion(String version) {
+    this.version = version;
+    return this;
   }
 }

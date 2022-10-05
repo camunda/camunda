@@ -57,8 +57,6 @@ public class BackupManager {
   private static final Logger logger = LoggerFactory.getLogger(BackupManager.class);
   private static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "type=repository_missing_exception";
   public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "type=snapshot_missing_exception";
-  public static final String UNKNOWN_VERSION = "unknown-version";
-
   @Autowired
   private List<Prio1Backup> prio1BackupIndices;
 
@@ -86,8 +84,6 @@ public class BackupManager {
 
   private String[][] indexPatternsOrdered;
 
-  private String currentOperateVersion;
-
   public TakeBackupResponseDto takeBackup(TakeBackupRequestDto request) {
     validateRepositoryExists();
     validateNoDuplicateBackupId(request.getBackupId());
@@ -106,7 +102,7 @@ public class BackupManager {
     String repositoryName = getRepositoryName();
     int count = getIndexPatternsOrdered().length;
     List<String> snapshotNames = new ArrayList<>();
-    String version = getCurrentOperateVersion() == null ? UNKNOWN_VERSION : getCurrentOperateVersion();
+    String version = getCurrentOperateVersion();
     for (int index = 0; index < count; index++) {
       String[] indexPattern = getIndexPatternsOrdered()[index];
       Metadata metadata = new Metadata().setVersion(version).setPartCount(count).setPartNo(index + 1);
@@ -227,10 +223,7 @@ public class BackupManager {
   }
 
   private String getCurrentOperateVersion() {
-    if (currentOperateVersion == null) {
-      currentOperateVersion = BackupManager.class.getPackage().getImplementationVersion();
-    }
-    return currentOperateVersion;
+    return operateProperties.getVersion().toLowerCase();
   }
 
   @Bean("backupThreadPoolExecutor")
