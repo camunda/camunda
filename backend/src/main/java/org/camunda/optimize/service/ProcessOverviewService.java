@@ -44,7 +44,6 @@ import static org.camunda.optimize.service.onboardinglistener.OnboardingNotifica
 @Slf4j
 public class ProcessOverviewService {
 
-  public static final String APP_CUE_DASHBOARD_SUFFIX = "?appcue=7c293dbb-3957-4187-a079-f0237161c489";
   private static final String PENDING_OWNER_UPDATE_TEMPLATE = "pendingauthcheck#%s#%s";
 
   private final DefinitionService definitionService;
@@ -81,8 +80,7 @@ public class ProcessOverviewService {
       .stream()
       .map(entry -> {
         final String procDefKey = entry.getKey();
-        String appCueSuffix = collectionAlreadyCreatedForProcess(procDefKey) ? "" : APP_CUE_DASHBOARD_SUFFIX;
-        String magicLinkToDashboard = String.format(MAGIC_LINK_TEMPLATE, "", procDefKey, procDefKey) + appCueSuffix;
+        String magicLinkToDashboard = String.format(MAGIC_LINK_TEMPLATE, "", procDefKey, procDefKey);
         final Optional<ProcessOverviewDto> overviewForKey = Optional.ofNullable(processOverviewByKey.get(procDefKey));
         return new ProcessOverviewResponseDto(
           entry.getValue(),
@@ -193,15 +191,6 @@ public class ProcessOverviewService {
       }, () -> {
         throw new NotFoundException("Process definition with key " + processDefKey + " does not exist.");
       });
-  }
-
-  private boolean collectionAlreadyCreatedForProcess(final String procDefKey) {
-    try {
-      return collectionService.getCollectionDefinition(procDefKey).isAutomaticallyCreated();
-    } catch (NotFoundException e) {
-      // Doesn't exist yet, return false
-      return false;
-    }
   }
 
 }
