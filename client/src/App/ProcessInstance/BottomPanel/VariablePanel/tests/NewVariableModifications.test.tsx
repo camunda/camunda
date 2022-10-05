@@ -8,6 +8,7 @@
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {VariablePanel} from '../index';
 import {
+  findByText,
   render,
   screen,
   UserEvent,
@@ -511,4 +512,75 @@ describe('New Variable Modifications', () => {
       ]);
     }
   );
+
+  it('should be able to remove the first added variable modification after switching between flow node instances', async () => {
+    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+    modificationsStore.enableModificationMode();
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
+    });
+
+    // add first variable
+    await user.click(screen.getByRole('button', {name: /add variable/i}));
+    expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
+
+    await editNameFromTextfieldAndBlur(user, 'test1');
+    await editValueFromTextfieldAndBlur(user, '123');
+
+    expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
+
+    // add second variable
+    await user.click(screen.getByRole('button', {name: /add variable/i}));
+    expect(await screen.findAllByTestId('new-variable-name')).toHaveLength(2);
+
+    await editNameFromTextfieldAndBlur(user, 'test2');
+    await editValueFromTextfieldAndBlur(user, '456');
+
+    expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
+
+    mockServer.use(
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json([]))
+      ),
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) => res.once(ctx.json(undefined))
+      )
+    );
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'someProcessName',
+      flowNodeInstanceId: 'test',
+    });
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+
+    mockServer.use(
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json([]))
+      ),
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) => res.once(ctx.json(undefined))
+      )
+    );
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeInstanceId: 'instance_id',
+      isMultiInstance: false,
+    });
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+
+    const [, deleteFirstAddedVariable] = screen.getAllByRole('button', {
+      name: /delete variable/i,
+    });
+    await user.click(deleteFirstAddedVariable!);
+
+    expect(screen.queryByDisplayValue('test1')).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue('123')).not.toBeInTheDocument();
+
+    expect(screen.getByDisplayValue('test2')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('456')).toBeInTheDocument();
+  });
 });

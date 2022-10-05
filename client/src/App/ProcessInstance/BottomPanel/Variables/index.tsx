@@ -178,7 +178,9 @@ const Variables: React.FC<Props> = observer(
                               .map((variableName, index) => {
                                 return (
                                   <TR
-                                    key={variableName}
+                                    key={
+                                      fields.value[index]?.id ?? variableName
+                                    }
                                     data-testid={`newVariables[${index}]`}
                                   >
                                     <NewVariableModification
