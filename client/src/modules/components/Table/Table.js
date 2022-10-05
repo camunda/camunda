@@ -40,8 +40,8 @@ export default function Table({
   const columns = React.useMemo(() => Table.formatColumns(head, '', columnWidths.current), [head]);
   const data = React.useMemo(() => Table.formatData(head, body), [head, body]);
   const initialSorting = React.useMemo(
-    () => formatSorting(sorting, resultType, columns),
-    [columns, resultType, sorting]
+    () => formatSorting(sorting, resultType, columns, allowLocalSorting),
+    [columns, resultType, sorting, allowLocalSorting]
   );
 
   const {
@@ -107,7 +107,7 @@ export default function Table({
               sortColumn = 'value';
             }
           }
-          updateSorting && updateSorting(sortColumn, sorting?.order === 'asc' ? 'desc' : 'asc');
+          updateSorting?.(sortColumn, sorting?.order === 'asc' ? 'desc' : 'asc');
         }
       },
     };
@@ -259,7 +259,15 @@ export default function Table({
   );
 }
 
-function formatSorting(sorting, resultType, columns) {
+function formatSorting(sorting, resultType, columns, allowLocalSorting) {
+  if (allowLocalSorting) {
+    const firstSortableColumn = columns.find((column) => !column.disableSortBy);
+    if (firstSortableColumn) {
+      return [{id: firstSortableColumn.id, order: 'desc'}];
+    }
+    return [];
+  }
+
   if (!sorting) {
     return [];
   }

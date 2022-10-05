@@ -8,7 +8,7 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {Select} from 'components';
+import {Icon, Select} from 'components';
 
 import Table from './Table';
 
@@ -193,4 +193,23 @@ it('should go to the last page if data changes in a way that current page is emp
   runAllEffects();
 
   expect(spy).toHaveBeenCalledWith({pageIndex: 4, pageSize: 20});
+});
+
+it('should be sorted desc by default when allowed to sort locally', () => {
+  const node = shallow(
+    <Table {...{head: ['a'], body: generateData(21), foot: []}} allowLocalSorting />
+  );
+
+  expect(node.find(Icon).at(0).prop('type')).toBe('up');
+  expect(node.find('td').at(0).childAt(0).prop('value')).toBe('0');
+});
+
+it('should change sorting to asc when clicked on header', () => {
+  const node = shallow(
+    <Table {...{head: ['a'], body: generateData(21), foot: []}} allowLocalSorting />
+  );
+
+  node.find('thead .cellContent').at(0).simulate('click', {persist: jest.fn()});
+  expect(node.find(Icon).at(0).prop('type')).toBe('down');
+  expect(node.find('td').at(0).childAt(0).prop('value')).toBe('20');
 });
