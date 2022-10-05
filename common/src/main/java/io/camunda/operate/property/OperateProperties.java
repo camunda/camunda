@@ -91,6 +91,7 @@ public class OperateProperties {
   @NestedConfigurationProperty
   private OAuthClientProperties client = new OAuthClientProperties();
 
+  @NestedConfigurationProperty
   private BackupProperties backup = new BackupProperties();
 
   public boolean isImporterEnabled() {
