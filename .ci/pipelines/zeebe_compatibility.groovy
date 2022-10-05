@@ -229,9 +229,9 @@ pipeline {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
               container('gcloud') {
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe80.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe800.log'
               }
-              archiveArtifacts artifacts: 'elasticsearch_zeebe80.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearch_zeebe800.log', onlyIfSuccessful: false
             }
           }
         }
@@ -255,9 +255,9 @@ pipeline {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
               container('gcloud') {
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe81.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe801.log'
               }
-              archiveArtifacts artifacts: 'elasticsearch_zeebe81.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearch_zeebe801.log', onlyIfSuccessful: false
             }
           }
         }
@@ -281,9 +281,9 @@ pipeline {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
               container('gcloud'){
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe82.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe802.log'
               }
-              archiveArtifacts artifacts: 'elasticsearch_zeebe82.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearch_zeebe802.log', onlyIfSuccessful: false
             }
           }
         }
@@ -307,9 +307,9 @@ pipeline {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
               container('gcloud'){
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe83.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe803.log'
               }
-              archiveArtifacts artifacts: 'elasticsearch_zeebe83.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearch_zeebe803.log', onlyIfSuccessful: false
             }
           }
         }
@@ -333,9 +333,9 @@ pipeline {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
               container('gcloud'){
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe84.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe804.log'
               }
-              archiveArtifacts artifacts: 'elasticsearch_zeebe84.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearch_zeebe804.log', onlyIfSuccessful: false
             }
           }
         }
@@ -359,9 +359,9 @@ pipeline {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
               container('gcloud'){
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe85.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe805.log'
               }
-              archiveArtifacts artifacts: 'elasticsearch_zeebe85.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearch_zeebe805.log', onlyIfSuccessful: false
             }
           }
         }
@@ -385,9 +385,35 @@ pipeline {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
               container('gcloud'){
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe86.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe806.log'
               }
-              archiveArtifacts artifacts: 'elasticsearch_zeebe86.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearch_zeebe806.log', onlyIfSuccessful: false
+            }
+          }
+        }
+        stage("8.1.0") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-zeebe-8-1-0_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenIntegrationTestSpec("${env.CAMBPM_VERSION}", "${env.ES_VERSION}")
+            }
+          }
+          environment {
+            LABEL = "optimize-ci-build-zeebe-8-1-0_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+          }
+          steps {
+            integrationTestSteps("8.1.0", false)
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud'){
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe810.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_zeebe810.log', onlyIfSuccessful: false
             }
           }
         }
