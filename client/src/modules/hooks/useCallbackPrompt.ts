@@ -48,9 +48,14 @@ export function useCallbackPrompt(when: boolean) {
       const contextPath = window.clientConfig?.contextPath;
 
       if (contextPath !== undefined) {
+        const pathname = lastLocation.location.pathname.replace(
+          contextPath,
+          ''
+        );
+
         navigate({
           ...lastLocation.location,
-          pathname: lastLocation.location.pathname.replace(contextPath, ''),
+          pathname: pathname === '' ? '/' : pathname,
         });
       } else {
         navigate(lastLocation.location);

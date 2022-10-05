@@ -9,6 +9,7 @@ import {
   Route,
   unstable_HistoryRouter as HistoryRouter,
   Routes,
+  Link,
 } from 'react-router-dom';
 import {
   render,
@@ -84,6 +85,7 @@ function getWrapper(
           <Routes>
             <Route path="/processes/:processInstanceId" element={children} />
             <Route path="/processes" element={<>instances page</>} />
+            <Route path="/" element={<>dashboard page</>} />
           </Routes>
           <LocationLog />
         </HistoryRouter>
@@ -784,7 +786,7 @@ describe('Instance', () => {
     expect(await screen.findByText('instances page')).toBeInTheDocument();
   });
 
-  it('should block navigation when modification mode is enabled - with context path', async () => {
+  it('should block navigation when navigating to processes page modification mode is enabled - with context path', async () => {
     const contextPath = '/custom';
     window.clientConfig = {
       contextPath,
@@ -849,5 +851,70 @@ describe('Instance', () => {
     await user.click(screen.getByRole('button', {name: 'Leave'}));
 
     expect(await screen.findByText('instances page')).toBeInTheDocument();
+  });
+
+  it('should block navigation when navigating to dashboard with modification mode is enabled - with context path', async () => {
+    const contextPath = '/custom';
+    window.clientConfig = {
+      contextPath,
+    };
+
+    mockRequests(contextPath);
+
+    mockServer.use(
+      rest.get('/custom/api/process-instances/:id', (_, res, ctx) =>
+        res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
+      )
+    );
+
+    const {user} = render(
+      <>
+        <Link to="/">go to dashboard</Link>
+        <ProcessInstance />
+      </>,
+      {
+        wrapper: getWrapper(`${contextPath}/processes/4294980768`, contextPath),
+      }
+    );
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    storeStateLocally({
+      [`hideModificationHelperModal`]: true,
+    });
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /modify instance/i,
+      })
+    );
+
+    await user.click(screen.getByText(/go to dashboard/));
+
+    expect(
+      await screen.findByText(
+        'By leaving this page, all planned modification will be discarded.'
+      )
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Stay'}));
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByText(
+        'By leaving this page, all planned modification will be discarded.'
+      )
+    );
+
+    await user.click(screen.getByText(/go to dashboard/));
+
+    expect(
+      await screen.findByText(
+        'By leaving this page, all planned modification will be discarded.'
+      )
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Leave'}));
+
+    expect(await screen.findByText('dashboard page')).toBeInTheDocument();
   });
 });
