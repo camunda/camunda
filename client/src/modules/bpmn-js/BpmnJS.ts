@@ -281,7 +281,14 @@ class BpmnJS {
     position: OverlayPosition;
     type: string;
     isZoomFixed?: boolean;
-  }): string => {
+  }) => {
+    if (
+      this.#navigatedViewer?.get('elementRegistry')?.get(elementId) ===
+      undefined
+    ) {
+      return null;
+    }
+
     return this.#navigatedViewer?.get('overlays')?.add(elementId, type, {
       html: children,
       position: position,
