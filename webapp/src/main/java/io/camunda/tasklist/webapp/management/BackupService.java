@@ -7,6 +7,7 @@
 package io.camunda.tasklist.webapp.management;
 
 import io.camunda.tasklist.webapp.es.backup.BackupManager;
+import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.tasklist.webapp.rest.InternalAPIErrorController;
@@ -16,6 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -31,6 +34,11 @@ public class BackupService extends InternalAPIErrorController {
   public TakeBackupResponseDto takeBackup(@RequestBody TakeBackupRequestDto request) {
     validateRequest(request);
     return backupManager.takeBackup(request);
+  }
+
+  @GetMapping("/{backupId}")
+  public GetBackupStateResponseDto getBackupState(@PathVariable String backupId) {
+    return backupManager.getBackupState(backupId);
   }
 
   private void validateRequest(TakeBackupRequestDto request) {

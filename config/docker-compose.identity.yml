@@ -90,6 +90,7 @@ services:
       - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
       - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
       - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
+      - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
     ports:
       - 8081:8081
     depends_on:
@@ -115,6 +116,7 @@ services:
       - CAMUNDA_TASKLIST_IDENTITY_AUDIENCE=tasklist-api
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://localhost:18080/auth/realms/camunda-platform
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/certs
+      - CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME=test
     ports:
       - 8082:8082
     depends_on:

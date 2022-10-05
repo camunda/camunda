@@ -7,19 +7,24 @@
 package io.camunda.tasklist.property;
 
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 /** This class contains all project configuration parameters. */
 @Component
 @Configuration
 @ConfigurationProperties(TasklistProperties.PREFIX)
+@PropertySource("classpath:version.properties")
 public class TasklistProperties {
 
   public static final String PREFIX = "camunda.tasklist";
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 1_000_000L;
+
+  private static final String UNKNOWN_VERSION = "unknown-version";
 
   private boolean importerEnabled = true;
   private boolean archiverEnabled = true;
@@ -38,6 +43,9 @@ public class TasklistProperties {
   private Long batchOperationMaxSize = BATCH_OPERATION_MAX_SIZE_DEFAULT;
 
   private boolean enterprise = false;
+
+  @Value("${camunda.tasklist.internal.version.current}")
+  private String version = UNKNOWN_VERSION;
 
   @NestedConfigurationProperty
   private TasklistElasticsearchProperties elasticsearch = new TasklistElasticsearchProperties();
@@ -242,6 +250,15 @@ public class TasklistProperties {
 
   public TasklistProperties setBackup(BackupProperties backup) {
     this.backup = backup;
+    return this;
+  }
+
+  public String getVersion() {
+    return version;
+  }
+
+  public TasklistProperties setVersion(String version) {
+    this.version = version;
     return this;
   }
 }

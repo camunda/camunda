@@ -7,15 +7,21 @@
 package io.camunda.tasklist.webapp.es.backup;
 
 import static java.util.stream.Collectors.joining;
+import static org.elasticsearch.snapshots.SnapshotState.*;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.backup.*;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
+import io.camunda.tasklist.webapp.management.dto.BackupStateDto;
+import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,6 +39,7 @@ import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.snapshots.SnapshotInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,13 +53,10 @@ import org.springframework.stereotype.Component;
 @Configuration
 public class BackupManager {
 
+  public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "type=snapshot_missing_exception";
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupManager.class);
-
-  private static final String SNAPSHOT_NAME_PREFIX = "camunda_tasklist_{backupId}";
-  private static final String SNAPSHOT_NAME_PATTERN = "{prefix}_{version}_part_{index}_of_{count}";
   private static final String REPOSITORY_MISSING_EXCEPTION_TYPE =
       "type=repository_missing_exception";
-  private static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "type=snapshot_missing_exception";
 
   @Autowired private List<Prio1Backup> prio1BackupIndices;
 
@@ -65,6 +69,8 @@ public class BackupManager {
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired private RestHighLevelClient esClient;
+
+  @Autowired private ObjectMapper objectMapper;
 
   private Queue<CreateSnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
 
@@ -92,9 +98,12 @@ public class BackupManager {
     final String repositoryName = getRepositoryName();
     final int count = getIndexPatternsOrdered().length;
     final List<String> snapshotNames = new ArrayList<>();
+    final String version = getCurrentTasklistVersion();
     for (int index = 0; index < count; index++) {
       final String[] indexPattern = getIndexPatternsOrdered()[index];
-      final String snapshotName = getSnapshotName(request.getBackupId(), index + 1, count);
+      final Metadata metadata =
+          new Metadata().setVersion(version).setPartCount(count).setPartNo(index + 1);
+      final String snapshotName = metadata.buildSnapshotName(request.getBackupId());
       requestsQueue.offer(
           new CreateSnapshotRequest()
               .repository(repositoryName)
@@ -104,6 +113,7 @@ public class BackupManager {
               // allowNoIndices = true - indices defined by wildcards, e.g. archived, MIGHT BE
               // absent
               .indicesOptions(IndicesOptions.fromOptions(false, true, true, true))
+              .userMetadata(objectMapper.convertValue(metadata, new TypeReference<>() {}))
               .featureStates(new String[] {"none"})
               .waitForCompletion(true));
       LOGGER.debug("Snapshot scheduled: " + snapshotName);
@@ -165,7 +175,7 @@ public class BackupManager {
     final GetSnapshotsRequest snapshotsStatusRequest =
         new GetSnapshotsRequest()
             .repository(getRepositoryName())
-            .snapshots(new String[] {getSnapshotNamePrefix(backupId) + "*"});
+            .snapshots(new String[] {Metadata.buildSnapshotNamePrefix(backupId) + "*"});
     final GetSnapshotsResponse response;
     try {
       response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
@@ -203,20 +213,6 @@ public class BackupManager {
     esClient
         .snapshot()
         .createAsync(snapshotRequest, RequestOptions.DEFAULT, getSnapshotActionListener());
-  }
-
-  private String getSnapshotName(String backupId, int index, int count) {
-    return SNAPSHOT_NAME_PATTERN
-        .replace("{prefix}", getSnapshotNamePrefix(backupId))
-        .replace(
-            "{version}",
-            getCurrentOperateVersion() == null ? "unknown-version" : getCurrentOperateVersion())
-        .replace("{index}", index + "")
-        .replace("{count}", count + "");
-  }
-
-  private String getSnapshotNamePrefix(String backupId) {
-    return SNAPSHOT_NAME_PREFIX.replace("{backupId}", backupId);
   }
 
   private String[][] getIndexPatternsOrdered() {
@@ -262,11 +258,8 @@ public class BackupManager {
     }
   }
 
-  private String getCurrentOperateVersion() {
-    if (currentOperateVersion == null) {
-      currentOperateVersion = BackupManager.class.getPackage().getImplementationVersion();
-    }
-    return currentOperateVersion;
+  private String getCurrentTasklistVersion() {
+    return tasklistProperties.getVersion().toLowerCase();
   }
 
   @Bean("backupThreadPoolExecutor")
@@ -316,5 +309,52 @@ public class BackupManager {
         return;
       }
     };
+  }
+
+  public GetBackupStateResponseDto getBackupState(String backupId) {
+    final List<SnapshotInfo> snapshots = findSnapshots(backupId);
+
+    final Metadata metadata =
+        objectMapper.convertValue(snapshots.get(0).userMetadata(), Metadata.class);
+    final Integer expectedSnapshotsCount = metadata.getPartCount();
+    if (snapshots.size() == expectedSnapshotsCount
+        && snapshots.stream().map(SnapshotInfo::state).allMatch(s -> SUCCESS.equals(s))) {
+      return new GetBackupStateResponseDto(BackupStateDto.COMPLETED);
+    }
+    if (snapshots.stream()
+        .map(SnapshotInfo::state)
+        .anyMatch(s -> FAILED.equals(s) || PARTIAL.equals(s))) {
+      return new GetBackupStateResponseDto(BackupStateDto.FAILED);
+    }
+    if (snapshots.stream().map(SnapshotInfo::state).anyMatch(s -> INCOMPATIBLE.equals(s))) {
+      return new GetBackupStateResponseDto(BackupStateDto.INCOMPATIBLE);
+    }
+    if (snapshots.stream().map(SnapshotInfo::state).anyMatch(s -> IN_PROGRESS.equals(s))) {
+      return new GetBackupStateResponseDto(BackupStateDto.IN_PROGRESS);
+    }
+    return new GetBackupStateResponseDto(BackupStateDto.INCOMPLETE);
+  }
+
+  private List<SnapshotInfo> findSnapshots(String backupId) {
+    final GetSnapshotsRequest snapshotsStatusRequest =
+        new GetSnapshotsRequest()
+            .repository(getRepositoryName())
+            .snapshots(new String[] {Metadata.buildSnapshotNamePrefix(backupId) + "*"});
+    final GetSnapshotsResponse response;
+    try {
+      response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
+      return response.getSnapshots();
+    } catch (Exception e) {
+      if (e instanceof ElasticsearchStatusException
+          && ((ElasticsearchStatusException) e)
+              .getDetailedMessage()
+              .contains(SNAPSHOT_MISSING_EXCEPTION_TYPE)) {
+        // no snapshot with given backupID exists
+        throw new NotFoundException(String.format("No backup with id [%s] found.", backupId), e);
+      }
+      final String reason =
+          String.format("Exception occurred when searching for backup with ID [%s].", backupId);
+      throw new TasklistRuntimeException(reason, e);
+    }
   }
 }

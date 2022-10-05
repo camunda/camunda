@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.rest;
 
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.InternalAPIException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
@@ -26,8 +27,8 @@ public class InternalAPIErrorController {
   @Autowired private TasklistProfileService tasklistProfileService;
 
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<Error> handleException(Exception exception) {
+  @ExceptionHandler(TasklistRuntimeException.class)
+  public ResponseEntity<Error> handleException(TasklistRuntimeException exception) {
     LOGGER.warn(exception.getMessage(), exception);
     final Error error =
         new Error()
@@ -61,7 +62,7 @@ public class InternalAPIErrorController {
             .setStatus(HttpStatus.NOT_FOUND.value())
             .setInstance(exception.getInstance())
             .setMessage(tasklistProfileService.getMessageByProfileFor(exception));
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);
   }
