@@ -29,7 +29,7 @@ import org.junit.Test;
 
 public final class SignalEventValidationTest {
 
-  @ClassRule public static final EngineRule engine = EngineRule.singlePartition();
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -45,7 +45,7 @@ public final class SignalEventValidationTest {
         Bpmn.createExecutableProcess(processId).startEvent("start").signal("signalName").done();
 
     final Record<DeploymentRecordValue> deployment =
-        engine.deployment().withXmlResource(processDefinition).deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).deploy();
 
     // then
     assertThat(deployment.getKey())
@@ -68,7 +68,7 @@ public final class SignalEventValidationTest {
             .done();
 
     final Record<DeploymentRecordValue> deployment =
-        engine.deployment().withXmlResource(processDefinition).deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).deploy();
 
     // then
     assertThat(deployment.getKey())
@@ -93,7 +93,7 @@ public final class SignalEventValidationTest {
             .done();
 
     final Record<DeploymentRecordValue> deployment =
-        engine.deployment().withXmlResource(processDefinition).deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).deploy();
 
     // then
     assertThat(deployment.getKey())
@@ -108,7 +108,7 @@ public final class SignalEventValidationTest {
 
     // when
     final Record<DeploymentRecordValue> deployment =
-        engine.deployment().withXmlResource(processDefinition).deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).deploy();
 
     // then
     assertThat(deployment.getKey())
@@ -131,7 +131,7 @@ public final class SignalEventValidationTest {
             .done();
 
     final Record<DeploymentRecordValue> deployment =
-        engine.deployment().withXmlResource(processDefinition).deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).deploy();
 
     // then
     assertThat(deployment.getKey())
@@ -158,7 +158,7 @@ public final class SignalEventValidationTest {
             .done();
 
     final Record<DeploymentRecordValue> deployment =
-        engine.deployment().withXmlResource(processDefinition).deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).deploy();
 
     // then
     assertThat(deployment.getKey())
@@ -175,7 +175,7 @@ public final class SignalEventValidationTest {
 
     // when
     final Record<DeploymentRecordValue> deployment =
-        engine.deployment().withXmlResource(processDefinition).deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).deploy();
 
     // then
     assertThat(deployment.getKey())
@@ -198,7 +198,7 @@ public final class SignalEventValidationTest {
             .done();
 
     final Record<DeploymentRecordValue> deployment =
-        engine.deployment().withXmlResource(processDefinition).deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).deploy();
 
     // then
     assertThat(deployment.getKey())
@@ -222,7 +222,7 @@ public final class SignalEventValidationTest {
             .done();
 
     final Record<DeploymentRecordValue> deployment =
-        engine.deployment().withXmlResource(processDefinition).deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).deploy();
 
     // then
     assertThat(deployment.getKey())
@@ -237,7 +237,7 @@ public final class SignalEventValidationTest {
     final BpmnModelInstance processDefinition = getProcessWithMultipleStartEventsWithSameSignal();
 
     final Record<DeploymentRecordValue> rejectedDeployment =
-        engine.deployment().withXmlResource(processDefinition).expectRejection().deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
 
     // then
     Assertions.assertThat(rejectedDeployment)
