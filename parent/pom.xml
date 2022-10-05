@@ -93,7 +93,7 @@
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.3.0</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
-    <version.jqwik>1.6.5</version.jqwik>
+    <version.jqwik>1.7.0</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.8</version.json-smart>
     <version.byte-buddy>1.12.17</version.byte-buddy>
@@ -950,7 +950,7 @@
       <dependency>
         <groupId>com.amazonaws</groupId>
         <artifactId>aws-java-sdk-core</artifactId>
-        <version>1.12.315</version>
+        <version>1.12.316</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>
