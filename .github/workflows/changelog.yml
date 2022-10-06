@@ -44,9 +44,14 @@ jobs:
           to: HEAD
           config-file: "${{ github.workspace }}/.github/workflows/defaultChangelogConfig.json"
 
-      - name: Append to CHANGELOG.md
-        run: |
-          printf '# v%s\n%s\n%s\n' '${{ github.event.inputs.version }}' '${{ steps.changelog.outputs.body }}' "$(cat ./CHANGELOG.md)" > ./CHANGELOG.md
+      - name: Prepend to CHANGELOG.md
+        uses: "vsgoulart/write-file-action@master"
+        with:
+          path: ./CHANGELOG.md
+          write-mode: prepend
+          contents: |
+            # v${{ github.event.inputs.version }}
+            ${{ steps.changelog.outputs.body }}
 
       - name: Commit CHANGELOG.md
         uses: stefanzweifel/git-auto-commit-action@v4
