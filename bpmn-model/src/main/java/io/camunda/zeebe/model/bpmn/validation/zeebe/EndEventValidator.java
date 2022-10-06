@@ -65,7 +65,7 @@ public class EndEventValidator implements ModelElementValidator<EndEvent> {
         def -> {
           if (SUPPORTED_EVENT_DEFINITIONS.stream().noneMatch(type -> type.isInstance(def))) {
             validationResultCollector.addError(
-                0, "End events must be one of: none, error, message, terminate, signal");
+                0, "End events must be one of: none, error, message, terminate, or signal");
           }
         });
   }
