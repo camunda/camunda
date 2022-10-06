@@ -264,6 +264,12 @@
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_S3_SECRETKEY
           # secretKey:
 
+          # Configure a maximum duration for all S3 client API calls.
+          # Lower values will ensure that failed or slow API calls don't block other backups but may increase the risk
+          # that backups can't be stored if uploading parts of the backup takes longer than the configured timeout.
+          # See https://github.com/aws/aws-sdk-java-v2/blob/master/docs/BestPractices.md#utilize-timeout-configurations
+          # apiCallTimeout: PT180S
+
     # cluster:
       # This section contains all cluster related configurations, to setup a zeebe cluster
 
