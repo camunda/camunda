@@ -1,3 +1,49 @@
+# v8.1.0
+## 🚀 New Features
+* **backend**: Get backup state endpoint ([#2117](https://github.com/camunda/tasklist/issues/2117))
+* **backend**: Create Backup endpoint ([#2112](https://github.com/camunda/tasklist/issues/2112))
+* run Zeebe Importer multi-threaded ([#2089](https://github.com/camunda/tasklist/issues/2089))
+* branch-deploy label for preview envs ([#2079](https://github.com/camunda/tasklist/issues/2079))
+* **metrics**: measure time to import Zeebe records ([#2073](https://github.com/camunda/tasklist/issues/2073))
+
+## 💊 Bugfixes
+* **chore**: add Spring JWT settings for API access via Identity ([#2094](https://github.com/camunda/tasklist/issues/2094))
+* gh deployment ref was wrong for PRs ([#2100](https://github.com/camunda/tasklist/issues/2100))
+* **deps**: update dependency @carbon/elements to v11.10.0 ([#2090](https://github.com/camunda/tasklist/issues/2090))
+* release the RecordsReader thread when queue has no capacity ([#2075](https://github.com/camunda/tasklist/issues/2075))
+* **test**: execute start timer only once ([#2084](https://github.com/camunda/tasklist/issues/2084))
+* **deps**: update dependency @carbon/react to v1.12.0 ([#2067](https://github.com/camunda/tasklist/issues/2067))
+* **test**: wait for task cancellation before doing the assertions ([#2081](https://github.com/camunda/tasklist/issues/2081))
+* fix quotation for cat command in the changelog workflow ([#2068](https://github.com/camunda/tasklist/issues/2068))
+* **deps**: update all non-major dependencies ([#2040](https://github.com/camunda/tasklist/issues/2040))
+
+## 🧹 Chore
+* Revert wrong CHANGELOG
+* Use action to avoid errors with unescaped characters ([#2131](https://github.com/camunda/tasklist/issues/2131))
+* update CHANGELOG.md
+* **project**: upgrade-identity-to-8.1.0 ([#2128](https://github.com/camunda/tasklist/issues/2128))
+* **project**: upgrade-zeebe-to-8.1.0 ([#2118](https://github.com/camunda/tasklist/issues/2118))
+* Update Browserlist DB
+* **backend**: update Zeebe and Identity till 8.1.0-alpha5` ([#2107](https://github.com/camunda/tasklist/issues/2107))
+* Update Browserlist DB
+* bump maven-jar-plugin from 3.2.2 to 3.3.0 ([#2085](https://github.com/camunda/tasklist/issues/2085))
+* bump version.log4j from 2.18.0 to 2.19.0 ([#2093](https://github.com/camunda/tasklist/issues/2093))
+* bump byte-buddy from 1.12.16 to 1.12.17 ([#2098](https://github.com/camunda/tasklist/issues/2098))
+* update processed positions periodically ([#2078](https://github.com/camunda/tasklist/issues/2078))
+* Update Browserlist DB
+* **deps**: update all non-major dependencies ([#2086](https://github.com/camunda/tasklist/issues/2086))
+* **deps**: update dependency typescript to v4.8.3 ([#2045](https://github.com/camunda/tasklist/issues/2045))
+* **deps**: update dependency msw to v0.47.3 ([#2051](https://github.com/camunda/tasklist/issues/2051))
+* bump maven-shade-plugin from 3.3.0 to 3.4.0 ([#2083](https://github.com/camunda/tasklist/issues/2083))
+* Add Carbon dependencies to master so they're updated
+* bump mockito-core from 4.7.0 to 4.8.0 ([#2064](https://github.com/camunda/tasklist/issues/2064))
+* bump netty-bom from 4.1.80.Final to 4.1.82.Final ([#2076](https://github.com/camunda/tasklist/issues/2076))
+* bump jib-maven-plugin from 3.2.1 to 3.3.0 ([#2052](https://github.com/camunda/tasklist/issues/2052))
+* bump byte-buddy from 1.12.14 to 1.12.16 ([#2070](https://github.com/camunda/tasklist/issues/2070))
+* bump version.jackson from 2.13.3 to 2.13.4 ([#2054](https://github.com/camunda/tasklist/issues/2054))
+* bump version.micrometer from 1.9.3 to 1.9.4 ([#2071](https://github.com/camunda/tasklist/issues/2071))
+* Update Browserlist DB
+* update CHANGELOG.md
 # v8.1.0-alpha5
 
 ## 🚀 New Features
