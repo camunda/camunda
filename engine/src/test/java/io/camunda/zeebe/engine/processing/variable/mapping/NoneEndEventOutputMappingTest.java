@@ -13,7 +13,6 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
-import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -42,8 +41,7 @@ public final class NoneEndEventOutputMappingTest {
             .zeebeOutputExpression("x+1", "y")
             .done();
 
-    final Record<DeploymentRecordValue> deployment =
-        ENGINE_RULE.deployment().withXmlResource(processDefinition).deploy();
+    ENGINE_RULE.deployment().withXmlResource(processDefinition).deploy();
 
     // when
     final long processInstanceKey =
@@ -82,8 +80,7 @@ public final class NoneEndEventOutputMappingTest {
             .zeebeOutputExpression("sub_y + 1", "y")
             .done();
 
-    final Record<DeploymentRecordValue> deployment =
-        ENGINE_RULE.deployment().withXmlResource(processDefinition).deploy();
+    ENGINE_RULE.deployment().withXmlResource(processDefinition).deploy();
 
     // when
     final long processInstanceKey =
