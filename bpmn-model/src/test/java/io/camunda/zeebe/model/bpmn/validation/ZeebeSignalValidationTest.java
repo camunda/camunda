@@ -16,7 +16,6 @@
 package io.camunda.zeebe.model.bpmn.validation;
 
 import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
-import static java.util.Collections.singletonList;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -24,94 +23,159 @@ import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.Signal;
+import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
-import java.util.Arrays;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
-public class ZeebeSignalValidationTest extends AbstractZeebeValidationTest {
+class ZeebeSignalValidationTest {
 
-  @Parameters(name = "{index}: {1}")
-  public static Object[][] parameters() {
-    return new Object[][] {
-      {
-        Bpmn.createExecutableProcess("process").startEvent().signal("").done(),
-        Arrays.asList(expect(Signal.class, "Name must be present and not empty"))
-      },
-      {
+  @Test
+  @DisplayName("A signal start event must have a name")
+  void emptySignalStartEvent() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process").startEvent().signal("").done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process, expect(Signal.class, "Name must be present and not empty"));
+  }
+
+  @Test
+  @DisplayName("A signal start event could have a static name")
+  void signalStartEventName() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process").startEvent().signal("signalName").done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("A signal start event could have a expression name")
+  void signalStartEventNameExpression() {
+    // given
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .signal(s -> s.nameExpression("signal_val"))
-            .done(),
-        valid()
-      },
-      {Bpmn.createExecutableProcess("process").startEvent().signal("signalName").done(), valid()},
-      {
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("A signal start event could have a custom id")
+  void signalStartEventWithCustomId() {
+    // given
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .signal(s -> s.id("signalId").name("signalName"))
-            .endEvent()
-            .done(),
-        valid()
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .endEvent()
-            .addExtensionElement(ZeebeTaskDefinition.class, e -> e.setType("type"))
-            .signalEventDefinition()
-            .done(),
-        valid()
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .intermediateThrowEvent()
-            .addExtensionElement(ZeebeTaskDefinition.class, e -> e.setType("type"))
-            .signalEventDefinition()
-            .throwEventDefinitionDone()
-            .endEvent()
-            .done(),
-        valid()
-      },
-      {
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("Multiple signal start event with different signal names are allowed")
+  void multipleSignalStartEventName() {
+    // given
+    final BpmnModelInstance process = getProcessWithMultipleSignalStartEvents();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("Multiple signal start event with the same signal name are not allowed")
+  void multipleSignalStartEventWithSameSignalName() {
+    // given
+    final BpmnModelInstance process = getProcessWithMultipleStartEventsWithSameSignal();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            Process.class,
+            "Multiple signal event definitions with the same name 'signalName' are not allowed."));
+  }
+
+  @Test
+  @DisplayName("A intermediate signal catch event must have a name")
+  void emptyIntermediateCatchSignalEvent() {
+    // given
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .intermediateCatchEvent("foo")
             .signal("")
-            .done(),
-        Arrays.asList(expect(Signal.class, "Name must be present and not empty"))
-      },
-      {
-        getProcessWithMultipleStartEventsWithSameSignal(),
-        singletonList(
-            expect(
-                Process.class,
-                "Multiple signal event definitions with the same name 'signalName' are not allowed."))
-      },
-      {getProcessWithMultipleSignalStartEvents(), valid()},
-      {
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process, expect(Signal.class, "Name must be present and not empty"));
+  }
+
+  @Test
+  @DisplayName("A intermediate signal catch event could have a static name")
+  void intermediateCatchSignalEvent() {
+    // given
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .intermediateCatchEvent("foo")
-            .signalEventDefinition()
-            .id("signal")
-            .done(),
-        singletonList(expect("signal", "Must reference a signal"))
-      },
-      {
+            .signal("signalName")
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("A intermediate signal throw event must have a name")
+  void emptyIntermediateThrowSignalEvent() {
+    // given
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .subProcess("subProcess")
-            .embeddedSubProcess()
-            .startEvent("subProcessStart")
-            .signal(s -> s.name("signal"))
+            .intermediateThrowEvent("foo")
+            .signal("")
             .endEvent()
-            .subProcessDone()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process, expect(Signal.class, "Name must be present and not empty"));
+  }
+
+  @Test
+  @DisplayName("A intermediate signal throw event could have a static name")
+  void intermediateThrowSignalEvent() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateThrowEvent("foo")
+            .signal("signalName")
             .endEvent()
-            .done(),
-        singletonList(expect("subProcess", "Start events in subprocesses must be of type none"))
-      },
-      {
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("A boundary signal event must have a name")
+  void emptyBoundarySignalEvent() {
+    // given
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask("task", t -> t.zeebeJobType("test"))
@@ -120,24 +184,21 @@ public class ZeebeSignalValidationTest extends AbstractZeebeValidationTest {
             .moveToActivity("task")
             .boundaryEvent("boundary-2", b -> b.signal(s -> s.name(null)))
             .endEvent()
-            .done(),
-        Arrays.asList(
-            expect(Signal.class, "Name must be present and not empty"),
-            expect(Signal.class, "Name must be present and not empty"))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task", t -> t.zeebeJobType("test"))
-            .boundaryEvent("boundary-1", b -> b.signal(s -> s.name("signalName")))
-            .endEvent()
-            .moveToActivity("task")
-            .boundaryEvent("boundary-2", b -> b.signal(s -> s.name(null)))
-            .endEvent()
-            .done(),
-        singletonList(expect(Signal.class, "Name must be present and not empty"))
-      },
-      {
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(Signal.class, "Name must be present and not empty"),
+        expect(Signal.class, "Name must be present and not empty"));
+  }
+
+  @Test
+  @DisplayName(
+      "A task with multiple signal boundary event definitions with the same name are not allowed")
+  void sameBoundarySignalEvent() {
+    // given
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask("task", t -> t.zeebeJobType("test"))
@@ -146,13 +207,22 @@ public class ZeebeSignalValidationTest extends AbstractZeebeValidationTest {
             .moveToActivity("task")
             .boundaryEvent("boundary-2", b -> b.signal(s -> s.name("signalName")))
             .endEvent()
-            .done(),
-        singletonList(
-            expect(
-                ServiceTask.class,
-                "Multiple signal event definitions with the same name 'signalName' are not allowed."))
-      },
-      {
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ServiceTask.class,
+            "Multiple signal event definitions with the same name 'signalName' are not allowed."));
+  }
+
+  @Test
+  @DisplayName(
+      "A task with multiple signal boundary event definitions with different names are allowed")
+  void differentBoundarySignalEvent() {
+    // given
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask("task", t -> t.zeebeJobType("test"))
@@ -161,10 +231,34 @@ public class ZeebeSignalValidationTest extends AbstractZeebeValidationTest {
             .moveToActivity("task")
             .boundaryEvent("boundary-2", b -> b.signal(s -> s.name("signalName2")))
             .endEvent()
-            .done(),
-        valid()
-      },
-      {
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("Must reference a signal")
+  void checkReferenceSignal() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .endEvent()
+            .addExtensionElement(ZeebeTaskDefinition.class, e -> e.setType("type"))
+            .signalEventDefinition()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process, expect(SignalEventDefinition.class, "Must reference a signal"));
+  }
+
+  @Test
+  @DisplayName("Different event definitions with the same signal name are allowed")
+  void differentEventWithSameSignalName() {
+    // given
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .signal(m -> m.id("start-signal").name("signalName"))
@@ -172,20 +266,44 @@ public class ZeebeSignalValidationTest extends AbstractZeebeValidationTest {
             .boundaryEvent(
                 "boundary-1", b -> b.signal(s -> s.id("boundary-signal").name("signalName")))
             .endEvent()
-            .done(),
-        valid()
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .signal(s -> s.id("start-signal").name("signalName"))
-            .intermediateCatchEvent("foo")
-            .signal(s -> s.id("foo-signal").name("signalName"))
-            .done(),
-        valid()
-      },
-      {getEventSubProcessWithEmbeddedSubProcessWithBoundarySignalEvent(), valid()}
-    };
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("Signal event are allowed in an event sub process")
+  void eventSubProcessWithEmbeddedSubProcessWithBoundarySignalEvent() {
+    // given
+    final BpmnModelInstance process =
+        getEventSubProcessWithEmbeddedSubProcessWithBoundarySignalEvent();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("A signal end event must hava a name")
+  void emptySignalEndEvent() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process").startEvent().endEvent().signal("").done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process, expect(Signal.class, "Name must be present and not empty"));
+  }
+
+  @Test
+  @DisplayName("A end event could support signal")
+  void signalEndEvent() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process").startEvent().endEvent().signal("signalName").done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
   }
 
   private static BpmnModelInstance getProcessWithMultipleStartEventsWithSameSignal() {
