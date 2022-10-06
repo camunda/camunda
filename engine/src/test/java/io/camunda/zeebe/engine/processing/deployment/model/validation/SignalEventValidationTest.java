@@ -54,7 +54,7 @@ public final class SignalEventValidationTest {
   }
 
   @Test
-  public void shouldDeploySignalEndEvent() {
+  public void shouldRejectDeployNoneReferenceSignalEndEvent() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
 
@@ -67,6 +67,56 @@ public final class SignalEventValidationTest {
             .signalEventDefinition()
             .done();
 
+    final Record<DeploymentRecordValue> rejectedDeployment =
+        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains("Element: signalEventDefinition_")
+        .contains("ERROR: Must reference a signal");
+  }
+
+  @Test
+  public void shouldRejectDeployEmptySignalEndEvent() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess(processId).startEvent("start").endEvent().signal("").done();
+
+    final Record<DeploymentRecordValue> rejectedDeployment =
+        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains("Element: signal_")
+        .contains("ERROR: Name must be present and not empty");
+  }
+
+  @Test
+  public void shouldDeploySignalEndEvent() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .endEvent()
+            .signal("signalName")
+            .done();
+
     final Record<DeploymentRecordValue> deployment =
         ENGINE.deployment().withXmlResource(processDefinition).deploy();
 
@@ -74,6 +124,34 @@ public final class SignalEventValidationTest {
     assertThat(deployment.getKey())
         .describedAs("Support signal end event process deployment")
         .isNotNegative();
+  }
+
+  @Test
+  public void shouldRejectDeployEmptySignalThrowEvent() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .intermediateThrowEvent()
+            .signal("")
+            .endEvent()
+            .done();
+
+    final Record<DeploymentRecordValue> rejectedDeployment =
+        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains("Element: signal_")
+        .contains("ERROR: Name must be present and not empty");
   }
 
   @Test
@@ -86,9 +164,7 @@ public final class SignalEventValidationTest {
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .intermediateThrowEvent()
-            .addExtensionElement(ZeebeTaskDefinition.class, b -> b.setType("signalType"))
-            .signalEventDefinition()
-            .throwEventDefinitionDone()
+            .signal("signalName")
             .endEvent()
             .done();
 
