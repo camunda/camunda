@@ -1,3 +1,126 @@
+# v8.1.0
+## 🚀 New Features
+* **backend**: Get Backup State endpoint ([#3417](https://github.com/camunda/operate/issues/3417))
+* Support terminate end event ([#3429](https://github.com/camunda/operate/issues/3429))
+* **backend**: provide tasklistUrl in ClientConfig ([#3399](https://github.com/camunda/operate/issues/3399))
+* enable modification mode ([#3363](https://github.com/camunda/operate/issues/3363))
+* **feature-flagged**: cover multi instance scopes for instance history ([#3406](https://github.com/camunda/operate/issues/3406))
+* **feature-flagged**: Create new instance history node along with parent nodes ([#3401](https://github.com/camunda/operate/issues/3401))
+* Add SingleStepModifyProcessInstanceHandler  ([#3413](https://github.com/camunda/operate/issues/3413))
+* **feature-flagged**: make variable panel readonly for finished instances ([#3386](https://github.com/camunda/operate/issues/3386))
+* Add quick link to Tasklist ([#3403](https://github.com/camunda/operate/issues/3403))
+* **feature-flagged**: send tracking events for process instance modification ([#3379](https://github.com/camunda/operate/issues/3379))
+* **feature-flagged**: display warning modal when leaving modification mode ([#3376](https://github.com/camunda/operate/issues/3376))
+* **feature-flagged**: adjust states for variables panel in modification mode ([#3319](https://github.com/camunda/operate/issues/3319))
+* **backend**: Add modify process instance REST endpoint ([#3243](https://github.com/camunda/operate/issues/3243))
+* **feature-flagged**: implement info messages in summary modal ([#3288](https://github.com/camunda/operate/issues/3288))
+* **feature-flagged**: Display modifications in instance history ([#3341](https://github.com/camunda/operate/issues/3341))
+* branch-deploy label for preview envs ([#3327](https://github.com/camunda/operate/issues/3327))
+* Update diagram popover content ([#3205](https://github.com/camunda/operate/issues/3205))
+* **feature-flagged**: apply modifications ([#3312](https://github.com/camunda/operate/issues/3312))
+* **feature-flagged**: display tooltip on non modifiable flow nodes ([#3340](https://github.com/camunda/operate/issues/3340))
+* **feature-flagged**: change badge colors when tokens are canceled ([#3285](https://github.com/camunda/operate/issues/3285))
+* display token counts in process instance detail page ([#3313](https://github.com/camunda/operate/issues/3313))
+* Create Backup endpoint ([#3323](https://github.com/camunda/operate/issues/3323))
+* **feature-flagged**: apply add variable modification on blur ([#3326](https://github.com/camunda/operate/issues/3326))
+* **feature-flagged**: apply edit variable modification on blur ([#3210](https://github.com/camunda/operate/issues/3210))
+* **backend**: Add FlowNode statistics for process Instance REST endpoint ([#3248](https://github.com/camunda/operate/issues/3248))
+* **feature-flagged**: display modify operation in operations panel ([#3301](https://github.com/camunda/operate/issues/3301))
+* **feature-flagged**: support parent scope ids for add and move token modifications ([#3325](https://github.com/camunda/operate/issues/3325))
+* **metrics**: measure time to import Zeebe records ([#3287](https://github.com/camunda/operate/issues/3287))
+* **feature-flagged**: stop polling during modification ([#3234](https://github.com/camunda/operate/issues/3234))
+
+## 💊 Bugfixes
+* fix removing new add variable modifications after scopes changed ([#3460](https://github.com/camunda/operate/issues/3460))
+* **backend**: clean up after backup implemented ([#3412](https://github.com/camunda/operate/issues/3412))
+* check for invalid element id ([#3454](https://github.com/camunda/operate/issues/3454))
+* show correct variable panel state for completed flow node ([#3453](https://github.com/camunda/operate/issues/3453))
+* fix navigating to dashboard from modification mode with context path ([#3451](https://github.com/camunda/operate/issues/3451))
+* **distro**: remove list of exposed Actuator endpoints from application.yml ([#3455](https://github.com/camunda/operate/issues/3455))
+* disable add button in summary modal when there are no modifications ([#3449](https://github.com/camunda/operate/issues/3449))
+* remove the whole variable modification when deleted ([#3443](https://github.com/camunda/operate/issues/3443))
+* validate variable name when its empty ([#3446](https://github.com/camunda/operate/issues/3446))
+* display canceled tokens badge on cancel and move modifications ([#3441](https://github.com/camunda/operate/issues/3441))
+* handle context path when leaving modification mode ([#3439](https://github.com/camunda/operate/issues/3439))
+* display no modifications available when running tokens canceled and add is not supported ([#3427](https://github.com/camunda/operate/issues/3427))
+* clear flow node selection when the selected flow node modification is removed ([#3425](https://github.com/camunda/operate/issues/3425))
+* **backend**: exclude feature states from backup ([#3419](https://github.com/camunda/operate/issues/3419))
+* reset validation on json editor close ([#3410](https://github.com/camunda/operate/issues/3410))
+* **backend**: introduce json error message for internal-api ([#3364](https://github.com/camunda/operate/issues/3364))
+* **deps**: pin dependency history to 5.3.0 ([#3409](https://github.com/camunda/operate/issues/3409))
+* **deps**: update dependency sass to v1.55.0 ([#3387](https://github.com/camunda/operate/issues/3387))
+* **deps**: update all non-major dependencies ([#3392](https://github.com/camunda/operate/issues/3392))
+* **feature-flagged**: fix wrong state for variables panel when a single flow node is selected ([#3405](https://github.com/camunda/operate/issues/3405))
+* **feature-flagged**: fix affected total count for add modification ([#3393](https://github.com/camunda/operate/issues/3393))
+* **feature-flagged**: load full variable on click in modification mode ([#3356](https://github.com/camunda/operate/issues/3356))
+* **feature-flagged**: do not allow multi instance child to be modified ([#3372](https://github.com/camunda/operate/issues/3372))
+* **backend-test**: ignore failing tests on ci
+* **deps**: update dependency dmn-js to v13 ([#3360](https://github.com/camunda/operate/issues/3360))
+* **deps**: update dependency bpmn-js to v10 ([#3359](https://github.com/camunda/operate/issues/3359))
+* **feature-flagged**: revert deleted logic for move modification ([#3382](https://github.com/camunda/operate/issues/3382))
+* gh deployment ref was wrong for PRs ([#3378](https://github.com/camunda/operate/issues/3378))
+* fix modify api payload ([#3369](https://github.com/camunda/operate/issues/3369))
+* **feature-flagged**: do not poll after expanding a flow node in modification mode ([#3357](https://github.com/camunda/operate/issues/3357))
+* **backend**: persist batch operation before single operations are created ([#3358](https://github.com/camunda/operate/issues/3358))
+* **qa**: path to latest docker image has changed since commit 3236531f ([#3354](https://github.com/camunda/operate/issues/3354))
+* **backend**: allow dashes in URL ([#3352](https://github.com/camunda/operate/issues/3352))
+* **reader**: release thread when the import job queue is full ([#3298](https://github.com/camunda/operate/issues/3298))
+* **test**: await all tasks being active ([#3337](https://github.com/camunda/operate/issues/3337))
+* **test**: await process instance completion before archiving ([#3329](https://github.com/camunda/operate/issues/3329))
+* **deps**: update dependency @carbon/elements to v11.9.0 ([#3271](https://github.com/camunda/operate/issues/3271))
+* **deps**: update dependency react-router-dom to v6.4.0 ([#3322](https://github.com/camunda/operate/issues/3322))
+* **feature-flagged**: use margin instead of padding to fix selection of undo button ([#3302](https://github.com/camunda/operate/issues/3302))
+* **feature-flagged**: allow add modifications for events that are not attached to event based gateway ([#3235](https://github.com/camunda/operate/issues/3235))
+* fix quotation for cat command in the changelog workflow ([#3307](https://github.com/camunda/operate/issues/3307))
+
+## 🧹 Chore
+* Revert wrong CHANGELOG
+* Use action to avoid errors with unescaped characters ([#3465](https://github.com/camunda/operate/issues/3465))
+* update CHANGELOG.md
+* **project**: upgrade identity to 8.1.0 ([#3461](https://github.com/camunda/operate/issues/3461))
+* **backend**: load version from pom.xml ([#3457](https://github.com/camunda/operate/issues/3457))
+* **deps**: update dependency @types/node to v16.11.64 ([#3445](https://github.com/camunda/operate/issues/3445))
+* fix failing test
+* fix dmn incident icon ([#3448](https://github.com/camunda/operate/issues/3448))
+* **project**: upgrade zeebe to 8.1.0 ([#3447](https://github.com/camunda/operate/issues/3447))
+* Update Browserlist DB
+* add Terminate end event process to test data ([#3433](https://github.com/camunda/operate/issues/3433))
+* remove flow node states endpoint ([#3414](https://github.com/camunda/operate/issues/3414))
+* Update Node version on pom.xml
+* **deps**: update dependency @types/lodash to v4.14.186 ([#3416](https://github.com/camunda/operate/issues/3416))
+* **deps**: update dependency zeebe-node to v8.1.0 ([#3366](https://github.com/camunda/operate/issues/3366))
+* **project**: upgrade zeebe to 8.1.0-rc2 ([#3415](https://github.com/camunda/operate/issues/3415))
+* Upgrade Zeebe to 8.1.0-rc1 ([#3408](https://github.com/camunda/operate/issues/3408))
+* **project**: upgrade zeebe 8.1.0-alpha5 to SNAPSHOT ([#3400](https://github.com/camunda/operate/issues/3400))
+* **qa**: test docker image to be run with arbitrary user ([#3238](https://github.com/camunda/operate/issues/3238))
+* Update Browserlist DB
+* **feature-flagged**: remove mocks for modify api ([#3388](https://github.com/camunda/operate/issues/3388))
+* **deps**: bump version.spring.boot from 2.7.3 to 2.7.4 ([#3380](https://github.com/camunda/operate/issues/3380))
+* **deps**: bump maven-shade-plugin from 3.3.0 to 3.4.0 ([#3334](https://github.com/camunda/operate/issues/3334))
+* **backend**: fix exception logging ([#3394](https://github.com/camunda/operate/issues/3394))
+* **deps**: update all non-major dependencies ([#3385](https://github.com/camunda/operate/issues/3385))
+* Remove unnecessary props types
+* Remove unused imports
+* **feature-flagged**: remove loading overlay for add modifications ([#3368](https://github.com/camunda/operate/issues/3368))
+* store processed positions periodically ([#3317](https://github.com/camunda/operate/issues/3317))
+* Readd createPortal
+* **metrics**: measure import metrics by partition and value type ([#3295](https://github.com/camunda/operate/issues/3295))
+* Split popover component ([#3361](https://github.com/camunda/operate/issues/3361))
+* Split process instances test suite ([#3321](https://github.com/camunda/operate/issues/3321))
+* Remove unnecessary closing tag
+* **docker-compose**: fix docker-compose.identity.yml config ([#3350](https://github.com/camunda/operate/issues/3350))
+* Update Browserlist DB
+* use tab view in decision instance page ([#3316](https://github.com/camunda/operate/issues/3316))
+* Migrate Popper to @floating-u/react-dom ([#3320](https://github.com/camunda/operate/issues/3320))
+* **deps**: bump version.micrometer from 1.9.3 to 1.9.4 ([#3311](https://github.com/camunda/operate/issues/3311))
+* **deps**: update all non-major dependencies ([#3308](https://github.com/camunda/operate/issues/3308))
+* **qa**: fix night jobs ([#3292](https://github.com/camunda/operate/issues/3292))
+* Update Browserlist DB
+* **deps**: bump mockito-core from 4.7.0 to 4.8.0 ([#3294](https://github.com/camunda/operate/issues/3294))
+* Fix CHANGELOG.md
+* **deps**: update all non-major dependencies ([#3267](https://github.com/camunda/operate/issues/3267))
+* update CHANGELOG.md
+* update CHANGELOG.md
 # v8.1.0-alpha5
 
 ## 🚀 New Features
