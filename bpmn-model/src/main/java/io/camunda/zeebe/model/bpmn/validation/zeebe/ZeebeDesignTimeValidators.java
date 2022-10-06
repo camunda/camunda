@@ -107,7 +107,6 @@ public final class ZeebeDesignTimeValidators {
             .hasNonEmptyAttribute(
                 ZeebeCalledDecision::getResultVariable, ZeebeConstants.ATTRIBUTE_RESULT_VARIABLE));
     validators.add(new SignalEventDefinitionValidator());
-    validators.add(new SignalThrowEventValidator());
     validators.add(new SignalValidator());
 
     VALIDATORS = Collections.unmodifiableList(validators);

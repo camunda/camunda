@@ -15,11 +15,9 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
-import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import java.util.Collection;
-import java.util.stream.Collectors;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -33,18 +31,7 @@ public class StartEventValidator implements ModelElementValidator<StartEvent> {
   public void validate(
       final StartEvent element, final ValidationResultCollector validationResultCollector) {
     final Collection<EventDefinition> eventDefinitions = element.getEventDefinitions();
-
-    final Collection<EventDefinition> events =
-        eventDefinitions.stream()
-            .filter(
-                eventDefinition ->
-                    eventDefinition
-                        .getElementType()
-                        .getTypeName()
-                        .equals(BpmnModelConstants.BPMN_ELEMENT_SIGNAL_EVENT_DEFINITION))
-            .collect(Collectors.toList());
-
-    if (eventDefinitions.size() > 1 && eventDefinitions.size() > events.size()) {
+    if (eventDefinitions.size() > 1) {
       validationResultCollector.addError(0, "Start event can't have more than one type");
     }
   }

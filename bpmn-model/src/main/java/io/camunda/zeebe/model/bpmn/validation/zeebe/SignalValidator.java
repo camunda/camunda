@@ -16,8 +16,10 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.Signal;
 import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
@@ -45,7 +47,10 @@ public class SignalValidator implements ModelElementValidator<Signal> {
   public void validate(
       final Signal element, final ValidationResultCollector validationResultCollector) {
 
-    if (isReferredByCatchEvent(element) || isReferredByEventSubProcessStartEvent(element)) {
+    if (isReferredByCatchEvent(element)
+        || isReferredByThrowEvent(element)
+        || isReferredByEndEvent(element)
+        || isReferredByEventSubProcessStartEvent(element)) {
       validateName(element, validationResultCollector);
     }
 
@@ -91,6 +96,29 @@ public class SignalValidator implements ModelElementValidator<Signal> {
                     && ((SignalEventDefinition) e).getSignal() == element);
   }
 
+  private boolean isReferredByThrowEvent(final Signal element) {
+    final Collection<IntermediateThrowEvent> intermediateThrowEvents =
+        getAllElementsByType(element, IntermediateThrowEvent.class);
+
+    return intermediateThrowEvents.stream()
+        .flatMap(i -> i.getEventDefinitions().stream())
+        .anyMatch(
+            e ->
+                e instanceof SignalEventDefinition
+                    && ((SignalEventDefinition) e).getSignal() == element);
+  }
+
+  private boolean isReferredByEndEvent(final Signal element) {
+    final Collection<EndEvent> endEvents = getAllElementsByType(element, EndEvent.class);
+
+    return endEvents.stream()
+        .flatMap(i -> i.getEventDefinitions().stream())
+        .anyMatch(
+            e ->
+                e instanceof SignalEventDefinition
+                    && ((SignalEventDefinition) e).getSignal() == element);
+  }
+
   private boolean isReferredByEventSubProcessStartEvent(final Signal element) {
     final Collection<StartEvent> startEvents =
         element.getParentElement().getChildElementsByType(Process.class).stream()
@@ -119,12 +147,11 @@ public class SignalValidator implements ModelElementValidator<Signal> {
       final List<EventDefinition> catchEvents,
       final ValidationResultCollector validationResultCollector) {
 
-    catchEvents.stream()
-        .forEach(
-            event -> {
-              final SignalEventDefinition e = (SignalEventDefinition) event;
-              validateName(e.getSignal(), validationResultCollector);
-            });
+    catchEvents.forEach(
+        event -> {
+          final SignalEventDefinition e = (SignalEventDefinition) event;
+          validateName(e.getSignal(), validationResultCollector);
+        });
   }
 
   private <T extends ModelElementInstance> Collection<T> getAllElementsByType(

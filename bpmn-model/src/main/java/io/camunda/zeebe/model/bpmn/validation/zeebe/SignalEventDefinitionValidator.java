@@ -16,8 +16,6 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
-import io.camunda.zeebe.model.bpmn.instance.ThrowEvent;
-import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -33,13 +31,8 @@ public class SignalEventDefinitionValidator
   public void validate(
       final SignalEventDefinition element,
       final ValidationResultCollector validationResultCollector) {
-    if (!isSignalThrowEvent(element) && element.getSignal() == null) {
+    if (element.getSignal() == null) {
       validationResultCollector.addError(0, "Must reference a signal");
     }
-  }
-
-  private boolean isSignalThrowEvent(final SignalEventDefinition element) {
-    final ModelElementInstance parentElement = element.getParentElement();
-    return parentElement instanceof ThrowEvent;
   }
 }
