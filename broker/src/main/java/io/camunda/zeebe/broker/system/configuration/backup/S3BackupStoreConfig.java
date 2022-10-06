@@ -18,7 +18,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
   private String region;
   private String accessKey;
   private String secretKey;
-  private Duration apiCallTimeout;
+  private Duration apiCallTimeout = Duration.ofSeconds(180);
 
   public String getBucketName() {
     return bucketName;
