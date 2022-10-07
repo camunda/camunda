@@ -215,6 +215,7 @@ public class ClusteringRule extends ExternalResource {
 
   @Override
   protected void before() throws IOException {
+    LOG.debug("Starting ClusteringRule...");
     partitionLatch = new CountDownLatch(partitionCount);
     // create brokers
     for (int nodeId = 0; nodeId < clusterSize; nodeId++) {
