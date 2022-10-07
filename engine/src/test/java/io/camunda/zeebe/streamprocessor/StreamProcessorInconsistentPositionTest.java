@@ -32,14 +32,22 @@ public final class StreamProcessorInconsistentPositionTest {
     final var listLogStorage = new ListLogStorage();
     try (final var firstLogCtx = streamPlatform.createLogStream(listLogStorage, 1)) {
       try (final var secondLogCtx = streamPlatform.createLogStream(listLogStorage, 2)) {
-        final var firstBatchWriter = firstLogCtx.setupBatchWriter(RecordToWrite.command()
-                .processInstance(ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD),
-            RecordToWrite.command()
-                .processInstance(ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD));
-        final var secondBatchWriter = secondLogCtx.setupBatchWriter(RecordToWrite.command()
-                .processInstance(ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD),
-            RecordToWrite.command()
-                .processInstance(ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD));
+        final var firstBatchWriter =
+            firstLogCtx.setupBatchWriter(
+                RecordToWrite.command()
+                    .processInstance(
+                        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD),
+                RecordToWrite.command()
+                    .processInstance(
+                        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD));
+        final var secondBatchWriter =
+            secondLogCtx.setupBatchWriter(
+                RecordToWrite.command()
+                    .processInstance(
+                        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD),
+                RecordToWrite.command()
+                    .processInstance(
+                        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD));
 
         // We write two record batches with different logstreams.
         // The logstreams are backed with the same logstorage, which means records are written to
@@ -53,8 +61,8 @@ public final class StreamProcessorInconsistentPositionTest {
         final var streamProcessor = streamPlatform.startStreamProcessorNotAwaitOpening();
 
         // then
-        Awaitility.await("We expect that the opening fails").untilAsserted(() -> assertThat(streamProcessor.isFailed()).isTrue());
-
+        Awaitility.await("We expect that the opening fails")
+            .untilAsserted(() -> assertThat(streamProcessor.isFailed()).isTrue());
       }
     }
   }
