@@ -30,8 +30,8 @@ public final class StreamProcessorInconsistentPositionTest {
   public void shouldNotStartOnInconsistentLog() {
     // given
     final var listLogStorage = new ListLogStorage();
-    try (final var firstLogCtx = streamPlatform.createLogStream(listLogStorage, 1)) {
-      try (final var secondLogCtx = streamPlatform.createLogStream(listLogStorage, 2)) {
+    try (final var firstLogCtx = streamPlatform.createLogContext(listLogStorage, 1)) {
+      try (final var secondLogCtx = streamPlatform.createLogContext(listLogStorage, 2)) {
         final var firstBatchWriter =
             firstLogCtx.setupBatchWriter(
                 RecordToWrite.command()
@@ -58,6 +58,7 @@ public final class StreamProcessorInconsistentPositionTest {
         // After writing we have at the logstorage: [1, 2, 1, 2], which should be detected
 
         // when
+        streamPlatform.setLogContext(secondLogCtx);
         final var streamProcessor = streamPlatform.startStreamProcessorNotAwaitOpening();
 
         // then

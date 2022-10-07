@@ -108,17 +108,38 @@ public final class StreamPlatform {
     closeables.add(() -> recordProcessors.clear());
     mockProcessorLifecycleAware = mock(StreamProcessorLifecycleAware.class);
     mockStreamProcessorListener = mock(StreamProcessorListener.class);
+
+    logContext = createLogContext(new ListLogStorage(), DEFAULT_PARTITION);
+    closeables.add(logContext);
   }
 
   public CommandResponseWriter getMockCommandResponseWriter() {
     return mockCommandResponseWriter;
   }
 
-  public void createLogStream() {
-    createLogStream(new ListLogStorage(), DEFAULT_PARTITION);
+  /**
+   * This can be used to overwrite the current logContext. In some tests useful, were we need more
+   * control about the backend.
+   *
+   * <p>Note: The previous logContext will be overwritten, but it is still be part of the closables
+   * list which means it will be closed at the end.
+   */
+  void setLogContext(final LogContext logContext) {
+    this.logContext = logContext;
+    closeables.add(logContext);
   }
 
-  public LogContext createLogStream(final ListLogStorage logStorage, final int partitionId) {
+  /**
+   * Creates a LogContext, which consist of given logStorage and a LogStream for the given
+   * parititon.
+   *
+   * <p>Note: Make sure to close the LogContext, to not leak any memory.
+   *
+   * @param logStorage the list logstorage which should be used as backend
+   * @param partitionId the partition ID for the log stream
+   * @return the create log context
+   */
+  public LogContext createLogContext(final ListLogStorage logStorage, final int partitionId) {
     final var logStream =
         SyncLogStream.builder()
             .withLogName(STREAM_NAME + partitionId)
@@ -128,10 +149,7 @@ public final class StreamPlatform {
             .build();
 
     logStorage.setPositionListener(logStream::setLastWrittenPosition);
-
-    logContext = new LogContext(logStream);
-    closeables.add(logContext);
-    return logContext;
+    return new LogContext(logStream);
   }
 
   public SynchronousLogStream getLogStream() {

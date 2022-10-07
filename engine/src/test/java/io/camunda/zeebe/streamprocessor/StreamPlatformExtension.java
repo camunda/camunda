@@ -110,7 +110,6 @@ public class StreamPlatformExtension implements BeforeEachCallback {
 
         // streams
         streamPlatform = new StreamPlatform(tempFolder, closables, actorScheduler, factory);
-        streamPlatform.createLogStream();
 
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);
