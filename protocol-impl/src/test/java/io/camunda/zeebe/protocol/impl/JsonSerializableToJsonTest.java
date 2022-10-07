@@ -787,7 +787,8 @@ final class JsonSerializableToJsonTest {
               }
             }],
             "elementId": "activity"
-          }]
+          }],
+          "activatedElementInstanceKeys": []
         }
         """
       },
@@ -803,7 +804,8 @@ final class JsonSerializableToJsonTest {
         {
           "processInstanceKey": 1,
           "terminateInstructions": [],
-          "activateInstructions": []
+          "activateInstructions": [],
+          "activatedElementInstanceKeys": []
         }
         """
       },
