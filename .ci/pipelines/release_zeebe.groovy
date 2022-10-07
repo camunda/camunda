@@ -152,7 +152,8 @@ spec:
                         string(name: 'BRANCH', value: env.RELEASE_BRANCH),
                         string(name: 'VERSION', value: params.RELEASE_VERSION),
                         booleanParam(name: 'IS_LATEST', value: params.IS_LATEST),
-                        booleanParam(name: 'PUSH', value: true)
+                        booleanParam(name: 'PUSH', value: true),
+                        booleanParam(name: 'VERIFY', value: false)
                 ]
             }
         }
