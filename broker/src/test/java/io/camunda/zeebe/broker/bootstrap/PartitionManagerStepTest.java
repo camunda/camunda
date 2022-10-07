@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -34,10 +35,13 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class PartitionManagerStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
@@ -49,6 +53,7 @@ class PartitionManagerStepTest {
     networkCfg.setHost("localhost");
   }
 
+  private final Logger log = LoggerFactory.getLogger(PartitionManagerStepTest.class);
   private final PartitionManagerStep sut = new PartitionManagerStep();
   private BrokerStartupContextImpl testBrokerStartupContext;
 
@@ -109,7 +114,11 @@ class PartitionManagerStepTest {
       if (partitionManager != null) {
         partitionManager.stop().join();
       }
-      actorScheduler.stop();
+      try {
+        actorScheduler.stop();
+      } catch (final IllegalStateException e) {
+        log.debug("ActorScheduler was already stopped.");
+      }
     }
 
     @Test
@@ -131,6 +140,21 @@ class PartitionManagerStepTest {
       // then
       final var partitionManager = testBrokerStartupContext.getPartitionManager();
       assertThat(partitionManager).isNotNull();
+    }
+
+    @Test
+    void shouldHandleSyncFailOfStart() throws Exception {
+      // given
+      actorScheduler.close();
+
+      // when
+      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+
+      // then
+      assertThatThrownBy(() -> startupFuture.get())
+          .isInstanceOf(CompletionException.class)
+          .hasCauseInstanceOf(CompletionException.class)
+          .hasRootCauseInstanceOf(IllegalStateException.class);
     }
   }
 

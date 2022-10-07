@@ -20,8 +20,8 @@ zeebe:
   # IoThreadCount defines how many threads can be used for the exporting on each broker pod
   ioThreadCount: 4
 
-  # PodSecurityContext defines the security options the broker and gateway container should be run with
-  podSecurityContext:
+  # ContainerSecurityContext defines the security options the Zeebe broker container should be run with
+  containerSecurityContext:
     capabilities:
       add: ["NET_ADMIN"]
 
