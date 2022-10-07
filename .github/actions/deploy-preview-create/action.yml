@@ -59,6 +59,10 @@ runs:
       curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/download/${{ inputs.argocd_version }}/argocd-linux-amd64
       chmod +x /usr/local/bin/argocd
       argocd version
+    env:
+      ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
+      ARGOCD_OPTS: "--grpc-web"
+      ARGOCD_SERVER: ${{ inputs.argocd_server  }}
     #########################################################################
     # Create a GitHub deployment that points to the URL we're going to deploy to.
     # If a Pull Request exists, it will show the status of this deployment.
