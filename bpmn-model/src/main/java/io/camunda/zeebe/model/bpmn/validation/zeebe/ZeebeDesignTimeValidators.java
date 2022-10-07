@@ -108,6 +108,7 @@ public final class ZeebeDesignTimeValidators {
                 ZeebeCalledDecision::getResultVariable, ZeebeConstants.ATTRIBUTE_RESULT_VARIABLE));
     validators.add(new SignalEventDefinitionValidator());
     validators.add(new SignalValidator());
+    validators.add(new LinkEventDefinitionValidator());
 
     VALIDATORS = Collections.unmodifiableList(validators);
   }

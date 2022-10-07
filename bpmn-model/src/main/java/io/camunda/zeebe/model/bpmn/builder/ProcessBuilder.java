@@ -17,6 +17,7 @@
 package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
@@ -72,6 +73,18 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
     return this;
   }
 
+  public IntermediateCatchEventBuilder linkCatchEvent() {
+    return linkCatchEvent(null);
+  }
+
+  public IntermediateCatchEventBuilder linkCatchEvent(final String id) {
+    final IntermediateCatchEvent catchEvent = createChild(IntermediateCatchEvent.class, id);
+    final BpmnShape bpmnShape = createBpmnShape(catchEvent);
+    setLinkCatchEventCoordinates(bpmnShape);
+    resizeLinkCatchEvent(bpmnShape);
+    return catchEvent.builder();
+  }
+
   @Override
   protected void setCoordinates(final BpmnShape targetBpmnShape) {
     final Bounds bounds = targetBpmnShape.getBounds();
@@ -81,6 +94,28 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
 
   protected void setEventSubProcessCoordinates(final BpmnShape targetBpmnShape) {
     final SubProcess eventSubProcess = (SubProcess) targetBpmnShape.getBpmnElement();
+    final Bounds targetBounds = targetBpmnShape.getBounds();
+    double lowestheight = 0;
+
+    // find the lowest element in the model
+    final Collection<BpmnShape> allShapes = modelInstance.getModelElementsByType(BpmnShape.class);
+    for (final BpmnShape shape : allShapes) {
+      final Bounds bounds = shape.getBounds();
+      final double bottom = bounds.getY() + bounds.getHeight();
+      if (bottom > lowestheight) {
+        lowestheight = bottom;
+      }
+    }
+
+    final double ycoord = lowestheight + 50.0;
+    final double xcoord = 100.0;
+
+    // move target
+    targetBounds.setY(ycoord);
+    targetBounds.setX(xcoord);
+  }
+
+  protected void setLinkCatchEventCoordinates(final BpmnShape targetBpmnShape) {
     final Bounds targetBounds = targetBpmnShape.getBounds();
     double lowestheight = 0;
 

@@ -22,6 +22,7 @@ import io.camunda.zeebe.model.bpmn.builder.zeebe.SignalBuilder;
 import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ConditionalEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.LinkEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Signal;
@@ -249,6 +250,20 @@ public abstract class AbstractCatchEventBuilder<
   public B condition(final String condition) {
     conditionalEventDefinition().condition(condition);
     return myself;
+  }
+
+  public LinkEventDefinitionBuilder linkEventDefinition() {
+    return linkEventDefinition(null);
+  }
+
+  public LinkEventDefinitionBuilder linkEventDefinition(final String id) {
+    final LinkEventDefinition eventDefinition = createInstance(LinkEventDefinition.class);
+    if (id != null) {
+      eventDefinition.setId(id);
+    }
+
+    element.getEventDefinitions().add(eventDefinition);
+    return new LinkEventDefinitionBuilder(modelInstance, eventDefinition);
   }
 
   @Override
