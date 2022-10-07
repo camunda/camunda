@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.util;
+package io.camunda.zeebe.streamprocessor;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -34,9 +35,6 @@ import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
