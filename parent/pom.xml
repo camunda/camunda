@@ -164,6 +164,7 @@
     <skipTests>false</skipTests>
     <skipUTs>${skipTests}</skipUTs>
     <skipITs>${skipTests}</skipITs>
+    <skipOpenTelemetryTests>${skipTests}</skipOpenTelemetryTests>
     <jacoco.skip>${skipUTs}</jacoco.skip>
 
     <!--

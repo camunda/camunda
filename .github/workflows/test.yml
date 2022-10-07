@@ -237,7 +237,7 @@ jobs:
         with:
           name: Property Tests
   opentelemetry-tests:
-    name: Java randomized tests
+    name: Java Opentelemetry Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -250,7 +250,7 @@ jobs:
           go: false
       - run: >
           mvn -B
-          -DskipUTs -DskipChecks
+          -DskipUTs -DskipITs -DskipChecks
           -P opentelemetry-tests
           verify
       - name: Upload test artifacts
@@ -442,6 +442,7 @@ jobs:
       - java-checks
       - go-lint
       - docker-checks
+      - opentelemetry-tests
     steps:
       - run: exit 0
 
@@ -459,6 +460,7 @@ jobs:
       - property-tests
       - go-client
       - java-client
+      - opentelemetry-tests
     if: always()
     steps:
       - name: Upload
