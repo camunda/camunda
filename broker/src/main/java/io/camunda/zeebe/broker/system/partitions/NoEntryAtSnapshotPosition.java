@@ -11,7 +11,7 @@ package io.camunda.zeebe.broker.system.partitions;
  * Used when there is no entry at the determined snapshot position while taking a transient
  * snapshot.
  */
-public class NoEntryAtSnapshotPosition extends RuntimeException {
+public class NoEntryAtSnapshotPosition extends Exception {
 
   public NoEntryAtSnapshotPosition(final String message) {
     super(message);

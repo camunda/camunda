@@ -199,6 +199,33 @@ public final class StateControllerImplTest {
   }
 
   @Test
+  public void shouldTakeSnapshotWithoutIndexedEntryWhenProcessedPositionChanged() {
+    // given
+    final var snapshotPosition = 2;
+    exporterPosition.set(snapshotPosition - 1);
+    snapshotController.recover().join();
+    final var firstSnapshot =
+        snapshotController.takeTransientSnapshot(snapshotPosition).join().persist().join();
+    atomixRecordEntrySupplier.set(emptyEntrySupplier);
+
+    // when
+    final var snapshot =
+        snapshotController.takeTransientSnapshot(snapshotPosition + 1).join().persist().join();
+
+    // then
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getCompactionBound)
+        .isEqualTo(firstSnapshot.getCompactionBound());
+    assertThat(snapshot.getId()).isNotEqualTo(firstSnapshot.getId());
+    final var newSnapshotId = FileBasedSnapshotId.ofFileName(snapshot.getId()).orElseThrow();
+    final var firstSnapshotId = FileBasedSnapshotId.ofFileName(firstSnapshot.getId()).orElseThrow();
+    assertThat(newSnapshotId.getExportedPosition())
+        .isEqualTo(firstSnapshotId.getExportedPosition());
+    assertThat(newSnapshotId.getProcessedPosition())
+        .isGreaterThan(firstSnapshotId.getProcessedPosition());
+  }
+
+  @Test
   public void shouldTakeSnapshotWhenProcessorPositionNotChanged() {
     // given
     final var snapshotPosition = 2;
