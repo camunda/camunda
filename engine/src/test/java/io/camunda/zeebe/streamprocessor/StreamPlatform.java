@@ -115,12 +115,15 @@ public final class StreamPlatform {
   }
 
   public void createLogStream() {
-    final var logStorage = new ListLogStorage();
+    createLogStream(new ListLogStorage(), DEFAULT_PARTITION);
+  }
+
+  public LogContext createLogStream(final ListLogStorage logStorage, final int partitionId) {
     final var logStream =
         SyncLogStream.builder()
-            .withLogName(STREAM_NAME + DEFAULT_PARTITION)
+            .withLogName(STREAM_NAME + partitionId)
             .withLogStorage(logStorage)
-            .withPartitionId(DEFAULT_PARTITION)
+            .withPartitionId(partitionId)
             .withActorSchedulingService(actorScheduler)
             .build();
 
@@ -128,6 +131,7 @@ public final class StreamPlatform {
 
     logContext = new LogContext(logStream);
     closeables.add(logContext);
+    return logContext;
   }
 
   public SynchronousLogStream getLogStream() {
@@ -265,41 +269,45 @@ public final class StreamPlatform {
         .orElseThrow(() -> new NoSuchElementException("No stream processor found."));
   }
 
-  public LogStreamBatchWriter setupBatchWriter(final RecordToWrite[] recordToWrites) {
-    final SynchronousLogStream logStream = getLogStream();
-    final LogStreamBatchWriter logStreamBatchWriter = logStream.newLogStreamBatchWriter();
-    for (final RecordToWrite recordToWrite : recordToWrites) {
-      logStreamBatchWriter
-          .event()
-          .key(recordToWrite.getKey())
-          .sourceIndex(recordToWrite.getSourceIndex())
-          .metadataWriter(recordToWrite.getRecordMetadata())
-          .valueWriter(recordToWrite.getUnifiedRecordValue())
-          .done();
-    }
-    return logStreamBatchWriter;
+  public long writeBatch(final RecordToWrite... recordsToWrite) {
+    final var batchWriter = logContext.setupBatchWriter(recordsToWrite);
+    return writeBatch(batchWriter);
   }
 
-  public long writeBatch(final RecordToWrite... recordsToWrite) {
-    final var batchWriter = setupBatchWriter(recordsToWrite);
-    return writeActor.submit(batchWriter::tryWrite).join();
+  public long writeBatch(final LogStreamBatchWriter logStreamBatchWriter) {
+    return writeActor.submit(logStreamBatchWriter::tryWrite).join();
   }
 
   public void closeStreamProcessor() throws Exception {
     processorContext.close();
   }
 
+  public record LogContext(SynchronousLogStream logStream) implements AutoCloseable {
+
+    public LogStreamBatchWriter setupBatchWriter(final RecordToWrite... recordToWrites) {
+      final LogStreamBatchWriter logStreamBatchWriter = logStream.newLogStreamBatchWriter();
+      for (final RecordToWrite recordToWrite : recordToWrites) {
+        logStreamBatchWriter
+            .event()
+            .key(recordToWrite.getKey())
+            .sourceIndex(recordToWrite.getSourceIndex())
+            .metadataWriter(recordToWrite.getRecordMetadata())
+            .valueWriter(recordToWrite.getUnifiedRecordValue())
+            .done();
+      }
+      return logStreamBatchWriter;
+    }
+
+    @Override
+    public void close() {
+      logStream.close();
+    }
+  }
+
   /** Used to run writes within an actor thread. */
   private static final class WriteActor extends Actor {
     public ActorFuture<Long> submit(final Callable<Long> write) {
       return actor.call(write);
-    }
-  }
-
-  private record LogContext(SynchronousLogStream logStream) implements AutoCloseable {
-    @Override
-    public void close() {
-      logStream.close();
     }
   }
 
