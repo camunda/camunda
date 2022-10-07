@@ -10,10 +10,13 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
     implements ProcessInstanceModificationRecordValue {
@@ -27,11 +30,14 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       activateInstructionsProperty =
           new ArrayProperty<>(
               "activateInstructions", new ProcessInstanceModificationActivateInstruction());
+  private final ArrayProperty<LongValue> activatedElementInstanceKeys =
+      new ArrayProperty<>("activatedElementInstanceKeys", new LongValue());
 
   public ProcessInstanceModificationRecord() {
     declareProperty(processInstanceKeyProperty)
         .declareProperty(terminateInstructionsProperty)
-        .declareProperty(activateInstructionsProperty);
+        .declareProperty(activateInstructionsProperty)
+        .declareProperty(activatedElementInstanceKeys);
   }
 
   /**
@@ -95,6 +101,17 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
   public ProcessInstanceModificationRecord addActivateInstruction(
       final ProcessInstanceModificationActivateInstruction activateInstruction) {
     activateInstructionsProperty.add().copy(activateInstruction);
+    return this;
+  }
+
+  public Set<Long> getActivatedElementInstanceKeys() {
+    return activatedElementInstanceKeys.stream()
+        .map(LongValue::getValue)
+        .collect(Collectors.toSet());
+  }
+
+  public ProcessInstanceModificationRecord addActivatedElementInstanceKey(final long key) {
+    activatedElementInstanceKeys.add().setValue(key);
     return this;
   }
 

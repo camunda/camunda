@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
@@ -24,5 +25,13 @@ final class ProcessInstanceModifiedEventApplier
   }
 
   @Override
-  public void applyState(final long key, final ProcessInstanceModificationRecord value) {}
+  public void applyState(final long key, final ProcessInstanceModificationRecord value) {
+    value.getActivatedElementInstanceKeys().stream()
+        .map(elementInstanceState::getInstance)
+        .filter(ElementInstance::isInterrupted)
+        .forEach(
+            instance ->
+                elementInstanceState.updateInstance(
+                    instance.getKey(), ElementInstance::clearInterruptedState));
+  }
 }
