@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(StreamPlatformExtension.class)
-public final class StreamProcessorInconsistentPositionTest {
+final class StreamProcessorInconsistentPositionTest {
 
   private static final ProcessInstanceRecord PROCESS_INSTANCE_RECORD = Records.processInstance(1);
 
@@ -27,7 +27,7 @@ public final class StreamProcessorInconsistentPositionTest {
   private StreamPlatform streamPlatform;
 
   @Test
-  public void shouldNotStartOnInconsistentLog() {
+  void shouldNotStartOnInconsistentLog() {
     // given
     final var listLogStorage = new ListLogStorage();
     try (final var firstLogCtx = streamPlatform.createLogContext(listLogStorage, 1)) {
