@@ -371,37 +371,6 @@ jobs:
           maven-cache: true
           maven-cache-key-modifier: java-checks
       - run: mvn -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
-  docker-checks:
-    name: Docker checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: hadolint/hadolint-action@v2.1.0
-        with:
-          config: ./.hadolint.yaml
-          dockerfile: ./Dockerfile
-          format: sarif
-          output-file: ./hadolint.sarif
-          no-color: true
-      - name: Upload Hadolint Results
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: ./hadolint.sarif
-      - uses: ./.github/actions/setup-zeebe
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-      - uses: ./.github/actions/build-docker
-        id: build-docker
-        with:
-          # give it a fake name to ensure we never try pushing it
-          repository: localhost:5000/camunda/zeebe
-          distball: ${{ steps.build-zeebe.outputs.distball }}
-      - name: Verify Docker image
-        env:
-          DATE: ${{ steps.build-docker.outputs.date }}
-          REVISION: ${{ github.sha }}
-          VERSION: ${{ steps.build-docker.outputs.version }}
-        run: ${PWD}/docker/test/verify.sh '${{ steps.build-docker.outputs.image }}'
   # Used by bors to check all tests, including the unit test matrix.
   # New test jobs must be added to the `needs` lists!
   # This name is hard-referenced from bors.toml; remember to update that if this name changes
@@ -419,7 +388,6 @@ jobs:
       - codeql
       - java-checks
       - go-lint
-      - docker-checks
     steps:
       - run: exit 0
 
