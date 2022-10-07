@@ -50,7 +50,7 @@
     <version.docker-java-api>3.2.13</version.docker-java-api>
     <version.elasticsearch>7.17.5</version.elasticsearch>
     <version.error-prone>2.15.0</version.error-prone>
-    <version.grpc>1.49.1</version.grpc>
+    <version.grpc>1.49.2</version.grpc>
     <version.gson>2.9.1</version.gson>
     <version.guava>31.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -82,7 +82,7 @@
     <version.wiremock>2.34.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>1.17.4</version.testcontainers>
+    <version.testcontainers>1.17.5</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
     <version.zeebe-test-container>3.5.2</version.zeebe-test-container>
     <version.feel-scala>1.15.2</version.feel-scala>
@@ -133,7 +133,7 @@
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.3.0</plugin.version.resources>
     <plugin.version.revapi>0.14.7</plugin.version.revapi>
-    <plugin.version.scala>4.7.1</plugin.version.scala>
+    <plugin.version.scala>4.7.2</plugin.version.scala>
     <plugin.version.shade>3.4.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.7.2.0</plugin.version.spotbugs>
