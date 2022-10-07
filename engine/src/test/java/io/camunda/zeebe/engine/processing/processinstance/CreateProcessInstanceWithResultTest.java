@@ -45,13 +45,9 @@ public final class CreateProcessInstanceWithResultTest {
 
   @BeforeClass
   public static void init() {
-    ENGINE.deployment().withXmlResource(PROCESS).deploy();
-  }
-
-  @BeforeClass
-  public static void setUp() {
     mockCommandResponseWriter = ENGINE.getCommandResponseWriter();
     interceptResponseWriter(mockCommandResponseWriter);
+    ENGINE.deployment().withXmlResource(PROCESS).deploy();
   }
 
   @Before
