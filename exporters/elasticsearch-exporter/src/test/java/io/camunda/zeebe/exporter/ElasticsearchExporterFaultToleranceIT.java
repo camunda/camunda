@@ -11,25 +11,48 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.time.Duration;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+import org.testcontainers.containers.ToxiproxyContainer;
+import org.testcontainers.containers.ToxiproxyContainer.ContainerProxy;
+import org.testcontainers.utility.DockerImageName;
 
 public class ElasticsearchExporterFaultToleranceIT
     extends AbstractElasticsearchExporterIntegrationTestCase {
 
+  // we use Toxiproxy to simulate Elastic being "down" arbitrarily
+  private final ToxiproxyContainer proxy =
+      new ToxiproxyContainer(DockerImageName.parse("shopify/toxiproxy").withTag("2.1.0"))
+          .withNetwork(network)
+          .withNetworkAliases("proxy");
+
+  private ContainerProxy elasticProxy;
+
+  @Before
+  public void before() {
+    proxy.start();
+    elasticProxy = proxy.getProxy("elastic", 9200);
+  }
+
+  @After
+  public void after() {
+    proxy.stop();
+  }
+
   @Test
   public void shouldExportEvenIfElasticNotInitiallyReachable() {
     // given
-    elastic.withPort(SocketUtil.getNextAddress().getPort());
+    elastic.withPort(elasticProxy.getProxyPort());
     configuration = getDefaultConfiguration();
     configuration.index.prefix = "zeebe";
     esClient = createElasticsearchClient(configuration);
+    exporterBrokerRule.configure("es", ElasticsearchExporter.class, configuration);
 
     // when
-    exporterBrokerRule.configure("es", ElasticsearchExporter.class, configuration);
     startBrokerWithoutWaitingForIndexTemplates();
     exporterBrokerRule.publishMessage("message", "123");
     elastic.start();

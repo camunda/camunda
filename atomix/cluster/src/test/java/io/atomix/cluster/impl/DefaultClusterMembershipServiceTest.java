@@ -86,6 +86,8 @@ final class DefaultClusterMembershipServiceTest {
     assertThat(membershipService.getLocalMember())
         .as("the local member is member 0")
         .isEqualTo(expectedMember);
+
+    membershipService.stop().join();
   }
 
   @Test
@@ -105,6 +107,8 @@ final class DefaultClusterMembershipServiceTest {
         .isNotEmpty()
         .as("the reported members are exactly the same as the protocol's")
         .containsExactlyInAnyOrderElementsOf(protocol.getMembers());
+
+    membershipService.stop().join();
   }
 
   @Test
@@ -188,5 +192,7 @@ final class DefaultClusterMembershipServiceTest {
     assertThat(receivedEvent)
         .as("the received event is the same as the one sent")
         .hasValue(expectedEvent);
+
+    membershipService.stop().join();
   }
 }

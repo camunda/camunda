@@ -173,8 +173,8 @@ public class RaftFailOverTest {
   public void shouldReplicateSnapshotWithManyFilesOnJoin() throws Exception {
     // given
     final var follower = raftRule.shutdownFollower();
-    raftRule.appendEntries(20);
-    final long snapshotIndex = 10L;
+    raftRule.appendEntries(30);
+    final long snapshotIndex = 20;
     raftRule.doSnapshot(snapshotIndex, 10);
     final var leaderSnapshot = raftRule.getSnapshotFromLeader();
 

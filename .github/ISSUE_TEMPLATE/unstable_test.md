@@ -3,7 +3,7 @@
 name: Unstable test
 about: Report tests that are flaky/non-deterministic
 title: ''
-labels: 'Type: Unstable Test'
+labels: 'kind/flake'
 assignees: ''
 
 ---
