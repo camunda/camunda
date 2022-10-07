@@ -1,0 +1,41 @@
+---
+name: Check for duplicated test runs
+
+description: Check for duplicated test runs from a maven build output file and fail if found.
+
+inputs:
+  buildOutputFilePath:
+    description: 'Path to the build log file.'
+    required: true
+
+runs:
+  using: composite
+  steps:
+
+  - name: Parse the build log output and write duplicate tests to the output file
+    shell: bash
+    env:
+      BUILD_OUTPUT_FILE_PATH: ${{ inputs.buildOutputFilePath }}
+    run: |
+      if [ ! -s "$BUILD_OUTPUT_FILE_PATH" ]; then
+        echo "::error::Build output file does not exist or is empty!"
+        exit 1
+      fi
+      if grep -E -q "^\[(INFO|WARNING|ERROR)\] Tests run: [1-9]" "$BUILD_OUTPUT_FILE_PATH"; then
+        outputFile=$(mktemp)
+        tmpFile=$(mktemp)
+        grep -oP "\[INFO\] Running \K(.*)$" "$BUILD_OUTPUT_FILE_PATH" > "$tmpFile"
+        if [ -s "$tmpFile" ]; then  # found tests
+          sort "$tmpFile" | uniq -d | tee "$outputFile"
+          if [ -s "$outputFile" ]; then
+            echo "::error::Found duplicate test runs!"
+            exit 1
+          fi
+          echo "No duplicate test runs found, all good!"
+          exit 0
+        fi
+        echo "::error::Could not find any tests, duplicate detection is broken."
+        exit 1
+      fi
+      echo "No test execution found in build output, thus nothing to check."
+      exit 0

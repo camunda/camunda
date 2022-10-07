@@ -3,7 +3,7 @@
 name: Documentation issue
 about: Changes to the documentation
 title: ''
-labels: 'Type: Docs'
+labels: 'kind/documentation'
 assignees: ''
 
 ---
