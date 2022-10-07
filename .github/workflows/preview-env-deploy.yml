@@ -47,7 +47,7 @@ jobs:
     #########################################################################
     # Create a preview environment
     - name: Deploy Preview Environment
-      uses: ./.github/actions/deploy-preview
+      uses: ./.github/actions/deploy-preview-create
       with:
         deployment_id: ${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }} # fake ternary https://github.com/actions/runner/issues/409
         revision: ${{ env.BRANCH_NAME }}
