@@ -39,4 +39,5 @@ jobs:
         uses: ./.github/actions/deploy-preview-destroy
         with:
           deployment_ref: ${{ env.BRANCH_NAME }} # actual branch name, which is the targetRevision in ArgoCD
+          revision: ${{ env.BRANCH_NAME }}
           argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
