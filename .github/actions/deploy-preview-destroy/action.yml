@@ -1,0 +1,88 @@
+---
+name: Destroy preview environment
+
+description: Destroy Operate preview environment.
+
+inputs:
+  deployment_ref:
+    description: >-
+      This is supposed to contain the branch name that will be used to lookup the actual Argo CD deployment name.
+      Typically it's populated using `github.event.ref`.
+    required: false
+    default: ${{ github.event.ref }}
+
+  revision:
+    description: Revision or branch of the Operate Helm chart. Typically the branch to be deployed, or `master`.
+    required: true
+
+  argocd_server:
+    description: Url of the Argo CD instance to target.
+    required: false
+    default: argocd.int.camunda.com
+
+  argocd_token:
+    description: An Argo CD token with sufficient permissions to create Applications.
+    required: true
+
+  argocd_version:
+    default: v2.3.1
+    description: Version tag of Argo CD CLI tool
+    required: false
+runs:
+  using: composite
+  steps:
+  - name: Echo inputs
+    shell: bash
+    run: |
+      echo "Inputs"
+      echo "-----"
+      echo "Chart revision:           ${{ inputs.revision }}"
+  - name: Restore cache
+    uses: actions/cache@v3
+    id: tool-cache-argocd
+    with:
+      path: /usr/local/bin/argocd
+      key: ${{ runner.os }}-tool-cache-argo-${{ inputs.argocd_version }}
+  - name: Setup Argo CD
+    shell: bash
+    if: ${{ steps.tool-cache-argocd.outputs.cache-hit != 'true' }}
+    run: |-
+      curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/download/${{ inputs.argocd_version }}/argocd-linux-amd64
+      chmod +x /usr/local/bin/argocd
+      argocd version
+  - name: Determine APP_NAME
+    shell: bash
+    run: |-
+      APP_NAME="$(argocd app list -o json | jq -r '.[] | select(.spec.source.targetRevision=="${{ inputs.deployment_ref }}").metadata.name')"
+      echo "APP_NAME=${APP_NAME}" >> ${GITHUB_ENV}
+    env:
+      ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
+      ARGOCD_OPTS: "--grpc-web"
+      ARGOCD_SERVER: ${{ inputs.argocd_server  }}
+
+  - name: Tear down
+    shell: bash
+    run: argocd app delete ${{ env.APP_NAME }} --yes
+    env:
+      ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
+      ARGOCD_OPTS: "--grpc-web"
+      ARGOCD_SERVER: ${{ inputs.argocd_server  }}
+  - name: Wait for sync (up to 15 minutes)
+    shell: bash
+    run: |-
+      echo "::group::wait for sync"
+      argocd app wait ${{ env.APP_NAME }} --timeout 900 --operation
+      echo "::endgroup::"
+    env:
+      ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
+      ARGOCD_OPTS: "--grpc-web"
+      ARGOCD_SERVER: ${{ inputs.argocd_server  }}
+
+  - uses: bobheadxi/deployments@26f1b13bf5048b2a8cf9c92af826742fefe2bc3a
+    if: always()
+    name: Deactivate GitHub Deployment environment
+    with:
+      step: deactivate-env
+      token: "${{ github.token }}"
+      env: ${{ env.APP_NAME }}
+      ref: ${{ inputs.revision }}

@@ -36,10 +36,7 @@ jobs:
       #########################################################################
       # Tear down preview environment
       - name: Tear down Preview Environment
-        uses: ./.github/actions/deploy-preview
+        uses: ./.github/actions/deploy-preview-destroy
         with:
           deployment_ref: ${{ env.BRANCH_NAME }} # actual branch name, which is the targetRevision in ArgoCD
-          revision: ${{ env.BRANCH_NAME }} # doesn't matter for teardown but is required
-          docker_tag: ci-${{ github.sha }} # doesn't matter for teardown but is required
           argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-          step: stop
