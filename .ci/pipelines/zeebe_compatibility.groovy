@@ -209,29 +209,29 @@ pipeline {
     stage('Zeebe Integration Tests') {
       failFast false
       parallel {
-        stage("8.0.7") {
+        stage("8.0.0") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-zeebe-8-0-7_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+              label "optimize-ci-build-zeebe-8-0-0_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml mavenIntegrationTestSpec("${env.CAMBPM_VERSION}", "${env.ES_VERSION}")
             }
           }
           environment {
-            LABEL = "optimize-ci-build-zeebe-8-0-7_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+            LABEL = "optimize-ci-build-zeebe-8-0-0_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
           }
           steps {
-            integrationTestSteps("8.0.7", false)
+            integrationTestSteps("8.0.0", false)
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
               container('gcloud'){
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe807.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_zeebe800.log'
               }
-              archiveArtifacts artifacts: 'elasticsearch_zeebe807.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearch_zeebe800.log', onlyIfSuccessful: false
             }
           }
         }
