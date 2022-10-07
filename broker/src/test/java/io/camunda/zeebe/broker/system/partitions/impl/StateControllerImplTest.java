@@ -218,8 +218,9 @@ public final class StateControllerImplTest {
         .extracting(PersistedSnapshot::getCompactionBound)
         .isEqualTo(firstSnapshot.getCompactionBound());
     assertThat(snapshot.getId()).isNotEqualTo(firstSnapshot.getId());
-    final var newSnapshotId = FileBasedSnapshotId.ofFileName(snapshot.getId()).orElseThrow();
-    final var firstSnapshotId = FileBasedSnapshotId.ofFileName(firstSnapshot.getId()).orElseThrow();
+    final var newSnapshotId = FileBasedSnapshotMetadata.ofFileName(snapshot.getId()).orElseThrow();
+    final var firstSnapshotId =
+        FileBasedSnapshotMetadata.ofFileName(firstSnapshot.getId()).orElseThrow();
     assertThat(newSnapshotId.getExportedPosition())
         .isEqualTo(firstSnapshotId.getExportedPosition());
     assertThat(newSnapshotId.getProcessedPosition())
