@@ -8,7 +8,6 @@
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {VariablePanel} from '../index';
 import {
-  findByText,
   render,
   screen,
   UserEvent,

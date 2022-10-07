@@ -348,6 +348,7 @@ describe('VariablePanel', () => {
   });
 
   it('should remove pending variable if scope id changes', async () => {
+    jest.useFakeTimers();
     mockServer.use(
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
@@ -406,6 +407,9 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
 
     expect(screen.getByTitle(/add variable/i)).toBeInTheDocument();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should display validation error if backend validation fails while adding variable', async () => {
@@ -431,8 +435,10 @@ describe('VariablePanel', () => {
     );
     await user.click(screen.getByTitle(/save variable/i));
 
-    await waitForElementToBeRemoved(
-      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('edit-variable-spinner')
+      ).not.toBeInTheDocument()
     );
 
     expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
