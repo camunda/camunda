@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.streamprocessor;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
 import static org.mockito.ArgumentMatchers.any;
@@ -14,10 +14,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.engine.api.EmptyProcessingResult;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.engine.util.Records;
-import io.camunda.zeebe.engine.util.StreamPlatform;
-import io.camunda.zeebe.engine.util.StreamPlatformExtension;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;

@@ -37,8 +37,6 @@ import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
 import io.camunda.zeebe.engine.util.Records;
-import io.camunda.zeebe.engine.util.StreamPlatform;
-import io.camunda.zeebe.engine.util.StreamPlatformExtension;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
