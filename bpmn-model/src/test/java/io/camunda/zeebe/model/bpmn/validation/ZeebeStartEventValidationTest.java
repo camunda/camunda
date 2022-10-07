@@ -22,7 +22,6 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.model.bpmn.instance.Process;
-import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import java.util.Arrays;
@@ -39,9 +38,7 @@ public class ZeebeStartEventValidationTest extends AbstractZeebeValidationTest {
         singletonList(expect("subProcess", "Must have exactly one start event"))
       },
       {
-        Bpmn.createExecutableProcess().startEvent().signal("signal").endEvent().done(),
-        singletonList(
-            expect(SignalEventDefinition.class, "Event definition of this type is not supported")),
+        Bpmn.createExecutableProcess().startEvent().signal("signal").endEvent().done(), valid(),
       },
       {
         Bpmn.createExecutableProcess()
@@ -50,9 +47,7 @@ public class ZeebeStartEventValidationTest extends AbstractZeebeValidationTest {
             .signal("signal")
             .endEvent()
             .done(),
-        Arrays.asList(
-            expect(StartEvent.class, "Start event can't have more than one type"),
-            expect(SignalEventDefinition.class, "Event definition of this type is not supported")),
+        singletonList(expect(StartEvent.class, "Start event can't have more than one type")),
       },
       {
         "multiple-timer-start-event-sub-process.bpmn",

@@ -19,8 +19,6 @@ import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.ex
 import static java.util.Collections.singletonList;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
-import java.util.Arrays;
 import org.junit.runners.Parameterized.Parameters;
 
 public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTest {
@@ -37,9 +35,7 @@ public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTes
             .signal("signal")
             .endEvent("end")
             .done(),
-        Arrays.asList(
-            expect(SignalEventDefinition.class, "Event definition of this type is not supported"),
-            expect("boundary", "Boundary events must be one of: timer, message, error"))
+        valid()
       },
       {
         Bpmn.createExecutableProcess("process")
