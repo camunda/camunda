@@ -18,11 +18,13 @@ package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.zeebe.MessageBuilder;
+import io.camunda.zeebe.model.bpmn.builder.zeebe.SignalBuilder;
 import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ConditionalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.Signal;
 import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.TimeCycle;
 import io.camunda.zeebe.model.bpmn.instance.TimeDate;
@@ -103,6 +105,26 @@ public abstract class AbstractCatchEventBuilder<
     element.getEventDefinitions().add(signalEventDefinition);
 
     return myself;
+  }
+
+  public B signal(final Consumer<SignalBuilder> signalBuilderConsumer) {
+    final SignalEventDefinition signalEventDefinition = createInstance(SignalEventDefinition.class);
+    element.getEventDefinitions().add(signalEventDefinition);
+
+    final Signal signal = createSignal();
+    final SignalBuilder builder = new SignalBuilder(modelInstance, signal);
+
+    signalBuilderConsumer.accept(builder);
+
+    signalEventDefinition.setSignal(signal);
+
+    return myself;
+  }
+
+  public SignalEventDefinitionBuilder signalEventDefinition() {
+    final SignalEventDefinition eventDefinition = createEmptySignalEventDefinition();
+    element.getEventDefinitions().add(eventDefinition);
+    return new SignalEventDefinitionBuilder(modelInstance, eventDefinition);
   }
 
   public B timerWithDateExpression(final String timerDate) {

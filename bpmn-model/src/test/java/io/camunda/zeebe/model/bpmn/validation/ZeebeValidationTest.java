@@ -24,7 +24,6 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
-import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import java.util.Arrays;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -81,14 +80,7 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
                 "subprocess",
                 "Start events in event subprocesses must be one of: message, timer, error"))
       },
-      {
-        eventSubprocWithSignalStart(),
-        Arrays.asList(
-            expect(SignalEventDefinition.class, "Event definition of this type is not supported"),
-            expect(
-                "subprocess",
-                "Start events in event subprocesses must be one of: message, timer, error"))
-      }
+      {eventSubprocWithSignalStart(), valid()}
     };
   }
 

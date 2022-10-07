@@ -96,6 +96,18 @@ public abstract class AbstractThrowEventBuilder<
   }
 
   /**
+   * Creates an empty signal event definition with an unique id and returns a builder for the signal
+   * event definition.
+   *
+   * @return the signal event definition builder object
+   */
+  public SignalEventDefinitionBuilder signalEventDefinition() {
+    final SignalEventDefinition eventDefinition = createEmptySignalEventDefinition();
+    element.getEventDefinitions().add(eventDefinition);
+    return new SignalEventDefinitionBuilder(modelInstance, eventDefinition);
+  }
+
+  /**
    * Sets an event definition for the given Signal name. If a signal with this name already exists
    * it will be used, otherwise a new signal is created. It returns a builder for the Signal Event
    * Definition.

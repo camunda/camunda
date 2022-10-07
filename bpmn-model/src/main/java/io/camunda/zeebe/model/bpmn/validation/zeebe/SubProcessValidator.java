@@ -18,6 +18,7 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
@@ -32,7 +33,10 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
 
   private static final List<Class<? extends EventDefinition>> SUPPORTED_START_TYPES =
       Arrays.asList(
-          TimerEventDefinition.class, MessageEventDefinition.class, ErrorEventDefinition.class);
+          TimerEventDefinition.class,
+          MessageEventDefinition.class,
+          ErrorEventDefinition.class,
+          SignalEventDefinition.class);
 
   @Override
   public Class<SubProcess> getElementType() {
@@ -74,14 +78,15 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
     final Collection<EventDefinition> eventDefinitions = start.getEventDefinitions();
     if (eventDefinitions.isEmpty()) {
       validationResultCollector.addError(
-          0, "Start events in event subprocesses must be one of: message, timer, error");
+          0, "Start events in event subprocesses must be one of: message, timer, error, signal");
     }
 
     eventDefinitions.forEach(
         def -> {
           if (SUPPORTED_START_TYPES.stream().noneMatch(type -> type.isInstance(def))) {
             validationResultCollector.addError(
-                0, "Start events in event subprocesses must be one of: message, timer, error");
+                0,
+                "Start events in event subprocesses must be one of: message, timer, error, signal");
           }
         });
 
