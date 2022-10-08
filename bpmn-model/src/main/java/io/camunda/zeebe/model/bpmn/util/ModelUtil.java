@@ -118,19 +118,13 @@ public class ModelUtil {
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
   }
 
-  public static void verifyNoDuplicatedLinkCatchEvents(
-      final ModelElementInstance element, final Consumer<String> errorCollector) {
-
-    final List<EventDefinition> definitions = getEventDefinitionsForLinkCatchEvents(element);
-
-    verifyNoDuplicatedEventDefinition(definitions, errorCollector);
-  }
-
-  public static void verifyPairsLinkEvents(
+  public static void verifyLinkIntermediateEvents(
       final ModelElementInstance element, final Consumer<String> errorCollector) {
 
     // get link catch events definition
     final List<EventDefinition> linkCatchEvents = getEventDefinitionsForLinkCatchEvents(element);
+
+    verifyNoDuplicatedEventDefinition(linkCatchEvents, errorCollector);
 
     // get link throw events definition
     final List<EventDefinition> linkThrowEvents = getEventDefinitionsForLinkThrowEvents(element);
@@ -153,21 +147,12 @@ public class ModelUtil {
     // get distinct link throw events names
     final List<String> linkThrowList = throwsEventNames.distinct().collect(Collectors.toList());
 
-    // intersection with linkCatchList and linkThrowList
-    final List<String> intersection =
-        linkCatchList.stream()
-            .filter(item -> linkThrowList.contains(item))
-            .collect(Collectors.toList());
-
-    // check if intermediate throw and catch link event definitions are appears in pairs.
-    if (!(linkCatchEvents.size() == 0 && linkThrowEvents.size() == 0)) {
-      if ((linkCatchEvents.size() == 0 && linkThrowEvents.size() > 0)
-          || (linkCatchEvents.size() > 0 && linkThrowEvents.size() == 0)
-          || intersection.size() == 0) {
-        errorCollector.accept(
-            "Intermediate throw and catch link event definitions must appear in pairs.");
-      }
-    }
+    linkThrowList.forEach(
+        item -> {
+          if (!linkCatchList.contains(item)) {
+            errorCollector.accept(noPairedLinkNames(item));
+          }
+        });
   }
 
   public static void verifyEventDefinition(
@@ -269,6 +254,11 @@ public class ModelUtil {
     return String.format(
         "Multiple intermediate catch link event definitions with the same name '%s' are not allowed.",
         linkName);
+  }
+
+  private static String noPairedLinkNames(final String linkName) {
+    return String.format(
+        "Can't find an catch link event for the throw link event with the name '%s'.", linkName);
   }
 
   private static void verifyEventDefinition(

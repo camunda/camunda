@@ -90,9 +90,6 @@ public class LinkEventDefinitionTest {
         .hasIntent(DeploymentIntent.CREATE)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT);
     assertThat(rejectedDeployment.getRejectionReason())
-        .contains("Element: process")
-        .contains(
-            "ERROR: Intermediate throw and catch link event definitions must appear in pairs.")
         .contains("Element: linkEvent")
         .contains("ERROR: Link name must be present and not empty.");
   }
@@ -119,13 +116,10 @@ public class LinkEventDefinitionTest {
         .hasIntent(DeploymentIntent.CREATE)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT);
     assertThat(rejectedDeployment.getRejectionReason())
-        .contains("Element: Process_05x4y1u")
+        .contains("Element: Gateway_")
         .contains("ERROR: Event-based gateway must have at least 2 outgoing sequence flows.")
         .contains(
-            "ERROR: Event-based gateway must not have an outgoing sequence flow to other elements than message/timer intermediate catch events.")
-        .contains("Element: Process_05x4y1u")
-        .contains(
-            "ERROR: Intermediate throw and catch link event definitions must appear in pairs.");
+            "ERROR: Event-based gateway must not have an outgoing sequence flow to other elements than message/timer intermediate catch events.");
   }
 
   @Test
@@ -209,7 +203,7 @@ public class LinkEventDefinitionTest {
     assertThat(rejectedDeployment.getRejectionReason())
         .contains("Element: process")
         .contains(
-            "ERROR: Intermediate throw and catch link event definitions must appear in pairs.");
+            "ERROR: Can't find an catch link event for the throw link event with the name 'LinkA'.");
   }
 
   public static BpmnModelInstance getLinkEventProcess() {

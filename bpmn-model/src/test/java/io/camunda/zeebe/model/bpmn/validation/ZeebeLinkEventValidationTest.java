@@ -70,15 +70,12 @@ public class ZeebeLinkEventValidationTest {
 
     // when/then
     ProcessValidationUtil.assertThatProcessHasViolations(
-        process,
-        expect("linkEvent", "Link name must be present and not empty."),
-        expect(
-            "process",
-            "Intermediate throw and catch link event definitions must appear in pairs."));
+        process, expect("linkEvent", "Link name must be present and not empty."));
   }
 
   @Test
-  @DisplayName("Intermediate throw and catch link event definitions must appear in pairs")
+  @DisplayName(
+      "If there is a source Link, there MUST be a matching target Link (they have the same name)")
   void testNotPairsEventLink() {
     // given
     final BpmnModelInstance process = getLinkEventProcess();
@@ -88,12 +85,11 @@ public class ZeebeLinkEventValidationTest {
         process,
         expect(
             "process",
-            "Intermediate throw and catch link event definitions must appear in pairs."));
+            "Can't find an catch link event for the throw link event with the name 'LinkA'."));
   }
 
   @Test
-  @DisplayName(
-      "Intermediate throw and catch link event definitions with the same link name are not allowed")
+  @DisplayName("There MUST NOT be multiple target Links for a single source Link.")
   void testInvalidEventLinkMultipleTarget() {
     // given
     final BpmnModelInstance process =
@@ -126,10 +122,55 @@ public class ZeebeLinkEventValidationTest {
             "Event-based gateway must have at least 2 outgoing sequence flows."),
         expect(
             EventBasedGateway.class,
-            "Event-based gateway must not have an outgoing sequence flow to other elements than message/timer intermediate catch events."),
+            "Event-based gateway must not have an outgoing sequence flow to other elements than message/timer intermediate catch events."));
+  }
+
+  @Test
+  @DisplayName("If there is only target intermediate catch link event, it's allowed")
+  void testOnlyTargetEventLink() {
+    // given
+    final BpmnModelInstance process = getOnlyTargetLinkEventProcess();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("If there are only target intermediate catch link events, these are allowed")
+  void testOnlyManyTargetEventLink() {
+    // given
+    final BpmnModelInstance process = getOnlyManyTargetLinkEventProcess();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName(
+      "Link intermediate events can also be used as generic “Go To” objects within the Process level.")
+  void testGotoEventLink() {
+    // given
+    final BpmnModelInstance process = getGoToLinkEventProcess();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("A test for many link intermediate events")
+  void testManyEventLink() {
+    // given
+    final BpmnModelInstance process = getManyLinkEventProcess();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
         expect(
             Process.class,
-            "Intermediate throw and catch link event definitions must appear in pairs."));
+            "Multiple intermediate catch link event definitions with the same name 'LinkA' are not allowed."),
+        expect(
+            Process.class,
+            "Can't find an catch link event for the throw link event with the name 'LinkB'."));
   }
 
   public static BpmnModelInstance getLinkEventProcess() {
@@ -148,6 +189,92 @@ public class ZeebeLinkEventValidationTest {
         .linkEventDefinitionDone()
         .manualTask("manualTask2")
         .endEvent()
+        .done();
+  }
+
+  public static BpmnModelInstance getOnlyTargetLinkEventProcess() {
+    final ProcessBuilder process = Bpmn.createExecutableProcess("process");
+    process.startEvent().endEvent();
+    return process
+        .linkCatchEvent()
+        .linkEventDefinition()
+        .name("LinkB")
+        .linkEventDefinitionDone()
+        .endEvent()
+        .done();
+  }
+
+  public static BpmnModelInstance getOnlyManyTargetLinkEventProcess() {
+    final ProcessBuilder process = Bpmn.createExecutableProcess("process");
+    process.startEvent().endEvent();
+    process
+        .linkCatchEvent()
+        .linkEventDefinition()
+        .name("LinkB")
+        .linkEventDefinitionDone()
+        .endEvent();
+
+    return process
+        .linkCatchEvent()
+        .linkEventDefinition()
+        .name("LinkC")
+        .linkEventDefinitionDone()
+        .endEvent()
+        .done();
+  }
+
+  public static BpmnModelInstance getManyLinkEventProcess() {
+    final ProcessBuilder process = Bpmn.createExecutableProcess("process");
+    process
+        .startEvent()
+        .manualTask("manualTask1")
+        .intermediateThrowEvent("linkThrow1")
+        .linkEventDefinition()
+        .name("LinkA")
+        .linkEventDefinitionDone();
+    process
+        .linkCatchEvent()
+        .linkEventDefinition()
+        .name("LinkA")
+        .linkEventDefinitionDone()
+        .manualTask("manualTask2")
+        .intermediateThrowEvent("linkThrow2")
+        .linkEventDefinition()
+        .name("LinkB")
+        .linkEventDefinitionDone();
+    return process
+        .linkCatchEvent()
+        .linkEventDefinition()
+        .name("LinkA")
+        .linkEventDefinitionDone()
+        .manualTask("manualTask3")
+        .endEvent()
+        .done();
+  }
+
+  public static BpmnModelInstance getGoToLinkEventProcess() {
+    final ProcessBuilder process = Bpmn.createExecutableProcess("process");
+    process
+        .startEvent()
+        .exclusiveGateway("exclusive1")
+        .manualTask("manualTask1")
+        .manualTask("manualTask2")
+        .exclusiveGateway("exclusive2")
+        .defaultFlow()
+        .manualTask("manualTask3")
+        .endEvent()
+        .moveToLastExclusiveGateway()
+        .conditionExpression("condition_link")
+        .intermediateThrowEvent("linkThrow")
+        .linkEventDefinition()
+        .name("LinkA")
+        .linkEventDefinitionDone();
+    return process
+        .linkCatchEvent()
+        .linkEventDefinition()
+        .name("LinkA")
+        .linkEventDefinitionDone()
+        .connectTo("exclusive1")
         .done();
   }
 }
