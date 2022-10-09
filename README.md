@@ -23,7 +23,7 @@ Our release cadence within major releases is a minor release every three months,
 
 Minor releases are supported with patches for six months after their release.
 
-Here is a diagram illustrating the lifecycle of minor releases over a 13-month period:
+Here is a diagram illustrating the lifecycle of minor releases over 13-month:
 
 ![](img/release-cadence.png)
 

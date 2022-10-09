@@ -1,6 +1,6 @@
 # Contributing to Zeebe
 
-* [Build Zeebe from source](#build-zeebe-from-source)
+* [Build Zeebe from the source](#build-zeebe-from-source)
 * [Report issues or contact developers](#report-issues-or-contact-developers)
 * [GitHub Issue Guidelines](#github-issue-guidelines)
   * [Starting on an Issue](#starting-on-an-issue)
@@ -13,7 +13,7 @@
 * [Licenses](#licenses)
 * [Code of Conduct](#code-of-conduct)
 
-## Build Zeebe from source
+## Build Zeebe from the source
 
 Zeebe is a multi-module maven project. To build all components,
 run the command: `mvn clean install -DskipTests` in the root folder.
@@ -44,13 +44,13 @@ docker build \
 ```
 
 This is a small overview of the contents of the different modules:
-- `util` contains custom implementations of building blocks like an actor scheduler, buffer allocations, metrics. Its parts are used in most of the other modules
+- `util` contains custom implementations of building blocks like an actor scheduler, buffer allocations, and metrics. Its parts are used in most of the other modules
 - `protocol` contains the SBE definition of the main message protocol
 - `bpmn-model` is a Java API for BPMN process definitions used for parsing etc.
-- `msgpack-*` is custom msgpack implementation with extensions to evaluate json-path expressions on msgpack objects
+- `msgpack-*` is a custom msgpack implementation with extensions to evaluate json-path expressions on msgpack objects
 - `dispatcher` is a custom implementation of message passing between threads
 - `service-container` is a custom implementation to manage dependencies between different services
-- `logstreams` is an implementation of a append only log backed by the filesystem
+- `logstreams` is an implementation of an append-only log backed by the filesystem
 - `transport` is our abstraction over network transports
 - `gateway` is the implementation of the gRPC gateway, using our SBE-based protocol to communicate with brokers
 - `gateway-protocol` is the gRPC definitions for the Zeebe client-to-gateway protocol
@@ -78,12 +78,12 @@ If you have a general usage question please ask on the [forum][] or [slack][] ch
 
 ## GitHub Issue Guidelines
 
-Every issue should have a meaningful name and a description which either
+Every issue should have a meaningful name and a description that either
 describes:
 - a new feature with details about the use case the feature would solve or
 improve
-- a problem, how we can reproduce it and what would be the expected behavior
-- a change and the intention how this would improve the system
+- a problem, how we can reproduce it, and what would be the expected behavior
+- a change and the intention of how this would improve the system
 
 ## Starting on an issue
 
@@ -106,7 +106,7 @@ follow the following steps:
 4. Follow the [Google Java Format](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
    and [Zeebe Code Style](https://github.com/zeebe-io/zeebe/wiki/Code-Style) while coding.
 5. Implement the required changes on your branch and regularly push your
-   changes to the origin so that the CI can run. Code formatting, style and
+   changes to the origin so that the CI can run. Code formatting, style, and
    license header are fixed automatically by running maven. Checkstyle
    violations have to be fixed manually.
 
@@ -117,7 +117,7 @@ follow the following steps:
 6. If you think you finished the issue please prepare the branch for reviewing.
    Please consider our [pull requests and code
    reviews](https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews)
-   guide, before requesting a review. In general the commits should be squashed
+   guide, before requesting a review. In general, the commits should be squashed
    into meaningful commits with a helpful message. This means cleanup/fix etc
    commits should be squashed into the related commit. If you made refactorings
    it would be best if they are split up into another commit. Rule of thumb is
@@ -135,7 +135,7 @@ Before opening your first pull request, please have a look at this [guide](https
 
 1. To start the review process create a new pull request on GitHub from your
    branch to the `main` branch. Give it a meaningful name and describe
-   your changes in the body of the pull request. Lastly add a link to the issue
+   your changes in the body of the pull request. Lastly, add a link to the issue
    this pull request closes, i.e. by writing in the description `closes #123`
 2. Assign the pull request to one developer to review, if you are not sure who
    should review the issue skip this step. Someone will assign a reviewer for
@@ -182,7 +182,7 @@ For example, to distinguish a required change from an optional suggestion.
 - 🔧 or `:wrench:`: This is a well-meant suggestion or minor issue. Take it or leave it. Nothing major that blocks merging.
 - 💭 or `:thought_balloon:`: I’m just thinking out loud here. Something doesn’t necessarily have to change, but I want to make sure to share my thoughts.
 
-_Inspired by [Microsofts emoji code](https://devblogs.microsoft.com/appcenter/how-the-visual-studio-mobile-center-team-does-code-review/#introducing-the-emoji-code)._
+_Inspired by [Microsoft's emoji code](https://devblogs.microsoft.com/appcenter/how-the-visual-studio-mobile-center-team-does-code-review/#introducing-the-emoji-code)._
 
 ## Backporting changes
 
@@ -196,15 +196,15 @@ Please follow these steps to backport your changes:
      finished merging the pull request.
    - if the pull request is _already_ merged, create a comment on the pull request that contains
      `/backport` to trigger the automatic backporting.
-2. The Github Actions bot comments on the pull request once it finishes:
+2. The GitHub Actions bot comments on the pull request once it finishes:
    - When _successful_, a new backport pull request was automatically created. Simply **approve and
      merge it** by adding a review with a `bors merge` comment.
    - If it _failed_, please follow these **manual steps**:
      1. Locally checkout the target branch (e.g. `stable/1.0`).
-     2. Make sure it's up to date with origin (i.e. `git pull`).
+     2. Make sure it's up to date with the origin (i.e. `git pull`).
      3. Checkout a new branch for your backported changes (e.g. `git checkout -b
         backport-123-to-stable/1.0`).
-     4. Cherry pick your changes `git cherry-pick -x <sha-1>...<sha-n>`. You may need to resolve
+     4. Cherry-pick your changes `git cherry-pick -x <sha-1>...<sha-n>`. You may need to resolve
         conflicts.
      5. Push your cherry-picked changes `git push`.
      6. Create a pull request for your backport branch:
@@ -217,7 +217,7 @@ Please follow these steps to backport your changes:
 
 ## Commit Message Guidelines
 
-Commit messages use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) format.
+Commit messages to use the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) format.
 
 ```
 <header>
@@ -227,7 +227,7 @@ Commit messages use [Conventional Commits](https://www.conventionalcommits.org/e
 <footer> (optional)
 ```
 
-Zeebe uses a bot which will check your commit messages when a pull request is
+Zeebe uses a bot that will check your commit messages when a pull request is
 submitted. Please make sure to address any hints from the bot.
 
 ### Commit message header
@@ -246,7 +246,7 @@ The commit header should match the following pattern:
 
 The commit header should be kept short, preferably under 72 chars but we allow a max of 120 chars.
 
-- `type` should be one of:
+- `type` should be one of the:
   - `build`: Changes that affect the build system (e.g. Maven, Docker, etc)
   - `ci`: Changes to our CI configuration files and scripts (e.g. Jenkins, Bors, etc)
   - `deps`: A change to the external dependencies (was already used by Dependabot)
@@ -258,7 +258,7 @@ The commit header should be kept short, preferably under 72 chars but we allow a
   - `style`: A change to align the code with our style guide
   - `test`: Adding missing tests or correcting existing tests
 - `scope` (optional): name of the changed component (e.g. `engine`, `journal`, `README`)
-- `description`: short description of the change in present tense
+- `description`: short description of the change in the present tense
 
 ### Commit message body
 
@@ -267,7 +267,7 @@ Should describe the motivation for the change.
 ## Contributor License Agreement
 
 You will be asked to sign our Contributor License Agreement when you open a Pull Request. We are not
-asking you to assign copyright to us, but to give us the right to distribute
+asking you to assign a copyright to us, but to give us the right to distribute
 your code without restriction. We ask this of all contributors in order to
 assure our users of the origin and continuing existence of the code. You only
 need to sign the CLA once.
