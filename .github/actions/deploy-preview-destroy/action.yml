@@ -82,7 +82,7 @@ runs:
       ARGOCD_OPTS: "--grpc-web"
       ARGOCD_SERVER: ${{ inputs.argocd_server  }}
 
-  - uses: bobheadxi/deployments@26f1b13bf5048b2a8cf9c92af826742fefe2bc3a
+  - uses: bobheadxi/deployments@9d4477fdaa4120020cd10ab7e97f68c801422e73
     if: always()
     name: Deactivate GitHub Deployment environment
     with:
