@@ -64,7 +64,7 @@ sed_inplace "s/rate=100/rate=50/" timer.yaml
 sed_inplace "s/rate=100/rate=50/" publisher.yaml
 sed_inplace "s/rate=200/rate=100/" starter.yaml
 
-make zeebe starter worker timer publisher
+make zeebe starter worker timer # publisher should be enabled after fixing https://github.com/camunda/zeebe/issues/10643
 
 git add .
 git commit -m "test(benchmark): add $benchmark-mixed"
