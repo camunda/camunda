@@ -8,7 +8,7 @@
     "@camunda-cloud/common-ui": "0.0.18-rc9",
     "@camunda-cloud/common-ui-react": "0.0.18-rc9",
     "@carbon/elements": "11.10.0",
-    "@carbon/react": "1.12.0",
+    "@carbon/react": "1.14.0",
     "@monaco-editor/react": "4.4.5",
     "date-fns": "2.29.3",
     "final-form": "4.20.7",
