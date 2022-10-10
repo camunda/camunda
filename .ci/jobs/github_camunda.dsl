@@ -28,10 +28,8 @@ organizationFolder('camunda') {
                   excludes('')
                 }
 
-                // Disable sending Github status notifications in non-prod envs.
-                if (ENVIRONMENT != 'prod') {
-                    notificationsSkip()
-                }
+                // Disable sending Github status notifications as GHA CI is default
+                notificationsSkip()
             }
         }
     }
