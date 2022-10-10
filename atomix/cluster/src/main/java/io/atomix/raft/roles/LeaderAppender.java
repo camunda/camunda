@@ -208,16 +208,16 @@ final class LeaderAppender {
         .append(member.getMember().memberId(), request)
         .whenCompleteAsync(
             (response, error) -> {
-              // Complete the append to the member.
-              final long appendLatency = System.currentTimeMillis() - timestamp;
-              metrics.appendComplete(appendLatency, member.getMember().memberId().id());
-              if (!request.entries().isEmpty()) {
-                member.completeAppend(appendLatency);
-              } else {
-                member.completeAppend();
-              }
-
               if (open) {
+                // Complete the append to the member.
+                final long appendLatency = System.currentTimeMillis() - timestamp;
+                metrics.appendComplete(appendLatency, member.getMember().memberId().id());
+                if (!request.entries().isEmpty()) {
+                  member.completeAppend(appendLatency);
+                } else {
+                  member.completeAppend();
+                }
+
                 if (error == null) {
                   log.trace("Received {} from {}", response, member.getMember().memberId());
                   handleAppendResponse(member, request, response, timestamp);
@@ -300,10 +300,10 @@ final class LeaderAppender {
         .configure(member.getMember().memberId(), request)
         .whenCompleteAsync(
             (response, error) -> {
-              // Complete the configure to the member.
-              member.completeConfigure();
-
               if (open) {
+                // Complete the configure to the member.
+                member.completeConfigure();
+
                 if (error == null) {
                   log.trace("Received {} from {}", response, member.getMember().memberId());
                   handleConfigureResponse(member, request, response, timestamp);
@@ -413,10 +413,10 @@ final class LeaderAppender {
         .install(member.getMember().memberId(), request)
         .whenCompleteAsync(
             (response, error) -> {
-              // Complete the install to the member.
-              member.completeInstall();
-
               if (open) {
+                // Complete the install to the member.
+                member.completeInstall();
+
                 if (error == null) {
                   log.trace("Received {} from {}", response, member.getMember().memberId());
                   handleInstallResponse(member, request, response, timestamp);
