@@ -9,7 +9,7 @@
     "@camunda-cloud/common-ui-react": "0.0.18-rc9",
     "@carbon/elements": "11.10.0",
     "@carbon/react": "1.14.0",
-    "@monaco-editor/react": "4.4.5",
+    "@monaco-editor/react": "4.4.6",
     "date-fns": "2.29.3",
     "final-form": "4.20.7",
     "final-form-arrays": "3.0.2",
@@ -26,7 +26,7 @@
     "react-textarea-autosize": "8.3.4",
     "react-transition-group": "4.4.5",
     "sass": "1.54.9",
-    "styled-components": "5.3.5"
+    "styled-components": "5.3.6"
   },
   "scripts": {
     "start": "TSC_COMPILE_ON_ERROR=true react-scripts start",
@@ -66,8 +66,8 @@
     "@types/carbon__elements": "11.10.0",
     "@types/jest": "27.5.2",
     "@types/mixpanel-browser": "2.38.0",
-    "@types/node": "16.11.59",
-    "@types/react": "18.0.20",
+    "@types/node": "16.11.64",
+    "@types/react": "18.0.21",
     "@types/react-dom": "18.0.6",
     "@types/react-transition-group": "4.4.5",
     "@types/styled-components": "5.1.26",
@@ -79,13 +79,13 @@
     "jest-environment-jsdom-fifteen": "1.0.2",
     "lint-staged": "13.0.3",
     "monaco-editor": "0.34.0",
-    "msw": "0.47.3",
+    "msw": "0.47.4",
     "prettier": "2.7.1",
     "react-scripts": "4.0.3",
-    "source-map-explorer": "2.5.2",
+    "source-map-explorer": "2.5.3",
     "testcafe": "2.0.1",
     "ts-toolbelt": "9.6.0",
-    "typescript": "4.8.3",
+    "typescript": "4.8.4",
     "zeebe-node": "8.1.2"
   },
   "lint-staged": {
