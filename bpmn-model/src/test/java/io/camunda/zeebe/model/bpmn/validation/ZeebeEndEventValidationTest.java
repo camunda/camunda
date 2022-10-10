@@ -62,7 +62,8 @@ class ZeebeEndEventValidationTest {
     // when/then
     ProcessValidationUtil.assertThatProcessHasViolations(
         process,
-        expect(END_EVENT_ID, "End events must be one of: none, error, message, or terminate"),
+        expect(
+            END_EVENT_ID, "End events must be one of: none, error, message, terminate, or signal"),
         expect(endEventTypeBuilder.eventType, "Event definition of this type is not supported"));
   }
 
@@ -96,6 +97,8 @@ class ZeebeEndEventValidationTest {
     return Stream.of(
         new EndEventTypeBuilder(null, endEvent -> endEvent),
         new EndEventTypeBuilder(
+            SignalEventDefinition.class, endEvent -> endEvent.signal("signal-name")),
+        new EndEventTypeBuilder(
             ErrorEventDefinition.class, endEvent -> endEvent.error("error-code")),
         new EndEventTypeBuilder(
             MessageEventDefinition.class,
@@ -105,8 +108,6 @@ class ZeebeEndEventValidationTest {
 
   private static Stream<EndEventTypeBuilder> unsupportedEndEventTypes() {
     return Stream.of(
-        new EndEventTypeBuilder(
-            SignalEventDefinition.class, endEvent -> endEvent.signal("signal-name")),
         new EndEventTypeBuilder(
             EscalationEventDefinition.class, endEvent -> endEvent.escalation("escalation-code")),
         new EndEventTypeBuilder(

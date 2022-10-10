@@ -225,6 +225,16 @@ public abstract class AbstractBaseElementBuilder<
     return signalEventDefinition;
   }
 
+  protected Signal createSignal() {
+    final Definitions definitions = modelInstance.getDefinitions();
+    final Signal signal = createChild(definitions, Signal.class);
+    return signal;
+  }
+
+  protected SignalEventDefinition createEmptySignalEventDefinition() {
+    return createInstance(SignalEventDefinition.class);
+  }
+
   protected ErrorEventDefinition findErrorDefinitionForCode(final String errorCode) {
     final Collection<ErrorEventDefinition> definitions =
         modelInstance.getModelElementsByType(ErrorEventDefinition.class);

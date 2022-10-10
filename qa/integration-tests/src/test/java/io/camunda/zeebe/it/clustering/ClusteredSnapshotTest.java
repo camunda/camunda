@@ -39,11 +39,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.unit.DataSize;
 
 @RunWith(Parameterized.class)
 public class ClusteredSnapshotTest {
 
+  public static final Logger LOG = LoggerFactory.getLogger("ClusteredSnapshotTest");
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(5);
 
   @Rule
@@ -59,11 +62,19 @@ public class ClusteredSnapshotTest {
   public static Object[][] snapshotTriggers() {
     return new Object[][] {
       new Object[] {
-        (Consumer<ClusteringRule>) ClusteringRule::triggerAndWaitForSnapshots,
+        (Consumer<ClusteringRule>)
+            (rule) -> {
+              LOG.info("Triggerring snapshots using admin api");
+              rule.triggerAndWaitForSnapshots();
+            },
         "explicit trigger snapshot"
       },
       new Object[] {
-        (Consumer<ClusteringRule>) (rule) -> rule.getClock().addTime(SNAPSHOT_INTERVAL),
+        (Consumer<ClusteringRule>)
+            (rule) -> {
+              LOG.info("Increasing clock by snapshot interval {}", SNAPSHOT_INTERVAL);
+              rule.getClock().addTime(SNAPSHOT_INTERVAL);
+            },
         "implicit snapshot by advancing the clock"
       }
     };
@@ -177,6 +188,8 @@ public class ClusteredSnapshotTest {
         clusteringRule.getTopologyFromClient().getBrokers().stream()
             .collect(Collectors.toMap(BrokerInfo::getNodeId, this::getSnapshot));
 
+    LOG.info("Snapshots before configuring exporters {}", snapshotsByBroker);
+
     // when
     configureExporters();
     restartCluster();
@@ -191,7 +204,8 @@ public class ClusteredSnapshotTest {
           assertThat(broker)
               .havingSnapshot()
               .withIndex(expectedSnapshot.getIndex())
-              .withTerm(expectedSnapshot.getTerm());
+              .withTerm(expectedSnapshot.getTerm())
+              .withExportedPosition(0);
         });
   }
 
@@ -367,10 +381,10 @@ public class ClusteredSnapshotTest {
 
     public SnapshotAssert havingSnapshot() {
       final var snapshot = rule.getSnapshot(actual);
-      Assertions.assertThat(snapshot.isPresent())
+      Assertions.assertThat(snapshot)
           .withFailMessage("No snapshot exists for broker <%s>", actual)
-          .isTrue();
-      return new SnapshotAssert(snapshot.get());
+          .isPresent();
+      return new SnapshotAssert(snapshot.orElseThrow());
     }
   }
 

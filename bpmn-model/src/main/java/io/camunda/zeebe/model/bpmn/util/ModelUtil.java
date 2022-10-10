@@ -25,6 +25,8 @@ import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.Signal;
+import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
@@ -41,7 +43,8 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 public class ModelUtil {
 
   private static final List<Class<? extends EventDefinition>> NON_INTERRUPTING_EVENT_DEFINITIONS =
-      Arrays.asList(MessageEventDefinition.class, TimerEventDefinition.class);
+      Arrays.asList(
+          MessageEventDefinition.class, TimerEventDefinition.class, SignalEventDefinition.class);
 
   public static List<EventDefinition> getEventDefinitionsForBoundaryEvents(final Activity element) {
     return element.getBoundaryEvents().stream()
@@ -55,6 +58,14 @@ public class ModelUtil {
         .filter(SubProcess::triggeredByEvent)
         .flatMap(subProcess -> subProcess.getChildElementsByType(StartEvent.class).stream())
         .flatMap(s -> s.getEventDefinitions().stream())
+        .collect(Collectors.toList());
+  }
+
+  public static List<EventDefinition> getEventDefinitionsForSignalStartEvents(
+      final ModelElementInstance element) {
+    return element.getChildElementsByType(StartEvent.class).stream()
+        .flatMap(i -> i.getEventDefinitions().stream())
+        .filter(e -> e instanceof SignalEventDefinition)
         .collect(Collectors.toList());
   }
 
@@ -76,6 +87,14 @@ public class ModelUtil {
       final Activity activity, final Consumer<String> errorCollector) {
 
     final List<EventDefinition> definitions = getEventDefinitionsForBoundaryEvents(activity);
+
+    verifyNoDuplicatedEventDefinition(definitions, errorCollector);
+  }
+
+  public static void verifyNoDuplicateSignalStartEvents(
+      final ModelElementInstance element, final Consumer<String> errorCollector) {
+
+    final List<EventDefinition> definitions = getEventDefinitionsForSignalStartEvents(element);
 
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
   }
@@ -130,6 +149,15 @@ public class ModelUtil {
             .map(Error::getErrorCode);
 
     getDuplicatedEntries(errorCodes).map(ModelUtil::duplicatedErrorCodes).forEach(errorCollector);
+
+    final Stream<String> signalNames =
+        getEventDefinition(definitions, SignalEventDefinition.class)
+            .filter(def -> def.getSignal() != null)
+            .map(SignalEventDefinition::getSignal)
+            .filter(signal -> signal.getName() != null && !signal.getName().isEmpty())
+            .map(Signal::getName);
+
+    getDuplicatedEntries(signalNames).map(ModelUtil::duplicatedSignalNames).forEach(errorCollector);
   }
 
   public static <T extends EventDefinition> Stream<T> getEventDefinition(
@@ -152,6 +180,11 @@ public class ModelUtil {
     return String.format(
         "Multiple error event definitions with the same errorCode '%s' are not allowed.",
         errorCode);
+  }
+
+  private static String duplicatedSignalNames(final String signalName) {
+    return String.format(
+        "Multiple signal event definitions with the same name '%s' are not allowed.", signalName);
   }
 
   private static void verifyEventDefinition(

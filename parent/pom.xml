@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>8.1.0-SNAPSHOT</version>
+    <version>8.2.0-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
@@ -50,7 +50,7 @@
     <version.docker-java-api>3.2.13</version.docker-java-api>
     <version.elasticsearch>7.17.5</version.elasticsearch>
     <version.error-prone>2.15.0</version.error-prone>
-    <version.grpc>1.49.1</version.grpc>
+    <version.grpc>1.49.2</version.grpc>
     <version.gson>2.9.1</version.gson>
     <version.guava>31.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -70,19 +70,19 @@
     <version.netty>4.1.82.Final</version.netty>
     <version.objenesis>3.3</version.objenesis>
     <version.prometheus>0.16.0</version.prometheus>
-    <version.protobuf>3.21.6</version.protobuf>
-    <version.protobuf-common>2.9.3</version.protobuf-common>
+    <version.protobuf>3.21.7</version.protobuf>
+    <version.protobuf-common>2.9.6</version.protobuf-common>
     <version.micrometer>1.9.4</version.micrometer>
-    <version.rocksdbjni>7.5.3</version.rocksdbjni>
+    <version.rocksdbjni>7.6.0</version.rocksdbjni>
     <version.sbe>1.26.0</version.sbe>
-    <version.scala>2.13.9</version.scala>
+    <version.scala>2.13.10</version.scala>
     <version.slf4j>1.7.36</version.slf4j>
     <version.snakeyaml>1.33</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
     <version.wiremock>2.34.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>1.17.4</version.testcontainers>
+    <version.testcontainers>1.17.5</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
     <version.zeebe-test-container>3.5.2</version.zeebe-test-container>
     <version.feel-scala>1.15.2</version.feel-scala>
@@ -93,7 +93,7 @@
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.3.0</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
-    <version.jqwik>1.6.5</version.jqwik>
+    <version.jqwik>1.7.0</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.8</version.json-smart>
     <version.byte-buddy>1.12.17</version.byte-buddy>
@@ -110,9 +110,9 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.15</version.jnr-posix>
-    <version.zpt>8.0.6</version.zpt>
+    <version.zpt>8.1.0</version.zpt>
     <version.feign>11.10</version.feign>
-    <version.awssdk>2.17.284</version.awssdk>
+    <version.awssdk>2.17.289</version.awssdk>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -133,7 +133,7 @@
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.3.0</plugin.version.resources>
     <plugin.version.revapi>0.14.7</plugin.version.revapi>
-    <plugin.version.scala>4.7.1</plugin.version.scala>
+    <plugin.version.scala>4.7.2</plugin.version.scala>
     <plugin.version.shade>3.4.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.7.2.0</plugin.version.spotbugs>
@@ -147,7 +147,7 @@
     <extension.version.os-maven-plugin>1.7.0</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>8.0.0</backwards.compat.version>
+    <backwards.compat.version>8.1.0</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
 
     <!--
@@ -950,7 +950,7 @@
       <dependency>
         <groupId>com.amazonaws</groupId>
         <artifactId>aws-java-sdk-core</artifactId>
-        <version>1.12.310</version>
+        <version>1.12.318</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>

@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.util;
+package io.camunda.zeebe.streamprocessor;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -34,9 +35,6 @@ import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
@@ -110,26 +108,48 @@ public final class StreamPlatform {
     closeables.add(() -> recordProcessors.clear());
     mockProcessorLifecycleAware = mock(StreamProcessorLifecycleAware.class);
     mockStreamProcessorListener = mock(StreamProcessorListener.class);
+
+    logContext = createLogContext(new ListLogStorage(), DEFAULT_PARTITION);
+    closeables.add(logContext);
   }
 
   public CommandResponseWriter getMockCommandResponseWriter() {
     return mockCommandResponseWriter;
   }
 
-  public void createLogStream() {
-    final var logStorage = new ListLogStorage();
+  /**
+   * This can be used to overwrite the current logContext. In some tests useful, were we need more
+   * control about the backend.
+   *
+   * <p>Note: The previous logContext will be overwritten, but it is still be part of the closables
+   * list which means it will be closed at the end.
+   */
+  void setLogContext(final LogContext logContext) {
+    this.logContext = logContext;
+    closeables.add(logContext);
+  }
+
+  /**
+   * Creates a LogContext, which consist of given logStorage and a LogStream for the given
+   * parititon.
+   *
+   * <p>Note: Make sure to close the LogContext, to not leak any memory.
+   *
+   * @param logStorage the list logstorage which should be used as backend
+   * @param partitionId the partition ID for the log stream
+   * @return the create log context
+   */
+  public LogContext createLogContext(final ListLogStorage logStorage, final int partitionId) {
     final var logStream =
         SyncLogStream.builder()
-            .withLogName(STREAM_NAME + DEFAULT_PARTITION)
+            .withLogName(STREAM_NAME + partitionId)
             .withLogStorage(logStorage)
-            .withPartitionId(DEFAULT_PARTITION)
+            .withPartitionId(partitionId)
             .withActorSchedulingService(actorScheduler)
             .build();
 
     logStorage.setPositionListener(logStream::setLastWrittenPosition);
-
-    logContext = new LogContext(logStream);
-    closeables.add(logContext);
+    return new LogContext(logStream);
   }
 
   public SynchronousLogStream getLogStream() {
@@ -267,41 +287,45 @@ public final class StreamPlatform {
         .orElseThrow(() -> new NoSuchElementException("No stream processor found."));
   }
 
-  public LogStreamBatchWriter setupBatchWriter(final RecordToWrite[] recordToWrites) {
-    final SynchronousLogStream logStream = getLogStream();
-    final LogStreamBatchWriter logStreamBatchWriter = logStream.newLogStreamBatchWriter();
-    for (final RecordToWrite recordToWrite : recordToWrites) {
-      logStreamBatchWriter
-          .event()
-          .key(recordToWrite.getKey())
-          .sourceIndex(recordToWrite.getSourceIndex())
-          .metadataWriter(recordToWrite.getRecordMetadata())
-          .valueWriter(recordToWrite.getUnifiedRecordValue())
-          .done();
-    }
-    return logStreamBatchWriter;
+  public long writeBatch(final RecordToWrite... recordsToWrite) {
+    final var batchWriter = logContext.setupBatchWriter(recordsToWrite);
+    return writeBatch(batchWriter);
   }
 
-  public long writeBatch(final RecordToWrite... recordsToWrite) {
-    final var batchWriter = setupBatchWriter(recordsToWrite);
-    return writeActor.submit(batchWriter::tryWrite).join();
+  public long writeBatch(final LogStreamBatchWriter logStreamBatchWriter) {
+    return writeActor.submit(logStreamBatchWriter::tryWrite).join();
   }
 
   public void closeStreamProcessor() throws Exception {
     processorContext.close();
   }
 
+  public record LogContext(SynchronousLogStream logStream) implements AutoCloseable {
+
+    public LogStreamBatchWriter setupBatchWriter(final RecordToWrite... recordToWrites) {
+      final LogStreamBatchWriter logStreamBatchWriter = logStream.newLogStreamBatchWriter();
+      for (final RecordToWrite recordToWrite : recordToWrites) {
+        logStreamBatchWriter
+            .event()
+            .key(recordToWrite.getKey())
+            .sourceIndex(recordToWrite.getSourceIndex())
+            .metadataWriter(recordToWrite.getRecordMetadata())
+            .valueWriter(recordToWrite.getUnifiedRecordValue())
+            .done();
+      }
+      return logStreamBatchWriter;
+    }
+
+    @Override
+    public void close() {
+      logStream.close();
+    }
+  }
+
   /** Used to run writes within an actor thread. */
   private static final class WriteActor extends Actor {
     public ActorFuture<Long> submit(final Callable<Long> write) {
       return actor.call(write);
-    }
-  }
-
-  private record LogContext(SynchronousLogStream logStream) implements AutoCloseable {
-    @Override
-    public void close() {
-      logStream.close();
     }
   }
 

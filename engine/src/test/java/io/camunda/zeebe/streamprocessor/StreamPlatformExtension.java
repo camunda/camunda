@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.util;
+package io.camunda.zeebe.streamprocessor;
 
 import static org.junit.platform.commons.util.ReflectionUtils.makeAccessible;
 
@@ -110,7 +110,6 @@ public class StreamPlatformExtension implements BeforeEachCallback {
 
         // streams
         streamPlatform = new StreamPlatform(tempFolder, closables, actorScheduler, factory);
-        streamPlatform.createLogStream();
 
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);

@@ -19,6 +19,7 @@ import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.util.ModelUtil;
 import java.util.Arrays;
@@ -31,7 +32,10 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
 
   private static final List<Class<? extends EventDefinition>> SUPPORTED_EVENT_DEFINITIONS =
       Arrays.asList(
-          TimerEventDefinition.class, MessageEventDefinition.class, ErrorEventDefinition.class);
+          TimerEventDefinition.class,
+          MessageEventDefinition.class,
+          ErrorEventDefinition.class,
+          SignalEventDefinition.class);
 
   @Override
   public Class<BoundaryEvent> getElementType() {
@@ -68,7 +72,7 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
         def -> {
           if (SUPPORTED_EVENT_DEFINITIONS.stream().noneMatch(type -> type.isInstance(def))) {
             validationResultCollector.addError(
-                0, "Boundary events must be one of: timer, message, error");
+                0, "Boundary events must be one of: timer, message, error, signal");
           }
         });
 

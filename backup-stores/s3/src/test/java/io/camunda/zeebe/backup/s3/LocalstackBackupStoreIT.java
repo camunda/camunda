@@ -26,7 +26,7 @@ final class LocalstackBackupStoreIT implements S3BackupStoreTests {
 
   @Container
   private static final LocalStackContainer S3 =
-      new LocalStackContainer(DockerImageName.parse("localstack/localstack:0.14.5"))
+      new LocalStackContainer(DockerImageName.parse("localstack/localstack"))
           .withServices(Service.S3);
 
   private static S3AsyncClient client;
