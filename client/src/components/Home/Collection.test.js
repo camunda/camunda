@@ -8,7 +8,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Dropdown, EntityList, Deleter, ReportTemplateModal} from 'components';
+import {Dropdown, EntityList, Deleter, ReportTemplateModal, Badge} from 'components';
 import {refreshBreadcrumbs} from 'components/navigation';
 import {loadEntity, updateEntity} from 'services';
 import {getOptimizeProfile} from 'config';
@@ -17,6 +17,7 @@ import {Collection} from './Collection';
 import Copier from './Copier';
 import CollectionModal from './modals/CollectionModal';
 import {loadCollectionEntities} from './service';
+import UserList from './UserList';
 
 jest.mock('config', () => ({
   getOptimizeProfile: jest.fn().mockReturnValue('platform'),
@@ -156,7 +157,8 @@ it('should render content depending on the selected tab', async () => {
     <Collection {...props} match={{params: {id: 'aCollectionId', viewMode: 'users'}}} />
   );
 
-  expect(node).toMatchSnapshot();
+  expect(node.find('.navigation .active').text()).toBe('Users');
+  expect(node.find(UserList).prop('collection')).toBe('aCollectionId');
 });
 
 it('should show the copy modal when clicking the copy button', () => {
@@ -231,4 +233,21 @@ it('should hide alerts and users tab in the ccsm environment', async () => {
 
   expect(node.find({to: 'alerts'})).not.toExist();
   expect(node.find({to: 'users'})).not.toExist();
+});
+
+it('should display badge with user role Manager', () => {
+  loadEntity.mockReturnValue({
+    id: 'aCollectionId',
+    name: 'aCollectionName',
+    lastModified: '2017-11-11T11:11:11.1111+0200',
+    created: '2017-11-11T11:11:11.1111+0200',
+    owner: 'user_id',
+    lastModifier: 'user_id',
+    currentUserRole: 'manager',
+    data: {},
+  });
+
+  const node = shallow(<Collection {...props} />);
+
+  expect(node.find(Badge).children().text()).toBe('Manager');
 });

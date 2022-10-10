@@ -18,6 +18,7 @@ import EditUserModal from './modals/EditUserModal';
 import {addUser, editUser, removeUser, getUsers, removeUsers} from './service';
 
 import './UserList.scss';
+import {formatRole} from 'services/formatters';
 
 export default withErrorHandling(
   class UserList extends React.Component {
@@ -187,8 +188,4 @@ function formatType(type) {
     default:
       return t('home.types.unknown');
   }
-}
-
-function formatRole(role) {
-  return t('home.roles.' + role);
 }

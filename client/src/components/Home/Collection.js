@@ -22,6 +22,7 @@ import {
   Tooltip,
   ReportTemplateModal,
   DashboardTemplateModal,
+  Badge,
 } from 'components';
 import {formatters, loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {showError, addNotification} from 'notifications';
@@ -40,6 +41,7 @@ import CollectionModal from './modals/CollectionModal';
 import {formatLink, formatType, formatSubEntities} from './formatters';
 
 import './Collection.scss';
+import {formatRole} from 'services/formatters';
 
 export class Collection extends React.Component {
   state = {
@@ -169,6 +171,7 @@ export class Collection extends React.Component {
                   </Dropdown.Option>
                 </Dropdown>
               )}
+              <Badge className="role">{formatRole(collection.currentUserRole)}</Badge>
             </>
           )}
           <ul className="navigation">
