@@ -185,6 +185,11 @@ public final class ProcessInstanceModificationProcessor
                                   processInstance,
                                   process,
                                   instruction));
+
+                  activatedElementKeys
+                      .getFlowScopeKeys()
+                      .forEach(value::addActivatedElementInstanceKey);
+
                   return activatedElementKeys.getFlowScopeKeys().stream();
                 })
             .collect(Collectors.toSet());
