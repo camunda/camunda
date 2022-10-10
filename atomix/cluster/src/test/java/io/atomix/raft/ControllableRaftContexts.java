@@ -513,7 +513,13 @@ public final class ControllableRaftContexts {
   }
 
   public void assertAllMembersAreReady() {
-    raftServers.values().forEach(raft -> assertThat(raft.getState()).isEqualTo(State.READY));
+    raftServers
+        .values()
+        .forEach(
+            raft ->
+                assertThat(raft.getState())
+                    .describedAs("Raft %s must be ready".formatted(raft.getName()))
+                    .isEqualTo(State.READY));
   }
 
   public void assertNoJournalAppendErrors() {
