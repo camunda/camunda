@@ -29,6 +29,7 @@ public final class ZeebeAssignmentDefinitionImpl extends BpmnModelElementInstanc
 
   private static Attribute<String> assigneeAttribute;
   private static Attribute<String> candidateGroupsAttribute;
+  private static Attribute<String> candidateUsersAttribute;
 
   public ZeebeAssignmentDefinitionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -54,6 +55,12 @@ public final class ZeebeAssignmentDefinitionImpl extends BpmnModelElementInstanc
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .build();
 
+    candidateUsersAttribute =
+        typeBuilder
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_CANDIDATE_USERS)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .build();
+
     typeBuilder.build();
   }
 
@@ -75,5 +82,15 @@ public final class ZeebeAssignmentDefinitionImpl extends BpmnModelElementInstanc
   @Override
   public void setCandidateGroups(final String candidateGroups) {
     candidateGroupsAttribute.setValue(this, candidateGroups);
+  }
+
+  @Override
+  public String getCandidateUsers() {
+    return candidateUsersAttribute.getValue(this);
+  }
+
+  @Override
+  public void setCandidateUsers(final String candidateUsers) {
+    candidateUsersAttribute.setValue(this, candidateUsers);
   }
 }

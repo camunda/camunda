@@ -26,4 +26,8 @@ public interface ZeebeAssignmentDefinition extends BpmnModelElementInstance {
   String getCandidateGroups();
 
   void setCandidateGroups(String candidateGroups);
+
+  String getCandidateUsers();
+
+  void setCandidateUsers(String candidateUsers);
 }

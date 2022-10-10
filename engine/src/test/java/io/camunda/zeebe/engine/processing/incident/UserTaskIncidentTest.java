@@ -315,4 +315,124 @@ public class UserTaskIncidentTest {
 
     assertThat(incidentResolved.getKey()).isEqualTo(incidentCreated.getKey());
   }
+
+  @Test
+  public void shouldCreateIncidentIfCandidateUsersExpressionEvaluationFailed() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(u -> u.zeebeCandidateUsersExpression("MISSING_VAR")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "failed to evaluate expression 'MISSING_VAR': no variable found for name 'MISSING_VAR'");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfCandidateUsersExpressionOfInvalidType() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            processWithUserTask(u -> u.zeebeCandidateUsersExpression("\"not a list\"")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected result of the expression '\"not a list\"' to be 'ARRAY', but was 'STRING'.");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfCandidateUsersExpressionOfInvalidArrayItemType() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(u -> u.zeebeCandidateUsersExpression("[1,2,3]")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected result of the expression '[1,2,3]' to be 'ARRAY' containing 'STRING' items,"
+                + " but was 'ARRAY' containing at least one non-'STRING' item.");
+  }
+
+  @Test
+  public void shouldResolveIncidentAfterCandidateUsersExpressionEvaluationFailed() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(t -> t.zeebeCandidateUsersExpression("MISSING_VAR")))
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+
+    // ... update state to resolve issue
+    ENGINE
+        .variables()
+        .ofScope(incidentCreated.getValue().getElementInstanceKey())
+        .withDocument(Maps.of(entry("MISSING_VAR", List.of("a string value", "and another"))))
+        .update();
+
+    // ... resolve incident
+    final var incidentResolved =
+        ENGINE
+            .incident()
+            .ofInstance(processInstanceKey)
+            .withKey(incidentCreated.getKey())
+            .resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(TASK_ELEMENT_ID)
+                .exists())
+        .isTrue();
+
+    assertThat(incidentResolved.getKey()).isEqualTo(incidentCreated.getKey());
+  }
 }

@@ -96,7 +96,8 @@ public final class BpmnJobBehavior {
         .flatMap(p -> evalTypeExp(jobWorkerProps, scopeKey).map(p::type))
         .flatMap(p -> evalRetriesExp(jobWorkerProps, scopeKey).map(p::retries))
         .flatMap(p -> evalAssigneeExp(jobWorkerProps, scopeKey).map(p::assignee))
-        .flatMap(p -> evalCandidateGroupsExp(jobWorkerProps, scopeKey).map(p::candidateGroups));
+        .flatMap(p -> evalCandidateGroupsExp(jobWorkerProps, scopeKey).map(p::candidateGroups))
+        .flatMap(p -> evalCandidateUsersExp(jobWorkerProps, scopeKey).map(p::candidateUsers));
   }
 
   private Either<Failure, String> evalTypeExp(
@@ -131,6 +132,17 @@ public final class BpmnJobBehavior {
         .map(ExpressionTransformer::asListLiteral);
   }
 
+  private Either<Failure, String> evalCandidateUsersExp(
+      final JobWorkerProperties jobWorkerProperties, final long scopeKey) {
+    final Expression candidateUsers = jobWorkerProperties.getCandidateUsers();
+    if (candidateUsers == null) {
+      return Either.right(null);
+    }
+    return expressionBehavior
+        .evaluateArrayOfStringsExpression(candidateUsers, scopeKey)
+        .map(ExpressionTransformer::asListLiteral);
+  }
+
   private void writeJobCreatedEvent(
       final BpmnElementContext context,
       final ExecutableJobWorkerElement jobWorkerElement,
@@ -159,11 +171,15 @@ public final class BpmnJobBehavior {
     final var headers = new HashMap<>(taskHeaders);
     final String assignee = props.getAssignee();
     final String candidateGroups = props.getCandidateGroups();
+    final String candidateUsers = props.getCandidateUsers();
     if (assignee != null && !assignee.isEmpty()) {
       headers.put(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, assignee);
     }
     if (candidateGroups != null && !candidateGroups.isEmpty()) {
       headers.put(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, candidateGroups);
+    }
+    if (candidateUsers != null && !candidateUsers.isEmpty()) {
+      headers.put(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, candidateUsers);
     }
     return headerEncoder.encode(headers);
   }
@@ -198,6 +214,7 @@ public final class BpmnJobBehavior {
     private Long retries;
     private String assignee;
     private String candidateGroups;
+    private String candidateUsers;
 
     public JobProperties type(final String type) {
       this.type = type;
@@ -233,6 +250,15 @@ public final class BpmnJobBehavior {
 
     public String getCandidateGroups() {
       return candidateGroups;
+    }
+
+    public JobProperties candidateUsers(final String candidateUsers) {
+      this.candidateUsers = candidateUsers;
+      return this;
+    }
+
+    public String getCandidateUsers() {
+      return candidateUsers;
     }
   }
 

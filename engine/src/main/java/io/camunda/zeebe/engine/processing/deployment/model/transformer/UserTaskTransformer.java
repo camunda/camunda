@@ -88,6 +88,21 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
         jobWorkerProperties.setCandidateGroups(candidateGroupsExpression);
       }
     }
+    final var candidateUsers = assignmentDefinition.getCandidateUsers();
+    if (candidateUsers != null && !candidateUsers.isBlank()) {
+      final var candidateUsersExpression = expressionLanguage.parseExpression(candidateUsers);
+      if (candidateUsersExpression.isStatic()) {
+        // static candidateUsers must be in CSV format, but this is already checked by validator
+        jobWorkerProperties.setCandidateUsers(
+            ExpressionTransformer.parseListOfCsv(candidateUsers)
+                .map(ExpressionTransformer::asListLiteral)
+                .map(ExpressionTransformer::asFeelExpressionString)
+                .map(expressionLanguage::parseExpression)
+                .get());
+      } else {
+        jobWorkerProperties.setCandidateUsers(candidateUsersExpression);
+      }
+    }
   }
 
   private void transformTaskHeaders(

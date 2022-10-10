@@ -371,6 +371,54 @@ public final class UserTaskTest {
   }
 
   @Test
+  public void shouldCreateJobWithCandidateUsersHeader() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeCandidateUsers("jack,rose"))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders)
+        .hasSize(1)
+        .containsEntry(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "[\"jack\",\"rose\"]");
+  }
+
+  @Test
+  public void shouldCreateJobWithEvaluatedCandidateUsersExpressionHeader() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeCandidateUsersExpression("users")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{ \"users\": [\"jack\", \"rose\"] }")
+            .create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders)
+        .hasSize(1)
+        .containsEntry(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "[\"jack\",\"rose\"]");
+  }
+
+  @Test
   public void shouldCompleteUserTask() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();

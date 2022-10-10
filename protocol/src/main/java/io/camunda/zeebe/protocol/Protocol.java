@@ -80,6 +80,10 @@ public final class Protocol {
   public static final String USER_TASK_CANDIDATE_GROUPS_HEADER_NAME =
       RESERVED_HEADER_NAME_PREFIX + "candidateGroups";
 
+  /** Task header key used for candidate users */
+  public static final String USER_TASK_CANDIDATE_USERS_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "candidateUsers";
+
   public static long encodePartitionId(final int partitionId, final long key) {
     return ((long) partitionId << KEY_BITS) + key;
   }
