@@ -258,15 +258,21 @@ public class ClusteringRule extends ExternalResource {
   @Override
   protected void after() {
     LOG.debug("Closing ClusteringRule...");
-    brokers.values().parallelStream()
-        .forEach(
-            b -> {
-              try {
-                b.close();
-              } catch (final Exception e) {
-                LOG.error("Failed to close broker: ", e);
-              }
-            });
+
+    // Previously we used `Collection#parallelStream` in an attempt to achieve the same but
+    // that didn't work because requesting a parallel stream does not guarantee that
+    // stopping the brokers will actually run in parallel.
+    final var shutdownFutures =
+        brokers.values().stream()
+            .map(b -> CompletableFuture.runAsync(b::close))
+            .toArray(CompletableFuture[]::new);
+    CompletableFuture.allOf(shutdownFutures)
+        .exceptionally(
+            t -> {
+              LOG.error("Failed to close broker", t);
+              return null;
+            })
+        .join();
     systemContexts.values().forEach(ctx -> ctx.getScheduler().stop());
     systemContexts.clear();
     brokers.clear();
@@ -282,7 +288,7 @@ public class ClusteringRule extends ExternalResource {
   private void waitUntilBrokersStarted()
       throws InterruptedException, TimeoutException, ExecutionException {
     final var brokerStartFutures =
-        brokers.values().parallelStream().map(Broker::start).toArray(CompletableFuture[]::new);
+        brokers.values().stream().map(Broker::start).toArray(CompletableFuture[]::new);
     CompletableFuture.allOf(brokerStartFutures).get(120, TimeUnit.SECONDS);
 
     assertThat(partitionLatch.await(60, TimeUnit.SECONDS)).isTrue();
