@@ -81,10 +81,9 @@ it('should reset colors when hovering outside chart area', () => {
   const plugin = fadeOnHover({visualization: 'pie'});
   plugin.afterInit(chart);
 
-  const datasets = [{datasetIndex: 1}];
-  chart.options.onHover({}, datasets, chart);
+  chart.options.onHover({}, [{datasetIndex: 1}], chart);
 
-  simulateEvent(chart.canvas, 'mousemove', {offsetX: 0, offsetY: 300});
+  plugin.afterEvent(chart, {event: {type: 'mouseout'}});
 
   expect(chart.data.datasets[0].backgroundColor[1]).not.toBe('fadded');
 });

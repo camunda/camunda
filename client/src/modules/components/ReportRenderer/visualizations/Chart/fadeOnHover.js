@@ -11,8 +11,6 @@ import deepEqual from 'fast-deep-equal';
 const COLOR_FADE_OPACITY = 0.15;
 
 export default function fadeOnHover({visualization, isStacked}) {
-  let chartInstance = null;
-  let canvas = null;
   let prevDatasets = [];
 
   function onHover(evt, datasets, chart) {
@@ -89,18 +87,6 @@ export default function fadeOnHover({visualization, isStacked}) {
     return addAlpha(originalColor, COLOR_FADE_OPACITY);
   }
 
-  function onMouseMove({offsetX, offsetY}) {
-    if (
-      offsetX < chartInstance.chartArea.left ||
-      chartInstance.chartArea.right < offsetX ||
-      offsetY < chartInstance.chartArea.top ||
-      chartInstance.chartArea.bottom < offsetY
-    ) {
-      // reset hover effect when moving mouse outside chart area
-      onHover({}, [], chartInstance);
-    }
-  }
-
   return {
     afterInit: function (chart) {
       const originalHover = chart.options.onHover;
@@ -108,13 +94,11 @@ export default function fadeOnHover({visualization, isStacked}) {
         originalHover?.(...args);
         onHover.call(this, ...args);
       };
-      chartInstance = chart;
-      canvas = chart.canvas;
-
-      canvas.addEventListener('mousemove', onMouseMove);
     },
-    destroy: function () {
-      canvas.removeEventListener('mousemove', onMouseMove);
+    afterEvent(chart, {event}) {
+      if (event.type === 'mouseout') {
+        onHover({}, [], chart);
+      }
     },
   };
 }
