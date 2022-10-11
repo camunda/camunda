@@ -35,6 +35,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
+        with:
+          maven-cache: 'true'
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -90,6 +92,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
+        with:
+          maven-cache: 'true'
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -137,6 +141,7 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+          maven-cache: 'true'
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -204,6 +209,7 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+          maven-cache: 'true'
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -266,6 +272,8 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+          maven-cache: 'true'
+          maven-cache-key-modifier: java-client
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -309,6 +317,7 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+          maven-cache: 'true'
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
@@ -354,6 +363,8 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
+          maven-cache: 'true'
+          maven-cache-key-modifier: java-checks
       - run: mvn -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
   docker-checks:
     name: Docker checks
