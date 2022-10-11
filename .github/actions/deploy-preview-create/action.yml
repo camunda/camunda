@@ -38,82 +38,83 @@ inputs:
 runs:
   using: composite
   steps:
-  - name: Echo inputs
-    shell: bash
-    run: |
-      echo "Inputs"
-      echo "-----"
-      echo "Deployment ID / App Name: ${{ inputs.deployment_id }}"
-      echo "Operate tag:              ${{ inputs.docker_tag }}"
-      echo "Chart revision:           ${{ inputs.revision }}"
-  - name: Restore cache
-    uses: actions/cache@v3
-    id: tool-cache-argocd
-    with:
-      path: /usr/local/bin/argocd
-      key: ${{ runner.os }}-tool-cache-argo-${{ inputs.argocd_version }}
-  - name: Setup Argo CD
-    shell: bash
-    if: ${{ steps.tool-cache-argocd.outputs.cache-hit != 'true' }}
-    run: |-
-      curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/download/${{ inputs.argocd_version }}/argocd-linux-amd64
-      chmod +x /usr/local/bin/argocd
-      argocd version
-    env:
-      ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
-      ARGOCD_OPTS: "--grpc-web"
-      ARGOCD_SERVER: ${{ inputs.argocd_server  }}
-    #########################################################################
-    # Create a GitHub deployment that points to the URL we're going to deploy to.
-    # If a Pull Request exists, it will show the status of this deployment.
-  - uses: bobheadxi/deployments@26f1b13bf5048b2a8cf9c92af826742fefe2bc3a
-    name: Create GitHub deployment
-    id: deployment
-    with:
-      step: start
-      token: "${{ github.token }}"
-      env: "operate-${{ inputs.deployment_id }}"
-      ref: ${{ inputs.revision }}
-  - name: Deploy
-    shell: bash
-    run: >-
-      argocd app create
-      --dest-namespace operate-${{ inputs.deployment_id }}
-      --file .ci/preview-environments/argo/application.yml
-      --helm-set camunda-platform.operate.image.tag=${{ inputs.docker_tag }}
-      --helm-set git.branch=${{ inputs.revision }}
-      --helm-set global.labels.app=operate-${{ inputs.deployment_id }}
-      --name operate-${{ inputs.deployment_id }}
-      --revision ${{ inputs.revision }}
-      --upsert
+    - name: Echo inputs
+      shell: bash
+      run: |
+        echo "Inputs"
+        echo "-----"
+        echo "Deployment ID / App Name: ${{ inputs.deployment_id }}"
+        echo "Operate tag:              ${{ inputs.docker_tag }}"
+        echo "Chart revision:           ${{ inputs.revision }}"
+    - name: Restore cache
+      uses: actions/cache@v3
+      id: tool-cache-argocd
+      with:
+        path: /usr/local/bin/argocd
+        key: ${{ runner.os }}-tool-cache-argo-${{ inputs.argocd_version }}
+    - name: Setup Argo CD
+      shell: bash
+      if: ${{ steps.tool-cache-argocd.outputs.cache-hit != 'true' }}
+      run: |-
+        curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/download/${{ inputs.argocd_version }}/argocd-linux-amd64
+        chmod +x /usr/local/bin/argocd
+        argocd version
+      env:
+        ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
+        ARGOCD_OPTS: "--grpc-web"
+        ARGOCD_SERVER: ${{ inputs.argocd_server  }}
+      #########################################################################
+      # Create a GitHub deployment that points to the URL we're going to deploy to.
+      # If a Pull Request exists, it will show the status of this deployment.
+    - uses: bobheadxi/deployments@9d4477fdaa4120020cd10ab7e97f68c801422e73
+      name: Create GitHub deployment
+      id: deployment
+      with:
+        step: start
+        token: "${{ github.token }}"
+        env: "operate-${{ inputs.deployment_id }}"
+        ref: ${{ inputs.revision }}
+    - name: Deploy
+      shell: bash
+      run: >-
+        argocd app create
+        --dest-namespace operate-${{ inputs.deployment_id }}
+        --file .ci/preview-environments/argo/application.yml
+        --helm-set camunda-platform.operate.image.tag=${{ inputs.docker_tag }}
+        --helm-set git.branch=${{ inputs.revision }}
+        --helm-set global.labels.app=operate-${{ inputs.deployment_id }}
+        --name operate-${{ inputs.deployment_id }}
+        --revision ${{ inputs.revision }}
+        --upsert
 
-      argocd app sync operate-${{ inputs.deployment_id }} --async --force || true
-    env:
-      ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
-      ARGOCD_OPTS: "--grpc-web"
-      ARGOCD_SERVER: ${{ inputs.argocd_server  }}
-  - name: Wait for sync (up to 15 minutes)
-    shell: bash
-    run: |-
-      echo "::group::wait for sync"
-      argocd app wait operate-${{ inputs.deployment_id }} --timeout 900 --health --sync
-      echo "::endgroup::"
-    env:
-      ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
-      ARGOCD_OPTS: "--grpc-web"
-      ARGOCD_SERVER: ${{ inputs.argocd_server  }}
-    #########################################################################
-    # Update the deployment status so we can see the result in the Pull Request
-    # or in the list of environments.
-  - name: Update branch deployment status
-    # When running the "start" step, `always()` ensures that the deployment status
-    # is updated regardless of previous steps failing.
-    if: always()
-    uses: bobheadxi/deployments@26f1b13bf5048b2a8cf9c92af826742fefe2bc3a
-    with:
-      step: finish
-      token: ${{ github.token }}
-      status: ${{ job.status }}
-      deployment_id: ${{ steps.deployment.outputs.deployment_id }}
-      env_url: https://${{ inputs.deployment_id }}.operate.camunda.cloud
-      ref: ${{ inputs.revision }}
+        argocd app sync operate-${{ inputs.deployment_id }} --async --force || true
+      env:
+        ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
+        ARGOCD_OPTS: "--grpc-web"
+        ARGOCD_SERVER: ${{ inputs.argocd_server  }}
+    - name: Wait for sync (up to 15 minutes)
+      shell: bash
+      run: |-
+        echo "::group::wait for sync"
+        argocd app wait operate-${{ inputs.deployment_id }} --timeout 900 --health --sync
+        echo "::endgroup::"
+      env:
+        ARGOCD_AUTH_TOKEN: ${{ inputs.argocd_token }}
+        ARGOCD_OPTS: "--grpc-web"
+        ARGOCD_SERVER: ${{ inputs.argocd_server  }}
+      #########################################################################
+      # Update the deployment status so we can see the result in the Pull Request
+      # or in the list of environments.
+    - name: Update branch deployment status
+      # When running the "start" step, `always()` ensures that the deployment status
+      # is updated regardless of previous steps failing.
+      if: always()
+      uses: bobheadxi/deployments@9d4477fdaa4120020cd10ab7e97f68c801422e73
+      with:
+        step: finish
+        token: ${{ github.token }}
+        status: ${{ job.status }}
+        deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+        env_url: https://${{ inputs.deployment_id }}.operate.camunda.cloud
+        ref: ${{ inputs.revision }}
+        env: "operate-${{ inputs.deployment_id }}"
