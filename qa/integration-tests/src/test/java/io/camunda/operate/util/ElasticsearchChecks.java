@@ -486,7 +486,7 @@ public class ElasticsearchChecks {
       final Long scopeKey = (Long) objects[3];
       try {
         return value.equals(variableReader
-            .getVariableByName(processInstanceKey+"", "" + scopeKey , varName));
+            .getVariableByName(processInstanceKey+"", "" + scopeKey , varName).getValue());
       } catch (OperateRuntimeException ex) {
         return false;
       }
@@ -633,6 +633,23 @@ public class ElasticsearchChecks {
   }
 
   /**
+   * Including pending
+   * @param processInstanceKey
+   * @return
+   */
+  public long getIncidentsCount(Long processInstanceKey) {
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate)
+        .source(new SearchSourceBuilder()
+            .query(termQuery(PROCESS_INSTANCE_KEY, processInstanceKey)));
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return response.getHits().getTotalHits().value;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
    * Checks whether the incidents of given args[0] processInstanceKey (Long) equals given args[1] incidentsCount (Integer)
    * @return
    */
@@ -646,6 +663,27 @@ public class ElasticsearchChecks {
       int incidentsCount = (int)objects[1];
       try {
         return getActiveIncidentsCount(processInstanceKey) == incidentsCount;
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
+  /**
+   * Checks whether the incidents of given args[0] processInstanceKey (Long) are present, no matter pending or not.
+   * Ammount of incidents: args[1] incidentsCount (Integer).
+   * @return
+   */
+  @Bean(name = "incidentsArePresentCheck")
+  public Predicate<Object[]> getIncidentsArePresentCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(2);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(Integer.class);
+      Long processInstanceKey = (Long)objects[0];
+      int incidentsCount = (int)objects[1];
+      try {
+        return getIncidentsCount(processInstanceKey) == incidentsCount;
       } catch (NotFoundException ex) {
         return false;
       }
@@ -788,6 +826,27 @@ public class ElasticsearchChecks {
           q.setIds(CollectionUtil.toSafeListOfStrings(ids));
           q.setRunning(true);
           q.setActive(true);
+          q.setIncidents(true);
+        });
+      getActiveRequest.setPageSize(ids.size());
+      final ListViewResponseDto responseDto = listViewReader.queryProcessInstances(getActiveRequest);
+      return responseDto.getTotalCount() == ids.size();
+    };
+  }
+  /**
+   * Checks whether all processInstances from given processInstanceKeys (List<Long>) exist
+   * @return
+   */
+  @Bean(name = "processInstanceExistsCheck")
+  public Predicate<Object[]> getProcessInstanceExistsCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(1);
+      assertThat(objects[0]).isInstanceOf(List.class);
+      @SuppressWarnings("unchecked")
+      List<Long> ids = (List<Long>)objects[0];
+      final ListViewRequestDto getActiveRequest =
+        TestUtil.createGetAllProcessInstancesRequest(q -> {
+          q.setIds(CollectionUtil.toSafeListOfStrings(ids));
         });
       getActiveRequest.setPageSize(ids.size());
       final ListViewResponseDto responseDto = listViewReader.queryProcessInstances(getActiveRequest);
@@ -808,6 +867,23 @@ public class ElasticsearchChecks {
       ListViewProcessInstanceDto processInstance = processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
       return processInstance.getOperations().stream().allMatch( operation -> {
           return operation.getState().equals(OperationState.COMPLETED);
+      });
+    };
+  }
+
+  /**
+   * Checks whether all operations for given processInstanceKey (Long) are completed
+   * @return
+   */
+  @Bean(name = "operationsByProcessInstanceAreFailedCheck")
+  public Predicate<Object[]> getOperationsByProcessInstanceAreFailed() {
+    return objects -> {
+      assertThat(objects).hasSize(1);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      Long processInstanceKey = (Long)objects[0];
+      ListViewProcessInstanceDto processInstance = processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
+      return processInstance.getOperations().stream().allMatch( operation -> {
+          return operation.getState().equals(OperationState.FAILED);
       });
     };
   }

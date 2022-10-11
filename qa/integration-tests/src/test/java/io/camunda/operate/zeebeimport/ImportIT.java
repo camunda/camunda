@@ -107,6 +107,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //when TC 1
     final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
     elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
     elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "a");
 

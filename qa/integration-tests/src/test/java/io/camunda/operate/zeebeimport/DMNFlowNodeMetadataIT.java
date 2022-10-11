@@ -62,7 +62,8 @@ public class DMNFlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .decisionsAreDeployed(2)
         .startProcessInstance(bpmnProcessId, "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}")
         .waitUntil()
-        .decisionInstancesAreCreated(2)
+        //we have 2 decisions in this DRD
+        .decisionInstancesAreCreated(3)
         .getProcessInstanceKey();
 
     testDecisionWithoutIncident(decision2Name, elementId, processInstanceKey);

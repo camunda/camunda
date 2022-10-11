@@ -290,7 +290,7 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
         .waitUntil()
         .operationIsCompleted()
         .and()
-        .variableHasValue("a","c");
+        .variableHasValue("a","\"c\"");
     // then
     assertThat(tester.getVariable("a")).isEqualTo("\"c\"");
   }
@@ -375,7 +375,7 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
         .flowNodeIsTerminated("taskA")
         .flowNodeIsActive("taskB")
         .flowNodeIsActive("taskC")
-        .flowNodeIsTerminated("taskC");
+        .flowNodeIsTerminated("taskD");
     // then
     assertThat(tester.getFlowNodeStateFor("taskA")).isEqualTo(FlowNodeStateDto.TERMINATED);
     assertThat(tester.getFlowNodeStateFor("taskB")).isEqualTo(FlowNodeStateDto.ACTIVE);
@@ -466,41 +466,43 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
   @Test
   public void shouldAddTokenAndNewScopesForEventSubprocess() throws Exception {
     // Given
+    String subprocessFlowNodeId = "eventSubprocess";
+    String eventSubprocessTaskFlowNodeId = "eventSubprocessTask";
     tester.deployProcess("develop/eventSubProcess_v_1.bpmn")
         .waitUntil().processIsDeployed()
         .then().startProcessInstance("eventSubprocessProcess")
         .and()
-        .flowNodeIsActive("SubProcess_1ip6c6s");
+        .flowNodeIsActive(subprocessFlowNodeId);
 
     // when
     tester.modifyProcessInstanceOperation(List.of(
         new Modification().setModification(Modification.Type.ADD_TOKEN)
-            .setToFlowNodeId("ServiceTask_0h8cwwl"),
+            .setToFlowNodeId(eventSubprocessTaskFlowNodeId),
         new Modification().setModification(Modification.Type.ADD_TOKEN)
-            .setToFlowNodeId("ServiceTask_0h8cwwl"),
+            .setToFlowNodeId(eventSubprocessTaskFlowNodeId),
         new Modification().setModification(Modification.Type.ADD_TOKEN)
-            .setToFlowNodeId("SubProcess_1ip6c6s"),
+            .setToFlowNodeId(subprocessFlowNodeId),
         new Modification().setModification(Modification.Type.ADD_TOKEN)
-            .setToFlowNodeId("ServiceTask_0h8cwwl")
+            .setToFlowNodeId(eventSubprocessTaskFlowNodeId)
     ));
     // then
     tester.waitUntil()
         .operationIsCompleted().and()
-        .flowNodesAreActive("ServiceTask_0h8cwwl", 4)
+        .flowNodesAreActive(eventSubprocessTaskFlowNodeId, 5)
         .and()
-        .flowNodesAreActive("SubProcess_1ip6c6s", 2);
+        .flowNodesAreActive(subprocessFlowNodeId, 2);
     // check states
     var flowNodeStates = tester.getFlowNodeStates();
-    assertThat(flowNodeStates.get("ServiceTask_0h8cwwl")).isEqualTo(FlowNodeStateDto.ACTIVE);
-    assertThat(flowNodeStates.get("SubProcess_1ip6c6s")).isEqualTo(FlowNodeStateDto.ACTIVE);
+    assertThat(flowNodeStates.get(eventSubprocessTaskFlowNodeId)).isEqualTo(FlowNodeStateDto.ACTIVE);
+    assertThat(flowNodeStates.get(subprocessFlowNodeId)).isEqualTo(FlowNodeStateDto.ACTIVE);
     // check statistics
     var statistics = flowNodeInstanceReader
         .getFlowNodeStatisticsForProcessInstance(tester.getProcessInstanceKey());
     var eventSubProcessTaskStatistic = statistics.stream().filter(
-        s -> s.getActivityId().equals("ServiceTask_0h8cwwl")).findFirst().get();
+        s -> s.getActivityId().equals(eventSubprocessTaskFlowNodeId)).findFirst().get();
     var eventSubProcessStatistic = statistics.stream().filter(
-        s -> s.getActivityId().equals("SubProcess_1ip6c6s")).findFirst().get();
-    assertThat(eventSubProcessTaskStatistic.getActive()).isEqualTo(4);
+        s -> s.getActivityId().equals(subprocessFlowNodeId)).findFirst().get();
+    assertThat(eventSubProcessTaskStatistic.getActive()).isEqualTo(5);
     assertThat(eventSubProcessStatistic.getActive()).isEqualTo(2);
   }
 

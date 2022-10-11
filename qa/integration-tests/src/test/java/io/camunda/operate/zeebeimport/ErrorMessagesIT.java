@@ -61,7 +61,9 @@ public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
 
     // when
     Long processInstanceKey = setupIncidentWith(errorMessageWithWhitespaces);
-    tester.updateVariableOperation("a", "b").waitUntil().operationIsCompleted();
+    tester.updateVariableOperation("a", "wrong value")
+        .waitUntil()
+        .operationIsFailed();
 
     // then
     assertThat(incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey).get(0).getErrorMessage()).isEqualTo(errorMessageWithoutWhiteSpaces);
@@ -119,7 +121,8 @@ public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
     return tester
         .deployProcess("demoProcess_v_1.bpmn").waitUntil().processIsDeployed()
         .startProcessInstance("demoProcess","{\"a\": \"b\"}").failTask("taskA", errorMessage)
-        .waitUntil().processInstanceIsFinished()
+        .waitUntil()
+        .incidentIsActive()
         .getProcessInstanceKey();
   }
 

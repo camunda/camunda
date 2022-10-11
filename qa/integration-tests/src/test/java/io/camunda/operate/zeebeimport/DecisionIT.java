@@ -45,7 +45,8 @@ public class DecisionIT extends OperateZeebeIntegrationTest {
     tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
         .deployDecision("invoiceBusinessDecisions_v_2.dmn")
         .waitUntil()
-        .decisionsAreDeployed(2);
+        //each DRD has two decisions
+        .decisionsAreDeployed(4);
 
     //when
     MockHttpServletRequestBuilder request = get(QUERY_DECISIONS_GROUPED_URL);

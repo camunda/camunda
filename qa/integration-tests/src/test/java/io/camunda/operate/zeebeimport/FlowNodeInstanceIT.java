@@ -72,27 +72,31 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
   @Test
   public void testFlowNodeInstanceTreeSeveralQueriesInOne() throws Exception {
     //having process with multi-instance subprocess
-    final String taskId = "taskA";
+    final String jobKey = "taskA";
+    final String flowNodeId1 = "task1";
+    final String flowNodeId2 = "task2";
     final String processId = "testProcess";
+    String subprocessFlowNodeId = "subprocess";
     final BpmnModelInstance testProcess =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
-            .subProcess(
-                "subprocess",
+            .subProcess(subprocessFlowNodeId,
                 s -> s.multiInstance(m -> m.zeebeInputCollectionExpression("items").parallel())
                     .embeddedSubProcess()
                     .startEvent()
-                    .serviceTask("someTask").zeebeJobType(taskId)
-                    .serviceTask(taskId).zeebeJobType(taskId)
+                    .serviceTask(flowNodeId1).zeebeJobType(jobKey)
+                    .serviceTask(flowNodeId2).zeebeJobType(jobKey)
                     .endEvent())
             .endEvent()
             .done();
     deployProcess(testProcess, processId + ".bpmn");
     final long processInstanceKey = ZeebeTestUtil
         .startProcessInstance(zeebeClient, processId, "{\"items\": [0, 1]}");
-    ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null, 3);
+    ZeebeTestUtil.completeTask(zeebeClient, jobKey, getWorkerName(), null, 3);
     elasticsearchTestRule
-        .processAllRecordsAndWait(flowNodesAreCompletedCheck, processInstanceKey, taskId, 3);
+        .processAllRecordsAndWait(flowNodesAreCompletedCheck, processInstanceKey, flowNodeId1, 2);
+    elasticsearchTestRule
+        .processAllRecordsAndWait(flowNodesAreCompletedCheck, processInstanceKey, subprocessFlowNodeId, 1);
 
     //find out subprocess instance ids
     final String processInstanceId = String.valueOf(processInstanceKey);

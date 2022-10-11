@@ -108,7 +108,7 @@ public class MetricIT extends OperateZeebeIntegrationTest {
       .and()
       .startProcessInstance(bpmnProcessId).waitUntil().processInstanceIsCompleted()
       .and()
-      .cancelProcessInstanceOperation().waitUntil().operationIsCompleted();
+      .cancelProcessInstanceOperation().waitUntil().operationIsFailed();
     // Then
     assertThatMetricsFrom(mockMvc,
         new MetricAssert.ValueMatcher("operate_commands_total{status=\""+OperationState.FAILED+"\",type=\""+OperationType.CANCEL_PROCESS_INSTANCE+"\",}",

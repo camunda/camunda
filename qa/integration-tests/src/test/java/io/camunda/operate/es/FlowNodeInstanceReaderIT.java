@@ -127,8 +127,6 @@ public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
     // and when
     tester.completeTask("taskA")
         .and().waitUntil()
-        .flowNodeIsCompleted("taskA")
-        .and()
         .flowNodeIsActive("subprocess");
 
     flowNodeStatistics = getFlowNodeStatisticsForProcessInstance(processInstanceKey);

@@ -14,6 +14,7 @@ import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.es.writer.ProcessInstanceWriter;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import java.io.IOException;
 import java.util.List;
 import org.elasticsearch.action.search.SearchRequest;
@@ -41,9 +42,13 @@ public class ProcessInstanceWriterIT extends OperateZeebeIntegrationTest {
   @Autowired
   private ProcessInstanceReader processInstanceReader;
 
+  @Autowired
+  private CancelProcessInstanceHandler cancelProcessInstanceHandler;
+
   @Before
   public void before() {
     super.before();
+    cancelProcessInstanceHandler.setZeebeClient(super.getClient());
     tester.deployProcess("single-task.bpmn")
         .waitUntil().processIsDeployed();
   }
@@ -53,7 +58,7 @@ public class ProcessInstanceWriterIT extends OperateZeebeIntegrationTest {
     // given
     final Long finishedProcessInstanceKey =
         tester.startProcessInstance("process", null)
-            .and().completeTask("task", null)
+            .and().completeTask("task", "task", null)
             .waitUntil()
             .processInstanceIsFinished()
             .getProcessInstanceKey();
@@ -72,8 +77,10 @@ public class ProcessInstanceWriterIT extends OperateZeebeIntegrationTest {
     // given
     final Long canceledProcessInstanceKey =
         tester.startProcessInstance("process", null)
-            .and().completeTask("task", null)
-            .and().cancelProcessInstanceOperation()
+            .waitUntil()
+            .processInstanceIsStarted()
+            .and()
+            .cancelProcessInstanceOperation()
             .waitUntil().operationIsCompleted()
             .getProcessInstanceKey();
     // when

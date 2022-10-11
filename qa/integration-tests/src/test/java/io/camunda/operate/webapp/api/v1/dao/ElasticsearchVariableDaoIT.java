@@ -46,10 +46,10 @@ public class ElasticsearchVariableDaoIT extends OperateZeebeIntegrationTest {
   protected Long createVariablesAndGetProcessInstanceKey(String bpmnProcessId, Map<String,Object> variables) {
     try {
       final String payload = objectMapper.writeValueAsString(variables);
-    return tester
-        .startProcessInstance(bpmnProcessId, payload).waitUntil().processInstanceIsStarted()
-        .and().waitUntil().processInstanceIsStarted()
-        .getProcessInstanceKey();
+      return tester
+          .startProcessInstance(bpmnProcessId, payload)
+          .waitUntil().processInstanceIsStarted()
+          .getProcessInstanceKey();
     } catch (JsonProcessingException e) {
       fail("Could not build payload from map ", variables);
     }

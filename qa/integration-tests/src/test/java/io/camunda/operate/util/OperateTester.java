@@ -113,6 +113,10 @@ public class OperateTester {
   private Predicate<Object[]> processInstancesAreStartedCheck;
 
   @Autowired
+  @Qualifier("processInstanceExistsCheck")
+  private Predicate<Object[]> processInstanceExistsCheck;
+
+  @Autowired
   @Qualifier("processInstancesAreFinishedCheck")
   private Predicate<Object[]> processInstancesAreFinishedCheck;
 
@@ -162,6 +166,10 @@ public class OperateTester {
   @Autowired
   @Qualifier("operationsByProcessInstanceAreCompletedCheck")
   private Predicate<Object[]> operationsByProcessInstanceAreCompletedCheck;
+
+  @Autowired
+  @Qualifier("operationsByProcessInstanceAreFailedCheck")
+  private Predicate<Object[]> operationsByProcessInstanceAreFailedCheck;
 
   @Autowired
   @Qualifier("variableExistsCheck")
@@ -297,6 +305,11 @@ public class OperateTester {
     return this;
   }
 
+  public OperateTester processInstanceExists() {
+    elasticsearchTestRule.processAllRecordsAndWait(processInstanceExistsCheck, Arrays.asList(processInstanceKey));
+    return this;
+  }
+
   public OperateTester processInstanceIsFinished() {
     elasticsearchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, Arrays.asList(processInstanceKey));
     return this;
@@ -374,7 +387,6 @@ public class OperateTester {
         new FlowNodeMetadataRequestDto().setFlowNodeId(flowNodeId)).getFlowNodeInstanceId());
   }
   public Map<String, FlowNodeStateDto> getFlowNodeStates(){
-    elasticsearchTestRule.refreshOperateESIndices();
     return flowNodeInstanceReader.getFlowNodeStates("" + processInstanceKey);
   }
 
@@ -408,12 +420,16 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester completeTask(String activityId) {
-    return completeTask(activityId, null);
+  public OperateTester completeTask(String activityId, String jobKey) {
+    return completeTask(activityId, jobKey, null);
   }
 
-  public OperateTester completeTask(String activityId, String payload) {
-    ZeebeTestUtil.completeTask(zeebeClient, activityId, TestUtil.createRandomString(10), payload);
+  public OperateTester completeTask(String jobKey) {
+    return completeTask(jobKey, jobKey, null);
+  }
+
+  public OperateTester completeTask(String activityId, String jobKey, String payload) {
+    ZeebeTestUtil.completeTask(zeebeClient, jobKey, TestUtil.createRandomString(10), payload);
     return flowNodeIsCompleted(activityId);
   }
 
@@ -522,7 +538,11 @@ public class OperateTester {
   public OperateTester operationIsCompleted() throws Exception {
     executeOneBatch();
     elasticsearchTestRule.processAllRecordsAndWait(operationsByProcessInstanceAreCompletedCheck, processInstanceKey);
-    elasticsearchTestRule.refreshOperateESIndices();
+    return this;
+  }
+  public OperateTester operationIsFailed() throws Exception {
+    executeOneBatch();
+    elasticsearchTestRule.processAllRecordsAndWait(operationsByProcessInstanceAreFailedCheck, processInstanceKey);
     return this;
   }
 

@@ -111,6 +111,10 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected Predicate<Object[]> incidentsAreActiveCheck;
 
   @Autowired
+  @Qualifier("incidentsArePresentCheck")
+  protected Predicate<Object[]> incidentsArePresentCheck;
+
+  @Autowired
   @Qualifier("incidentWithErrorMessageIsActiveCheck")
   protected Predicate<Object[]> incidentWithErrorMessageIsActiveCheck;
 
@@ -440,7 +444,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   }
 
   protected List<Long> deployProcesses(String... processResources) {
-    return Stream.of(processResources)
+    return Stream.of(processResources).sequential()
         .map(resource ->
             tester
                 .deployProcess(resource)
@@ -452,12 +456,12 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   }
 
   protected List<Long> startProcesses(String... bpmnProcessIds) {
-     return Stream.of(bpmnProcessIds)
+     return Stream.of(bpmnProcessIds).sequential()
         .map(bpmnProcessId ->
             tester.startProcessInstance(bpmnProcessId)
                 .and()
                 .waitUntil()
-                .processInstanceIsStarted()
+                .processInstanceExists()
                 .getProcessInstanceKey())
         .collect(Collectors.toList());
   }

@@ -470,31 +470,37 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   //OPE-671
   @Test
   public void testArchivedOperationsWillNotBeLocked() throws Exception {
-      // given (set up) : disabled OperationExecutor
-      tester.disableOperationExecutor();
-      // and given processInstance
-      final String bpmnProcessId = "startEndProcess";
-      final BpmnModelInstance startEndProcess =
+    // given (set up) : disabled OperationExecutor
+    tester.disableOperationExecutor();
+    // and given processInstance
+    final String bpmnProcessId = "startEndProcess";
+    final String taskId = "task";
+    final BpmnModelInstance startEndProcess =
         Bpmn.createExecutableProcess(bpmnProcessId)
           .startEvent()
+            .serviceTask(taskId).zeebeJobType(taskId)
           .endEvent()
           .done();
 
-      tester
-        .deployProcess(startEndProcess, "startEndProcess.bpmn").processIsDeployed()
-        .and()
-        .startProcessInstance(bpmnProcessId).waitUntil().processInstanceIsStarted()
-        .and()
-        // when
-        // 1. Schedule operation (with disabled operation executor)
-        .cancelProcessInstanceOperation().waitUntil().operationIsCompleted()
-        // 2. Finish process instance
-        .then()
-        .waitUntil().processInstanceIsFinished()
-        // 3. Wait till process instance is archived
-        .archive().waitUntil().archiveIsDone()
-        // 4. Enable the operation executor
-        .then()
-        .enableOperationExecutor();
+    tester
+      .deployProcess(startEndProcess, "startEndProcess.bpmn").processIsDeployed()
+      .and()
+      .startProcessInstance(bpmnProcessId)
+      .waitUntil()
+      .processInstanceIsStarted()
+      .and()
+      // when
+      // 1. Schedule operation (with disabled operation executor)
+      .cancelProcessInstanceOperation()
+      // 2. Finish process instance
+      .and()
+      .completeTask(taskId)
+      .waitUntil()
+      .processInstanceIsFinished()
+      // 3. Wait till process instance is archived
+      .archive().waitUntil().archiveIsDone()
+      // 4. Enable the operation executor
+      .then()
+      .enableOperationExecutor();
   }
 }

@@ -84,7 +84,7 @@ public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeIntegrationTe
     given(() -> {
       deployProcesses("single-task.bpmn", "complexProcess_v_3.bpmn", "demoProcess_v_2.bpmn");
       key  = tester.startProcessInstance("process", null)
-              .and().completeTask("task", null)
+              .and().completeTask("task", "task", null)
               .waitUntil()
               .processInstanceIsFinished()
               .getProcessInstanceKey();

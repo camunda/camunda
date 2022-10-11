@@ -323,7 +323,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //when
     //load only incidents
-    processImportTypeAndWait(ImportValueType.INCIDENT, incidentIsActiveCheck, processInstanceKey);
+    processImportTypeAndWait(ImportValueType.INCIDENT, incidentsArePresentCheck, processInstanceKey, 1);
 
     assertListViewResponse();
     //if nothing is returned in list view - there is no way to access the process instance, no need to check other queries
@@ -354,8 +354,6 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   public void testIncidentDeletedAfterActivityCompleted() {
     // having
     String activityId = "taskA";
-
-
     String processId = "demoProcess";
     final BpmnModelInstance modelInstance =
       Bpmn.createExecutableProcess(processId)
@@ -368,7 +366,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
-    elasticsearchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 2);
+    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
     final long incidentKey = getOnlyIncidentKey(processInstanceKey);
 
     //when update retries
@@ -406,8 +404,6 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   public void testIncidentDeletedAfterActivityTerminated() {
     // having
     String activityId = "taskA";
-
-
     String processId = "demoProcess";
     final BpmnModelInstance modelInstance =
       Bpmn.createExecutableProcess(processId)
@@ -420,7 +416,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
-    elasticsearchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 2);
+    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
     final long incidentKey = getOnlyIncidentKey(processInstanceKey);
 
     //when update retries

@@ -29,8 +29,11 @@ import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
+import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -44,6 +47,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Predicate;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -87,6 +91,9 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
   private PartitionHolder partitionHolder;
 
   @Autowired
+  private ListViewReader listViewReader;
+
+  @Autowired
   private List<ProcessInstanceDependant> processInstanceDependantTemplates;
 
   private Random random = new Random();
@@ -118,7 +125,7 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
     //finish instances 2 days ago
     final Instant endDate = currentTime.minus(2, ChronoUnit.DAYS);
     finishInstances(count, endDate, activityId);
-    elasticsearchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids1);
+    elasticsearchTestRule.processAllRecordsAndWait(getPartOfProcessInstancesAreFinishedCheck(), ids1);
 
     pinZeebeTime(currentTime);
 
@@ -132,6 +139,20 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
 
     //then
     assertInstancesInCorrectIndex(expectedCount, endDate);
+  }
+
+  public Predicate<Object[]> getPartOfProcessInstancesAreFinishedCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(1);
+      assertThat(objects[0]).isInstanceOf(List.class);
+      @SuppressWarnings("unchecked")
+      List<Long> ids = (List<Long>)objects[0];
+      final ListViewRequestDto getFinishedRequest =
+          TestUtil.createGetAllFinishedRequest(q -> q.setIds(CollectionUtil.toSafeListOfStrings(ids)));
+      getFinishedRequest.setPageSize(ids.size());
+      final ListViewResponseDto responseDto = listViewReader.queryProcessInstances(getFinishedRequest);
+      return responseDto.getTotalCount() >= ids.size() / operateProperties.getClusterNode().getNodeCount();
+    };
   }
 
   protected void createOperations(List<Long> ids1) {
@@ -221,7 +242,6 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
     for (int i = 0; i < count; i++) {
       ids.add(ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"var\": 123}"));
     }
-    elasticsearchTestRule.processAllRecordsAndWait(processInstancesAreStartedCheck, ids);
     return ids;
   }
 

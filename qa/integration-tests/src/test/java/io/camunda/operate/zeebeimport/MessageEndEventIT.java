@@ -21,13 +21,19 @@ public class MessageEndEventIT extends OperateZeebeIntegrationTest {
   @Test
   @IfProfileValue(name="spring.profiles.active", value="test")
   public void shouldImportMessageEndEvent(){
+    final String flowNodeId = "messageEndEvent";
+    final String jobKey = "taskDefinition";
     // given
     tester
         .deployProcess("message-end-event.bpmn")
         .waitUntil().processIsDeployed()
         .then()
         .startProcessInstance("message-end-event-process", null)
-        .waitUntil().processInstanceIsFinished();
+        .flowNodeIsActive(flowNodeId)
+        .then()
+        .completeTask(flowNodeId, jobKey)
+        .waitUntil()
+        .processInstanceIsFinished();
 
     // when
     List<FlowNodeInstanceEntity> flowNodes = tester.getAllFlowNodeInstances(tester.getProcessInstanceKey());

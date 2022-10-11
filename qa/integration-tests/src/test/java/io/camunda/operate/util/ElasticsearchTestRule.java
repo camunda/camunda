@@ -280,6 +280,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       logger.debug("Conditions met in round {} ({} ms).", waitingRound,finishedTime );
     }else {
       logger.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
+      throw new TestPrerequisitesFailedException("Conditions not met.");
     }
   }
 
