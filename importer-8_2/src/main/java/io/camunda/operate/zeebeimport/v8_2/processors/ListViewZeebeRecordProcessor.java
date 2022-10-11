@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_0.processors;
+package io.camunda.operate.zeebeimport.v8_2.processors;
 
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
@@ -428,10 +428,10 @@ public class ListViewZeebeRecordProcessor {
     try {
       logger.debug("Activity instance for list view: id {}", entity.getId());
       return new UpdateRequest().index(listViewTemplate.getFullQualifiedName()).id(entity.getId())
-          .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-          .script(getUpdateFlowNodeInstanceScript(entity))
-          .routing(processInstanceKey.toString())
-          .retryOnConflict(UPDATE_RETRY_COUNT);
+        .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+        .script(getUpdateFlowNodeInstanceScript(entity))
+        .routing(processInstanceKey.toString())
+        .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert activity instance for list view", e);
@@ -443,19 +443,21 @@ public class ListViewZeebeRecordProcessor {
     final Map<String, Object> paramsMap = new HashMap<>();
     paramsMap.put("errorMessage", entity.getErrorMessage());
     paramsMap.put("pendingIncident", entity.isPendingIncident());
-    if (entity.getIncidentKeys().size()>0) {
+    if (entity.getIncidentKeys().size() > 0) {
       paramsMap.put("incidentKey", entity.getIncidentKeys().get(0));
     }
     final String script =
-        "ctx._source." + ListViewTemplate.ERROR_MSG + " = params.errorMessage;"
-            + "ctx._source." + ListViewTemplate.PENDING_INCIDENT + " = params.pendingIncident;"
-            + "if (params.incidentKey != null){"
-            + "  if (ctx._source." + ListViewTemplate.INCIDENT_KEYS + " == null) {"
-            + "    ctx._source." + ListViewTemplate.INCIDENT_KEYS + " = new String[]{params.incidentKey};"
-            + "  } else {"
-            + "    ctx._source." + ListViewTemplate.INCIDENT_KEYS + ".add(params.incidentKey);"
-            + "  }"
-            + "}";
+          "ctx._source." + ListViewTemplate.ERROR_MSG + " = params.errorMessage;"
+        + "ctx._source." + ListViewTemplate.PENDING_INCIDENT + " = params.pendingIncident;"
+        + "if (params.incidentKey != null){"
+        + "  if (ctx._source." + ListViewTemplate.INCIDENT_KEYS + " == null) {"
+        + "    ctx._source." + ListViewTemplate.INCIDENT_KEYS + " = new String[]{params.incidentKey};"
+        + "  } else {"
+        + "    if (!ctx._source." + ListViewTemplate.INCIDENT_KEYS + ".contains(params.incidentKey)) { "
+        + "      ctx._source." + ListViewTemplate.INCIDENT_KEYS + ".add(params.incidentKey);"
+        + "    }"
+        + "  }"
+        + "}";
     return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, paramsMap);
   }
 

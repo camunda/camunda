@@ -7,8 +7,8 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <name>Operate Importer 8.0</name>
-  <artifactId>operate-importer-8_0</artifactId>
+  <name>Operate Importer 8.2</name>
+  <artifactId>operate-importer-8_2</artifactId>
 
   <dependencies>
 
@@ -57,13 +57,12 @@
             <includes>
               <include>io.camunda:zeebe-protocol</include>
               <include>io.camunda:zeebe-protocol-jackson</include>
-              <include>io.camunda:zeebe-protocol-util</include>
             </includes>
           </artifactSet>
           <relocations>
             <relocation>
               <pattern>io.camunda.zeebe.protocol</pattern>
-              <shadedPattern>io.camunda.zeebe.protocol.v800</shadedPattern>
+              <shadedPattern>io.camunda.zeebe.protocol.v820</shadedPattern>
             </relocation>
           </relocations>
         </configuration>

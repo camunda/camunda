@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_0.processors;
+package io.camunda.operate.zeebeimport.v8_2.processors;
 
 import static io.camunda.operate.entities.EventType.ELEMENT_ACTIVATING;
 import static io.camunda.operate.entities.EventType.ELEMENT_COMPLETING;
@@ -28,10 +28,12 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,10 +42,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
-import org.elasticsearch.index.VersionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +61,7 @@ public class EventZeebeRecordProcessor {
   private static final Set<String> INCIDENT_EVENTS = new HashSet<>();
   private final static Set<String> JOB_EVENTS = new HashSet<>();
   private static final Set<String> PROCESS_INSTANCE_STATES = new HashSet<>();
+  private static final Set<String> PROCESS_MESSAGE_SUBSCRIPTION_STATES = new HashSet<>();
 
   static {
     INCIDENT_EVENTS.add(IncidentIntent.CREATED.name());
@@ -78,6 +79,8 @@ public class EventZeebeRecordProcessor {
     PROCESS_INSTANCE_STATES.add(ELEMENT_COMPLETING.name());
     PROCESS_INSTANCE_STATES.add(ELEMENT_COMPLETED.name());
     PROCESS_INSTANCE_STATES.add(ELEMENT_TERMINATED.name());
+
+    PROCESS_MESSAGE_SUBSCRIPTION_STATES.add(ProcessMessageSubscriptionIntent.CORRELATED.name());
   }
 
   @Autowired
@@ -104,6 +107,19 @@ public class EventZeebeRecordProcessor {
         processJob(record, recordValue, bulkRequest);
       }));
     }
+  }
+
+  public void processProcessMessageSubscription(
+      final Map<Long, List<Record<ProcessMessageSubscriptionRecordValue>>> records,
+      final BulkRequest bulkRequest) throws PersistenceException {
+    for (List<Record<ProcessMessageSubscriptionRecordValue>> pmsRecords : records.values()) {
+      processLastRecord(pmsRecords, PROCESS_MESSAGE_SUBSCRIPTION_STATES, rethrowConsumer(record -> {
+        ProcessMessageSubscriptionRecordValue recordValue = (ProcessMessageSubscriptionRecordValue) record
+            .getValue();
+        processMessage(record, recordValue, bulkRequest);
+      }));
+    }
+
   }
 
   public void processProcessInstanceRecords(
@@ -154,6 +170,39 @@ public class EventZeebeRecordProcessor {
 
       persistEvent(eventEntity, record.getPosition(), bulkRequest);
     }
+  }
+
+  private void processMessage(final Record record,
+      final ProcessMessageSubscriptionRecordValue recordValue, final BulkRequest bulkRequest)
+      throws PersistenceException {
+    EventEntity eventEntity = new EventEntity();
+
+    eventEntity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
+
+    loadEventGeneralData(record, eventEntity);
+
+    final long processInstanceKey = recordValue.getProcessInstanceKey();
+    if (processInstanceKey > 0) {
+      eventEntity.setProcessInstanceKey(processInstanceKey);
+    }
+
+    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
+
+    eventEntity.setFlowNodeId(recordValue.getElementId());
+
+    final long activityInstanceKey = recordValue.getElementInstanceKey();
+    if (activityInstanceKey > 0) {
+      eventEntity.setFlowNodeInstanceKey(activityInstanceKey);
+    }
+
+    EventMetadataEntity eventMetadata = new EventMetadataEntity();
+    eventMetadata.setMessageName(recordValue.getMessageName());
+    eventMetadata.setCorrelationKey(recordValue.getCorrelationKey());
+
+    eventEntity.setMetadata(eventMetadata);
+
+    persistEvent(eventEntity, record.getPosition(), bulkRequest);
+
   }
 
   private void processJob(Record record, JobRecordValue recordValue, BulkRequest bulkRequest) throws PersistenceException {
@@ -251,7 +300,6 @@ public class EventZeebeRecordProcessor {
     try {
       logger.debug("Event: id {}, eventSourceType {}, eventType {}, processInstanceKey {}", entity.getId(), entity.getEventSourceType(), entity.getEventType(),
         entity.getProcessInstanceKey());
-
       Map<String, Object> jsonMap = new HashMap<>();
       jsonMap.put(EventTemplate.KEY, entity.getKey());
       jsonMap.put(EventTemplate.EVENT_SOURCE_TYPE, entity.getEventSourceType());
@@ -276,6 +324,10 @@ public class EventZeebeRecordProcessor {
           metadataMap.put(EventTemplate.JOB_KEY, entity.getMetadata().getJobKey());
           metadataMap.put(EventTemplate.JOB_CUSTOM_HEADERS, entity.getMetadata().getJobCustomHeaders());
         }
+        if (entity.getMetadata().getMessageName() != null) {
+          metadataMap.put(EventTemplate.MESSAGE_NAME, entity.getMetadata().getMessageName());
+          metadataMap.put(EventTemplate.CORRELATION_KEY, entity.getMetadata().getCorrelationKey());
+        }
         if (metadataMap.size() > 0) {
           jsonMap.put(METADATA, metadataMap);
         }
@@ -292,5 +344,4 @@ public class EventZeebeRecordProcessor {
       throw new PersistenceException(String.format("Error preparing the query to insert event [%s]", entity.getId()), e);
     }
   }
-
 }

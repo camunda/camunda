@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_0.processors;
+package io.camunda.operate.zeebeimport.v8_2.processors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.SimpleType;
@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
@@ -119,6 +120,9 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
       case JOB:
         processJobRecords(bulkRequest, zeebeRecords);
         break;
+      case PROCESS_MESSAGE_SUBSCRIPTION:
+        processProcessMessageSubscription(bulkRequest, zeebeRecords);
+        break;
       default:
         logger.debug("Default case triggered for type {}", importValueType);
         break;
@@ -134,6 +138,15 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
       Metrics.TAG_KEY_TYPE, record.getValueType().name(),
       Metrics.TAG_KEY_PARTITION, String.valueOf(record.getPartitionId())
     ).record(currentTime - record.getTimestamp(), TimeUnit.MILLISECONDS));
+  }
+
+  private void processProcessMessageSubscription(final BulkRequest bulkRequest,
+      final List<Record> zeebeRecords) throws PersistenceException {
+    // per flow node instance
+    Map<Long, List<Record<ProcessMessageSubscriptionRecordValue>>> groupedRecordsPerFlowNodeInst
+        = zeebeRecords.stream().map(obj -> (Record<ProcessMessageSubscriptionRecordValue>)obj)
+        .collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
+    eventZeebeRecordProcessor.processProcessMessageSubscription(groupedRecordsPerFlowNodeInst, bulkRequest);
   }
 
   private ObjectMapper getLocalObjectMapper() {
@@ -240,6 +253,6 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
   @Override
   public String getZeebeVersion() {
-    return "8.0";
+    return "8.2";
   }
 }

@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_0.processors;
+package io.camunda.operate.zeebeimport.v8_2.processors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.SequenceFlowEntity;
