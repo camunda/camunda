@@ -225,9 +225,9 @@ public class DigestService implements ConfigurationReloadable {
       .filter(kpiResult -> kpiType.equals(kpiResult.getType()))
       .filter(KpiResultDto::isTargetMet)
       .count();
-    return successfulResultCount == 0
+    return resultCount == 0
       ? 0
-      : (int) (100.0 * resultCount / successfulResultCount);
+      : (int) (100.0 * successfulResultCount / resultCount);
   }
 
   private void updateLastKpiReportResults(final String processDefinitionKey,
