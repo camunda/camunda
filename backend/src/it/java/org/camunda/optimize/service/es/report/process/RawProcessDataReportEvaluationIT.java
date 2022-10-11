@@ -28,9 +28,10 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.VariableDto;
+import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.service.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -60,6 +61,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.LESS_THAN;
 import static org.camunda.optimize.service.es.report.command.process.mapping.RawProcessDataResultDtoMapper.OBJECT_VARIABLE_VALUE_PLACEHOLDER;
+import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
@@ -862,6 +864,40 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId()).isEqualTo(processInstance.getId());
   }
 
+  @Test
+  public void openIncidentCountAppearsOnRawDataReport() {
+    // given
+    String definitionKey = "definitionKey";
+    String definitionVersion = "1";
+    // @formatter:off
+    ProcessInstanceEngineDto firstInstance = IncidentDataDeployer.dataDeployer(incidentClient)
+      .key(definitionKey)
+      .deployProcess(ONE_TASK)
+        .startProcessInstance()
+          .withOpenIncident()
+        .startProcessInstance()
+          .withResolvedIncident()
+      .executeDeployment()
+      .get(0);
+    // @formatter:on
+    importAllEngineEntitiesFromScratch();
+    firstInstance.setProcessDefinitionKey(definitionKey);
+    firstInstance.setProcessDefinitionVersion(definitionVersion);
+
+    // when
+    ProcessReportDataDto reportData = createReport(firstInstance);
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
+      evaluateRawReportWithDefaultPagination(reportData);
+
+    // then
+    assertThat(evaluationResult.getReportDefinition().getData()).extracting(
+        ProcessReportDataDto::getProcessDefinitionKey,
+        ProcessReportDataDto::getDefinitionVersions)
+      .containsExactly(definitionKey, List.of(definitionVersion));
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
+    assertThat(result.getData()).extracting(RawDataProcessInstanceDto::getNumberOfOpenIncidents).containsExactlyInAnyOrder(0L, 1L);
+  }
+
   @ParameterizedTest
   @MethodSource("viewLevelFilters")
   public void viewLevelFiltersAllAppliedOnlyToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
@@ -1366,6 +1402,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(resultInstance.getEngineName()).isEqualTo(DEFAULT_ENGINE_ALIAS);
     assertThat(resultInstance.getBusinessKey()).isEqualTo(BUSINESS_KEY);
     assertThat(resultInstance.getVariables()).isNotNull().isEmpty();
+    assertThat(resultInstance.getNumberOfOpenIncidents()).isZero();
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {

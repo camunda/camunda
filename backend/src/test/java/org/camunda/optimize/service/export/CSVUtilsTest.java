@@ -66,9 +66,9 @@ public class CSVUtilsTest {
 		variables.put("\"1\"",  "test");
 		final List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtoWithVariables(variables);
 		final String expectedString =
-			"\"processDefinitionKey\",\"processDefinitionId\",\"processInstanceId\",\"businessKey\",\"startDate\"," +
+			"\"processDefinitionKey\",\"processDefinitionId\",\"processInstanceId\",\"numberOfOpenIncidents\",\"businessKey\",\"startDate\"," +
 				"\"endDate\",\"duration\",\"engineName\",\"tenantId\",\"variable:\"\"1\"\"\"\r\n" +
-				"\"test_key\",\"test_id\",,\"aBusinessKey\",\"2018-02-23T14:31:08.048+01:00\",\"2018-02-23T14:31:08" +
+				"\"test_key\",\"test_id\",,\"0\",\"aBusinessKey\",\"2018-02-23T14:31:08.048+01:00\",\"2018-02-23T14:31:08" +
 				".048+01:00\",\"0\",\"engine\",\"tenant\",\"test\"\r\n";
 
 		// when
@@ -475,37 +475,37 @@ public class CSVUtilsTest {
 	private static Stream<Arguments> getExpectedStringAndCsvDelimiter() {
 		return Stream.of(
 			Arguments.of(
-				"\"processDefinitionKey\",\"processDefinitionId\",\"processInstanceId\",\"businessKey\",\"startDate\"," +
+				"\"processDefinitionKey\",\"processDefinitionId\",\"processInstanceId\",\"numberOfOpenIncidents\",\"businessKey\",\"startDate\"," +
 					"\"endDate\",\"duration\",\"engineName\",\"tenantId\",\"variable:\"\"1\"\"\"\r\n" +
-					"\"test_key\",\"test_id\",,\"aBusinessKey\",\"2018-02-23T14:31:08.048+01:00\",\"2018-02-23T14:31:08" +
+					"\"test_key\",\"test_id\",,\"0\",\"aBusinessKey\",\"2018-02-23T14:31:08.048+01:00\",\"2018-02-23T14:31:08" +
 					".048+01:00\",\"0\",\"engine\",\"tenant\",\"test\"\r\n",
 				','
 			),
 			Arguments.of(
-				"\"processDefinitionKey\";\"processDefinitionId\";\"processInstanceId\";\"businessKey\";\"startDate\";" +
+				"\"processDefinitionKey\";\"processDefinitionId\";\"processInstanceId\";\"numberOfOpenIncidents\";\"businessKey\";\"startDate\";" +
 					"\"endDate\";\"duration\";\"engineName\";\"tenantId\";\"variable:\"\"1\"\"\"\r\n" +
-					"\"test_key\";\"test_id\";;\"aBusinessKey\";\"2018-02-23T14:31:08.048+01:00\";\"2018-02-23T14:31:08" +
+					"\"test_key\";\"test_id\";;\"0\";\"aBusinessKey\";\"2018-02-23T14:31:08.048+01:00\";\"2018-02-23T14:31:08" +
 					".048+01:00\";\"0\";\"engine\";\"tenant\";\"test\"\r\n",
 				';'
 			),
 			Arguments.of(
-				"\"processDefinitionKey\"	\"processDefinitionId\"	\"processInstanceId\"	\"businessKey\"	\"startDate\"	" +
+				"\"processDefinitionKey\"	\"processDefinitionId\"	\"processInstanceId\"	\"numberOfOpenIncidents\"	\"businessKey\"	\"startDate\"	" +
 					"\"endDate\"	\"duration\"	\"engineName\"	\"tenantId\"	\"variable:\"\"1\"\"\"\r\n" +
-					"\"test_key\"	\"test_id\"		\"aBusinessKey\"	\"2018-02-23T14:31:08.048+01:00\"	\"2018-02-23T14:31:08" +
+					"\"test_key\"	\"test_id\"		\"0\"	\"aBusinessKey\"	\"2018-02-23T14:31:08.048+01:00\"	\"2018-02-23T14:31:08" +
 					".048+01:00\"	\"0\"	\"engine\"	\"tenant\"	\"test\"\r\n",
 				'\t'
 			),
 			Arguments.of(
-				"\"processDefinitionKey\"|\"processDefinitionId\"|\"processInstanceId\"|\"businessKey\"|\"startDate\"|" +
+				"\"processDefinitionKey\"|\"processDefinitionId\"|\"processInstanceId\"|\"numberOfOpenIncidents\"|\"businessKey\"|\"startDate\"|" +
 					"\"endDate\"|\"duration\"|\"engineName\"|\"tenantId\"|\"variable:\"\"1\"\"\"\r\n" +
-					"\"test_key\"|\"test_id\"||\"aBusinessKey\"|\"2018-02-23T14:31:08.048+01:00\"|\"2018-02-23T14:31:08" +
+					"\"test_key\"|\"test_id\"||\"0\"|\"aBusinessKey\"|\"2018-02-23T14:31:08.048+01:00\"|\"2018-02-23T14:31:08" +
 					".048+01:00\"|\"0\"|\"engine\"|\"tenant\"|\"test\"\r\n",
 				'|'
 			),
 			Arguments.of(
-				"\"processDefinitionKey\" \"processDefinitionId\" \"processInstanceId\" \"businessKey\" \"startDate\" " +
+				"\"processDefinitionKey\" \"processDefinitionId\" \"processInstanceId\" \"numberOfOpenIncidents\" \"businessKey\" \"startDate\" " +
 					"\"endDate\" \"duration\" \"engineName\" \"tenantId\" \"variable:\"\"1\"\"\"\r\n" +
-					"\"test_key\" \"test_id\"  \"aBusinessKey\" \"2018-02-23T14:31:08.048+01:00\" \"2018-02-23T14:31:08" +
+					"\"test_key\" \"test_id\"  \"0\" \"aBusinessKey\" \"2018-02-23T14:31:08.048+01:00\" \"2018-02-23T14:31:08" +
 					".048+01:00\" \"0\" \"engine\" \"tenant\" \"test\"\r\n",
 				' '
 			)

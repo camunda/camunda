@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -31,11 +32,15 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
   private static final String OPTIMIZE_PERMISSION = "write:*";
 
   private final Identity identity;
+  private final ConfigurationService configurationService;
 
-  public CCSMAuthenticationService(final Identity identity, final SessionService sessionService,
-                                   final AuthCookieService authCookieService) {
+  public CCSMAuthenticationService(final Identity identity,
+                                   final SessionService sessionService,
+                                   final AuthCookieService authCookieService,
+                                   final ConfigurationService configurationService) {
     super(sessionService, authCookieService);
     this.identity = identity;
+    this.configurationService = configurationService;
   }
 
   @Override
@@ -75,7 +80,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
     throw new NotSupportedException("Cannot logout in Optimize in Camunda Platform Self-Managed mode");
   }
 
-  private static String buildRootRedirect(final ContainerRequestContext requestContext) {
+  private String buildRootRedirect(final ContainerRequestContext requestContext) {
     final URI baseUri = requestContext.getUriInfo().getBaseUri();
     String redirectUri = baseUri.getScheme() + "://" + baseUri.getHost();
     if (
@@ -84,6 +89,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
     ) {
       redirectUri += ":" + baseUri.getPort();
     }
+    redirectUri += configurationService.getContextPath().orElse("");
     return redirectUri;
   }
 

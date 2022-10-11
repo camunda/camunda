@@ -1,4 +1,8 @@
+@import 'shared-styles/shared-styles.scss';
+
 .DecisionTable {
+  @include scrollable;
+
   .dmn-decision-table-container .tjs-container {
     width: 100%;
 

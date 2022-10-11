@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
+import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
@@ -20,12 +21,14 @@ import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.EntitiesReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.onboardinglistener.OnboardingDashboardCreationService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.AuthorizedEntitiesService;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 import java.util.Comparator;
 import java.util.List;
@@ -47,6 +50,7 @@ public class EntitiesService {
   private final DashboardService dashboardService;
   private final AuthorizedCollectionService authorizedCollectionService;
   private final OnboardingDashboardCreationService onboardingService;
+  private final AbstractIdentityService identityService;
 
   public List<EntityResponseDto> getAllEntities(final String userId) {
     final List<AuthorizedCollectionDefinitionDto> collectionDefinitions =
@@ -71,11 +75,14 @@ public class EntitiesService {
   }
 
   public EntityNameResponseDto getEntityNames(final EntityNameRequestDto requestDto, final String userId) {
-
     Optional<EntityNameResponseDto> entityNames = entitiesReader.getEntityNames(requestDto);
     // If it's a click for a magic link
     if (requestDto.getCollectionId() != null && requestDto.getDashboardId() != null &&
       requestDto.getDashboardId().equals(requestDto.getCollectionId())) {
+      if (!identityService.getUserAuthorizations(userId).contains(AuthorizationType.ENTITY_EDITOR)) {
+        throw new ForbiddenException(
+          "You are not authorized to create Optimize entities within Collections you do not have access");
+      }
       if (entityNames.isEmpty()) {
         onboardingService.createNewDashboardForProcess(userId, requestDto.getDashboardId());
         entityNames = entitiesReader.getEntityNames(requestDto);

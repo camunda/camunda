@@ -54,6 +54,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableR
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
+import org.camunda.optimize.dto.optimize.rest.BackupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
@@ -142,6 +143,7 @@ import static org.camunda.optimize.rest.PublicApiRestService.REPORT_SUB_PATH;
 import static org.camunda.optimize.rest.SharingRestService.SHARE_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
 import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
+import static org.camunda.optimize.rest.constants.RestConstants.BACKUP_ENDPOINT;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
@@ -169,6 +171,7 @@ public class OptimizeRequestExecutor {
   private Entity<?> body;
   private String mediaType = MediaType.APPLICATION_JSON;
   private Map<String, Object> queryParams;
+
   public OptimizeRequestExecutor(final String defaultUser,
                                  final String defaultUserPassword,
                                  final String restEndpoint) {
@@ -1822,6 +1825,22 @@ public class OptimizeRequestExecutor {
     this.mediaType = MediaType.TEXT_PLAIN;
     this.body = Entity.text("");
     setAccessToken(accessToken);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildTriggerBackupRequest(final BackupRequestDto backupRequestDto) {
+    setActuatorWebTarget();
+    this.path = BACKUP_ENDPOINT;
+    this.method = POST;
+    this.mediaType = MediaType.APPLICATION_JSON;
+    this.body = getBody(backupRequestDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetBackupStateRequest(final String backupId) {
+    setActuatorWebTarget();
+    this.path = BACKUP_ENDPOINT + backupId;
+    this.method = GET;
     return this;
   }
 

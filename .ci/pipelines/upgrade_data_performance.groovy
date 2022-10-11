@@ -256,6 +256,9 @@ pipeline {
           yaml upgradePerformanceConfig(env.PREV_ES_VERSION, env.ES_VERSION, env.CAMBPM_VERSION)
         }
       }
+      environment {
+        LABEL = "optimize-ci-build-${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+      }
       stages {
         stage('Build') {
           steps {
@@ -299,12 +302,14 @@ pipeline {
               container('maven') {
                 sh 'curl localhost:9250/_cat/indices?v'
                 sh 'curl localhost:9200/_cat/indices?v'
-                sh ('''#!/bin/bash -ex
-                  cp -R --parents /ssd-storage/es-logs-old /ssd-storage/es-logs-new .
-                  chown -R 10000:1000 ./ssd-storage/
-                ''')
-                archiveArtifacts artifacts: 'ssd-storage/es-logs-*/*', allowEmptyArchive: true, onlyIfSuccessful: false
                 archiveArtifacts artifacts: 'qa/upgrade-tests/target/*.log', allowEmptyArchive: false, onlyIfSuccessful: false
+              }
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-new > elasticsearch_new.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-old > elasticsearch_old.log'
+                archiveArtifacts artifacts: 'elasticsearch_new.log', onlyIfSuccessful: false
+                archiveArtifacts artifacts: 'elasticsearch_old.log', onlyIfSuccessful: false
               }
             }
           }

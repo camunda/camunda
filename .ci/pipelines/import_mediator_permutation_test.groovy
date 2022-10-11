@@ -48,6 +48,18 @@ spec:
     securityContext:
       privileged: true
   containers:
+  - name: gcloud
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    imagePullPolicy: Always
+    command: ["cat"]
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}
     command: ["cat"]
@@ -159,11 +171,23 @@ pipeline {
           yaml mavenElasticsearchAgent(env.ES_VERSION, env.CAMBPM_VERSION)
         }
       }
+      environment{
+        LABEL = "optimize-ci-build-${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+      }
       steps {
         optimizeCloneGitRepo(params.BRANCH)
         container('maven') {
           runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,qa -am -Pengine-latest")
           runMaven("-f qa/import-mediator-permutation-test/pom.xml clean verify -Pimport-mediator-permutation-test -B")
+        }
+      }
+      post {
+        always {
+          container ('gcloud'){
+            sh 'apt-get install kubectl'
+            sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch.log'
+            archiveArtifacts artifacts: 'elasticsearch.log', onlyIfSuccessful: false
+          }
         }
       }
     }

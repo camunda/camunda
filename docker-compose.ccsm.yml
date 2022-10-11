@@ -3,7 +3,7 @@ version: "3.6"
 services:
   optimize:
     container_name: optimize
-    image: registry.camunda.cloud/optimize-ee/optimize:latest
+    image: camunda/optimize:latest
     ports:
       - "8090:8090"
     environment:
@@ -56,7 +56,7 @@ services:
     networks:
       - identity-network
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-7.10.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-7.17.0}
     container_name: elasticsearch
     environment:
       - cluster.name=elasticsearch
@@ -81,7 +81,7 @@ services:
     networks:
       - optimize
   zeebe:
-    image: camunda/zeebe:1.3.0
+    image: camunda/zeebe:latest
     container_name: zeebe
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
@@ -93,6 +93,29 @@ services:
       - ./zeebe-application.yml:/usr/local/zeebe/config/application.yaml
     depends_on:
       - elasticsearch
+    networks:
+      - optimize
+# We include Operate here to use its data generator, via the SPRING_PROFILES_ACTIVE property
+  operate:
+    image: camunda/operate:latest
+    container_name: operate
+    environment:
+        - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
+        - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
+        - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+        - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
+        - SPRING_PROFILES_ACTIVE=dev-data
+        - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
+        - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform
+        - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
+        - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
+        - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
+        - management.endpoint.health.group.liveness.include=elsIndicesCheck
+    ports:
+      - 8080:8080
+    depends_on:
+      - elasticsearch
+      - zeebe
     networks:
       - optimize
 networks:

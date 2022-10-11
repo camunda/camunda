@@ -120,6 +120,8 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
       .dataSource(new EngineDataSourceDto(engineContext.getEngineAlias()))
       .tenantId(engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null)))
       .deleted(engineEntity.isDeleted())
+      // if it is v1, then we assume that it is not yet onboarded. Otherwise, we assume it already is onboarded
+      .onboarded(engineEntity.getVersion() != 1)
       .build();
   }
 

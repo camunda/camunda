@@ -18,6 +18,7 @@ import {DashboardView} from '../Dashboards/DashboardView';
 import KpiResult from './KpiResult';
 import KpiSummary from './KpiSummary';
 import ConfigureProcessModal from './ConfigureProcessModal';
+import KpiTooltip from './KpiTooltip';
 import {loadProcesses, updateProcess, loadManagementDashboard} from './service';
 
 import './Processes.scss';
@@ -53,8 +54,12 @@ export function Processes({mightFail, user}) {
 
   const columns = [
     t('common.name'),
-    t('processes.timeKpi'),
-    t('processes.qualityKpi'),
+    <>
+      {t('processes.timeKpi')} <KpiTooltip />
+    </>,
+    <>
+      {t('processes.qualityKpi')} <KpiTooltip />
+    </>,
     t('common.configure'),
   ];
 
@@ -68,25 +73,49 @@ export function Processes({mightFail, user}) {
     columns.splice(-1, 0, t('dashboard.label'));
   }
 
+  const processesLabel =
+    processes?.length === 1 ? t('processes.label') : t('processes.label-plural');
+
   return (
     <div className="Processes">
-      <h1 className="processOverview">Process Overview</h1>
+      <h1 className="processOverview">
+        {t('processes.processOverview')}
+        {processes && (
+          <div className="info">
+            <span
+              dangerouslySetInnerHTML={{
+                __html: t('processes.analysing', {count: processes.length, label: processesLabel}),
+              }}
+            />{' '}
+            <DocsLink location="components/optimize/userguide/processes">
+              {t('events.sources.learnMore')}
+            </DocsLink>
+          </div>
+        )}
+      </h1>
       {dashboard && (
         <DashboardView
           reports={dashboard.reports}
           availableFilters={dashboard.availableFilters}
-          disableNameLink
+          customizeReportLink={(id) => `/processes/report/${id}/`}
+          simplifiedDateFilter
         />
       )}
       <EntityList
-        name={t('processes.title')}
-        headerText={
-          <>
-            {t('processes.kpiInfo')}{' '}
-            <DocsLink location="components/optimize/userguide/processes/#set-time-and-quality-kpis">
-              {t('events.sources.learnMore')}
-            </DocsLink>
-          </>
+        name={t('processes.list')}
+        displaySearchInfo={
+          processes &&
+          ((query, count) => (
+            <div className="info">
+              {query
+                ? t('processes.processesListedOf', {
+                    count,
+                    total: processes.length,
+                    label: processesLabel,
+                  })
+                : t('processes.processesListed', {total: processes.length, label: processesLabel})}
+            </div>
+          ))
         }
         empty={t('processes.empty')}
         isLoading={!processes}
@@ -120,11 +149,7 @@ export function Processes({mightFail, user}) {
             }
 
             if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
-              meta.unshift(
-                <Tooltip content={owner?.name} overflowOnly>
-                  <div className="ownerName">{owner?.name}</div>
-                </Tooltip>
-              );
+              meta.unshift(owner?.name);
 
               meta.push(
                 <Button

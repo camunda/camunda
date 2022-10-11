@@ -38,6 +38,18 @@ spec:
       securityContext:
         privileged: true
   containers:
+  - name: gcloud
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    imagePullPolicy: Always
+    command: ["cat"]
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
   - name: maven
     image: ${mavenImage}
     command: ["cat"]
@@ -190,12 +202,20 @@ pipeline {
               yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("openjdk-11-slim"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
             }
           }
+          environment {
+            LABEL = "optimize-ci-build_es-JDK11_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+          }
           steps {
             integrationTestSteps()
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_jdk11.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_jdk11.log', onlyIfSuccessful: false
             }
           }
         }
@@ -208,12 +228,20 @@ pipeline {
               yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("openjdk-16-slim"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
             }
           }
+          environment {
+            LABEL = "optimize-ci-build_es-JDK16_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+          }
           steps {
             integrationTestSteps()
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_jdk16.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_jdk16.log', onlyIfSuccessful: false
             }
           }
         }
@@ -226,12 +254,20 @@ pipeline {
               yaml mavenIntegrationTestAgent("adoptopenjdk/maven-openjdk11:latest", "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
             }
           }
+          environment {
+            LABEL = "optimize-ci-build_es-ADOPT11_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+          }
           steps {
             integrationTestSteps()
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_ADOP.log'
+              }
+                archiveArtifacts artifacts: 'elasticsearch_ADOP.log', onlyIfSuccessful: false
             }
           }
         }

@@ -221,7 +221,13 @@ export function TemplateModal({
           {t('common.cancel')}
         </Button>
         {onConfirm ? (
-          <Button main primary className="confirm" onClick={() => onConfirm(newEntityState)}>
+          <Button
+            disabled={!validSelection}
+            main
+            primary
+            className="confirm"
+            onClick={() => onConfirm(newEntityState)}
+          >
             {t(entity + '.create')}
           </Button>
         ) : (

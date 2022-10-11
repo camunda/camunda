@@ -68,7 +68,7 @@ runs:
         echo "Chart revision:           ${{ inputs.revision }}"
         echo "Lifecycle step:           ${{ inputs.step }}"
     - name: Restore cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       id: tool-cache-argocd
       with:
         path: /usr/local/bin/argocd
@@ -96,7 +96,7 @@ runs:
       #########################################################################
       # Create a GitHub deployment that points to the URL we're going to deploy to.
       # If a Pull Request exists, it will show the status of this deployment.
-    - uses: bobheadxi/deployments@26f1b13bf5048b2a8cf9c92af826742fefe2bc3a
+    - uses: bobheadxi/deployments@9d4477fdaa4120020cd10ab7e97f68c801422e73
       name: Create GitHub deployment
       id: deployment
       with:
@@ -141,10 +141,11 @@ runs:
       # When running the "start" step, `always()` ensures that the deployment status
       # is updated regardless of previous steps failing.
       if: always()
-      uses: bobheadxi/deployments@26f1b13bf5048b2a8cf9c92af826742fefe2bc3a
+      uses: bobheadxi/deployments@9d4477fdaa4120020cd10ab7e97f68c801422e73
       with:
         step: finish
         token: ${{ github.token }}
         status: ${{ job.status }}
         deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+        env: ${{ steps.deployment.outputs.env }}
         env_url: https://${{ inputs.deployment_id }}.optimize.camunda.cloud

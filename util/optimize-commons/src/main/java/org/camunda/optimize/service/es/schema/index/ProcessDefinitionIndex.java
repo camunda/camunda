@@ -15,7 +15,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENA
 
 public class ProcessDefinitionIndex extends AbstractDefinitionIndex {
 
-  public static final int VERSION = 5;
+  public static final int VERSION = 6;
 
   public static final String PROCESS_DEFINITION_ID = DEFINITION_ID;
   public static final String PROCESS_DEFINITION_KEY = DEFINITION_KEY;
@@ -26,6 +26,7 @@ public class ProcessDefinitionIndex extends AbstractDefinitionIndex {
   public static final String FLOW_NODE_DATA = ProcessDefinitionOptimizeDto.Fields.flowNodeData;
   public static final String USER_TASK_NAMES = ProcessDefinitionOptimizeDto.Fields.userTaskNames;
   public static final String TENANT_ID = DEFINITION_TENANT_ID;
+  public static final String ONBOARDED = ProcessDefinitionOptimizeDto.Fields.onboarded;
 
   @Override
   public String getIndexName() {
@@ -42,17 +43,20 @@ public class ProcessDefinitionIndex extends AbstractDefinitionIndex {
     // @formatter:off
     return super.addProperties(xContentBuilder)
       .startObject(FLOW_NODE_DATA)
-        .field("type", "object")
+        .field("type", ElasticsearchConstants.TYPE_OBJECT)
         .field(MAPPING_ENABLED_SETTING, "false")
       .endObject()
       .startObject(USER_TASK_NAMES)
-        .field("type", "object")
+        .field("type", ElasticsearchConstants.TYPE_OBJECT)
         .field(MAPPING_ENABLED_SETTING, "false")
       .endObject()
       .startObject(PROCESS_DEFINITION_XML)
-        .field("type", "text")
+        .field("type", ElasticsearchConstants.TYPE_TEXT)
         .field("index", true)
         .field("analyzer", "is_present_analyzer")
+      .endObject()
+      .startObject(ONBOARDED)
+        .field("type", ElasticsearchConstants.TYPE_BOOLEAN)
       .endObject();
     // @formatter:on
   }

@@ -29,10 +29,10 @@ export default function ProgressBar({min, max, value, isBelow, formatter, precis
     relative = Math.min(1, Math.max(0, (value - min) / (max - min)));
     goalPercentage = ((max - min) * 100) / (value - min);
     goalExceeded = max < value;
-    leftLabel = formatter(min);
+    leftLabel = formatter(min, precision);
     rightLabel = goalExceeded
       ? formatter(value, precision)
-      : `${t('report.progressBar.goal')} ` + formatter(max);
+      : `${t('report.progressBar.goal')} ` + formatter(max, precision);
     warning = isBelow ? value > max : value < max;
   }
 

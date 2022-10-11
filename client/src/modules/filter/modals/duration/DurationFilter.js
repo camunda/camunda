@@ -67,7 +67,7 @@ export default class DurationFilter extends React.Component {
       >
         <Modal.Header>
           {t('common.filter.modalHeader', {
-            type: t(`common.filter.types.instanceDuration`),
+            type: t('common.filter.types.processInstanceDuration'),
           })}
         </Modal.Header>
         <Modal.Content>

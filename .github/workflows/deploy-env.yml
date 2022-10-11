@@ -34,7 +34,7 @@ jobs:
       # Setup: import secrets from vault
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@67281159dfa7c251b824d2aad468b4d7c41c1ccc
+        uses: hashicorp/vault-action@7d98524254c38dc6892804f991526ff30905f643
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -46,7 +46,7 @@ jobs:
       # Setup: checkout code. This is required because we are using
       # composite actions and deployment manifests.
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       #########################################################################
       # Create a preview environment
       - name: Deploy Preview Environment

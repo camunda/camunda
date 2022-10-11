@@ -112,12 +112,12 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
     final MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(GreenMailUtil.getBody(emails[0])).contains(DEF_KEY);
-    greenMail.reset();
 
     // when digest is disabled
     processOverviewClient.updateProcess(
       DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(false));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    greenMail.reset();
 
     // then no more emails are sent
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isFalse();

@@ -5,13 +5,13 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.9.0-alpha4</version>
+    <version>3.10.0-preview1</version>
   </parent>
 
   <artifactId>optimize-backend</artifactId>
 
   <properties>
-    <jetty.version>9.4.48.v20220622</jetty.version>
+    <jetty.version>9.4.49.v20220914</jetty.version>
     <jersey.version>2.35</jersey.version>
     <spring.security.version>5.7.3</spring.security.version>
     <it.test.excludedGroups />
@@ -262,7 +262,7 @@
     <dependency>
       <groupId>com.github.sisyphsu</groupId>
       <artifactId>dateparser</artifactId>
-      <version>1.0.10</version>
+      <version>1.0.11</version>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
@@ -274,14 +274,14 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-prometheus</artifactId>
-      <version>1.9.3</version>
+      <version>1.9.4</version>
     </dependency>
 
     <!--Test dependencies-->
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-test-container</artifactId>
-      <version>3.5.0</version>
+      <version>3.5.2</version>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
@@ -309,7 +309,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>1.6.10</version>
+      <version>1.6.11</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -690,7 +690,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-jar-plugin</artifactId>
-            <version>3.2.2</version>
+            <version>3.3.0</version>
             <executions>
               <execution>
                 <id>create-invalid-optimize-testplugin-invalidVersion</id>

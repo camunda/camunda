@@ -68,15 +68,6 @@ Then in new terminal
 yarn start
 ```
 
-Backend also can be started without maven compilation step. It's possible only if there is already
-compiled version of optimize backend at ``camunda-optimize/distro/target``.
-To do that set ``FAST_BUILD`` environment on scope. For example:
-
-```bash
-export FAST_BUILD=1
-yarn run start-backend
-```
-
 ### Problems that may happen
 
 If for some reason you are getting error try running from the root folder:

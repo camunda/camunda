@@ -46,9 +46,12 @@ it('should pass a single filter to the date filter component', () => {
   expect(node.find('DateFilter')).toHaveProp('filter', dateFilter);
 });
 
-it('should have a button to reset all filters', () => {
+it('should have a button to reset all filters if there are more than one filter', () => {
   const node = shallow(<FiltersView {...props} />);
 
+  expect(node.find(Button)).not.toExist();
+
+  node.setProps({availableFilters: [{type: 'state'}, {type: 'instanceStartDate'}]});
   node.find(Button).simulate('click');
 
   expect(props.setFilter).toHaveBeenCalledWith([]);

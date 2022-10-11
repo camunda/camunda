@@ -18,6 +18,8 @@ public class OnboardingConfiguration {
   private boolean enabled;
   @Property("appCuesScriptUrl")
   private String appCuesScriptUrl;
+  @Property("scheduleProcessOnboardingChecks")
+  private boolean scheduleProcessOnboardingChecks;
   @Property("enableOnboardingEmails")
   private boolean enableOnboardingEmails;
   @Property("intervalForCheckingTriggerForOnboardingEmails")

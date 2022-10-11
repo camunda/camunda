@@ -90,7 +90,7 @@ export function Heatmap({report, context, user}) {
               <span className="text" dangerouslySetInnerHTML={{__html: tooltipHTML}} />
               {context !== 'shared' && (
                 <DownloadButton
-                  retriever={loadRawData(getConfig(report.data, id))}
+                  retriever={() => loadRawData(getConfig(report.data, id))}
                   fileName={
                     t('report.heatTarget.exceededInstances', {
                       name: formatters.formatFileName(name),

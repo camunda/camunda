@@ -43,7 +43,7 @@ export function DownloadButton({
   function triggerDownload(evt) {
     onClick?.(evt);
     mightFail(
-      retriever || getData(href),
+      retriever ? retriever() : getData(href),
       (data) => {
         const hiddenElement = document.createElement('a');
         hiddenElement.href = window.URL.createObjectURL(data);

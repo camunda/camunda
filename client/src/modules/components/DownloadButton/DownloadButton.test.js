@@ -38,7 +38,7 @@ it('invoke get with the provided href', async () => {
   expect(get).toHaveBeenCalledWith('testUrl');
 });
 
-it('invoke invoke the retriever function when proveded', () => {
+it('invoke the retriever function when provided', () => {
   const retriever = jest.fn();
   const spy = jest.fn();
   const node = shallow(
@@ -47,7 +47,7 @@ it('invoke invoke the retriever function when proveded', () => {
 
   node.find(Button).first().simulate('click');
 
-  expect(spy.mock.calls[0][0]).toEqual(retriever);
+  expect(retriever).toHaveBeenCalled();
 });
 
 it('should display a modal if total download count is more than csv limit', async () => {

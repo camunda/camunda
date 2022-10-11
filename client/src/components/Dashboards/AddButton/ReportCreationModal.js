@@ -9,23 +9,23 @@ import React, {useEffect, useState} from 'react';
 import {withRouter} from 'react-router';
 
 import {t} from 'translation';
-import {ReportTemplateModal} from 'components';
+import {LoadingIndicator, Modal, ReportTemplateModal} from 'components';
 import {withErrorHandling} from 'HOC';
 import {addNotification, showError} from 'notifications';
-import {createEntity, evaluateReport, getCollection} from 'services';
+import {createEntity, getCollection, loadEntity} from 'services';
 
 export function ReportCreationModal({onClose, existingReport, mightFail, onConfirm, location}) {
-  const [initialTemplateDefinitions, setInitialTemplateDefinitions] = useState([]);
+  const [initialTemplateDefinitions, setInitialTemplateDefinitions] = useState();
 
   useEffect(() => {
     if (!existingReport) {
-      return;
+      return setInitialTemplateDefinitions([]);
     }
 
     const {id, data} = existingReport;
     if (id) {
       mightFail(
-        evaluateReport(id),
+        loadEntity('report', id),
         (report) => setInitialTemplateDefinitions(report.data.definitions),
         showError
       );
@@ -47,6 +47,16 @@ export function ReportCreationModal({onClose, existingReport, mightFail, onConfi
         });
       },
       showError
+    );
+  }
+
+  if (!initialTemplateDefinitions) {
+    return (
+      <Modal open>
+        <Modal.Content>
+          <LoadingIndicator />
+        </Modal.Content>
+      </Modal>
     );
   }
 

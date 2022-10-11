@@ -43,7 +43,7 @@ export function CreateNewButton({
       )}
       <Dropdown.Option onClick={createDashboard}>{t('home.createBtn.dashboard')}</Dropdown.Option>
       {optimizeProfile === 'platform' ? (
-        <Dropdown.Submenu label={t('home.createBtn.report.default')}>
+        <Dropdown.Submenu label={t('home.createBtn.report.default')} openToLeft>
           <Dropdown.Option onClick={createProcessReport}>
             {t('home.createBtn.report.process')}
           </Dropdown.Option>

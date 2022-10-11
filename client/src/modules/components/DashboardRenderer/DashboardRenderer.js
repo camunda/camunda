@@ -22,6 +22,7 @@ const cellMargin = 10;
 export default function DashboardRenderer({
   disableReportInteractions,
   disableNameLink,
+  customizeReportLink,
   reports,
   filter = [],
   loadReport,
@@ -80,6 +81,7 @@ export default function DashboardRenderer({
           >
             <DashboardReport
               disableNameLink={disableReportInteractions || disableNameLink}
+              customizeReportLink={customizeReportLink}
               loadReport={loadReport}
               report={report}
               filter={filter.map((filter) => ({...filter, appliedTo: ['all']}))}

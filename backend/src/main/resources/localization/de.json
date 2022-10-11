@@ -88,10 +88,10 @@
   "home": {
     "createBtn": {
       "default": "Neu erstellen",
-      "collection": "Neue Sammlung",
-      "dashboard": "Neues Dashboard",
+      "collection": "Sammlung",
+      "dashboard": "Dashboard",
       "report": {
-        "default": "Neuer Bericht",
+        "default": "Bericht",
         "process": "Prozessbericht",
         "combined": "Kombinierter Prozessbericht",
         "decision": "Entscheidungsbericht"
@@ -165,7 +165,9 @@
     "welcome": "Willkommen"
   },
   "processes": {
-    "title": "Prozesse",
+    "label": "Prozess",
+    "label-plural": "Prozesse",
+    "list": "Prozessliste",
     "empty": "Es sind noch keine Prozesse importiert",
     "owner": "Eigentümer",
     "processOwner": "Prozess Eigentümer",
@@ -178,11 +180,15 @@
     "goalRemoved": "Ziele aus dem '{processName}' Prozess wurden entfernt",
     "ownerInfo": "Der Prozesseigentümer ist für Geschäftsmetriken des Prozesses verantwortlich. Sie können den Prozesseigentümer verwenden, um Prozesse zu sortieren und zu filtern",
     "ownerRemoveWarning": "Der Eigentümer '{owner}' wird aus dem Prozess entfernt",
-    "processOverview": "Prozessübersicht",
+    "processOverview": "Prozesse Übersicht",
     "configureProcess": "Prozess konfigurieren",
     "emailDigest": "Email Digest",
     "digestInfo": "Der Prozess Digest sendet regelmäßige E-Mails mit dem KPI-Status an den Prozesseigentümer. Standardmäßig wird der Digest jeden Montag um 9:00 Uhr versendet (wenn Sie die Standardversandzeit ändern möchten, wenden Sie sich bitte an Ihren Administrator).",
     "digestConfigured": "Ihr Prozess Digest wurde erfolgreich konfiguriert. Eine E-Mail wurde an {Name} gesendet.",
+    "configureKpis": "Erfahren Sie mehr über KPIs",
+    "analysing": "<b>{count}</b> {label} analysiert.",
+    "processesListed": "{total} {label} aufgelistet",
+    "processesListedOf": "{count} von {total} {label} aufgelistet",
     "timeGoals": {
       "label": "Zeitziele",
       "configure": "Ziele konfigurieren",
@@ -511,7 +517,8 @@
         "multipleVariable": "Var",
         "inputVariable": "EingabeVar",
         "outputVariable": "AusgabeVar",
-        "objectVariable": "Objektvariable"
+        "objectVariable": "Objektvariable",
+        "numberOfOpenIncidents": "Anzahl der offener Zwischenfälle"
       },
       "pageError": "Nur die ersten 10.000 Instanzen können angezeigt werden"
     },
@@ -596,7 +603,7 @@
         "enableStackedBars": "Gestapelte Balken"
       },
       "limitPrecision": {
-        "legend": "Genauigkeit begrenzen",
+        "legend": "Genauigkeit einstellen",
         "numberOf": {
           "digits": "Nachkommastellen",
           "units": "Anzahl der Einheiten"
@@ -731,8 +738,8 @@
       },
       "types": {
         "state": "Instanzstatus",
-        "instanceStartDate": "Startdatum",
-        "instanceEndDate": "Enddatum",
+        "instanceStartDate": "Startdatum der Instanz",
+        "instanceEndDate": "Enddatum der Instanz",
         "variable": "Variable",
         "runningInstancesOnly": "Laufend",
         "completedInstancesOnly": "Abgeschlossen",
@@ -904,6 +911,7 @@
     "dataSource": "Datenquelle",
     "selected": "Ausgewählt",
     "documentation": "Dokumentation",
+    "here": "hier",
     "open": "Öffnen",
     "for": "für",
     "download": "Herunterladen",
@@ -1083,13 +1091,14 @@
         "candidateGroup": "Potenzielle Gruppe",
         "instanceStartDate": "Startdatum",
         "instanceEndDate": "Enddatum",
-        "duration": "Dauer",
         "instance": "Prozessinstanz",
-        "instanceDuration": "Dauer der Prozessinstanz",
+        "duration": "Dauer",
+        "instanceDuration": "Instanzdauer",
+        "processInstanceDuration": "Dauer der Prozessinstanz",
         "flowNodeDuration": "Prozessknoten Dauer",
         "variable": "Variable",
         "multipleVariable": "Variable",
-        "flowNode": "Prozessknoten",
+        "flowNode": "Prozessknoten Ausführung",
         "evaluationDateTime": "Evaluierungszeitpunkt",
         "inputVariable": "Eingangsvariable",
         "outputVariable": "Ausgabevariable",
@@ -1239,6 +1248,10 @@
         "instance": "Prozessinstanzen filtern",
         "view": "Prozessknoten-Daten filtern",
         "decision": "Entscheidungsevaluierungen filtern"
+      },
+      "dropdownInfo": {
+        "instance": "Rückgabe Instanzen gefiltert nach...",
+        "view": "Rückgabe von Prozessknoten-Daten gefiltert nach..."
       },
       "allVisible": {
         "instance": "Alle Instanzen sichtbar",

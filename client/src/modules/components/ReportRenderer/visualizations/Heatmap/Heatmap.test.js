@@ -188,7 +188,9 @@ it('should show a tooltip with information about actual and target value', () =>
 
   const tooltip = node.find('HeatmapOverlay').renderProp('formatter')('', 'b');
 
-  expect(tooltip).toMatchSnapshot();
+  expect(tooltip.find('span').prop('dangerouslySetInnerHTML').__html).toMatch(
+    /Target.duration:.*?1ms.*?Average.duration:.*?2ms/
+  );
 });
 
 it('should inform if the actual value is less than 1% of the target value', () => {
@@ -218,7 +220,9 @@ it('should inform if the actual value is less than 1% of the target value', () =
 
   const tooltip = node.find(HeatmapOverlay).renderProp('formatter')('', 'b');
 
-  expect(tooltip).toMatchSnapshot();
+  expect(tooltip.find('span').prop('dangerouslySetInnerHTML').__html).toMatch(
+    /<.1%.of.the.target.value/
+  );
 });
 
 it('should show a tooltip with information if no actual value is available', () => {
@@ -262,7 +266,9 @@ it('should show a tooltip with information if no actual value is available', () 
 
   const tooltip = node.find(HeatmapOverlay).renderProp('formatter')('', 'b');
 
-  expect(tooltip).toMatchSnapshot();
+  expect(tooltip.find('span').prop('dangerouslySetInnerHTML').__html).toMatch(
+    /No.actual.value.available.*?Cannot.compare.target.and.actual.value/
+  );
 });
 
 it('should invoke report evaluation when clicking the download instances button', async () => {
@@ -289,7 +295,7 @@ it('should invoke report evaluation when clicking the download instances button'
 
   const tooltip = node.find('HeatmapOverlay').renderProp('formatter')('', 'b');
 
-  await tooltip.find(DownloadButton).prop('retriever');
+  await tooltip.find(DownloadButton).prop('retriever')();
 
   expect(loadRawData).toHaveBeenCalledWith('config');
 });
@@ -349,7 +355,10 @@ describe('multi-measure reports', () => {
 
     const tooltip = node.find('HeatmapOverlay').renderProp('formatter')('', 'b');
 
-    expect(tooltip).toMatchSnapshot();
+    console.log(tooltip.text());
+
+    expect(tooltip.text()).toMatch(/12/);
+    expect(tooltip.text()).toMatch(/2d.15s/);
   });
 
   it('should allow switching between heat visualizations for multi-measure reports', () => {

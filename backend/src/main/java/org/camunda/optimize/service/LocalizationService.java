@@ -182,7 +182,7 @@ public class LocalizationService implements ConfigurationReloadable {
                                    final String messageCode) throws IOException {
     // @formatter:off
     final Map<String, Object> localisationMap = objectMapper.readValue(
-      getLocalizedJsonFile(localeCode), new TypeReference<Map<String, Object>>() {}
+      getLocalizedJsonFile(localeCode), new TypeReference<>() {}
     );
     // @formatter:on
     final Map<String, String> categoryMessageCodeMap = (Map<String, String>) localisationMap.get(categoryCode);

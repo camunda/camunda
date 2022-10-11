@@ -79,7 +79,7 @@ export function Number({report, formatter, mightFail}) {
         isBelow={isBelow}
         value={result.data}
         formatter={formatter}
-        precision={precision}
+        precision={calculatePrecision(precision, result.measures?.[0]?.property)}
       />
     );
   }
@@ -124,7 +124,9 @@ export function Number({report, formatter, mightFail}) {
 
           return (
             <React.Fragment key={idx}>
-              <div className="data">{formatter(measure.data, precision)}</div>
+              <div className="data">
+                {formatter(measure.data, calculatePrecision(precision, measure.property))}
+              </div>
               <div className="label">{viewString}</div>
             </React.Fragment>
           );
@@ -135,3 +137,11 @@ export function Number({report, formatter, mightFail}) {
 }
 
 export default withErrorHandling(Number);
+
+function calculatePrecision(precision, measure) {
+  if (measure === 'duration') {
+    return precision || 3;
+  }
+
+  return precision;
+}

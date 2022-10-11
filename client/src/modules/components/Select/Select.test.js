@@ -7,6 +7,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import {ignoreFragments} from 'services';
 
 import {Dropdown} from 'components';
 
@@ -17,7 +18,12 @@ jest.mock('services', () => ({
   formatters: {
     getHighlightedText: () => 'got highlight',
   },
+  ignoreFragments: jest.fn().mockImplementation((children) => children),
 }));
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
 it('should render without crashing', () => {
   shallow(<Select />);
@@ -104,4 +110,11 @@ it('should use label attribute to calculate Select button label if provided', ()
 
   node.setProps({value: '1'});
   expect(node.find('Dropdown').prop('label')).toBe('submenu : Option One');
+});
+
+it('should invoke ignoreFragments when rendering the list', async () => {
+  const children = [<Select.Submenu key="1" />, <Select.Option key="2" />];
+  shallow(<Select>{children}</Select>);
+
+  expect(ignoreFragments).toHaveBeenCalledWith(children);
 });

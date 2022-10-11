@@ -126,36 +126,36 @@ test('instance state filters', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Process Instance State'));
+  await t.click(Report.filterOption('Instance State'));
   await t.click(Report.modalOption('Running'));
   await t.click(Report.primaryModalButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Process Instance State'));
+  await t.click(Report.filterOption('Instance State'));
   await t.click(Report.modalOption('Completed'));
   await t.click(Report.primaryModalButton);
   await t.expect(Report.warningMessage.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Process Instance State'));
+  await t.click(Report.filterOption('Instance State'));
   await t.click(Report.modalOption('Canceled'));
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Process Instance State'));
+  await t.click(Report.filterOption('Instance State'));
   await t.click(Report.modalOption('Non Canceled'));
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Process Instance State'));
+  await t.click(Report.filterOption('Instance State'));
   await t.click(Report.modalOption('Suspended'));
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Process Instance State'));
+  await t.click(Report.filterOption('Instance State'));
   await t.click(Report.modalOption('Non Suspended'));
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
@@ -232,7 +232,7 @@ test('add process instance duration filter', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Duration'));
+  await t.click(Report.filterOption('Instance Duration'));
   await t.click(Report.subFilterOption('Process instance'));
   await t.click(Filter.durationFilterOperator);
   await t.click(Report.option('less than'));
@@ -251,7 +251,7 @@ test('add flow node duration filter', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Duration'));
+  await t.click(Report.filterOption('Instance Duration'));
   await t.click(Report.subFilterOption('Flow Node'));
 
   await t.typeText(Report.targetValueInput('Approve Invoice'), '1');
@@ -299,7 +299,7 @@ test('add Flow Node filter', async (t) => {
   await t.resizeWindow(1000, 700);
 
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Flow Node'));
+  await t.click(Report.filterOption('Flow Node Execution'));
 
   await t.click(Report.flowNode('approveInvoice'));
   await t.click(Report.flowNode('reviewInvoice'));
@@ -318,7 +318,7 @@ test('the filter is visible in the control panel and contains correct informatio
 
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Flow Node'));
+  await t.click(Report.filterOption('Flow Node Execution'));
   await t.click(Report.flowNode('approveInvoice'));
   await t.click(Report.primaryModalButton);
   const controlPanelFilterText = Report.controlPanelFilter.textContent;
@@ -337,7 +337,7 @@ test('the filter is visible in the control panel and contains correct informatio
   await t.click(Report.primaryModalButton);
 
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Process Instance State'));
+  await t.click(Report.filterOption('Instance State'));
   await t.click(Report.modalOption('Running'));
   await t.click(Report.primaryModalButton);
 
@@ -440,7 +440,7 @@ test('multi definition filters', async (t) => {
 
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Process Instance State'));
+  await t.click(Report.filterOption('Instance State'));
 
   await t.click(Report.modalOption('Running'));
   await t.click(Filter.removeButtonFor('All included processes'));
@@ -455,7 +455,7 @@ test('multi definition filters', async (t) => {
   await t.expect(Report.controlPanel.textContent).contains('Applied to: 2 Processes');
 
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Flow Node'));
+  await t.click(Report.filterOption('Flow Node Execution'));
 
   await t.click(Filter.typeahead);
   await t.click(Filter.typeaheadOption('Embedded Subprocess'));

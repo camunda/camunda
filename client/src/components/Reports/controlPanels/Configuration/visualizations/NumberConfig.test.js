@@ -46,7 +46,7 @@ it('should have a switch for the precision setting', () => {
   expect(node.find('Switch')).toExist();
   expect(node.find('.precision')).toExist();
 
-  node.find({label: 'Limit Precision'}).simulate('change', {target: {checked: true}});
+  node.find({label: 'Custom Precision'}).simulate('change', {target: {checked: true}});
 
   expect(spy).toHaveBeenCalledWith({precision: {$set: 1}});
 });

@@ -188,3 +188,20 @@ it('should update the selected template if it is disabled for the selected defin
   expect(node.find('.active')).not.toIncludeText('Heatmap');
   expect(node.find('.active')).toIncludeText('Bar Chart');
 });
+
+it('should invoke the onConfirm when when clicking the create button', async () => {
+  const testDef = {key: 'def', versions: ['1'], tenantIds: [null]};
+  const spy = jest.fn();
+  const node = shallow(<TemplateModal {...props} onConfirm={spy} />);
+
+  expect(node.find('.confirm')).toBeDisabled();
+
+  node.find(DefinitionSelection).simulate('change', [testDef]);
+  runAllEffects();
+  await flushPromises();
+
+  node.find('.confirm').simulate('click');
+
+  expect(spy).toHaveBeenCalled();
+  expect(node.find('.confirm')).not.toBeDisabled();
+});

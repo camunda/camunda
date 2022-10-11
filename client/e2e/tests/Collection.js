@@ -16,9 +16,9 @@ import * as e from './Collection.elements.js';
 fixture('Collection').page(config.endpoint).beforeEach(login).afterEach(cleanEntities);
 
 async function createCollection(t, name = 'Test Collection') {
-  await t.click(Homepage.createNewMenu).click(Homepage.option('New Collection'));
+  await t.click(Homepage.createNewMenu).click(Homepage.option('Collection'));
   await t.typeText(Homepage.modalNameInput, name, {replace: true});
-  
+
   await t.click(Homepage.confirmButton);
   await t.click(e.selectAllCheckbox);
   await t.click(Homepage.confirmButton);
@@ -34,9 +34,9 @@ test('create a collection and entities inside it', async (t) => {
 
   await t.click(e.createNewMenu);
 
-  await t.expect(e.createNewMenu.textContent).notContains('New Collection');
-  await t.expect(e.createNewMenu.textContent).contains('New Dashboard');
-  await t.expect(e.createNewMenu.textContent).contains('New Report');
+  await t.expect(e.createNewMenu.textContent).notContains('Collection');
+  await t.expect(e.createNewMenu.textContent).contains('Dashboard');
+  await t.expect(e.createNewMenu.textContent).contains('Report');
   await t.click(e.createNewMenu);
 
   await createNewDashboard(t);

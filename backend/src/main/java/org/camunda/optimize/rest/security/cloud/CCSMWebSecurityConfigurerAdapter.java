@@ -45,7 +45,6 @@ import static org.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
 import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static org.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
-import static org.camunda.optimize.rest.constants.RestConstants.PROMETHEUS_ENDPOINT;
 import static org.camunda.optimize.rest.security.platform.PlatformWebSecurityConfigurerAdapter.DEEP_SUB_PATH_ANY;
 
 @Configuration
@@ -107,7 +106,7 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
           createApiPath(UI_CONFIGURATION_PATH),
           createApiPath(LOCALIZATION_PATH)
         ).permitAll()
-      .antMatchers(getPrometheusEndpoint()).permitAll()
+      .antMatchers(ACTUATOR_ENDPOINT + "/**").permitAll()
       .anyRequest().authenticated()
       .and()
       .addFilterBefore(authenticationCookieFilter(), AbstractPreAuthenticatedProcessingFilter.class)
@@ -115,10 +114,6 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
         .defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED), new AntPathRequestMatcher(REST_API_PATH + "/**"))
         .defaultAuthenticationEntryPointFor(this::redirectToIdentity, new AntPathRequestMatcher("/**"));
     //@formatter:on
-  }
-
-  private String getPrometheusEndpoint() {
-    return ACTUATOR_ENDPOINT + PROMETHEUS_ENDPOINT;
   }
 
   private void redirectToIdentity(final HttpServletRequest request, final HttpServletResponse response,

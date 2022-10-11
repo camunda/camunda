@@ -58,6 +58,18 @@ spec:
       - name: es-storage
         mountPath: /data
   containers:
+  - name: gcloud
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    imagePullPolicy: Always
+    command: ["cat"]
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}
     command: ["cat"]
@@ -208,6 +220,9 @@ pipeline {
           yaml mavenElasticsearchAgent(env, params.POSTGRES_VERSION, env.ES_VERSION, env.CAMBPM_VERSION)
         }
       }
+      environment {
+        LABEL = "optimize-ci-build-${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+      }
       steps {
         optimizeCloneGitRepo(params.BRANCH)
         container('maven') {
@@ -222,10 +237,14 @@ pipeline {
           container('maven') {
             sh 'curl localhost:9200/_cat/indices?v'
             sh('''#!/bin/bash -ex
-                          cp -R --parents /es-storage/logs /cambpm-storage .
-                          chown -R 10000:1000 ./{es-storage,cambpm-storage}
+                          cp -R --parents /cambpm-storage .
+                          chown -R 10000:1000 ./cambpm-storage
                         ''')
-            archiveArtifacts artifacts: 'es-storage/logs/*,cambpm-storage/**/*', onlyIfSuccessful: false
+          }
+          container('gcloud'){
+            sh 'apt-get install kubectl'
+            sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch.log'
+            archiveArtifacts artifacts: 'elasticsearch.log,cambpm-storage/**/*', onlyIfSuccessful: false
           }
         }
       }

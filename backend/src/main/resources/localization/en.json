@@ -88,10 +88,10 @@
   "home": {
     "createBtn": {
       "default": "Create New",
-      "collection": "New Collection",
-      "dashboard": "New Dashboard",
+      "collection": "Collection",
+      "dashboard": "Dashboard",
       "report": {
-        "default": "New Report",
+        "default": "Report",
         "process": "Process Report",
         "combined": "Combined Process Report",
         "decision": "Decision Report"
@@ -165,7 +165,9 @@
     "welcome": "Welcome"
   },
   "processes": {
-    "title": "Processes",
+    "label": "process",
+    "label-plural": "processes",
+    "list": "Processes List",
     "empty": "There are no processes imported yet",
     "owner": "Owner",
     "processOwner": "Process Owner",
@@ -178,11 +180,15 @@
     "goalRemoved": "Goals removed from '{processName}' process",
     "ownerInfo": "The process owner is responsible for business metrics for the process. You can use the process owner to sort and filter processes.",
     "ownerRemoveWarning": "The '{owner}' Owner will be removed from the process",
-    "processOverview": "Process Overview",
+    "processOverview": "Processes Overview",
     "configureProcess": "Configure Process",
     "emailDigest": "Email Digest",
     "digestInfo": "The process digest sends periodic emails with the existing KPI status to the Process Owner. By default, the digest will be sent every Monday at 9:00 AM (To change the default send time, please contact your administrator).",
     "digestConfigured": "Your process digest has been successfully configured. An email has been sent to {name}.",
+    "configureKpis": "Learn more about KPIs",
+    "analysing": "Analysing <b>{count}</b> {label}.",
+    "processesListed": "{total} {label} listed",
+    "processesListedOf": "{count} of {total} {label} listed",
     "timeGoals": {
       "label": "Time goals",
       "configure": "Configure duration goals",
@@ -511,7 +517,8 @@
         "multipleVariable": "Var",
         "inputVariable": "InputVar",
         "outputVariable": "OutputVar",
-        "objectVariable": "Object Variable"
+        "objectVariable": "Object Variable",
+        "numberOfOpenIncidents": "Open Incidents Count"
       },
       "pageError": "Only the first 10,000 instances can be displayed"
     },
@@ -596,7 +603,7 @@
         "enableStackedBars": "Stacked bars"
       },
       "limitPrecision": {
-        "legend": "Limit Precision",
+        "legend": "Custom Precision",
         "numberOf": {
           "digits": "No. of digits",
           "units": "No. of units"
@@ -731,8 +738,8 @@
       },
       "types": {
         "state": "Instance State",
-        "instanceStartDate": "Start Date",
-        "instanceEndDate": "End Date",
+        "instanceStartDate": "Instance Start Date",
+        "instanceEndDate": "Instance End Date",
         "variable": "Variable",
         "runningInstancesOnly": "Running",
         "completedInstancesOnly": "Completed",
@@ -904,6 +911,7 @@
     "dataSource": "Data Source",
     "selected": "Selected",
     "documentation": "documentation",
+    "here": "here",
     "open": "Open",
     "for": "for",
     "download": "Download",
@@ -1077,19 +1085,20 @@
         }
       },
       "types": {
-        "instanceState": "Process Instance State",
+        "instanceState": "Instance State",
         "date": "Instance Date",
         "assignee": "Assignee",
         "candidateGroup": "Candidate Group",
         "instanceStartDate": "Start Date",
         "instanceEndDate": "End Date",
-        "duration": "Duration",
         "instance": "Process instance",
-        "instanceDuration": "Process Instance Duration",
+        "duration": "Duration",
+        "instanceDuration": "Instance Duration",
+        "processInstanceDuration": "Process Instance Duration",
         "flowNodeDuration": "Flow Node Duration",
         "variable": "Variable",
         "multipleVariable": "Variable",
-        "flowNode": "Flow Node",
+        "flowNode": "Flow Node Execution",
         "evaluationDateTime": "Evaluation Date Time",
         "inputVariable": "Input Variable",
         "outputVariable": "Output Variable",
@@ -1239,6 +1248,10 @@
         "instance": "Filter Process Instances",
         "view": "Filter Flow Nodes",
         "decision": "Filter Decision Evaluations"
+      },
+      "dropdownInfo": {
+        "instance": "Return Instances filtered by...",
+        "view": "Return Flow Node Data filtered by..."
       },
       "allVisible": {
         "instance": "All instances visible",

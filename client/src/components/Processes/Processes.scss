@@ -8,6 +8,13 @@
     color: var(--grey-darken-23);
     margin: 30px 0 0 65px;
     flex-grow: 1;
+    min-height: 50px;
+
+    .info {
+      font-size: 14px;
+      line-height: 18px;
+      color: var(--grey-darken-33);
+    }
   }
 
   .fullscreen {
@@ -37,6 +44,10 @@
       > h3 {
         display: none;
       }
+
+      .Popover {
+        width: max-content;
+      }
     }
   }
 
@@ -54,20 +65,16 @@
     .columnHeaders {
       padding-right: 0;
 
+      .meta .Icon {
+        opacity: 0.5;
+
+        &:hover {
+          opacity: 1;
+        }
+      }
+
       .meta:last-child span {
         visibility: hidden;
-      }
-    }
-
-    .ownerInfo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-
-      .ownerName {
-        max-width: 100px;
-        overflow: hidden;
-        text-overflow: ellipsis;
       }
     }
 

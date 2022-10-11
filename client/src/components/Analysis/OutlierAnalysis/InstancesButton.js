@@ -14,17 +14,19 @@ import {t} from 'translation';
 export function InstancesButton({id, name, config, value, totalCount, user}) {
   return (
     <DownloadButton
-      retriever={loadRawData({
-        ...config,
-        filter: [
-          {
-            type: 'flowNodeDuration',
-            data: {[id]: {operator: '>', value, unit: 'millis'}},
-            filterLevel: 'instance',
-          },
-        ],
-        includedColumns: ['processInstanceId'],
-      })}
+      retriever={() =>
+        loadRawData({
+          ...config,
+          filter: [
+            {
+              type: 'flowNodeDuration',
+              data: {[id]: {operator: '>', value, unit: 'millis'}},
+              filterLevel: 'instance',
+            },
+          ],
+          includedColumns: ['processInstanceId'],
+        })
+      }
       fileName={
         formatters.formatFileName(name || id) +
         '-' +

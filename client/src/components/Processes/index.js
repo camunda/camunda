@@ -6,3 +6,4 @@
  */
 
 export {default as Processes} from './Processes';
+export {default as ProcessReport} from './ProcessReport';
