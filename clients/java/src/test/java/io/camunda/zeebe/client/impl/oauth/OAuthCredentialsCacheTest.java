@@ -152,7 +152,7 @@ public final class OAuthCredentialsCacheTest {
   }
 
   @Test
-  public void shouldCreateFileOnlyIfParentIsSymbolicLinkToDirectory() throws IOException {
+  public void shouldCreateFileOnlyIfParentIsDirectory() throws IOException {
     final File root = new File(temporaryFolder.getRoot(), "/some/root");
     Files.createDirectories(root.toPath());
     assertThat(root.exists()).isTrue();
