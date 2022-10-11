@@ -43,6 +43,7 @@ import io.camunda.zeebe.model.bpmn.instance.SendTask;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
+import io.camunda.zeebe.model.bpmn.instance.Task;
 import io.camunda.zeebe.model.bpmn.instance.Transaction;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
@@ -266,6 +267,14 @@ public abstract class AbstractFlowNodeBuilder<
 
   public ManualTaskBuilder manualTask(final String id) {
     return createTargetBuilder(ManualTask.class, id);
+  }
+
+  public AbstractTaskBuilder task() {
+    return createTargetBuilder(Task.class);
+  }
+
+  public AbstractTaskBuilder task(final String id) {
+    return createTargetBuilder(Task.class, id);
   }
 
   public EndEventBuilder endEvent() {

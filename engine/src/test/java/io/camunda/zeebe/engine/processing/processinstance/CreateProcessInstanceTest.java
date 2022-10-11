@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -197,5 +198,28 @@ public final class CreateProcessInstanceTest {
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId("process")
         .hasProcessInstanceKey(processInstanceKey);
+  }
+
+  @Test
+  public void shouldCompleteAbstractTask() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process").startEvent().task().endEvent().done();
+
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 }

@@ -19,13 +19,13 @@ package io.camunda.zeebe.model.bpmn.impl.instance;
 import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_TASK;
 
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.Activity;
 import io.camunda.zeebe.model.bpmn.instance.Task;
 import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
-import org.camunda.bpm.model.xml.impl.util.ModelTypeException;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
@@ -64,7 +64,8 @@ public class TaskImpl extends ActivityImpl implements Task {
   @Override
   @SuppressWarnings("rawtypes")
   public AbstractTaskBuilder builder() {
-    throw new ModelTypeException("No builder implemented.");
+    return new AbstractTaskBuilder<>(
+        (BpmnModelInstance) modelInstance, this, AbstractTaskBuilder.class);
   }
 
   @Override

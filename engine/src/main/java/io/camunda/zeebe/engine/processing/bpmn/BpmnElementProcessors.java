@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.bpmn.gateway.EventBasedGatewayProcesso
 import io.camunda.zeebe.engine.processing.bpmn.gateway.ExclusiveGatewayProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.gateway.InclusiveGatewayProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.gateway.ParallelGatewayProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.task.AbstractTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.BusinessRuleTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.JobWorkerTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.ManualTaskProcessor;
@@ -62,6 +63,8 @@ public final class BpmnElementProcessors {
     processors.put(
         BpmnElementType.MANUAL_TASK,
         new ManualTaskProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.TASK, new AbstractTaskProcessor(bpmnBehaviors, stateTransitionBehavior));
 
     // gateways
     processors.put(

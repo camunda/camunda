@@ -467,6 +467,23 @@ public final class CreateDeploymentTest {
         findProcess(originalProcesses, processId), findProcess(repeatedProcesses, processId));
   }
 
+  @Test
+  public void shouldDeployProcessModelWithAbstractTask() {
+    // when
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process").startEvent().task().endEvent().done();
+
+    final Record<DeploymentRecordValue> result =
+        ENGINE.deployment().withXmlResource(modelInstance).deploy();
+
+    // then
+    assertThat(result.getKey()).isGreaterThan(0);
+    assertThat(result.getValue().getProcessesMetadata()).hasSize(1);
+    final ProcessMetadataValue deployedProcess = result.getValue().getProcessesMetadata().get(0);
+    assertThat(deployedProcess.getVersion()).isEqualTo(1);
+    assertThat(deployedProcess.getProcessDefinitionKey()).isGreaterThan(0);
+  }
+
   private ProcessMetadataValue findProcess(
       final List<ProcessMetadataValue> processes, final String processId) {
     return processes.stream()
