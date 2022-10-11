@@ -57,9 +57,9 @@ organizationFolder('camunda') {
     properties {
         // Avoid automatically build jobs on non-prod envs by org indexing.
         // Note: The DSL name here is misleading. This config is for the branches that WILL be built automatically.
-        // So on prod env all branches will be built automatically but for non-prod no automatic builds.
+        // So on prod env main will be built automatically but for non-prod no automatic builds.
         noTriggerOrganizationFolderProperty {
-            branches (ENVIRONMENT == 'prod' ? '.*' : '')
+            branches (ENVIRONMENT == 'prod' ? 'main' : '')
         }
     }
 
