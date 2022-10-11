@@ -428,30 +428,6 @@ pipeline {
             }
         }
 
-        failure {
-            script {
-                if (env.BRANCH_NAME != mainBranchName || agentDisconnected()) {
-                    return
-                }
-                sendZeebeSlackMessage()
-            }
-        }
-
-        changed {
-            script {
-                if (env.BRANCH_NAME != mainBranchName || agentDisconnected()) {
-                    return
-                }
-                if (currentBuild.currentResult == 'FAILURE') {
-                    return // already handled above
-                }
-                if (!hasBuildResultChanged()) {
-                    return
-                }
-
-                sendZeebeSlackMessage()
-            }
-        }
     }
 }
 
@@ -488,14 +464,6 @@ def setHumanReadableBuildDisplayName(int maximumLength = 45) {
             currentBuild.displayName = displayStringHardTruncate.take(displayStringHardTruncate.lastIndexOf(' '))
         }
     }
-}
-
-// TODO: can be extracted to zeebe-jenkins-shared-library
-def sendZeebeSlackMessage() {
-    echo "Send slack message"
-    slackSend(
-        channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
-        message: "Zeebe ${env.BRANCH_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
 }
 
 def isBorsStagingBranch() {
