@@ -9,14 +9,14 @@ import {BpmnElement} from 'bpmn-js/lib/NavigatedViewer';
 import {isFlowNode} from 'modules/utils/flowNodes';
 
 function isNonSelectableFlowNode(
-  element: BpmnElement,
+  bpmnElement: BpmnElement,
   selectableFlowNodes?: string[]
 ) {
   return (
     selectableFlowNodes !== undefined &&
-    !selectableFlowNodes.includes(element.id) &&
-    element.type !== 'label' &&
-    isFlowNode(element)
+    !selectableFlowNodes.includes(bpmnElement.id) &&
+    bpmnElement.type !== 'label' &&
+    isFlowNode(bpmnElement.businessObject)
   );
 }
 

@@ -13,6 +13,8 @@ import {
 } from 'modules/constants';
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
+type BpmnType = keyof typeof FLOWNODE_TYPE_HANDLE;
+
 type InputOutputMappings = {
   inputMappings: {
     source: string;
@@ -29,7 +31,7 @@ type NodeMetaDataMap = {
     name: string;
     type: {
       elementType: string;
-      eventType: string;
+      eventType?: string;
       isMultiInstance: boolean;
       multiInstanceType?: string;
       inputMappings: {source: string; target: string}[];
@@ -39,46 +41,44 @@ type NodeMetaDataMap = {
   };
 };
 
-const getSelectableFlowNodes = (bpmnElements: any) => {
-  if (!bpmnElements) {
-    return {};
-  }
-
-  return Object.entries(bpmnElements).reduce(
-    (accumulator, [key, bpmnElement]) => {
-      if (isFlowNode(bpmnElement)) {
-        return {...accumulator, [key]: bpmnElement};
+const getSelectableFlowNodes = (elementsById: {
+  [id: string]: BusinessObject;
+}) => {
+  return Object.entries(elementsById).reduce(
+    (selectableFlowNodes, [flowNodeId, businessObject]) => {
+      if (isFlowNode(businessObject)) {
+        return {...selectableFlowNodes, [flowNodeId]: businessObject};
       }
-      return accumulator;
+      return selectableFlowNodes;
     },
     {}
   );
 };
 
-const createNodeMetaDataMap = (bpmnElements: {
+const createNodeMetaDataMap = (businessObject: {
   [key: string]: BusinessObject;
 }) => {
-  return Object.entries(bpmnElements).reduce<NodeMetaDataMap>(
-    (map, [activityId, bpmnElement]) => {
+  return Object.entries(businessObject).reduce<NodeMetaDataMap>(
+    (map, [flowNodeId, businessObject]) => {
       const {inputMappings, outputMappings} =
-        getInputOutputMappings(bpmnElement);
+        getInputOutputMappings(businessObject);
 
-      const elementType = getElementType(bpmnElement);
+      const elementType = getElementType(businessObject);
 
-      map[activityId] = {
-        name: bpmnElement.name,
+      map[flowNodeId] = {
+        name: businessObject.name,
         type: {
           elementType,
-          eventType: getEventType(bpmnElement),
+          eventType: getEventType(businessObject),
           isMultiInstance:
-            bpmnElement?.loopCharacteristics?.$type ===
+            businessObject?.loopCharacteristics?.$type ===
               'bpmn:MultiInstanceLoopCharacteristics' ?? false,
-          multiInstanceType: getMultiInstanceType(bpmnElement),
+          multiInstanceType: getMultiInstanceType(businessObject),
           inputMappings,
           outputMappings,
           isProcessEndEvent:
             elementType === 'END' &&
-            bpmnElement?.$parent?.$type === 'bpmn:Process',
+            businessObject?.$parent?.$type === 'bpmn:Process',
         },
       };
 
@@ -88,17 +88,19 @@ const createNodeMetaDataMap = (bpmnElements: {
   );
 };
 
-const getEventType = (bpmnElement: any) => {
-  // doesn't return a event type when element of type 'multiple event'
-  if (bpmnElement.eventDefinitions?.length === 1) {
-    // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-    return FLOWNODE_TYPE_HANDLE[bpmnElement.eventDefinitions[0].$type];
+const getEventType = (businessObject: BusinessObject) => {
+  const firstEventDefinition = businessObject.eventDefinitions?.[0];
+
+  if (firstEventDefinition !== undefined) {
+    return FLOWNODE_TYPE_HANDLE[firstEventDefinition.$type as BpmnType];
   }
 };
 
-const getElementType = (bpmnElement: any) => {
-  const {$type: type, cancelActivity, triggeredByEvent} = bpmnElement;
-
+const getElementType = ({
+  $type: type,
+  cancelActivity,
+  triggeredByEvent,
+}: BusinessObject) => {
   if (type === 'bpmn:SubProcess' && triggeredByEvent) {
     return TYPE.EVENT_SUBPROCESS;
   }
@@ -109,26 +111,23 @@ const getElementType = (bpmnElement: any) => {
       : TYPE.EVENT_BOUNDARY_INTERRUPTING;
   }
 
-  // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-  return FLOWNODE_TYPE_HANDLE[type];
+  return FLOWNODE_TYPE_HANDLE[type as BpmnType];
 };
 
-const getMultiInstanceType = (bpmnElement: any) => {
-  if (!bpmnElement.loopCharacteristics) {
+const getMultiInstanceType = (businessObject: BusinessObject) => {
+  if (businessObject.loopCharacteristics === undefined) {
     return;
   }
 
-  return bpmnElement.loopCharacteristics.isSequential
+  return businessObject.loopCharacteristics.isSequential
     ? MULTI_INSTANCE_TYPE.SEQUENTIAL
     : MULTI_INSTANCE_TYPE.PARALLEL;
 };
 
 function getInputOutputMappings(
-  bpmnElement: BusinessObject
+  businessObject: BusinessObject
 ): InputOutputMappings {
-  const {extensionElements} = bpmnElement;
-
-  const ioMappings = extensionElements?.values?.find(
+  const ioMappings = businessObject.extensionElements?.values?.find(
     (element) => element.$type === 'zeebe:ioMapping'
   );
 
@@ -156,26 +155,16 @@ function getInputOutputMappings(
   );
 }
 
-const getProcessedSequenceFlows = (sequenceFlows: any) => {
+const getProcessedSequenceFlows = (sequenceFlows: {activityId: string}[]) => {
   return sequenceFlows
-    .map((item: any) => item.activityId)
-    .filter(
-      (value: any, index: any, self: any) => self.indexOf(value) === index
-    );
-};
-
-const mapify = (arrayOfObjects: any, uniqueKey: any) => {
-  if (arrayOfObjects === undefined) return new Map();
-  return arrayOfObjects.reduce((acc: any, object: any) => {
-    return acc.set(object[uniqueKey], object);
-  }, new Map());
+    .map((item) => item.activityId)
+    .filter((value, index, self) => self.indexOf(value) === index);
 };
 
 export {
   getSelectableFlowNodes,
   createNodeMetaDataMap,
   getProcessedSequenceFlows,
-  mapify,
 };
 
 export type {NodeMetaDataMap};

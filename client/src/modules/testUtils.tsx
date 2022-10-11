@@ -243,18 +243,6 @@ export const createDiagramNode = (options = {}) => {
   };
 };
 
-export const createDefinitions = () => {
-  return {
-    $type: 'bpmn:Definitions',
-    diagrams: ['ModdleElement'],
-    exporter: 'Zeebe Modeler',
-    exporterVersion: '0.4.0',
-    id: 'Definitions_0hir062',
-    rootElements: [],
-    targetNamespace: '',
-  };
-};
-
 export const diObject = {set: jest.fn()};
 
 export const createSequenceFlows = () => {

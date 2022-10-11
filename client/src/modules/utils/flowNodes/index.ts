@@ -5,26 +5,19 @@
  * except in compliance with the proprietary license.
  */
 
-export function isFlowNode(bpmnElement: any) {
-  if (typeof bpmnElement.businessObject !== 'undefined') {
-    bpmnElement = bpmnElement.businessObject;
-  }
+import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {DiagramModel} from 'bpmn-moddle';
 
-  return bpmnElement.$instanceOf('bpmn:FlowNode');
+export function isFlowNode(businessObject: BusinessObject) {
+  return businessObject.$instanceOf('bpmn:FlowNode');
 }
 
-export function getFlowNodes(bpmnElements?: any) {
-  if (bpmnElements === undefined) {
+export function getFlowNodes(elementsById?: DiagramModel['elementsById']) {
+  if (elementsById === undefined) {
     return [];
   }
 
-  let flowNodes: any = [];
-
-  Object.values(bpmnElements).forEach((bpmnElement) => {
-    if (isFlowNode(bpmnElement)) {
-      flowNodes.push(bpmnElement);
-    }
-  });
-
-  return flowNodes;
+  return Object.values(elementsById).filter((businessObject) =>
+    isFlowNode(businessObject)
+  );
 }

@@ -5,13 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {createDefinitions} from 'modules/testUtils';
 import {createDiagramNodes} from './bpmn.setup';
 
-const bpmnElements = createDiagramNodes();
-
-export const parsedDiagram = {bpmnElements, definitions: createDefinitions()};
-
 export const parseDiagramXML = jest.fn(async (xml) => {
-  return {bpmnElements, definitions: createDefinitions()};
+  return {elementsById: createDiagramNodes()};
 });

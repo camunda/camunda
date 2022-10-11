@@ -6,6 +6,7 @@
  */
 
 import {makeObservable, action, observable, override, computed} from 'mobx';
+import {DiagramModel} from 'bpmn-moddle';
 import {fetchProcessInstancesStatistics} from 'modules/api/instances';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {logger} from 'modules/logger';
@@ -21,12 +22,6 @@ import {
   INCIDENTS_BADGE,
 } from 'modules/bpmn-js/badgePositions';
 
-type Node = {
-  $type: string;
-  id: string;
-  name: string;
-};
-
 type NodeStatistics = {
   active: number;
   activityId: string;
@@ -37,7 +32,7 @@ type NodeStatistics = {
 
 type State = {
   statistics: NodeStatistics[];
-  diagramModel: {bpmnElements: unknown} | null;
+  diagramModel: DiagramModel | null;
   xml: string | null;
   status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
 };
@@ -129,19 +124,19 @@ class ProcessDiagram extends NetworkReconnectionHandler {
 
     if (processXMLResponse.ok && processInstancesStatisticsResponse.ok) {
       const xml = await processXMLResponse.text();
-      const [parsedDiagram, statistics] = await Promise.all([
+      const [diagramModel, statistics] = await Promise.all([
         parseDiagramXML(xml),
         processInstancesStatisticsResponse.json(),
       ]);
 
-      this.handleFetchSuccess(xml, parsedDiagram, statistics);
+      this.handleFetchSuccess(xml, diagramModel, statistics);
     } else {
       this.handleFetchError();
     }
   };
 
-  get selectableFlowNodes(): Node[] {
-    return getFlowNodes(this.state.diagramModel?.bpmnElements);
+  get selectableFlowNodes() {
+    return getFlowNodes(this.state.diagramModel?.elementsById);
   }
 
   get selectableIds() {
@@ -154,16 +149,16 @@ class ProcessDiagram extends NetworkReconnectionHandler {
 
   handleFetchSuccess = (
     xml: string,
-    parsedDiagramXml: any,
-    statistics: any
+    diagramModel: DiagramModel,
+    statistics: NodeStatistics[]
   ) => {
     this.state.xml = xml;
-    this.state.diagramModel = parsedDiagramXml;
+    this.state.diagramModel = diagramModel;
     this.state.statistics = statistics;
     this.state.status = 'fetched';
   };
 
-  handleFetchStatisticsSuccess = (statistics: any) => {
+  handleFetchStatisticsSuccess = (statistics: NodeStatistics[]) => {
     this.state.statistics = statistics;
     this.state.status = 'fetched';
   };

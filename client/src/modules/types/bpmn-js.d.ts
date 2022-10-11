@@ -9,6 +9,21 @@ declare module 'bpmn-js/lib/util/ModelUtil' {
   export function is(element: BpmnElement, type: string): boolean;
 }
 
+declare module 'bpmn-moddle' {
+  export type DiagramModel = {
+    elementsById: {
+      [id: string]: BusinessObject;
+    };
+  };
+
+  class BpmnModdle {
+    constructor();
+    fromXML(xml: BpmnElement, definitions: string): Promise<DiagramModel>;
+  }
+
+  export = BpmnModdle;
+}
+
 declare module 'bpmn-js/lib/NavigatedViewer' {
   export type BusinessObject = {
     id: string;
@@ -18,7 +33,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     sourceRef?: BusinessObject;
     incoming?: BusinessObject[];
     flowElements?: BusinessObject[];
-    loopCharacteristics?: {$type: string};
+    loopCharacteristics?: {$type: string; isSequential: boolean};
     extensionElements?: {
       values: {
         $type: string;
@@ -29,6 +44,10 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
         }[];
       }[];
     };
+    eventDefinitions?: {$type: string}[];
+    cancelActivity?: boolean;
+    triggeredByEvent?: boolean;
+    $instanceOf: (type: BusinessObject['$type']) => boolean;
   };
 
   export type BpmnElement = {

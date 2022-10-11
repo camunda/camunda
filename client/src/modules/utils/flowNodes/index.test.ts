@@ -5,28 +5,31 @@
  * except in compliance with the proprietary license.
  */
 
+import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {isFlowNode, getFlowNodes} from './index';
 
-const createElement = (type: string, isFlowNode: boolean, id?: string) => {
+const createElement = (
+  type: string,
+  id: string = 'FlowNode'
+): BusinessObject => {
   return {
     id,
-    businessObject: {
-      $type: type,
-      $instanceOf: () => isFlowNode,
-    },
+    name: 'Element',
+    $type: type,
+    $instanceOf: () => type === 'bpmn:Task',
   };
 };
 
 describe('flowNodes', () => {
   describe('isFlowNode', () => {
     it('should return true for tasks', () => {
-      const element = createElement('bpmn:Task', true);
+      const element = createElement('bpmn:Task');
 
       expect(isFlowNode(element)).toBeTruthy();
     });
 
     it('should return false for Processes', () => {
-      const element = createElement('bpmn:Process', false);
+      const element = createElement('bpmn:Process');
 
       expect(isFlowNode(element)).toBeFalsy();
     });
@@ -34,13 +37,9 @@ describe('flowNodes', () => {
 
   describe('getFlowNodes', () => {
     it('should get flow nodes', () => {
-      const Task1 = createElement('bpmn:Task', true, 'Task1');
-      const Root = createElement('bpmn:Process', false, 'Root');
-      const SequenceFlow1 = createElement(
-        'bpmn:SequenceFlow',
-        false,
-        'SequenceFlow1'
-      );
+      const Task1 = createElement('bpmn:Task', 'Task1');
+      const Root = createElement('bpmn:Process', 'Root');
+      const SequenceFlow1 = createElement('bpmn:SequenceFlow', 'SequenceFlow1');
 
       const elements = [Task1, Root, SequenceFlow1];
 

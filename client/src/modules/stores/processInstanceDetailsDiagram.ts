@@ -14,6 +14,7 @@ import {
   override,
   observable,
 } from 'mobx';
+import {DiagramModel} from 'bpmn-moddle';
 import {fetchProcessXML} from 'modules/api/diagram';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {
@@ -30,6 +31,7 @@ import {modificationsStore} from './modifications';
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {isAttachedToAnEventBasedGateway} from 'modules/bpmn-js/isAttachedToAnEventBasedGateway';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
+import {isWithinMultiInstance} from 'modules/bpmn-js/isWithinMultiInstance';
 
 type FlowNodeMetaData = {
   name: string;
@@ -41,7 +43,7 @@ type FlowNodeMetaData = {
 };
 
 type State = {
-  diagramModel: {bpmnElements: {[elementId: string]: unknown}} | null;
+  diagramModel: DiagramModel | null;
   xml: string | null;
   status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
   nodeMetaDataMap?: NodeMetaDataMap;
@@ -52,13 +54,6 @@ const DEFAULT_STATE: State = {
   xml: null,
   status: 'initial',
   nodeMetaDataMap: undefined,
-};
-
-const isWithinMultiInstance = (node: BusinessObject) => {
-  return (
-    node.$parent?.loopCharacteristics?.$type ===
-    'bpmn:MultiInstanceLoopCharacteristics'
-  );
 };
 
 class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
@@ -125,11 +120,11 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
     }
   };
 
-  handleFetchSuccess = (xml: string, parsedDiagramXml: any) => {
-    this.state.diagramModel = parsedDiagramXml;
+  handleFetchSuccess = (xml: string, diagramModel: DiagramModel) => {
+    this.state.diagramModel = diagramModel;
     this.state.xml = xml;
     this.state.nodeMetaDataMap = createNodeMetaDataMap(
-      getSelectableFlowNodes(parsedDiagramXml.bpmnElements)
+      getSelectableFlowNodes(diagramModel.elementsById)
     );
     this.state.status = 'fetched';
   };
@@ -162,8 +157,8 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
   };
 
   getFlowNode = (flowNodeId: string) => {
-    const flowNodes = getFlowNodes(this.state.diagramModel?.bpmnElements);
-    return flowNodes.find((flowNode: any) => flowNode.id === flowNodeId);
+    const flowNodes = getFlowNodes(this.state.diagramModel?.elementsById);
+    return flowNodes.find((flowNode) => flowNode.id === flowNodeId);
   };
 
   getFlowNodeParents = (flowNode?: BusinessObject): string[] => {
@@ -196,7 +191,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
 
   get flowNodes() {
     const allFlowNodes: BusinessObject[] = getFlowNodes(
-      this.state.diagramModel?.bpmnElements
+      this.state.diagramModel?.elementsById
     );
 
     return allFlowNodes.map((flowNode) => {
@@ -264,12 +259,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
 
   get areDiagramDefinitionsAvailable() {
     const {status, diagramModel} = this.state;
-
-    return (
-      status === 'fetched' &&
-      // @ts-expect-error
-      diagramModel?.definitions !== undefined
-    );
+    return status === 'fetched' && diagramModel !== null;
   }
 
   get hasCalledProcessInstances() {

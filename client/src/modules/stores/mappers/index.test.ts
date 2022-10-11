@@ -72,8 +72,14 @@ describe('mappers', () => {
           id: '1',
           name: 'element1',
           $type: 'type1',
+          $instanceOf: () => true,
         },
-        activity2: {id: '2', name: 'element2', $type: 'type2'},
+        activity2: {
+          id: '2',
+          name: 'element2',
+          $type: 'type2',
+          $instanceOf: () => true,
+        },
         activity3: {
           id: '3',
           name: 'element3',
@@ -81,6 +87,7 @@ describe('mappers', () => {
           extensionElements: {
             values: [{$type: 'value1'}],
           },
+          $instanceOf: () => true,
         },
         activity4: {
           id: '4',
@@ -89,6 +96,7 @@ describe('mappers', () => {
           extensionElements: {
             values: [{$type: 'zeebe:ioMapping'}],
           },
+          $instanceOf: () => true,
         },
         activity5: {
           id: '5',
@@ -106,6 +114,7 @@ describe('mappers', () => {
               },
             ],
           },
+          $instanceOf: () => true,
         },
       });
 

@@ -5,12 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import BpmnModdle from 'bpmn-moddle';
+import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
-const moddle = new BpmnModdle();
+const isWithinMultiInstance = (businessObject: BusinessObject) => {
+  return (
+    businessObject.$parent?.loopCharacteristics?.$type ===
+    'bpmn:MultiInstanceLoopCharacteristics'
+  );
+};
 
-function parseDiagramXML(xml: string) {
-  return moddle.fromXML(xml, 'bpmn:Definitions');
-}
-
-export {parseDiagramXML};
+export {isWithinMultiInstance};
