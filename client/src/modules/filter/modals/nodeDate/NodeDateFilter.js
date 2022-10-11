@@ -8,7 +8,15 @@
 import React, {useEffect, useState} from 'react';
 import classnames from 'classnames';
 
-import {Modal, Button, Form, DateRangeInput, BPMNDiagram, ClickBehavior} from 'components';
+import {
+  Modal,
+  Button,
+  Form,
+  DateRangeInput,
+  BPMNDiagram,
+  ClickBehavior,
+  LoadingIndicator,
+} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
@@ -30,7 +38,16 @@ export function NodeDateFilter({
   filterLevel,
 }) {
   const [selectedNodes, setSelectedNodes] = useState([]);
-  const [applyTo, setApplyTo] = useState(null);
+  const [applyTo, setApplyTo] = useState(() => {
+    const validDefinitions = definitions.filter(
+      (definition) => definition.versions.length && definition.tenantIds.length
+    );
+
+    return (
+      validDefinitions.find(({identifier}) => filterData?.appliedTo[0] === identifier) ||
+      validDefinitions[0]
+    );
+  });
   const [xml, setXml] = useState(null);
   const [dateRange, setDateRange] = useState({
     type: '',
@@ -41,23 +58,14 @@ export function NodeDateFilter({
   });
 
   useEffect(() => {
-    const validDefinitions = definitions.filter(
-      (definition) => definition.versions.length && definition.tenantIds.length
-    );
-
-    setApplyTo(
-      validDefinitions.find(({identifier}) => filterData?.appliedTo[0] === identifier) ||
-        validDefinitions[0]
-    );
-  }, [definitions, filterData?.appliedTo]);
-
-  useEffect(() => {
     if (applyTo) {
       setSelectedNodes([]);
       setXml(null);
       mightFail(
         loadProcessDefinitionXml(applyTo.key, applyTo.versions[0], applyTo.tenantIds[0]),
-        setXml,
+        (xml) => {
+          setXml(xml);
+        },
         showError
       );
     }
@@ -113,29 +121,34 @@ export function NodeDateFilter({
           applyTo={applyTo}
           setApplyTo={setApplyTo}
         />
-        <Form>
-          <p className="info">
-            {t('common.filter.nodeDateModal.info.' + filterType + '.' + filterLevel)}
-          </p>
-          <DateRangeInput
-            type={type}
-            unit={unit}
-            startDate={startDate}
-            endDate={endDate}
-            customNum={customNum}
-            onChange={(change) => setDateRange({...dateRange, ...change})}
-          />
-        </Form>
-        {xml && filterLevel === 'instance' && (
-          <div className="diagramContainer">
-            <BPMNDiagram xml={xml}>
-              <ClickBehavior
-                onClick={toggleNode}
-                selectedNodes={selectedNodes}
-                nodeTypes={['FlowNode']}
+        {!xml && <LoadingIndicator />}
+        {xml && (
+          <>
+            <Form>
+              <p className="info">
+                {t('common.filter.nodeDateModal.info.' + filterType + '.' + filterLevel)}
+              </p>
+              <DateRangeInput
+                type={type}
+                unit={unit}
+                startDate={startDate}
+                endDate={endDate}
+                customNum={customNum}
+                onChange={(change) => setDateRange({...dateRange, ...change})}
               />
-            </BPMNDiagram>
-          </div>
+            </Form>
+            {filterLevel === 'instance' && (
+              <div className="diagramContainer">
+                <BPMNDiagram xml={xml}>
+                  <ClickBehavior
+                    onClick={toggleNode}
+                    selectedNodes={selectedNodes}
+                    nodeTypes={['FlowNode']}
+                  />
+                </BPMNDiagram>
+              </div>
+            )}
+          </>
         )}
       </Modal.Content>
       <Modal.Actions>

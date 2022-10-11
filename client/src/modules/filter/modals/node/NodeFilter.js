@@ -5,9 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 
-import {Modal, ButtonGroup, Button, BPMNDiagram, ClickBehavior} from 'components';
+import {Modal, ButtonGroup, Button, BPMNDiagram, ClickBehavior, LoadingIndicator} from 'components';
 import {t} from 'translation';
 import {loadProcessDefinitionXml} from 'services';
 import {withErrorHandling} from 'HOC';
@@ -19,157 +19,143 @@ import NodeListPreview from './NodeListPreview';
 
 import './NodeFilter.scss';
 
-export class NodeFilter extends React.Component {
-  constructor(props) {
-    super(props);
-
-    const {filterData} = this.props;
-
-    this.state = {
-      selectedNodes: filterData?.data.values ?? [],
-      operator: filterData?.data ? filterData?.data.operator : 'in',
-      type: filterData?.type ?? 'executedFlowNodes',
-      applyTo: null,
-      xml: null,
-    };
-  }
-
-  componentDidMount() {
-    const validDefinitions = this.props.definitions.filter(
+export function NodeFilter({filterData, definitions, mightFail, close, addFilter}) {
+  const [selectedNodes, setSelectedNodes] = useState([]);
+  const [applyTo, setApplyTo] = useState(() => {
+    const validDefinitions = definitions.filter(
       (definition) => definition.versions.length && definition.tenantIds.length
     );
 
-    this.updateXml(
-      validDefinitions.find(({identifier}) => this.props.filterData?.appliedTo[0] === identifier) ||
-        validDefinitions[0]
+    return (
+      validDefinitions.find(({identifier}) => filterData?.appliedTo[0] === identifier) ||
+      validDefinitions[0]
     );
-  }
+  });
+  const [xml, setXml] = useState(null);
+  const [operator, setOperator] = useState(filterData?.data ? filterData?.data.operator : 'in');
+  const [type, setType] = useState(filterData?.type ?? 'executedFlowNodes');
 
-  async componentDidUpdate(prevProps, prevState) {
-    if (prevState.applyTo && prevState.applyTo !== this.state.applyTo) {
-      this.setState({selectedNodes: []});
-      await this.updateXml(this.state.applyTo);
+  useEffect(() => {
+    if (applyTo) {
+      setXml(null);
+      setSelectedNodes([]);
+      mightFail(
+        loadProcessDefinitionXml(applyTo.key, applyTo.versions[0], applyTo.tenantIds[0]),
+        setXml,
+        showError
+      );
     }
-  }
+  }, [applyTo, mightFail]);
 
-  updateXml = (applyTo) => {
-    this.setState({xml: null});
-    return this.props.mightFail(
-      loadProcessDefinitionXml(applyTo.key, applyTo.versions[0], applyTo.tenantIds[0]),
-      (xml) => {
-        this.setState({xml, applyTo});
-      },
-      showError
-    );
-  };
+  useEffect(() => {
+    if (!filterData) {
+      return;
+    }
 
-  toggleNode = (toggledNode) => {
-    if (this.state.selectedNodes.includes(toggledNode)) {
-      this.setState({
-        selectedNodes: this.state.selectedNodes.filter((node) => node !== toggledNode),
-      });
+    setSelectedNodes(filterData.data.values);
+  }, [filterData]);
+
+  const toggleNode = (toggledNode) => {
+    if (selectedNodes.includes(toggledNode)) {
+      setSelectedNodes(selectedNodes.filter((node) => node !== toggledNode));
     } else {
-      this.setState({
-        selectedNodes: this.state.selectedNodes.concat([toggledNode]),
-      });
+      setSelectedNodes(selectedNodes.concat([toggledNode]));
     }
   };
 
-  createFilter = () => {
-    const values = this.state.selectedNodes.map((node) => node.id);
-    const {operator, type} = this.state;
-    this.props.addFilter({
+  const createFilter = () => {
+    const values = selectedNodes.map((node) => node.id);
+    addFilter({
       type,
       data: {operator, values},
-      appliedTo: [this.state.applyTo.identifier],
+      appliedTo: [applyTo.identifier],
     });
   };
 
-  isNodeSelected = () => {
-    return this.state.selectedNodes.length > 0;
+  const isNodeSelected = () => {
+    return selectedNodes.length > 0;
   };
 
-  setSelectedNodes = (nodes) => {
-    this.setState({
-      selectedNodes: nodes,
-    });
+  const setTypeAndOperator = ({type, operator}) => {
+    setType(type);
+    setOperator(operator);
   };
 
-  render() {
-    const {close, filterData, definitions} = this.props;
-    const {selectedNodes, operator, type, applyTo, xml} = this.state;
-
-    return (
-      <Modal
-        open
-        onClose={close}
-        onConfirm={this.isNodeSelected() ? this.createFilter : undefined}
-        className="NodeFilter"
-        size="max"
-      >
-        <Modal.Header>
-          {t('common.filter.modalHeader', {
-            type: t('common.filter.types.flowNode'),
-          })}
-        </Modal.Header>
-        <Modal.Content className="modalContent">
-          <FilterSingleDefinitionSelection
-            availableDefinitions={definitions}
-            applyTo={applyTo}
-            setApplyTo={(applyTo) => this.setState({applyTo})}
-          />
-          <div className="preview">
-            <NodeListPreview nodes={selectedNodes} operator={operator} type={type} />
-          </div>
-          <ButtonGroup>
-            <Button
-              active={type === 'executingFlowNodes'}
-              onClick={() => this.setState({operator: undefined, type: 'executingFlowNodes'})}
-            >
-              {t('common.filter.nodeModal.executingFlowNodes')}
-            </Button>
-            <Button
-              active={operator === 'in'}
-              onClick={() => this.setState({operator: 'in', type: 'executedFlowNodes'})}
-            >
-              {t('common.filter.nodeModal.executedFlowNodes')}
-            </Button>
-            <Button
-              active={operator === 'not in'}
-              onClick={() => this.setState({operator: 'not in', type: 'executedFlowNodes'})}
-            >
-              {t('common.filter.nodeModal.notExecutedFlowNodes')}
-            </Button>
-            <Button
-              active={type === 'canceledFlowNodes'}
-              onClick={() => this.setState({operator: undefined, type: 'canceledFlowNodes'})}
-            >
-              {t('common.filter.nodeModal.canceledFlowNodes')}
-            </Button>
-          </ButtonGroup>
-          {xml && (
+  return (
+    <Modal
+      open
+      onClose={close}
+      onConfirm={isNodeSelected() ? createFilter : undefined}
+      className="NodeFilter"
+      size="max"
+    >
+      <Modal.Header>
+        {t('common.filter.modalHeader', {
+          type: t('common.filter.types.flowNode'),
+        })}
+      </Modal.Header>
+      <Modal.Content className="modalContent">
+        <FilterSingleDefinitionSelection
+          availableDefinitions={definitions}
+          applyTo={applyTo}
+          setApplyTo={setApplyTo}
+        />
+        {!xml && <LoadingIndicator />}
+        {xml && (
+          <>
+            <div className="preview">
+              <NodeListPreview nodes={selectedNodes} operator={operator} type={type} />
+            </div>
+            <ButtonGroup>
+              <Button
+                active={type === 'executingFlowNodes'}
+                onClick={() =>
+                  setTypeAndOperator({operator: undefined, type: 'executingFlowNodes'})
+                }
+              >
+                {t('common.filter.nodeModal.executingFlowNodes')}
+              </Button>
+              <Button
+                active={operator === 'in'}
+                onClick={() => setTypeAndOperator({operator: 'in', type: 'executedFlowNodes'})}
+              >
+                {t('common.filter.nodeModal.executedFlowNodes')}
+              </Button>
+              <Button
+                active={operator === 'not in'}
+                onClick={() => setTypeAndOperator({operator: 'not in', type: 'executedFlowNodes'})}
+              >
+                {t('common.filter.nodeModal.notExecutedFlowNodes')}
+              </Button>
+              <Button
+                active={type === 'canceledFlowNodes'}
+                onClick={() => setTypeAndOperator({operator: undefined, type: 'canceledFlowNodes'})}
+              >
+                {t('common.filter.nodeModal.canceledFlowNodes')}
+              </Button>
+            </ButtonGroup>
             <div className="diagramContainer">
               <BPMNDiagram xml={xml}>
                 <ClickBehavior
-                  setSelectedNodes={this.setSelectedNodes}
-                  onClick={this.toggleNode}
-                  selectedNodes={this.state.selectedNodes}
+                  setSelectedNodes={setSelectedNodes}
+                  onClick={toggleNode}
+                  selectedNodes={selectedNodes}
                 />
               </BPMNDiagram>
             </div>
-          )}
-        </Modal.Content>
-        <Modal.Actions>
-          <Button main onClick={close}>
-            {t('common.cancel')}
-          </Button>
-          <Button main primary disabled={!this.isNodeSelected()} onClick={this.createFilter}>
-            {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
-          </Button>
-        </Modal.Actions>
-      </Modal>
-    );
-  }
+          </>
+        )}
+      </Modal.Content>
+      <Modal.Actions>
+        <Button main onClick={close}>
+          {t('common.cancel')}
+        </Button>
+        <Button main primary disabled={!isNodeSelected()} onClick={createFilter}>
+          {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
+        </Button>
+      </Modal.Actions>
+    </Modal>
+  );
 }
 
 export default withErrorHandling(NodeFilter);
