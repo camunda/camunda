@@ -14,12 +14,12 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 
-public class AbstractTaskProcessor implements BpmnElementProcessor<ExecutableActivity> {
+public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableActivity> {
 
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
 
-  public AbstractTaskProcessor(
+  public UndefinedTaskProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior) {
     this.stateTransitionBehavior = stateTransitionBehavior;

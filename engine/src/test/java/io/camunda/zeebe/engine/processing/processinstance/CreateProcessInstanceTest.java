@@ -201,7 +201,7 @@ public final class CreateProcessInstanceTest {
   }
 
   @Test
-  public void shouldCompleteAbstractTask() {
+  public void shouldCompleteUndefinedTask() {
     // given
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process").startEvent().task().endEvent().done();

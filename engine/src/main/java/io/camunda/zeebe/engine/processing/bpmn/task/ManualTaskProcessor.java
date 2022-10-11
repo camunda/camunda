@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.task;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 
-public class ManualTaskProcessor extends AbstractTaskProcessor {
+public class ManualTaskProcessor extends UndefinedTaskProcessor {
 
   public ManualTaskProcessor(
       final BpmnBehaviors bpmnBehaviors,

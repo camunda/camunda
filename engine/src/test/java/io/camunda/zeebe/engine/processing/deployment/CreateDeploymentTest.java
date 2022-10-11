@@ -468,7 +468,7 @@ public final class CreateDeploymentTest {
   }
 
   @Test
-  public void shouldDeployProcessModelWithAbstractTask() {
+  public void shouldDeployProcessModelWithUndefinedTask() {
     // when
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process").startEvent().task().endEvent().done();

@@ -384,7 +384,7 @@ public final class BpmnElementTypeTest {
                   .done();
             }
           },
-          new BpmnElementTypeScenario("Abstract Task", BpmnElementType.TASK) {
+          new BpmnElementTypeScenario("Undefined Task", BpmnElementType.TASK) {
             @Override
             BpmnModelInstance modelInstance() {
               return Bpmn.createExecutableProcess(processId())
