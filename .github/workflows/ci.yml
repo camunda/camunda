@@ -565,6 +565,7 @@ jobs:
       checks: read
       pull-requests: write
     steps:
+      - uses: actions/checkout@v3
       - id: metadata
         name: Fetch dependency metadata
         uses: dependabot/fetch-metadata@v1.3.4
