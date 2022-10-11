@@ -1122,3 +1122,51 @@ test('variable renaming', async (t) => {
 
   await t.expect(e.viewSelect.textContent).contains('amount');
 });
+
+test('create report with two versions of the same process', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
+
+  const definition1 = e
+    .definitionElement('Invoice Receipt with alternative correlation variable')
+    .nth(0);
+
+  await t.click(e.definitionCopyButton(definition1));
+
+  await t
+    .expect(e.definitionElement('Invoice Receipt with alternative correlation variable').count)
+    .eql(2);
+
+  const definition2 = e
+    .definitionElement('Invoice Receipt with alternative correlation variable')
+    .nth(1);
+
+  await u.selectVersion(t, definition1, [5]);
+  await u.selectVersion(t, definition2, [4]);
+
+  await t.click(e.definitionEditButton(definition1));
+  await t.click(e.versionPopover);
+
+  await t.takeElementScreenshot(
+    '.DefinitionEditor',
+    'additional-features/img/process-version-selection.png'
+  );
+
+  await t.click(e.definitionEditButton(definition1));
+
+  await t.expect(e.definitionElement('Version: 5').exists).ok();
+  await t.expect(e.definitionElement('Version: 4').exists).ok();
+
+  await u.selectView(t, 'Process Instance', 'Duration');
+  await u.selectGroupby(t, 'Process');
+
+  await t.click(e.configurationButton);
+  await t.click(e.selectSwitchLabel('Show Absolute Value'));
+  await t.click(e.configurationButton);
+
+  await t
+    .resizeWindow(1600, 800)
+    .takeScreenshot('additional-features/img/report-with-process-variants.png', {
+      fullPage: true,
+    });
+});

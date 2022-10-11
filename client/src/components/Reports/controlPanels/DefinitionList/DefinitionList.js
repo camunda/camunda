@@ -12,7 +12,7 @@ import useDeepCompareEffect from 'use-deep-compare-effect';
 import deepEqual from 'fast-deep-equal';
 
 import {Button, Icon, Popover, Tooltip} from 'components';
-import {withErrorHandling} from 'HOC';
+import {withDocs, withErrorHandling} from 'HOC';
 import {getCollection, formatters} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
@@ -32,6 +32,7 @@ export function DefinitionList({
   onChange,
   onRemove,
   onCopy,
+  docsLink,
 }) {
   const [openPopover, setOpenPopover] = useState();
   const [tenantInfo, setTenantInfo] = useState();
@@ -73,7 +74,12 @@ export function DefinitionList({
             <div className="actions">
               {!isDefinitionLimitReached && (
                 <Tooltip
-                  content={t('report.copyTooltip', {entity: t('common.process.label')})}
+                  content={t('report.copyTooltip', {
+                    entity: t('common.process.label'),
+                    docsLink:
+                      docsLink +
+                      'components/userguide/additional-features/process-variants-comparison/',
+                  })}
                   position="bottom"
                 >
                   <Button icon onClick={() => onCopy(idx)}>
@@ -114,4 +120,4 @@ export function DefinitionList({
   );
 }
 
-export default withRouter(withErrorHandling(DefinitionList));
+export default withRouter(withErrorHandling(withDocs(DefinitionList)));

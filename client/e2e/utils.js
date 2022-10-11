@@ -51,6 +51,22 @@ export async function createNewReport(t) {
   await t.click(Selector('.Modal .primary.confirm.Button'));
 }
 
+export async function selectVersion(t, selector, version) {
+  await t.click(selector.find('.Popover .Button'));
+  await t.click('.VersionPopover');
+
+  if (typeof version === 'string') {
+    await t.click(Selector('.label').withText(version));
+  } else {
+    await t.click(Selector('.label').withText('Specific versions'));
+    for (let i = 0; i < version.length; i++) {
+      await t.click(Selector('.specificVersions input[type="checkbox"]').nth(-version[i]));
+    }
+  }
+
+  await t.click(selector.find('.Popover .Button'));
+}
+
 export async function selectReportDefinition(t, name, version) {
   await t
     .click('.AddDefinition')
@@ -58,19 +74,7 @@ export async function selectReportDefinition(t, name, version) {
     .click('.Modal .primary.Button');
 
   if (version) {
-    await t.click(Selector('.DefinitionList li').withText(name).find('.Popover .Button'));
-    await t.click('.VersionPopover');
-
-    if (typeof version === 'string') {
-      await t.click(Selector('.label').withText(version));
-    } else {
-      await t.click(Selector('.label').withText('Specific versions'));
-      for (let i = 0; i < version.length; i++) {
-        await t.click(Selector('.specificVersions input[type="checkbox"]').nth(-version[i]));
-      }
-    }
-
-    await t.click(Selector('.DefinitionList li').withText(name).find('.Popover .Button'));
+    selectVersion(t, Selector('.DefinitionList li').withText(name), version);
   }
 }
 
