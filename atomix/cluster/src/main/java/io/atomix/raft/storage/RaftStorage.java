@@ -28,7 +28,9 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 
 /**
@@ -110,17 +112,30 @@ public final class RaftStorage {
    * @return indicates whether the lock was successfully acquired
    */
   public boolean lock(final String id) {
-    final File file = new File(directory, String.format(".%s.lock", prefix));
+    final File lockFile = new File(directory, String.format(".%s.lock", prefix));
+    final File tempLockFile = new File(directory, String.format(".%s.lock.tmp", id));
     try {
-      if (file.createNewFile()) {
-        Files.writeString(file.toPath(), id, StandardOpenOption.WRITE);
-        return true;
-      } else {
-        final String lock = Files.readString(file.toPath());
-        return lock != null && lock.equals(id);
+      if (!lockFile.exists()) {
+        // Create and update the file atomically
+        Files.writeString(
+            tempLockFile.toPath(),
+            id,
+            StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.SYNC);
+
+        // If two nodes tries to acquire lock, move will fail with FileAlreadyExistsException
+        FileUtil.moveDurably(
+            tempLockFile.toPath(), lockFile.toPath(), StandardCopyOption.ATOMIC_MOVE);
       }
+      // Read the lock file again to ensure that contents matches the local id
+      final String lock = Files.readString(lockFile.toPath());
+      return lock != null && lock.equals(id);
+    } catch (final FileAlreadyExistsException e) {
+      return false;
     } catch (final IOException e) {
-      throw new StorageException("Failed to acquire storage lock");
+      throw new StorageException("Failed to acquire storage lock", e);
     }
   }
 
