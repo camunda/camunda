@@ -867,4 +867,42 @@ public class CreateProcessInstanceAnywhereTest {
         .describedAs("Expected to create the timer only once")
         .containsOnlyOnce(TimerIntent.CREATED);
   }
+
+  @Test
+  public void shouldActivateParallelGateway() {
+    // Given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .parallelGateway("fork")
+                .userTask("A")
+                .moveToLastGateway()
+                .userTask("B")
+                .done())
+        .deploy();
+
+    // When
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withStartInstruction("fork").create();
+
+    // Then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit("fork", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .extracting(record -> record.getValue().getBpmnElementType(), Record::getIntent)
+        .describedAs("Expected to start process instance at parallel gateway")
+        .containsSequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.PARALLEL_GATEWAY, ProcessInstanceIntent.ACTIVATE_ELEMENT))
+        .containsSubsequence(
+            tuple(BpmnElementType.PARALLEL_GATEWAY, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.PARALLEL_GATEWAY, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContain(
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
 }
