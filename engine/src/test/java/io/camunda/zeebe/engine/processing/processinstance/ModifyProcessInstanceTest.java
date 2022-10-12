@@ -809,6 +809,47 @@ public class ModifyProcessInstanceTest {
         .isEqualTo(2);
   }
 
+  @Test
+  public void shouldActivateParallelGateway() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .parallelGateway("fork")
+                .serviceTask("A", a -> a.zeebeJobType("A"))
+                .endEvent()
+                .moveToNode("fork")
+                .serviceTask("B", b -> b.zeebeJobType("B"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    Assertions.assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .hasSize(2);
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("fork")
+        .modify();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(4))
+        .hasSize(4);
+  }
+
   private static void verifyThatRootElementIsActivated(
       final long processInstanceKey, final String elementId, final BpmnElementType elementType) {
     verifyThatElementIsActivated(processInstanceKey, elementId, elementType, processInstanceKey);
