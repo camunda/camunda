@@ -413,8 +413,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    *
    * @param committedEntry the most recently committed entry
    */
-  public void notifyCommitListeners(final IndexedRaftLogEntry committedEntry) {
-    commitListeners.forEach(listener -> listener.onCommit(committedEntry.index()));
+  public void notifyCommittedEntryListeners(final IndexedRaftLogEntry committedEntry) {
     committedEntryListeners.forEach(listener -> listener.onCommit(committedEntry));
   }
 
@@ -447,6 +446,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         stateChangeListeners.forEach(l -> l.accept(state));
       }
       replicationMetrics.setCommitIndex(commitIndex);
+      notifyCommitListeners(commitIndex);
     }
     return previousCommitIndex;
   }
