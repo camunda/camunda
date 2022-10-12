@@ -157,7 +157,8 @@ public class ProcessOverviewService {
       .keySet()
       .stream()
       .filter(completeDefKey -> {
-        Pattern pattern = Pattern.compile(String.format(PENDING_OWNER_UPDATE_TEMPLATE, "(.*)", "(.*)$"));
+        Pattern pattern = Pattern.compile(
+          String.format(PENDING_OWNER_UPDATE_TEMPLATE, "(.*)", processToBeOnboarded + "$"));
         return pattern.matcher(completeDefKey).matches();
       })
       .forEach(completeDefKey -> {
