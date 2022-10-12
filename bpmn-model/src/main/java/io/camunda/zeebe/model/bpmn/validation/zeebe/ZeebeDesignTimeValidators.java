@@ -18,13 +18,13 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
-import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
 import io.camunda.zeebe.model.bpmn.instance.SendTask;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.ArrayList;
@@ -64,10 +64,7 @@ public final class ZeebeDesignTimeValidators {
             .hasSingleExtensionElement(
                 ZeebeLoopCharacteristics.class, ZeebeConstants.ELEMENT_LOOP_CHARACTERISTICS));
     validators.add(new ProcessValidator());
-    validators.add(
-        ExtensionElementsValidator.verifyThat(ScriptTask.class)
-            .hasSingleExtensionElement(
-                ZeebeTaskDefinition.class, ZeebeConstants.ELEMENT_TASK_DEFINITION));
+    validators.add(new ScriptTaskValidation());
     validators.add(new SequenceFlowValidator());
     validators.add(
         ExtensionElementsValidator.verifyThat(SendTask.class)
@@ -106,6 +103,11 @@ public final class ZeebeDesignTimeValidators {
                 ZeebeCalledDecision::getDecisionId, ZeebeConstants.ATTRIBUTE_DECISION_ID)
             .hasNonEmptyAttribute(
                 ZeebeCalledDecision::getResultVariable, ZeebeConstants.ATTRIBUTE_RESULT_VARIABLE));
+    validators.add(
+        ZeebeElementValidator.verifyThat(ZeebeScript.class)
+            .hasNonEmptyAttribute(ZeebeScript::getExpression, ZeebeConstants.ATTRIBUTE_EXPRESSION)
+            .hasNonEmptyAttribute(
+                ZeebeScript::getResultVariable, ZeebeConstants.ATTRIBUTE_RESULT_VARIABLE));
     validators.add(new SignalEventDefinitionValidator());
     validators.add(new SignalValidator());
     validators.add(new LinkEventDefinitionValidator());

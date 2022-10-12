@@ -45,6 +45,8 @@ public class ZeebeConstants {
 
   public static final String ATTRIBUTE_DECISION_ID = "decisionId";
 
+  public static final String ATTRIBUTE_EXPRESSION = "expression";
+
   public static final String ATTRIBUTE_RESULT_VARIABLE = "resultVariable";
 
   public static final String ELEMENT_HEADER = "header";
@@ -52,6 +54,7 @@ public class ZeebeConstants {
   public static final String ELEMENT_IO_MAPPING = "ioMapping";
   public static final String ELEMENT_OUTPUT = "output";
 
+  public static final String ELEMENT_SCRIPT = "script";
   public static final String ELEMENT_SUBSCRIPTION = "subscription";
 
   public static final String ELEMENT_TASK_DEFINITION = "taskDefinition";
