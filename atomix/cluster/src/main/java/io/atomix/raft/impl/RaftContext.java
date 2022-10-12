@@ -216,6 +216,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     // Register protocol listeners.
     registerHandlers(protocol);
     started = true;
+
+    addCommitListener(new AwaitingReadyCommitListener());
   }
 
   private void setSnapshot(final PersistedSnapshot persistedSnapshot) {
@@ -437,13 +439,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       final long configurationIndex = cluster.getConfiguration().index();
       if (configurationIndex > previousCommitIndex && configurationIndex <= commitIndex) {
         cluster.commit();
-      }
-      setFirstCommitIndex(commitIndex);
-      // On start up, set the state to READY after the follower has caught up with the leader
-      // https://github.com/zeebe-io/zeebe/issues/4877
-      if (state == State.ACTIVE && commitIndex >= firstCommitIndex) {
-        state = State.READY;
-        stateChangeListeners.forEach(l -> l.accept(state));
       }
       replicationMetrics.setCommitIndex(commitIndex);
       notifyCommitListeners(commitIndex);
@@ -1158,5 +1153,29 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     NONE,
     STARTED,
     COMPLETED
+  }
+
+  /** Commit listener is active only until the server is ready * */
+  class AwaitingReadyCommitListener implements RaftCommitListener {
+    private long lastLogTime = System.currentTimeMillis();
+
+    @Override
+    public void onCommit(final long index) {
+      setFirstCommitIndex(index);
+      // On start up, set the state to READY after the follower has caught up with the leader
+      // https://github.com/zeebe-io/zeebe/issues/4877
+      if (index >= firstCommitIndex) {
+        state = State.READY;
+        log.info("Commit index is {}. RaftServer is ready", index);
+        stateChangeListeners.forEach(l -> l.accept(state));
+        removeCommitListener(this);
+      } else if (System.currentTimeMillis() - lastLogTime >= 30_000) { // log every 30 seconds
+        lastLogTime = System.currentTimeMillis();
+        log.info(
+            "Commit index is {}. RaftServer is ready only after it has committed events up to index {}",
+            commitIndex,
+            firstCommitIndex);
+      }
+    }
   }
 }
