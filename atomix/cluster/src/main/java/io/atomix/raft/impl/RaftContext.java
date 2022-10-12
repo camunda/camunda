@@ -120,7 +120,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private volatile long term;
   private MemberId lastVotedFor;
   private long commitIndex;
-  private volatile long firstCommitIndex;
+  private long firstCommitIndex;
   private volatile boolean started;
   private EntryValidator entryValidator;
   // Used for randomizing election timeout
