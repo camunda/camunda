@@ -12,7 +12,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_PROXY;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROXY;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -32,12 +32,12 @@ public class ProxyConfiguration {
     if (this.enabled) {
       if (host == null || host.isEmpty()) {
         throw new OptimizeConfigurationException(
-          ELASTIC_SEARCH_PROXY + ".host must be set and not empty if proxy is enabled"
+          ELASTICSEARCH_PROXY + ".host must be set and not empty if proxy is enabled"
         );
       }
       if (port == null) {
         throw new OptimizeConfigurationException(
-          ELASTIC_SEARCH_PROXY + ".port must be set and not empty if proxy is enabled"
+          ELASTICSEARCH_PROXY + ".port must be set and not empty if proxy is enabled"
         );
       }
     }

@@ -9,11 +9,11 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.ProcessOverviewService;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.reader.ProcessInstanceReader;
+import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.importing.CustomerOnboardingDataImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -29,8 +29,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import static java.util.stream.Collectors.toSet;
-
 @EqualsAndHashCode(callSuper = true)
 @RequiredArgsConstructor
 @Component
@@ -39,53 +37,54 @@ import static java.util.stream.Collectors.toSet;
 public class OnboardingSchedulerService extends AbstractScheduledService implements ConfigurationReloadable {
 
   private final ProcessDefinitionReader processDefinitionReader;
+  private final ProcessDefinitionWriter processDefinitionWriter;
   private final ProcessInstanceReader processInstanceReader;
   private final ConfigurationService configurationService;
   private final OnboardingNotificationService onboardingNotificationService;
   private final ProcessOverviewService processOverviewService;
   private final CustomerOnboardingDataImportService onboardingDataService;
 
-  private Set<String> onboardedProcessDefinitions = new HashSet<>();
   private int intervalToCheckForOnboardingDataInSeconds;
   private Function<String, Object> notificationHandler;
 
   @PostConstruct
   public void init() {
-    // Check no more often than every 60s, recommended 180 (3min)
-    setIntervalToCheckForOnboardingDataInSeconds(
-      Math.max(60, configurationService.getOnboarding().getIntervalForCheckingTriggerForOnboardingEmails()));
-    log.info("Initializing OnboardingScheduler");
-    onboardedProcessDefinitions = new HashSet<>();
-    for (String processToBeEvaluated : getAllProcessDefinitionKeys()) {
-      if (processHasCompletedInstance(processToBeEvaluated)) {
-        onboardedProcessDefinitions.add(processToBeEvaluated);
+    setUpScheduler();
+  }
+
+  public void setUpScheduler() {
+    if (configurationService.getOnboarding().isScheduleProcessOnboardingChecks()) {
+      // Check no more often than every 60s, recommended 180 (3min)
+      setIntervalToCheckForOnboardingDataInSeconds(
+        Math.max(60, configurationService.getOnboarding().getIntervalForCheckingTriggerForOnboardingEmails()));
+      log.info("Initializing OnboardingScheduler");
+      if (configurationService.getOnboarding().isEnableOnboardingEmails()) {
+        this.setNotificationHandler(processKey -> {
+          onboardingNotificationService.notifyOnboardingWithErrorHandling(processKey);
+          return processKey;
+        });
+      } else {
+        log.info("Onboarding E-Mails deactivated by configuration");
       }
+      startOnboardingScheduling();
+    } else {
+      log.info("Will not schedule checks for process onboarding state as this is disabled by configuration");
     }
-    if (configurationService.getOnboarding().isEnableOnboardingEmails()) {
-      this.setNotificationHandler(processKey -> {
-        onboardingNotificationService.notifyOnboardingWithErrorHandling(processKey);
-        return processKey;
-      });
-    }
-    else {
-      log.info("Onboarding E-Mails deactivated by configuration");
-    }
-    startOnboardingScheduling();
   }
 
   public void checkIfNewOnboardingDataIsPresent() {
-    Set<String> processesNotYetOnboarded = getAllProcessDefinitionKeys();
-    processesNotYetOnboarded.removeAll(onboardedProcessDefinitions);
-    // Demo onboarding data does not count as new data, therefore remove it
-    processesNotYetOnboarded.removeAll(onboardingDataService.getImportedDemoProcessDefinitionKeys());
-    for (String processToBeOnboarded : processesNotYetOnboarded) {
+    Set<String> processesNewlyOnboarded = new HashSet<>();
+    for (String processToBeOnboarded : processDefinitionReader.getAllNonOnboardedProcessDefinitionKeys()) {
       resolveAnyPendingOwnerAuthorizations(processToBeOnboarded);
       if (processHasCompletedInstance(processToBeOnboarded)) {
         if (configurationService.getOnboarding().isEnableOnboardingEmails()) {
           triggerOnboardingForProcess(processToBeOnboarded);
         }
-        onboardedProcessDefinitions.add(processToBeOnboarded);
+        processesNewlyOnboarded.add(processToBeOnboarded);
       }
+    }
+    if (!processesNewlyOnboarded.isEmpty()) {
+      processDefinitionWriter.markDefinitionKeysAsOnboarded(processesNewlyOnboarded);
     }
   }
 
@@ -94,9 +93,9 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
     init();
   }
 
-  public synchronized boolean startOnboardingScheduling() {
+  public synchronized void startOnboardingScheduling() {
     log.info("Starting onboarding scheduling");
-    return startScheduling();
+    startScheduling();
   }
 
   @PreDestroy
@@ -130,11 +129,4 @@ public class OnboardingSchedulerService extends AbstractScheduledService impleme
     notificationHandler.apply(processToBeOnboarded);
   }
 
-  private Set<String> getAllProcessDefinitionKeys() {
-    return processDefinitionReader.getAllProcessDefinitions()
-      .stream()
-      .filter(definition -> !definition.isEventBased())
-      .map(ProcessDefinitionOptimizeDto::getKey)
-      .collect(toSet());
-  }
 }

@@ -73,6 +73,50 @@ public class OnboardingDashboardCreationService {
   private final CollectionScopeService collectionScopeService;
   private CollectionRoleService collectionRoleService;
 
+  public void addUserAsEditorToAutomaticallyCreatedCollection(final String collectionId, final String userId) {
+    IdentityDto user = new IdentityDto(userId, IdentityType.USER);
+    collectionRoleService.addUserAsEditorToAutomaticallyCreatedCollection(collectionId, user);
+  }
+
+  public void createNewDashboardForProcess(final String userId, final String processId) {
+    DefinitionResponseDto definition = definitionService.getDefinitionWithAvailableTenants(
+        DefinitionType.PROCESS,
+        processId,
+        userId
+      )
+      .orElseThrow(() -> {
+        final String reason =
+          String.format("Did not automatically create dashboard for process [%s] because it doesn't " +
+                          "exist.", processId);
+        log.error(reason);
+        return new NotFoundException(reason);
+      });
+    List<String> tenants = definition.getTenants().stream().map(TenantDto::getId).collect(
+      Collectors.toList());
+
+    Optional<String> createdCollectionId = createCollectionForDashboard(userId, processId, tenants, definition.getName());
+    if (createdCollectionId.isPresent()) {
+      final Optional<ProcessDefinitionOptimizeDto> definitionWithXml =
+        definitionService.getDefinitionWithXml(DefinitionType.PROCESS, userId, processId, "all", tenants.get(0));
+
+      if (definitionWithXml.isEmpty()) {
+        final String reason =
+          String.format("Did not automatically create dashboard for process [%s] because it doesn't exist.", processId);
+        log.error(reason);
+        throw new NotFoundException(reason);
+      }
+      List<ReportLocationDto> dashboardReports =
+        generateReportsAutomaticallyForDashboard(userId, processId, createdCollectionId.get(), tenants, definitionWithXml.get());
+
+      DashboardDefinitionRestDto dashboardDef = new DashboardDefinitionRestDto();
+      dashboardDef.setReports(dashboardReports);
+      dashboardDef.setCollectionId(createdCollectionId.get());
+      dashboardDef.setName(definition.getName());
+      collectionService.updatePartialCollection(userId, createdCollectionId.get(), new PartialCollectionDefinitionRequestDto());
+      dashboardService.createNewDashboardWithPresetId(userId, dashboardDef, processId);
+    }
+  }
+
   private List<ReportLocationDto> generateReportsAutomaticallyForDashboard(final String userId,
                                                                            final String processId,
                                                                            final String collectionId,
@@ -92,7 +136,7 @@ public class OnboardingDashboardCreationService {
     ReportLocationDto p75Duration = new ReportLocationDto();
     p75Duration.setId(createInstanceDurationReport(userId, processId, collectionId, "75", durationTargetBelow24Hours,
                                                    tenants
-                                                   ).getId());
+    ).getId());
     p75Duration.setPosition(new PositionDto(3, 0));
     p75Duration.setDimensions(new DimensionDto(4, 2));
     dashboardReports.add(p75Duration);
@@ -102,8 +146,8 @@ public class OnboardingDashboardCreationService {
     durationTargetBelow7Days.setValue("7");
     durationTargetBelow7Days.setUnit(TargetValueUnit.DAYS);
     ReportLocationDto p99Duration = new ReportLocationDto();
-    p99Duration.setId(createInstanceDurationReport(userId, processId, collectionId, "99", durationTargetBelow7Days,
-                                                   tenants).getId());
+    p99Duration.setId(createInstanceDurationReport(
+      userId, processId, collectionId, "99", durationTargetBelow7Days, tenants).getId());
     p99Duration.setPosition(new PositionDto(7, 0));
     p99Duration.setDimensions(new DimensionDto(4, 2));
     dashboardReports.add(p99Duration);
@@ -122,10 +166,10 @@ public class OnboardingDashboardCreationService {
 
     ReportLocationDto heatMap1 = new ReportLocationDto();
     heatMap1.setId(
-      createDurationHeatmapReport(userId, processId, collectionId,
-                                  ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE,
-                                  "Which process steps take too much time?", tenants,
-                                  definitionWithXml.getBpmn20Xml()).getId());
+      createDurationHeatmapReport(
+        userId, processId, collectionId, ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE,
+        "Which process steps take too much time?", tenants, definitionWithXml.getBpmn20Xml()
+      ).getId());
     heatMap1.setPosition(new PositionDto(0, 2));
     heatMap1.setDimensions(new DimensionDto(9, 5));
     dashboardReports.add(heatMap1);
@@ -137,10 +181,10 @@ public class OnboardingDashboardCreationService {
     dashboardReports.add(controlChart);
 
     ReportLocationDto heatMap2 = new ReportLocationDto();
-    heatMap2.setId(createFrequencyHeatmapReport(userId, processId, collectionId,
-                                                ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE,
-                                                "How often is each process step run?", tenants,
-                                                definitionWithXml.getBpmn20Xml()).getId());
+    heatMap2.setId(createFrequencyHeatmapReport(
+      userId, processId, collectionId, ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE,
+      "How often is each process step run?", tenants, definitionWithXml.getBpmn20Xml()
+    ).getId());
     heatMap2.setPosition(new PositionDto(0, 7));
     heatMap2.setDimensions(new DimensionDto(9, 5));
     dashboardReports.add(heatMap2);
@@ -152,22 +196,20 @@ public class OnboardingDashboardCreationService {
     dashboardReports.add(barReport);
 
     ReportLocationDto heatMap3 = new ReportLocationDto();
-    heatMap3.setId(createFrequencyHeatmapReport(userId, processId, collectionId,
-                                                ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_FLOW_NODE,
-                                                "Where are the active incidents?",
-                                                tenants,
-                                                definitionWithXml.getBpmn20Xml()).getId());
+    heatMap3.setId(createFrequencyHeatmapReport(
+      userId, processId, collectionId, ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_FLOW_NODE,
+      "Where are the active incidents?", tenants, definitionWithXml.getBpmn20Xml()
+    ).getId());
     heatMap3.setPosition(new PositionDto(0, 12));
     heatMap3.setDimensions(new DimensionDto(9, 5));
     dashboardReports.add(heatMap3);
 
     ReportLocationDto heatMap4 = new ReportLocationDto();
     heatMap4.setId(
-      createDurationHeatmapReport(userId, processId, collectionId,
-                                  ProcessReportDataType.INCIDENT_DUR_GROUP_BY_FLOW_NODE,
-                                  "Where are the worst incidents",
-                                  tenants,
-                                  definitionWithXml.getBpmn20Xml()).getId());
+      createDurationHeatmapReport(
+        userId, processId, collectionId, ProcessReportDataType.INCIDENT_DUR_GROUP_BY_FLOW_NODE,
+        "Where are the worst incidents", tenants, definitionWithXml.getBpmn20Xml()
+      ).getId());
     heatMap4.setPosition(new PositionDto(9, 12));
     heatMap4.setDimensions(new DimensionDto(9, 5));
     dashboardReports.add(heatMap4);
@@ -496,65 +538,13 @@ public class OnboardingDashboardCreationService {
     final PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto =
       new PartialCollectionDefinitionRequestDto();
     partialCollectionDefinitionDto.setName(collectionName);
-    final Optional<IdResponseDto> response = collectionService.createNewCollectionWithPresetId (
-      userId, partialCollectionDefinitionDto, processId,true);
+    final Optional<IdResponseDto> response = collectionService.createNewCollectionWithPresetId(
+      userId, partialCollectionDefinitionDto, processId, true);
     return response.map(res -> {
-        CollectionScopeEntryDto scopeUpdate = new CollectionScopeEntryDto(DefinitionType.PROCESS, processId, tenants);
-        collectionScopeService.addScopeEntriesToCollection(userId, res.getId(), List.of(scopeUpdate));
-        return res.getId();
-      });
+      CollectionScopeEntryDto scopeUpdate = new CollectionScopeEntryDto(DefinitionType.PROCESS, processId, tenants);
+      collectionScopeService.addScopeEntriesToCollection(userId, res.getId(), List.of(scopeUpdate));
+      return res.getId();
+    });
   }
 
-  public void addUserAsEditorToAutomaticallyCreatedCollection(final String collectionId, final String userId) {
-    IdentityDto user = new IdentityDto(userId, IdentityType.USER);
-    collectionRoleService.addUserAsEditorToAutomaticallyCreatedCollection(collectionId, user);
-  }
-
-  public IdResponseDto createNewDashboardForProcess(final String userId, final String processId) {
-    DefinitionResponseDto definition = definitionService.getDefinitionWithAvailableTenants(
-        DefinitionType.PROCESS,
-        processId,
-        userId
-      )
-      .orElseThrow(() -> {
-        final String reason =
-          String.format("Did not automatically create dashboard for process [%s] because it doesn't " +
-                          "exist.", processId);
-        log.error(reason);
-        return new NotFoundException(reason);
-      });
-    List<String> tenants = definition.getTenants().stream().map(TenantDto::getId).collect(
-      Collectors.toList());
-
-    Optional<String> createdCollectionId = createCollectionForDashboard(userId, processId, tenants, definition.getName());
-    if (createdCollectionId.isPresent()) {
-      final Optional<ProcessDefinitionOptimizeDto> definitionWithXml =
-        definitionService.getDefinitionWithXml(DefinitionType.PROCESS, userId, processId, "all", tenants.get(0));
-
-      return definitionWithXml.map(def -> {
-        List<ReportLocationDto> dashboardReports =
-          generateReportsAutomaticallyForDashboard(userId, processId, createdCollectionId.get(), tenants, def);
-
-        DashboardDefinitionRestDto dashboardDef = new DashboardDefinitionRestDto();
-        dashboardDef.setReports(dashboardReports);
-        dashboardDef.setCollectionId(createdCollectionId.get());
-        dashboardDef.setName(definition.getName());
-        collectionService.updatePartialCollection(userId, createdCollectionId.get(), new PartialCollectionDefinitionRequestDto());
-        return dashboardService.createNewDashboardWithPresetId(userId, dashboardDef, processId).get();
-      }).orElseThrow(() -> {
-        final String reason =
-          String.format("Did not automatically create dashboard for process [%s] because it doesn't " +
-                          "exist.", processId);
-        log.error(reason);
-        return new NotFoundException(reason);
-      });
-    } else {
-      IdResponseDto id = new IdResponseDto(processId);
-      if (dashboardService.getAllDashboardIdsInCollection(processId).contains(id)) {
-        return id;
-      } else {
-        return null;
-      }
-    }
-  }
 }

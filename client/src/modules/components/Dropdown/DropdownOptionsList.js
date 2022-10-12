@@ -9,6 +9,7 @@ import React, {useEffect, useState, useRef} from 'react';
 import classnames from 'classnames';
 
 import {Select} from 'components';
+import {ignoreFragments} from 'services';
 
 import DropdownOption from './DropdownOption';
 import Submenu from './Submenu';
@@ -69,7 +70,7 @@ export default function DropdownOptionsList({open, closeParent, children, classN
 
   return (
     <ul className={classnames('DropdownOptionsList', className)} ref={optionsListRef} {...props}>
-      {React.Children.map(children, (child, idx) => (
+      {React.Children.map(ignoreFragments(children), (child, idx) => (
         <li key={idx}>{renderChild(child, idx)}</li>
       ))}
     </ul>

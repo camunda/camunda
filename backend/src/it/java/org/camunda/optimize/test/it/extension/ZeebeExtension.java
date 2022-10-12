@@ -85,7 +85,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
         .build();
   }
 
-  public Process deployProcess(BpmnModelInstance bpmnModelInstance) {
+  public Process deployProcess(final BpmnModelInstance bpmnModelInstance) {
     final DeployResourceCommandStep1 deployResourceCommandStep1 = zeebeClient.newDeployResourceCommand();
     deployResourceCommandStep1.addProcessModel(bpmnModelInstance, "resourceName.bpmn");
     final DeploymentEvent deploymentEvent =
@@ -95,7 +95,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     return deploymentEvent.getProcesses().get(0);
   }
 
-  public long startProcessInstanceWithVariables(String bpmnProcessId, Map<String, Object> variables) {
+  public long startProcessInstanceWithVariables(final String bpmnProcessId, final Map<String, Object> variables) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 createProcessInstanceCommandStep3 =
       zeebeClient
         .newCreateInstanceCommand()
@@ -105,7 +105,18 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     return createProcessInstanceCommandStep3.send().join().getProcessInstanceKey();
   }
 
-  public void addVariablesToScope(Long variableScopeKey, Map<String, Object> variables, boolean local) {
+  public void startProcessInstanceBeforeElementWithIds(final String bpmnProcessId, final String... elementIds) {
+    final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 createProcessInstanceCommandStep3 =
+      zeebeClient.newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .latestVersion();
+    for (String elementId : elementIds) {
+      createProcessInstanceCommandStep3.startBeforeElement(elementId);
+    }
+    createProcessInstanceCommandStep3.send().join().getProcessInstanceKey();
+  }
+
+  public void addVariablesToScope(final Long variableScopeKey, final Map<String, Object> variables, final boolean local) {
     zeebeClient
       .newSetVariablesCommand(variableScopeKey)
       .variables(variables)
@@ -114,28 +125,28 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
       .join();
   }
 
-  public void setClock(Instant pinAt) throws IOException, InterruptedException {
+  public void setClock(final Instant pinAt) throws IOException, InterruptedException {
     final ClockActuatorClient clockClient = new ClockActuatorClient(zeebeContainer.getExternalMonitoringAddress());
     clockClient.pinZeebeTime(pinAt);
   }
 
-  public ProcessInstanceEvent startProcessInstanceForProcess(String processId) {
+  public ProcessInstanceEvent startProcessInstanceForProcess(final String processId) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 startInstanceCommand =
       zeebeClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion();
     return startInstanceCommand.send().join();
   }
 
-  public void cancelProcessInstance(long processInstanceKey) {
+  public void cancelProcessInstance(final long processInstanceKey) {
     zeebeClient.newCancelInstanceCommand(processInstanceKey).send().join();
   }
 
   @SneakyThrows
-  public void completeTaskForInstanceWithJobType(String jobType) {
+  public void completeTaskForInstanceWithJobType(final String jobType) {
     completeTaskForInstanceWithJobType(jobType, null);
   }
 
   @SneakyThrows
-  public void completeTaskForInstanceWithJobType(String jobType, Map<String, Object> variables) {
+  public void completeTaskForInstanceWithJobType(final String jobType, final Map<String, Object> variables) {
     handleSingleJob(jobType, (zeebeClient, job) -> {
       CompleteJobCommandStep1 completeJobCommandStep1 = zeebeClient.newCompleteCommand(job.getKey());
       Optional.ofNullable(variables).ifPresent(completeJobCommandStep1::variables);
@@ -143,14 +154,14 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     });
   }
 
-  public void throwErrorIncident(String jobType) {
+  public void throwErrorIncident(final String jobType) {
     handleSingleJob(jobType, (zeebeClient, job) -> zeebeClient.newThrowErrorCommand(job.getKey())
       .errorCode("1")
       .errorMessage("someErrorMessage")
       .send().join());
   }
 
-  public void failTask(String jobType) {
+  public void failTask(final String jobType) {
     handleSingleJob(jobType, (zeebeClient, job) -> zeebeClient.newFailCommand(job.getKey())
       .retries(0)
       .errorMessage("someTaskFailMessage")
@@ -158,11 +169,11 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
       .join());
   }
 
-  public void resolveIncident(Long incidentKey) {
+  public void resolveIncident(final Long incidentKey) {
     zeebeClient.newResolveIncidentCommand(incidentKey).send().join();
   }
 
-  private void handleSingleJob(String jobType, JobHandler jobHandler) {
+  private void handleSingleJob(final String jobType, final JobHandler jobHandler) {
     AtomicBoolean jobCompleted = new AtomicBoolean(false);
     JobWorker jobWorker = zeebeClient.newWorker()
       .jobType(jobType)

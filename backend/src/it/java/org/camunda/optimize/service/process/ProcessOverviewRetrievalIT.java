@@ -31,12 +31,10 @@ import javax.ws.rs.core.Response;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.service.ProcessOverviewService.APP_CUE_DASHBOARD_SUFFIX;
 import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.MAGIC_LINK_TEMPLATE;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
@@ -253,7 +251,7 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
   }
 
   @Test
-  public void magicLinkHasAppCueSuffixIfItsClickedForTheFirstTime() {
+  public void magicLinkUrlContainsExpectedContent() {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(FIRST_PROCESS_DEFINITION_KEY));
     importAllEngineEntitiesFromScratch();
@@ -266,32 +264,8 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
       .equals(FIRST_PROCESS_DEFINITION_KEY))
       .singleElement()
       .satisfies(process -> assertThat(process.getLinkToDashboard()).isEqualTo(
-        String.format(MAGIC_LINK_TEMPLATE, "", FIRST_PROCESS_DEFINITION_KEY, FIRST_PROCESS_DEFINITION_KEY)
-          + APP_CUE_DASHBOARD_SUFFIX));
-  }
-
-  @Test
-  public void magicLinkHasNoAppCueSuffixIfItHasBeenClickedBefore() {
-    // given
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(SECOND_PROCESS_DEFINITION_KEY));
-    importAllEngineEntitiesFromScratch();
-    // "Click" the link once
-    entitiesClient.getEntityNames(SECOND_PROCESS_DEFINITION_KEY, SECOND_PROCESS_DEFINITION_KEY, null, null);
-    // Wait until everything is created
-    Awaitility.given().ignoreExceptions()
-      .timeout(5, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(collectionClient.getCollectionById(SECOND_PROCESS_DEFINITION_KEY)).isNotNull());
-
-    // when
-    final List<ProcessOverviewResponseDto> overviews = processOverviewClient.getProcessOverviews();
-
-    // then
-    assertThat(overviews).filteredOn(process -> process.getProcessDefinitionKey()
-      .equals(SECOND_PROCESS_DEFINITION_KEY))
-      .singleElement()
-      .satisfies(process -> assertThat(process.getLinkToDashboard()).isEqualTo(
         // No suffix
-        String.format(MAGIC_LINK_TEMPLATE, "", SECOND_PROCESS_DEFINITION_KEY, SECOND_PROCESS_DEFINITION_KEY)));
+        String.format(MAGIC_LINK_TEMPLATE, "", FIRST_PROCESS_DEFINITION_KEY, FIRST_PROCESS_DEFINITION_KEY)));
   }
 
   @Test

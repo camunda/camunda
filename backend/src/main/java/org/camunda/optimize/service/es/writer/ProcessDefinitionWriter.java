@@ -34,6 +34,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEF
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Component
 @Slf4j
@@ -51,6 +52,13 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
     ScriptType.INLINE,
     Script.DEFAULT_SCRIPT_LANG,
     "ctx._source.deleted = true",
+    Collections.emptyMap()
+  );
+
+  private static final Script MARK_AS_ONBOARDED_SCRIPT = new Script(
+    ScriptType.INLINE,
+    Script.DEFAULT_SCRIPT_LANG,
+    "ctx._source.onboarded = true",
     Collections.emptyMap()
   );
 
@@ -109,6 +117,16 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
       log.debug("Marked old definitions with new deployments as deleted");
     }
     return definitionsUpdated.get();
+  }
+
+  public void markDefinitionKeysAsOnboarded(final Set<String> definitionKeys) {
+    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+      esClient,
+      "process definitions onboarded state",
+      MARK_AS_ONBOARDED_SCRIPT,
+      boolQuery().must(termsQuery(PROCESS_DEFINITION_KEY, definitionKeys)),
+      PROCESS_DEFINITION_INDEX_NAME
+    );
   }
 
   @Override

@@ -71,7 +71,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_KEY;
@@ -79,11 +78,9 @@ import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionInd
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_TENANT_ID;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_VERSION_TAG;
-import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_XML;
-import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
@@ -132,6 +129,7 @@ public class DefinitionReader {
     return getDefinitionWithAvailableTenants(type, key, null, null);
 
   }
+
   public Optional<DefinitionWithTenantIdsDto> getDefinitionWithAvailableTenants(final DefinitionType type,
                                                                                 final String key,
                                                                                 final List<String> versions,
@@ -304,23 +302,23 @@ public class DefinitionReader {
         ? null
         : key;
       List<SimpleDefinitionDto> simpleDefinitionDtos = value.stream().map(parsedBucket -> {
-        final String indexAliasName = (String) (parsedBucket.getKey().get(DEFINITION_TYPE_AGGREGATION));
-        final String definitionKey = (String) (parsedBucket.getKey().get(DEFINITION_KEY_AGGREGATION));
-        final String definitionName = ((Terms) parsedBucket.getAggregations().get(NAME_AGGREGATION))
-          .getBuckets()
-          .stream()
-          .findFirst()
-          .map(Terms.Bucket::getKeyAsString)
-          .orElse(null);
-        final Terms enginesResult = parsedBucket.getAggregations().get(ENGINE_AGGREGATION);
-        return new SimpleDefinitionDto(
-          definitionKey,
-          definitionName,
-          resolveDefinitionTypeFromIndexAlias(indexAliasName),
-          resolveIsEventProcessFromIndexAlias(indexAliasName),
-          enginesResult.getBuckets().stream().map(Terms.Bucket::getKeyAsString).collect(Collectors.toSet())
-        );
-      })
+          final String indexAliasName = (String) (parsedBucket.getKey().get(DEFINITION_TYPE_AGGREGATION));
+          final String definitionKey = (String) (parsedBucket.getKey().get(DEFINITION_KEY_AGGREGATION));
+          final String definitionName = ((Terms) parsedBucket.getAggregations().get(NAME_AGGREGATION))
+            .getBuckets()
+            .stream()
+            .findFirst()
+            .map(Terms.Bucket::getKeyAsString)
+            .orElse(null);
+          final Terms enginesResult = parsedBucket.getAggregations().get(ENGINE_AGGREGATION);
+          return new SimpleDefinitionDto(
+            definitionKey,
+            definitionName,
+            resolveDefinitionTypeFromIndexAlias(indexAliasName),
+            resolveIsEventProcessFromIndexAlias(indexAliasName),
+            enginesResult.getBuckets().stream().map(Terms.Bucket::getKeyAsString).collect(Collectors.toSet())
+          );
+        })
         .collect(toList());
       resultMap.put(tenantId, new TenantIdWithDefinitionsDto(tenantId, simpleDefinitionDtos));
     });
@@ -442,45 +440,9 @@ public class DefinitionReader {
     return getDefinitions(type, filteredQuery, withXml);
   }
 
-  protected <T extends DefinitionOptimizeResponseDto> List<T> getDefinitionsByIds(final DefinitionType type,
-                                                                                  final Set<String> definitionIds,
-                                                                                  final boolean fullyImported,
-                                                                                  final boolean withXml,
-                                                                                  final boolean includeDeleted) {
-
-    final String xmlField = resolveXmlFieldFromType(type);
-    final BoolQueryBuilder rootQuery = boolQuery().must(
-      fullyImported ? existsQuery(xmlField) : matchAllQuery()
-    );
-    final BoolQueryBuilder filteredQuery = rootQuery.must(matchAllQuery());
-    if (!includeDeleted) {
-      filteredQuery.must(termQuery(DEFINITION_DELETED, false));
-    }
-    if (!definitionIds.isEmpty()) {
-      filteredQuery.must(termsQuery(resolveDefinitionIdFieldFromType(type), definitionIds.toArray()));
-    }
-    return getDefinitions(type, filteredQuery, withXml);
-  }
-
-  private void addVersionFilterToQuery(final List<String> versions,
-                                       final Supplier<String> latestVersionSupplier,
-                                       final BoolQueryBuilder filterQuery) {
-    if (!CollectionUtils.isEmpty(versions) &&
-      // if all is among the versions, no filtering needed
-      !DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll(versions)) {
-      filterQuery.filter(termsQuery(
-        DEFINITION_VERSION,
-        versions.stream()
-          .filter(version -> !ALL_VERSIONS.equalsIgnoreCase(version))
-          .map(version -> convertToLatestParticularVersion(version, latestVersionSupplier))
-          .collect(Collectors.toSet())
-      ));
-    }
-  }
-
-  private <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(final DefinitionType type,
-                                                                           final BoolQueryBuilder filterQuery,
-                                                                           final boolean withXml) {
+  protected <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(final DefinitionType type,
+                                                                             final BoolQueryBuilder filterQuery,
+                                                                             final boolean withXml) {
     final String xmlField = resolveXmlFieldFromType(type);
     final String[] fieldsToExclude = withXml ? null : new String[]{xmlField};
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
@@ -509,6 +471,21 @@ public class DefinitionReader {
       esClient,
       configurationService.getEsScrollTimeoutInSeconds()
     );
+  }
+
+  private void addVersionFilterToQuery(final List<String> versions,
+                                       final Supplier<String> latestVersionSupplier,
+                                       final BoolQueryBuilder filterQuery) {
+    // If no versions were given or if 'all' is among the versions, then no filtering is needed
+    if (!CollectionUtils.isEmpty(versions) &&
+      !DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll(versions)) {
+      filterQuery.filter(termsQuery(
+        DEFINITION_VERSION,
+        versions.stream()
+          .map(version -> convertToLatestParticularVersion(version, latestVersionSupplier))
+          .collect(Collectors.toSet())
+      ));
+    }
   }
 
   private <T extends DefinitionOptimizeResponseDto> Optional<T> getFullyImportedDefinition(
@@ -566,11 +543,11 @@ public class DefinitionReader {
 
     final Class<T> typeClass = resolveDefinitionClassFromType(type);
     final T definitionOptimizeDto = ElasticsearchReaderUtil.mapHits(
-      searchResponse.getHits(),
-      1,
-      typeClass,
-      createMappingFunctionForDefinitionType(typeClass)
-    ).stream()
+        searchResponse.getHits(),
+        1,
+        typeClass,
+        createMappingFunctionForDefinitionType(typeClass)
+      ).stream()
       .findFirst()
       .orElse(null);
     return Optional.ofNullable(definitionOptimizeDto);
@@ -877,17 +854,6 @@ public class DefinitionReader {
         return PROCESS_DEFINITION_KEY;
       case DECISION:
         return DECISION_DEFINITION_KEY;
-      default:
-        throw new IllegalStateException("Unknown DefinitionType:" + type);
-    }
-  }
-
-  private String resolveDefinitionIdFieldFromType(final DefinitionType type) {
-    switch (type) {
-      case PROCESS:
-        return PROCESS_DEFINITION_ID;
-      case DECISION:
-        return DECISION_DEFINITION_ID;
       default:
         throw new IllegalStateException("Unknown DefinitionType:" + type);
     }

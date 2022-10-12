@@ -335,6 +335,8 @@ es:
       port: null
       # whether this proxy is using a secured connection
       sslEnabled: false
+  backup:
+      repositoryName: ${CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME:}
 
 
   # Elasticsearch security settings
@@ -624,9 +626,14 @@ analytics:
       clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:dev}
 
 onboarding:
+  # This is a UI flag to determine whether the onboarding UI actions should be display
   enabled: ${CAMUNDA_OPTIMIZE_ONBOARDING_ENABLED:false}
   appCuesScriptUrl: ${CAMUNDA_OPTIMIZE_ONBOARDING_APPCUES_SCRIPT_URL://fast.appcues.com/104513.js}
-  # Should process owners receive emails with onboarding data?
+  # Determines whether this Optimize instance should check for whether or not processes are onboarded. Note: This
+  # should be enabled for exactly one Optimize instance within the cluster
+  scheduleProcessOnboardingChecks: ${CAMUNDA_OPTIMIZE_ONBOARDING_SCHEDULE_PROCESS_ONBOARDING_CHECKS:true}
+  # Determines whether onboarding emails should be sent with process data. 'scheduleProcessOnboardingChecks' must be
+  # set to true for this to take effect
   enableOnboardingEmails: ${CAMUNDA_OPTIMIZE_ONBOARDING_SEND_EMAILS:false}
   # How often (in seconds) shall optimize check for process instances updates? - Minimum 60s
   intervalForCheckingTriggerForOnboardingEmails: ${CAMUNDA_OPTIMIZE_ONBOARDING_INTERVAL_CHECK_DATA:180}

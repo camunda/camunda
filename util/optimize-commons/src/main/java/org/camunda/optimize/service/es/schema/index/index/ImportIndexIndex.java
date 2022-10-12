@@ -29,6 +29,11 @@ public class ImportIndexIndex extends DefaultIndexMappingCreator {
   }
 
   @Override
+  public boolean isImportIndex() {
+    return true;
+  }
+
+  @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder

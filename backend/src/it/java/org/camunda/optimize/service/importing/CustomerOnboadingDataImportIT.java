@@ -72,13 +72,16 @@ public class CustomerOnboadingDataImportIT extends AbstractImportIT {
         ProcessDefinitionOptimizeDto.class
       );
     assertThat(processDefinitionDocuments).hasSize(1);
-    assertThat(indexExist(new ProcessInstanceIndex(processDefinitionDocuments.get(0).getKey()).getIndexName())).isTrue();
+    final ProcessDefinitionOptimizeDto processDefinition = processDefinitionDocuments.get(0);
+    // the onboarding data should already be considered onboarded to avoid the notification being sent upon import
+    assertThat(processDefinition.isOnboarded()).isTrue();
+    assertThat(indexExist(new ProcessInstanceIndex(processDefinition.getKey()).getIndexName())).isTrue();
     assertThat(elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      new ProcessInstanceIndex(processDefinitionDocuments.get(0).getKey()).getIndexName(),
+      new ProcessInstanceIndex(processDefinition.getKey()).getIndexName(),
       ProcessDefinitionOptimizeDto.class
     )).hasSize(3);
     List<ProcessInstanceDto> processInstanceDtos = elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      new ProcessInstanceIndex(processDefinitionDocuments.get(0).getKey()).getIndexName(), ProcessInstanceDto.class);
+      new ProcessInstanceIndex(processDefinition.getKey()).getIndexName(), ProcessInstanceDto.class);
     assertThat(processInstanceDtos).anyMatch(processInstanceDto -> processInstanceDto.getIncidents() != null);
   }
 

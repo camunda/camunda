@@ -57,7 +57,6 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
   @Autowired
   private Environment environment;
 
-
   @Getter
   private List<AbstractImportScheduler<? extends SchedulerConfig>> importSchedulers = new ArrayList<>();
 

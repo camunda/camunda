@@ -20,7 +20,7 @@ public enum MetricEnum {
     "newPageFetchTime",
     "Records the time spent for fetching next import page from Zeebe Elasticsearch"
   );
-  private static final String IMPORT_METRICS = "import";
+  private static final String IMPORT_METRICS_PREFIX = "optimize.import";
   @Getter
   private final String id;
   @Getter
@@ -31,6 +31,6 @@ public enum MetricEnum {
   MetricEnum(String id, String description) {
     this.id = id;
     this.description = description;
-    this.name = IMPORT_METRICS + "." + id;
+    this.name = IMPORT_METRICS_PREFIX + "." + id;
   }
 }
