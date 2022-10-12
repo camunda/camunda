@@ -60,6 +60,18 @@ export default class VariableFilter extends React.Component {
     });
   };
 
+  componentDidUpdate = () => {
+    const {filter, selectedVariable} = this.state;
+
+    if (selectedVariable && filter) {
+      const InputComponent = this.getInputComponentForVariable(selectedVariable);
+      const valid = InputComponent.isValid(filter);
+      if (this.state.valid !== valid) {
+        this.setState({valid});
+      }
+    }
+  };
+
   selectVariable = (nameOrId) => {
     const variable = this.state.variables.find((variable) => this.getId(variable) === nameOrId);
     this.setState({
@@ -84,8 +96,6 @@ export default class VariableFilter extends React.Component {
         return NumberInput;
     }
   };
-
-  setValid = (valid) => this.setState({valid});
 
   changeFilter = (filter) => this.setState({filter});
 
@@ -156,7 +166,6 @@ export default class VariableFilter extends React.Component {
           <ValueInput
             config={config}
             variable={selectedVariable}
-            setValid={this.setValid}
             changeFilter={this.changeFilter}
             filter={filter}
             definition={applyTo}

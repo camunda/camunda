@@ -20,6 +20,7 @@ jest.mock('./date', () => {
   DateInput.defaultFilter = {startDate: 'start', endDate: 'end'};
   DateInput.parseFilter = jest.fn();
   DateInput.addFilter = jest.fn();
+  DateInput.isValid = jest.fn();
 
   return {DateInput};
 });
@@ -78,6 +79,10 @@ it('should enable add filter button if variable selection is valid', async () =>
   await node.setState({
     valid: true,
     selectedVariable: {type: 'String', name: 'StrVar'},
+    filter: {
+      operator: 'in',
+      values: ['value1', 'value2'],
+    },
   });
   const buttons = node.find(Button);
   expect(buttons.at(0).prop('disabled')).toBeFalsy(); // abort
@@ -113,13 +118,14 @@ it('should create a new string filter', async () => {
   });
 });
 
-it('should create a new  boolean filter', async () => {
+it('should create a new boolean filter', async () => {
   const spy = jest.fn();
   const node = await shallow(<VariableFilter {...props} addFilter={spy} />);
 
   node.setState({
     selectedVariable: {name: 'foo', type: 'Boolean'},
     valid: true,
+    filter: {values: []},
   });
 
   node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
@@ -129,7 +135,9 @@ it('should create a new  boolean filter', async () => {
     data: {
       name: 'foo',
       type: 'Boolean',
-      data: {},
+      data: {
+        values: [],
+      },
     },
     appliedTo: ['definition'],
   });

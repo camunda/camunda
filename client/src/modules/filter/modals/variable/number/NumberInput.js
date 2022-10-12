@@ -15,10 +15,6 @@ import ValueListInput from '../ValueListInput';
 export default class NumberInput extends React.Component {
   static defaultFilter = {operator: 'in', values: [], includeUndefined: false};
 
-  componentDidMount() {
-    this.props.setValid?.(this.selectionIsValid());
-  }
-
   setOperator = (newOperator) => (evt) => {
     evt.preventDefault();
 
@@ -46,12 +42,6 @@ export default class NumberInput extends React.Component {
   };
 
   isValid = (value) => value.trim() && !isNaN(value.trim());
-
-  componentDidUpdate(prevProps) {
-    if (prevProps.filter !== this.props.filter) {
-      this.props.setValid?.(this.selectionIsValid());
-    }
-  }
 
   render() {
     const {filter, changeFilter} = this.props;

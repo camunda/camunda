@@ -43,15 +43,6 @@ it('should not show the add value button for greater and less than operators', (
   expect(node.find('ValueListInput').prop('allowMultiple')).toBe(false);
 });
 
-it('should disable add filter button if provided value is invalid', () => {
-  const spy = jest.fn();
-  const node = shallow(<NumberInput {...props} setValid={spy} />);
-
-  node.setProps({filter: {operator: 'in', values: ['123xxxx'], includeUndefined: false}});
-
-  expect(spy).toHaveBeenCalledWith(false);
-});
-
 it('should parse an existing filter', () => {
   const parsed = NumberInput.parseFilter({data: {data: {values: ['123', null], operator: 'in'}}});
 

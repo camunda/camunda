@@ -64,24 +64,6 @@ it('should load 10 more values if the user wants more', () => {
   expect(props.config.getValues).toHaveBeenCalledWith('foo', 'String', 21, '', props.definition);
 });
 
-it('should disable add filter button if no value is selected', () => {
-  const changeSpy = jest.fn();
-  const validSpy = jest.fn();
-  const node = shallow(
-    <StringInput
-      {...props}
-      filter={{operator: 'in', values: ['A']}}
-      changeFilter={changeSpy}
-      setValid={validSpy}
-    />
-  );
-
-  node.find('Checklist').prop('onChange')([]);
-
-  expect(changeSpy).toHaveBeenCalledWith({operator: 'in', values: []});
-  expect(validSpy).toHaveBeenCalledWith(false);
-});
-
 it('should reset values when switching between operators types', () => {
   const node = shallow(<StringInput {...props} filter={{operator: 'in', values: ['A']}} />);
 

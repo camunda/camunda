@@ -5,16 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect} from 'react';
+import React from 'react';
 
 import {t} from 'translation';
 import {Checklist} from 'components';
 
-export default function BooleanInput({changeFilter, setValid, filter}) {
-  useEffect(() => {
-    setValid?.(filter.values.length > 0);
-  }, [filter, setValid]);
-
+export default function BooleanInput({changeFilter, filter}) {
   const formatValue = (value) =>
     value === null
       ? t('common.filter.variableModal.bool.isNullOrUndefined')
