@@ -20,8 +20,11 @@ import static java.util.stream.Collectors.groupingBy;
 
 import io.camunda.zeebe.model.bpmn.instance.Activity;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.Error;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.Escalation;
+import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
@@ -36,7 +39,10 @@ import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -48,7 +54,14 @@ public class ModelUtil {
 
   private static final List<Class<? extends EventDefinition>> NON_INTERRUPTING_EVENT_DEFINITIONS =
       Arrays.asList(
-          MessageEventDefinition.class, TimerEventDefinition.class, SignalEventDefinition.class);
+          MessageEventDefinition.class,
+          TimerEventDefinition.class,
+          SignalEventDefinition.class,
+          EscalationEventDefinition.class);
+
+  private static final List<Class<? extends Activity>>
+      ESCALATION_BOUNDARY_EVENT_SUPPORTED_ACTIVITIES =
+          Arrays.asList(SubProcess.class, CallActivity.class);
 
   public static List<EventDefinition> getEventDefinitionsForBoundaryEvents(final Activity element) {
     return element.getBoundaryEvents().stream()
@@ -109,6 +122,7 @@ public class ModelUtil {
     final List<EventDefinition> definitions = getEventDefinitionsForBoundaryEvents(activity);
 
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
+    verifyNoDuplicatedEscalationHandler(definitions, errorCollector);
   }
 
   public static void verifyNoDuplicateSignalStartEvents(
@@ -157,8 +171,12 @@ public class ModelUtil {
     boundaryEvent
         .getEventDefinitions()
         .forEach(
-            definition ->
-                verifyEventDefinition(definition, boundaryEvent.cancelActivity(), errorCollector));
+            definition -> {
+              if (definition instanceof EscalationEventDefinition) {
+                verifyEscalationBoundaryEvent(boundaryEvent, errorCollector);
+              }
+              verifyEventDefinition(definition, boundaryEvent.cancelActivity(), errorCollector);
+            });
   }
 
   public static void verifyEventDefinition(
@@ -177,6 +195,7 @@ public class ModelUtil {
     final List<EventDefinition> definitions = getEventDefinitionsForEventSubprocesses(element);
 
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
+    verifyNoDuplicatedEscalationHandler(definitions, errorCollector);
   }
 
   public static void verifyNoDuplicatedEventDefinition(
@@ -218,6 +237,56 @@ public class ModelUtil {
             .map(LinkEventDefinition::getName);
 
     getDuplicatedEntries(linkNames).map(ModelUtil::duplicatedLinkNames).forEach(errorCollector);
+  }
+
+  private static void verifyNoDuplicatedEscalationHandler(
+      final List<EventDefinition> definitions, final Consumer<String> errorCollector) {
+    final List<Escalation> escalations =
+        getEventDefinition(definitions, EscalationEventDefinition.class)
+            .map(EscalationEventDefinition::getEscalation)
+            .collect(Collectors.toList());
+
+    if (escalations.isEmpty()) {
+      return;
+    }
+
+    final long definitionWithoutEscalationCount =
+        escalations.stream().filter(Objects::isNull).count();
+
+    if (definitionWithoutEscalationCount > 1) {
+      errorCollector.accept(
+          "The same scope can not contain more than one escalation catch event without"
+              + " escalation code. An escalation catch event without escalation code catches"
+              + " all escalations.");
+    }
+
+    final Map<Optional<String>, Long> escalationCodeOccurrences =
+        escalations.stream()
+            .filter(Objects::nonNull)
+            .map(escalation -> Optional.ofNullable(escalation.getEscalationCode()))
+            .collect(groupingBy(escalationCode -> escalationCode, counting()));
+
+    if (definitionWithoutEscalationCount >= 1 && !escalationCodeOccurrences.isEmpty()) {
+      errorCollector.accept(
+          "The same scope can not contain an escalation catch event without escalation code "
+              + "and another one with escalation code. An escalation catch event without "
+              + "escalation code catches all escalations.");
+    }
+
+    escalationCodeOccurrences.forEach(
+        (escalationCode, occurrences) -> {
+          if (occurrences > 1) {
+            errorCollector.accept(
+                escalationCode.isPresent()
+                    ? String.format(
+                        "Multiple escalation catch events with the same escalation code '%s' are "
+                            + "not supported on the same scope.",
+                        escalationCode.get())
+                    : "The same scope can not contain more than one escalation catch event without"
+                        + " escalation code. An escalation catch event without escalation code catches"
+                        + " all escalations.");
+          }
+        });
   }
 
   public static <T extends EventDefinition> Stream<T> getEventDefinition(
@@ -274,6 +343,15 @@ public class ModelUtil {
       if (timerEventDefinition.getTimeCycle() != null) {
         errorCollector.accept("Interrupting timer event with time cycle is not allowed.");
       }
+    }
+  }
+
+  private static void verifyEscalationBoundaryEvent(
+      final BoundaryEvent element, final Consumer<String> errorCollector) {
+    if (ESCALATION_BOUNDARY_EVENT_SUPPORTED_ACTIVITIES.stream()
+        .noneMatch(activity -> activity.isInstance(element.getAttachedTo()))) {
+      errorCollector.accept(
+          "An escalation boundary event should only be attached to a subprocess, or a call activity.");
     }
   }
 }
