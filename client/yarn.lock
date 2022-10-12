@@ -1283,12 +1283,12 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@bpmn-io/form-js-editor@^0.9.6":
-  version "0.9.6"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-editor/-/form-js-editor-0.9.6.tgz#5e4135f1a14e02f47dee7c749ff5b81a9ecbfe12"
-  integrity sha512-FnR95G9BYnVCtqQIyauX5IK1JeF5cOCA+vJYtebJBF0ukTZ5UtxEykZyAb0bBNOeXr95kMuIH/kLBZjS9L9sgw==
+"@bpmn-io/form-js-editor@^0.9.7":
+  version "0.9.7"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-editor/-/form-js-editor-0.9.7.tgz#73a2e10979eb95bd500d02bf368fc1e09cb866e7"
+  integrity sha512-NMX5XXzLWLEusHVUBaHWN896rZgn40duTrRJSz855JsQ6Nl8rRCbgjKyjPeL2lfyEby/qfl2/Hw/6F99GdByRw==
   dependencies:
-    "@bpmn-io/form-js-viewer" "^0.9.5"
+    "@bpmn-io/form-js-viewer" "^0.9.7"
     array-move "^3.0.1"
     dragula "^3.7.3"
     ids "^1.0.0"
@@ -1296,13 +1296,13 @@
     min-dom "^3.2.1"
     preact "^10.5.14"
 
-"@bpmn-io/form-js-playground@^0.9.6":
-  version "0.9.6"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-playground/-/form-js-playground-0.9.6.tgz#904a7a24ace8cdfb525001a737f777937903813a"
-  integrity sha512-PyxTkg8pfXqOonc3QzJZyQTlEqweSKcatPsvBLS3Q7dMG13SQ7cNfVOHoeC3yMOb/tNjBtKh16AFz6k9UTUS6Q==
+"@bpmn-io/form-js-playground@^0.9.7":
+  version "0.9.7"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-playground/-/form-js-playground-0.9.7.tgz#68ac5e47042ca8c9d58dbdb63b67efcd88092863"
+  integrity sha512-pSosV3+ahfFEilUxMJHdJZIQLDubiqrRiz9X8dKSXc0doP7mngUZ32XRlyT9EsqVwTUKKDtn2RNWle//uZ6Yqg==
   dependencies:
-    "@bpmn-io/form-js-editor" "^0.9.6"
-    "@bpmn-io/form-js-viewer" "^0.9.5"
+    "@bpmn-io/form-js-editor" "^0.9.7"
+    "@bpmn-io/form-js-viewer" "^0.9.7"
     "@codemirror/lang-json" "^6.0.0"
     "@codemirror/state" "^6.1.1"
     "@codemirror/view" "^6.2.0"
@@ -1313,10 +1313,10 @@
     mitt "^3.0.0"
     preact "^10.5.14"
 
-"@bpmn-io/form-js-viewer@^0.9.5":
-  version "0.9.5"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-0.9.5.tgz#b59cb87043a575d7874b040de629ae81321af310"
-  integrity sha512-o7X5WCuCBbNgNWLA85vFxo7mUN5wV2WK1mhyc5r2ghOy+G5bOriYUUtbJg46ezu3wCMSH8R/UVddeEh9Yb3Pmw==
+"@bpmn-io/form-js-viewer@^0.9.7":
+  version "0.9.7"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-0.9.7.tgz#c535538946079aaae20b467502007008c007e8c8"
+  integrity sha512-3QTystYETRApgMYK/EfEBn2BudCuHoTS6YPg0YlPsM0ThVXyFnoM5wESmMiRwlfKwM6QWMXJ6B+d0dIqF4dayw==
   dependencies:
     "@bpmn-io/snarkdown" "^2.1.0"
     classnames "^2.3.1"
@@ -1326,14 +1326,14 @@
     preact "^10.5.14"
     preact-markup "^2.1.1"
 
-"@bpmn-io/form-js@0.9.6":
-  version "0.9.6"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js/-/form-js-0.9.6.tgz#3fbaaa417c27ba05ecf49cbf3fa59d0a3b36ac6d"
-  integrity sha512-InwvFZf+01n1CYj6xTrp18ND8JeJiB86BBiz17ulrFobQWhNuIQGlTmwJ1jH53hACwKHc23Yg5JOtqqjkR7jWQ==
+"@bpmn-io/form-js@0.9.7":
+  version "0.9.7"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js/-/form-js-0.9.7.tgz#878614753ae6103f801b3ae22edbee15cb5e7c85"
+  integrity sha512-qSGMiHDANq+P+5os2beYH/dMeosfOT6cS6fFZnAZTAG3aPCm5fqc7HC82+1uVyzIHBIXICtrWfRV4TGW1BQEAA==
   dependencies:
-    "@bpmn-io/form-js-editor" "^0.9.6"
-    "@bpmn-io/form-js-playground" "^0.9.6"
-    "@bpmn-io/form-js-viewer" "^0.9.5"
+    "@bpmn-io/form-js-editor" "^0.9.7"
+    "@bpmn-io/form-js-playground" "^0.9.7"
+    "@bpmn-io/form-js-viewer" "^0.9.7"
 
 "@bpmn-io/snarkdown@^2.1.0":
   version "2.1.0"
