@@ -16,20 +16,14 @@
  */
 package io.atomix.raft.storage;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 /** Raft storage test. */
@@ -38,14 +32,14 @@ public class RaftStorageTest {
   private static final Path PATH = Paths.get("target/test-logs/");
 
   @Test
-  public void testDefaultConfiguration() throws Exception {
+  public void testDefaultConfiguration() {
     final RaftStorage storage = RaftStorage.builder().build();
-    assertEquals("atomix", storage.prefix());
-    assertEquals(new File(System.getProperty("user.dir")), storage.directory());
+    assertThat(storage.prefix()).isEqualTo("atomix");
+    assertThat(storage.directory()).isEqualTo(new File(System.getProperty("user.dir")));
   }
 
   @Test
-  public void testCustomConfiguration() throws Exception {
+  public void testCustomConfiguration() {
     final RaftStorage storage =
         RaftStorage.builder()
             .withPrefix("foo")
@@ -54,49 +48,54 @@ public class RaftStorageTest {
             .withFreeDiskSpace(100)
             .withFlushExplicitly(false)
             .build();
-    assertEquals("foo", storage.prefix());
-    assertEquals(new File(PATH.toFile(), "foo"), storage.directory());
+    assertThat(storage.prefix()).isEqualTo("foo");
+    assertThat(storage.directory()).isEqualTo(new File(PATH.toFile(), "foo"));
   }
 
   @Test
-  public void testStorageLock() throws Exception {
+  public void canAcquireLockOnEmptyDirectory() {
+    // given empty directory in PATH
+
+    // when
     final RaftStorage storage1 =
         RaftStorage.builder().withDirectory(PATH.toFile()).withPrefix("test").build();
 
-    assertTrue(storage1.lock("a"));
+    // then
+    assertThat(storage1.lock("a")).isTrue();
+  }
 
+  @Test
+  public void cannotLockAlreadyLockedDirectory() {
+    // given
+    final RaftStorage storage1 =
+        RaftStorage.builder().withDirectory(PATH.toFile()).withPrefix("test").build();
+    storage1.lock("a");
+
+    // when
     final RaftStorage storage2 =
         RaftStorage.builder().withDirectory(PATH.toFile()).withPrefix("test").build();
 
-    assertFalse(storage2.lock("b"));
+    // then
+    assertThat(storage2.lock("b")).isFalse();
+  }
 
+  @Test
+  public void canAcquireLockOnDirectoryLockedBySameNode() {
+    // given
+    final RaftStorage storage1 =
+        RaftStorage.builder().withDirectory(PATH.toFile()).withPrefix("test").build();
+    storage1.lock("a");
+
+    // when
     final RaftStorage storage3 =
         RaftStorage.builder().withDirectory(PATH.toFile()).withPrefix("test").build();
 
-    assertTrue(storage3.lock("a"));
+    // then
+    assertThat(storage3.lock("a")).isTrue();
   }
 
-  @Before
   @After
   public void cleanupStorage() throws IOException {
-    if (Files.exists(PATH)) {
-      Files.walkFileTree(
-          PATH,
-          new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
-                throws IOException {
-              Files.delete(file);
-              return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(final Path dir, final IOException exc)
-                throws IOException {
-              Files.delete(dir);
-              return FileVisitResult.CONTINUE;
-            }
-          });
-    }
+    FileUtil.deleteFolderIfExists(PATH);
   }
 }
