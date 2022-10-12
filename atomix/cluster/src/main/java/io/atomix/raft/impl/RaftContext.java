@@ -70,6 +70,7 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Random;
@@ -1157,7 +1158,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   /** Commit listener is active only until the server is ready * */
   class AwaitingReadyCommitListener implements RaftCommitListener {
-    private long lastLogTime = System.currentTimeMillis();
+    private final Logger throttledLogger = new ThrottledLogger(log, Duration.ofSeconds(30));
 
     @Override
     public void onCommit(final long index) {
@@ -1169,9 +1170,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         log.info("Commit index is {}. RaftServer is ready", index);
         stateChangeListeners.forEach(l -> l.accept(state));
         removeCommitListener(this);
-      } else if (System.currentTimeMillis() - lastLogTime >= 30_000) { // log every 30 seconds
-        lastLogTime = System.currentTimeMillis();
-        log.info(
+      } else {
+        throttledLogger.info(
             "Commit index is {}. RaftServer is ready only after it has committed events up to index {}",
             commitIndex,
             firstCommitIndex);
