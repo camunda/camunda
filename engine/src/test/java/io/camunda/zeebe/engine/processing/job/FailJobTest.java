@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.intent.JobIntent.FAIL;
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.FAILED;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -271,5 +273,44 @@ public final class FailJobTest {
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_STATE);
     assertThat(jobRecord.getRejectionReason()).contains("is in state 'ERROR_THROWN'");
+  }
+
+  @Test
+  public void shouldFailWithVariables() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final int retries = 23;
+
+    // when
+    final Record<JobRecordValue> failRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .ofInstance(job.getProcessInstanceKey())
+            .withRetries(retries)
+            .withVariables("{'foo':'bar'}")
+            .fail();
+
+    // then
+    Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
+    Assertions.assertThat(failRecord.getValue())
+        .hasWorker(job.getWorker())
+        .hasType(job.getType())
+        .hasRetries(retries)
+        .hasDeadline(job.getDeadline());
+
+    assertThat(failRecord.getValue().getVariables()).containsExactly(entry("foo", "bar"));
+
+    final Record<VariableRecordValue> variableRecord =
+        RecordingExporter.variableRecords()
+            .withProcessInstanceKey(job.getProcessInstanceKey())
+            .withScopeKey(failRecord.getValue().getElementInstanceKey())
+            .withName("foo")
+            .getFirst();
+
+    assertThat(variableRecord.getValue().getValue()).isEqualTo("\"bar\"");
   }
 }
