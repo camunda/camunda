@@ -11,7 +11,6 @@ import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
@@ -19,15 +18,12 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.snapshots.SnapshotId;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
@@ -122,121 +118,6 @@ public class ClusteredSnapshotTest {
     assertThat(clusteringRule.getBroker(followerId)).havingSnapshot();
   }
 
-  @Test
-  public void shouldIncludeExportedPositionInSnapshot() {
-    // given
-    ControllableExporter.updatePosition(true);
-
-    publishMessages();
-    ControllableExporter.updatePosition(false);
-    publishMessages();
-
-    // when - then
-    awaitUntilAsserted(
-        (broker) -> {
-          triggerSnapshotRoutine();
-          assertThat(broker)
-              .havingSnapshot()
-              .withExportedPosition(ControllableExporter.lastUpdatedPosition);
-        });
-  }
-
-  @Test
-  public void shouldTakeSnapshotWhenExporterPositionIsMinusOne() {
-    // given
-    // an exporter is configured, but nothing gets exported
-    ControllableExporter.updatePosition(false);
-    publishMessages();
-
-    // when
-    triggerSnapshotRoutine();
-
-    // then
-    awaitUntilAsserted(
-        (broker) -> {
-          assertThat(broker).havingSnapshot().withIndex(0).withTerm(0).withExportedPosition(0);
-        });
-  }
-
-  @Test
-  public void shouldKeepIndexAndTerm() {
-    // given
-    ControllableExporter.updatePosition(false);
-    removeExporters();
-    restartCluster();
-    publishMessages();
-    triggerSnapshotRoutine();
-
-    // expect - each broker has created a snapshot
-    awaitUntilAsserted(
-        (broker) -> {
-          assertThat(broker).havingSnapshot().withExportedPosition(Long.MAX_VALUE);
-        });
-
-    final Map<Integer, SnapshotId> snapshotsByBroker =
-        clusteringRule.getTopologyFromClient().getBrokers().stream()
-            .collect(Collectors.toMap(BrokerInfo::getNodeId, this::getSnapshot));
-
-    // when
-    configureExporters();
-    restartCluster();
-    publishMessages();
-    triggerSnapshotRoutine();
-
-    // then
-    awaitUntilAsserted(
-        (broker) -> {
-          final SnapshotId expectedSnapshot =
-              snapshotsByBroker.get(broker.getConfig().getCluster().getNodeId());
-          assertThat(broker)
-              .havingSnapshot()
-              .withIndex(expectedSnapshot.getIndex())
-              .withTerm(expectedSnapshot.getTerm());
-        });
-  }
-
-  @Test
-  public void shouldNotTakeNewSnapshot() {
-    // given
-    ControllableExporter.updatePosition(false);
-    removeExporters();
-    restartCluster();
-    publishMessages();
-
-    final var leaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
-    final var leaderAdminService =
-        clusteringRule.getBroker(leaderId).getBrokerContext().getBrokerAdminService();
-    final var expectedProcessedPosition =
-        leaderAdminService.getPartitionStatus().get(1).getProcessedPosition();
-
-    // expect
-    awaitUntilAsserted(
-        (broker) -> {
-          triggerSnapshotRoutine();
-          assertThat(broker)
-              .havingSnapshot()
-              .withProcessedPosition(expectedProcessedPosition)
-              .withExportedPosition(Long.MAX_VALUE);
-        });
-
-    final Map<Integer, SnapshotId> snapshotsByBroker =
-        clusteringRule.getTopologyFromClient().getBrokers().stream()
-            .collect(Collectors.toMap(BrokerInfo::getNodeId, this::getSnapshot));
-
-    // when
-    configureExporters();
-    restartCluster();
-    triggerSnapshotRoutine();
-
-    // then
-    awaitUntilAsserted(
-        (broker) -> {
-          final SnapshotId expectedSnapshot =
-              snapshotsByBroker.get(broker.getConfig().getCluster().getNodeId());
-          assertThat(broker).havingSnapshot().isEqualTo(expectedSnapshot);
-        });
-  }
-
   private void awaitUntilAsserted(final Consumer<Broker> consumer) {
     Awaitility.await()
         .pollInterval(Duration.ofSeconds(1))
@@ -259,35 +140,14 @@ public class ClusteredSnapshotTest {
     configureExporter(brokerCfg);
   }
 
-  private void configureExporters() {
-    clusteringRule.getBrokers().stream().map(Broker::getConfig).forEach(this::configureExporter);
-  }
-
   private void configureExporter(final BrokerCfg brokerConfig) {
     final ExporterCfg exporterConfig = new ExporterCfg();
     exporterConfig.setClassName(ControllableExporter.class.getName());
     brokerConfig.setExporters(Collections.singletonMap("snapshot-test-exporter", exporterConfig));
   }
 
-  private void removeExporters() {
-    clusteringRule.getBrokers().forEach(this::removeExporter);
-  }
-
-  private void removeExporter(final Broker broker) {
-    final BrokerCfg brokerConfig = broker.getConfig();
-    brokerConfig.setExporters(Collections.emptyMap());
-  }
-
-  private void restartCluster() {
-    clusteringRule.restartCluster();
-  }
-
   private void triggerSnapshotRoutine() {
     snapshotTrigger.accept(clusteringRule);
-  }
-
-  private SnapshotId getSnapshot(final BrokerInfo brokerInfo) {
-    return clusteringRule.getSnapshot(brokerInfo.getNodeId()).get();
   }
 
   private void publishMessages() {
@@ -365,57 +225,11 @@ public class ClusteredSnapshotTest {
       this.rule = rule;
     }
 
-    public SnapshotAssert havingSnapshot() {
+    public void havingSnapshot() {
       final var snapshot = rule.getSnapshot(actual);
-      Assertions.assertThat(snapshot.isPresent())
+      Assertions.assertThat(snapshot)
           .withFailMessage("No snapshot exists for broker <%s>", actual)
-          .isTrue();
-      return new SnapshotAssert(snapshot.get());
-    }
-  }
-
-  private static class SnapshotAssert extends AbstractAssert<SnapshotAssert, SnapshotId> {
-
-    protected SnapshotAssert(final SnapshotId actual) {
-      super(actual, SnapshotAssert.class);
-    }
-
-    public SnapshotAssert withIndex(final long expected) {
-      Assertions.assertThat(actual.getIndex())
-          .withFailMessage(
-              "Expecting snapshot index <%s> but was <%s>", expected, actual.getIndex())
-          .isEqualTo(expected);
-      return myself;
-    }
-
-    public SnapshotAssert withTerm(final long expected) {
-      Assertions.assertThat(actual.getTerm())
-          .withFailMessage("Expecting snapshot term <%s> but was <%s>", expected, actual.getTerm())
-          .isEqualTo(expected);
-      return myself;
-    }
-
-    public SnapshotAssert withProcessedPosition(final long expected) {
-      Assertions.assertThat(actual.getProcessedPosition())
-          .withFailMessage(
-              "Expecting snapshot processed position <%s> but was <%s>",
-              expected, actual.getProcessedPosition())
-          .isEqualTo(expected);
-      return myself;
-    }
-
-    public SnapshotAssert withExportedPosition(final long expected) {
-      Assertions.assertThat(actual.getExportedPosition())
-          .withFailMessage(
-              "Expecting snapshot exported position <%s> but was <%s>",
-              expected, actual.getExportedPosition())
-          .isEqualTo(expected);
-      return myself;
-    }
-
-    @Override
-    public SnapshotAssert isEqualTo(final Object expected) {
-      return super.isEqualTo(expected);
+          .isPresent();
     }
   }
 }
