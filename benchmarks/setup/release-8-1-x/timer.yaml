@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: timer
-        image: gcr.io/zeebe-io/starter:8.1.0
+        image: gcr.io/zeebe-io/starter:8.1.1
         imagePullPolicy: Always
         env:
           - name: JAVA_OPTIONS
