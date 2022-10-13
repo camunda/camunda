@@ -61,13 +61,13 @@ export default class VariableFilter extends React.Component {
   };
 
   componentDidUpdate = () => {
-    const {filter, selectedVariable} = this.state;
+    const {filter, selectedVariable, valid} = this.state;
 
     if (selectedVariable && filter) {
       const InputComponent = this.getInputComponentForVariable(selectedVariable);
-      const valid = InputComponent.isValid(filter);
-      if (this.state.valid !== valid) {
-        this.setState({valid});
+      const isFilterValid = InputComponent.isValid(filter);
+      if (valid !== isFilterValid) {
+        this.setState({valid: isFilterValid});
       }
     }
   };

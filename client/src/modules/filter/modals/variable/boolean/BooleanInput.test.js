@@ -28,3 +28,15 @@ it('should update filter selected values on Checklist change', () => {
 
   expect(spy).toHaveBeenCalledWith({values: [null, true]});
 });
+
+it('isValid should return true for valid filters', () => {
+  const result = BooleanInput.isValid({values: [true]});
+
+  expect(result).toBe(true);
+});
+
+it('isValid should return false for invalid filters', () => {
+  const result = BooleanInput.isValid({values: []});
+
+  expect(result).toBe(false);
+});

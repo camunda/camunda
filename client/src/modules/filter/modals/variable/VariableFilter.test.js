@@ -231,3 +231,35 @@ it('should allow forcing the add button to be enabled', () => {
 
   expect(node.find(Button).last()).not.toBeDisabled();
 });
+
+it('should update the valid state on filter change', () => {
+  const node = shallow(<VariableFilter {...props} />);
+
+  node.setState({
+    selectedVariable: {type: 'String', name: 'StrVar'},
+    filter: {
+      operator: 'in',
+      values: ['value1', 'value2'],
+    },
+  });
+
+  expect(node.state().valid).toBe(true);
+
+  node.setState({
+    filter: {
+      operator: 'in',
+      values: [],
+    },
+  });
+
+  expect(node.state().valid).toBe(false);
+
+  node.setState({
+    filter: {
+      operator: 'in',
+      includeUndefined: true,
+    },
+  });
+
+  expect(node.state().valid).toBe(true);
+});

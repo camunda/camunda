@@ -65,3 +65,23 @@ it('should convert includeUndefined to a null entry in filter values', () => {
     appliedTo: ['definition'],
   });
 });
+
+it('isValid should return true for valid filters', () => {
+  let result = NumberInput.isValid({values: ['123']});
+
+  expect(result).toBe(true);
+
+  result = NumberInput.isValid({values: [], includeUndefined: true});
+
+  expect(result).toBe(true);
+});
+
+it('isValid should return false for invalid filters', () => {
+  let result = NumberInput.isValid({values: ['NaN']});
+
+  expect(result).toBe(false);
+
+  result = NumberInput.isValid({values: [], includeUndefined: false});
+
+  expect(result).toBe(false);
+});

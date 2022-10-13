@@ -215,3 +215,23 @@ it('should parse existing values correctly without creating duplicates', async (
 
   expect(node.find('Checklist').prop('allItems')).toEqual([null, 'A', 'B']);
 });
+
+it('isValid should return true for valid filters', () => {
+  let result = StringInput.isValid({values: [null, 'A']});
+
+  expect(result).toBe(true);
+
+  result = StringInput.isValid({values: [], includeUndefined: true});
+
+  expect(result).toBe(true);
+});
+
+it('isValid should return false for invalid filters', () => {
+  let result = StringInput.isValid({values: []});
+
+  expect(result).toBe(false);
+
+  result = StringInput.isValid({values: [], includeUndefined: false});
+
+  expect(result).toBe(false);
+});
