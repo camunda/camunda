@@ -585,7 +585,7 @@
         #     decision: true
         #     decisionEvaluation: true
         #     deployment: true
-        #     deploymentDistribution: false
+        #     deploymentDistribution: true
         #     error: true
         #     incident: true
         #     job: true
@@ -599,7 +599,7 @@
         #     processInstanceCreation: true
         #     processInstanceModification: true
         #     processMessageSubscription: true
-        #     timer: false
+        #     timer: true
         #     variable: true
         #     variableDocument: true
 

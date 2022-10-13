@@ -147,10 +147,10 @@ public class ElasticsearchExporterConfiguration {
     public boolean variableDocument = true;
 
     public boolean checkpoint = false;
-    public boolean timer = false;
-    public boolean messageStartEventSubscription = false;
+    public boolean timer = true;
+    public boolean messageStartEventSubscription = true;
     public boolean processEvent = false;
-    public boolean deploymentDistribution = false;
+    public boolean deploymentDistribution = true;
 
     // index settings
     private Integer numberOfShards = null;
@@ -220,6 +220,14 @@ public class ElasticsearchExporterConfiguration {
           + decisionEvaluation
           + ", checkpoint="
           + checkpoint
+          + ", timer="
+          + timer
+          + ", messageStartEventSubscription="
+          + messageStartEventSubscription
+          + ", processEvent="
+          + processEvent
+          + ", deploymentDistribution="
+          + deploymentDistribution
           + '}';
     }
   }
