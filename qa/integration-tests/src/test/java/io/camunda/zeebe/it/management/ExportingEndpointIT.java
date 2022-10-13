@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.it.management;
 
-import static io.camunda.zeebe.it.management.ExportingEndpointIT.StableValuePredicate.hasStableValue;
+import static io.camunda.zeebe.test.StableValuePredicate.hasStableValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
@@ -21,8 +21,6 @@ import io.zeebe.containers.cluster.ZeebeCluster;
 import io.zeebe.containers.exporter.DebugReceiver;
 import java.time.Duration;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -157,28 +155,6 @@ final class ExportingEndpointIT {
               status ->
                   status.exporterPhase() == null || status.exporterPhase().equals("EXPORTING"),
               "All exporters should be running");
-    }
-  }
-
-  static final class StableValuePredicate<T> implements Predicate<T> {
-
-    final AtomicReference<T> lastSeen = new AtomicReference<>();
-
-    /**
-     * Used in combination with {@link Awaitility}'s {@link
-     * org.awaitility.core.ConditionFactory#during(Duration)} to ensure that an expression maintains
-     * an arbitrary value over time.
-     *
-     * @return a predicate that accepts a value if it is the same value that was checked in the
-     *     previous call to this predicate.
-     */
-    static <T> StableValuePredicate<T> hasStableValue() {
-      return new StableValuePredicate<>();
-    }
-
-    @Override
-    public boolean test(final T t) {
-      return t == lastSeen.getAndSet(t);
     }
   }
 }
