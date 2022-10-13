@@ -264,47 +264,19 @@ class BackupServiceImplTest {
             Optional.empty(),
             Optional.empty(),
             Optional.empty());
-    when(backupStore.getStatus(inProgressBackup))
-        .thenReturn(CompletableFuture.completedFuture(inProgressStatus));
-    when(backupStore.getStatus(notExistingBackup))
-        .thenReturn(CompletableFuture.completedFuture(notExistingStatus));
-    when(backupStore.getStatus(completedBackup))
-        .thenReturn(CompletableFuture.completedFuture(completedStatus));
+    when(backupStore.list(any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                List.of(inProgressStatus, notExistingStatus, completedStatus)));
 
     // when
-    backupService.failInProgressBackups(1, 10, List.of(1, 2, 3), concurrencyControl);
+    backupService.failInProgressBackups(1, 10, concurrencyControl);
 
     // then
     final var expectedFailureReason = "Backup is cancelled due to leader change.";
     verify(backupStore, timeout(1000)).markFailed(inProgressBackup, expectedFailureReason);
     verify(backupStore, never()).markFailed(notExistingBackup, expectedFailureReason);
     verify(backupStore, never()).markFailed(completedBackup, expectedFailureReason);
-  }
-
-  @Test
-  void shouldMarkRemainingBackupsAsFailedWhenThrowsError() {
-    // given
-    final var inProgressBackup = new BackupIdentifierImpl(1, 1, 10);
-    final var backupFailsToQuery = new BackupIdentifierImpl(2, 1, 10);
-    final var inProgressStatus =
-        new BackupStatusImpl(
-            inProgressBackup,
-            Optional.empty(),
-            BackupStatusCode.IN_PROGRESS,
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty());
-    when(backupStore.getStatus(inProgressBackup))
-        .thenReturn(CompletableFuture.completedFuture(inProgressStatus));
-    when(backupStore.getStatus(backupFailsToQuery))
-        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")));
-
-    // when
-    backupService.failInProgressBackups(1, 10, List.of(1, 2), concurrencyControl);
-
-    // then
-    verify(backupStore, timeout(1000))
-        .markFailed(inProgressBackup, "Backup is cancelled due to leader change.");
   }
 
   @Test
