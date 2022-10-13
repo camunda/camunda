@@ -4064,12 +4064,12 @@ bowser@^2.8.1:
   resolved "https://registry.yarnpkg.com/bowser/-/bowser-2.9.0.tgz#3bed854233b419b9a7422d9ee3e85504373821c9"
   integrity sha512-2ld76tuLBNFekRgmJfT2+3j5MIrP6bFict8WAIT3beq+srz1gcKNAdNKMqHqauQt63NmAa88HfP1/Ypa9Er3HA==
 
-bpmn-js-disable-collapsed-subprocess@^0.1.5:
-  version "0.1.5"
-  resolved "https://registry.yarnpkg.com/bpmn-js-disable-collapsed-subprocess/-/bpmn-js-disable-collapsed-subprocess-0.1.5.tgz#bc1d4685ef2fa4120b1f96b51cc51b7726c8cdfa"
-  integrity sha512-OydebFC1js0BKa+4C01WiauWStmVKZuoC1aiAQ68NvSLqtVTwbgCewN1I/wiHPJsa9XHCqKX6+EJdA+x/iUVlw==
+bpmn-js-disable-collapsed-subprocess@^0.1.7:
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/bpmn-js-disable-collapsed-subprocess/-/bpmn-js-disable-collapsed-subprocess-0.1.7.tgz#21defb9f7cf94b9352d2b2b51f649a671fc9be04"
+  integrity sha512-Lhaklmi77ulvcWG8wh6w0nLVAIlWvHPkri6hwm7ReP6tw/S2SMSNsFHYa+dfvVEZD30uNLZHGpDztZOdxBGvrw==
   dependencies:
-    min-dash "^3.5.2"
+    min-dash "^4.0.0"
 
 bpmn-js@9.4.1:
   version "9.4.1"
@@ -10674,6 +10674,11 @@ min-dash@^3.0.0, min-dash@^3.5.2, min-dash@^3.8.1:
   version "3.8.1"
   resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-3.8.1.tgz#09a8bd8a041d65eec4732042cde9cb24a6e84b0d"
   integrity sha512-evumdlmIlg9mbRVPbC4F5FuRhNmcMS5pvuBUbqb1G9v09Ro0ImPEgz5n3khir83lFok1inKqVDjnKEg3GpDxQg==
+
+min-dash@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-4.0.0.tgz#4a1afec4c4d70f510b6e241d0550493d4ac0f161"
+  integrity sha512-piIvVJ/nxuA4+LpnYIzF6oCtRvdtDvQJteSC+H768H2UvPKFKIt5oiJnUVtr0ZdchneXTcvUZ91vIrvWVIN0AA==
 
 min-document@^2.19.0:
   version "2.19.0"
