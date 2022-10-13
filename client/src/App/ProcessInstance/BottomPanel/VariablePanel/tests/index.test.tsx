@@ -898,7 +898,9 @@ describe('VariablePanel', () => {
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         scopeId: 'some-new-scope-id',
-        parentScopeIds: {},
+        parentScopeIds: {
+          'another-flownode-without-any-tokens': 'some-new-parent-scope-id',
+        },
       },
     });
 
@@ -941,6 +943,21 @@ describe('VariablePanel', () => {
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'flowNode-without-running-tokens',
       flowNodeInstanceId: 'some-new-scope-id-1',
+      isPlaceholder: true,
+    });
+
+    expect(
+      screen.getByText('The Flow Node has no Variables')
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /add variable/i})
+    ).toBeInTheDocument();
+
+    // select new parent scope
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'another-flownode-without-any-tokens',
+      flowNodeInstanceId: 'some-new-parent-scope-id',
       isPlaceholder: true,
     });
 

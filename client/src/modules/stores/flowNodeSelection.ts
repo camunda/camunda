@@ -171,14 +171,18 @@ class FlowNodeSelection {
   get newTokenCountForSelectedNode() {
     const currentFlowNodeSelection = this.state.selection;
 
-    if (currentFlowNodeSelection?.flowNodeId === undefined) {
+    const flowNodeId = currentFlowNodeSelection?.flowNodeId;
+    if (flowNodeId === undefined) {
       return 0;
     }
 
     return (
-      modificationsStore.modificationsByFlowNode[
-        currentFlowNodeSelection.flowNodeId
-      ]?.newTokens ?? 0
+      (modificationsStore.modificationsByFlowNode[flowNodeId]?.newTokens ?? 0) +
+      modificationsStore.flowNodeModifications.filter(
+        (modification) =>
+          modification.operation !== 'CANCEL_TOKEN' &&
+          Object.keys(modification.parentScopeIds).includes(flowNodeId)
+      ).length
     );
   }
 
