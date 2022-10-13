@@ -40,6 +40,7 @@ public enum BpmnElementType {
   RECEIVE_TASK("receiveTask"),
   USER_TASK("userTask"),
   MANUAL_TASK("manualTask"),
+  TASK("task"),
 
   // Gateways
   EXCLUSIVE_GATEWAY("exclusiveGateway"),

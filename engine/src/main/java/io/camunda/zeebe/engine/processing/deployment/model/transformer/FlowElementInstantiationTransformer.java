@@ -47,6 +47,7 @@ import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
+import io.camunda.zeebe.model.bpmn.instance.Task;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.HashMap;
@@ -72,6 +73,7 @@ public final class FlowElementInstantiationTransformer
     ELEMENT_FACTORIES.put(IntermediateCatchEvent.class, ExecutableCatchEventElement::new);
     ELEMENT_FACTORIES.put(IntermediateThrowEvent.class, ExecutableIntermediateThrowEvent::new);
     ELEMENT_FACTORIES.put(ManualTask.class, ExecutableActivity::new);
+    ELEMENT_FACTORIES.put(Task.class, ExecutableActivity::new);
     ELEMENT_FACTORIES.put(ParallelGateway.class, ExecutableFlowNode::new);
     ELEMENT_FACTORIES.put(ReceiveTask.class, ExecutableReceiveTask::new);
     ELEMENT_FACTORIES.put(ScriptTask.class, ExecutableJobWorkerTask::new);

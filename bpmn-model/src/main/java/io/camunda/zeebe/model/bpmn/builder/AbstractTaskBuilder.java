@@ -22,10 +22,10 @@ import io.camunda.zeebe.model.bpmn.instance.Task;
 /**
  * @author Sebastian Menski
  */
-public abstract class AbstractTaskBuilder<B extends AbstractTaskBuilder<B, E>, E extends Task>
+public class AbstractTaskBuilder<B extends AbstractTaskBuilder<B, E>, E extends Task>
     extends AbstractActivityBuilder<B, E> {
 
-  protected AbstractTaskBuilder(
+  public AbstractTaskBuilder(
       final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
