@@ -415,7 +415,3 @@ export function formatTenantName({id, name}) {
 export function formatFileName(name) {
   return name.replace(/[^a-zA-Z0-9-_.]/gi, '_').toLowerCase();
 }
-
-export function formatRole(role) {
-  return t('home.roles.' + role);
-}

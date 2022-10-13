@@ -38,10 +38,9 @@ import AlertList from './AlertList';
 import SourcesList from './SourcesList';
 import CollectionModal from './modals/CollectionModal';
 
-import {formatLink, formatType, formatSubEntities} from './formatters';
+import {formatLink, formatType, formatSubEntities, formatRole} from './formatters';
 
 import './Collection.scss';
-import {formatRole} from 'services/formatters';
 
 export class Collection extends React.Component {
   state = {

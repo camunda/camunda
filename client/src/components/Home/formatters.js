@@ -49,3 +49,7 @@ export function formatSubEntities({dashboard, report}) {
 
   return string;
 }
+
+export function formatRole(role) {
+  return t('home.roles.' + role);
+}

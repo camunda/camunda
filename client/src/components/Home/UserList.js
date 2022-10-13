@@ -16,9 +16,9 @@ import {getOptimizeProfile} from 'config';
 import AddUserModal from './modals/AddUserModal';
 import EditUserModal from './modals/EditUserModal';
 import {addUser, editUser, removeUser, getUsers, removeUsers} from './service';
+import {formatRole} from './formatters';
 
 import './UserList.scss';
-import {formatRole} from 'services/formatters';
 
 export default withErrorHandling(
   class UserList extends React.Component {
