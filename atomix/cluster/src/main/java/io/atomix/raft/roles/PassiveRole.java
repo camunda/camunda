@@ -532,7 +532,6 @@ public class PassiveRole extends InactiveRole {
     final long previousCommitIndex = raft.setCommitIndex(commitIndex);
     if (previousCommitIndex < commitIndex) {
       log.trace("Committed entries up to index {}", commitIndex);
-      raft.notifyCommitListeners(commitIndex);
     }
 
     // Make sure all entries are flushed before ack to ensure we have persisted what we acknowledge
