@@ -89,9 +89,11 @@ public class FlowElementValidator implements ModelElementValidator<FlowElement> 
         && !NON_EXECUTABLE_ELEMENT_TYPES.contains(elementType)) {
       validationResultCollector.addError(
           0,
-          "Elements of type 'elementType.getSimpleName()' are currently not supported. Please refer "
-              + "to the documentation for a list of supported elements: "
-              + "https://docs.camunda.io/docs/reference/bpmn-processes/bpmn-coverage");
+          String.format(
+              "Elements of type '%s' are currently not supported. Please refer "
+                  + "to the documentation for a list of supported elements: "
+                  + "https://docs.camunda.io/docs/reference/bpmn-processes/bpmn-coverage",
+              elementType.getSimpleName()));
     }
   }
 }
