@@ -1157,7 +1157,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /** Commit listener is active only until the server is ready * */
-  class AwaitingReadyCommitListener implements RaftCommitListener {
+  final class AwaitingReadyCommitListener implements RaftCommitListener {
     private final Logger throttledLogger = new ThrottledLogger(log, Duration.ofSeconds(30));
 
     @Override
