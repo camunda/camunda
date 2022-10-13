@@ -523,17 +523,21 @@
         #     decision: true
         #     decisionEvaluation: true
         #     deployment: true
+        #     deploymentDistribution: false
         #     error: true
         #     incident: true
         #     job: true
         #     jobBatch: false
         #     message: true
+        #     messageStartSubscription: false
         #     messageSubscription: true
         #     process: true
+        #     processEvent: false
         #     processInstance: true
         #     processInstanceCreation: true
         #     processInstanceModification: true
         #     processMessageSubscription: true
+        #     timer: false
         #     variable: true
         #     variableDocument: true
 

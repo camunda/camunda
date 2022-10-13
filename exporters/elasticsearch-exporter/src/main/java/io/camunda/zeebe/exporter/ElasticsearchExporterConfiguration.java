@@ -89,6 +89,14 @@ public class ElasticsearchExporterConfiguration {
         return index.decisionEvaluation;
       case CHECKPOINT:
         return index.checkpoint;
+      case TIMER:
+        return index.timer;
+      case MESSAGE_START_EVENT_SUBSCRIPTION:
+        return index.messageStartEventSubscription;
+      case PROCESS_EVENT:
+        return index.processEvent;
+      case DEPLOYMENT_DISTRIBUTION:
+        return index.deploymentDistribution;
       default:
         return false;
     }
@@ -139,6 +147,10 @@ public class ElasticsearchExporterConfiguration {
     public boolean variableDocument = true;
 
     public boolean checkpoint = false;
+    public boolean timer = false;
+    public boolean messageStartEventSubscription = false;
+    public boolean processEvent = false;
+    public boolean deploymentDistribution = false;
 
     // index settings
     private Integer numberOfShards = null;
