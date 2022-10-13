@@ -12,6 +12,13 @@ entity moving through the engine. Tokens are also not spawned and consumed for e
 * Activated elements
 * Taken sequence flows
 
+## How does the StreamPlatform and Engine interaction look like?
+
+Open the model and start the token flow to see the interaction between StreamProcessor (maintained by ZDP) and the RecordProcessor (Engine, maintained by the ZPA).
+
+[![engine-bpmn](https://user-images.githubusercontent.com/2758593/195591824-233ca579-96bc-4ee1-b6a3-5449929d75a9.png)](https://modeler.cloud.ultrawombat.com/diagrams/32c22fc0-709a-48d7-afe5-83a0c40a83fd--engine-bpmn?v=1076,651,1)
+
+
 ### Activated Elements
 
 The engine tracks the state of element instances. If they are in the state _Activated_ this is
