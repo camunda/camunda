@@ -115,7 +115,7 @@ jobs:
 
       - id: slack-failure-notify
         name: Send failure slack notification
-        uses: slackapi/slack-github-action@v1.22.0
+        uses: slackapi/slack-github-action@v1.23.0
         if: ${{ always() && needs.qa-testbench.result != 'success' }}
         with:
           payload: |
@@ -144,7 +144,7 @@ jobs:
 
       - id: slack-success-notify
         name: Send success slack notification
-        uses: slackapi/slack-github-action@v1.22.0
+        uses: slackapi/slack-github-action@v1.23.0
         if: ${{ always() && needs.qa-testbench.result == 'success' }}
         with:
           payload: |
