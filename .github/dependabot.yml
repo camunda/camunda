@@ -22,7 +22,6 @@ updates:
       - "dependencies"
       - "backend"
 
-
   - package-ecosystem: "npm"
     directory: "/client"
     schedule:
@@ -38,7 +37,6 @@ updates:
       - "dependencies"
       - "frontend"
 
-
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
@@ -53,13 +51,14 @@ updates:
     labels:
       - "dependencies"
 
-  # release/3.9
+
+  # maintenance/3.9
   - package-ecosystem: "maven"
     directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 10
-    target-branch: "release/3.9.0"
+    target-branch: "maintenance/3.9"
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -76,13 +75,12 @@ updates:
       - "dependencies"
       - "backend"
 
-
   - package-ecosystem: "npm"
     directory: "/client"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 10
-    target-branch: "release/3.9.0"
+    target-branch: "maintenance/3.9"
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -95,13 +93,12 @@ updates:
       - "dependencies"
       - "frontend"
 
-
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 10
-    target-branch: "release/3.9.0"
+    target-branch: "maintenance/3.9"
     commit-message:
       prefix: "chore"
       include: "scope"
