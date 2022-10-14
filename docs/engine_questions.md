@@ -18,7 +18,6 @@ Open the model and start the token flow to see the interaction between StreamPro
 
 [![engine-bpmn](https://user-images.githubusercontent.com/2758593/195849695-e0c0ee19-9557-48ad-89f0-0bcccc845bbd.png)](https://modeler.cloud.ultrawombat.com/diagrams/32c22fc0-709a-48d7-afe5-83a0c40a83fd--engine-bpmn?v=1076,651,1)
 
-
 ### Activated Elements
 
 The engine tracks the state of element instances. If they are in the state _Activated_ this is
