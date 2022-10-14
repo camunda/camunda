@@ -29,8 +29,8 @@ runs:
     - name: Compress test artifacts
       shell: bash
       run: |
-        ls -d **/target/failsafe-reports/ **/target/surefire-reports/ **/*.log
-        tar cafv report.tar.zstd $(ls -d **/target/failsafe-reports/ **/target/surefire-reports/ **/*.log 2>/dev/null)
+        ls -d **/target/failsafe-reports/ **/target/surefire-reports/ **/*.log || true
+        tar cafv report.tar.zstd $(ls -d **/target/failsafe-reports/ **/target/surefire-reports/ **/*.log 2>/dev/null || true)
     - name: Archive Test Results
       uses: actions/upload-artifact@v3
       with:
