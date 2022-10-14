@@ -104,7 +104,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     deployAndStartInstanceForProcess(createStartEndProcess("someProcess"));
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsExportedCount(6);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -443,7 +443,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     zeebeExtension.startProcessInstanceWithVariables(process.getBpmnProcessId(), Map.of("varName", "a,b"));
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(2);
+    waitUntilMinimumProcessInstanceEventsExportedCount(8);
     importAllZeebeEntitiesFromScratch();
 
     // then
