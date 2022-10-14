@@ -3,7 +3,7 @@
 name: Publish Test Results
 on:
   workflow_run:
-    workflows: [CI]
+    workflows: [ CI ]
     types:
       - completed
 jobs:
@@ -27,6 +27,7 @@ jobs:
             gh api $url > "$name.zip"
             unzip -d "$name" "$name.zip"
           done
+          tar xvf report.tar.zstd
 
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
