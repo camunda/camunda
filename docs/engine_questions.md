@@ -16,7 +16,7 @@ entity moving through the engine. Tokens are also not spawned and consumed for e
 
 Open the model and start the token flow to see the interaction between StreamProcessor (maintained by ZDP) and the RecordProcessor (Engine, maintained by the ZPA).
 
-[![engine-bpmn](https://user-images.githubusercontent.com/2758593/195591824-233ca579-96bc-4ee1-b6a3-5449929d75a9.png)](https://modeler.cloud.ultrawombat.com/diagrams/32c22fc0-709a-48d7-afe5-83a0c40a83fd--engine-bpmn?v=1076,651,1)
+[![engine-bpmn](https://user-images.githubusercontent.com/2758593/195849695-e0c0ee19-9557-48ad-89f0-0bcccc845bbd.png)](https://modeler.cloud.ultrawombat.com/diagrams/32c22fc0-709a-48d7-afe5-83a0c40a83fd--engine-bpmn?v=1076,651,1)
 
 
 ### Activated Elements
