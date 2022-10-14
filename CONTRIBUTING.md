@@ -64,6 +64,13 @@ This is a small overview of the contents of the different modules:
 - `journal` contains the append-only log used by the consensus algorithm
 - `snapshots` module abstracting how state snapshots (i.e. `zb-db`) are handled
 
+### Test Execution
+
+Tests can be executed via maven (`mvn verify`) or in your prefered IDE. The Zeebe Team uses mostly [Intellij IDEA](https://www.jetbrains.com/idea/), where we also [provide settings for](https://github.com/camunda/zeebe/tree/main/.idea).
+
+> Note: If you encounter issues while running the test StandaloneGatewaySecurityTest.shouldStartWithTlsEnabled take a look at https://github.com/camunda/zeebe/issues/10488 to resolve it
+
+
 ## Report issues or contact developers
 
 Zeebe uses GitHub issues to organize the development process. If you want to
