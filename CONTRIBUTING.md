@@ -70,7 +70,6 @@ Tests can be executed via maven (`mvn verify`) or in your prefered IDE. The Zeeb
 
 > Note: If you encounter issues (like `java.lang.UnsatisfiedLinkError: failed to load the required native library`) while running the test StandaloneGatewaySecurityTest.shouldStartWithTlsEnabled take a look at https://github.com/camunda/zeebe/issues/10488 to resolve it
 
-
 ## Report issues or contact developers
 
 Zeebe uses GitHub issues to organize the development process. If you want to
