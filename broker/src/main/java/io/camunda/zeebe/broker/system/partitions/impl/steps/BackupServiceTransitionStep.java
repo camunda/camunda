@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
-import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.management.BackupService;
@@ -19,7 +18,6 @@ import io.camunda.zeebe.journal.file.SegmentFile;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.function.Predicate;
 
 public final class BackupServiceTransitionStep implements PartitionTransitionStep {
@@ -115,7 +113,6 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
             context.getNodeId(),
             context.getPartitionId(),
             context.getBrokerCfg().getCluster().getPartitionsCount(),
-            getPartitionMembers(context),
             context.getBackupStore(),
             context.getPersistedSnapshotStore(),
             context.getRaftPartition().dataDirectory().toPath(),
@@ -142,14 +139,6 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
     final CheckpointRecordsProcessor checkpointRecordsProcessor =
         new CheckpointRecordsProcessor(backupManager, context.getPartitionId());
     context.setCheckpointProcessor(checkpointRecordsProcessor);
-  }
-
-  // Brokers which are members of this partition's replication group
-  private static List<Integer> getPartitionMembers(final PartitionTransitionContext context) {
-    return context.getRaftPartition().members().stream()
-        .map(MemberId::id)
-        .map(Integer::parseInt)
-        .toList();
   }
 
   private boolean shouldInstallOnTransition(final Role newRole, final Role currentRole) {

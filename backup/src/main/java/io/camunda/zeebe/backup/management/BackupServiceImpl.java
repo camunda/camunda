@@ -7,17 +7,14 @@
  */
 package io.camunda.zeebe.backup.management;
 
-import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -182,45 +179,40 @@ final class BackupServiceImpl {
   }
 
   void failInProgressBackups(
-      final int partitionId,
-      final long lastCheckpointId,
-      final Collection<Integer> brokers,
-      final ConcurrencyControl executor) {
+      final int partitionId, final long lastCheckpointId, final ConcurrencyControl executor) {
     if (lastCheckpointId != CheckpointState.NO_CHECKPOINT) {
       executor.run(
-          () -> {
-            final var backupIds =
-                brokers.stream()
-                    .map(b -> new BackupIdentifierImpl(b, partitionId, lastCheckpointId))
-                    .toList();
-            // Fail backups initiated by previous leaders
-            backupIds.forEach(this::failInProgressBackup);
-          });
+          () ->
+              backupStore
+                  .list(
+                      new BackupIdentifierWildcardImpl(
+                          Optional.empty(),
+                          Optional.of(partitionId),
+                          Optional.of(lastCheckpointId)))
+                  .thenAccept(backups -> backups.forEach(this::failInProgressBackup))
+                  .exceptionally(
+                      failure -> {
+                        LOG.warn("Failed to list backups that should be marked as failed", failure);
+                        return null;
+                      }));
     }
   }
 
-  private void failInProgressBackup(final BackupIdentifier backupId) {
+  private void failInProgressBackup(final BackupStatus backupStatus) {
+    if (backupStatus.statusCode() != BackupStatusCode.IN_PROGRESS) {
+      return;
+    }
+
+    LOG.info(
+        "The backup {} initiated by previous leader is still in progress. Marking it as failed.",
+        backupStatus.id());
+
     backupStore
-        .getStatus(backupId)
-        .thenAccept(
-            status -> {
-              if (status.statusCode() == BackupStatusCode.IN_PROGRESS) {
-                LOG.info(
-                    "The backup {} initiated by previous leader is still in progress. Marking it as failed.",
-                    backupId);
-                backupStore
-                    .markFailed(backupId, "Backup is cancelled due to leader change.")
-                    .thenAccept(ignore -> LOG.trace("Marked backup {} as failed.", backupId))
-                    .exceptionally(
-                        failed -> {
-                          LOG.warn("Failed to mark backup {} as failed", backupId, failed);
-                          return null;
-                        });
-              }
-            })
+        .markFailed(backupStatus.id(), "Backup is cancelled due to leader change.")
+        .thenAccept(ignore -> LOG.trace("Marked backup {} as failed.", backupStatus.id()))
         .exceptionally(
-            error -> {
-              LOG.warn("Failed to retrieve status of backup {}", backupId);
+            failed -> {
+              LOG.warn("Failed to mark backup {} as failed", backupStatus.id(), failed);
               return null;
             });
   }
