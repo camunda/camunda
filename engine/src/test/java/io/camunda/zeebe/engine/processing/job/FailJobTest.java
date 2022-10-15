@@ -311,6 +311,8 @@ public final class FailJobTest {
             .withName("foo")
             .getFirst();
 
-    assertThat(variableRecord.getValue().getValue()).isEqualTo("\"bar\"");
+    assertThat(variableRecord.getValue().getValue())
+        .describedAs("check set failing job variables locally")
+        .isEqualTo("\"bar\"");
   }
 }
