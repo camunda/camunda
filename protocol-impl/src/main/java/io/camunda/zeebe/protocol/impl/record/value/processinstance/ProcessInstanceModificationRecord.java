@@ -80,6 +80,13 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
         .toList();
   }
 
+  @Override
+  public Set<Long> getActivatedElementInstanceKeys() {
+    return activatedElementInstanceKeys.stream()
+        .map(LongValue::getValue)
+        .collect(Collectors.toSet());
+  }
+
   /** Returns true if this record has terminate instructions, otherwise false. */
   @JsonIgnore
   public boolean hasTerminateInstructions() {
@@ -102,12 +109,6 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       final ProcessInstanceModificationActivateInstruction activateInstruction) {
     activateInstructionsProperty.add().copy(activateInstruction);
     return this;
-  }
-
-  public Set<Long> getActivatedElementInstanceKeys() {
-    return activatedElementInstanceKeys.stream()
-        .map(LongValue::getValue)
-        .collect(Collectors.toSet());
   }
 
   public ProcessInstanceModificationRecord addActivatedElementInstanceKey(final long key) {
