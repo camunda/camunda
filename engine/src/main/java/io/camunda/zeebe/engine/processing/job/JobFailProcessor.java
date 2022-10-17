@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
@@ -37,18 +38,21 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
   private final KeyGenerator keyGenerator;
   private final JobMetrics jobMetrics;
   private final JobBackoffChecker jobBackoffChecker;
+  private final VariableBehavior variableBehavior;
 
   public JobFailProcessor(
       final ZeebeState state,
       final KeyGenerator keyGenerator,
       final JobMetrics jobMetrics,
-      final JobBackoffChecker jobBackoffChecker) {
+      final JobBackoffChecker jobBackoffChecker,
+      final VariableBehavior variableBehavior) {
     jobState = state.getJobState();
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;
     defaultProcessor =
         new DefaultJobCommandPreconditionGuard("fail", jobState, this::acceptCommand);
     this.jobMetrics = jobMetrics;
+    this.variableBehavior = variableBehavior;
   }
 
   @Override
@@ -66,6 +70,18 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
       final long key,
       final Intent intent,
       final JobRecord value) {
+
+    // set fail job variables locally
+    final DirectBuffer variables = value.getVariablesBuffer();
+    if (variables.capacity() > 0) {
+      variableBehavior.mergeLocalDocument(
+          value.getElementInstanceKey(),
+          value.getProcessDefinitionKey(),
+          value.getProcessInstanceKey(),
+          value.getBpmnProcessIdBuffer(),
+          variables);
+    }
+
     if (value.getRetries() <= 0) {
       final DirectBuffer jobErrorMessage = value.getErrorMessageBuffer();
       DirectBuffer incidentErrorMessage = DEFAULT_ERROR_MESSAGE;
@@ -101,6 +117,8 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
     failedJob.setRetries(retries);
     failedJob.setErrorMessage(command.getValue().getErrorMessageBuffer());
     failedJob.setRetryBackoff(retryBackOff);
+    failedJob.setVariables(command.getValue().getVariablesBuffer());
+
     if (retries > 0 && retryBackOff > 0) {
       final long receivedTime = command.getTimestamp();
       failedJob.setRecurringTime(receivedTime + retryBackOff);
