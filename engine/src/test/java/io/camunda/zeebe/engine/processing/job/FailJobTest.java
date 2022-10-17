@@ -307,12 +307,12 @@ public final class FailJobTest {
     final Record<VariableRecordValue> variableRecord =
         RecordingExporter.variableRecords()
             .withProcessInstanceKey(job.getProcessInstanceKey())
-            .withScopeKey(failRecord.getValue().getElementInstanceKey())
-            .withName("foo")
             .getFirst();
 
-    assertThat(variableRecord.getValue().getValue())
+    Assertions.assertThat(variableRecord.getValue())
         .describedAs("check set failing job variables locally")
-        .isEqualTo("\"bar\"");
+        .hasScopeKey(failRecord.getValue().getElementInstanceKey())
+        .hasName("foo")
+        .hasValue("\"bar\"");
   }
 }
