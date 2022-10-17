@@ -3938,7 +3938,16 @@ bpmn-js@^9.0.3:
     object-refs "^0.3.0"
     tiny-svg "^2.2.4"
 
-bpmn-moddle@7.1.3, bpmn-moddle@^7.1.3:
+bpmn-moddle@8.0.0:
+  version "8.0.0"
+  resolved "https://registry.yarnpkg.com/bpmn-moddle/-/bpmn-moddle-8.0.0.tgz#bb6da18f78bb4ec5abe1b5b995c950d16548e3e4"
+  integrity sha512-mHmtIVzUyZcPMKKl/REq151gYxEtZxvivKnIEp/RtuRm8SOgxAK58uYBkP+jQQBy6XudwObRTH0pwyeKLALWrA==
+  dependencies:
+    min-dash "^4.0.0"
+    moddle "^6.0.0"
+    moddle-xml "^10.0.0"
+
+bpmn-moddle@^7.1.3:
   version "7.1.3"
   resolved "https://registry.yarnpkg.com/bpmn-moddle/-/bpmn-moddle-7.1.3.tgz#5b4592001e8f23dbdb18c557531e06489462bf42"
   integrity sha512-ZcBfw0NSOdYTSXFKEn7MOXHItz7VfLZTrFYKO8cK6V8ZzGjCcdiLIOiw7Lctw1PJsihhLiZQS8Htj2xKf+NwCg==
@@ -9940,6 +9949,11 @@ min-dash@^3.0.0, min-dash@^3.5.2, min-dash@^3.8.1:
   resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-3.8.1.tgz#09a8bd8a041d65eec4732042cde9cb24a6e84b0d"
   integrity sha512-evumdlmIlg9mbRVPbC4F5FuRhNmcMS5pvuBUbqb1G9v09Ro0ImPEgz5n3khir83lFok1inKqVDjnKEg3GpDxQg==
 
+min-dash@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-4.0.0.tgz#4a1afec4c4d70f510b6e241d0550493d4ac0f161"
+  integrity sha512-piIvVJ/nxuA4+LpnYIzF6oCtRvdtDvQJteSC+H768H2UvPKFKIt5oiJnUVtr0ZdchneXTcvUZ91vIrvWVIN0AA==
+
 min-document@^2.19.0:
   version "2.19.0"
   resolved "https://registry.yarnpkg.com/min-document/-/min-document-2.19.0.tgz#7bd282e3f5842ed295bb748cdd9f1ffa2c824685"
@@ -10103,6 +10117,15 @@ mobx@6.6.2:
   resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.6.2.tgz#9d9102a0e337e3fc09cb2d8ca0c6f00b61270d5a"
   integrity sha512-IOpS0bf3+hXIhDIy+CmlNMBfFpAbHS0aVHcNC+xH/TFYEKIIVDKNYRh9eKlXuVfJ1iRKAp0cRVmO145CyJAMVQ==
 
+moddle-xml@^10.0.0:
+  version "10.0.0"
+  resolved "https://registry.yarnpkg.com/moddle-xml/-/moddle-xml-10.0.0.tgz#7b0815982b375ece4338258ec86bc6be4f05ed7b"
+  integrity sha512-e5qG0uC9ebHXInLEKW9pZNqcAK7ALCOKmcLw8jmepBPY9BiUZFi+8Th/Cydog3S1rrUXyyo0pqaHaCvc1zt6VA==
+  dependencies:
+    min-dash "^4.0.0"
+    moddle "^6.0.0"
+    saxen "^8.1.2"
+
 moddle-xml@^9.0.5, moddle-xml@^9.0.6:
   version "9.0.6"
   resolved "https://registry.yarnpkg.com/moddle-xml/-/moddle-xml-9.0.6.tgz#282b2a2232065a82556ba3fbbe3010b374f95cbf"
@@ -10118,6 +10141,13 @@ moddle@^5.0.1, moddle@^5.0.2:
   integrity sha512-EjnQkSaZClHMsM3H/guBy9h7AmHUICH0Pf8H1VnnYGUXy2hkZQU4gqEAyHywJzMRAhYX87pXjH2NtyigF7evkA==
   dependencies:
     min-dash "^3.0.0"
+
+moddle@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/moddle/-/moddle-6.0.0.tgz#ccfae6936430e8294a98619bcbefbf1950eeaaa4"
+  integrity sha512-dHYSJpGV0R0X8cJeWWUnE0VqCA0SFP0jZYQtO23EdsBk+MpAgSpdhXadYR6WbHElKroB6XTbifpsWro26UlP6Q==
+  dependencies:
+    min-dash "^4.0.0"
 
 moment-duration-format-commonjs@^1.0.0:
   version "1.0.1"
