@@ -90,7 +90,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -235,6 +234,9 @@ public class ClusteringRule extends ExternalResource {
       setInitialContactPoints(contactPoints).accept(brokerCfg);
     }
 
+    // start brokers
+    final var brokersStarted = startBrokers();
+
     // create gateway
     gateway = createGateway();
     gateway.start().join();
@@ -243,7 +245,7 @@ public class ClusteringRule extends ExternalResource {
     client = createClient();
 
     try {
-      waitUntilBrokersStarted();
+      brokersStarted.join();
       waitForTopology(
           assertion -> assertion.isComplete(clusterSize, partitionCount, replicationFactor));
       LOG.info("All brokers in topology {}", getTopologyFromClient());
@@ -258,15 +260,21 @@ public class ClusteringRule extends ExternalResource {
   @Override
   protected void after() {
     LOG.debug("Closing ClusteringRule...");
-    brokers.values().parallelStream()
-        .forEach(
-            b -> {
-              try {
-                b.close();
-              } catch (final Exception e) {
-                LOG.error("Failed to close broker: ", e);
-              }
-            });
+
+    // Previously we used `Collection#parallelStream` in an attempt to achieve the same but
+    // that didn't work because requesting a parallel stream does not guarantee that
+    // stopping the brokers will actually run in parallel.
+    final var shutdownFutures =
+        brokers.values().stream()
+            .map(b -> CompletableFuture.runAsync(b::close))
+            .toArray(CompletableFuture[]::new);
+    CompletableFuture.allOf(shutdownFutures)
+        .exceptionally(
+            t -> {
+              LOG.error("Failed to close broker", t);
+              return null;
+            })
+        .join();
     systemContexts.values().forEach(ctx -> ctx.getScheduler().stop());
     systemContexts.clear();
     brokers.clear();
@@ -279,13 +287,18 @@ public class ClusteringRule extends ExternalResource {
     return brokers.computeIfAbsent(nodeId, this::createBroker);
   }
 
-  private void waitUntilBrokersStarted()
-      throws InterruptedException, TimeoutException, ExecutionException {
+  private CompletableFuture<Void> startBrokers() {
+    //noinspection resource
     final var brokerStartFutures =
-        brokers.values().parallelStream().map(Broker::start).toArray(CompletableFuture[]::new);
-    CompletableFuture.allOf(brokerStartFutures).get(120, TimeUnit.SECONDS);
-
-    assertThat(partitionLatch.await(60, TimeUnit.SECONDS)).isTrue();
+        brokers.values().stream()
+            // Broker#start looks async but is actually sync (see Broker#internalStart).
+            // Here we start all brokers in parallel on the common fork-join pool.
+            // Previously we used `Collection#parallelStream` in an attempt to achieve the same but
+            // that didn't work because requesting a parallel stream does not guarantee that
+            // starting the brokers will actually run in parallel.
+            .map(b -> CompletableFuture.runAsync(() -> b.start().join()))
+            .toArray(CompletableFuture[]::new);
+    return CompletableFuture.allOf(brokerStartFutures).orTimeout(120, TimeUnit.SECONDS);
   }
 
   private Broker createBroker(final int nodeId) {
@@ -511,7 +524,7 @@ public class ClusteringRule extends ExternalResource {
     brokers.forEach(this::stopBroker);
     brokers.forEach(this::getBroker);
     try {
-      waitUntilBrokersStarted();
+      startBrokers().join();
       waitForTopology(
           assertion -> assertion.isComplete(clusterSize, partitionCount, replicationFactor));
     } catch (final Exception e) {

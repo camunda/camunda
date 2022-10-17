@@ -70,6 +70,7 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Random;
@@ -120,7 +121,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private volatile long term;
   private MemberId lastVotedFor;
   private long commitIndex;
-  private volatile long firstCommitIndex;
+  private long firstCommitIndex;
   private volatile boolean started;
   private EntryValidator entryValidator;
   // Used for randomizing election timeout
@@ -216,6 +217,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     // Register protocol listeners.
     registerHandlers(protocol);
     started = true;
+
+    addCommitListener(new AwaitingReadyCommitListener());
   }
 
   private void setSnapshot(final PersistedSnapshot persistedSnapshot) {
@@ -413,8 +416,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    *
    * @param committedEntry the most recently committed entry
    */
-  public void notifyCommitListeners(final IndexedRaftLogEntry committedEntry) {
-    commitListeners.forEach(listener -> listener.onCommit(committedEntry.index()));
+  public void notifyCommittedEntryListeners(final IndexedRaftLogEntry committedEntry) {
     committedEntryListeners.forEach(listener -> listener.onCommit(committedEntry));
   }
 
@@ -439,14 +441,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       if (configurationIndex > previousCommitIndex && configurationIndex <= commitIndex) {
         cluster.commit();
       }
-      setFirstCommitIndex(commitIndex);
-      // On start up, set the state to READY after the follower has caught up with the leader
-      // https://github.com/zeebe-io/zeebe/issues/4877
-      if (state == State.ACTIVE && commitIndex >= firstCommitIndex) {
-        state = State.READY;
-        stateChangeListeners.forEach(l -> l.accept(state));
-      }
       replicationMetrics.setCommitIndex(commitIndex);
+      notifyCommitListeners(commitIndex);
     }
     return previousCommitIndex;
   }
@@ -1158,5 +1154,28 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     NONE,
     STARTED,
     COMPLETED
+  }
+
+  /** Commit listener is active only until the server is ready * */
+  final class AwaitingReadyCommitListener implements RaftCommitListener {
+    private final Logger throttledLogger = new ThrottledLogger(log, Duration.ofSeconds(30));
+
+    @Override
+    public void onCommit(final long index) {
+      setFirstCommitIndex(index);
+      // On start up, set the state to READY after the follower has caught up with the leader
+      // https://github.com/zeebe-io/zeebe/issues/4877
+      if (index >= firstCommitIndex) {
+        state = State.READY;
+        log.info("Commit index is {}. RaftServer is ready", index);
+        stateChangeListeners.forEach(l -> l.accept(state));
+        removeCommitListener(this);
+      } else {
+        throttledLogger.info(
+            "Commit index is {}. RaftServer is ready only after it has committed events up to index {}",
+            commitIndex,
+            firstCommitIndex);
+      }
+    }
   }
 }

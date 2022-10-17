@@ -19,7 +19,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
@@ -36,14 +35,12 @@ public final class BackupService extends Actor implements BackupManager {
   private final PersistedSnapshotStore snapshotStore;
   private final Path segmentsDirectory;
   private final Predicate<Path> isSegmentsFile;
-  private final List<Integer> partitionMembers;
   private final BackupManagerMetrics metrics;
 
   public BackupService(
       final int nodeId,
       final int partitionId,
       final int numberOfPartitions,
-      final List<Integer> partitionMembers,
       final BackupStore backupStore,
       final PersistedSnapshotStore snapshotStore,
       final Path segmentsDirectory,
@@ -51,7 +48,6 @@ public final class BackupService extends Actor implements BackupManager {
     this.nodeId = nodeId;
     this.partitionId = partitionId;
     this.numberOfPartitions = numberOfPartitions;
-    this.partitionMembers = partitionMembers;
     this.snapshotStore = snapshotStore;
     this.segmentsDirectory = segmentsDirectory;
     this.isSegmentsFile = isSegmentsFile;
@@ -152,8 +148,7 @@ public final class BackupService extends Actor implements BackupManager {
 
   @Override
   public void failInProgressBackup(final long lastCheckpointId) {
-    internalBackupManager.failInProgressBackups(
-        partitionId, lastCheckpointId, partitionMembers, actor);
+    internalBackupManager.failInProgressBackups(partitionId, lastCheckpointId, actor);
   }
 
   private BackupIdentifierImpl getBackupId(final long checkpointId) {

@@ -107,9 +107,13 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
       final var activated = stateTransitionBehavior.transitionToActivated(activating);
       final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-      stateTransitionBehavior
-          .transitionToCompleted(element, completing)
-          .ifLeft(failure -> incidentBehavior.createIncident(failure, completing));
+
+      variableMappingBehavior
+          .applyOutputMappings(completing, element)
+          .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
+          .ifRightOrLeft(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
+              failure -> incidentBehavior.createIncident(failure, completing));
     }
   }
 

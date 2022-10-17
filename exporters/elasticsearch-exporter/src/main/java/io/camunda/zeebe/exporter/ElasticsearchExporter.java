@@ -200,6 +200,18 @@ public class ElasticsearchExporter implements Exporter {
       if (index.checkpoint) {
         createValueIndexTemplate(ValueType.CHECKPOINT);
       }
+      if (index.timer) {
+        createValueIndexTemplate(ValueType.TIMER);
+      }
+      if (index.messageStartEventSubscription) {
+        createValueIndexTemplate(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION);
+      }
+      if (index.processEvent) {
+        createValueIndexTemplate(ValueType.PROCESS_EVENT);
+      }
+      if (index.deploymentDistribution) {
+        createValueIndexTemplate(ValueType.DEPLOYMENT_DISTRIBUTION);
+      }
     }
 
     indexTemplatesCreated = true;

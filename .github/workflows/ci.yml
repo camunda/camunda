@@ -1,8 +1,9 @@
-name: Tests
+name: CI
 
 on:
   push:
     branches:
+      - main
       - stable/*
       - release-*
       - trying
@@ -36,7 +37,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
         with:
-          maven-cache: true
+          maven-cache: 'true'
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -94,7 +95,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
         with:
-          maven-cache: true
+          maven-cache: 'true'
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -142,7 +143,7 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
-          maven-cache: true
+          maven-cache: 'true'
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -212,7 +213,7 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
-          maven-cache: true
+          maven-cache: 'true'
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -275,7 +276,7 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
-          maven-cache: true
+          maven-cache: 'true'
           maven-cache-key-modifier: java-client
       - uses: ./.github/actions/build-zeebe
         with:
@@ -320,7 +321,7 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
-          maven-cache: true
+          maven-cache: 'true'
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
@@ -368,7 +369,7 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
-          maven-cache: true
+          maven-cache: 'true'
           maven-cache-key-modifier: java-checks
       - run: mvn -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
   docker-checks:
@@ -402,10 +403,10 @@ jobs:
           REVISION: ${{ github.sha }}
           VERSION: ${{ steps.build-docker.outputs.version }}
         run: ${PWD}/docker/test/verify.sh '${{ steps.build-docker.outputs.image }}'
-  # Used by bors to check all tests, including the unit test matrix.
-  # New test jobs must be added to the `needs` lists!
-  # This name is hard-referenced from bors.toml; remember to update that if this name changes
   test-summary:
+    # Used by bors to check all tests, including the unit test matrix.
+    # New test jobs must be added to the `needs` lists!
+    # This name is hard-referenced from bors.toml; remember to update that if this name changes
     name: Test summary
     runs-on: ubuntu-latest
     needs:
@@ -422,11 +423,10 @@ jobs:
       - docker-checks
     steps:
       - run: exit 0
-
-  # We need to upload the event file as an artifact in order to support
-  # publishing the results of forked repositories
-  # https://github.com/EnricoMi/publish-unit-test-result-action#support-fork-repositories-and-dependabot-branches
   event_file:
+    # We need to upload the event file as an artifact in order to support
+    # publishing the results of forked repositories
+    # https://github.com/EnricoMi/publish-unit-test-result-action#support-fork-repositories-and-dependabot-branches
     name: "Event File"
     runs-on: ubuntu-latest
     needs:
@@ -445,3 +445,141 @@ jobs:
           name: Event File
           path: ${{ github.event_path }}
           retention-days: 1
+  deploy-snapshots:
+    name: Deploy snapshot artifacts
+    needs: [ test-summary ]
+    runs-on: ubuntu-latest
+    if: github.repository == 'camunda/zeebe' && github.ref == 'refs/heads/main'
+    concurrency:
+      group: deploy-maven-snapshot
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v3
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.4.2
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
+      - uses: actions/setup-java@v3.5.1
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          server-id: camunda-nexus
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+      # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
+      # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
+      # not resolve-able by the Javadoc generator
+      - run: mvn -B -D skipTests -D skipChecks compile generate-sources source:jar javadoc:jar deploy
+        env:
+          MAVEN_USERNAME: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
+          MAVEN_PASSWORD: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
+  deploy-docker-snapshot:
+    name: Deploy snapshot Docker image
+    needs: [ test-summary ]
+    runs-on: ubuntu-latest
+    if: github.repository == 'camunda/zeebe' && github.ref == 'refs/heads/main'
+    concurrency:
+      group: deploy-docker-snapshot
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v3
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.4.2
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+      - uses: ./.github/actions/build-docker
+        id: build-docker
+        with:
+          repository: camunda/zeebe
+          version: SNAPSHOT
+          push: true
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+  notify-if-failed:
+    name: Send slack notification on build failure
+    runs-on: ubuntu-latest
+    needs: [ test-summary, deploy-snapshots, deploy-docker-snapshot ]
+    if: failure() && github.repository == 'camunda/zeebe' && github.ref == 'refs/heads/main'
+    steps:
+      - id: slack-notify
+        name: Send slack notification
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "text": ":alarm: Build on `main` failed! :alarm:\n${{ github.event.head_commit.url }}",
+             	"blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: Build on `main` failed! :alarm:"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Please check the related commit: ${{ github.event.head_commit.url }}\n \\cc @zeebe-medic"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+  auto-merge:
+    # This workflow will auto merge a PR authored by dependabot[bot]. It runs only on open PRs ready for
+    # review.
+    #
+    # It will merge the PR only if: it is authored by dependabot[bot], is a patch semantic update, and
+    # all CI checks are successful (ignoring the soon-to-be-removed Jenkins check).
+    #
+    # The workflow is divided into multiple sequential jobs to allow giving only minimal permissions to
+    # the GitHub token passed around.
+    #
+    # Once we're using the merge queue feature, I think we can simplify this workflow a lot by relying
+    # on dependabot merging PRs via its commands, as it will always wait for checks to be green before
+    # merging.
+    name: Auto-merge dependabot PRs
+    runs-on: ubuntu-latest
+    needs: [ test-summary ]
+    if: github.repository == 'camunda/zeebe' && github.actor == 'dependabot[bot]'
+    permissions:
+      checks: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v3
+      - id: metadata
+        name: Fetch dependency metadata
+        uses: dependabot/fetch-metadata@v1.3.4
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - id: approve-and-merge
+        name: Approve and merge PR
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        run: gh pr review ${{ github.event.pull_request.number }} --approve -b "bors merge"
+        env:
+          GITHUB_TOKEN: "${{secrets.GITHUB_TOKEN}}"

@@ -16,6 +16,11 @@
  */
 package io.atomix.raft;
 
+/**
+ * Will be notified when a new batch is committed. It is not guaranteed to get notified for each
+ * index. For example, if records at index 1 to 5 are committed together, the listener can be
+ * invoked just once with index 5.
+ */
 @FunctionalInterface
 public interface RaftCommitListener {
 

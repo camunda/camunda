@@ -37,6 +37,7 @@ public final class ZeebeAssignmentDefinitionTest extends BpmnModelElementInstanc
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "assignee", false, false),
-        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "candidateGroups", false, false));
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "candidateGroups", false, false),
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "candidateUsers", false, false));
   }
 }

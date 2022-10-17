@@ -188,6 +188,10 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     return getInterruptingElementId().capacity() > 0;
   }
 
+  public void clearInterruptedState() {
+    interruptingEventKeyProp.setValue("");
+  }
+
   public long getParentKey() {
     return parentKeyProp.getValue();
   }
