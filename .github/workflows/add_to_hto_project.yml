@@ -1,0 +1,20 @@
+name: Add to HTO board
+
+on:
+  issues:
+    types:
+      - opened
+      - transferred
+  pull_request:
+    types:
+      - opened
+
+jobs:
+  Exec:
+    name: Add issue to project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@d3b6ae9953cfef24c2e92848b832e7c91d6dba67
+        with:
+          project-url: ${{ secrets.HTO_PROJECT_URL }}
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
