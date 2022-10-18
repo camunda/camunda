@@ -7,9 +7,10 @@
  */
 package io.camunda.zeebe.broker.system.monitoring;
 
+import io.camunda.zeebe.scheduler.AsyncClosable;
 import java.util.function.LongSupplier;
 
-public interface DiskSpaceUsageMonitor {
+public interface DiskSpaceUsageMonitor extends AsyncClosable {
 
   void addDiskUsageListener(DiskSpaceUsageListener listener);
 
