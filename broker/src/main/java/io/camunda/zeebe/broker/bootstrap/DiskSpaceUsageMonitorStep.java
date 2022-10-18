@@ -8,12 +8,15 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitorActor;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.function.LongSupplier;
 
 class DiskSpaceUsageMonitorStep extends AbstractBrokerStartupStep {
 
@@ -24,6 +27,12 @@ class DiskSpaceUsageMonitorStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture) {
 
     final var data = brokerStartupContext.getBrokerConfiguration().getData();
+
+    if (!data.isDiskUsageMonitoringEnabled()) {
+      brokerStartupContext.setDiskSpaceUsageMonitor(new DisabledDiskUsageMonitor());
+      startupFuture.complete(brokerStartupContext);
+      return;
+    }
 
     startDiskUsageMonitorActor(brokerStartupContext, startupFuture, data);
   }
@@ -38,6 +47,7 @@ class DiskSpaceUsageMonitorStep extends AbstractBrokerStartupStep {
     if (diskSpaceUsageMonitor instanceof DiskSpaceUsageMonitorActor actor) {
       stopDiskUsageMonitorActor(brokerShutdownContext, concurrencyControl, shutdownFuture, actor);
     } else {
+      brokerShutdownContext.setDiskSpaceUsageMonitor(null);
       shutdownFuture.complete(brokerShutdownContext);
     }
   }
@@ -104,5 +114,17 @@ class DiskSpaceUsageMonitorStep extends AbstractBrokerStartupStep {
   @Override
   public String getName() {
     return "Disk Space Usage Monitor";
+  }
+
+  private static final class DisabledDiskUsageMonitor implements DiskSpaceUsageMonitor {
+
+    @Override
+    public void addDiskUsageListener(final DiskSpaceUsageListener listener) {}
+
+    @Override
+    public void removeDiskUsageListener(final DiskSpaceUsageListener listener) {}
+
+    @Override
+    public void setFreeDiskSpaceSupplier(final LongSupplier freeDiskSpaceSupplier) {}
   }
 }
