@@ -11,7 +11,6 @@ import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
@@ -19,77 +18,61 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.snapshots.SnapshotId;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.unit.DataSize;
 
-@RunWith(Parameterized.class)
-public class ClusteredSnapshotTest {
+final class ClusteredSnapshotTest {
 
   public static final Logger LOG = LoggerFactory.getLogger("ClusteredSnapshotTest");
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(5);
 
-  @Rule
-  public final ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3, this::configureBroker);
+  @RegisterExtension
+  private final ClusteringRuleExtension clusteringRule =
+      new ClusteringRuleExtension(1, 3, 3, this::configureBroker);
 
-  @Parameter(0)
-  public Consumer<ClusteringRule> snapshotTrigger;
-
-  @Parameter(1)
-  public String description;
-
-  @Parameters(name = "{index}: {1}")
-  public static Object[][] snapshotTriggers() {
-    return new Object[][] {
-      new Object[] {
-        (Consumer<ClusteringRule>)
-            (rule) -> {
-              LOG.info("Triggerring snapshots using admin api");
-              rule.triggerAndWaitForSnapshots();
-            },
-        "explicit trigger snapshot"
-      },
-      new Object[] {
-        (Consumer<ClusteringRule>)
-            (rule) -> {
-              LOG.info("Increasing clock by snapshot interval {}", SNAPSHOT_INTERVAL);
-              rule.getClock().addTime(SNAPSHOT_INTERVAL);
-            },
-        "implicit snapshot by advancing the clock"
-      }
-    };
+  public static Stream<Arguments> snapshotTriggers() {
+    return Stream.of(
+        Arguments.of(
+            Named.of(
+                "explicit trigger snapshot",
+                (Consumer<ClusteringRule>)
+                    (rule) -> {
+                      LOG.info("Triggering snapshots using admin api");
+                      rule.triggerAndWaitForSnapshots();
+                    })),
+        Arguments.of(
+            Named.of(
+                "implicit snapshot by advancing the clock",
+                (Consumer<ClusteringRule>)
+                    (rule) -> {
+                      LOG.info("Increasing clock by snapshot interval {}", SNAPSHOT_INTERVAL);
+                      rule.getClock().addTime(SNAPSHOT_INTERVAL);
+                    })));
   }
 
-  @After
-  public void cleanUp() {
+  @AfterEach
+  void cleanUp() {
     ControllableExporter.updatePosition(true);
-    ControllableExporter.EXPORTED_RECORDS.set(0);
-    ControllableExporter.RECORD_TYPE_FILTER.set(r -> true);
-    ControllableExporter.VALUE_TYPE_FILTER.set(r -> true);
   }
 
-  @Test
-  public void shouldTakeSnapshotsOnAllNodes() {
+  @ParameterizedTest
+  @MethodSource("snapshotTriggers")
+  void shouldTakeSnapshotsOnAllNodes(final Consumer<ClusteringRule> snapshotTrigger) {
     // given
     ControllableExporter.updatePosition(true);
 
@@ -100,13 +83,14 @@ public class ClusteredSnapshotTest {
     // when - then
     awaitUntilAsserted(
         (broker) -> {
-          triggerSnapshotRoutine();
+          snapshotTrigger.accept(clusteringRule);
           assertThat(broker).havingSnapshot();
         });
   }
 
-  @Test
-  public void shouldSendSnapshotOnReconnect() {
+  @ParameterizedTest()
+  @MethodSource("snapshotTriggers")
+  void shouldSendSnapshotOnReconnect(final Consumer<ClusteringRule> snapshotTrigger) {
     // given
     final var followerId = clusteringRule.stopAnyFollower();
     final var leaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
@@ -133,133 +117,13 @@ public class ClusteredSnapshotTest {
     assertThat(clusteringRule.getBroker(followerId)).havingSnapshot();
   }
 
-  @Test
-  public void shouldIncludeExportedPositionInSnapshot() {
-    // given
-    ControllableExporter.updatePosition(true);
-
-    publishMessages();
-    ControllableExporter.updatePosition(false);
-    publishMessages();
-
-    // when - then
-    awaitUntilAsserted(
-        (broker) -> {
-          triggerSnapshotRoutine();
-          assertThat(broker)
-              .havingSnapshot()
-              .withExportedPosition(ControllableExporter.lastUpdatedPosition);
-        });
-  }
-
-  @Test
-  public void shouldTakeSnapshotWhenExporterPositionIsMinusOne() {
-    // given
-    // an exporter is configured, but nothing gets exported
-    ControllableExporter.updatePosition(false);
-    publishMessages();
-
-    // when
-    triggerSnapshotRoutine();
-
-    // then
-    awaitUntilAsserted(
-        (broker) -> {
-          assertThat(broker).havingSnapshot().withIndex(0).withTerm(0).withExportedPosition(0);
-        });
-  }
-
-  @Test
-  public void shouldKeepIndexAndTerm() {
-    // given
-    ControllableExporter.updatePosition(false);
-    removeExporters();
-    restartCluster();
-    publishMessages();
-    triggerSnapshotRoutine();
-
-    // expect - each broker has created a snapshot
-    awaitUntilAsserted(
-        (broker) -> {
-          assertThat(broker).havingSnapshot().withExportedPosition(Long.MAX_VALUE);
-        });
-
-    final Map<Integer, SnapshotId> snapshotsByBroker =
-        clusteringRule.getTopologyFromClient().getBrokers().stream()
-            .collect(Collectors.toMap(BrokerInfo::getNodeId, this::getSnapshot));
-
-    LOG.info("Snapshots before configuring exporters {}", snapshotsByBroker);
-
-    // when
-    configureExporters();
-    restartCluster();
-    publishMessages();
-    triggerSnapshotRoutine();
-
-    // then
-    awaitUntilAsserted(
-        (broker) -> {
-          final SnapshotId expectedSnapshot =
-              snapshotsByBroker.get(broker.getConfig().getCluster().getNodeId());
-          assertThat(broker)
-              .havingSnapshot()
-              .withIndex(expectedSnapshot.getIndex())
-              .withTerm(expectedSnapshot.getTerm())
-              .withExportedPosition(0);
-        });
-  }
-
-  @Test
-  public void shouldNotTakeNewSnapshot() {
-    // given
-    ControllableExporter.updatePosition(false);
-    removeExporters();
-    restartCluster();
-    publishMessages();
-
-    final var leaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
-    final var leaderAdminService =
-        clusteringRule.getBroker(leaderId).getBrokerContext().getBrokerAdminService();
-    final var expectedProcessedPosition =
-        leaderAdminService.getPartitionStatus().get(1).getProcessedPosition();
-
-    // expect
-    awaitUntilAsserted(
-        (broker) -> {
-          triggerSnapshotRoutine();
-          assertThat(broker)
-              .havingSnapshot()
-              .withProcessedPosition(expectedProcessedPosition)
-              .withExportedPosition(Long.MAX_VALUE);
-        });
-
-    final Map<Integer, SnapshotId> snapshotsByBroker =
-        clusteringRule.getTopologyFromClient().getBrokers().stream()
-            .collect(Collectors.toMap(BrokerInfo::getNodeId, this::getSnapshot));
-
-    // when
-    configureExporters();
-    restartCluster();
-    triggerSnapshotRoutine();
-
-    // then
-    awaitUntilAsserted(
-        (broker) -> {
-          final SnapshotId expectedSnapshot =
-              snapshotsByBroker.get(broker.getConfig().getCluster().getNodeId());
-          assertThat(broker).havingSnapshot().isEqualTo(expectedSnapshot);
-        });
-  }
-
   private void awaitUntilAsserted(final Consumer<Broker> consumer) {
     Awaitility.await()
         .pollInterval(Duration.ofSeconds(1))
         .timeout(Duration.ofSeconds(60))
         .ignoreExceptions()
         .untilAsserted(
-            () -> {
-              Assertions.assertThat(clusteringRule.getBrokers()).allSatisfy(consumer);
-            });
+            () -> Assertions.assertThat(clusteringRule.getBrokers()).allSatisfy(consumer));
   }
 
   private void configureBroker(final BrokerCfg brokerCfg) {
@@ -273,35 +137,10 @@ public class ClusteredSnapshotTest {
     configureExporter(brokerCfg);
   }
 
-  private void configureExporters() {
-    clusteringRule.getBrokers().stream().map(Broker::getConfig).forEach(this::configureExporter);
-  }
-
   private void configureExporter(final BrokerCfg brokerConfig) {
     final ExporterCfg exporterConfig = new ExporterCfg();
     exporterConfig.setClassName(ControllableExporter.class.getName());
     brokerConfig.setExporters(Collections.singletonMap("snapshot-test-exporter", exporterConfig));
-  }
-
-  private void removeExporters() {
-    clusteringRule.getBrokers().forEach(this::removeExporter);
-  }
-
-  private void removeExporter(final Broker broker) {
-    final BrokerCfg brokerConfig = broker.getConfig();
-    brokerConfig.setExporters(Collections.emptyMap());
-  }
-
-  private void restartCluster() {
-    clusteringRule.restartCluster();
-  }
-
-  private void triggerSnapshotRoutine() {
-    snapshotTrigger.accept(clusteringRule);
-  }
-
-  private SnapshotId getSnapshot(final BrokerInfo brokerInfo) {
-    return clusteringRule.getSnapshot(brokerInfo.getNodeId()).get();
   }
 
   private void publishMessages() {
@@ -324,14 +163,6 @@ public class ClusteredSnapshotTest {
 
   public static class ControllableExporter implements Exporter {
     static volatile boolean shouldExport = true;
-    static volatile long lastUpdatedPosition = -1;
-
-    static final AtomicLong EXPORTED_RECORDS = new AtomicLong(0);
-    static final AtomicReference<Predicate<RecordType>> RECORD_TYPE_FILTER =
-        new AtomicReference<>(r -> true);
-    static final AtomicReference<Predicate<ValueType>> VALUE_TYPE_FILTER =
-        new AtomicReference<>(r -> true);
-
     private Controller controller;
 
     static void updatePosition(final boolean flag) {
@@ -344,12 +175,12 @@ public class ClusteredSnapshotTest {
           new RecordFilter() {
             @Override
             public boolean acceptType(final RecordType recordType) {
-              return RECORD_TYPE_FILTER.get().test(recordType);
+              return true;
             }
 
             @Override
             public boolean acceptValue(final ValueType valueType) {
-              return VALUE_TYPE_FILTER.get().test(valueType);
+              return true;
             }
           });
     }
@@ -362,11 +193,8 @@ public class ClusteredSnapshotTest {
     @Override
     public void export(final Record<?> record) {
       if (shouldExport) {
-        lastUpdatedPosition = record.getPosition();
-        controller.updateLastExportedRecordPosition(lastUpdatedPosition);
+        controller.updateLastExportedRecordPosition(record.getPosition());
       }
-
-      EXPORTED_RECORDS.incrementAndGet();
     }
   }
 
@@ -379,57 +207,11 @@ public class ClusteredSnapshotTest {
       this.rule = rule;
     }
 
-    public SnapshotAssert havingSnapshot() {
+    public void havingSnapshot() {
       final var snapshot = rule.getSnapshot(actual);
       Assertions.assertThat(snapshot)
           .withFailMessage("No snapshot exists for broker <%s>", actual)
           .isPresent();
-      return new SnapshotAssert(snapshot.orElseThrow());
-    }
-  }
-
-  private static class SnapshotAssert extends AbstractAssert<SnapshotAssert, SnapshotId> {
-
-    protected SnapshotAssert(final SnapshotId actual) {
-      super(actual, SnapshotAssert.class);
-    }
-
-    public SnapshotAssert withIndex(final long expected) {
-      Assertions.assertThat(actual.getIndex())
-          .withFailMessage(
-              "Expecting snapshot index <%s> but was <%s>", expected, actual.getIndex())
-          .isEqualTo(expected);
-      return myself;
-    }
-
-    public SnapshotAssert withTerm(final long expected) {
-      Assertions.assertThat(actual.getTerm())
-          .withFailMessage("Expecting snapshot term <%s> but was <%s>", expected, actual.getTerm())
-          .isEqualTo(expected);
-      return myself;
-    }
-
-    public SnapshotAssert withProcessedPosition(final long expected) {
-      Assertions.assertThat(actual.getProcessedPosition())
-          .withFailMessage(
-              "Expecting snapshot processed position <%s> but was <%s>",
-              expected, actual.getProcessedPosition())
-          .isEqualTo(expected);
-      return myself;
-    }
-
-    public SnapshotAssert withExportedPosition(final long expected) {
-      Assertions.assertThat(actual.getExportedPosition())
-          .withFailMessage(
-              "Expecting snapshot exported position <%s> but was <%s>",
-              expected, actual.getExportedPosition())
-          .isEqualTo(expected);
-      return myself;
-    }
-
-    @Override
-    public SnapshotAssert isEqualTo(final Object expected) {
-      return super.isEqualTo(expected);
     }
   }
 }
