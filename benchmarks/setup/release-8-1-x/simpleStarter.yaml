@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: simple
-        image: gcr.io/zeebe-io/starter:8.1.1
+        image: gcr.io/zeebe-io/starter:8.1.2
         imagePullPolicy: Always
         env:
           - name: JAVA_OPTIONS
