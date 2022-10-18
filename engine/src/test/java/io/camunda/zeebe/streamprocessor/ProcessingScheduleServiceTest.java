@@ -288,7 +288,7 @@ public class ProcessingScheduleServiceTest {
     scheduleService.runAtFixedRate(Duration.ofMillis(10), mockedTask);
 
     // then
-    verify(mockedTask, TIMEOUT.times(5)).execute(any());
+    verify(mockedTask, TIMEOUT.atLeast(5)).execute(any());
   }
 
   @Test
