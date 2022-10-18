@@ -543,7 +543,7 @@ public abstract class AbstractBaseElementBuilder<
     return null;
   }
 
-  protected void resizeSubProcess(final BpmnShape innerShape) {
+  protected void resizeBpmnShape(final BpmnShape innerShape) {
 
     BaseElement innerElement = innerShape.getBpmnElement();
     Bounds innerShapeBounds = innerShape.getBounds();
@@ -592,14 +592,6 @@ public abstract class AbstractBaseElementBuilder<
         break;
       }
     }
-  }
-
-  protected void resizeLinkCatchEvent(final BpmnShape innerShape) {
-
-    BaseElement innerElement = innerShape.getBpmnElement();
-    Bounds innerShapeBounds = innerShape.getBounds();
-
-    ModelElementInstance parent = innerElement.getParentElement();
 
     while (parent instanceof IntermediateCatchEvent) {
 
@@ -636,7 +628,7 @@ public abstract class AbstractBaseElementBuilder<
           catchEventBounds.setHeight(newHeight);
         }
 
-        innerElement = (SubProcess) parent;
+        innerElement = (IntermediateCatchEvent) parent;
         innerShapeBounds = catchEventBounds;
         parent = innerElement.getParentElement();
       } else {

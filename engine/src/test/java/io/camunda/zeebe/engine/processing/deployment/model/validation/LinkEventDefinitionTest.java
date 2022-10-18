@@ -68,15 +68,13 @@ public class LinkEventDefinitionTest {
   }
 
   @Test
-  public void shouldRejectDeploymentIfNoLinkNameAndNotAppearInPairs() throws Exception {
+  public void shouldRejectDeploymentIfNoLinkName() throws Exception {
     // given
     final BpmnModelInstance processDefinition =
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .intermediateThrowEvent()
-            .linkEventDefinition("linkEvent")
-            .name("")
-            .linkEventDefinitionDone()
+            .link("")
             .done();
 
     // when
@@ -95,7 +93,7 @@ public class LinkEventDefinitionTest {
   }
 
   @Test
-  public void shouldRejectDeploymentIfCatchLinkEventAfterEventBasedGatewa() throws Exception {
+  public void shouldRejectDeploymentIfCatchLinkEventAfterEventBasedGateway() throws Exception {
     // given
     final Path path =
         Paths.get(
@@ -187,7 +185,7 @@ public class LinkEventDefinitionTest {
   }
 
   @Test
-  public void shouldRejectDeployMultipleStartEventsWithSameSignal() {
+  public void shouldRejectDeploymentIfLinkEventNotAppearInPairs() {
     // given
     final BpmnModelInstance processDefinition = getLinkEventProcess();
 
@@ -208,20 +206,7 @@ public class LinkEventDefinitionTest {
 
   public static BpmnModelInstance getLinkEventProcess() {
     final ProcessBuilder process = Bpmn.createExecutableProcess("process");
-    process
-        .startEvent()
-        .manualTask("manualTask1")
-        .intermediateThrowEvent()
-        .linkEventDefinition()
-        .name("LinkA")
-        .linkEventDefinitionDone();
-    return process
-        .linkCatchEvent()
-        .linkEventDefinition()
-        .name("LinkB")
-        .linkEventDefinitionDone()
-        .manualTask("manualTask2")
-        .endEvent()
-        .done();
+    process.startEvent().manualTask("manualTask1").intermediateThrowEvent().link("LinkA");
+    return process.linkCatchEvent().link("LinkB").manualTask("manualTask2").endEvent().done();
   }
 }

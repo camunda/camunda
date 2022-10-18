@@ -59,9 +59,9 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
     final BpmnShape targetBpmnShape = createBpmnShape(subProcess);
     // find the lowest shape in the process
     // place event sub process underneath
-    setEventSubProcessCoordinates(targetBpmnShape);
+    setEventCoordinates(targetBpmnShape);
 
-    resizeSubProcess(targetBpmnShape);
+    resizeBpmnShape(targetBpmnShape);
 
     return new EventSubProcessBuilder(modelInstance, subProcess);
   }
@@ -80,8 +80,8 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
   public IntermediateCatchEventBuilder linkCatchEvent(final String id) {
     final IntermediateCatchEvent catchEvent = createChild(IntermediateCatchEvent.class, id);
     final BpmnShape bpmnShape = createBpmnShape(catchEvent);
-    setLinkCatchEventCoordinates(bpmnShape);
-    resizeLinkCatchEvent(bpmnShape);
+    setEventCoordinates(bpmnShape);
+    resizeBpmnShape(bpmnShape);
     return catchEvent.builder();
   }
 
@@ -92,30 +92,7 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
     bounds.setY(100);
   }
 
-  protected void setEventSubProcessCoordinates(final BpmnShape targetBpmnShape) {
-    final SubProcess eventSubProcess = (SubProcess) targetBpmnShape.getBpmnElement();
-    final Bounds targetBounds = targetBpmnShape.getBounds();
-    double lowestheight = 0;
-
-    // find the lowest element in the model
-    final Collection<BpmnShape> allShapes = modelInstance.getModelElementsByType(BpmnShape.class);
-    for (final BpmnShape shape : allShapes) {
-      final Bounds bounds = shape.getBounds();
-      final double bottom = bounds.getY() + bounds.getHeight();
-      if (bottom > lowestheight) {
-        lowestheight = bottom;
-      }
-    }
-
-    final double ycoord = lowestheight + 50.0;
-    final double xcoord = 100.0;
-
-    // move target
-    targetBounds.setY(ycoord);
-    targetBounds.setX(xcoord);
-  }
-
-  protected void setLinkCatchEventCoordinates(final BpmnShape targetBpmnShape) {
+  protected void setEventCoordinates(final BpmnShape targetBpmnShape) {
     final Bounds targetBounds = targetBpmnShape.getBounds();
     double lowestheight = 0;
 

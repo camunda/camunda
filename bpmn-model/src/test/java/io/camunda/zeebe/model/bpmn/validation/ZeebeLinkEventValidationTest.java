@@ -175,52 +175,22 @@ public class ZeebeLinkEventValidationTest {
 
   public static BpmnModelInstance getLinkEventProcess() {
     final ProcessBuilder process = Bpmn.createExecutableProcess("process");
-    process
-        .startEvent()
-        .manualTask("manualTask1")
-        .intermediateThrowEvent()
-        .linkEventDefinition()
-        .name("LinkA")
-        .linkEventDefinitionDone();
-    return process
-        .linkCatchEvent()
-        .linkEventDefinition()
-        .name("LinkB")
-        .linkEventDefinitionDone()
-        .manualTask("manualTask2")
-        .endEvent()
-        .done();
+    process.startEvent().manualTask("manualTask1").intermediateThrowEvent().link("LinkA");
+    return process.linkCatchEvent().link("LinkB").manualTask("manualTask2").endEvent().done();
   }
 
   public static BpmnModelInstance getOnlyTargetLinkEventProcess() {
     final ProcessBuilder process = Bpmn.createExecutableProcess("process");
     process.startEvent().endEvent();
-    return process
-        .linkCatchEvent()
-        .linkEventDefinition()
-        .name("LinkB")
-        .linkEventDefinitionDone()
-        .endEvent()
-        .done();
+    return process.linkCatchEvent().link("LinkB").endEvent().done();
   }
 
   public static BpmnModelInstance getOnlyManyTargetLinkEventProcess() {
     final ProcessBuilder process = Bpmn.createExecutableProcess("process");
     process.startEvent().endEvent();
-    process
-        .linkCatchEvent()
-        .linkEventDefinition()
-        .name("LinkB")
-        .linkEventDefinitionDone()
-        .endEvent();
+    process.linkCatchEvent().link("LinkB").endEvent();
 
-    return process
-        .linkCatchEvent()
-        .linkEventDefinition()
-        .name("LinkC")
-        .linkEventDefinitionDone()
-        .endEvent()
-        .done();
+    return process.linkCatchEvent().link("LinkC").endEvent().done();
   }
 
   public static BpmnModelInstance getManyLinkEventProcess() {
@@ -229,27 +199,14 @@ public class ZeebeLinkEventValidationTest {
         .startEvent()
         .manualTask("manualTask1")
         .intermediateThrowEvent("linkThrow1")
-        .linkEventDefinition()
-        .name("LinkA")
-        .linkEventDefinitionDone();
+        .link("LinkA");
     process
         .linkCatchEvent()
-        .linkEventDefinition()
-        .name("LinkA")
-        .linkEventDefinitionDone()
+        .link("LinkA")
         .manualTask("manualTask2")
         .intermediateThrowEvent("linkThrow2")
-        .linkEventDefinition()
-        .name("LinkB")
-        .linkEventDefinitionDone();
-    return process
-        .linkCatchEvent()
-        .linkEventDefinition()
-        .name("LinkA")
-        .linkEventDefinitionDone()
-        .manualTask("manualTask3")
-        .endEvent()
-        .done();
+        .link("LinkB");
+    return process.linkCatchEvent().link("LinkA").manualTask("manualTask3").endEvent().done();
   }
 
   public static BpmnModelInstance getGoToLinkEventProcess() {
@@ -266,15 +223,7 @@ public class ZeebeLinkEventValidationTest {
         .moveToLastExclusiveGateway()
         .conditionExpression("condition_link")
         .intermediateThrowEvent("linkThrow")
-        .linkEventDefinition()
-        .name("LinkA")
-        .linkEventDefinitionDone();
-    return process
-        .linkCatchEvent()
-        .linkEventDefinition()
-        .name("LinkA")
-        .linkEventDefinitionDone()
-        .connectTo("exclusive1")
-        .done();
+        .link("LinkA");
+    return process.linkCatchEvent().link("LinkA").connectTo("exclusive1").done();
   }
 }

@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -130,22 +131,18 @@ public class ModelUtil {
     final List<EventDefinition> linkThrowEvents = getEventDefinitionsForLinkThrowEvents(element);
 
     // get link catch events names
-    final Stream<String> catchEventNames =
+    final Set<String> linkCatchList =
         getEventDefinition(linkCatchEvents, LinkEventDefinition.class)
             .filter(def -> def.getName() != null && !def.getName().isEmpty())
-            .map(LinkEventDefinition::getName);
+            .map(LinkEventDefinition::getName)
+            .collect(Collectors.toSet());
 
     // get link throw events names
-    final Stream<String> throwsEventNames =
+    final Set<String> linkThrowList =
         getEventDefinition(linkThrowEvents, LinkEventDefinition.class)
             .filter(def -> def.getName() != null && !def.getName().isEmpty())
-            .map(LinkEventDefinition::getName);
-
-    // get distinct link catch events names
-    final List<String> linkCatchList = catchEventNames.distinct().collect(Collectors.toList());
-
-    // get distinct link throw events names
-    final List<String> linkThrowList = throwsEventNames.distinct().collect(Collectors.toList());
+            .map(LinkEventDefinition::getName)
+            .collect(Collectors.toSet());
 
     linkThrowList.forEach(
         item -> {

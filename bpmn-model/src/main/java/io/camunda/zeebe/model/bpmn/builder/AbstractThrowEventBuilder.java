@@ -152,6 +152,18 @@ public abstract class AbstractThrowEventBuilder<
     element.getEventDefinitions().add(eventDefinition);
     return new CompensateEventDefinitionBuilder(modelInstance, eventDefinition);
   }
+
+  /**
+   * Sets a link event definition for the given link name.
+   *
+   * @param linkName the name of the link
+   * @return the builder object
+   */
+  public B link(final String linkName) {
+    linkEventDefinition().name(linkName);
+    return myself;
+  }
+
   /**
    * Creates an empty link event definition with a unique id and returns a builder for the link
    * event definition.

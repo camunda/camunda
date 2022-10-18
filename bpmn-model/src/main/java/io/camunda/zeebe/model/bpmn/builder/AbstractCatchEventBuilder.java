@@ -252,6 +252,17 @@ public abstract class AbstractCatchEventBuilder<
     return myself;
   }
 
+  /**
+   * Sets a link event definition for the given link name.
+   *
+   * @param linkName the name of the link
+   * @return the builder object
+   */
+  public B link(final String linkName) {
+    linkEventDefinition().name(linkName);
+    return myself;
+  }
+
   public LinkEventDefinitionBuilder linkEventDefinition() {
     return linkEventDefinition(null);
   }

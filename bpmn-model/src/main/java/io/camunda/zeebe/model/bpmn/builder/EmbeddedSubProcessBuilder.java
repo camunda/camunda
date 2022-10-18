@@ -77,7 +77,7 @@ public class EmbeddedSubProcessBuilder
     // place event sub process underneath
     setCoordinates(targetBpmnShape);
 
-    subProcessBuilder.resizeSubProcess(targetBpmnShape);
+    subProcessBuilder.resizeBpmnShape(targetBpmnShape);
 
     // Return the eventSubProcessBuilder
     final EventSubProcessBuilder eventSubProcessBuilder =
