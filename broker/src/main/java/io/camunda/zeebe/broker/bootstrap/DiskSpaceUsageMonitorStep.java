@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitorActor;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.FileUtil;
@@ -30,7 +30,7 @@ class DiskSpaceUsageMonitorStep extends AbstractBrokerStartupStep {
       return;
     }
 
-    final var diskSpaceUsageMonitor = new DiskSpaceUsageMonitor(data);
+    final var diskSpaceUsageMonitor = new DiskSpaceUsageMonitorActor(data);
 
     final var actorStartFuture =
         brokerStartupContext.getActorSchedulingService().submitActor(diskSpaceUsageMonitor);
@@ -57,9 +57,8 @@ class DiskSpaceUsageMonitorStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> shutdownFuture) {
 
     final var diskSpaceUsageMonitor = brokerShutdownContext.getDiskSpaceUsageMonitor();
-
-    if (diskSpaceUsageMonitor != null) {
-      final var closeFuture = diskSpaceUsageMonitor.closeAsync();
+    if (diskSpaceUsageMonitor instanceof DiskSpaceUsageMonitorActor actor) {
+      final var closeFuture = actor.closeAsync();
       concurrencyControl.runOnCompletion(
           closeFuture,
           (ok, error) -> {
