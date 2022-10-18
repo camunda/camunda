@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitorActor;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -23,6 +24,28 @@ class DiskSpaceUsageMonitorStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture) {
 
     final var data = brokerStartupContext.getBrokerConfiguration().getData();
+
+    startDiskUsageMonitorActor(brokerStartupContext, startupFuture, data);
+  }
+
+  @Override
+  void shutdownInternal(
+      final BrokerStartupContext brokerShutdownContext,
+      final ConcurrencyControl concurrencyControl,
+      final ActorFuture<BrokerStartupContext> shutdownFuture) {
+
+    final var diskSpaceUsageMonitor = brokerShutdownContext.getDiskSpaceUsageMonitor();
+    if (diskSpaceUsageMonitor instanceof DiskSpaceUsageMonitorActor actor) {
+      stopDiskUsageMonitorActor(brokerShutdownContext, concurrencyControl, shutdownFuture, actor);
+    } else {
+      shutdownFuture.complete(brokerShutdownContext);
+    }
+  }
+
+  private static void startDiskUsageMonitorActor(
+      final BrokerStartupContext brokerStartupContext,
+      final ActorFuture<BrokerStartupContext> startupFuture,
+      final DataCfg data) {
     try {
       FileUtil.ensureDirectoryExists(Paths.get(data.getDirectory()));
     } catch (final IOException e) {
@@ -50,38 +73,32 @@ class DiskSpaceUsageMonitorStep extends AbstractBrokerStartupStep {
             });
   }
 
-  @Override
-  void shutdownInternal(
+  private void stopDiskUsageMonitorActor(
       final BrokerStartupContext brokerShutdownContext,
       final ConcurrencyControl concurrencyControl,
-      final ActorFuture<BrokerStartupContext> shutdownFuture) {
+      final ActorFuture<BrokerStartupContext> shutdownFuture,
+      final DiskSpaceUsageMonitorActor actor) {
+    final var closeFuture = actor.closeAsync();
+    concurrencyControl.runOnCompletion(
+        closeFuture,
+        (ok, error) -> {
+          if (error != null) {
+            shutdownFuture.completeExceptionally(error);
+            return;
+          }
 
-    final var diskSpaceUsageMonitor = brokerShutdownContext.getDiskSpaceUsageMonitor();
-    if (diskSpaceUsageMonitor instanceof DiskSpaceUsageMonitorActor actor) {
-      final var closeFuture = actor.closeAsync();
-      concurrencyControl.runOnCompletion(
-          closeFuture,
-          (ok, error) -> {
-            if (error != null) {
-              shutdownFuture.completeExceptionally(error);
-              return;
-            }
-
-            forwardExceptions(
-                () ->
-                    concurrencyControl.run(
-                        () ->
-                            forwardExceptions(
-                                () -> {
-                                  brokerShutdownContext.setDiskSpaceUsageMonitor(null);
-                                  shutdownFuture.complete(brokerShutdownContext);
-                                },
-                                shutdownFuture)),
-                shutdownFuture);
-          });
-    } else {
-      shutdownFuture.complete(brokerShutdownContext);
-    }
+          forwardExceptions(
+              () ->
+                  concurrencyControl.run(
+                      () ->
+                          forwardExceptions(
+                              () -> {
+                                brokerShutdownContext.setDiskSpaceUsageMonitor(null);
+                                shutdownFuture.complete(brokerShutdownContext);
+                              },
+                              shutdownFuture)),
+              shutdownFuture);
+        });
   }
 
   @Override
