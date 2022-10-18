@@ -19,6 +19,7 @@ import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebeVolume;
 import io.zeebe.containers.exporter.DebugReceiver;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -53,19 +54,14 @@ final class SnapshotWithExportersTest {
 
           // when
           partitions.takeSnapshot();
+          final var snapshotId =
+              Awaitility.await("Snapshot is taken")
+                  .atMost(Duration.ofSeconds(60))
+                  .until(() -> partitions.query().get(1).snapshotId(), Objects::nonNull);
 
           // then
           final var exportedPositionInSnapshot =
-              Awaitility.await("Snapshot is taken")
-                  .atMost(Duration.ofSeconds(60))
-                  .during(Duration.ofSeconds(5))
-                  .until(
-                      () ->
-                          FileBasedSnapshotId.ofFileName(partitions.query().get(1).snapshotId())
-                              .orElseThrow()
-                              .getExportedPosition(),
-                      hasStableValue());
-
+              FileBasedSnapshotId.ofFileName(snapshotId).orElseThrow().getExportedPosition();
           assertThat(exportedPositionInSnapshot).isEqualTo(exporterPosition);
         }
       }
