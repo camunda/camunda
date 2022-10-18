@@ -20,7 +20,7 @@ import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
-import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitorActor;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -68,7 +68,7 @@ class CommandApiServiceStepTest {
             mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
             Collections.emptyList());
     testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
-    testBrokerStartupContext.setDiskSpaceUsageMonitor(mock(DiskSpaceUsageMonitor.class));
+    testBrokerStartupContext.setDiskSpaceUsageMonitor(mock(DiskSpaceUsageMonitorActor.class));
     testBrokerStartupContext.setGatewayBrokerTransport(mock(AtomixServerTransport.class));
   }
 
@@ -135,7 +135,7 @@ class CommandApiServiceStepTest {
     @Test
     void shouldAddCommandApiServiceAsDiskSpaceUsageListener() {
       // given
-      final var mockDiskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
+      final var mockDiskSpaceUsageMonitor = mock(DiskSpaceUsageMonitorActor.class);
       testBrokerStartupContext.setDiskSpaceUsageMonitor(mockDiskSpaceUsageMonitor);
 
       // when
@@ -171,7 +171,7 @@ class CommandApiServiceStepTest {
       testBrokerStartupContext.setGatewayBrokerTransport(mockAtomixServerTransport);
       testBrokerStartupContext.setCommandApiService(mockCommandApiService);
       testBrokerStartupContext.addPartitionListener(mockCommandApiService);
-      testBrokerStartupContext.setDiskSpaceUsageMonitor(mock(DiskSpaceUsageMonitor.class));
+      testBrokerStartupContext.setDiskSpaceUsageMonitor(mock(DiskSpaceUsageMonitorActor.class));
       testBrokerStartupContext
           .getDiskSpaceUsageMonitor()
           .addDiskUsageListener(mockCommandApiService);
@@ -182,7 +182,7 @@ class CommandApiServiceStepTest {
     @Test
     void shouldRemoveCommandApiFromDiskSpaceUsageListenerList() {
       // given
-      final var mockDiskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
+      final var mockDiskSpaceUsageMonitor = mock(DiskSpaceUsageMonitorActor.class);
       testBrokerStartupContext.setDiskSpaceUsageMonitor(mockDiskSpaceUsageMonitor);
 
       // when
