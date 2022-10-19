@@ -876,7 +876,7 @@
     "addACopy": "Kopie hinzufügen",
     "change": "Ändern",
     "export": "Exportieren",
-    "importJSON": "JSON Importieren",
+    "importReportDashboard": "Bericht/Dashboard Importieren",
     "copyName": "{name} kopieren",
     "copyLabel": "Kopie",
     "condition": "Bedingung",

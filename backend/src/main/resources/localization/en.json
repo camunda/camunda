@@ -875,7 +875,7 @@
     "copy": "Copy",
     "addACopy": "Add a copy",
     "export": "Export",
-    "importJSON": "Import JSON",
+    "importReportDashboard": "Import Report/Dashboard",
     "change": "Change",
     "copyName": "Copy {name}",
     "copyLabel": "copy",
