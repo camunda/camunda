@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.IntStream;
 
 /** Applies state changes for `ProcessInstance:Element_Activating` */
@@ -169,11 +171,16 @@ final class ProcessInstanceElementActivatingApplier
             value.getElementIdBuffer(),
             ExecutableCatchEventElement.class);
 
-    final var incomingSequenceFlow = executableCatchEventElement.getIncoming().get(0);
-    final var previousElement = incomingSequenceFlow.getSource();
-    if (previousElement.getElementType() != BpmnElementType.EVENT_BASED_GATEWAY) {
-      flowScopeInstance.decrementActiveSequenceFlows();
-      elementInstanceState.updateInstance(flowScopeInstance);
+    // When the catch event is of the link catch event type,
+    // the catch event has no incoming sequence flow
+    final List<ExecutableSequenceFlow> incoming = executableCatchEventElement.getIncoming();
+    if (!incoming.isEmpty()) {
+      final var incomingSequenceFlow = executableCatchEventElement.getIncoming().get(0);
+      final var previousElement = incomingSequenceFlow.getSource();
+      if (previousElement.getElementType() != BpmnElementType.EVENT_BASED_GATEWAY) {
+        flowScopeInstance.decrementActiveSequenceFlows();
+        elementInstanceState.updateInstance(flowScopeInstance);
+      }
     }
   }
 
