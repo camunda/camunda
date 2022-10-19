@@ -23,6 +23,9 @@ import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.camunda.zeebe.model.bpmn.instance.Error;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
+import io.camunda.zeebe.model.bpmn.instance.LinkEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Signal;
@@ -34,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -69,6 +73,22 @@ public class ModelUtil {
         .collect(Collectors.toList());
   }
 
+  public static List<EventDefinition> getEventDefinitionsForLinkCatchEvents(
+      final ModelElementInstance element) {
+    return element.getChildElementsByType(IntermediateCatchEvent.class).stream()
+        .flatMap(i -> i.getEventDefinitions().stream())
+        .filter(e -> e instanceof LinkEventDefinition)
+        .collect(Collectors.toList());
+  }
+
+  public static List<EventDefinition> getEventDefinitionsForLinkThrowEvents(
+      final ModelElementInstance element) {
+    return element.getChildElementsByType(IntermediateThrowEvent.class).stream()
+        .flatMap(i -> i.getEventDefinitions().stream())
+        .filter(e -> e instanceof LinkEventDefinition)
+        .collect(Collectors.toList());
+  }
+
   public static List<String> getDuplicateMessageNames(
       final Stream<MessageEventDefinition> eventDefinitions) {
 
@@ -97,6 +117,39 @@ public class ModelUtil {
     final List<EventDefinition> definitions = getEventDefinitionsForSignalStartEvents(element);
 
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
+  }
+
+  public static void verifyLinkIntermediateEvents(
+      final ModelElementInstance element, final Consumer<String> errorCollector) {
+
+    // get link catch events definition
+    final List<EventDefinition> linkCatchEvents = getEventDefinitionsForLinkCatchEvents(element);
+
+    verifyNoDuplicatedEventDefinition(linkCatchEvents, errorCollector);
+
+    // get link throw events definition
+    final List<EventDefinition> linkThrowEvents = getEventDefinitionsForLinkThrowEvents(element);
+
+    // get link catch events names
+    final Set<String> linkCatchList =
+        getEventDefinition(linkCatchEvents, LinkEventDefinition.class)
+            .filter(def -> def.getName() != null && !def.getName().isEmpty())
+            .map(LinkEventDefinition::getName)
+            .collect(Collectors.toSet());
+
+    // get link throw events names
+    final Set<String> linkThrowList =
+        getEventDefinition(linkThrowEvents, LinkEventDefinition.class)
+            .filter(def -> def.getName() != null && !def.getName().isEmpty())
+            .map(LinkEventDefinition::getName)
+            .collect(Collectors.toSet());
+
+    linkThrowList.forEach(
+        item -> {
+          if (!linkCatchList.contains(item)) {
+            errorCollector.accept(noPairedLinkNames(item));
+          }
+        });
   }
 
   public static void verifyEventDefinition(
@@ -158,6 +211,13 @@ public class ModelUtil {
             .map(Signal::getName);
 
     getDuplicatedEntries(signalNames).map(ModelUtil::duplicatedSignalNames).forEach(errorCollector);
+
+    final Stream<String> linkNames =
+        getEventDefinition(definitions, LinkEventDefinition.class)
+            .filter(def -> def.getName() != null && !def.getName().isEmpty())
+            .map(LinkEventDefinition::getName);
+
+    getDuplicatedEntries(linkNames).map(ModelUtil::duplicatedLinkNames).forEach(errorCollector);
   }
 
   public static <T extends EventDefinition> Stream<T> getEventDefinition(
@@ -185,6 +245,17 @@ public class ModelUtil {
   private static String duplicatedSignalNames(final String signalName) {
     return String.format(
         "Multiple signal event definitions with the same name '%s' are not allowed.", signalName);
+  }
+
+  private static String duplicatedLinkNames(final String linkName) {
+    return String.format(
+        "Multiple intermediate catch link event definitions with the same name '%s' are not allowed.",
+        linkName);
+  }
+
+  private static String noPairedLinkNames(final String linkName) {
+    return String.format(
+        "Can't find an catch link event for the throw link event with the name '%s'.", linkName);
   }
 
   private static void verifyEventDefinition(

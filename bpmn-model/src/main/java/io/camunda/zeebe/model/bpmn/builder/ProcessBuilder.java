@@ -17,6 +17,7 @@
 package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
@@ -58,9 +59,9 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
     final BpmnShape targetBpmnShape = createBpmnShape(subProcess);
     // find the lowest shape in the process
     // place event sub process underneath
-    setEventSubProcessCoordinates(targetBpmnShape);
+    setEventCoordinates(targetBpmnShape);
 
-    resizeSubProcess(targetBpmnShape);
+    resizeBpmnShape(targetBpmnShape);
 
     return new EventSubProcessBuilder(modelInstance, subProcess);
   }
@@ -72,6 +73,18 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
     return this;
   }
 
+  public IntermediateCatchEventBuilder linkCatchEvent() {
+    return linkCatchEvent(null);
+  }
+
+  public IntermediateCatchEventBuilder linkCatchEvent(final String id) {
+    final IntermediateCatchEvent catchEvent = createChild(IntermediateCatchEvent.class, id);
+    final BpmnShape bpmnShape = createBpmnShape(catchEvent);
+    setEventCoordinates(bpmnShape);
+    resizeBpmnShape(bpmnShape);
+    return catchEvent.builder();
+  }
+
   @Override
   protected void setCoordinates(final BpmnShape targetBpmnShape) {
     final Bounds bounds = targetBpmnShape.getBounds();
@@ -79,8 +92,7 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
     bounds.setY(100);
   }
 
-  protected void setEventSubProcessCoordinates(final BpmnShape targetBpmnShape) {
-    final SubProcess eventSubProcess = (SubProcess) targetBpmnShape.getBpmnElement();
+  protected void setEventCoordinates(final BpmnShape targetBpmnShape) {
     final Bounds targetBounds = targetBpmnShape.getBounds();
     double lowestheight = 0;
 
