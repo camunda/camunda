@@ -9,10 +9,10 @@ package io.camunda.zeebe.streamprocessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.api.records.ImmutableRecordBatchEntry;
 import io.camunda.zeebe.engine.api.records.RecordBatch;
 import io.camunda.zeebe.engine.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.engine.util.Records;
+import io.camunda.zeebe.logstreams.ImmutableRecordBatchEntry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;

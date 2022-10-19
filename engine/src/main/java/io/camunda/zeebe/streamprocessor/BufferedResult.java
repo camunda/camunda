@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.api.PostCommitTask;
 import io.camunda.zeebe.engine.api.ProcessingResponse;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.TaskResult;
-import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
+import io.camunda.zeebe.logstreams.ImmutableRecordBatch;
 import io.camunda.zeebe.streamprocessor.BufferedProcessingResultBuilder.ProcessingResponseImpl;
 import java.util.ArrayList;
 import java.util.List;

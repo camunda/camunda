@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.api;
 
-import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
+import io.camunda.zeebe.logstreams.ImmutableRecordBatch;
 import io.camunda.zeebe.engine.api.records.RecordBatchEntry;
 import java.util.Optional;
 

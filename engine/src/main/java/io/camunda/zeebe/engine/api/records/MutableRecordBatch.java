@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.api.records;
 
+import io.camunda.zeebe.logstreams.ImmutableRecordBatch;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;

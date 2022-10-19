@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.api.records;
 
 import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.EVENT_REGISTRY;
 
+import io.camunda.zeebe.logstreams.ImmutableRecordBatchEntry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
