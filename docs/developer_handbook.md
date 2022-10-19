@@ -83,6 +83,36 @@ You'll always need to add support for new records in the ES exporter. Even if yo
 5. Document this new filter option in the elasticsearch exporter's [README](../exporters/elasticsearch-exporter/README.md).
 6. Add a mapping for the ValueType to the [TestSupport](../exporters/elasticsearch-exporter/src/test/java/io/camunda/zeebe/exporter/TestSupport.java).
 
+## How to extend an existing record?
+
+Use case: adding a new property to an existing record.
+
+Extending an existing record is a special case
+of [creating a new record](#how-to-create-a-new-record) but with fewer steps.
+
+You'll need to do 4 things:
+
+1. Extend the existing `RecordValue` interface in the `protocol` module.
+
+- In general, the interface exposes all properties of the record.
+- As a result, they are available in our tests and other modules.
+
+2. Adjust the implementation of this `RecordValue` in the `protocol-impl` module.
+
+- Including
+  the [JsonSerializableToJsonTest](../protocol-impl/src/test/java/io/camunda/zeebe/protocol/impl/JsonSerializableToJsonTest.java).
+
+3. Adjust the template of this `RecordValue` in the Elasticsearch exporter.
+
+- We need to add all properties of the record, even if they are not consumed yet. The
+  template is defined `strict`.
+- We don't need to adjust the test cases because they are generated based on the `RecordValue`
+  interface. If a property is not in the interface then it is not covered by the tests.
+
+4. (Optionally) Adjust
+   the [CompactRecordLogger](../test-util/src/main/java/io/camunda/zeebe/test/util/record/CompactRecordLogger.java)
+   of this `RecordValue`.
+
 ## How to do inter-partition communication?
 
 Generally, each [partition](https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/partitions/) is isolated from the others. The gateway chooses the partition for each user command and sends the command to that partition's leader. This distributes the load over the partitions. When the engine processes commands, the follow-up records are written on the same partition.
@@ -97,21 +127,21 @@ The engine can send a command to another partition using `InterPartitionCommandS
 
 For example, the `DeploymentRedistributor` resends deployment distribution commands to other partitions.
 
-> **Note**  
+> **Note**
 > There is no response for inter-partition communication. It is a case of "fire and forget".
 
 ### How to process a command received from another partition?
 
 As we've seen, the sending partition may send a command many times to another partition. So, the engine must be able to deal with these redundant commands (i.e. commands that are sent many times). To be specific, the engine must process commands received from another partition idempotently.
 
-> **Note**  
+> **Note**
 > By idempotent command processing, we mean that the engine arrives at the same state when it processes the redundant command, as when it processed the original command.
 
 Generally, there are two ways we could idempotently process inter-partition commands:
 1. (**our preferred way**) reject redundant commands by writing a command rejection to the log, and don't change the state at all.
 2. (_not used by us_) produce the same events that, when applied, produce the same state changes, resulting in the same state.
 
-> **Note**  
+> **Note**
 > We aim to have a consistent approach and have decided to use option 1, for the following reasons:
 > - the command rejection is easier to understand when reading the log, compared to seeing the same event twice.
 > - the command rejection describes a reason to further clarify what happened.
