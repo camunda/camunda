@@ -3,7 +3,7 @@
 name: Publish Test Results
 on:
   workflow_run:
-    workflows: [Tests]
+    workflows: [CI]
     types:
       - completed
 jobs:

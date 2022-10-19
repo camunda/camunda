@@ -37,6 +37,7 @@ import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
+import io.camunda.zeebe.model.bpmn.instance.Task;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import java.util.HashSet;
 import java.util.Set;
@@ -69,6 +70,7 @@ public class FlowElementValidator implements ModelElementValidator<FlowElement> 
     SUPPORTED_ELEMENT_TYPES.add(UserTask.class);
     SUPPORTED_ELEMENT_TYPES.add(IntermediateThrowEvent.class);
     SUPPORTED_ELEMENT_TYPES.add(ManualTask.class);
+    SUPPORTED_ELEMENT_TYPES.add(Task.class);
 
     NON_EXECUTABLE_ELEMENT_TYPES.add(DataObject.class);
     NON_EXECUTABLE_ELEMENT_TYPES.add(DataObjectReference.class);
@@ -87,7 +89,13 @@ public class FlowElementValidator implements ModelElementValidator<FlowElement> 
 
     if (!SUPPORTED_ELEMENT_TYPES.contains(elementType)
         && !NON_EXECUTABLE_ELEMENT_TYPES.contains(elementType)) {
-      validationResultCollector.addError(0, "Elements of this type are not supported");
+      validationResultCollector.addError(
+          0,
+          String.format(
+              "Elements of type '%s' are currently not supported. Please refer "
+                  + "to the documentation for a list of supported elements: "
+                  + "https://docs.camunda.io/docs/reference/bpmn-processes/bpmn-coverage",
+              elementType.getSimpleName()));
     }
   }
 }

@@ -17,6 +17,7 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.camunda.zeebe.model.bpmn.instance.LinkEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
@@ -30,7 +31,10 @@ public class IntermediateCatchEventValidator
     implements ModelElementValidator<IntermediateCatchEvent> {
   private static final List<Class<? extends EventDefinition>> SUPPORTED_EVENTS =
       Arrays.asList(
-          MessageEventDefinition.class, TimerEventDefinition.class, SignalEventDefinition.class);
+          MessageEventDefinition.class,
+          TimerEventDefinition.class,
+          SignalEventDefinition.class,
+          LinkEventDefinition.class);
 
   @Override
   public Class<IntermediateCatchEvent> getElementType() {
@@ -51,7 +55,7 @@ public class IntermediateCatchEventValidator
 
       if (SUPPORTED_EVENTS.stream().noneMatch(c -> c.isAssignableFrom(type))) {
         validationResultCollector.addError(
-            0, "Event definition must be one of: message, timer, signal");
+            0, "Event definition must be one of: message, timer, signal, or link");
 
       } else if (eventDefinition instanceof TimerEventDefinition) {
         final TimerEventDefinition timerEventDefinition = (TimerEventDefinition) eventDefinition;

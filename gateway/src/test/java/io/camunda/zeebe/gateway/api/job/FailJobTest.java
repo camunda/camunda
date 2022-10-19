@@ -17,6 +17,9 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.test.util.JsonUtil;
+import io.camunda.zeebe.test.util.MsgPackUtil;
+import java.util.Collections;
 import org.junit.Test;
 
 public final class FailJobTest extends GatewayTest {
@@ -30,12 +33,15 @@ public final class FailJobTest extends GatewayTest {
     final int retries = 123;
     final int retryBackOff = 100;
 
+    final String variables = JsonUtil.toJson(Collections.singletonMap("foo", "bar"));
+
     final FailJobRequest request =
         FailJobRequest.newBuilder()
             .setJobKey(stub.getKey())
             .setRetries(retries)
             .setRetryBackOff(retryBackOff)
             .setErrorMessage("failed")
+            .setVariables(variables)
             .build();
 
     // when
@@ -53,5 +59,8 @@ public final class FailJobTest extends GatewayTest {
     assertThat(brokerRequestValue.getRetries()).isEqualTo(retries);
     assertThat(brokerRequestValue.getRetryBackoff()).isEqualTo(retryBackOff);
     assertThat(brokerRequestValue.getErrorMessageBuffer()).isEqualTo(wrapString("failed"));
+
+    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariablesBuffer(), variables);
+    assertThat(brokerRequestValue.getVariables().get("foo")).isEqualTo("bar");
   }
 }

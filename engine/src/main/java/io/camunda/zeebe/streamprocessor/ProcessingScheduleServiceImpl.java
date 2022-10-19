@@ -17,7 +17,6 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
 import java.time.Duration;
-import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -54,12 +53,6 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
   @Override
   public void runDelayed(final Duration delay, final Task task) {
     runDelayed(delay, toRunnable(task));
-  }
-
-  @Override
-  public <T> void runOnCompletion(
-      final ActorFuture<T> precedingTask, final BiConsumer<T, Throwable> followUpTask) {
-    useActorControl(() -> actorControl.runOnCompletion(precedingTask, followUpTask));
   }
 
   @Override

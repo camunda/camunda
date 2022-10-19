@@ -34,6 +34,7 @@ import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.Gateway;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Process;
@@ -542,7 +543,7 @@ public abstract class AbstractBaseElementBuilder<
     return null;
   }
 
-  protected void resizeSubProcess(final BpmnShape innerShape) {
+  protected void resizeBpmnShape(final BpmnShape innerShape) {
 
     BaseElement innerElement = innerShape.getBpmnElement();
     Bounds innerShapeBounds = innerShape.getBounds();
@@ -586,6 +587,49 @@ public abstract class AbstractBaseElementBuilder<
 
         innerElement = (SubProcess) parent;
         innerShapeBounds = subProcessBounds;
+        parent = innerElement.getParentElement();
+      } else {
+        break;
+      }
+    }
+
+    while (parent instanceof IntermediateCatchEvent) {
+
+      final BpmnShape catchEventShape = findBpmnShape((IntermediateCatchEvent) parent);
+
+      if (catchEventShape != null) {
+
+        final Bounds catchEventBounds = catchEventShape.getBounds();
+        final double innerX = innerShapeBounds.getX();
+        final double innerWidth = innerShapeBounds.getWidth();
+        final double innerY = innerShapeBounds.getY();
+        final double innerHeight = innerShapeBounds.getHeight();
+
+        final double catchEventY = catchEventBounds.getY();
+        final double catchEventHeight = catchEventBounds.getHeight();
+        final double catchEventX = catchEventBounds.getX();
+        final double catchEventWidth = catchEventBounds.getWidth();
+
+        final double tmpWidth = innerX + innerWidth + SPACE;
+        final double tmpHeight = innerY + innerHeight + SPACE;
+
+        if (innerY == catchEventY) {
+          catchEventBounds.setY(catchEventY - SPACE);
+          catchEventBounds.setHeight(catchEventHeight + SPACE);
+        }
+
+        if (tmpWidth >= catchEventX + catchEventWidth) {
+          final double newWidth = tmpWidth - catchEventX;
+          catchEventBounds.setWidth(newWidth);
+        }
+
+        if (tmpHeight >= catchEventY + catchEventHeight) {
+          final double newHeight = tmpHeight - catchEventY;
+          catchEventBounds.setHeight(newHeight);
+        }
+
+        innerElement = (IntermediateCatchEvent) parent;
+        innerShapeBounds = catchEventBounds;
         parent = innerElement.getParentElement();
       } else {
         break;

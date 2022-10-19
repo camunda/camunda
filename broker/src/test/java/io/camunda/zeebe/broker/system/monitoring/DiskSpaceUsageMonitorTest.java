@@ -22,7 +22,7 @@ public class DiskSpaceUsageMonitorTest {
     dataCfg.setDirectory("something-that-does-not-exist");
 
     // when + then
-    assertThatThrownBy(() -> new DiskSpaceUsageMonitor(dataCfg))
+    assertThatThrownBy(() -> new DiskSpaceUsageMonitorActor(dataCfg))
         .isInstanceOf(UncheckedIOException.class)
         .hasMessage("java.io.IOException: Folder 'something-that-does-not-exist' does not exist.");
   }

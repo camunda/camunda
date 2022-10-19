@@ -48,10 +48,9 @@ public final class BrokerStartupProcess {
 
     result.add(new ClusterServicesStep());
 
-    if (config.getData().isDiskUsageMonitoringEnabled()) {
-      // must be executed before any disk space usage listeners are registered
-      result.add(new DiskSpaceUsageMonitorStep());
-    }
+    // must be executed before any disk space usage listeners are registered
+    result.add(new DiskSpaceUsageMonitorStep());
+
     result.add(new MonitoringServerStep());
     result.add(new BrokerAdminServiceStep());
 

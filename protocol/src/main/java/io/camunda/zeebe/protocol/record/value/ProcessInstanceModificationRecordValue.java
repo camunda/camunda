@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -31,6 +32,8 @@ public interface ProcessInstanceModificationRecordValue
 
   /** Returns a list of activate instructions (if available), or an empty list. */
   List<ProcessInstanceModificationActivateInstructionValue> getActivateInstructions();
+
+  Set<Long> getActivatedElementInstanceKeys();
 
   @Value.Immutable
   @ImmutableProtocol(

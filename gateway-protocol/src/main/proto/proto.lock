@@ -537,6 +537,11 @@
                 "id": 4,
                 "name": "retryBackOff",
                 "type": "int64"
+              },
+              {
+                "id": 5,
+                "name": "variables",
+                "type": "string"
               }
             ]
           },

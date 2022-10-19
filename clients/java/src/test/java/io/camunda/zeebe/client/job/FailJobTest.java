@@ -21,8 +21,10 @@ import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.FailJobResponse;
 import io.camunda.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.client.util.JsonUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import java.time.Duration;
+import java.util.Collections;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -145,6 +147,25 @@ public final class FailJobTest extends ClientTest {
         command.retries(0).errorMessage("This failed oops.").send().join();
 
     // then
+    assertThat(response).isNotNull();
+  }
+
+  @Test
+  public void shouldFailJobWithJsonStringVariables() {
+    // given
+    final long jobKey = 12;
+    final int newRetries = 0;
+
+    final String json = JsonUtil.toJson(Collections.singletonMap("key", "val"));
+
+    // when
+    final FailJobResponse response =
+        client.newFailCommand(jobKey).retries(newRetries).variables(json).send().join();
+
+    // then
+    final FailJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobKey()).isEqualTo(jobKey);
+    JsonUtil.assertEquality(request.getVariables(), json);
     assertThat(response).isNotNull();
   }
 }

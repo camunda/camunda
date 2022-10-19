@@ -186,17 +186,21 @@ exporters:
         decision: true
         decisionEvaluation: true
         deployment: true
+        deploymentDistribution: true
         error: true
         incident: true
         job: true
         jobBatch: false
         message: true
+        messageStartSubscription: true
         messageSubscription: true
         process: true
+        processEvent: false
         processInstance: true
         processInstanceCreation: true
         processInstanceModification: true
         processMessageSubscription: true
+        timer: true
         variable: true
         variableDocument: true
 ```
