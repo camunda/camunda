@@ -16,8 +16,8 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
@@ -48,7 +48,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private ProcessingScheduleService processingScheduleService;
   private MutableLastProcessedPositionState lastProcessedPositionState;
 
-  private LogStreamBatchWriter logStreamBatchWriter;
+  private LogStreamWriter logStreamBatchWriter;
   private CommandResponseWriter commandResponseWriter;
   private InterPartitionCommandSender partitionCommandSender;
 
@@ -169,11 +169,11 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return streamProcessorMode;
   }
 
-  public void logStreamBatchWriter(final LogStreamBatchWriter batchWriter) {
+  public void logStreamBatchWriter(final LogStreamWriter batchWriter) {
     logStreamBatchWriter = batchWriter;
   }
 
-  public LogStreamBatchWriter getLogStreamBatchWriter() {
+  public LogStreamWriter getLogStreamBatchWriter() {
     return logStreamBatchWriter;
   }
 

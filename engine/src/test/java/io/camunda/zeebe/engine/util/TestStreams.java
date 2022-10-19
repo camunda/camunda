@@ -438,7 +438,7 @@ public final class TestStreams {
       writer.metadataWriter(metadata);
       writer.valueWriter(value);
 
-      return doRepeatedly(writer::tryWrite).until(p -> p >= 0);
+      return doRepeatedly(() -> writer.tryWrite()).until(p -> p >= 0);
     }
   }
 

@@ -17,8 +17,8 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.logstreams.impl.Loggers;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -137,7 +137,7 @@ public final class ProcessingStateMachine {
   private final List<RecordProcessor> recordProcessors;
   private ProcessingResult currentProcessingResult;
   private RecordProcessor currentProcessor;
-  private final LogStreamBatchWriter logStreamBatchWriter;
+  private final LogStreamWriter logStreamBatchWriter;
   private boolean inProcessing;
 
   public ProcessingStateMachine(
@@ -243,7 +243,7 @@ public final class ProcessingStateMachine {
 
       final long position = typedCommand.getPosition();
       final ProcessingResultBuilder processingResultBuilder =
-          new BufferedProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
+          new BufferedProcessingResultBuilder((x, y) -> true);
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
@@ -321,7 +321,7 @@ public final class ProcessingStateMachine {
     zeebeDbTransaction.run(
         () -> {
           final ProcessingResultBuilder processingResultBuilder =
-              new BufferedProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
+              new BufferedProcessingResultBuilder((x, y) -> true);
 
           currentProcessingResult =
               currentProcessor.onProcessingError(
@@ -333,22 +333,9 @@ public final class ProcessingStateMachine {
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
-              logStreamBatchWriter.reset();
-              logStreamBatchWriter.sourceRecordPosition(typedCommand.getPosition());
-
-              currentProcessingResult
-                  .getRecordBatch()
-                  .forEach(
-                      entry ->
-                          logStreamBatchWriter
-                              .event()
-                              .key(entry.key())
-                              .metadataWriter(entry.recordMetadata())
-                              .sourceIndex(entry.sourceIndex())
-                              .valueWriter(entry.recordValue())
-                              .done());
-
-              final long position = logStreamBatchWriter.tryWrite();
+              final var batch = currentProcessingResult.getRecordBatch();
+              final long position =
+                  logStreamBatchWriter.tryWrite(batch, typedCommand.getPosition());
               if (position > 0) {
                 writtenPosition = position;
               }

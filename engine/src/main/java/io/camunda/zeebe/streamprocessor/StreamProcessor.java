@@ -19,8 +19,8 @@ import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
@@ -173,7 +173,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
           new ProcessingScheduleServiceImpl(
               streamProcessorContext::getStreamProcessorPhase,
               streamProcessorContext.getAbortCondition(),
-              logStream::newLogStreamBatchWriter);
+              logStream::newLogStreamWriter);
       streamProcessorContext.scheduleService(scheduleService);
 
       initRecordProcessors();
@@ -275,7 +275,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void onRetrievingWriter(
-      final LogStreamBatchWriter batchWriter,
+      final LogStreamWriter batchWriter,
       final Throwable errorOnReceivingWriter,
       final LastProcessingPositions lastProcessingPositions) {
 
@@ -380,7 +380,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   private void onRecovered(final LastProcessingPositions lastProcessingPositions) {
     logStream
-        .newLogStreamBatchWriter()
+        .newLogStreamWriter()
         .onComplete(
             (batchWriter, errorOnReceivingWriter) ->
                 onRetrievingWriter(batchWriter, errorOnReceivingWriter, lastProcessingPositions));

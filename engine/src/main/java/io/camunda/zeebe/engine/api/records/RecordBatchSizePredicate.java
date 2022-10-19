@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.api.records;
 
+import io.camunda.zeebe.logstreams.RecordBatchEntry;
 import java.util.function.BiPredicate;
 
 /**

@@ -12,7 +12,9 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.ImmutableRecordBatch.Impl;
+import io.camunda.zeebe.logstreams.ImmutableRecordBatchEntry;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
@@ -28,6 +30,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
+import java.util.List;
 
 /**
  * Request handler to handle commands and queries related to the backup ({@link RequestType#BACKUP})
@@ -36,7 +39,7 @@ public final class BackupApiRequestHandler
     extends AsyncApiRequestHandler<BackupApiRequestReader, BackupApiResponseWriter>
     implements DiskSpaceUsageListener {
   private boolean isDiskSpaceAvailable = true;
-  private final LogStreamRecordWriter logStreamRecordWriter;
+  private final LogStreamWriter logStreamRecordWriter;
   private final BackupManager backupManager;
   private final AtomixServerTransport transport;
   private final int partitionId;
@@ -44,7 +47,7 @@ public final class BackupApiRequestHandler
 
   public BackupApiRequestHandler(
       final AtomixServerTransport transport,
-      final LogStreamRecordWriter logStreamRecordWriter,
+      final LogStreamWriter logStreamRecordWriter,
       final BackupManager backupManager,
       final int partitionId,
       final boolean backupFeatureEnabled) {
@@ -108,8 +111,9 @@ public final class BackupApiRequestHandler
     final CheckpointRecord checkpointRecord =
         new CheckpointRecord().setCheckpointId(requestReader.backupId());
 
-    final var written =
-        logStreamRecordWriter.metadataWriter(metadata).valueWriter(checkpointRecord).tryWrite();
+    final var entry = new ImmutableRecordBatchEntry.Impl(-1, -1, metadata, checkpointRecord);
+    final var batch = new Impl(List.of(entry), entry.getLength());
+    final var written = logStreamRecordWriter.tryWrite(batch, -1);
 
     if (written > 0) {
       // Response will be sent by the processor

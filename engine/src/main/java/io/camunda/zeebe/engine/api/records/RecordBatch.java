@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.api.records;
 
 import io.camunda.zeebe.logstreams.ImmutableRecordBatch;
 import io.camunda.zeebe.logstreams.ImmutableRecordBatchEntry;
+import io.camunda.zeebe.logstreams.RecordBatchEntry;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -77,6 +78,11 @@ public final class RecordBatch implements MutableRecordBatch {
   @Override
   public int size() {
     return batchSize;
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return recordBatchEntries.isEmpty();
   }
 
   public int getBatchSize() {

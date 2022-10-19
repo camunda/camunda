@@ -10,7 +10,6 @@ package io.camunda.zeebe.streamprocessor;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -26,8 +25,8 @@ import io.camunda.zeebe.engine.api.TaskResult;
 import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.api.records.RecordBatch;
 import io.camunda.zeebe.engine.util.Records;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -202,9 +201,7 @@ public class ProcessingScheduleServiceTest {
   public void shouldWriteRecordAfterTaskWasExecuted() {
     // given
     final var batchWriter = writerAsyncSupplier.get().join();
-    when(batchWriter.canWriteAdditionalEvent(anyInt(), anyInt())).thenReturn(true);
     final var logEntryBuilder = mock(LogEntryBuilder.class, Mockito.RETURNS_DEEP_STUBS);
-    when(batchWriter.event()).thenReturn(logEntryBuilder);
 
     // when
     scheduleService.runDelayed(
@@ -215,7 +212,6 @@ public class ProcessingScheduleServiceTest {
         });
 
     // then
-    verify(batchWriter, TIMEOUT).event();
     verify(logEntryBuilder, TIMEOUT).key(1);
     verify(batchWriter, TIMEOUT).tryWrite();
   }
@@ -224,9 +220,7 @@ public class ProcessingScheduleServiceTest {
   public void shouldPreserveOrderingOfWritesEvenWithRetries() {
     // given
     final var batchWriter = writerAsyncSupplier.get().join();
-    when(batchWriter.canWriteAdditionalEvent(anyInt(), anyInt())).thenReturn(true);
     final var logEntryBuilder = mock(LogEntryBuilder.class, Mockito.RETURNS_DEEP_STUBS);
-    when(batchWriter.event()).thenReturn(logEntryBuilder);
 
     // when - in order to make sure we would interleave tasks without the fix for #10240, we need to
     // make sure we retry at least twice, such that the second task can be executed in between both
@@ -270,10 +264,8 @@ public class ProcessingScheduleServiceTest {
     // then
     final var inOrder = inOrder(batchWriter, logEntryBuilder);
 
-    inOrder.verify(batchWriter, TIMEOUT).event();
     inOrder.verify(logEntryBuilder, TIMEOUT).key(1);
     inOrder.verify(batchWriter, TIMEOUT.times(5000)).tryWrite();
-    inOrder.verify(batchWriter, TIMEOUT).event();
     inOrder.verify(logEntryBuilder, TIMEOUT).key(2);
     inOrder.verify(batchWriter, TIMEOUT).tryWrite();
     inOrder.verifyNoMoreInteractions();
@@ -350,13 +342,12 @@ public class ProcessingScheduleServiceTest {
     }
   }
 
-  private static final class WriterAsyncSupplier
-      implements Supplier<ActorFuture<LogStreamBatchWriter>> {
-    AtomicReference<ActorFuture<LogStreamBatchWriter>> writerFutureRef =
-        new AtomicReference<>(CompletableActorFuture.completed(mock(LogStreamBatchWriter.class)));
+  private static final class WriterAsyncSupplier implements Supplier<ActorFuture<LogStreamWriter>> {
+    AtomicReference<ActorFuture<LogStreamWriter>> writerFutureRef =
+        new AtomicReference<>(CompletableActorFuture.completed(mock(LogStreamWriter.class)));
 
     @Override
-    public ActorFuture<LogStreamBatchWriter> get() {
+    public ActorFuture<LogStreamWriter> get() {
       return writerFutureRef.get();
     }
   }

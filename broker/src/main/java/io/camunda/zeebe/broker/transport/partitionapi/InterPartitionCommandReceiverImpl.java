@@ -12,7 +12,10 @@ import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.protocol.InterPartitionMessageDecoder;
 import io.camunda.zeebe.broker.protocol.MessageHeaderDecoder;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.ImmutableRecordBatch.Impl;
+import io.camunda.zeebe.logstreams.ImmutableRecordBatchEntry;
+import io.camunda.zeebe.logstreams.RecordBatchEntry;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -21,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import java.util.List;
 import java.util.Optional;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -28,11 +32,11 @@ import org.slf4j.Logger;
 final class InterPartitionCommandReceiverImpl {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private final Decoder decoder = new Decoder();
-  private final LogStreamRecordWriter logStreamWriter;
+  private final LogStreamWriter logStreamWriter;
   private boolean diskSpaceAvailable = true;
   private long checkpointId = CheckpointState.NO_CHECKPOINT;
 
-  InterPartitionCommandReceiverImpl(final LogStreamRecordWriter logStreamWriter) {
+  InterPartitionCommandReceiverImpl(final LogStreamWriter logStreamWriter) {
     this.logStreamWriter = logStreamWriter;
   }
 
@@ -81,25 +85,33 @@ final class InterPartitionCommandReceiverImpl {
         "Received command with checkpoint {}, current checkpoint is {}",
         decoded.checkpointId,
         checkpointId);
-    logStreamWriter.reset();
+
     final var metadata =
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
             .intent(CheckpointIntent.CREATE)
             .valueType(ValueType.CHECKPOINT);
     final var checkpointRecord = new CheckpointRecord().setCheckpointId(decoded.checkpointId);
-    final var writeResult =
-        logStreamWriter.metadataWriter(metadata).valueWriter(checkpointRecord).tryWrite();
+
+    final var entry = new ImmutableRecordBatchEntry.Impl(-1, -1, metadata, checkpointRecord);
+    final var batch = new Impl(List.of(entry), entry.getLength());
+    final var writeResult = logStreamWriter.tryWrite(batch, -1);
     return writeResult > 0;
   }
 
   private boolean writeCommand(final DecodedMessage decoded) {
-    logStreamWriter.reset();
-
-    decoded.recordKey.ifPresent(logStreamWriter::key);
-
-    final var writeResult =
-        logStreamWriter.metadataWriter(decoded.metadata).valueWriter(decoded.command).tryWrite();
+    final var entry =
+        RecordBatchEntry.createEntry(
+            -1,
+            -1,
+            decoded.metadata.getRecordType(),
+            decoded.metadata.getIntent(),
+            decoded.metadata.getRejectionType(),
+            decoded.metadata.getRejectionReason(),
+            decoded.metadata.getValueType(),
+            decoded.command);
+    final var batch = new Impl(List.of(entry), entry.getLength());
+    final var writeResult = logStreamWriter.tryWrite(batch, -1);
     return writeResult > 0;
   }
 

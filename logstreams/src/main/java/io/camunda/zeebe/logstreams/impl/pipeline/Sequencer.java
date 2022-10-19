@@ -9,7 +9,11 @@ package io.camunda.zeebe.logstreams.impl.pipeline;
 
 import io.camunda.zeebe.logstreams.ImmutableRecordBatch;
 import io.camunda.zeebe.logstreams.ImmutableRecordBatchEntry;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.ActorCondition;
+import io.camunda.zeebe.scheduler.AsyncClosable;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -17,7 +21,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.locks.ReentrantLock;
 
 /** Accepts records from multiple writers, sequences them and assigns positions to each record */
-public final class Sequencer {
+public final class Sequencer implements LogStreamWriter, AsyncClosable {
   private long position;
   private ActorCondition consumer;
   private final Queue<SequencedRecordBatch> queue = new LinkedBlockingDeque<>();
@@ -28,7 +32,11 @@ public final class Sequencer {
     this.position = initialPosition;
   }
 
-  public long offerBatch(final ImmutableRecordBatch batch, final long sourceRecordPosition) {
+  @Override
+  public long tryWrite(final ImmutableRecordBatch batch, final long sourceRecordPosition) {
+    if (batch.isEmpty()) {
+      return 0;
+    }
     lock.lock();
     try {
       final var startingPosition = position;
@@ -55,6 +63,11 @@ public final class Sequencer {
 
   public void registerConsumer(final ActorCondition condition) {
     this.consumer = condition;
+  }
+
+  @Override
+  public ActorFuture<Void> closeAsync() {
+    return CompletableActorFuture.completed(null);
   }
 
   record SequencedRecordBatch(

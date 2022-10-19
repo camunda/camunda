@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.logstreams.log;
 
+import io.camunda.zeebe.logstreams.ImmutableRecordBatch;
+
 public interface LogStreamWriter {
 
   /**
@@ -14,5 +16,11 @@ public interface LogStreamWriter {
    *
    * @return the event position or a negative value if fails to write the event
    */
-  long tryWrite();
+  default long tryWrite() {
+    return 0;
+  }
+
+  default long tryWrite(final ImmutableRecordBatch batch, final long sourceRecordPosition) {
+    return 0;
+  }
 }

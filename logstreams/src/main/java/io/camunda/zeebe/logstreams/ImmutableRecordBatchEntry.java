@@ -42,4 +42,14 @@ public interface ImmutableRecordBatchEntry {
    *     its maximum size
    */
   int getLength();
+
+  record Impl(
+      long key, int sourceIndex, RecordMetadata recordMetadata, UnifiedRecordValue recordValue)
+      implements ImmutableRecordBatchEntry {
+
+    @Override
+    public int getLength() {
+      return Long.BYTES + Integer.BYTES + recordMetadata.getLength() + recordMetadata.getLength();
+    }
+  }
 }

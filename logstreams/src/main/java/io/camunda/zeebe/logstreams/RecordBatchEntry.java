@@ -5,11 +5,8 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.api.records;
+package io.camunda.zeebe.logstreams;
 
-import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.EVENT_REGISTRY;
-
-import io.camunda.zeebe.logstreams.ImmutableRecordBatchEntry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -62,7 +59,8 @@ public record RecordBatchEntry(
     valueWriter.write(recordValueBuffer, 0);
 
     final UnifiedRecordValue unifiedRecordValue =
-        ReflectUtil.newInstance(EVENT_REGISTRY.get(recordMetadata.getValueType()));
+        ReflectUtil.newInstance(
+            TypedEventRegistry.EVENT_REGISTRY.get(recordMetadata.getValueType()));
     unifiedRecordValue.wrap(recordValueBuffer, 0, recordValueBuffer.capacity());
 
     return new RecordBatchEntry(key, sourceIndex, recordMetadata, unifiedRecordValue);

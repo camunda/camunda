@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
-import io.camunda.zeebe.dispatcher.Dispatcher;
-import io.camunda.zeebe.dispatcher.Dispatchers;
-import io.camunda.zeebe.dispatcher.Subscription;
 import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.logstreams.impl.pipeline.Appender;
+import io.camunda.zeebe.logstreams.impl.pipeline.Sequencer;
+import io.camunda.zeebe.logstreams.impl.pipeline.Serializer;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
@@ -51,9 +51,9 @@ public final class LogStreamImpl extends Actor
   private final CompletableActorFuture<Void> closeFuture;
   private final int nodeId;
   private final Set<FailureListener> failureListeners = new HashSet<>();
-  private ActorFuture<LogStorageAppender> appenderFuture;
-  private Dispatcher writeBuffer;
-  private LogStorageAppender appender;
+  private ActorFuture<Appender> appenderFuture;
+  private Sequencer sequencer;
+  private Appender appender;
   private Throwable closeError; // set if any error occurred during closeAsync
   private final String actorName;
   private HealthReport healthReport = HealthReport.healthy(this);
@@ -178,12 +178,12 @@ public final class LogStreamImpl extends Actor
 
   @Override
   public ActorFuture<LogStreamRecordWriter> newLogStreamRecordWriter() {
-    return newLogStreamWriter(LogStreamWriterImpl::new);
+    return CompletableActorFuture.completedExceptionally(new UnsupportedOperationException());
   }
 
   @Override
   public ActorFuture<LogStreamBatchWriter> newLogStreamBatchWriter() {
-    return newLogStreamWriter(LogStreamBatchWriterImpl::new);
+    return CompletableActorFuture.completedExceptionally(new UnsupportedOperationException());
   }
 
   @Override
@@ -196,15 +196,16 @@ public final class LogStreamImpl extends Actor
     actor.call(() -> recordAwaiters.remove(recordAwaiter));
   }
 
-  private <T extends LogStreamWriter> ActorFuture<T> newLogStreamWriter(
-      final WriterCreator<T> logStreamCreator) {
+  @Override
+  public ActorFuture<LogStreamWriter> newLogStreamWriter() {
     // this should be replaced after refactoring the actor control
     if (actor.isClosed()) {
       return CompletableActorFuture.completedExceptionally(new RuntimeException("Actor is closed"));
     }
 
-    final var writerFuture = new CompletableActorFuture<T>();
-    actor.run(() -> createWriter(writerFuture, logStreamCreator));
+    final var writerFuture = new CompletableActorFuture<LogStreamWriter>();
+
+    actor.run(() -> createWriter(writerFuture));
     return writerFuture;
   }
 
@@ -223,10 +224,9 @@ public final class LogStreamImpl extends Actor
     return newReader;
   }
 
-  private <T extends LogStreamWriter> void createWriter(
-      final CompletableActorFuture<T> writerFuture, final WriterCreator<T> creator) {
+  private void createWriter(final CompletableActorFuture<LogStreamWriter> writerFuture) {
 
-    final var onOpenAppenderConsumer = onOpenAppender(writerFuture, creator);
+    final var onOpenAppenderConsumer = onOpenAppender(writerFuture);
 
     if (appender != null) {
       onOpenAppenderConsumer.accept(appender, null);
@@ -235,11 +235,11 @@ public final class LogStreamImpl extends Actor
     }
   }
 
-  private <T extends LogStreamWriter> BiConsumer<LogStorageAppender, Throwable> onOpenAppender(
-      final CompletableActorFuture<T> writerFuture, final WriterCreator<T> creator) {
+  private BiConsumer<Appender, Throwable> onOpenAppender(
+      final CompletableActorFuture<LogStreamWriter> writerFuture) {
     return (openedAppender, errorOnOpeningAppender) -> {
       if (errorOnOpeningAppender == null) {
-        writerFuture.complete(creator.create(partitionId, writeBuffer));
+        writerFuture.complete(sequencer);
       } else {
         writerFuture.completeExceptionally(errorOnOpeningAppender);
       }
@@ -252,11 +252,11 @@ public final class LogStreamImpl extends Actor
     LOG.info("Close appender for log stream {}", logName);
 
     final var toCloseAppender = appender;
-    final var toCloseWriteBuffer = writeBuffer;
+    final var toCloseWriteBuffer = sequencer;
     final var toCompleteExceptionallyAppenderFuture = appenderFuture;
 
     appender = null;
-    writeBuffer = null;
+    sequencer = null;
     appenderFuture = null;
 
     if (toCompleteExceptionallyAppenderFuture != null
@@ -285,7 +285,7 @@ public final class LogStreamImpl extends Actor
     return closeAppenderFuture;
   }
 
-  private ActorFuture<LogStorageAppender> openAppender() {
+  private ActorFuture<Appender> openAppender() {
     if (appenderFuture != null) {
       return appenderFuture;
     }
@@ -294,26 +294,19 @@ public final class LogStreamImpl extends Actor
     actor.run(
         () -> {
           final var initialPosition = getWriteBuffersInitialPosition();
-          writeBuffer = createAndScheduleWriteBuffer(initialPosition);
-
-          writeBuffer
-              .openSubscriptionAsync(APPENDER_SUBSCRIPTION_NAME)
+          final var sequencer = new Sequencer(initialPosition);
+          final var appender = new Appender(new Serializer(), sequencer, logStorage);
+          actorSchedulingService
+              .submitActor(appender)
               .onComplete(
-                  (subscription, throwable) -> {
-                    if (throwable == null) {
-                      createAndScheduleLogStorageAppender(subscription)
-                          .onComplete(
-                              (v, t) -> {
-                                if (t != null) {
-                                  onFailure(t);
-                                } else {
-                                  appenderFuture.complete(appender);
-                                  appender.addFailureListener(this);
-                                }
-                              });
-                    } else {
-                      onFailure(throwable);
+                  (ignored, err) -> {
+                    if (err != null) {
+                      appenderFuture.completeExceptionally(err);
+                      return;
                     }
+                    this.appender = appender;
+                    this.sequencer = sequencer;
+                    appenderFuture.complete(appender);
                   });
         });
 
@@ -329,26 +322,6 @@ public final class LogStreamImpl extends Actor
     }
 
     return initialPosition;
-  }
-
-  private Dispatcher createAndScheduleWriteBuffer(final long initialPosition) {
-    return Dispatchers.create(buildActorName(nodeId, "dispatcher", partitionId))
-        .maxFragmentLength(maxFrameLength)
-        .initialPosition(initialPosition)
-        .name(logName + "-write-buffer")
-        .actorSchedulingService(actorSchedulingService)
-        .build();
-  }
-
-  private ActorFuture<Void> createAndScheduleLogStorageAppender(final Subscription subscription) {
-    appender =
-        new LogStorageAppender(
-            buildActorName(nodeId, "LogAppender", partitionId),
-            partitionId,
-            logStorage,
-            subscription,
-            maxFrameLength);
-    return actorSchedulingService.submitActor(appender);
   }
 
   private long getLastCommittedPosition() {
@@ -406,11 +379,5 @@ public final class LogStreamImpl extends Actor
     private LogStorageAppenderClosedException() {
       super("LogStorageAppender was closed before opening succeeded");
     }
-  }
-
-  @FunctionalInterface
-  private interface WriterCreator<T extends LogStreamWriter> {
-
-    T create(int partitionId, Dispatcher dispatcher);
   }
 }

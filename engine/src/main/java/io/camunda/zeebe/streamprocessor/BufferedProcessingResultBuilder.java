@@ -14,7 +14,7 @@ import io.camunda.zeebe.engine.api.ProcessingResponse;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.records.RecordBatch;
-import io.camunda.zeebe.engine.api.records.RecordBatchEntry;
+import io.camunda.zeebe.logstreams.RecordBatchEntry;
 import io.camunda.zeebe.engine.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;

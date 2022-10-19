@@ -11,7 +11,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 
@@ -47,7 +47,7 @@ public final class BackupApiRequestHandlerStep implements PartitionTransitionSte
 
   private ActorFuture<Void> installRequestHandler(final PartitionTransitionContext context) {
     final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
-    final var writerFuture = context.getLogStream().newLogStreamRecordWriter();
+    final var writerFuture = context.getLogStream().newLogStreamWriter();
     writerFuture.onComplete(
         (logStreamRecordWriter, error) -> {
           if (error == null) {
@@ -63,7 +63,7 @@ public final class BackupApiRequestHandlerStep implements PartitionTransitionSte
   private void createBackupApiRequestHandler(
       final PartitionTransitionContext context,
       final ActorFuture<Void> installed,
-      final LogStreamRecordWriter logStreamRecordWriter) {
+      final LogStreamWriter logStreamRecordWriter) {
     final var requestHandler =
         new BackupApiRequestHandler(
             context.getGatewayBrokerTransport(),

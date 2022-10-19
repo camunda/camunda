@@ -14,7 +14,7 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -37,7 +37,7 @@ public final class InterPartitionCommandReceiverActor extends Actor
       final int nodeId,
       final int partitionId,
       final ClusterCommunicationService communicationService,
-      final LogStreamRecordWriter logStreamWriter) {
+      final LogStreamWriter logStreamWriter) {
     this.partitionId = partitionId;
     this.communicationService = communicationService;
     receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);

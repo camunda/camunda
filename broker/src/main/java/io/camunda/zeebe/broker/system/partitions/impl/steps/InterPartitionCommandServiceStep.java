@@ -90,7 +90,7 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
 
     context
         .getLogStream()
-        .newLogStreamRecordWriter()
+        .newLogStreamWriter()
         .onComplete(
             (writer, error) -> {
               if (error != null) {
