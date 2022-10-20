@@ -20,6 +20,7 @@ import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {fetchProcessInstanceDetailStatistics} from 'modules/api/instances';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {modificationsStore} from './modifications';
+import {isProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
 
 type Statistic = {
   activityId: string;
@@ -187,22 +188,21 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
     return this.state.statistics.reduce<{
       [key: string]: Omit<Statistic, 'activityId'>;
     }>((statistics, {activityId, active, incidents, completed, canceled}) => {
-      const metaData =
-        processInstanceDetailsDiagramStore.getMetaData(activityId);
+      const businessObject =
+        processInstanceDetailsDiagramStore.businessObjects[activityId];
+
+      if (businessObject === undefined) {
+        return statistics;
+      }
 
       statistics[activityId] = {
         active,
         filteredActive:
-          metaData?.type.elementType === undefined ||
-          !['TASK_SUBPROCESS', 'EVENT_SUBPROCESS'].includes(
-            metaData.type.elementType
-          )
-            ? active
-            : 0,
+          businessObject?.$type !== 'bpmn:SubProcess' ? active : 0,
         incidents,
         completed:
           modificationsStore.isModificationModeEnabled ||
-          !metaData?.type.isProcessEndEvent
+          !isProcessEndEvent(businessObject)
             ? 0
             : completed,
 

@@ -9,7 +9,7 @@ import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {DiagramModel} from 'bpmn-moddle';
 
 export function isFlowNode(businessObject: BusinessObject) {
-  return businessObject.$instanceOf('bpmn:FlowNode');
+  return businessObject.$instanceOf?.('bpmn:FlowNode') ?? false;
 }
 
 export function getFlowNodes(elementsById?: DiagramModel['elementsById']) {

@@ -5,10 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-const getProcessedSequenceFlows = (sequenceFlows: {activityId: string}[]) => {
-  return sequenceFlows
-    .map((sequenceFlow) => sequenceFlow.activityId)
-    .filter((value, index, self) => self.indexOf(value) === index);
+import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+
+const getBoundaryEventType = ({cancelActivity}: BusinessObject) => {
+  if (cancelActivity === undefined) {
+    return;
+  }
+
+  return cancelActivity ? 'interrupting' : 'non-interrupting';
 };
 
-export {getProcessedSequenceFlows};
+export {getBoundaryEventType};

@@ -21,8 +21,15 @@ describe('Input Mappings', () => {
   });
 
   it('should display empty message', async () => {
+    mockServer.use(
+      rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
+        res.once(ctx.text(mockProcessWithInputOutputMappingsXML))
+      )
+    );
+
+    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
     flowNodeSelectionStore.setSelection({
-      flowNodeId: 'Activity_0qtp1k6',
+      flowNodeId: 'Event_0bonl61',
     });
     const {rerender} = render(<InputOutputMappings type="Input" />, {
       wrapper: ThemeProvider,
@@ -104,7 +111,7 @@ describe('Input Mappings', () => {
 
       await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
       flowNodeSelectionStore.setSelection({
-        flowNodeId: 'some-flow-node',
+        flowNodeId: 'Activity_0qtp1k6',
       });
 
       const {user, rerender} = render(

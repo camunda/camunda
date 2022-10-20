@@ -7,8 +7,6 @@
 
 import React, {useRef} from 'react';
 import {observer} from 'mobx-react';
-import {TYPE} from 'modules/constants';
-import {getProcessName} from 'modules/utils/instance';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -86,28 +84,21 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
     const hasVisibleChildPlaceholders = visibleChildPlaceholders.length > 0;
     const hasVisibleChildNodes = visibleChildNodes.length > 0;
 
-    const metaData = processInstanceDetailsDiagramStore.getMetaData(
-      flowNodeInstance.flowNodeId || null
-    ) || {
-      name:
-        processInstanceDetailsStore.state.processInstance !== null
-          ? getProcessName(processInstanceDetailsStore.state.processInstance)
-          : '',
-      type: {elementType: 'PROCESS'},
-    };
+    const businessObject = isProcessInstance
+      ? processInstanceDetailsDiagramStore.processBusinessObject
+      : processInstanceDetailsDiagramStore.businessObjects[
+          flowNodeInstance.flowNodeId
+        ];
 
-    const isMultiInstance = flowNodeInstance.type === TYPE.MULTI_INSTANCE_BODY;
+    const isMultiInstanceBody = flowNodeInstance.type === 'MULTI_INSTANCE_BODY';
 
-    const isSubProcess =
-      flowNodeInstance.type === 'SUB_PROCESS' ||
-      flowNodeInstance.type === 'EVENT_SUB_PROCESS';
-
-    const isFoldable = isMultiInstance || isSubProcess;
+    const isFoldable =
+      isMultiInstanceBody || businessObject?.$type === 'bpmn:SubProcess';
 
     const isSelected = flowNodeSelectionStore.isSelected({
       flowNodeInstanceId: flowNodeInstance.id,
       flowNodeId: flowNodeInstance.flowNodeId,
-      isMultiInstance,
+      isMultiInstance: isMultiInstanceBody,
     });
 
     const rowRef = useRef<HTMLDivElement>(null);
@@ -143,10 +134,8 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
       }
     };
 
-    const nodeName = `${metaData.name || flowNodeInstance.flowNodeId}${
-      flowNodeInstance.type === TYPE.MULTI_INSTANCE_BODY
-        ? ` (Multi Instance)`
-        : ''
+    const nodeName = `${businessObject?.name || flowNodeInstance.flowNodeId}${
+      isMultiInstanceBody ? ` (Multi Instance)` : ''
     }`;
 
     return (
@@ -191,7 +180,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               : undefined
           }
         >
-          {metaData !== undefined && (
+          {businessObject !== undefined && (
             <Summary
               ref={rowRef}
               data-testid={flowNodeInstance.id}
@@ -202,7 +191,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
                     ? undefined
                     : flowNodeInstance.flowNodeId,
                   flowNodeInstanceId: flowNodeInstance.id,
-                  isMultiInstance,
+                  isMultiInstance: isMultiInstanceBody,
                   isPlaceholder: flowNodeInstance.isPlaceholder,
                 });
               }}
@@ -212,10 +201,10 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
             >
               <Bar
                 flowNodeInstance={flowNodeInstance}
-                metaData={metaData}
+                businessObject={businessObject}
                 nodeName={nodeName}
                 isSelected={isSelected}
-                isBold={isFoldable || metaData.type.elementType === 'PROCESS'}
+                isBold={isFoldable || businessObject.$type === 'bpmn:Process'}
                 hasTopBorder={treeDepth > 1}
               />
             </Summary>

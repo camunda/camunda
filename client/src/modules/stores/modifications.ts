@@ -7,10 +7,9 @@
 
 import {makeAutoObservable} from 'mobx';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
-import {isFlowNodeMultiInstance} from 'modules/stores/utils/isFlowNodeMultiInstance';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
-import {getFlowElementIds} from 'modules/bpmn-js/getFlowElementIds';
+import {getFlowElementIds} from 'modules/bpmn-js/utils/getFlowElementIds';
 import {
   modify,
   ModificationPayload,
@@ -18,6 +17,7 @@ import {
 } from 'modules/api/modifications';
 import {logger} from 'modules/logger';
 import {tracking} from 'modules/tracking';
+import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 
 type FlowNodeModificationPayload =
   | {
@@ -114,11 +114,11 @@ class Modifications {
   };
 
   generateParentScopeIds = (targetFlowNodeId: string) => {
-    const flowNode =
-      processInstanceDetailsDiagramStore.getFlowNode(targetFlowNodeId);
+    const businessObject =
+      processInstanceDetailsDiagramStore.businessObjects[targetFlowNodeId];
 
     const parentFlowNodeIds =
-      processInstanceDetailsDiagramStore.getFlowNodeParents(flowNode);
+      processInstanceDetailsDiagramStore.getFlowNodeParents(businessObject);
 
     return parentFlowNodeIds.reduce<{[flowNodeId: string]: string}>(
       (parentFlowNodeScopes, flowNodeId) => {
@@ -156,12 +156,15 @@ class Modifications {
         processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
           this.state.sourceFlowNodeIdForMoveOperation
         );
+
       const visibleAffectedTokenCount =
         processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
           this.state.sourceFlowNodeIdForMoveOperation
         );
-      const newScopeCount = isFlowNodeMultiInstance(
-        this.state.sourceFlowNodeIdForMoveOperation
+      const newScopeCount = isMultiInstance(
+        processInstanceDetailsDiagramStore.businessObjects[
+          this.state.sourceFlowNodeIdForMoveOperation
+        ]
       )
         ? 1
         : affectedTokenCount;
@@ -328,7 +331,11 @@ class Modifications {
           visibleAffectedTokenCount;
 
         modificationsByFlowNode[payload.targetFlowNode.id]!.newTokens =
-          isFlowNodeMultiInstance(flowNode.id) ? 1 : affectedTokenCount;
+          isMultiInstance(
+            processInstanceDetailsDiagramStore.businessObjects[flowNode.id]
+          )
+            ? 1
+            : affectedTokenCount;
       }
 
       if (operation === 'CANCEL_TOKEN') {
@@ -339,7 +346,7 @@ class Modifications {
 
         // set cancel token counts for child elements if flow node has any
         const elementIds = getFlowElementIds(
-          processInstanceDetailsDiagramStore.getFlowNode(flowNode.id)
+          processInstanceDetailsDiagramStore.businessObjects[flowNode.id]
         );
 
         let affectedChildTokenCount = 0;

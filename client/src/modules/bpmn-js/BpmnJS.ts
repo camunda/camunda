@@ -16,8 +16,8 @@ import {isEqual} from 'lodash';
 import {theme} from 'modules/theme';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
-import {isNonSelectableFlowNode} from './isNonSelectableFlowNode';
-import {isMultiInstance} from './isMultiInstance';
+import {isNonSelectableFlowNode} from './utils/isNonSelectableFlowNode';
+import {isMultiInstance} from './utils/isMultiInstance';
 import {tracking} from 'modules/tracking';
 import {OutlineModule} from './modules/Outline';
 
@@ -321,7 +321,10 @@ class BpmnJS {
       this.#selectableFlowNodes.includes(flowNode.id) &&
       flowNode.id !== this.#selectedFlowNodeId
     ) {
-      this.onFlowNodeSelection?.(flowNode.id, isMultiInstance(flowNode));
+      this.onFlowNodeSelection?.(
+        flowNode.id,
+        isMultiInstance(flowNode.businessObject)
+      );
     } else if (this.#selectedFlowNodeId !== undefined) {
       this.onFlowNodeSelection?.(undefined);
     }

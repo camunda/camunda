@@ -5,16 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Bar} from './index';
-import {
-  mockStartNode,
-  mockStartMetaData,
-  mockMultiInstanceBodyNode,
-  mockMultiInstanceBodyMetaData,
-} from './index.setup';
+import {mockStartNode, mockStartEventBusinessObject} from './index.setup';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
@@ -27,8 +21,8 @@ describe('<Bar />', () => {
     render(
       <Bar
         flowNodeInstance={mockStartNode}
-        metaData={mockStartMetaData}
-        nodeName={mockStartMetaData.name}
+        businessObject={mockStartEventBusinessObject}
+        nodeName={mockStartEventBusinessObject.name}
         isBold={false}
         isSelected={false}
         hasTopBorder={false}
@@ -38,18 +32,18 @@ describe('<Bar />', () => {
       }
     );
 
+    expect(screen.getByText('flow-node-event-start.svg')).toBeInTheDocument();
     expect(
-      screen.getByTestId(`flow-node-icon-${mockStartMetaData.type.elementType}`)
+      screen.getByText(mockStartEventBusinessObject.name)
     ).toBeInTheDocument();
-    expect(screen.getByText(mockStartMetaData.name)).toBeInTheDocument();
   });
 
   it('should toggle the timestamp', () => {
     render(
       <Bar
-        flowNodeInstance={mockMultiInstanceBodyNode}
-        metaData={mockMultiInstanceBodyMetaData}
-        nodeName={mockMultiInstanceBodyMetaData.name}
+        flowNodeInstance={mockStartNode}
+        businessObject={mockStartEventBusinessObject}
+        nodeName={mockStartEventBusinessObject.name}
         isBold={false}
         isSelected={false}
         hasTopBorder={false}
@@ -59,9 +53,7 @@ describe('<Bar />', () => {
       }
     );
 
-    expect(
-      screen.queryByText(mockMultiInstanceBodyNode.endDate!)
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
 
     flowNodeTimeStampStore.toggleTimeStampVisibility();
 

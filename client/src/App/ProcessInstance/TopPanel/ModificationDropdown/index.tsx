@@ -21,7 +21,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
-import {isMultiInstance} from 'modules/bpmn-js/isMultiInstance';
+import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {tracking} from 'modules/tracking';
 
 type Props = {
@@ -40,14 +40,15 @@ const ModificationDropdown: React.FC<Props> = observer(
       return null;
     }
 
-    const element = processInstanceDetailsDiagramStore.getFlowNode(flowNodeId);
+    const businessObject =
+      processInstanceDetailsDiagramStore.businessObjects[flowNodeId];
 
     const canSelectedFlowNodeBeModified =
       !processInstanceDetailsDiagramStore.nonModifiableFlowNodes.includes(
         flowNodeId
       ) &&
       !(
-        isMultiInstance(element) &&
+        isMultiInstance(businessObject) &&
         !flowNodeSelectionStore.state.selection?.isMultiInstance
       );
 
@@ -150,8 +151,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                     <CancelIcon />
                     Cancel
                   </Option>
-                  {processInstanceDetailsDiagramStore.getFlowNode(flowNodeId)
-                    ?.$type !== 'bpmn:SubProcess' && (
+                  {businessObject?.$type !== 'bpmn:SubProcess' && (
                     <Option
                       title="Move all running instances in this flow node to another target"
                       onClick={() => {

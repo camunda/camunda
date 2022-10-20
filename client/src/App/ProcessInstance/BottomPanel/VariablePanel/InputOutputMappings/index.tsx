@@ -11,6 +11,7 @@ import {EmptyPanel} from 'modules/components/EmptyPanel';
 import {observer} from 'mobx-react';
 import {DataTable} from 'modules/components/DataTable';
 import {IOMappingInfoBanner} from './IOMappingInfoBanner';
+import {getMappings} from 'modules/bpmn-js/utils/getInputOutputMappings';
 
 const INFORMATION_TEXT = {
   Input:
@@ -30,10 +31,11 @@ const InputOutputMappings: React.FC<Props> = observer(({type}) => {
     return null;
   }
 
-  const mappings = processInstanceDetailsDiagramStore.getInputOutputMappings(
-    type,
-    flowNodeId
-  );
+  const businessObject =
+    processInstanceDetailsDiagramStore.businessObjects[flowNodeId];
+
+  const mappings =
+    businessObject === undefined ? [] : getMappings(businessObject, type);
 
   return (
     <div>

@@ -567,7 +567,7 @@ describe('stores/modifications', () => {
           res.once(
             ctx.json([
               {
-                activityId: 'flowNode1',
+                activityId: 'StartEvent_1',
                 active: 2,
                 incidents: 0,
                 completed: 0,
@@ -575,7 +575,14 @@ describe('stores/modifications', () => {
               },
             ])
           )
+      ),
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessForModifications))
       )
+    );
+
+    await processInstanceDetailsDiagramStore.fetchProcessXml(
+      'processInstanceId'
     );
 
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
@@ -585,21 +592,21 @@ describe('stores/modifications', () => {
       modificationsStore.state.sourceFlowNodeIdForMoveOperation
     ).toBeNull();
 
-    modificationsStore.startMovingToken('flowNode1');
+    modificationsStore.startMovingToken('StartEvent_1');
     expect(modificationsStore.state.sourceFlowNodeIdForMoveOperation).toBe(
-      'flowNode1'
+      'StartEvent_1'
     );
 
-    modificationsStore.finishMovingToken('flowNode2');
+    modificationsStore.finishMovingToken('end-event');
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
-      flowNode1: {
+      StartEvent_1: {
         cancelledTokens: 2,
         newTokens: 0,
         cancelledChildTokens: 0,
         visibleCancelledTokens: 2,
       },
-      flowNode2: {
+      'end-event': {
         cancelledTokens: 0,
         newTokens: 2,
         cancelledChildTokens: 0,

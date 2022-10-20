@@ -13,7 +13,6 @@ import {
   createInstance,
   mockProcessXML,
   mockCallActivityProcessXML,
-  mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {waitFor} from 'modules/testing-library';
 import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
@@ -79,87 +78,42 @@ describe('stores/processInstanceDiagram', () => {
     );
   });
 
-  it('should get metaData', async () => {
+  it('should get business object', async () => {
     await processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     expect(
-      processInstanceDetailsDiagramStore.getMetaData('invalid_activity_id')
+      processInstanceDetailsDiagramStore.businessObjects['invalid_activity_id']
     ).toEqual(undefined);
 
     expect(
-      processInstanceDetailsDiagramStore.getMetaData('StartEvent_1')
+      processInstanceDetailsDiagramStore.businessObjects['StartEvent_1']
     ).toEqual({
-      name: undefined,
-      type: {
-        elementType: 'START',
-        eventType: undefined,
-        isMultiInstance: false,
-        multiInstanceType: undefined,
-        isProcessEndEvent: false,
-        inputMappings: [],
-        outputMappings: [],
-      },
+      $type: 'bpmn:StartEvent',
+      id: 'StartEvent_1',
     });
 
     expect(
-      processInstanceDetailsDiagramStore.getMetaData('ServiceTask_0kt6c5i')
+      processInstanceDetailsDiagramStore.businessObjects['ServiceTask_0kt6c5i']
     ).toEqual({
-      name: undefined,
-      type: {
-        elementType: 'TASK_SERVICE',
-        eventType: undefined,
-        isMultiInstance: false,
-        multiInstanceType: undefined,
-        isProcessEndEvent: false,
-        inputMappings: [],
-        outputMappings: [],
+      $type: 'bpmn:ServiceTask',
+      extensionElements: {
+        $type: 'bpmn:ExtensionElements',
+        values: [
+          {
+            $type: 'zeebe:taskDefinition',
+            type: 'task',
+          },
+        ],
       },
+      id: 'ServiceTask_0kt6c5i',
     });
 
     expect(
-      processInstanceDetailsDiagramStore.getMetaData('EndEvent_0crvjrk')
+      processInstanceDetailsDiagramStore.businessObjects['EndEvent_0crvjrk']
     ).toEqual({
-      name: undefined,
-      type: {
-        elementType: 'END',
-        eventType: undefined,
-        isMultiInstance: false,
-        multiInstanceType: undefined,
-        isProcessEndEvent: true,
-        inputMappings: [],
-        outputMappings: [],
-      },
+      $type: 'bpmn:EndEvent',
+      id: 'EndEvent_0crvjrk',
     });
-  });
-
-  it('should get input and output mappings', async () => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessWithInputOutputMappingsXML))
-      )
-    );
-    await processInstanceDetailsDiagramStore.fetchProcessXml('1');
-
-    expect(
-      processInstanceDetailsDiagramStore.getInputOutputMappings(
-        'Input',
-        'Activity_0qtp1k6'
-      )
-    ).toEqual([
-      {source: '= "test1"', target: 'localVariable1'},
-      {source: '= "test2"', target: 'localVariable2'},
-    ]);
-    expect(
-      processInstanceDetailsDiagramStore.getInputOutputMappings(
-        'Output',
-        'Activity_0qtp1k6'
-      )
-    ).toEqual([
-      {
-        source: '= 2',
-        target: 'outputTest',
-      },
-    ]);
   });
 
   it('should get areDiagramDefinitionsAvailable', async () => {
@@ -451,25 +405,25 @@ describe('stores/processInstanceDiagram', () => {
 
     expect(
       processInstanceDetailsDiagramStore.getFlowNodeParents(
-        processInstanceDetailsDiagramStore.getFlowNode('user_task')
+        processInstanceDetailsDiagramStore.businessObjects['user_task']
       )
     ).toEqual(['inner_sub_process', 'parent_sub_process']);
 
     expect(
       processInstanceDetailsDiagramStore.getFlowNodeParents(
-        processInstanceDetailsDiagramStore.getFlowNode('inner_sub_process')
+        processInstanceDetailsDiagramStore.businessObjects['inner_sub_process']
       )
     ).toEqual(['parent_sub_process']);
 
     expect(
       processInstanceDetailsDiagramStore.getFlowNodeParents(
-        processInstanceDetailsDiagramStore.getFlowNode('parent_sub_process')
+        processInstanceDetailsDiagramStore.businessObjects['parent_sub_process']
       )
     ).toEqual([]);
 
     expect(
       processInstanceDetailsDiagramStore.getFlowNodeParents(
-        processInstanceDetailsDiagramStore.getFlowNode('non_existing')
+        processInstanceDetailsDiagramStore.businessObjects['non_existing']
       )
     ).toEqual([]);
   });

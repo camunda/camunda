@@ -5,17 +5,25 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {render, screen} from 'modules/testing-library';
-import FlowNodeIcon from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {TYPE, MULTI_INSTANCE_TYPE} from 'modules/constants';
+import {FlowNodeIcon} from '.';
 
 describe('FlowNodeIcon', () => {
   it('should render default icon', () => {
-    render(<FlowNodeIcon types={{}} flowNodeInstanceType={''} />, {
-      wrapper: ThemeProvider,
-    });
+    render(
+      <FlowNodeIcon
+        flowNodeInstanceType=""
+        diagramBusinessObject={{
+          id: 'unknown',
+          name: 'Unknown',
+          $type: 'bpmn:SequenceFlow',
+        }}
+      />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
 
     expect(
       screen.getByText('flow-node-task-undefined.svg')
@@ -25,12 +33,18 @@ describe('FlowNodeIcon', () => {
   it('should render parallel multi instance body', () => {
     render(
       <FlowNodeIcon
-        types={{
-          elementType: TYPE.TASK_SUBPROCESS,
-          multiInstanceType: MULTI_INSTANCE_TYPE.PARALLEL,
+        flowNodeInstanceType="MULTI_INSTANCE_BODY"
+        diagramBusinessObject={{
+          id: 'subProcess',
+          name: 'Sub Process',
+          $type: 'bpmn:SubProcess',
+          loopCharacteristics: {
+            $type: 'bpmn:MultiInstanceLoopCharacteristics',
+            isSequential: false,
+          },
         }}
-        flowNodeInstanceType={TYPE.MULTI_INSTANCE_BODY}
       />,
+
       {
         wrapper: ThemeProvider,
       }
@@ -44,11 +58,16 @@ describe('FlowNodeIcon', () => {
   it('should render sequential multi instance body', () => {
     render(
       <FlowNodeIcon
-        types={{
-          elementType: TYPE.TASK_SUBPROCESS,
-          multiInstanceType: MULTI_INSTANCE_TYPE.SEQUENTIAL,
+        flowNodeInstanceType="MULTI_INSTANCE_BODY"
+        diagramBusinessObject={{
+          id: 'subProcess',
+          name: 'Sub Process',
+          $type: 'bpmn:SubProcess',
+          loopCharacteristics: {
+            $type: 'bpmn:MultiInstanceLoopCharacteristics',
+            isSequential: true,
+          },
         }}
-        flowNodeInstanceType={TYPE.MULTI_INSTANCE_BODY}
       />,
       {
         wrapper: ThemeProvider,
@@ -63,11 +82,17 @@ describe('FlowNodeIcon', () => {
   it('should render intermediate timer event', () => {
     render(
       <FlowNodeIcon
-        types={{
-          elementType: TYPE.EVENT_INTERMEDIATE_CATCH,
-          eventType: TYPE.EVENT_TIMER,
+        flowNodeInstanceType=""
+        diagramBusinessObject={{
+          id: 'event1',
+          name: 'Event',
+          $type: 'bpmn:IntermediateCatchEvent',
+          eventDefinitions: [
+            {
+              $type: 'bpmn:TimerEventDefinition',
+            },
+          ],
         }}
-        flowNodeInstanceType={TYPE.EVENT_INTERMEDIATE_CATCH}
       />,
       {
         wrapper: ThemeProvider,
@@ -82,11 +107,18 @@ describe('FlowNodeIcon', () => {
   it('should render message boundary event', () => {
     render(
       <FlowNodeIcon
-        types={{
-          elementType: TYPE.EVENT_BOUNDARY_NON_INTERRUPTING,
-          eventType: TYPE.EVENT_MESSAGE,
+        flowNodeInstanceType=""
+        diagramBusinessObject={{
+          id: 'event1',
+          name: 'Event',
+          $type: 'bpmn:BoundaryEvent',
+          eventDefinitions: [
+            {
+              $type: 'bpmn:MessageEventDefinition',
+            },
+          ],
+          cancelActivity: false,
         }}
-        flowNodeInstanceType={TYPE.EVENT_BOUNDARY_NON_INTERRUPTING}
       />,
       {
         wrapper: ThemeProvider,
@@ -95,6 +127,27 @@ describe('FlowNodeIcon', () => {
 
     expect(
       screen.getByText('flow-node-event-message-non-interrupting.svg')
+    ).toBeInTheDocument();
+  });
+
+  it('should render event sub process', () => {
+    render(
+      <FlowNodeIcon
+        flowNodeInstanceType=""
+        diagramBusinessObject={{
+          id: 'eventSubProcess1',
+          name: 'Event Sub Process 1',
+          $type: 'bpmn:SubProcess',
+          triggeredByEvent: true,
+        }}
+      />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
+
+    expect(
+      screen.getByText('flow-node-subprocess-event.svg')
     ).toBeInTheDocument();
   });
 });

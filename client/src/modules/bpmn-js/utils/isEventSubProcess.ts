@@ -5,10 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-const getProcessedSequenceFlows = (sequenceFlows: {activityId: string}[]) => {
-  return sequenceFlows
-    .map((sequenceFlow) => sequenceFlow.activityId)
-    .filter((value, index, self) => self.indexOf(value) === index);
+import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+
+const isEventSubProcess = (businessObject: BusinessObject) => {
+  return (
+    businessObject.$type === 'bpmn:SubProcess' &&
+    businessObject.triggeredByEvent === true
+  );
 };
 
-export {getProcessedSequenceFlows};
+export {isEventSubProcess};

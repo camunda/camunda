@@ -17,29 +17,10 @@ const mockStartNode: FlowNodeInstance = {
   sortValues: [],
 };
 
-const mockStartMetaData = {
+const mockStartEventBusinessObject = {
+  id: 'StartEvent1',
   name: 'Start Event',
-  type: {elementType: 'START', eventType: undefined},
-};
+  $type: 'bpmn:StartEvent',
+} as const;
 
-const mockMultiInstanceBodyNode: FlowNodeInstance = {
-  type: 'MULTI_INSTANCE_BODY',
-  id: '2251799813685264',
-  flowNodeId: 'Task_1',
-  startDate: '2021-03-10T12:24:18.387+0000',
-  endDate: '2021-03-10T12:24:18.399+0000',
-  treePath: '',
-  sortValues: [],
-};
-
-const mockMultiInstanceBodyMetaData = {
-  name: 'Task 1',
-  type: {elementType: 'MULTI_INSTANCE_BODY'},
-};
-
-export {
-  mockStartNode,
-  mockStartMetaData,
-  mockMultiInstanceBodyNode,
-  mockMultiInstanceBodyMetaData,
-};
+export {mockStartNode, mockStartEventBusinessObject};

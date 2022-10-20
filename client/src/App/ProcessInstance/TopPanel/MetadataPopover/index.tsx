@@ -61,9 +61,9 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     return null;
   }
 
-  const flowNodeMetaData =
-    processInstanceDetailsDiagramStore.getMetaData(flowNodeId);
-  const flowNodeName = flowNodeMetaData?.name || flowNodeId;
+  const businessObject =
+    processInstanceDetailsDiagramStore.businessObjects[flowNodeId];
+  const flowNodeName = businessObject?.name || flowNodeId;
   const {instanceMetadata, incident, incidentCount} = metaData;
 
   const {
@@ -136,7 +136,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
           <SummaryDataValue>
             {getExecutionDuration(startDate!, endDate)}
           </SummaryDataValue>
-          {flowNodeMetaData?.type.elementType === 'TASK_CALL_ACTIVITY' &&
+          {businessObject?.$type === 'bpmn:CallActivity' &&
             flowNodeType !== 'MULTI_INSTANCE_BODY' && (
               <>
                 <SummaryDataKey>Called Process Instance</SummaryDataKey>
@@ -159,7 +159,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
                 </SummaryDataValue>
               </>
             )}
-          {flowNodeMetaData?.type.elementType === 'TASK_BUSINESS_RULE' && (
+          {businessObject?.$type === 'bpmn:BusinessRuleTask' && (
             <>
               <SummaryDataKey>Called Decision Instance</SummaryDataKey>
               <SummaryDataValue>

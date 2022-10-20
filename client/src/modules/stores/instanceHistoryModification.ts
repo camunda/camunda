@@ -7,11 +7,10 @@
 
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {IReactionDisposer, makeAutoObservable} from 'mobx';
-import {TYPE} from 'modules/constants';
 import {FlowNodeInstance} from './flowNodeInstance';
 import {modificationsStore, FlowNodeModification} from './modifications';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
-import {isMultiInstance} from 'modules/bpmn-js/isMultiInstance';
+import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 
 type ModificationPlaceholder = {
   flowNodeInstance: FlowNodeInstance;
@@ -80,8 +79,7 @@ const createModificationPlaceholders = ({
   flowNode,
 }: {
   modificationPayload: FlowNodeModification['payload'];
-  // TODO: fix type in #3116
-  flowNode: any;
+  flowNode: BusinessObject;
 }): ModificationPlaceholder[] => {
   const parentFlowNodeId = flowNode.$parent?.id;
 
@@ -96,9 +94,7 @@ const createModificationPlaceholders = ({
     flowNodeInstance: {
       flowNodeId: flowNode.id,
       id: scopeId,
-      type: isMultiInstance(flowNode)
-        ? TYPE.MULTI_INSTANCE_BODY
-        : flowNode.$type,
+      type: isMultiInstance(flowNode) ? 'MULTI_INSTANCE_BODY' : flowNode.$type,
       startDate: '',
       endDate: null,
       sortValues: [],
@@ -143,7 +139,7 @@ class InstanceHistoryModification {
           : modificationPayload.flowNode.id;
 
       const flowNode =
-        processInstanceDetailsDiagramStore.getFlowNode(flowNodeId);
+        processInstanceDetailsDiagramStore.businessObjects[flowNodeId];
 
       if (flowNode === undefined) {
         return modificationPlaceHolders;

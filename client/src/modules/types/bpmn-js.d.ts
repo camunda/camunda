@@ -25,10 +25,40 @@ declare module 'bpmn-moddle' {
 }
 
 declare module 'bpmn-js/lib/NavigatedViewer' {
+  export type EventType = `bpmn:${
+    | 'MessageEventDefinition'
+    | 'ErrorEventDefinition'
+    | 'TimerEventDefinition'
+    | 'TerminateEventDefinition'}`;
+
+  export type FlowNodeType = `bpmn:${
+    | 'StartEvent'
+    | 'EndEvent'
+    | 'IntermediateCatchEvent'
+    | 'IntermediateThrowEvent'
+    | 'EventBasedGateway'
+    | 'ParallelGateway'
+    | 'ExclusiveGateway'
+    | 'SubProcess'
+    | 'ServiceTask'
+    | 'UserTask'
+    | 'BusinessRuleTask'
+    | 'ScriptTask'
+    | 'ReceiveTask'
+    | 'SendTask'
+    | 'ManualTask'
+    | 'CallActivity'
+    | 'BoundaryEvent'}`;
+
+  export type ElementType =
+    | FlowNodeType
+    | 'label'
+    | `bpmn:${'Process' | 'SequenceFlow'}`;
+
   export type BusinessObject = {
     id: string;
     name: string;
-    $type: string;
+    $type: ElementType;
     $parent?: BusinessObject;
     sourceRef?: BusinessObject;
     incoming?: BusinessObject[];
@@ -44,15 +74,15 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
         }[];
       }[];
     };
-    eventDefinitions?: {$type: string}[];
+    eventDefinitions?: {$type: EventType}[];
     cancelActivity?: boolean;
     triggeredByEvent?: boolean;
-    $instanceOf: (type: BusinessObject['$type']) => boolean;
+    $instanceOf?: (type: string) => boolean;
   };
 
   export type BpmnElement = {
     id: string;
-    type: string;
+    type: ElementType;
     businessObject: BusinessObject;
     di: {set: Function};
     width: number;

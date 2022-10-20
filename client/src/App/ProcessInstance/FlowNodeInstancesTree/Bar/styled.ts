@@ -6,16 +6,20 @@
  */
 
 import styled, {css} from 'styled-components';
-import BasicFlowNodeIcon from 'modules/components/FlowNodeIcon';
+import {FlowNodeIcon as BasicFlowNodeIcon} from 'modules/components/FlowNodeIcon';
 import {styles} from '@carbon/elements';
 
-const NodeIcon = styled(BasicFlowNodeIcon)`
-  ${({theme, isSelected}) => {
+type NodeIconProps = {
+  $isSelected: boolean;
+};
+
+const NodeIcon = styled(BasicFlowNodeIcon)<NodeIconProps>`
+  ${({theme, $isSelected}) => {
     const opacity = theme.opacity.flowNodeInstancesTree.bar.nodeIcon;
 
     return css`
       color: ${theme.colors.text02};
-      opacity: ${isSelected ? opacity.selected : opacity.default};
+      opacity: ${$isSelected ? opacity.selected : opacity.default};
     `;
   }}
 `;
@@ -43,7 +47,6 @@ const Container = styled.div<ContainerProps>`
         border-color: ${theme.colors.borderColor};
         border-width: 1px 0px 0px 1px;
         background: ${theme.colors.selectedOdd};
-        color: ${theme.colors.white};
       `};
 
       ${!$hasTopBorder &&

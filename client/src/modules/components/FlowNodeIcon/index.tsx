@@ -5,103 +5,197 @@
  * except in compliance with the proprietary license.
  */
 
-import {TYPE} from 'modules/constants';
-
-import * as Styled from './styled';
+import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {getBoundaryEventType} from 'modules/bpmn-js/utils/getBoundaryEventType';
+import {getEventType} from 'modules/bpmn-js/utils/getEventType';
+import {getMultiInstanceType} from 'modules/bpmn-js/utils/getMultiInstanceType';
+import {isEventSubProcess} from 'modules/bpmn-js/utils/isEventSubProcess';
 import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {SVGIcon} from './styled';
 
-const getEventFlowNode = (
-  eventType:
-    | 'EVENT_TIMER'
-    | 'EVENT_MESSAGE'
-    | 'EVENT_ERROR'
-    | 'EVENT_TERMINATE',
-  elementType: string
+import {ReactComponent as FlowNodeProcess} from 'modules/components/Icon/flow-node-process-root.svg';
+
+/**
+ * Gateway Imports
+ */
+import {ReactComponent as FlowNodeGatewayExclusive} from 'modules/components/Icon/flow-node-gateway-exclusive.svg';
+import {ReactComponent as FlowNodeGatewayParallel} from 'modules/components/Icon/flow-node-gateway-parallel.svg';
+import {ReactComponent as FlowNodeGatewayEventBased} from 'modules/components/Icon/flow-node-gateway-event-based.svg';
+
+/**
+ * Task Imports
+ */
+
+import {ReactComponent as FlowNodeTask} from 'modules/components/Icon/flow-node-task-undefined.svg';
+import {ReactComponent as FlowNodeTaskService} from 'modules/components/Icon/flow-node-task-service.svg';
+import {ReactComponent as FlowNodeTaskReceive} from 'modules/components/Icon/flow-node-task-receive.svg';
+import {ReactComponent as FlowNodeTaskSend} from 'modules/components/Icon/flow-node-task-send.svg';
+import {ReactComponent as FlowNodeTaskSubProcess} from 'modules/components/Icon/flow-node-subprocess-embedded.svg';
+import {ReactComponent as FlowNodeTaskMulti} from 'modules/components/Icon/flow-node-multi-instance-parallel.svg';
+import {ReactComponent as FlowNodeTaskParallel} from 'modules/components/Icon/flow-node-multi-instance-sequential.svg';
+import {ReactComponent as FlowNodeCallActivity} from 'modules/components/Icon/flow-node-call-activity.svg';
+import {ReactComponent as FlowNodeTaskUser} from 'modules/components/Icon/flow-node-task-user.svg';
+import {ReactComponent as FlowNodeTaskBusinessRule} from 'modules/components/Icon/flow-node-task-business-rule.svg';
+import {ReactComponent as FlowNodeTaskScript} from 'modules/components/Icon/flow-node-task-script.svg';
+import {ReactComponent as FlowNodeTaskManual} from 'modules/components/Icon/flow-node-task-manual.svg';
+
+/**
+ * Event Imports
+ */
+
+import {ReactComponent as FlowNodeEventStart} from 'modules/components/Icon/flow-node-event-start.svg';
+import {ReactComponent as FlowNodeEventEnd} from 'modules/components/Icon/flow-node-event-end.svg';
+import {ReactComponent as FlowNodeEventIntermediateThrow} from 'modules/components/Icon/flow-node-event-intermediate-none.svg';
+
+import {ReactComponent as FlowNodeEventMessageStart} from 'modules/components/Icon/flow-node-event-message-start.svg';
+
+import {ReactComponent as FlowNodeEventMessageIntermediateThrow} from 'modules/components/Icon/flow-node-event-message-throw.svg';
+import {ReactComponent as FlowNodeEventMessageBoundaryNonInterrupting} from 'modules/components/Icon/flow-node-event-message-non-interrupting.svg';
+import {ReactComponent as FlowNodeEventMessageBoundaryInterrupting} from 'modules/components/Icon/flow-node-event-message-interrupting.svg';
+import {ReactComponent as FlowNodeEventMessageEnd} from 'modules/components/Icon/flow-node-event-message-end.svg';
+
+import {ReactComponent as FlowNodeEventTimerStart} from 'modules/components/Icon/flow-node-event-timer-start.svg';
+import {ReactComponent as FlowNodeEventTimerBoundaryInterrupting} from 'modules/components/Icon/flow-node-event-timer-interrupting.svg';
+import {ReactComponent as FlowNodeEventTimerBoundaryNonInerrupting} from 'modules/components/Icon/flow-node-event-timer-non-interrupting.svg';
+
+import {ReactComponent as FlowNodeEventErrorStart} from 'modules/components/Icon/flow-node-event-error-start.svg';
+import {ReactComponent as FlowNodeEventErrorBoundary} from 'modules/components/Icon/flow-node-event-error-boundary.svg';
+import {ReactComponent as FlowNodeEventErrorEnd} from 'modules/components/Icon/flow-node-event-error-end.svg';
+
+import {ReactComponent as FlowNodeEventSubprocess} from 'modules/components/Icon/flow-node-subprocess-event.svg';
+
+import {ReactComponent as FlowNodeEventTerminateEnd} from 'modules/components/Icon/flow-node-event-terminate-end.svg';
+
+const getSVGComponent = (
+  businessObject: BusinessObject,
+  isMultiInstanceBody: boolean
 ) => {
-  const map = {
-    // @ts-expect-error ts-migrate(7053) FIXME: No index signature with a parameter of type 'strin... Remove this comment to see the full error message
-    [TYPE.EVENT_TIMER]: Styled[TYPE.EVENT_TIMER + `_${elementType}`],
-    // @ts-expect-error ts-migrate(7053) FIXME: No index signature with a parameter of type 'strin... Remove this comment to see the full error message
-    [TYPE.EVENT_MESSAGE]: Styled[TYPE.EVENT_MESSAGE + `_${elementType}`],
-    // @ts-expect-error ts-migrate(7053) FIXME: No index signature with a parameter of type 'strin... Remove this comment to see the full error message
-    [TYPE.EVENT_ERROR]: Styled[TYPE.EVENT_ERROR + `_${elementType}`],
-    // @ts-expect-error ts-migrate(7053) FIXME: No index signature with a parameter of type 'strin... Remove this comment to see the full error message
-    [TYPE.EVENT_TERMINATE]: Styled[TYPE.EVENT_TERMINATE + `_${elementType}`],
-  };
+  if (isMultiInstanceBody) {
+    switch (getMultiInstanceType(businessObject)) {
+      case 'parallel':
+        return FlowNodeTaskParallel;
+      case 'sequential':
+        return FlowNodeTaskMulti;
+    }
+  }
+  switch (getEventType(businessObject)) {
+    case 'bpmn:ErrorEventDefinition':
+      switch (businessObject.$type) {
+        default:
+        case 'bpmn:StartEvent':
+          return FlowNodeEventErrorStart;
+        case 'bpmn:EndEvent':
+          return FlowNodeEventErrorEnd;
+        case 'bpmn:BoundaryEvent':
+          return FlowNodeEventErrorBoundary;
+      }
+    case 'bpmn:MessageEventDefinition':
+      switch (businessObject.$type) {
+        default:
+        case 'bpmn:StartEvent':
+          return FlowNodeEventMessageStart;
+        case 'bpmn:EndEvent':
+          return FlowNodeEventMessageEnd;
+        case 'bpmn:IntermediateCatchEvent':
+          // uses the same style as boundary interrupting
+          return FlowNodeEventMessageBoundaryInterrupting;
+        case 'bpmn:IntermediateThrowEvent':
+          return FlowNodeEventMessageIntermediateThrow;
+        case 'bpmn:BoundaryEvent':
+          switch (getBoundaryEventType(businessObject)) {
+            default:
+            case 'interrupting':
+              return FlowNodeEventMessageBoundaryInterrupting;
 
-  return map[eventType];
-};
-
-const flowNodes = {
-  [TYPE.PROCESS]: Styled[TYPE.PROCESS],
-  [TYPE.EVENT_START]: Styled[TYPE.EVENT_START],
-  [TYPE.EVENT_END]: Styled[TYPE.EVENT_END],
-  [TYPE.EVENT_INTERMEDIATE_THROW]: Styled[TYPE.EVENT_INTERMEDIATE_THROW],
-  //Tasks
-  [TYPE.TASK_SERVICE]: Styled[TYPE.TASK_SERVICE],
-  [TYPE.TASK_RECEIVE]: Styled[TYPE.TASK_RECEIVE],
-  [TYPE.TASK_SEND]: Styled[TYPE.TASK_SEND],
-  [TYPE.TASK_SUBPROCESS]: Styled[TYPE.TASK_SUBPROCESS],
-  [TYPE.TASK_CALL_ACTIVITY]: Styled[TYPE.TASK_CALL_ACTIVITY],
-  [TYPE.TASK_USER]: Styled[TYPE.TASK_USER],
-  [TYPE.TASK_BUSINESS_RULE]: Styled[TYPE.TASK_BUSINESS_RULE],
-  [TYPE.TASK_SCRIPT]: Styled[TYPE.TASK_SCRIPT],
-  [TYPE.TASK_MANUAL]: Styled[TYPE.TASK_MANUAL],
-  //Gateways
-  [TYPE.GATEWAY_EVENT_BASED]: Styled[TYPE.GATEWAY_EVENT_BASED],
-  [TYPE.GATEWAY_PARALLEL]: Styled[TYPE.GATEWAY_PARALLEL],
-  [TYPE.GATEWAY_EXCLUSIVE]: Styled[TYPE.GATEWAY_EXCLUSIVE],
-  //Other
-  [TYPE.EVENT_SUBPROCESS]: Styled[TYPE.EVENT_SUBPROCESS],
-};
-
-function getFlowNodeTypeIcon({
-  elementType,
-  eventType,
-  multiInstanceType,
-  flowNodeInstanceType,
-}: {
-  elementType: string;
-  eventType:
-    | 'EVENT_TIMER'
-    | 'EVENT_MESSAGE'
-    | 'EVENT_ERROR'
-    | 'EVENT_TERMINATE';
-  multiInstanceType: string;
-  flowNodeInstanceType: FlowNodeInstance['type'];
-}) {
-  if (
-    flowNodeInstanceType === TYPE.MULTI_INSTANCE_BODY &&
-    multiInstanceType !== undefined
-  ) {
-    // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-    return Styled[multiInstanceType];
+            case 'non-interrupting':
+              return FlowNodeEventMessageBoundaryNonInterrupting;
+          }
+      }
+    case 'bpmn:TimerEventDefinition':
+      switch (businessObject.$type) {
+        default:
+        case 'bpmn:StartEvent':
+          return FlowNodeEventTimerStart;
+        case 'bpmn:IntermediateCatchEvent':
+          return FlowNodeEventTimerBoundaryInterrupting;
+        case 'bpmn:BoundaryEvent':
+          switch (getBoundaryEventType(businessObject)) {
+            default:
+            case 'interrupting':
+              return FlowNodeEventTimerBoundaryInterrupting;
+            case 'non-interrupting':
+              return FlowNodeEventTimerBoundaryNonInerrupting;
+          }
+      }
+    case 'bpmn:TerminateEventDefinition':
+      return FlowNodeEventTerminateEnd;
   }
 
-  return eventType === undefined
-    ? // @ts-expect-error ts-migrate(7053) FIXME: No index signature with a parameter of type 'strin... Remove this comment to see the full error message
-      flowNodes[elementType] || Styled[TYPE.TASK_DEFAULT]
-    : getEventFlowNode(eventType, elementType) || Styled[TYPE.EVENT_START];
-}
+  switch (businessObject.$type) {
+    case 'bpmn:StartEvent':
+      return FlowNodeEventStart;
+    case 'bpmn:EndEvent':
+      return FlowNodeEventEnd;
+    case 'bpmn:ServiceTask':
+      return FlowNodeTaskService;
+    case 'bpmn:UserTask':
+      return FlowNodeTaskUser;
+    case 'bpmn:BusinessRuleTask':
+      return FlowNodeTaskBusinessRule;
+    case 'bpmn:ScriptTask':
+      return FlowNodeTaskScript;
+    case 'bpmn:ReceiveTask':
+      return FlowNodeTaskReceive;
+    case 'bpmn:SendTask':
+      return FlowNodeTaskSend;
+    case 'bpmn:ManualTask':
+      return FlowNodeTaskManual;
+    case 'bpmn:CallActivity':
+      return FlowNodeCallActivity;
+    case 'bpmn:EventBasedGateway':
+      return FlowNodeGatewayEventBased;
+    case 'bpmn:ParallelGateway':
+      return FlowNodeGatewayParallel;
+    case 'bpmn:ExclusiveGateway':
+      return FlowNodeGatewayExclusive;
+    case 'bpmn:Process':
+      return FlowNodeProcess;
+    case 'bpmn:IntermediateThrowEvent':
+      return FlowNodeEventIntermediateThrow;
+    case 'bpmn:SubProcess':
+      return isEventSubProcess(businessObject)
+        ? FlowNodeEventSubprocess
+        : FlowNodeTaskSubProcess;
+  }
 
-type FlowNodeIconProps = {
-  types: any;
+  return FlowNodeTask;
+};
+
+type Props = {
   flowNodeInstanceType: FlowNodeInstance['type'];
-  isSelected?: boolean;
+  diagramBusinessObject: BusinessObject;
+  className?: string;
 };
 
-const FlowNodeIcon: React.FC<FlowNodeIconProps> = ({
-  types,
+const FlowNodeIcon: React.FC<Props> = ({
   flowNodeInstanceType,
-  isSelected,
-  ...props
+  diagramBusinessObject,
+  className,
 }) => {
-  const TargetFlowNodeTypeIcon = getFlowNodeTypeIcon({
-    ...types,
-    flowNodeInstanceType,
-  });
+  const SVGComponent = getSVGComponent(
+    diagramBusinessObject,
+    flowNodeInstanceType === 'MULTI_INSTANCE_BODY'
+  );
 
-  return <TargetFlowNodeTypeIcon {...props} />;
+  return (
+    <SVGIcon
+      SVGComponent={SVGComponent}
+      $isGateway={['bpmn:ParallelGateway', 'bpmn:ExclusiveGateway'].includes(
+        diagramBusinessObject.$type
+      )}
+      className={className}
+    />
+  );
 };
 
-export default FlowNodeIcon;
+export {FlowNodeIcon};

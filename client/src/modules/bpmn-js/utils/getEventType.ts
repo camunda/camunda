@@ -5,10 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import {processInstanceDetailsDiagramStore} from '../processInstanceDetailsDiagram';
+import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
-const isFlowNodeMultiInstance = (flowNodeId: string) =>
-  processInstanceDetailsDiagramStore.getMetaData(flowNodeId)?.type
-    .isMultiInstance ?? false;
+const getEventType = (businessObject: BusinessObject) => {
+  const firstEventDefinition = businessObject.eventDefinitions?.[0];
 
-export {isFlowNodeMultiInstance};
+  if (firstEventDefinition !== undefined) {
+    return firstEventDefinition.$type;
+  }
+};
+
+export {getEventType};

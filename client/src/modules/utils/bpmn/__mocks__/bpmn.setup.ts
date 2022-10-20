@@ -13,6 +13,11 @@ import {createDiagramNode} from 'modules/testUtils';
  */
 export const createDiagramNodes = () => {
   return {
+    processName: createDiagramNode({
+      $type: 'bpmn:Process',
+      id: 'processName',
+      name: 'processName',
+    }),
     taskD: createDiagramNode({
       $type: 'bpmn:ServiceTask',
       id: 'taskD',

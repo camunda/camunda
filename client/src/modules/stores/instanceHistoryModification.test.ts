@@ -9,7 +9,7 @@ import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {instanceHistoryModificationStore} from './instanceHistoryModification';
 import {FlowNodeModification, modificationsStore} from './modifications';
 
-const flowNodes: {
+const businessObjects: {
   [flowNodeId: string]: {id: string; $parent: {id: string}; $type: string};
 } = {
   startEvent_1: {
@@ -36,11 +36,7 @@ const flowNodes: {
 
 jest.mock('modules/stores/processInstanceDetailsDiagram', () => ({
   processInstanceDetailsDiagramStore: {
-    getFlowNode: (flowNodeId: string) => flowNodes[flowNodeId],
-    getMetaData: (flowNodeId: string) =>
-      flowNodeId === 'subprocess_1'
-        ? {type: {isMultiInstance: true}}
-        : {type: {isMultiInstance: false}},
+    businessObjects,
   },
 }));
 

@@ -11,14 +11,14 @@ import {TimeStampLabel} from '../TimeStampLabel';
 import {Container, NodeIcon, NodeName, LeftContainer} from './styled';
 
 import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
-import {FlowNodeMetaData} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
 import {observer} from 'mobx-react';
 import {ModificationIcons} from './ModificationIcons';
+import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
 type Props = {
   flowNodeInstance: FlowNodeInstance;
-  metaData: FlowNodeMetaData;
+  businessObject: BusinessObject;
   nodeName: string;
   isSelected: boolean;
   isBold: boolean;
@@ -28,7 +28,7 @@ type Props = {
 const Bar: React.FC<Props> = observer(
   ({
     flowNodeInstance,
-    metaData,
+    businessObject,
     nodeName,
     isSelected,
     isBold,
@@ -39,9 +39,8 @@ const Bar: React.FC<Props> = observer(
         <LeftContainer>
           <NodeIcon
             flowNodeInstanceType={flowNodeInstance.type}
-            types={metaData.type}
-            isSelected={isSelected}
-            data-testid={`flow-node-icon-${metaData.type.elementType}`}
+            diagramBusinessObject={businessObject}
+            $isSelected={isSelected}
           />
           <NodeName isSelected={isSelected} isBold={isBold}>
             {nodeName}

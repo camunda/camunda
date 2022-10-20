@@ -31,7 +31,12 @@ describe('FlowNodeInstanceLog', () => {
     mockServer.use(
       rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(
-          ctx.json({id: '1', state: 'ACTIVE', processName: 'processName'})
+          ctx.json({
+            id: '1',
+            state: 'ACTIVE',
+            processName: 'processName',
+            bpmnProcessId: 'processName',
+          })
         )
       )
     );
