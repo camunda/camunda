@@ -20,6 +20,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.Collection;
@@ -138,6 +139,11 @@ public final class ZeebeRuntimeValidators {
                         ? loopCharacteristics.getCompletionCondition().getTextContent()
                         : null,
                 ExpressionVerification::isOptional)
+            .build(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(ZeebeScript.class)
+            .hasValidExpression(
+                ZeebeScript::getExpression, expression -> expression.isNonStatic().isMandatory())
             .build(expressionLanguage));
   }
 }
