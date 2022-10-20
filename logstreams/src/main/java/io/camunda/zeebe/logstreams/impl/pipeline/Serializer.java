@@ -11,6 +11,7 @@ import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.metadataOf
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceEventPosition;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
 
+import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.camunda.zeebe.logstreams.impl.pipeline.Sequencer.SequencedBatchEntry;
 import io.camunda.zeebe.logstreams.impl.pipeline.Sequencer.SequencedRecordBatch;
@@ -29,6 +30,14 @@ public class Serializer {
     int bufferOffset = 0;
     for (int i = 0; i < batch.entries().size(); i++) {
       final var entry = batch.entries().get(i);
+      final var entryLength = calculateEntrySize(entry);
+
+      // Write frame length
+
+      buffer.putInt(
+          DataFrameDescriptor.lengthOffset(bufferOffset),
+          DataFrameDescriptor.HEADER_LENGTH + entryLength);
+      bufferOffset += DataFrameDescriptor.HEADER_LENGTH;
 
       LogEntryDescriptor.setPosition(mutableBuffer, bufferOffset, entry.position());
       final var sourceIndex = entry.entry().sourceIndex();
@@ -48,7 +57,7 @@ public class Serializer {
 
       entry.entry().recordMetadata().write(mutableBuffer, metadataOffset(bufferOffset));
       entry.entry().recordValue().write(mutableBuffer, valueOffset(bufferOffset, metadataLength));
-      bufferOffset += calculateEntrySize(entry);
+      bufferOffset += entryLength;
     }
 
     return buffer;
@@ -59,7 +68,9 @@ public class Serializer {
   }
 
   private int calculateEntrySize(final SequencedBatchEntry entry) {
-    return LogEntryDescriptor.headerLength(entry.entry().recordMetadata().getLength())
-        + entry.entry().recordValue().getLength();
+    return DataFrameDescriptor.alignedLength(
+        LogEntryDescriptor.headerLength(entry.entry().recordMetadata().getLength())
+            + entry.entry().recordValue().getLength()
+            + DataFrameDescriptor.HEADER_LENGTH);
   }
 }
