@@ -190,9 +190,6 @@ public final class ProcessInstanceModificationProcessor
                                   process,
                                   instruction));
 
-                  activatedElementKeys
-                      .getFlowScopeKeys()
-                      .forEach(value::addActivatedElementInstanceKey);
                   extendedRecord.addActivateInstruction(
                       ((ProcessInstanceModificationActivateInstruction) instruction)
                           .addAncestorScopeKeys(activatedElementKeys.getFlowScopeKeys()));
