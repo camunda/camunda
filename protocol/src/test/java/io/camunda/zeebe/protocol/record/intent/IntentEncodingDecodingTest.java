@@ -72,6 +72,7 @@ final class IntentEncodingDecodingTest {
     result.addAll(buildParameterSets(VariableDocumentIntent.class, VariableDocumentIntent::from));
     result.addAll(buildParameterSets(VariableIntent.class, VariableIntent::from));
     result.addAll(buildParameterSets(CheckpointIntent.class, CheckpointIntent::from));
+    result.addAll(buildParameterSets(EscalationIntent.class, EscalationIntent::from));
 
     return result.stream();
   }

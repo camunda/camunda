@@ -24,6 +24,7 @@ public interface Intent {
   Collection<Class<? extends Intent>> INTENT_CLASSES =
       Arrays.asList(
           DeploymentIntent.class,
+          EscalationIntent.class,
           IncidentIntent.class,
           JobIntent.class,
           ProcessInstanceIntent.class,
@@ -111,6 +112,8 @@ public interface Intent {
         return DecisionEvaluationIntent.from(intent);
       case CHECKPOINT:
         return CheckpointIntent.from(intent);
+      case ESCALATION:
+        return EscalationIntent.from(intent);
       case PROCESS_INSTANCE_MODIFICATION:
         return ProcessInstanceModificationIntent.from(intent);
       case NULL_VAL:
@@ -170,6 +173,8 @@ public interface Intent {
         return DecisionEvaluationIntent.valueOf(intent);
       case CHECKPOINT:
         return CheckpointIntent.valueOf(intent);
+      case ESCALATION:
+        return EscalationIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
