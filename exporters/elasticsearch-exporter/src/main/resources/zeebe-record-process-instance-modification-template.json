@@ -48,6 +48,9 @@
                       "type": "keyword"
                     }
                   }
+                },
+                "ancestorScopeKeys": {
+                  "type": "long"
                 }
               }
             },

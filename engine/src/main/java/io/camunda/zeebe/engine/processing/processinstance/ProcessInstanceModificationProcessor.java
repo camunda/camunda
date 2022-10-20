@@ -35,6 +35,7 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -167,6 +168,9 @@ public final class ProcessInstanceModificationProcessor
       return;
     }
 
+    final var extendedRecord = new ProcessInstanceModificationRecord();
+    extendedRecord.setProcessInstanceKey(value.getProcessInstanceKey());
+
     final var requiredKeysForActivation =
         value.getActivateInstructions().stream()
             .flatMap(
@@ -189,6 +193,9 @@ public final class ProcessInstanceModificationProcessor
                   activatedElementKeys
                       .getFlowScopeKeys()
                       .forEach(value::addActivatedElementInstanceKey);
+                  extendedRecord.addActivateInstruction(
+                      ((ProcessInstanceModificationActivateInstruction) instruction)
+                          .addAncestorScopeKeys(activatedElementKeys.getFlowScopeKeys()));
 
                   return activatedElementKeys.getFlowScopeKeys().stream();
                 })
@@ -201,6 +208,7 @@ public final class ProcessInstanceModificationProcessor
         .getTerminateInstructions()
         .forEach(
             instruction -> {
+              extendedRecord.addTerminateInstruction(instruction);
               final var elementInstance =
                   elementInstanceState.getInstance(instruction.getElementInstanceKey());
               if (elementInstance == null) {
@@ -215,10 +223,11 @@ public final class ProcessInstanceModificationProcessor
               terminateFlowScopes(flowScopeKey, sideEffectQueue, requiredKeysForActivation);
             });
 
-    stateWriter.appendFollowUpEvent(eventKey, ProcessInstanceModificationIntent.MODIFIED, value);
+    stateWriter.appendFollowUpEvent(
+        eventKey, ProcessInstanceModificationIntent.MODIFIED, extendedRecord);
 
     responseWriter.writeEventOnCommand(
-        eventKey, ProcessInstanceModificationIntent.MODIFIED, value, command);
+        eventKey, ProcessInstanceModificationIntent.MODIFIED, extendedRecord, command);
   }
 
   @Override
