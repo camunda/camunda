@@ -17,8 +17,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
+
+import java.util.UUID;
 
 public abstract class ErrorController {
 
@@ -34,6 +37,20 @@ public abstract class ErrorController {
         .setStatus(HttpStatus.BAD_REQUEST.value())
         .setMessage(exception.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(error);
+  }
+
+  @ResponseStatus(HttpStatus.UNAUTHORIZED)
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<Error> handleAccessDeniedException(AccessDeniedException exception) {
+    logger.info(exception.getMessage(), exception);
+    final Error error = new Error()
+        .setType(exception.getClass().getSimpleName())
+        .setInstance(UUID.randomUUID().toString())
+        .setStatus(HttpStatus.UNAUTHORIZED.value())
+        .setMessage(exception.getMessage());
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);
   }
