@@ -138,6 +138,36 @@ public abstract class AbstractThrowEventBuilder<
     return myself;
   }
 
+  /**
+   * Creates an escalation event definition with an unique id and returns a builder for the
+   * escalation event definition.
+   *
+   * @return the escalation event definition builder object
+   */
+  public EscalationEventDefinitionBuilder escalationEventDefinition(final String id) {
+    final EscalationEventDefinition escalationEventDefinition =
+        createEmptyEscalationEventDefinition();
+    if (id != null) {
+      escalationEventDefinition.setId(id);
+    }
+
+    element.getEventDefinitions().add(escalationEventDefinition);
+    return new EscalationEventDefinitionBuilder(modelInstance, escalationEventDefinition);
+  }
+
+  /**
+   * Creates an escalation event definition and returns a builder for the escalation event
+   * definition.
+   *
+   * @return the escalation event definition builder object
+   */
+  public EscalationEventDefinitionBuilder escalationEventDefinition() {
+    final EscalationEventDefinition escalationEventDefinition =
+        createEmptyEscalationEventDefinition();
+    element.getEventDefinitions().add(escalationEventDefinition);
+    return new EscalationEventDefinitionBuilder(modelInstance, escalationEventDefinition);
+  }
+
   public CompensateEventDefinitionBuilder compensateEventDefinition() {
     return compensateEventDefinition(null);
   }

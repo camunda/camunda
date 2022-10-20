@@ -293,6 +293,10 @@ public abstract class AbstractBaseElementBuilder<
     return escalation;
   }
 
+  protected EscalationEventDefinition createEmptyEscalationEventDefinition() {
+    return createInstance(EscalationEventDefinition.class);
+  }
+
   protected EscalationEventDefinition createEscalationEventDefinition(final String escalationCode) {
     final Escalation escalation = findEscalationForCode(escalationCode);
     final EscalationEventDefinition escalationEventDefinition =
