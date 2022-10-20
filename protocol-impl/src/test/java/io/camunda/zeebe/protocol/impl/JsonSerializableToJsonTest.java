@@ -57,6 +57,7 @@ import java.io.StringWriter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -770,7 +771,8 @@ final class JsonSerializableToJsonTest {
                           .addVariableInstruction(
                               new ProcessInstanceModificationVariableInstruction()
                                   .setVariables(VARIABLES_MSGPACK)
-                                  .setElementId(variableInstructionElementId)));
+                                  .setElementId(variableInstructionElementId))
+                          .addAncestorScopeKeys(Set.of(key, ancestorScopeKey)));
             },
         """
         {
@@ -786,9 +788,10 @@ final class JsonSerializableToJsonTest {
                 "foo": "bar"
               }
             }],
-            "elementId": "activity"
+            "elementId": "activity",
+            "ancestorScopeKeys": [1,3]
           }],
-          "activatedElementInstanceKeys": []
+          "ancestorScopeKeys": [1,3]
         }
         """
       },
@@ -805,7 +808,7 @@ final class JsonSerializableToJsonTest {
           "processInstanceKey": 1,
           "terminateInstructions": [],
           "activateInstructions": [],
-          "activatedElementInstanceKeys": []
+          "ancestorScopeKeys": []
         }
         """
       },

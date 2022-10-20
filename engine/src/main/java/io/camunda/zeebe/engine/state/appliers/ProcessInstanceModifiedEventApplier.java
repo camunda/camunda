@@ -40,7 +40,7 @@ final class ProcessInstanceModifiedEventApplier
   }
 
   private void clearInterruptedState(final ProcessInstanceModificationRecord value) {
-    value.getActivatedElementInstanceKeys().stream()
+    value.getAncestorScopeKeys().stream()
         .map(elementInstanceState::getInstance)
         .filter(ElementInstance::isInterrupted)
         .forEach(
