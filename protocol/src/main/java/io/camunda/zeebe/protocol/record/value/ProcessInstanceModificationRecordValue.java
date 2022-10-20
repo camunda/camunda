@@ -76,6 +76,9 @@ public interface ProcessInstanceModificationRecordValue
 
     /** Returns a list of variable instructions (if available), or an empty list. */
     List<ProcessInstanceModificationVariableInstructionValue> getVariableInstructions();
+
+    /** Returns all ancestor scope keys of the element that will be activated. */
+    Set<Long> getAncestorScopeKeys();
   }
 
   @Value.Immutable
