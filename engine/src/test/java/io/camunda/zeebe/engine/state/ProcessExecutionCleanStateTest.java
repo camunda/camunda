@@ -290,7 +290,7 @@ public final class ProcessExecutionCleanStateTest {
 
     RecordingExporter.messageStartEventSubscriptionRecords(
             MessageStartEventSubscriptionIntent.DELETED)
-        .withWorkfloKey(processDefinitionKey)
+        .withProcessDefinitionKey(processDefinitionKey)
         .await();
 
     // then
@@ -655,7 +655,7 @@ public final class ProcessExecutionCleanStateTest {
 
     RecordingExporter.messageStartEventSubscriptionRecords(
             MessageStartEventSubscriptionIntent.DELETED)
-        .withWorkfloKey(processDefinitionKey)
+        .withProcessDefinitionKey(processDefinitionKey)
         .await();
 
     // then
