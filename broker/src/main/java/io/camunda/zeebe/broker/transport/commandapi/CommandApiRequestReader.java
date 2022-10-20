@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder.TEMP
 
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.RequestReaderException;
+import io.camunda.zeebe.logstreams.TypedEventRegistry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentReco
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.ReflectUtil;
 import java.util.EnumMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -84,7 +86,10 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
         commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
     final int eventLength = commandRequestDecoder.valueLength();
     eventMetadata.protocolVersion(messageHeaderDecoder.version());
-    event = RECORDS_BY_TYPE.get(commandRequestDecoder.valueType());
+
+    event =
+        ReflectUtil.newInstance(
+            TypedEventRegistry.EVENT_REGISTRY.get(commandRequestDecoder.valueType()));
     if (event != null) {
       event.wrap(buffer, eventOffset, eventLength);
     }
@@ -95,6 +100,6 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
   }
 
   public RecordMetadata metadata() {
-    return eventMetadata;
+    return new RecordMetadata().protocolVersion(messageHeaderDecoder.version());
   }
 }
