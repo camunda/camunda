@@ -67,6 +67,13 @@ public class CCaaSJwtAuthenticationTokenValidatorIT {
     assertThat(jwtAuthenticationTokenValidator.isValid(token)).isFalse();
   }
 
+  @Test
+  public void shouldInvalidDueToScopeIsNull(){
+    final JwtAuthenticationToken token =
+        createJwtAuthenticationTokenWith("test.operate.camunda.com", null);
+    assertThat(jwtAuthenticationTokenValidator.isValid(token)).isFalse();
+  }
+
   protected JwtAuthenticationToken createJwtAuthenticationTokenWith(final String audience,final Object scope) {
     return new JwtAuthenticationToken(
         Jwt.withTokenValue("token")

@@ -56,6 +56,9 @@ public class CCSaaSJwtAuthenticationTokenValidator implements JwtAuthenticationT
 
   private String getScope(final Map<String, Object> payload) {
     final Object scopeObject = payload.get(SCOPE);
+    if(scopeObject == null){
+      throw new OperateRuntimeException("Couldn't get scope from JWT payload. Maybe wrong scope configuration?");
+    }
     if (scopeObject instanceof String) {
       return (String) scopeObject;
     }
