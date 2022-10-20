@@ -17,6 +17,7 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
@@ -34,7 +35,8 @@ public class EndEventValidator implements ModelElementValidator<EndEvent> {
           ErrorEventDefinition.class,
           MessageEventDefinition.class,
           TerminateEventDefinition.class,
-          SignalEventDefinition.class);
+          SignalEventDefinition.class,
+          EscalationEventDefinition.class);
 
   @Override
   public Class<EndEvent> getElementType() {
@@ -65,7 +67,8 @@ public class EndEventValidator implements ModelElementValidator<EndEvent> {
         def -> {
           if (SUPPORTED_EVENT_DEFINITIONS.stream().noneMatch(type -> type.isInstance(def))) {
             validationResultCollector.addError(
-                0, "End events must be one of: none, error, message, terminate, or signal");
+                0,
+                "End events must be one of: none, error, message, terminate, signal, or escalation");
           }
         });
   }

@@ -16,6 +16,7 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.LinkEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
@@ -36,7 +37,8 @@ public class EventDefinitionValidator implements ModelElementValidator<EventDefi
           ErrorEventDefinition.class,
           TerminateEventDefinition.class,
           SignalEventDefinition.class,
-          LinkEventDefinition.class);
+          LinkEventDefinition.class,
+          EscalationEventDefinition.class);
 
   @Override
   public Class<EventDefinition> getElementType() {

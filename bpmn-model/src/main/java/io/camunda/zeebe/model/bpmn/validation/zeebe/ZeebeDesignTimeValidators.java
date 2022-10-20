@@ -111,6 +111,8 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new SignalEventDefinitionValidator());
     validators.add(new SignalValidator());
     validators.add(new LinkEventDefinitionValidator());
+    validators.add(new EscalationEventDefinitionValidator());
+    validators.add(new EscalationValidator());
 
     VALIDATORS = Collections.unmodifiableList(validators);
   }
