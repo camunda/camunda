@@ -15,6 +15,7 @@ import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.camunda.zeebe.logstreams.impl.pipeline.Sequencer.SequencedBatchEntry;
 import io.camunda.zeebe.logstreams.impl.pipeline.Sequencer.SequencedRecordBatch;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -24,7 +25,7 @@ public class Serializer {
 
   public ByteBuffer serializeBatch(final SequencedRecordBatch batch) {
     final var size = calculateBatchSize(batch);
-    final var buffer = ByteBuffer.allocate(size);
+    final var buffer = ByteBuffer.allocate(size).order(Protocol.ENDIANNESS);
     final var mutableBuffer = new UnsafeBuffer(buffer);
 
     int bufferOffset = 0;
@@ -34,9 +35,7 @@ public class Serializer {
 
       // Write frame length
 
-      buffer.putInt(
-          DataFrameDescriptor.lengthOffset(bufferOffset),
-          DataFrameDescriptor.HEADER_LENGTH + entryLength);
+      buffer.putInt(DataFrameDescriptor.lengthOffset(bufferOffset), entryLength);
       bufferOffset += DataFrameDescriptor.HEADER_LENGTH;
 
       LogEntryDescriptor.setPosition(mutableBuffer, bufferOffset, entry.position());
@@ -57,7 +56,7 @@ public class Serializer {
 
       entry.entry().recordMetadata().write(mutableBuffer, metadataOffset(bufferOffset));
       entry.entry().recordValue().write(mutableBuffer, valueOffset(bufferOffset, metadataLength));
-      bufferOffset += entryLength;
+      bufferOffset += entryLength - DataFrameDescriptor.HEADER_LENGTH;
     }
 
     return buffer;

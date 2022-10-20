@@ -305,7 +305,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   /** Commits the given configuration. */
-  protected CompletableFuture<Long> configure(final Collection<RaftMember> members) {
+  private CompletableFuture<Long> configure(final Collection<RaftMember> members) {
     raft.checkThread();
 
     final long term = raft.getTerm();
@@ -558,7 +558,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     final ValidationResult result = raft.getEntryValidator().validateEntry(lastZbEntry, entry);
     if (result.failed()) {
-      appendListener.onWriteError(new IllegalStateException(result.errorMessage()));
+      final var exception = new IllegalStateException(result.errorMessage());
+      log.debug("Append failed, stepping down to follower: ", exception);
+      appendListener.onWriteError(exception);
       raft.transition(Role.FOLLOWER);
     } else {
       append(new RaftLogEntry(raft.getTerm(), entry))

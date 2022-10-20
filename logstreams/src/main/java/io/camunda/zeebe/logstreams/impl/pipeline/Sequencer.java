@@ -48,7 +48,7 @@ public final class Sequencer implements LogStreamWriter, AsyncClosable {
 
       final var sequencedBatch =
           new SequencedRecordBatch(
-              startingPosition, position, sourceRecordPosition, sequencedEntries);
+              startingPosition, position - 1, sourceRecordPosition, sequencedEntries);
       queue.offer(sequencedBatch);
       consumer.signal();
       return position;
