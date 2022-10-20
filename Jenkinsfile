@@ -330,9 +330,9 @@ String upgradeTestPodSpec(String camBpmVersion, String esVersion, String prevEsV
 }
 
 String itLatestPodSpec(String camBpmVersion, String esVersion) {
-  return basePodSpec(8, 10) +
-      camBpmContainerSpec(camBpmVersion, false, 6, 4) +
-      elasticSearchContainerSpec(esVersion, 8, 8)
+  return basePodSpec(4, 4) +
+      camBpmContainerSpec(camBpmVersion, false, 4, 4) +
+      elasticSearchContainerSpec(esVersion, 4, 8)
 }
 
 String itZeebePodSpec(String camBpmVersion, String esVersion) {
