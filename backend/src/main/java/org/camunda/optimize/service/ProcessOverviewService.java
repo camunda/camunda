@@ -9,12 +9,14 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.digest.DigestService;
 import org.camunda.optimize.service.es.reader.ProcessOverviewReader;
@@ -76,6 +78,9 @@ public class ProcessOverviewService {
     final Map<String, ProcessOverviewDto> processOverviewByKey =
       processOverviewReader.getProcessOverviewsByKey(procDefKeysAndName.keySet());
 
+    // Get data for all processes at once concerning whether they already have a dashboard
+    Map<String, Boolean> collectionHasDashboard = retrieveCollectionInformation(userId);
+
     return procDefKeysAndName.entrySet()
       .stream()
       .map(entry -> {
@@ -91,7 +96,8 @@ public class ProcessOverviewService {
           overviewForKey.map(ProcessOverviewDto::getDigest)
             .orElse(new ProcessDigestDto(false, new HashMap<>())),
           overviewForKey.map(kpiService::extractKpiResultsForProcessDefinition).orElse(Collections.emptyList()),
-          magicLinkToDashboard
+          magicLinkToDashboard,
+          collectionHasDashboard.getOrDefault(procDefKey, Boolean.FALSE)
         );
       }).collect(Collectors.toList());
   }
@@ -194,4 +200,11 @@ public class ProcessOverviewService {
       });
   }
 
+  private Map<String, Boolean> retrieveCollectionInformation(final String userId) {
+    // This involves a call to ES, so using it parsimoniously
+    return collectionService.getAllCollectionDefinitions(userId)
+      .stream()
+      .map(AuthorizedCollectionDefinitionDto::getDefinitionDto)
+      .collect(Collectors.toMap(CollectionDefinitionDto::getId, CollectionDefinitionDto::isAutomaticallyCreated));
+  }
 }
