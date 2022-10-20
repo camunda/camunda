@@ -247,7 +247,7 @@ public class RaftPartition implements Partition, HealthMonitorable {
   }
 
   public CompletableFuture<Void> goInactive() {
-    return server.goInactive();
+    return server.stop();
   }
 
   public PartitionMetadata getMetadata() {
