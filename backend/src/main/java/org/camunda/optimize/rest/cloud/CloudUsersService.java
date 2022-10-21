@@ -60,14 +60,11 @@ public class CloudUsersService {
   }
 
   public Optional<CloudUserDto> getUserById(final String userId) {
-    final Optional<CloudUserDto> cloudUser = Optional.ofNullable(cloudUsersCache.getIfPresent(userId));
-    if (cloudUser.isPresent()) {
-      return cloudUser;
-    }
+    // the cache doesn't store user by ID so we have to fetch directly
     final Optional<CloudUserDto> fetchedUser = accessTokenProvider.getCurrentUsersAccessToken()
       .map(accessToken -> userClient.getCloudUserById(userId, accessToken))
       .orElseThrow(() -> new NotAuthorizedException(ERROR_MISSING_ACCESS_TOKEN));
-    fetchedUser.ifPresent(user -> cloudUsersCache.put(user.getUserId(), user));
+    fetchedUser.ifPresent(user -> cloudUsersCache.put(user.getEmail(), user));
     return fetchedUser;
   }
 
@@ -96,6 +93,6 @@ public class CloudUsersService {
       .map(userClient::fetchAllCloudUsers)
       .orElseThrow(() -> new NotAuthorizedException(ERROR_MISSING_ACCESS_TOKEN))
       .stream()
-      .collect(Collectors.toMap(CloudUserDto::getUserId, Function.identity()));
+      .collect(Collectors.toMap(CloudUserDto::getEmail, Function.identity()));
   }
 }
