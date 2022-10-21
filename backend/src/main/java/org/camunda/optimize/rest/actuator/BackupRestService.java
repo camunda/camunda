@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.rest.actuator;
 
-import com.github.dockerjava.api.exception.ConflictException;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.rest.BackupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.BackupResponseDto;
@@ -70,8 +69,8 @@ public class BackupRestService {
       .body(getErrorResponseDto(exception));
   }
 
-  @ExceptionHandler(ConflictException.class)
-  public ResponseEntity<ErrorResponseDto> handleConflictException(final ConflictException exception) {
+  @ExceptionHandler(OptimizeConflictException.class)
+  public ResponseEntity<ErrorResponseDto> handleConflictException(final OptimizeConflictException exception) {
     return ResponseEntity.status(HttpStatus.CONFLICT)
       .contentType(MediaType.APPLICATION_JSON)
       .body(getErrorResponseDto(exception));
@@ -106,7 +105,7 @@ public class BackupRestService {
       errorCode = NOT_FOUND_ERROR_CODE;
     } else if (BadRequestException.class.equals(errorClass) || ValidationException.class.equals(errorClass)) {
       errorCode = BAD_REQUEST_ERROR_CODE;
-    } else if (ConflictException.class.equals(errorClass)) {
+    } else if (OptimizeConflictException.class.equals(errorClass)) {
       errorCode = OptimizeConflictException.ERROR_CODE;
     } else {
       errorCode = GENERIC_ERROR_CODE;

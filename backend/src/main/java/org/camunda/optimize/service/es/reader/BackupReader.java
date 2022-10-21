@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.service.es.reader;
 
-import com.github.dockerjava.api.exception.ConflictException;
 import io.micrometer.core.instrument.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeSnapshotRepositoryNotFoundException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -82,7 +82,7 @@ public class BackupReader {
         existingSnapshots.stream().map(snapshotInfo -> snapshotInfo.snapshotId().toString()).collect(joining(", "))
       );
       log.error(reason);
-      throw new ConflictException(reason);
+      throw new OptimizeConflictException(reason);
     }
   }
 
