@@ -20,51 +20,46 @@ import java.security.cert.CertificateException;
 import java.util.concurrent.TimeUnit;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Network;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
+@Testcontainers
 final class SecureClusteredMessagingIT {
   private static final Logger LOGGER = LoggerFactory.getLogger(SecureClusteredMessagingIT.class);
 
-  private Network network;
-  private ZeebeCluster cluster;
+  private final Network network = Network.newNetwork();
+  private final SelfSignedCertificate certificate = newCertificate();
+
+  @Container
+  private final ZeebeCluster cluster =
+      ZeebeCluster.builder()
+          .withNetwork(network)
+          .withGatewaysCount(1)
+          .withBrokersCount(2)
+          .withReplicationFactor(2)
+          .withEmbeddedGateway(false)
+          .withImage(ZeebeTestContainerDefaults.defaultTestImage())
+          .withNodeConfig(this::configureNode)
+          .build();
 
   @SuppressWarnings("unused")
   @RegisterExtension
-  final ContainerLogsDumper logsWatcher =
-      new ContainerLogsDumper(() -> cluster.getBrokers(), LOGGER);
-
-  private SelfSignedCertificate certificate;
-
-  @BeforeEach
-  void beforeEach() throws CertificateException {
-    network = Network.newNetwork();
-    certificate = new SelfSignedCertificate();
-  }
+  final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(cluster::getNodes, LOGGER);
 
   @AfterEach
   void afterEach() {
-    CloseHelper.quietCloseAll(cluster, network);
+    CloseHelper.quietCloseAll(network);
   }
 
   @Test
   void shouldFormAClusterWithTls() {
     // given - a cluster with 2 standalone brokers, and 1 standalone gateway
-    cluster =
-        ZeebeCluster.builder()
-            .withGatewaysCount(1)
-            .withBrokersCount(2)
-            .withReplicationFactor(2)
-            .withEmbeddedGateway(false)
-            .build();
-    cluster.getBrokers().forEach((nodeId, broker) -> configureNode(broker));
-    cluster.getGateways().forEach((nodeId, gateway) -> configureNode(gateway));
-    cluster.start();
 
     // when - note the client is using plaintext since we only care about inter-cluster TLS
     final Topology topology;
@@ -93,7 +88,6 @@ final class SecureClusteredMessagingIT {
 
     // configure both the broker and gateway; it doesn't really matter if one sees the environment
     // variables of the other
-    node.setDockerImageName(ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString());
     node.withEnv("ZEEBE_BROKER_NETWORK_SECURITY_ENABLED", "true")
         .withEnv("ZEEBE_BROKER_NETWORK_SECURITY_CERTIFICATECHAINPATH", certChainPath)
         .withEnv("ZEEBE_BROKER_NETWORK_SECURITY_PRIVATEKEYPATH", privateKeyPath)
@@ -109,7 +103,15 @@ final class SecureClusteredMessagingIT {
   private void assertAddressIsSecured(final Object nodeId, final String address) {
     final var socketAddress = Address.from(address).socketAddress();
     SslAssert.assertThat(socketAddress)
-        .as("node %s is not secured correctly", nodeId)
+        .as("node %s is not secured correctly at address %s", nodeId, address)
         .isSecuredBy(certificate);
+  }
+
+  private SelfSignedCertificate newCertificate() {
+    try {
+      return new SelfSignedCertificate();
+    } catch (final CertificateException e) {
+      throw new IllegalStateException("Failed to create self-signed certificate", e);
+    }
   }
 }
