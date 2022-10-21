@@ -19,7 +19,6 @@ import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
-import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
@@ -67,7 +66,7 @@ public class CustomerOnboardingDataImportService {
           .getClassLoader()
           .getResourceAsStream(processDefinition);
         if (customerOnboardingDefinition != null) {
-          String result = IOUtils.toString(customerOnboardingDefinition, StandardCharsets.UTF_8);
+          String result = new String(customerOnboardingDefinition.readAllBytes(), StandardCharsets.UTF_8);
           if (result != null) {
             ProcessDefinitionOptimizeDto processDefinitionDto = objectMapper.readValue(
               result,
@@ -105,7 +104,7 @@ public class CustomerOnboardingDataImportService {
         .getClassLoader()
         .getResourceAsStream(pathToProcessInstances);
       if (customerOnboardingProcessInstances != null) {
-        String result = IOUtils.toString(customerOnboardingProcessInstances, StandardCharsets.UTF_8);
+        String result = new String(customerOnboardingProcessInstances.readAllBytes(), StandardCharsets.UTF_8);
         if (result != null) {
           List<ProcessInstanceDto> rawProcessInstanceDtos = objectMapper.readValue(result, new TypeReference<>() {
           });

@@ -20,7 +20,6 @@ import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,8 +55,8 @@ public class IncidentGenerator {
         InputStream customerOnboardingProcessInstances = IncidentGenerator.class.getClassLoader()
           .getResourceAsStream(pathToProcessInstances);
         if (customerOnboardingProcessInstances != null) {
-          String customerOnboardingProcessInstancesAsString = IOUtils.toString(
-            customerOnboardingProcessInstances, StandardCharsets.UTF_8
+          String customerOnboardingProcessInstancesAsString = new String(
+            customerOnboardingProcessInstances.readAllBytes(), StandardCharsets.UTF_8
           );
           if (customerOnboardingProcessInstancesAsString != null) {
             String[] processInstances = customerOnboardingProcessInstancesAsString.split("\\r?\\n");
