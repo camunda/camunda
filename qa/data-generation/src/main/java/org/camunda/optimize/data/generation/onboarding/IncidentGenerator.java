@@ -58,23 +58,18 @@ public class IncidentGenerator {
           String customerOnboardingProcessInstancesAsString = new String(
             customerOnboardingProcessInstances.readAllBytes(), StandardCharsets.UTF_8
           );
-          if (customerOnboardingProcessInstancesAsString != null) {
-            String[] processInstances = customerOnboardingProcessInstancesAsString.split("\\r?\\n");
-            List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
-            for (String processInstance : processInstances) {
-              ElasticDumpEntryDto elasticDumpEntryDto = OBJECT_MAPPER.readValue(
-                processInstance, ElasticDumpEntryDto.class
-              );
-              ProcessInstanceDto rawProcessInstanceFromDump = elasticDumpEntryDto.getProcessInstanceDto();
-              if (rawProcessInstanceFromDump != null) {
-                processInstanceDtos.add(elasticDumpEntryDto.getProcessInstanceDto());
-              }
+          String[] processInstances = customerOnboardingProcessInstancesAsString.split("\\r?\\n");
+          List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
+          for (String processInstance : processInstances) {
+            ElasticDumpEntryDto elasticDumpEntryDto = OBJECT_MAPPER.readValue(
+              processInstance, ElasticDumpEntryDto.class
+            );
+            ProcessInstanceDto rawProcessInstanceFromDump = elasticDumpEntryDto.getProcessInstanceDto();
+            if (rawProcessInstanceFromDump != null) {
+              processInstanceDtos.add(elasticDumpEntryDto.getProcessInstanceDto());
             }
-            addIncidentsToProcessInstances(processInstanceDtos);
-          } else {
-            log.error(
-              "Could not load customer onboarding process instances. Please validate the process instance json file.");
           }
+          addIncidentsToProcessInstances(processInstanceDtos);
         } else {
           log.error("Process instance file cannot be null.");
         }
