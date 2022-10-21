@@ -16,45 +16,38 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.locks.ReentrantLock;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /** Accepts records from multiple writers, sequences them and assigns positions to each record */
 public final class Sequencer implements LogStreamWriter, AsyncClosable {
   private long position;
   private ActorCondition consumer;
-  private final Queue<SequencedRecordBatch> queue = new LinkedBlockingDeque<>();
-
-  final ReentrantLock lock = new ReentrantLock();
+  private final ManyToOneConcurrentLinkedQueue<SequencedRecordBatch> queue =
+      new ManyToOneConcurrentLinkedQueue<>();
 
   public Sequencer(final long initialPosition) {
     this.position = initialPosition;
   }
 
   @Override
-  public long tryWrite(final ImmutableRecordBatch batch, final long sourceRecordPosition) {
+  public synchronized long tryWrite(
+      final ImmutableRecordBatch batch, final long sourceRecordPosition) {
     if (batch.isEmpty()) {
       return 0;
     }
-    lock.lock();
-    try {
-      final var startingPosition = position;
-      final var sequencedEntries = new ArrayList<SequencedBatchEntry>();
+    final var startingPosition = position;
+    final var sequencedEntries = new ArrayList<SequencedBatchEntry>(batch.size());
 
-      for (final var record : batch) {
-        sequencedEntries.add(new SequencedBatchEntry(position++, record));
-      }
-
-      final var sequencedBatch =
-          new SequencedRecordBatch(
-              startingPosition, position - 1, sourceRecordPosition, sequencedEntries);
-      queue.offer(sequencedBatch);
-      consumer.signal();
-      return position;
-    } finally {
-      lock.unlock();
+    for (final var record : batch) {
+      sequencedEntries.add(new SequencedBatchEntry(position++, record));
     }
+
+    final var sequencedBatch =
+        new SequencedRecordBatch(
+            startingPosition, position - 1, sourceRecordPosition, sequencedEntries);
+    queue.offer(sequencedBatch);
+    consumer.signal();
+    return position;
   }
 
   public SequencedRecordBatch poll() {
