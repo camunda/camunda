@@ -109,7 +109,7 @@ public class BackupServiceTest {
       () -> backupService.triggerBackup("alreadyExists")
     );
     assertThat(thrown.getMessage()).isEqualTo(
-      "Status 409: A backup with ID [alreadyExists] already exists. Found snapshots: " +
+      "A backup with ID [alreadyExists] already exists. Found snapshots: " +
         "[existingSnapshotName/Xtll5DxHQ56j6rMz8nFDmQ]");
   }
 
