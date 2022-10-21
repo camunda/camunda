@@ -124,15 +124,21 @@ More specifically, each option configures the following:
   exported; if false, ignored.
 * `deployment` (`boolean`): if true, records related to deployments will be exported; if false,
   ignored.
+* `deploymentDistribution` (`boolean`): if true, records related to deployment distributions will be exported; if false,
+  ignored.
 * `error` (`boolean`): if true, records related to errors will be exported; if false, ignored.
+* `escalation` (`boolean`): if true, records related to escalations will be exported; if false, ignored.
 * `incident` (`boolean`): if true, records related to incidents will be exported; if false, ignored.
 * `job` (`boolean`): if true, records related to jobs will be exported; if false, ignored.
 * `jobBatch` (`boolean`): if true, records related to job batches will be exported; if false,
   ignored.
 * `message` (`boolean`): if true, records related to messages will be exported; if false, ignored.
 * `messageSubscription` (`boolean`): if true, records related to message subscriptions will be
+* `messageStartSubscription` (`boolean`): if true, records related to message start subscriptions will be
   exported; if false, ignored.
 * `process` (`boolean`): if true, records related to processes will be exported; if false, ignored.
+* `processEvent` (`boolean`): if true, records related to process events will be exported; if
+  false, ignored.
 * `processInstance` (`boolean`): if true, records related to process instances will be exported; if
   false, ignored.
 * `processInstanceCreation` (`boolean`): if true, records related to process instance creations will
@@ -141,6 +147,7 @@ More specifically, each option configures the following:
   be exported; if false, ignored.
 * `processMessageSubscription` (`boolean`): if true, records related to process message
   subscriptions will be exported; if false, ignored.
+* `timer` (`boolean`): if true, records related to timers will be exported; if false, ignored.
 * `variable` (`boolean`): if true, records related to variables will be exported; if false, ignored.
 * `variableDocument` (`boolean`): if true, records related to variable documents will be exported;
    if false, ignored.
@@ -188,6 +195,7 @@ exporters:
         deployment: true
         deploymentDistribution: true
         error: true
+        escalation: true
         incident: true
         job: true
         jobBatch: false

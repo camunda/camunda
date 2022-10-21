@@ -71,6 +71,7 @@ final class TestSupport {
       case MESSAGE_START_EVENT_SUBSCRIPTION -> config.messageStartEventSubscription = value;
       case PROCESS_EVENT -> config.processEvent = value;
       case DEPLOYMENT_DISTRIBUTION -> config.deploymentDistribution = value;
+      case ESCALATION -> config.escalation = value;
       default -> throw new IllegalArgumentException(
           "No known indexing configuration option for value type " + valueType);
     }
