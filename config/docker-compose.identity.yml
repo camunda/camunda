@@ -47,9 +47,9 @@ services:
       KEYCLOAK_URL: http://keycloak:8080/auth
       IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
       KEYCLOAK_INIT_OPERATE_SECRET: the-cake-is-alive
-      KEYCLOAK_INIT_OPERATE_ROOT_URL: http://localhost:8081
+      KEYCLOAK_INIT_OPERATE_ROOT_URL: http://localhost:8081/operate
       KEYCLOAK_INIT_TASKLIST_SECRET: the-cake-is-alive
-      KEYCLOAK_INIT_TASKLIST_ROOT_URL: http://localhost:8082
+      KEYCLOAK_INIT_TASKLIST_ROOT_URL: http://localhost:8082/tasklist
       KEYCLOAK_USERS_0_USERNAME: "demo"
       KEYCLOAK_USERS_0_PASSWORD: "demo"
       KEYCLOAK_USERS_0_ROLES_0: "Identity"
@@ -90,10 +90,11 @@ services:
       - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
       - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
       - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
-      - CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8082
+      - CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8082/tasklist
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://localhost:18080/auth/realms/camunda-platform
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
       - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
+      - SERVER_SERVLET_CONTEXT_PATH=/operate
     ports:
       - 8081:8081
     depends_on:
@@ -120,6 +121,7 @@ services:
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://localhost:18080/auth/realms/camunda-platform
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
       - CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME=test
+      - SERVER_SERVLET_CONTEXT_PATH=/tasklist
     ports:
       - 8082:8082
     depends_on:

@@ -75,6 +75,7 @@ import org.springframework.test.context.junit4.SpringRunner;
         SameSiteCookieTomcatContextCustomizer.class
     },
     properties = {
+        "server.servlet.context-path=" + AuthenticationWithPersistentSessionsIT.CONTEXT_PATH,
         "camunda.operate.identity.issuerBackendUrl=http://localhost:18080/auth/realms/camunda-platform",
         "camunda.operate.identity.issuerUrl=http://localhost:18080/auth/realms/camunda-platform",
         "camunda.operate.identity.clientId=operate",
@@ -86,6 +87,8 @@ import org.springframework.test.context.junit4.SpringRunner;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})
 public class AuthenticationWithPersistentSessionsIT implements AuthenticationTestable {
+
+  public final static String CONTEXT_PATH = "/operate-test";
 
   @LocalServerPort
   private int randomServerPort;
@@ -203,7 +206,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   }
 
   private String urlFor(String path) {
-    return "http://localhost:" + randomServerPort + path;
+    return String.format("http://localhost:%d%s%s", randomServerPort, CONTEXT_PATH, path);
   }
 
   private ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {

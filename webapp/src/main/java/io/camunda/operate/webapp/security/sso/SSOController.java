@@ -84,7 +84,7 @@ public class SSOController {
     if (originalRequestUrl != null) {
         res.sendRedirect(req.getContextPath() + originalRequestUrl);
     } else {
-        res.sendRedirect(ROOT);
+        res.sendRedirect(req.getContextPath() + ROOT);
     }
   }
 
