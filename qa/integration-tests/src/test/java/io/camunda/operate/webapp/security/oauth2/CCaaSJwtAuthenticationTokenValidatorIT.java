@@ -38,7 +38,6 @@ public class CCaaSJwtAuthenticationTokenValidatorIT {
   @Autowired
   private CCSaaSJwtAuthenticationTokenValidator jwtAuthenticationTokenValidator;
 
-  @Ignore("Audience won't used (workaround)")
   @Test
   public void shouldNotValidForWrongAudience(){
     final JwtAuthenticationToken token =

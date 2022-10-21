@@ -13,6 +13,7 @@ import static io.camunda.operate.webapp.security.OperateProfileService.IDENTITY_
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -43,10 +44,8 @@ public class CCSaaSJwtAuthenticationTokenValidator implements JwtAuthenticationT
 
   private boolean isValid(final Map<String, Object> payload) {
     try {
-      //FIXME clean up usage of audience and scope: scope should not be directly compared to clusterId
-      //but to some new parameter e.g. CAMUNDA_CLOUD_CLIENT_SCOPE
-      //final String audience = getAudience(payload);
-      return getScope(payload).equals(getScopeFromConfiguration());
+      return getScope(payload).equals(getScopeFromConfiguration()) &&
+          getAudience(payload).equals(getAudienceFromConfiguration());
     } catch (Exception e) {
       logger.error(
           String.format("Validation of JWT payload failed due to %s. Request is not authenticated.", e.getMessage()), e);
@@ -66,13 +65,21 @@ public class CCSaaSJwtAuthenticationTokenValidator implements JwtAuthenticationT
       return firstOrDefault(
           (List<String>) getOrDefaultFromMap(payload, AUDIENCE, Collections.emptyList()), null);
     }
-    throw new OperateRuntimeException(
-        String.format("Couldn't get scope from type %s", scopeObject.getClass()));
+    throw new OperateRuntimeException("Couldn't get scope from JWT payload as String or list of Strings. Maybe wrong scope configuration?");
   }
 
   private String getAudience(final Map<String, Object> payload) {
-    return firstOrDefault(
-        (List<String>) getOrDefaultFromMap(payload, AUDIENCE, Collections.emptyList()), null);
+    final Object audienceObject = payload.get(AUDIENCE);
+    if(audienceObject == null){
+      throw new OperateRuntimeException("Couldn't get audience from JWT payload.");
+    }
+    if (audienceObject instanceof String) {
+      return (String) audienceObject;
+    }
+    if (audienceObject instanceof List) {
+      return ((List<String>) audienceObject).get(0);
+    }
+    throw new OperateRuntimeException("Couldn't get audience from JWT payload as String or array of Strings.");
   }
 
   private String getScopeFromConfiguration(){
@@ -86,5 +93,13 @@ public class CCSaaSJwtAuthenticationTokenValidator implements JwtAuthenticationT
       throw new OperateRuntimeException("No configuration found in 'CAMUNDA_OPERATE_CLOUD_CLUSTERID' or 'CAMUNDA_OPERATE_CLIENT_CLUSTERID'");
     }
     return clusterId;
+  }
+
+  private String getAudienceFromConfiguration(){
+    final String audience = operateProperties.getClient().getAudience();
+    if(stringIsEmpty(audience)){
+      throw new OperateRuntimeException("No configuration found in 'CAMUNDA_OPERATE_CLIENT_AUDIENCE'");
+    }
+    return audience;
   }
 }
