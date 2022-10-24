@@ -396,7 +396,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     zeebeExtension.startProcessInstanceBeforeElementWithIds(process.getBpmnProcessId(), END_EVENT, END_EVENT_2);
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(2);
+    waitUntilMinimumProcessInstanceEventsExportedCount(6);
     importAllZeebeEntitiesFromScratch();
 
     // then
