@@ -63,7 +63,6 @@ import io.camunda.zeebe.shared.ActorClockConfiguration;
 import io.camunda.zeebe.shared.management.ActorClockService.MutableClock;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
-import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -78,6 +77,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -112,7 +112,7 @@ public class ClusteringRule extends ExternalResource {
 
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
-  private final AutoCloseableRule closeables = new AutoCloseableRule();
+  private final ArrayDeque<AutoCloseable> closeables = new ArrayDeque<>();
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   // configuration
@@ -208,8 +208,7 @@ public class ClusteringRule extends ExternalResource {
 
   @Override
   public Statement apply(final Statement base, final Description description) {
-    Statement statement = recordingExporterTestWatcher.apply(base, description);
-    statement = closeables.apply(statement, description);
+    final var statement = recordingExporterTestWatcher.apply(base, description);
     return temporaryFolder.apply(super.apply(statement, description), description);
   }
 
@@ -257,6 +256,16 @@ public class ClusteringRule extends ExternalResource {
   @Override
   protected void after() {
     LOG.debug("Closing ClusteringRule...");
+    closeables
+        .descendingIterator()
+        .forEachRemaining(
+            autoCloseable -> {
+              try {
+                autoCloseable.close();
+              } catch (final Exception e) {
+                LOG.error("Failed to close managed resource {}", autoCloseable, e);
+              }
+            });
     brokers.values().parallelStream()
         .forEach(
             b -> {
@@ -429,10 +438,10 @@ public class ClusteringRule extends ExternalResource {
             actorScheduler);
     brokerClient.start();
     final Gateway gateway = new Gateway(gatewayCfg, brokerClient, actorScheduler);
-    closeables.manage(actorScheduler);
-    closeables.manage(gateway::stop);
-    closeables.manage(() -> atomixCluster.stop().join());
-    closeables.manage(brokerClient);
+    closeables.add(actorScheduler);
+    closeables.add(gateway::stop);
+    closeables.add(() -> atomixCluster.stop().join());
+    closeables.add(brokerClient);
     return gateway;
   }
 
@@ -445,7 +454,7 @@ public class ClusteringRule extends ExternalResource {
     clientConfigurator.accept(zeebeClientBuilder);
 
     final ZeebeClient client = zeebeClientBuilder.build();
-    closeables.manage(client);
+    closeables.add(client);
     return client;
   }
 
