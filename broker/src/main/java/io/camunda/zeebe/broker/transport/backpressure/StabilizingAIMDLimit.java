@@ -19,8 +19,8 @@ import java.util.concurrent.TimeUnit;
  * <p>The implementation is based on {@link com.netflix.concurrency.limits.limit.AIMDLimit}.
  * AIMDLimit has a limitation that the limit fluctuates between 1 and 2*X, where X is the optimal
  * limit for the system. It rarely stabilizes at X. This results in always fluctuating throughput
- * and latency. {@link StabilizingAIMDLimit} fixes this issue and attempts to keep the limit around
- * X.
+ * and latency. {@link StabilizingAIMDLimit} fixes this issue, by not reducing the limit if the
+ * inflight is greater than the current limit. As a result it attempts to keep the limit around X.
  */
 final class StabilizingAIMDLimit extends AbstractLimit {
 
