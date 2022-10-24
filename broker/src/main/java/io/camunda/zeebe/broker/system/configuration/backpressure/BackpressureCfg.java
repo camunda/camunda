@@ -13,7 +13,7 @@ public final class BackpressureCfg implements ConfigurationEntry {
 
   private boolean enabled = true;
   private boolean useWindowed = true;
-  private LimitAlgorithm algorithm = LimitAlgorithm.VEGAS;
+  private LimitAlgorithm algorithm = LimitAlgorithm.AIMD;
   private final AIMDCfg aimd = new AIMDCfg();
   private final FixedCfg fixed = new FixedCfg();
   private final VegasCfg vegas = new VegasCfg();
