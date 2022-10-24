@@ -60,7 +60,7 @@
   "devDependencies": {
     "@testing-library/jest-dom": "5.16.5",
     "@testing-library/react": "11.2.7",
-    "@testing-library/testcafe": "4.4.1",
+    "@testing-library/testcafe": "5.0.0",
     "@testing-library/user-event": "13.5.0",
     "@types/carbon-components-react": "7.55.2",
     "@types/carbon__elements": "11.10.0",
