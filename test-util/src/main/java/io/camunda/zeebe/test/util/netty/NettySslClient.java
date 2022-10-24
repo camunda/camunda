@@ -28,9 +28,11 @@ import java.io.UncheckedIOException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.security.cert.Certificate;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import org.agrona.LangUtil;
@@ -126,7 +128,11 @@ public final class NettySslClient {
       } catch (final CompletionException e) {
         if (e.getCause() instanceof PrematurelyClosedChannelException) {
           LOGGER.debug(
-              "Retrying prematurely closed connection to {}, attempt #{}", address, attemptCount);
+              "Retrying prematurely closed connection to {}, attempt #{} in {} seconds",
+              address,
+              attemptCount,
+              attemptCount);
+          LockSupport.parkNanos(Duration.ofSeconds(attemptCount).toNanos());
           return getRemoteCertificateChain(address, attemptCount + 1);
         }
 
