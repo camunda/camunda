@@ -16,6 +16,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.EventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import org.agrona.DirectBuffer;
 
@@ -29,6 +30,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final String PROP_PROCESS_KEY = "processDefinitionKey";
   public static final String PROP_PROCESS_BPMN_TYPE = "bpmnElementType";
   public static final String PROP_PROCESS_SCOPE_KEY = "flowScopeKey";
+  public static final String PROP_PROCESS_EVENT_TYPE = "eventType";
 
   private final StringProperty bpmnProcessIdProp =
       new StringProperty(PROP_PROCESS_BPMN_PROCESS_ID, "");
@@ -45,6 +47,9 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
       new EnumProperty<>(
           PROP_PROCESS_BPMN_TYPE, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
+  private final EnumProperty<EventType> eventTypeProp =
+      new EnumProperty<>(PROP_PROCESS_EVENT_TYPE, EventType.class, EventType.UNSPECIFIED);
+
   private final LongProperty parentProcessInstanceKeyProp =
       new LongProperty("parentProcessInstanceKey", -1L);
   private final LongProperty parentElementInstanceKeyProp =
@@ -58,6 +63,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(elementIdProp)
         .declareProperty(flowScopeKeyProp)
         .declareProperty(bpmnElementTypeProp)
+        .declareProperty(eventTypeProp)
         .declareProperty(parentProcessInstanceKeyProp)
         .declareProperty(parentElementInstanceKeyProp);
   }
@@ -70,6 +76,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
     processInstanceKeyProp.setValue(record.getProcessInstanceKey());
     bpmnElementTypeProp.setValue(record.getBpmnElementType());
+    eventTypeProp.setValue(record.getEventType());
     parentProcessInstanceKeyProp.setValue(record.getParentProcessInstanceKey());
     parentElementInstanceKeyProp.setValue(record.getParentElementInstanceKey());
   }
@@ -186,6 +193,16 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setBpmnProcessId(final DirectBuffer directBuffer) {
     bpmnProcessIdProp.setValue(directBuffer);
+    return this;
+  }
+
+  @Override
+  public EventType getEventType() {
+    return eventTypeProp.getValue();
+  }
+
+  public ProcessInstanceRecord setEventType(final EventType eventType) {
+    eventTypeProp.setValue(eventType);
     return this;
   }
 

@@ -76,4 +76,9 @@ public interface ProcessInstanceRecordValue extends RecordValue, ProcessInstance
    *     by another process instance.
    */
   long getParentElementInstanceKey();
+
+  /**
+   * @return the event type of the current process element.
+   */
+  EventType getEventType();
 }
