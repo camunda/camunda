@@ -5,13 +5,13 @@
  */
 package org.camunda.optimize.service.backup;
 
-import com.github.dockerjava.api.exception.ConflictException;
 import io.micrometer.core.instrument.util.StringUtils;
 import lombok.SneakyThrows;
 import org.camunda.optimize.service.BackupService;
 import org.camunda.optimize.service.es.reader.BackupReader;
 import org.camunda.optimize.service.es.reader.BackupWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeSnapshotRepositoryNotFoundException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -99,17 +99,17 @@ public class BackupServiceTest {
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
     doNothing().when(backupReader).validateRepositoryExistsOrFail();
     // Mock existence of other backup with the same ID
-    doThrow(new ConflictException(
+    doThrow(new OptimizeConflictException(
       "A backup with ID [alreadyExists] already exists. Found snapshots: [existingSnapshotName/Xtll5DxHQ56j6rMz8nFDmQ]"))
       .when(backupReader).validateNoDuplicateBackupId(any());
 
     // when
-    final ConflictException thrown = assertThrows(
-      ConflictException.class,
+    final OptimizeConflictException thrown = assertThrows(
+      OptimizeConflictException.class,
       () -> backupService.triggerBackup("alreadyExists")
     );
     assertThat(thrown.getMessage()).isEqualTo(
-      "Status 409: A backup with ID [alreadyExists] already exists. Found snapshots: " +
+      "A backup with ID [alreadyExists] already exists. Found snapshots: " +
         "[existingSnapshotName/Xtll5DxHQ56j6rMz8nFDmQ]");
   }
 

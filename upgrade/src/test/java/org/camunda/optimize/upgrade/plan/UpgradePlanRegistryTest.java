@@ -7,7 +7,7 @@ package org.camunda.optimize.upgrade.plan;
 
 import com.vdurmont.semver4j.Semver;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.function.Function;
@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class UpgradePlanRegistryTest {
 
   @Test
-  public void upgradePlansAreSortedAsExpected() {
+  void upgradePlansAreSortedAsExpected() {
     // given
     final List<Pair<String, String>> upgradePlanVersions = List.of(
       Pair.of("3.8", "3.9.0-preview-1"),
