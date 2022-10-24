@@ -71,15 +71,15 @@ final class SecureClusteredMessagingIT {
     // are secured using the expected certificate
     TopologyAssert.assertThat(topology).hasBrokersCount(2).isComplete(2, 1, 2);
     cluster
+        .getGateways()
+        .forEach((id, gateway) -> assertAddressIsSecured(id, gateway.getExternalClusterAddress()));
+    cluster
         .getBrokers()
         .forEach(
             (id, broker) -> {
               assertAddressIsSecured(id, broker.getExternalCommandAddress());
               assertAddressIsSecured(id, broker.getExternalClusterAddress());
             });
-    cluster
-        .getGateways()
-        .forEach((id, gateway) -> assertAddressIsSecured(id, gateway.getExternalClusterAddress()));
   }
 
   private void configureNode(final ZeebeNode<?> node) {
