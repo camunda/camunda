@@ -427,14 +427,14 @@
       # The algorithm configures which algorithm to use for the backpressure.
       # It should be one of vegas, aimd, fixed, gradient, or gradient2.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_ALGORITHM
-      # algorithm: "fixed"
+      # algorithm: "aimd"
 
       # Configure the parameters for "aimd" algorithm.
       # AIMD increases the limit for every successful response and decrease the limit for every request timeout.
       # aimd:
         # The limit will be reduced if the observed latency is greater than the requestTimeout.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_AIMD_REQUESTTIMEOUT
-        # requestTimeout: "1s"
+        # requestTimeout: "200ms"
 
         # The initial limit to be used when the broker starts. The limit will be reset to this value when the broker restarts.
         # This setting can also be overridden using the environment ZEEBE_BROKER_BACKPRESSURE_AIMD_INITIALLIMIT
