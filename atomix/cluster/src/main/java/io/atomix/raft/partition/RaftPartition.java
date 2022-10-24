@@ -246,7 +246,7 @@ public class RaftPartition implements Partition, HealthMonitorable {
         && primary.get() != server.getMemberId();
   }
 
-  public CompletableFuture<Void> goInactive() {
+  public CompletableFuture<Void> stop() {
     return server.stop();
   }
 
