@@ -29,6 +29,7 @@ export default function BarChartConfig({onChange, report}) {
     groupBy.type !== 'none' &&
     ['barLine', 'bar'].includes(visualization);
   const isStacked = isStackingPossible && configuration.stackedBar;
+  const isHorizontal = configuration.horizontalBar;
 
   return (
     <div className="BarChartConfig">
@@ -79,14 +80,14 @@ export default function BarChartConfig({onChange, report}) {
         />
         <label>{t('report.config.axisSettings.label')}</label>
         <Input
-          placeholder={t('report.config.axisSettings.xAxis')}
+          placeholder={t('report.config.axisSettings.' + (isHorizontal ? 'yAxis' : 'xAxis'))}
           type="text"
           value={configuration.xLabel}
           onChange={({target: {value}}) => onChange({xLabel: {$set: value}})}
         />
         {!isMultiMeasure && (
           <Input
-            placeholder={t('report.config.axisSettings.yAxis')}
+            placeholder={t('report.config.axisSettings.' + (isHorizontal ? 'xAxis' : 'yAxis'))}
             type="text"
             value={configuration.yLabel}
             onChange={({target: {value}}) => onChange({yLabel: {$set: value}})}

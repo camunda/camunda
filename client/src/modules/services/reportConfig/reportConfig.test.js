@@ -134,6 +134,40 @@ it('should update sorting', () => {
   });
 });
 
+describe('horizonalBarChart', () => {
+  it('should keep horizontalBar config as false for reports grouped by date', () => {
+    expect(
+      createReportUpdate('process', report, 'group', 'endDate').configuration.$set.horizontalBar
+    ).toBe(false);
+  });
+
+  it('should set horizontalBar config to true for reports grouped by boolean variable', () => {
+    expect(
+      createReportUpdate('process', report, 'group', 'variable', {
+        groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
+      }).configuration.$set.horizontalBar
+    ).toEqual(true);
+  });
+
+  it('should set horizontalBar config to true for reports grouped by flow node', () => {
+    const heatmapReport = {
+      ...report,
+      view: {entity: 'flowNode', properties: ['duration']},
+      groupBy: {type: 'flowNodes'},
+      visualization: 'heat',
+      configuration: {
+        ...report.configuration,
+        heatmapTargetValue: {active: true, values: {flowNode: {value: 12, unit: 'hours'}}},
+      },
+    };
+
+    expect(
+      createReportUpdate('process', heatmapReport, 'visualization', 'barChart').configuration.$set
+        .horizontalBar
+    ).toEqual(true);
+  });
+});
+
 describe('process exclusive updates', () => {
   it('should reset heatmap target values', () => {
     const heatmapReport = {

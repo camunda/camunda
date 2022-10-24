@@ -415,7 +415,7 @@ describe('createDurationFormattingOptions', () => {
 
   it('should show nice ticks for duration formats on the x axis', () => {
     const config = createDurationFormattingOptions(0, maxDuration);
-    config.axis = 'x';
+    config.type = 'category';
     config.getLabels = () => [(2 * 24 * 60 * 60 * 1000).toString()];
 
     expect(config.stepSize).toBe(1 * 24 * 60 * 60 * 1000);

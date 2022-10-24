@@ -19,7 +19,7 @@ export default function createDefaultChartData(props) {
   const {
     result,
     data: {
-      configuration: {measureVisualizations},
+      configuration: {measureVisualizations, horizontalBar},
     },
   } = props.report;
   const measures = result.measures;
@@ -41,7 +41,7 @@ export default function createDefaultChartData(props) {
     }
 
     datasets.push({
-      yAxisID: 'axis-' + getAxisIdx(measures, idx),
+      [horizontalBar ? 'xAxisID' : 'yAxisID']: 'axis-' + getAxisIdx(measures, idx),
       label: getLabel(measure),
       data: formattedResult.map(({value}) => value),
       formatter: formatters[measure.property],

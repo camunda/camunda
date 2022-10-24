@@ -8,8 +8,6 @@
 import {getTooltipText} from 'services';
 import {t} from 'translation';
 
-import {getColorFor} from './colorsUtils';
-
 export function formatTooltip({
   dataset,
   dataIndex,
@@ -84,28 +82,10 @@ export function getTooltipLabelColor({dataIndex, dataset}, type) {
   };
 }
 
-export function drawHorizentalLine(chart) {
-  if (chart.options.lineAt >= 0 && chart.options.lineAt !== false) {
-    const ctx = chart.ctx;
-    const xAxe = chart.scales['xAxes'];
-    const lineAt = calculateLinePosition(chart);
-
-    ctx.save();
-    ctx.strokeStyle = getColorFor('targetBar', true);
-    ctx.setLineDash([10, 10]);
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(xAxe.left, lineAt);
-    ctx.lineTo(xAxe.right, lineAt);
-    ctx.stroke();
-    ctx.restore();
-  }
-}
-
 export function calculateLinePosition(chart) {
-  const yAxis = chart.scales['axis-0'];
+  const firstMeasureAxis = chart.scales['axis-0'];
 
-  return yAxis.getPixelForValue(chart.options.lineAt);
+  return firstMeasureAxis.getPixelForValue(chart.options.lineAt);
 }
 
 export function canBeInterpolated({type, value}, xml, decisionDefinitionKey) {

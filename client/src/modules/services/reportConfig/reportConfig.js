@@ -104,6 +104,9 @@ export function createReportUpdate(reportType, report, type, newValue, payloadAd
 
   // update sorting and tablecolumnorder
   report.configuration.sorting = getDefaultSorting({reportType, data: newReport});
+  report.configuration.horizontalBar =
+    newReport.visualization === 'bar' && isCategoricalGroupBy(newReport.groupBy);
+
   report.configuration.tableColumns.columnOrder = [];
 
   if (reportType === 'process') {
@@ -211,4 +214,16 @@ function getDefaultSorting({reportType, data: {view, groupBy, visualization}}) {
   }
 
   return {by: 'key', order: 'desc'};
+}
+
+function isCategoricalGroupBy(groupBy) {
+  if (
+    ['flowNodes', 'userTasks', 'assignee', 'candidateGroup'].includes(groupBy?.type) ||
+    (['variable', 'inputVariable', 'outputVariable'].includes(groupBy?.type) &&
+      ['Boolean', 'String'].includes(groupBy.value.type))
+  ) {
+    return true;
+  }
+
+  return false;
 }

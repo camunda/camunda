@@ -148,11 +148,10 @@ export function createBarOptions({
   const hasMultipleAxes = ['frequency', 'duration'].every((prop) =>
     measures.some(({property}) => property === prop)
   );
-  const axisType = configuration.logScale ? 'logarithmic' : undefined;
+  const topPadding = isPersistedTooltips && !configuration.horizontalBar;
 
-  const yAxes = {
+  const measuresAxis = {
     'axis-0': {
-      type: axisType,
       grid: {
         color: getColorFor('grid', isDark),
       },
@@ -174,17 +173,19 @@ export function createBarOptions({
       },
       suggestedMax: targetLine,
       id: 'axis-0',
-      axis: 'y',
+      axis: configuration.horizontalBar ? 'x' : 'y',
+      position: configuration.horizontalBar ? 'bottom' : 'left',
       stacked,
     },
   };
 
   if (hasMultipleAxes) {
-    yAxes['axis-0'].title.display = true;
-    yAxes['axis-0'].title.text = `${t('common.' + entity + '.label')} ${t('report.view.count')}`;
+    measuresAxis['axis-0'].title.display = true;
+    measuresAxis['axis-0'].title.text = `${t('common.' + entity + '.label')} ${t(
+      'report.view.count'
+    )}`;
 
-    yAxes['axis-1'] = {
-      type: axisType,
+    measuresAxis['axis-1'] = {
       grid: {
         drawOnChartArea: false,
       },
@@ -203,59 +204,71 @@ export function createBarOptions({
         color: getColorFor('label', isDark),
       },
       suggestedMax: targetLine,
-      position: 'right',
       id: 'axis-1',
-      axis: 'y',
+      position: configuration.horizontalBar ? 'top' : 'right',
+      axis: configuration.horizontalBar ? 'x' : 'y',
     };
+  }
+
+  const groupByAxis = {
+    grid: {
+      color: getColorFor('grid', isDark),
+    },
+    title: {
+      display: !!configuration.xLabel,
+      text: configuration.xLabel,
+      color: getColorFor('label', isDark),
+      font: {
+        size: 14,
+        weight: 'bold',
+      },
+    },
+    ticks: {
+      color: getColorFor('label', isDark),
+      autoSkip,
+      callback: function (value, idx, allLabels) {
+        const label = this.getLabelForValue(value);
+        const width = this.maxWidth / allLabels.length;
+        const widthPerCharacter = 7;
+
+        if (isCombinedNumber && label.length > width / widthPerCharacter) {
+          return label.substr(0, Math.floor(width / widthPerCharacter)) + '…';
+        }
+
+        return label;
+      },
+      ...(groupedByDurationMaxValue
+        ? createDurationFormattingOptions(false, groupedByDurationMaxValue)
+        : {}),
+    },
+    stacked: stacked || isCombinedNumber,
+    axis: configuration.horizontalBar ? 'y' : 'x',
+  };
+
+  if (configuration.logScale) {
+    Object.keys(measuresAxis).forEach((key) => {
+      measuresAxis[key].type = 'logarithmic';
+    });
   }
 
   return {
     ...(configuration.pointMarkers === false ? {elements: {point: {radius: 0}}} : {}),
+    indexAxis: configuration.horizontalBar ? 'y' : 'x',
     layout: {
-      padding: {top: isPersistedTooltips ? 30 : 0},
+      padding: {top: topPadding ? 30 : 0},
     },
     scales: {
-      ...yAxes,
-      xAxes: {
-        axis: 'x',
-        grid: {
-          color: getColorFor('grid', isDark),
-        },
-        title: {
-          display: !!configuration.xLabel,
-          text: configuration.xLabel,
-          color: getColorFor('label', isDark),
-          font: {
-            size: 14,
-            weight: 'bold',
-          },
-        },
-        ticks: {
-          color: getColorFor('label', isDark),
-          autoSkip,
-          callback: function (value, idx, allLabels) {
-            const label = this.getLabelForValue(value);
-            const width = this.maxWidth / allLabels.length;
-            const widthPerCharacter = 7;
-
-            if (isCombinedNumber && label.length > width / widthPerCharacter) {
-              return label.substr(0, Math.floor(width / widthPerCharacter)) + '…';
-            }
-
-            return label;
-          },
-          ...(groupedByDurationMaxValue
-            ? createDurationFormattingOptions(false, groupedByDurationMaxValue)
-            : {}),
-        },
-        stacked: stacked || isCombinedNumber,
-      },
+      ...measuresAxis,
+      groupByAxis,
     },
     spanGaps: true,
     // plugin property
     lineAt: targetLine,
     tension: 0.4,
     plugins: {
+      datalabels: {
+        align: () => (configuration.horizontalBar ? 'start' : 'end'),
+      },
       legend: {
         display: measures.length > 1,
         onClick: (e) => e.native.stopPropagation(),

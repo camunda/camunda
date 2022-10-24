@@ -292,7 +292,8 @@ export function createDurationFormattingOptions(targetLine, dataMinStep, logScal
   return {
     callback: function (value, ...args) {
       let durationMs = value;
-      if (this.axis === 'x') {
+
+      if (this.type === 'category') {
         const labels = this.getLabels();
         durationMs = Number(labels[value]);
       }

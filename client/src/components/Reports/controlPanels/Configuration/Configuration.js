@@ -98,6 +98,7 @@ export default class Configuration extends React.Component {
           duration: 'line',
         },
         stackedBar: false,
+        horizontalBar: false,
         logScale: false,
       }),
       true

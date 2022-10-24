@@ -135,3 +135,35 @@ it('should assign line/bar visualization to dataset according to measureVisualiz
   expect(chartData.datasets[1].type).toBe('bar');
   expect(chartData.datasets[1].order).toBe(1);
 });
+
+it('should set the axis id for charts', () => {
+  const result = {
+    measures: [
+      {property: 'frequency', data: []},
+      {property: 'duration', data: []},
+    ],
+  };
+
+  const report = {
+    result,
+    data: {
+      configuration: {},
+      aggregationType: {type: 'avg', value: null},
+      visualization: 'bar',
+      view: {properties: ['frequency', 'duration'], entity: 'flowNode'},
+      groupBy: {},
+    },
+  };
+
+  const chartData = createDefaultChartData({report});
+
+  expect(chartData.datasets[0].yAxisID).toBe('axis-0');
+  expect(chartData.datasets[1].yAxisID).toBe('axis-1');
+
+  report.data.configuration.horizontalBar = true;
+  const horizontalBarData = createDefaultChartData({report});
+
+  expect(horizontalBarData.datasets[0].yAxisID).not.toBeDefined();
+  expect(horizontalBarData.datasets[0].xAxisID).toBe('axis-0');
+  expect(horizontalBarData.datasets[1].xAxisID).toBe('axis-1');
+});
