@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker.transport.backpressure;
 import static io.camunda.zeebe.broker.Broker.LOG;
 
 import com.netflix.concurrency.limits.Limit;
-import com.netflix.concurrency.limits.limit.AIMDLimit;
 import com.netflix.concurrency.limits.limit.FixedLimit;
 import com.netflix.concurrency.limits.limit.Gradient2Limit;
 import com.netflix.concurrency.limits.limit.GradientLimit;
@@ -113,12 +112,12 @@ public final class PartitionAwareRequestLimiter {
         .build();
   }
 
-  private static AIMDLimit getAIMD(final AIMDCfg aimdCfg) {
-    return AIMDLimit.newBuilder()
+  private static StabilizingAIMDLimit getAIMD(final AIMDCfg aimdCfg) {
+    return StabilizingAIMDLimit.newBuilder()
         .initialLimit(aimdCfg.getInitialLimit())
         .minLimit(aimdCfg.getMinLimit())
         .maxLimit(aimdCfg.getMaxLimit())
-        .timeout(aimdCfg.getRequestTimeout().toMillis(), TimeUnit.MILLISECONDS)
+        .expectedRTT(aimdCfg.getRequestTimeout().toMillis(), TimeUnit.MILLISECONDS)
         .backoffRatio(aimdCfg.getBackoffRatio())
         .build();
   }
