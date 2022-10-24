@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * and latency. {@link StabilizingAIMDLimit} fixes this issue and attempts to keep the limit around
  * X.
  */
-public final class StabilizingAIMDLimit extends AbstractLimit {
+final class StabilizingAIMDLimit extends AbstractLimit {
 
   private static final long DEFAULT_MAX_RTT = TimeUnit.SECONDS.toNanos(2);
   private final int minLimit;
@@ -64,8 +64,8 @@ public final class StabilizingAIMDLimit extends AbstractLimit {
     return "StabilizingAIMDLimit [limit=" + getLimit() + "]";
   }
 
-  public static StabilizingAIMDLimit.Builder newBuilder() {
-    return new StabilizingAIMDLimit.Builder();
+  public static Builder newBuilder() {
+    return new Builder();
   }
 
   static final class Builder {
@@ -75,17 +75,17 @@ public final class StabilizingAIMDLimit extends AbstractLimit {
     private double backoffRatio = 0.9;
     private long expectedRtt = DEFAULT_MAX_RTT;
 
-    public StabilizingAIMDLimit.Builder initialLimit(final int initialLimit) {
+    Builder initialLimit(final int initialLimit) {
       this.initialLimit = initialLimit;
       return this;
     }
 
-    public StabilizingAIMDLimit.Builder minLimit(final int minLimit) {
+    Builder minLimit(final int minLimit) {
       this.minLimit = minLimit;
       return this;
     }
 
-    public StabilizingAIMDLimit.Builder maxLimit(final int maxLimit) {
+    Builder maxLimit(final int maxLimit) {
       this.maxLimit = maxLimit;
       return this;
     }
@@ -94,7 +94,7 @@ public final class StabilizingAIMDLimit extends AbstractLimit {
      * When the limit has to be reduced, the new limit is calculated as current limit *
      * backoffRatio.
      */
-    public StabilizingAIMDLimit.Builder backoffRatio(final double backoffRatio) {
+    Builder backoffRatio(final double backoffRatio) {
       Preconditions.checkArgument(
           backoffRatio < 1.0 && backoffRatio >= 0.5,
           "Backoff ratio must be in the range [0.5, 1.0)");
@@ -103,13 +103,13 @@ public final class StabilizingAIMDLimit extends AbstractLimit {
     }
 
     /** When observed RTT exceeds this value, the limit will be reduced. */
-    public StabilizingAIMDLimit.Builder expectedRTT(final long timeout, final TimeUnit units) {
+    Builder expectedRTT(final long timeout, final TimeUnit units) {
       Preconditions.checkArgument(timeout > 0, "Timeout must be positive");
       expectedRtt = units.toNanos(timeout);
       return this;
     }
 
-    public StabilizingAIMDLimit build() {
+    StabilizingAIMDLimit build() {
       return new StabilizingAIMDLimit(initialLimit, maxLimit, minLimit, backoffRatio, expectedRtt);
     }
   }
