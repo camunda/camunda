@@ -232,7 +232,7 @@ public class ZeebePartitionTest {
     order.verify(transition).toLeader(2);
     // after failing leader transition no other
     // transitions are triggered
-    order.verify(raft, times(0)).goInactive();
+    order.verify(raft, times(0)).stop();
     order.verify(transition, times(0)).toFollower(anyLong());
   }
 
@@ -251,7 +251,7 @@ public class ZeebePartitionTest {
             });
     when(raft.getRole()).thenReturn(Role.FOLLOWER);
     when(ctx.getCurrentRole()).thenReturn(Role.FOLLOWER);
-    when(raft.goInactive())
+    when(raft.stop())
         .then(
             invocation -> {
               partition.onNewRole(Role.INACTIVE, 2);
@@ -267,23 +267,16 @@ public class ZeebePartitionTest {
     // then
     final InOrder order = inOrder(transition, raft);
     order.verify(transition).toFollower(0L);
-    order.verify(raft).goInactive();
+    order.verify(raft).stop();
     order.verify(transition).toInactive(anyLong());
   }
 
   @Test
   public void shouldGoInactiveIfTransitionHasUnrecoverableFailure() throws InterruptedException {
     // given
-    final CountDownLatch latch = new CountDownLatch(1);
     when(transition.toLeader(anyLong()))
         .thenReturn(
             CompletableActorFuture.completedExceptionally(new UnrecoverableException("expected")));
-    when(transition.toInactive(anyLong()))
-        .then(
-            invocation -> {
-              latch.countDown();
-              return CompletableActorFuture.completed(null);
-            });
     when(raft.getRole()).thenReturn(Role.LEADER);
     when(raft.term()).thenReturn(1L);
 
@@ -291,13 +284,11 @@ public class ZeebePartitionTest {
     schedulerRule.submitActor(partition);
     partition.onNewRole(raft.getRole(), raft.term());
     schedulerRule.workUntilDone();
-    assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 
     // then
     final InOrder order = inOrder(transition, raft);
     order.verify(transition).toLeader(0L);
-    order.verify(transition).toInactive(anyLong());
-    order.verify(raft).goInactive();
+    order.verify(raft).stop();
   }
 
   @Test
