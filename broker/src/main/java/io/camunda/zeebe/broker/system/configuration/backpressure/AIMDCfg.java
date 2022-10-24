@@ -14,7 +14,7 @@ import java.time.Duration;
 
 public class AIMDCfg {
 
-  private Duration requestTimeout = Duration.ofSeconds(1);
+  private Duration requestTimeout = Duration.ofMillis(200);
   private int initialLimit = 100;
   private int minLimit = 1;
   private int maxLimit = 1000;
