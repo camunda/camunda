@@ -5,7 +5,7 @@
   "io.openshift.non-scalable": "false",
   "io.openshift.tags": "bpmn,orchestration,workflow",
   "org.opencontainers.image.authors": "zeebe@camunda.com",
-  "org.opencontainers.image.base.digest": "fce37e5146419a158c2199c6089fa39b92445fb2e66dc0331f8591891239ea3b",
+  "org.opencontainers.image.base.digest": "e7fe469c4e729ff0ed6ff464f41eaff0e4cb9b6fe7efe71754d8935c8118eb87",
   "org.opencontainers.image.base.name": "docker.io/library/eclipse-temurin:17-jre-focal",
   "org.opencontainers.image.created": $DATE,
   "org.opencontainers.image.description": "Workflow engine for microservice orchestration",
