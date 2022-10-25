@@ -22,9 +22,9 @@ jobs:
           ref: "${{ github.event.inputs.branch }}"
       
       - name: determine current calendar week
-        run: export CURRENT_CW=$(date +%V)
+        run: echo "CURRENT_CW=$(date +%V)" >> $GITHUB_ENV
       - name: determine currently checked out commit sha
-        run: export CURRENT_SHA=$(git rev-parse --short HEAD)
+        run: echo "CURRENT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: merge branch into medic-cw-benchmarks
         run: |
