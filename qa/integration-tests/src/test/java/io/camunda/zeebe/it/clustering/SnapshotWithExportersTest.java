@@ -19,8 +19,9 @@ import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebeVolume;
 import io.zeebe.containers.exporter.DebugReceiver;
 import java.time.Duration;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.IntStream;
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -57,12 +58,16 @@ final class SnapshotWithExportersTest {
           final var snapshotId =
               Awaitility.await("Snapshot is taken")
                   .atMost(Duration.ofSeconds(60))
-                  .until(() -> partitions.query().get(1).snapshotId(), Objects::nonNull);
+                  .until(
+                      () ->
+                          Optional.ofNullable(partitions.query().get(1).snapshotId())
+                              .flatMap(FileBasedSnapshotId::ofFileName),
+                      Optional::isPresent)
+                  .orElseThrow();
 
           // then
-          final var exportedPositionInSnapshot =
-              FileBasedSnapshotId.ofFileName(snapshotId).orElseThrow().getExportedPosition();
-          assertThat(exportedPositionInSnapshot).isEqualTo(exporterPosition);
+          assertThat(snapshotId)
+              .returns(exporterPosition, FileBasedSnapshotId::getExportedPosition);
         }
       }
     }
@@ -100,11 +105,13 @@ final class SnapshotWithExportersTest {
                 .during(Duration.ofSeconds(5))
                 .until(
                     () ->
-                        FileBasedSnapshotId.ofFileName(partitions.query().get(1).snapshotId())
-                            .orElseThrow(),
-                    hasStableValue());
+                        Optional.ofNullable(partitions.query().get(1).snapshotId())
+                            .flatMap(FileBasedSnapshotId::ofFileName),
+                    hasStableValue())
+                .orElseThrow();
 
-        assertThat(snapshotWithExporters).returns(0L, FileBasedSnapshotId::getExportedPosition);
+        Assertions.assertThat(snapshotWithExporters)
+            .returns(0L, FileBasedSnapshotId::getExportedPosition);
       }
     }
   }
@@ -134,12 +141,12 @@ final class SnapshotWithExportersTest {
       snapshotWithoutExporters =
           Awaitility.await("Snapshot is taken")
               .atMost(Duration.ofSeconds(60))
-              .during(Duration.ofSeconds(5))
               .until(
                   () ->
-                      FileBasedSnapshotId.ofFileName(partitions.query().get(1).snapshotId())
-                          .orElseThrow(),
-                  hasStableValue());
+                      Optional.ofNullable(partitions.query().get(1).snapshotId())
+                          .flatMap(FileBasedSnapshotId::ofFileName),
+                  Optional::isPresent)
+              .orElseThrow();
     }
 
     // when -- taking snapshot on broker with exporters configured
@@ -160,9 +167,10 @@ final class SnapshotWithExportersTest {
                 .during(Duration.ofSeconds(5))
                 .until(
                     () ->
-                        FileBasedSnapshotId.ofFileName(partitions.query().get(1).snapshotId())
-                            .orElseThrow(),
-                    hasStableValue());
+                        Optional.ofNullable(partitions.query().get(1).snapshotId())
+                            .flatMap(FileBasedSnapshotId::ofFileName),
+                    hasStableValue())
+                .orElseThrow();
       }
     }
 
