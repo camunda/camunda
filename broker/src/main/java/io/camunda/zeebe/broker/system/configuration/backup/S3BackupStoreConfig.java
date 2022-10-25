@@ -19,6 +19,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
   private String accessKey;
   private String secretKey;
   private Duration apiCallTimeout = Duration.ofSeconds(180);
+  private boolean forcePathStyleAccess = false;
 
   public String getBucketName() {
     return bucketName;
@@ -68,6 +69,14 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     this.apiCallTimeout = apiCallTimeout;
   }
 
+  public boolean isForcePathStyleAccess() {
+    return forcePathStyleAccess;
+  }
+
+  public void setForcePathStyleAccess(final boolean forcePathStyleAccess) {
+    this.forcePathStyleAccess = forcePathStyleAccess;
+  }
+
   @Override
   public int hashCode() {
     int result = bucketName != null ? bucketName.hashCode() : 0;
@@ -76,6 +85,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     result = 31 * result + (accessKey != null ? accessKey.hashCode() : 0);
     result = 31 * result + (secretKey != null ? secretKey.hashCode() : 0);
     result = 31 * result + (apiCallTimeout != null ? apiCallTimeout.hashCode() : 0);
+    result = 31 * result + (forcePathStyleAccess ? 1 : 0);
     return result;
   }
 
@@ -90,6 +100,9 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
 
     final S3BackupStoreConfig that = (S3BackupStoreConfig) o;
 
+    if (forcePathStyleAccess != that.forcePathStyleAccess) {
+      return false;
+    }
     if (!Objects.equals(bucketName, that.bucketName)) {
       return false;
     }

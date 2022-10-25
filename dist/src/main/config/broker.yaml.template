@@ -210,6 +210,12 @@
           # See https://github.com/aws/aws-sdk-java-v2/blob/master/docs/BestPractices.md#utilize-timeout-configurations
           # apiCallTimeout: PT180S
 
+          # When enabled, forces the s3 client to use path-style access. By default, the client will automatically
+          # choose between path-style and virtual-hosted-style. Should only be enabled if the s3 compatible storage cannot
+          # support virtual-hosted-style.
+          # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-bucket-intro.html
+          # forcePathStyleAccess: false
+
     # cluster:
       # This section contains all cluster related configurations, to setup a zeebe cluster
 
