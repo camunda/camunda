@@ -101,7 +101,7 @@ final class BackupAcceptanceIT {
             minio.accessKey(),
             minio.secretKey(),
             Duration.ofSeconds(25),
-            false);
+            true);
     store = new S3BackupStore(config);
 
     try (final var client = S3BackupStore.buildClient(config)) {
