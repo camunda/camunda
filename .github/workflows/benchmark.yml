@@ -1,0 +1,46 @@
+# Creates and starts a benchmark cluster
+name: Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Specifies the branch to benchmark'
+        default: 'main'
+        required: false
+
+jobs:
+  benchmark:
+    name: Benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:    
+      - uses: actions/checkout@v3
+        with:
+          ref: "${{ github.event.inputs.branch }}"
+      
+      - name: determine current calendar week
+        run: export CURRENT_CW=$(date +%V)
+      - name: determine currently checked out commit sha
+        run: export CURRENT_SHA=$(git rev-parse --short HEAD)
+
+      - name: merge branch into medic-cw-benchmarks
+        run: |
+          git checkout medic-cw-benchmarks
+          git merge ${{ github.event.inputs.branch }} --no-edit
+          # git push origin medic-cw-benchmarks
+      
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          maven-cache: 'true'
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C
+      - uses: ./.github/actions/build-docker
+        with:
+          repository: gcr.io/zeebe-io/zeebe
+          version: medic-cw-${{ env.CURRENT_CW }}-${{ env.CURRENT_SHA }}-benchmark
+          push: false
+          distball: ${{ steps.build-zeebe.outputs.distball }}
