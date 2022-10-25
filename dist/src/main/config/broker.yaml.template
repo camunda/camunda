@@ -208,7 +208,15 @@
           # Lower values will ensure that failed or slow API calls don't block other backups but may increase the risk
           # that backups can't be stored if uploading parts of the backup takes longer than the configured timeout.
           # See https://github.com/aws/aws-sdk-java-v2/blob/master/docs/BestPractices.md#utilize-timeout-configurations
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_S3_APICALLTIMEOUT
           # apiCallTimeout: PT180S
+
+          # When enabled, forces the s3 client to use path-style access. By default, the client will automatically
+          # choose between path-style and virtual-hosted-style. Should only be enabled if the s3 compatible storage cannot
+          # support virtual-hosted-style.
+          # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-bucket-intro.html
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_S3_FORCEPATHSTYLEACCESS
+          # forcePathStyleAccess: false
 
     # cluster:
       # This section contains all cluster related configurations, to setup a zeebe cluster
