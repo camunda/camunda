@@ -27,6 +27,7 @@ jobs:
 
       - name: merge branch into medic-cw-benchmarks
         run: |
+          git fetch origin medic-cw-benchmarks
           git checkout medic-cw-benchmarks
           git merge ${{ github.event.inputs.branch }} --no-edit
           # git push origin medic-cw-benchmarks
