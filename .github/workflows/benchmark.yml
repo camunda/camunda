@@ -21,10 +21,11 @@ jobs:
         with:
           ref: "${{ github.event.inputs.branch }}"
       
-      - name: determine current calendar week
-        run: echo "CURRENT_CW=$(date +%V)" >> $GITHUB_ENV
-      - name: determine currently checked out commit sha
-        run: echo "CURRENT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: determine benchmark name
+        run: |
+          echo "CURRENT_CW=$(date +%V)" >> $GITHUB_ENV
+          echo "CURRENT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "BENCHMARK_NAME=medic-cw-$CURRENT_CW-$CURRENT_SHA-benchmark" >> $GITHUB_ENV
 
       - name: merge branch into medic-cw-benchmarks
         run: |
@@ -43,6 +44,16 @@ jobs:
       - uses: ./.github/actions/build-docker
         with:
           repository: gcr.io/zeebe-io/zeebe
-          version: medic-cw-${{ env.CURRENT_CW }}-${{ env.CURRENT_SHA }}-benchmark
+          version: ${{ env.BENCHMARK_NAME }}
           push: false
           distball: ${{ steps.build-zeebe.outputs.distball }}
+
+      - name: build benchmark project
+        run: |
+          cd benchmarks/project
+          sed -i -e "s/:SNAPSHOT/:$BENCHMARK_NAME/" docker-compose.yml
+          # Use --no-cache to force re-build the application.
+          # Without this flag, changes to zeebe-client were not picked up.
+          # This can take longer to build than usual.
+          docker-compose build --no-cache
+          # docker-compose push
