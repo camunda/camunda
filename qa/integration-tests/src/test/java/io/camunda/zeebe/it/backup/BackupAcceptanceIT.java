@@ -149,7 +149,8 @@ final class BackupAcceptanceIT {
         .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ENDPOINT", minio.internalEndpoint())
         .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_REGION", minio.region())
         .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ACCESSKEY", minio.accessKey())
-        .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_SECRETKEY", minio.secretKey());
+        .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_SECRETKEY", minio.secretKey())
+        .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_FORCEPATHSTYLEACCESS", "true");
   }
 
   private void configureNode(final ZeebeNode<?> node) {

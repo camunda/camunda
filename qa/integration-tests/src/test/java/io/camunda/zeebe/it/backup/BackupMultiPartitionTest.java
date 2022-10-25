@@ -94,6 +94,7 @@ class BackupMultiPartitionTest {
     s3Config.setRegion(S3.region());
     s3Config.setAccessKey(S3.accessKey());
     s3Config.setSecretKey(S3.secretKey());
+    s3Config.setForcePathStyleAccess(true);
   }
 
   private void generateBucketName() {
@@ -113,7 +114,7 @@ class BackupMultiPartitionTest {
             S3.accessKey(),
             S3.secretKey(),
             Duration.ofSeconds(15),
-            false);
+            true);
     s3BackupStore = new S3BackupStore(s3ClientConfig);
     try (final var s3Client = S3BackupStore.buildClient(s3ClientConfig)) {
       s3Client.createBucket(builder -> builder.bucket(bucketName).build()).join();
