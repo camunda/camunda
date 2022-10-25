@@ -45,11 +45,29 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
     #########################################################################
+    # Determine the argocd arguments that need to be passed to the create app command
+    - name: Determine Argocd Arguments
+      shell: bash
+      run: |
+        echo "argocd_arguments=--dest-namespace ${app_name} \
+        --file .ci/preview-environments/argo/application.yml \
+        --helm-set camunda-platform.operate.image.tag=${docker_tag} \
+        --helm-set git.branch=${revision} \
+        --helm-set global.labels.app=${app_name} \
+        --name ${app_name} \
+        --revision ${revision} \
+        --upsert" >> $GITHUB_ENV
+      env:
+        docker_tag: "ci-${{ github.event.pull_request.head.sha || github.sha }}" # commit id of latest PR event || sha of push event
+        revision: ${{ env.BRANCH_NAME }}
+        app_name: operate-${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}
+      #########################################################################
     # Create a preview environment
     - name: Deploy Preview Environment
-      uses: ./.github/actions/deploy-preview-create
+      uses: camunda/infra-global-github-actions/preview-env/create@main
       with:
-        deployment_id: ${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }} # fake ternary https://github.com/actions/runner/issues/409
         revision: ${{ env.BRANCH_NAME }}
-        docker_tag: "ci-${{ github.event.pull_request.head.sha || github.sha }}" # commit id of latest PR event || sha of push event
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+        app_name: operate-${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}
+        app_url: https://${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}.operate.camunda.cloud
+        argocd_arguments: ${{ env.argocd_arguments }}
