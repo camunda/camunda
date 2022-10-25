@@ -23,9 +23,9 @@ jobs:
       
       - name: determine benchmark name
         run: |
-          echo "CURRENT_CW=$(date +%V)" >> $GITHUB_ENV
-          echo "CURRENT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          echo "BENCHMARK_NAME=medic-cw-$CURRENT_CW-$CURRENT_SHA-benchmark" >> $GITHUB_ENV
+          export CURRENT_CW=$(date +%V)
+          export CURRENT_SHA=$(git rev-parse --short HEAD)
+          echo "BENCHMARK_NAME=medic-cw-${CURRENT_CW}-${CURRENT_SHA}-benchmark" >> $GITHUB_ENV
 
       - name: merge branch into medic-cw-benchmarks
         run: |
