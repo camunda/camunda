@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/docker/docker/api/types/filters"
@@ -40,6 +41,7 @@ var (
 	// Implement interfaces
 	_ Container = (*DockerContainer)(nil)
 
+	logOnce                 sync.Once
 	ErrDuplicateMountTarget = errors.New("duplicate mount target detected")
 )
 
@@ -47,6 +49,7 @@ const (
 	Bridge        = "bridge" // Bridge network name (as well as driver)
 	Podman        = "podman"
 	ReaperDefault = "reaper_default" // Default network name when bridge is not available
+	packagePath   = "github.com/testcontainers/testcontainers-go"
 )
 
 // DockerContainer represents a container started using Docker
@@ -393,6 +396,23 @@ func (c *DockerContainer) ContainerIP(ctx context.Context) (string, error) {
 	return ip, nil
 }
 
+// ContainerIPs gets the IP addresses of all the networks within the container.
+func (c *DockerContainer) ContainerIPs(ctx context.Context) ([]string, error) {
+	ips := make([]string, 0)
+
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	networks := inspect.NetworkSettings.Networks
+	for _, nw := range networks {
+		ips = append(ips, nw.IPAddress)
+	}
+
+	return ips, nil
+}
+
 // NetworkAliases gets the aliases of the container for the networks it is attached to.
 func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]string, error) {
 	inspect, err := c.inspectContainer(ctx)
@@ -725,6 +745,12 @@ func NewDockerClient() (cli *client.Client, host string, tcConfig TestContainers
 		host = "unix:///var/run/docker.sock"
 	}
 
+	opts = append(opts, client.WithHTTPHeaders(
+		map[string]string{
+			"x-tc-sid": sessionID().String(),
+		}),
+	)
+
 	cli, err = client.NewClientWithOpts(opts...)
 
 	if err != nil {
@@ -770,7 +796,28 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		config:                tcConfig,
 	}
 
+	// log docker server info only once
+	logOnce.Do(p.logDockerServerInfo)
+
 	return p, nil
+}
+
+func (p *DockerProvider) logDockerServerInfo() {
+	infoMessage := `%v - Connected to docker: 
+  Server Version: %v
+  API Version: %v
+  Operating System: %v
+  Total Memory: %v MB
+`
+
+	info, err := p.client.Info(context.Background())
+	if err != nil {
+		p.Logger.Printf("failed getting information about docker server: %s", err)
+	}
+
+	p.Logger.Printf(infoMessage, packagePath,
+		info.ServerVersion, p.client.ClientVersion(),
+		info.OperatingSystem, info.MemTotal/1024/1024)
 }
 
 // configureTC reads from testcontainers properties file, if it exists
@@ -893,10 +940,12 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		req.Labels = make(map[string]string)
 	}
 
-	sessionID := uuid.New()
+	sessionID := sessionID()
 
 	var termSignal chan bool
-	if !req.SkipReaper {
+	// the reaper does not need to start a reaper for itself
+	isReaperContainer := strings.EqualFold(req.Image, reaperImage(req.ReaperImage))
+	if !req.SkipReaper && !isReaperContainer {
 		r, err := NewReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperImage)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
@@ -910,6 +959,8 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 				req.Labels[k] = v
 			}
 		}
+	} else if !isReaperContainer {
+		p.printReaperBanner("container")
 	}
 
 	if err = req.Validate(); err != nil {
@@ -969,7 +1020,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	exposedPorts := req.ExposedPorts
-	if len(exposedPorts) == 0 {
+	if len(exposedPorts) == 0 && !req.NetworkMode.IsContainer() {
 		image, _, err := p.client.ImageInspectWithRaw(ctx, tag)
 		if err != nil {
 			return nil, err
@@ -1009,6 +1060,8 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		NetworkMode:  req.NetworkMode,
 		Resources:    req.Resources,
 		ShmSize:      req.ShmSize,
+		CapAdd:       req.CapAdd,
+		CapDrop:      req.CapDrop,
 	}
 
 	endpointConfigs := map[string]*network.EndpointSettings{}
@@ -1085,9 +1138,11 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 	if name == "" {
 		return nil, nil
 	}
+
+	// Note that, 'name' filter will use regex to find the containers
 	filter := filters.NewArgs(filters.KeyValuePair{
 		Key:   "name",
-		Value: name,
+		Value: fmt.Sprintf("^%s$", name),
 	})
 	containers, err := p.client.ContainerList(ctx, types.ContainerListOptions{Filters: filter})
 	if err != nil {
@@ -1108,10 +1163,10 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		return p.CreateContainer(ctx, req)
 	}
 
-	sessionID := uuid.New()
+	sessionID := sessionID()
 	var termSignal chan bool
 	if !req.SkipReaper {
-		r, err := NewReaper(ctx, sessionID.String(), p, req.ReaperImage)
+		r, err := NewReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperImage)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1119,6 +1174,8 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		if err != nil {
 			return nil, fmt.Errorf("%w: connecting to reaper failed", err)
 		}
+	} else {
+		p.printReaperBanner("container")
 	}
 	dc := &DockerContainer{
 		ID:                c.ID,
@@ -1261,10 +1318,9 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		IPAM:           req.IPAM,
 	}
 
-	sessionID := uuid.New()
-
 	var termSignal chan bool
 	if !req.SkipReaper {
+		sessionID := sessionID()
 		r, err := NewReaper(context.WithValue(ctx, dockerHostContextKey, p.host), sessionID.String(), p, req.ReaperImage)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
@@ -1278,6 +1334,8 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 				req.Labels[k] = v
 			}
 		}
+	} else {
+		p.printReaperBanner("network")
 	}
 
 	response, err := p.client.NetworkCreate(ctx, req.Name, nc)
@@ -1334,6 +1392,15 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 	}
 
 	return ip, nil
+}
+
+func (p *DockerProvider) printReaperBanner(resource string) {
+	ryukDisabledMessage := `
+	**********************************************************************************************
+	Ryuk has been disabled for the ` + resource + `. This can cause unexpected behavior in your environment.
+	More on this: https://golang.testcontainers.org/features/garbage_collector/
+	**********************************************************************************************`
+	p.Logger.Printf(ryukDisabledMessage)
 }
 
 func inAContainer() bool {

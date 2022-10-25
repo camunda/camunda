@@ -128,8 +128,6 @@ github.com/google/uuid
 # github.com/inconshreveable/mousetrap v1.0.1
 ## explicit; go 1.18
 github.com/inconshreveable/mousetrap
-# github.com/kr/pretty v0.3.0
-## explicit; go 1.12
 # github.com/magiconair/properties v1.8.6
 ## explicit; go 1.13
 github.com/magiconair/properties
@@ -179,8 +177,8 @@ github.com/spf13/pflag
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 github.com/stretchr/testify/suite
-# github.com/testcontainers/testcontainers-go v0.14.0
-## explicit; go 1.13
+# github.com/testcontainers/testcontainers-go v0.15.0
+## explicit; go 1.18
 github.com/testcontainers/testcontainers-go
 github.com/testcontainers/testcontainers-go/wait
 # go.opencensus.io v0.23.0
