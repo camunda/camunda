@@ -401,15 +401,6 @@
 
   </dependencies>
 
-  <properties>
-    <maven.surefire.debug>
-      -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005
-    </maven.surefire.debug>
-    <maven.failsafe.debug>
-      -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005
-    </maven.failsafe.debug>
-  </properties>
-
   <profiles>
     <!--
       this profile will run all tests annotated with @SmokeTest. the profile is mainly used to
