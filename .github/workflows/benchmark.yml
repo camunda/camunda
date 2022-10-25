@@ -45,7 +45,7 @@ jobs:
         with:
           repository: gcr.io/zeebe-io/zeebe
           version: ${{ env.BENCHMARK_NAME }}
-          push: false
+          push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
 
       - name: build benchmark project
@@ -56,4 +56,4 @@ jobs:
           # Without this flag, changes to zeebe-client were not picked up.
           # This can take longer to build than usual.
           docker compose build --no-cache
-          # docker-compose push
+          docker compose push
