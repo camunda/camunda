@@ -20,7 +20,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ENGINE_ALIAS_OPTIMIZE;
+
 public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?, ?>, DTO> implements ImportMediator {
+
   private final BackoffCalculator errorBackoffCalculator = new BackoffCalculator(10, 1000);
   protected Logger logger = LoggerFactory.getLogger(getClass());
   protected ConfigurationService configurationService;
@@ -138,16 +141,20 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
       Optional.ofNullable(configurationService)
         .map(config -> {
           List<String> idsToExclude = new ArrayList<>();
-          try {
-            idsToExclude.addAll(config.getExcludedTenants(importIndexHandler.getEngineAlias()));
-          } catch (OptimizeConfigurationException e) {
-            // This happens when the Engine configured in the importIndexHandler doesn't exist in the config. That's
-            // not a problem, then we just simply have no excluded Tenants and don't do any filtering. This is only
-            // expected to happen in unit tests where the EngineConfiguration map is not mocked
-            logger.info(String.format(
-              "Engine '%s' could not be found in the configuration",
-              importIndexHandler.getEngineAlias()
-            ));
+          // If the internal Optimize alias is used, then the mediator is an internal mechanism and no tenant exclusion should
+          // be applied
+          if (!ENGINE_ALIAS_OPTIMIZE.equals(importIndexHandler.getEngineAlias())) {
+            try {
+              idsToExclude.addAll(config.getExcludedTenants(importIndexHandler.getEngineAlias()));
+            } catch (OptimizeConfigurationException e) {
+              // This happens when the Engine configured in the importIndexHandler doesn't exist in the config. That's
+              // not a problem, then we just simply have no excluded Tenants and don't do any filtering. This is only
+              // expected to happen in unit tests where the EngineConfiguration map is not mocked
+              logger.info(String.format(
+                "Engine '%s' could not be found in the configuration",
+                importIndexHandler.getEngineAlias()
+              ));
+            }
           }
           return idsToExclude;
         }).orElse(new ArrayList<>());
