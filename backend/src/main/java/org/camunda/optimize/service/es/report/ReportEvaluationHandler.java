@@ -42,8 +42,8 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.ForbiddenException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -226,13 +226,21 @@ public abstract class ReportEvaluationHandler {
       if (reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto) {
         SingleProcessReportDefinitionRequestDto definitionDto =
           (SingleProcessReportDefinitionRequestDto) reportDefinitionDto;
-        Map<VariableType, Set<String>> variableFiltersByTypeForReport =
-          varNameSupplier.get()
-            .stream()
-            .collect(Collectors.groupingBy(
-              ProcessVariableNameResponseDto::getType,
-              mapping(ProcessVariableNameResponseDto::getName, Collectors.toSet())
-            ));
+
+        final EnumMap<VariableType, Set<String>> variableFiltersByTypeForReport;
+        // We only fetch the variable filter values if a variable filter is present
+        if (additionalFilters.getFilter().stream().anyMatch(filter -> filter.getData() instanceof VariableFilterDataDto)) {
+          variableFiltersByTypeForReport =
+            varNameSupplier.get()
+              .stream()
+              .collect(Collectors.groupingBy(
+                ProcessVariableNameResponseDto::getType,
+                () -> new EnumMap<>(VariableType.class),
+                mapping(ProcessVariableNameResponseDto::getName, Collectors.toSet())
+              ));
+        } else {
+          variableFiltersByTypeForReport = new EnumMap<>(VariableType.class);
+        }
 
         final List<ProcessFilterDto<?>> additionalFiltersToApply = additionalFilters.getFilter().stream()
           .filter(additionalFilter -> {
