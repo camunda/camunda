@@ -60,11 +60,14 @@ public class CloudUsersService {
   }
 
   public Optional<CloudUserDto> getUserById(final String userId) {
-    // the cache doesn't store user by ID so we have to fetch directly
+    final Optional<CloudUserDto> cloudUser = Optional.ofNullable(cloudUsersCache.getIfPresent(userId));
+    if (cloudUser.isPresent()) {
+      return cloudUser;
+    }
     final Optional<CloudUserDto> fetchedUser = accessTokenProvider.getCurrentUsersAccessToken()
       .map(accessToken -> userClient.getCloudUserById(userId, accessToken))
       .orElseThrow(() -> new NotAuthorizedException(ERROR_MISSING_ACCESS_TOKEN));
-    fetchedUser.ifPresent(user -> cloudUsersCache.put(user.getEmail(), user));
+    fetchedUser.ifPresent(user -> cloudUsersCache.put(user.getUserId(), user));
     return fetchedUser;
   }
 
@@ -80,19 +83,21 @@ public class CloudUsersService {
     final OffsetDateTime currentTime = LocalDateUtil.getCurrentDateTime();
     final long secondsSinceCacheRepopulated = cacheLastPopulatedTimestamp.until(currentTime, ChronoUnit.SECONDS);
     if (secondsSinceCacheRepopulated > configurationService.getCaches().getCloudUsers().getMinFetchIntervalSeconds()) {
-      cloudUsersCache.putAll(fetchAllUsers());
+      cloudUsersCache.putAll(fetchAllUsersWithinOrganization());
       cacheLastPopulatedTimestamp = currentTime;
     }
   }
 
   /**
-   * This fetches the users from the actual Cloud Users client
+   * This fetches the users of the organization from the Cloud Users client.
    */
-  private Map<String, CloudUserDto> fetchAllUsers() {
+  private Map<String, CloudUserDto> fetchAllUsersWithinOrganization() {
     return accessTokenProvider.getCurrentUsersAccessToken()
       .map(userClient::fetchAllCloudUsers)
       .orElseThrow(() -> new NotAuthorizedException(ERROR_MISSING_ACCESS_TOKEN))
       .stream()
-      .collect(Collectors.toMap(CloudUserDto::getEmail, Function.identity()));
+      // We remove the users without a user ID
+      .filter(user -> user.getUserId() != null)
+      .collect(Collectors.toMap(CloudUserDto::getUserId, Function.identity()));
   }
 }

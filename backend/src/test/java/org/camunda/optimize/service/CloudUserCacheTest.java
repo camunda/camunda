@@ -72,21 +72,33 @@ public class CloudUserCacheTest {
   }
 
   @Test
-  public void testCloudUserIsFetchedForIndividualUser() {
+  public void testCloudUserCacheIsUsedWhenFetchingIndividualUser() {
     // given
     when(configurationService.getCaches().getCloudUsers().getMinFetchIntervalSeconds()).thenReturn(600L);
     final String userId = "userId";
     final CloudUserDto cloudUserDto = createCloudUserWithId(userId);
-    when(ccSaaSUserClient.getCloudUserById(userId, ACCESS_TOKEN)).thenReturn(Optional.of(cloudUserDto));
+    when(ccSaaSUserClient.fetchAllCloudUsers(ACCESS_TOKEN)).thenReturn(List.of(cloudUserDto));
+    // we first populate the cache
+    underTest.getAllUsers();
 
     // when we fetch the user
     Optional<CloudUserDto> fetchedCloudUser = underTest.getUserById(userId);
 
-    // then the user is returned from the client
+    // then the user is returned from the cache
     assertThat(fetchedCloudUser).isPresent().get().isEqualTo(cloudUserDto);
-    verify(ccSaaSUserClient, times(1)).getCloudUserById(userId, ACCESS_TOKEN);
-    // and the user is now in the cache
-    assertThat(underTest.getAllUsers()).containsExactly(cloudUserDto);
+    // and no requests to fetch the user from the client are made
+    verify(ccSaaSUserClient, times(0)).getCloudUserById(userId, ACCESS_TOKEN);
+
+    // when we fetch a user not in the cache
+    final String otherUserId = "someOtherId";
+    final CloudUserDto otherCloudUser = createCloudUserWithId(otherUserId);
+    when(ccSaaSUserClient.getCloudUserById(otherUserId, ACCESS_TOKEN)).thenReturn(Optional.of(otherCloudUser));
+    fetchedCloudUser = underTest.getUserById(otherUserId);
+
+    // then the user is returned
+    assertThat(fetchedCloudUser).isPresent().get().isEqualTo(otherCloudUser);
+    // and a request to fetch the user directly was made
+    verify(ccSaaSUserClient, times(1)).getCloudUserById(otherUserId, ACCESS_TOKEN);
   }
 
   private CloudUserDto createCloudUserWithId(final String userId) {
