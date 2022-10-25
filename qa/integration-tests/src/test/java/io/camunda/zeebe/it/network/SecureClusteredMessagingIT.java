@@ -17,7 +17,9 @@ import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.zeebe.containers.ZeebeNode;
 import io.zeebe.containers.cluster.ZeebeCluster;
 import java.security.cert.CertificateException;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -102,9 +104,14 @@ final class SecureClusteredMessagingIT {
 
   private void assertAddressIsSecured(final Object nodeId, final String address) {
     final var socketAddress = Address.from(address).socketAddress();
-    SslAssert.assertThat(socketAddress)
-        .as("node %s is not secured correctly at address %s", nodeId, address)
-        .isSecuredBy(certificate);
+    try {
+      SslAssert.assertThat(socketAddress)
+          .as("node %s is not secured correctly at address %s", nodeId, address)
+          .isSecuredBy(certificate);
+    } catch (final AssertionError e) {
+      LockSupport.parkNanos(Duration.ofMinutes(10).toNanos());
+      throw e;
+    }
   }
 
   private SelfSignedCertificate newCertificate() {
