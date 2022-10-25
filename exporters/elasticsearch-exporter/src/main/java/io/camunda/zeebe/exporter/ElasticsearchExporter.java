@@ -212,6 +212,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.deploymentDistribution) {
         createValueIndexTemplate(ValueType.DEPLOYMENT_DISTRIBUTION);
       }
+      if (index.escalation) {
+        createValueIndexTemplate(ValueType.ESCALATION);
+      }
     }
 
     indexTemplatesCreated = true;

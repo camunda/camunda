@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistribu
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
+import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -1038,6 +1039,43 @@ final class JsonSerializableToJsonTest {
           {
               "checkpointId":1,
               "checkpointPosition":10
+          }
+          """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Escalation record /////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Escalation record",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new EscalationRecord()
+                    .setProcessInstanceKey(4L)
+                    .setEscalationCode("escalation")
+                    .setThrowElementId(wrapString("throw"))
+                    .setCatchElementId(wrapString("catch")),
+        """
+          {
+              "processInstanceKey":4,
+              "escalationCode": "escalation",
+              "throwElementId": "throw",
+              "catchElementId": "catch"
+          }
+          """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty EscalationRecord ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty EscalationRecord",
+        (Supplier<UnifiedRecordValue>) EscalationRecord::new,
+        """
+          {
+              "processInstanceKey":-1,
+              "escalationCode": "",
+              "throwElementId": "",
+              "catchElementId": ""
           }
           """
       },
