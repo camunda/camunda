@@ -59,15 +59,16 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          while true; do mvn -B --no-snapshot-updates
+          mvn -B -T2 --no-snapshot-updates
+          -D forkCount=5
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
-          -D maven.failsafe.debug=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005
+          -D maven.failsafe.debug=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n
           -D failsafe.rerunFailingTestsCount=0 -Dflaky.test.reportDir=failsafe-reports
-          -D it.test=SecureClusteredMessagingIT
-          -pl 'qa/integration-tests'
+          -P parallel-tests
+          -pl '!qa/update-tests'
           verify
-          | tee "${BUILD_OUTPUT_FILE_PATH}"; done
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Duplicate Test Check
         uses: ./.github/actions/check-duplicate-tests
         with:
