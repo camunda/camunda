@@ -8,6 +8,7 @@ on:
         description: 'Specifies the branch to benchmark'
         default: 'main'
         required: false
+  pull_request:
 
 jobs:
   benchmark:
