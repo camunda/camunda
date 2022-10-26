@@ -48,10 +48,13 @@
                       "type": "keyword"
                     }
                   }
+                },
+                "ancestorScopeKeys": {
+                  "type": "long"
                 }
               }
             },
-            "activatedElementInstanceKeys": {
+            "ancestorScopeKeys": {
               "type": "long"
             }
           }

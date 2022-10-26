@@ -33,7 +33,15 @@ public interface ProcessInstanceModificationRecordValue
   /** Returns a list of activate instructions (if available), or an empty list. */
   List<ProcessInstanceModificationActivateInstructionValue> getActivateInstructions();
 
-  Set<Long> getActivatedElementInstanceKeys();
+  /**
+   * Returns a list of all ancestor keys of all activate instructions. The property is set in the
+   * event only after the modification is applied.
+   *
+   * @deprecated since 8.1.3, replaced by {@link
+   *     ProcessInstanceModificationActivateInstructionValue#getAncestorScopeKeys()}
+   */
+  @Deprecated
+  Set<Long> getAncestorScopeKeys();
 
   @Value.Immutable
   @ImmutableProtocol(
@@ -76,6 +84,12 @@ public interface ProcessInstanceModificationRecordValue
 
     /** Returns a list of variable instructions (if available), or an empty list. */
     List<ProcessInstanceModificationVariableInstructionValue> getVariableInstructions();
+
+    /**
+     * Returns all ancestor scope keys of the element that will be activated. The property is set in
+     * the event only after the modification is applied.
+     */
+    Set<Long> getAncestorScopeKeys();
   }
 
   @Value.Immutable

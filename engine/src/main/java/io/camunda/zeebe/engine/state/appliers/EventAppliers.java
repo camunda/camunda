@@ -152,7 +152,8 @@ public final class EventAppliers implements EventApplier {
   private void registerProcessInstanceModificationAppliers(final MutableZeebeState state) {
     register(
         ProcessInstanceModificationIntent.MODIFIED,
-        new ProcessInstanceModifiedEventApplier(state.getElementInstanceState()));
+        new ProcessInstanceModifiedEventApplier(
+            state.getElementInstanceState(), state.getProcessState()));
   }
 
   private void registerJobIntentEventAppliers(final MutableZeebeState state) {
