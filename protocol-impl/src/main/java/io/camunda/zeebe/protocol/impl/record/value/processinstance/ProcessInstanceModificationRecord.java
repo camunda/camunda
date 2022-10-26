@@ -30,6 +30,8 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       activateInstructionsProperty =
           new ArrayProperty<>(
               "activateInstructions", new ProcessInstanceModificationActivateInstruction());
+
+  @Deprecated(since = "8.1.3")
   private final ArrayProperty<LongValue> activatedElementInstanceKeys =
       new ArrayProperty<>("activatedElementInstanceKeys", new LongValue());
 
@@ -80,6 +82,23 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
         .toList();
   }
 
+  @Override
+  public Set<Long> getAncestorScopeKeys() {
+    final Set<Long> activatedElementInstanceKeys =
+        this.activatedElementInstanceKeys.stream()
+            .map(LongValue::getValue)
+            .collect(Collectors.toSet());
+    // For backwards compatibility's sake we have to add the ancestor scope keys of all activate
+    // instructions, as from version 8.1.3 on the activatedElementInstanceKeys property is no longer
+    // filled.
+    activatedElementInstanceKeys.addAll(
+        getActivateInstructions().stream()
+            .map(ProcessInstanceModificationActivateInstructionValue::getAncestorScopeKeys)
+            .flatMap(Set::stream)
+            .collect(Collectors.toSet()));
+    return activatedElementInstanceKeys;
+  }
+
   /** Returns true if this record has terminate instructions, otherwise false. */
   @JsonIgnore
   public boolean hasTerminateInstructions() {
@@ -101,17 +120,6 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
   public ProcessInstanceModificationRecord addActivateInstruction(
       final ProcessInstanceModificationActivateInstruction activateInstruction) {
     activateInstructionsProperty.add().copy(activateInstruction);
-    return this;
-  }
-
-  public Set<Long> getActivatedElementInstanceKeys() {
-    return activatedElementInstanceKeys.stream()
-        .map(LongValue::getValue)
-        .collect(Collectors.toSet());
-  }
-
-  public ProcessInstanceModificationRecord addActivatedElementInstanceKey(final long key) {
-    activatedElementInstanceKeys.add().setValue(key);
     return this;
   }
 

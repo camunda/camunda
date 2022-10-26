@@ -111,7 +111,6 @@ public class ZeebeJobWorkerElementValidationTest {
   private static Stream<JobWorkerElementBuilder> jobWorkerElementBuilderProvider() {
     return Stream.of(
         JobWorkerElementBuilder.of("serviceTask", AbstractFlowNodeBuilder::serviceTask),
-        JobWorkerElementBuilder.of("scriptTask", AbstractFlowNodeBuilder::scriptTask),
         JobWorkerElementBuilder.of("sendTask", AbstractFlowNodeBuilder::sendTask),
         JobWorkerElementBuilder.of(
             "message end event",

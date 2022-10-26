@@ -445,6 +445,7 @@ public final class S3BackupStore implements BackupStore {
             .build());
 
     builder.overrideConfiguration(cfg -> cfg.retryPolicy(RetryMode.ADAPTIVE));
+    builder.forcePathStyle(config.forcePathStyleAccess());
     config.endpoint().ifPresent(endpoint -> builder.endpointOverride(URI.create(endpoint)));
     config.region().ifPresent(region -> builder.region(Region.of(region)));
     config

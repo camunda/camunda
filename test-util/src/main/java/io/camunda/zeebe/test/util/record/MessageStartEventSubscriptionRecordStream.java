@@ -26,7 +26,8 @@ public final class MessageStartEventSubscriptionRecordStream
     return new MessageStartEventSubscriptionRecordStream((wrappedStream));
   }
 
-  public MessageStartEventSubscriptionRecordStream withWorkfloKey(final long processDefinitionKey) {
+  public MessageStartEventSubscriptionRecordStream withProcessDefinitionKey(
+      final long processDefinitionKey) {
     return valueFilter(v -> v.getProcessDefinitionKey() == processDefinitionKey);
   }
 

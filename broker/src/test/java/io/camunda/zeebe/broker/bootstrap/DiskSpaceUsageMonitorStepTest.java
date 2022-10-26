@@ -15,7 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitorActor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -31,7 +31,7 @@ class DiskSpaceUsageMonitorStepTest {
 
   private BrokerStartupContext mockBrokerStartupContext;
   private ActorSchedulingService mockActorSchedulingService;
-  private DiskSpaceUsageMonitor mockDiskSpaceUsageMonitor;
+  private DiskSpaceUsageMonitorActor mockDiskSpaceUsageMonitor;
 
   private ActorFuture<BrokerStartupContext> future;
 
@@ -41,7 +41,7 @@ class DiskSpaceUsageMonitorStepTest {
   void setUp() {
     mockBrokerStartupContext = mock(BrokerStartupContext.class);
     mockActorSchedulingService = mock(ActorSchedulingService.class);
-    mockDiskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
+    mockDiskSpaceUsageMonitor = mock(DiskSpaceUsageMonitorActor.class);
 
     when(mockBrokerStartupContext.getBrokerConfiguration()).thenReturn(TEST_BROKER_CONFIG);
     when(mockBrokerStartupContext.getConcurrencyControl()).thenReturn(CONCURRENCY_CONTROL);
@@ -73,7 +73,7 @@ class DiskSpaceUsageMonitorStepTest {
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
 
     // then
-    final var argumentCaptor = ArgumentCaptor.forClass(DiskSpaceUsageMonitor.class);
+    final var argumentCaptor = ArgumentCaptor.forClass(DiskSpaceUsageMonitorActor.class);
     verify(mockBrokerStartupContext).setDiskSpaceUsageMonitor(argumentCaptor.capture());
     verify(mockActorSchedulingService).submitActor(argumentCaptor.getValue());
   }

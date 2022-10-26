@@ -3,18 +3,18 @@ module github.com/camunda/zeebe/clients/go/v8
 go 1.17
 
 require (
-	github.com/docker/docker v20.10.19+incompatible
+	github.com/docker/docker v20.10.21+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.9
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/spf13/cobra v1.6.0
-	github.com/stretchr/testify v1.8.0
-	github.com/testcontainers/testcontainers-go v0.14.0
+	github.com/spf13/cobra v1.6.1
+	github.com/stretchr/testify v1.8.1
+	github.com/testcontainers/testcontainers-go v0.15.0
 	golang.org/x/net v0.0.0-20220622184535-263ec571b305
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
-	google.golang.org/grpc v1.50.0
+	google.golang.org/grpc v1.50.1
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -35,7 +35,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
-	github.com/kr/pretty v0.3.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/moby/sys/mount v0.3.3 // indirect
 	github.com/moby/sys/mountinfo v0.6.2 // indirect

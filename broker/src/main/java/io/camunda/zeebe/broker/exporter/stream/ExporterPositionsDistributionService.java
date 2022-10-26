@@ -9,13 +9,18 @@ package io.camunda.zeebe.broker.exporter.stream;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
 
 public class ExporterPositionsDistributionService implements AutoCloseable {
 
+  private static final Logger PERIODIC_LOGGER =
+      new ThrottledLogger(Loggers.EXPORTER_LOGGER, Duration.ofSeconds(60));
   private final PartitionMessagingService partitionMessagingService;
   private final String exporterPositionsTopic;
   private final BiConsumer<String, Long> exporterPositionConsumer;
@@ -41,7 +46,8 @@ public class ExporterPositionsDistributionService implements AutoCloseable {
 
     final var exporterPositions = exportPositionsMessage.getExporterPositions();
 
-    Loggers.EXPORTER_LOGGER.debug("Received new exporter state {}", exporterPositions);
+    Loggers.EXPORTER_LOGGER.trace("Received new exporter state {}", exporterPositions);
+    PERIODIC_LOGGER.debug("Current exporter state {}", exporterPositions);
 
     exporterPositions.forEach(exporterPositionConsumer);
   }

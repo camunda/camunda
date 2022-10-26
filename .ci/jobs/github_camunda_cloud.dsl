@@ -30,7 +30,7 @@ organizationFolder('camunda-cloud') {
 
                 // Disable sending Github status notifications in non-prod envs.
                 if (ENVIRONMENT != 'prod') {
-                    notificationsSkip()
+                    githubSkipNotifications()
                 }
             }
         }

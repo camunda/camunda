@@ -476,4 +476,47 @@ public final class TerminateEndEventTest {
                 BpmnElementType.END_EVENT, "end_after_C", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.PROCESS, PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
+
+  @Test
+  public void shouldCompleteProcessWhenWaitingAtParallelGateway() {
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .parallelGateway("fork")
+                .parallelGateway("join")
+                .moveToNode("fork")
+                .serviceTask("A", s -> s.zeebeJobType("type"))
+                .boundaryEvent()
+                .error("code")
+                .endEvent()
+                .terminate()
+                .moveToNode("A")
+                .connectTo("join")
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey =
+        ENGINE_RULE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE_RULE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("type")
+        .withErrorCode("code")
+        .throwError();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(record -> record.getValue().getBpmnElementType(), Record::getIntent)
+        .describedAs(
+            "Expect to terminate all element instances when reaching the terminate end event")
+        .containsSubsequence(
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
 }

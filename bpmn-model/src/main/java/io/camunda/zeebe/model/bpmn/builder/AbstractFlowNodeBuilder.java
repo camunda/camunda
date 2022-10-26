@@ -153,7 +153,7 @@ public abstract class AbstractFlowNodeBuilder<
     final BpmnShape targetBpmnShape = createBpmnShape(target);
     setCoordinates(targetBpmnShape);
     connectTarget(target);
-    resizeSubProcess(targetBpmnShape);
+    resizeBpmnShape(targetBpmnShape);
     return target;
   }
 

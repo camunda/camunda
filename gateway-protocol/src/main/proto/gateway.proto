@@ -273,6 +273,12 @@ message FailJobRequest {
   string errorMessage = 3;
   // the backoff timeout (in ms) for the next retry
   int64 retryBackOff = 4;
+  // JSON document that will instantiate the variables at the local scope of the
+  // job's associated task; it must be a JSON object, as variables will be mapped in a
+  // key-value fashion. e.g. { "a": 1, "b": 2 } will create two variables, named "a" and
+  // "b" respectively, with their associated values. [{ "a": 1, "b": 2 }] would not be a
+  // valid argument, as the root of the JSON document is an array and not an object.
+  string variables = 5;
 }
 
 message FailJobResponse {

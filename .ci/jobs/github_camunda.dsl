@@ -29,7 +29,7 @@ organizationFolder('camunda') {
                 }
 
                 // Disable sending Github status notifications as GHA CI is default
-                notificationsSkip()
+                githubSkipNotifications()
             }
         }
     }

@@ -28,6 +28,11 @@ public final class BrokerFailJobRequest extends BrokerExecuteCommand<JobRecord> 
     return this;
   }
 
+  public BrokerFailJobRequest setVariables(final DirectBuffer variables) {
+    requestDto.setVariables(variables);
+    return this;
+  }
+
   @Override
   public JobRecord getRequestWriter() {
     return requestDto;

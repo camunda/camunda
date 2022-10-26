@@ -19,6 +19,7 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.LinkEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ThrowEvent;
@@ -137,6 +138,36 @@ public abstract class AbstractThrowEventBuilder<
     return myself;
   }
 
+  /**
+   * Creates an escalation event definition with an unique id and returns a builder for the
+   * escalation event definition.
+   *
+   * @return the escalation event definition builder object
+   */
+  public EscalationEventDefinitionBuilder escalationEventDefinition(final String id) {
+    final EscalationEventDefinition escalationEventDefinition =
+        createEmptyEscalationEventDefinition();
+    if (id != null) {
+      escalationEventDefinition.setId(id);
+    }
+
+    element.getEventDefinitions().add(escalationEventDefinition);
+    return new EscalationEventDefinitionBuilder(modelInstance, escalationEventDefinition);
+  }
+
+  /**
+   * Creates an escalation event definition and returns a builder for the escalation event
+   * definition.
+   *
+   * @return the escalation event definition builder object
+   */
+  public EscalationEventDefinitionBuilder escalationEventDefinition() {
+    final EscalationEventDefinition escalationEventDefinition =
+        createEmptyEscalationEventDefinition();
+    element.getEventDefinitions().add(escalationEventDefinition);
+    return new EscalationEventDefinitionBuilder(modelInstance, escalationEventDefinition);
+  }
+
   public CompensateEventDefinitionBuilder compensateEventDefinition() {
     return compensateEventDefinition(null);
   }
@@ -150,6 +181,44 @@ public abstract class AbstractThrowEventBuilder<
 
     element.getEventDefinitions().add(eventDefinition);
     return new CompensateEventDefinitionBuilder(modelInstance, eventDefinition);
+  }
+
+  /**
+   * Sets a link event definition for the given link name.
+   *
+   * @param linkName the name of the link
+   * @return the builder object
+   */
+  public B link(final String linkName) {
+    linkEventDefinition().name(linkName);
+    return myself;
+  }
+
+  /**
+   * Creates an empty link event definition with a unique id and returns a builder for the link
+   * event definition.
+   *
+   * @return the link event definition builder object
+   */
+  public LinkEventDefinitionBuilder linkEventDefinition() {
+    return linkEventDefinition(null);
+  }
+
+  /**
+   * Creates an empty link event definition with the given id and returns a builder for the link
+   * event definition.
+   *
+   * @param id the id of the link event definition
+   * @return the link event definition builder object
+   */
+  public LinkEventDefinitionBuilder linkEventDefinition(final String id) {
+    final LinkEventDefinition eventDefinition = createInstance(LinkEventDefinition.class);
+    if (id != null) {
+      eventDefinition.setId(id);
+    }
+
+    element.getEventDefinitions().add(eventDefinition);
+    return new LinkEventDefinitionBuilder(modelInstance, eventDefinition);
   }
 
   @Override

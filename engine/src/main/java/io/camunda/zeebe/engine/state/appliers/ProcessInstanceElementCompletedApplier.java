@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -63,6 +64,11 @@ final class ProcessInstanceElementCompletedApplier
 
     final var flowScopeElementType = flowScopeInstance.getValue().getBpmnElementType();
     manageMultiInstance(flowScopeInstance, flowScopeElementType);
+
+    if (isTerminateEndEvent(value)) {
+      flowScopeInstance.resetActiveSequenceFlows();
+      elementInstanceState.updateInstance(flowScopeInstance);
+    }
   }
 
   private boolean isChildProcess(
@@ -96,5 +102,17 @@ final class ProcessInstanceElementCompletedApplier
       flowScopeInstance.incrementNumberOfCompletedElementInstances();
       elementInstanceState.updateInstance(flowScopeInstance);
     }
+  }
+
+  private boolean isTerminateEndEvent(final ProcessInstanceRecord value) {
+    if (value.getBpmnElementType().equals(BpmnElementType.END_EVENT)) {
+      final var element =
+          processState.getFlowElement(
+              value.getProcessDefinitionKey(),
+              value.getElementIdBuffer(),
+              ExecutableEndEvent.class);
+      return element.isTerminateEndEvent();
+    }
+    return false;
   }
 }

@@ -12,11 +12,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 @JsonIgnoreProperties({
@@ -34,10 +37,14 @@ public final class ProcessInstanceModificationActivateInstruction extends Object
           new ArrayProperty<>(
               "variableInstructions", new ProcessInstanceModificationVariableInstruction());
 
+  private final ArrayProperty<LongValue> ancestorScopeKeysProperty =
+      new ArrayProperty<>("ancestorScopeKeys", new LongValue());
+
   public ProcessInstanceModificationActivateInstruction() {
     declareProperty(elementIdProperty)
         .declareProperty(ancestorScopeKeyProperty)
-        .declareProperty(variableInstructionsProperty);
+        .declareProperty(variableInstructionsProperty)
+        .declareProperty(ancestorScopeKeysProperty);
   }
 
   @Override
@@ -68,6 +75,11 @@ public final class ProcessInstanceModificationActivateInstruction extends Object
         .toList();
   }
 
+  @Override
+  public Set<Long> getAncestorScopeKeys() {
+    return ancestorScopeKeysProperty.stream().map(LongValue::getValue).collect(Collectors.toSet());
+  }
+
   public ProcessInstanceModificationActivateInstruction setAncestorScopeKey(
       final long ancestorScopeKey) {
     ancestorScopeKeyProperty.setValue(ancestorScopeKey);
@@ -91,6 +103,12 @@ public final class ProcessInstanceModificationActivateInstruction extends Object
     return this;
   }
 
+  public ProcessInstanceModificationActivateInstruction addAncestorScopeKeys(
+      final Set<Long> flowScopeKeys) {
+    flowScopeKeys.forEach(key -> ancestorScopeKeysProperty.add().setValue(key));
+    return this;
+  }
+
   @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
     return elementIdProperty.getValue();
@@ -102,6 +120,7 @@ public final class ProcessInstanceModificationActivateInstruction extends Object
     object.getVariableInstructions().stream()
         .map(ProcessInstanceModificationVariableInstruction.class::cast)
         .forEach(this::addVariableInstruction);
+    addAncestorScopeKeys(object.getAncestorScopeKeys());
   }
 
   /** hashCode relies on implementation provided by {@link ObjectValue#hashCode()} */

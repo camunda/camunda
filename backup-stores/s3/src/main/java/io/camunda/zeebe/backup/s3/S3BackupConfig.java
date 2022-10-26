@@ -22,27 +22,33 @@ import java.util.Optional;
  *     from the environment.
  * @param apiCallTimeout Used as the overall api call timeout for the AWS SDK. API calls that exceed
  *     the timeout may fail and result in failed backups.
+ * @param forcePathStyleAccess Forces the AWS SDK to always use paths for accessing the bucket. Off
+ *     by default, which allows the AWS SDK to choose virtual-hosted-style bucket access.
  * @see <a
  *     href=https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment>
  *     Automatically determine the Region from the environment</a>
  * @see software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+ * @see <a
+ *     href=https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-bucket-intro.html>Differences
+ *     between path-style and virtual-hosted-style access</a>
  */
 public record S3BackupConfig(
     String bucketName,
     Optional<String> endpoint,
     Optional<String> region,
     Optional<Credentials> credentials,
-    Optional<Duration> apiCallTimeout) {
+    Optional<Duration> apiCallTimeout,
+    boolean forcePathStyleAccess) {
 
   /**
    * Creates a config without setting the region and credentials.
    *
    * @param bucketName Name of the backup that will be used for storing backups
    * @see S3BackupConfig#S3BackupConfig(String bucketName, Optional endpoint, Optional region,
-   *     Optional credentials, Optional apiCallTimeout)
+   *     Optional credentials, Optional apiCallTimeout, boolean forcePathStyleAccess)
    */
   public S3BackupConfig(final String bucketName) {
-    this(bucketName, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+    this(bucketName, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), false);
   }
 
   public static S3BackupConfig from(
@@ -51,7 +57,8 @@ public record S3BackupConfig(
       final String region,
       final String accessKey,
       final String secretKey,
-      final Duration apiCallTimeoutMs) {
+      final Duration apiCallTimeoutMs,
+      final boolean forcePathStyleAccess) {
     Credentials credentials = null;
     if (accessKey != null && secretKey != null) {
       credentials = new Credentials(accessKey, secretKey);
@@ -61,7 +68,8 @@ public record S3BackupConfig(
         Optional.ofNullable(endpoint),
         Optional.ofNullable(region),
         Optional.ofNullable(credentials),
-        Optional.ofNullable(apiCallTimeoutMs));
+        Optional.ofNullable(apiCallTimeoutMs),
+        forcePathStyleAccess);
   }
 
   record Credentials(String accessKey, String secretKey) {

@@ -19,6 +19,7 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.Script;
 import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 
 /**
  * @author Sebastian Menski
@@ -56,6 +57,30 @@ public abstract class AbstractScriptTaskBuilder<B extends AbstractScriptTaskBuil
   public B scriptText(final String scriptText) {
     final Script script = createChild(Script.class);
     script.setTextContent(scriptText);
+    return myself;
+  }
+
+  /**
+   * Sets feel script text of the script task that is called
+   *
+   * @param expression the feel expression for the script task
+   * @return the builder object
+   */
+  public B zeebeExpression(final String expression) {
+    final ZeebeScript zeebeScript = getCreateSingleExtensionElement(ZeebeScript.class);
+    zeebeScript.setExpression(asZeebeExpression(expression));
+    return myself;
+  }
+
+  /**
+   * Sets the name of the result variable.
+   *
+   * @param resultVariable the name of the result variable
+   * @return the builder object
+   */
+  public B zeebeResultVariable(final String resultVariable) {
+    final ZeebeScript zeebeScript = getCreateSingleExtensionElement(ZeebeScript.class);
+    zeebeScript.setResultVariable(resultVariable);
     return myself;
   }
 }

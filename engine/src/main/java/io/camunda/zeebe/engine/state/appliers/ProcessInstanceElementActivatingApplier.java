@@ -91,8 +91,6 @@ final class ProcessInstanceElementActivatingApplier
       // (Tetris principle)
       elementInstanceState.decrementNumberOfTakenSequenceFlows(
           value.getFlowScopeKey(), gateway.getId());
-    } else {
-      return;
     }
   }
 

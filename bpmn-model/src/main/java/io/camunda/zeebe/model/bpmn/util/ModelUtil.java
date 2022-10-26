@@ -20,9 +20,15 @@ import static java.util.stream.Collectors.groupingBy;
 
 import io.camunda.zeebe.model.bpmn.instance.Activity;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.Error;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.Escalation;
+import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
+import io.camunda.zeebe.model.bpmn.instance.LinkEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Signal;
@@ -33,7 +39,11 @@ import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -44,7 +54,14 @@ public class ModelUtil {
 
   private static final List<Class<? extends EventDefinition>> NON_INTERRUPTING_EVENT_DEFINITIONS =
       Arrays.asList(
-          MessageEventDefinition.class, TimerEventDefinition.class, SignalEventDefinition.class);
+          MessageEventDefinition.class,
+          TimerEventDefinition.class,
+          SignalEventDefinition.class,
+          EscalationEventDefinition.class);
+
+  private static final List<Class<? extends Activity>>
+      ESCALATION_BOUNDARY_EVENT_SUPPORTED_ACTIVITIES =
+          Arrays.asList(SubProcess.class, CallActivity.class);
 
   public static List<EventDefinition> getEventDefinitionsForBoundaryEvents(final Activity element) {
     return element.getBoundaryEvents().stream()
@@ -69,6 +86,22 @@ public class ModelUtil {
         .collect(Collectors.toList());
   }
 
+  public static List<EventDefinition> getEventDefinitionsForLinkCatchEvents(
+      final ModelElementInstance element) {
+    return element.getChildElementsByType(IntermediateCatchEvent.class).stream()
+        .flatMap(i -> i.getEventDefinitions().stream())
+        .filter(e -> e instanceof LinkEventDefinition)
+        .collect(Collectors.toList());
+  }
+
+  public static List<EventDefinition> getEventDefinitionsForLinkThrowEvents(
+      final ModelElementInstance element) {
+    return element.getChildElementsByType(IntermediateThrowEvent.class).stream()
+        .flatMap(i -> i.getEventDefinitions().stream())
+        .filter(e -> e instanceof LinkEventDefinition)
+        .collect(Collectors.toList());
+  }
+
   public static List<String> getDuplicateMessageNames(
       final Stream<MessageEventDefinition> eventDefinitions) {
 
@@ -89,6 +122,7 @@ public class ModelUtil {
     final List<EventDefinition> definitions = getEventDefinitionsForBoundaryEvents(activity);
 
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
+    verifyNoDuplicatedEscalationHandler(definitions, errorCollector);
   }
 
   public static void verifyNoDuplicateSignalStartEvents(
@@ -99,13 +133,50 @@ public class ModelUtil {
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
   }
 
+  public static void verifyLinkIntermediateEvents(
+      final ModelElementInstance element, final Consumer<String> errorCollector) {
+
+    // get link catch events definition
+    final List<EventDefinition> linkCatchEvents = getEventDefinitionsForLinkCatchEvents(element);
+
+    verifyNoDuplicatedEventDefinition(linkCatchEvents, errorCollector);
+
+    // get link throw events definition
+    final List<EventDefinition> linkThrowEvents = getEventDefinitionsForLinkThrowEvents(element);
+
+    // get link catch events names
+    final Set<String> linkCatchList =
+        getEventDefinition(linkCatchEvents, LinkEventDefinition.class)
+            .filter(def -> def.getName() != null && !def.getName().isEmpty())
+            .map(LinkEventDefinition::getName)
+            .collect(Collectors.toSet());
+
+    // get link throw events names
+    final Set<String> linkThrowList =
+        getEventDefinition(linkThrowEvents, LinkEventDefinition.class)
+            .filter(def -> def.getName() != null && !def.getName().isEmpty())
+            .map(LinkEventDefinition::getName)
+            .collect(Collectors.toSet());
+
+    linkThrowList.forEach(
+        item -> {
+          if (!linkCatchList.contains(item)) {
+            errorCollector.accept(noPairedLinkNames(item));
+          }
+        });
+  }
+
   public static void verifyEventDefinition(
       final BoundaryEvent boundaryEvent, final Consumer<String> errorCollector) {
     boundaryEvent
         .getEventDefinitions()
         .forEach(
-            definition ->
-                verifyEventDefinition(definition, boundaryEvent.cancelActivity(), errorCollector));
+            definition -> {
+              if (definition instanceof EscalationEventDefinition) {
+                verifyEscalationBoundaryEvent(boundaryEvent, errorCollector);
+              }
+              verifyEventDefinition(definition, boundaryEvent.cancelActivity(), errorCollector);
+            });
   }
 
   public static void verifyEventDefinition(
@@ -124,6 +195,7 @@ public class ModelUtil {
     final List<EventDefinition> definitions = getEventDefinitionsForEventSubprocesses(element);
 
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
+    verifyNoDuplicatedEscalationHandler(definitions, errorCollector);
   }
 
   public static void verifyNoDuplicatedEventDefinition(
@@ -158,6 +230,63 @@ public class ModelUtil {
             .map(Signal::getName);
 
     getDuplicatedEntries(signalNames).map(ModelUtil::duplicatedSignalNames).forEach(errorCollector);
+
+    final Stream<String> linkNames =
+        getEventDefinition(definitions, LinkEventDefinition.class)
+            .filter(def -> def.getName() != null && !def.getName().isEmpty())
+            .map(LinkEventDefinition::getName);
+
+    getDuplicatedEntries(linkNames).map(ModelUtil::duplicatedLinkNames).forEach(errorCollector);
+  }
+
+  private static void verifyNoDuplicatedEscalationHandler(
+      final List<EventDefinition> definitions, final Consumer<String> errorCollector) {
+    final List<Escalation> escalations =
+        getEventDefinition(definitions, EscalationEventDefinition.class)
+            .map(EscalationEventDefinition::getEscalation)
+            .collect(Collectors.toList());
+
+    if (escalations.isEmpty()) {
+      return;
+    }
+
+    final long definitionWithoutEscalationCount =
+        escalations.stream().filter(Objects::isNull).count();
+
+    if (definitionWithoutEscalationCount > 1) {
+      errorCollector.accept(
+          "The same scope can not contain more than one escalation catch event without"
+              + " escalation code. An escalation catch event without escalation code catches"
+              + " all escalations.");
+    }
+
+    final Map<Optional<String>, Long> escalationCodeOccurrences =
+        escalations.stream()
+            .filter(Objects::nonNull)
+            .map(escalation -> Optional.ofNullable(escalation.getEscalationCode()))
+            .collect(groupingBy(escalationCode -> escalationCode, counting()));
+
+    if (definitionWithoutEscalationCount >= 1 && !escalationCodeOccurrences.isEmpty()) {
+      errorCollector.accept(
+          "The same scope can not contain an escalation catch event without escalation code "
+              + "and another one with escalation code. An escalation catch event without "
+              + "escalation code catches all escalations.");
+    }
+
+    escalationCodeOccurrences.forEach(
+        (escalationCode, occurrences) -> {
+          if (occurrences > 1) {
+            errorCollector.accept(
+                escalationCode.isPresent()
+                    ? String.format(
+                        "Multiple escalation catch events with the same escalation code '%s' are "
+                            + "not supported on the same scope.",
+                        escalationCode.get())
+                    : "The same scope can not contain more than one escalation catch event without"
+                        + " escalation code. An escalation catch event without escalation code catches"
+                        + " all escalations.");
+          }
+        });
   }
 
   public static <T extends EventDefinition> Stream<T> getEventDefinition(
@@ -187,6 +316,17 @@ public class ModelUtil {
         "Multiple signal event definitions with the same name '%s' are not allowed.", signalName);
   }
 
+  private static String duplicatedLinkNames(final String linkName) {
+    return String.format(
+        "Multiple intermediate catch link event definitions with the same name '%s' are not allowed.",
+        linkName);
+  }
+
+  private static String noPairedLinkNames(final String linkName) {
+    return String.format(
+        "Can't find an catch link event for the throw link event with the name '%s'.", linkName);
+  }
+
   private static void verifyEventDefinition(
       final EventDefinition definition,
       final boolean isInterrupting,
@@ -203,6 +343,15 @@ public class ModelUtil {
       if (timerEventDefinition.getTimeCycle() != null) {
         errorCollector.accept("Interrupting timer event with time cycle is not allowed.");
       }
+    }
+  }
+
+  private static void verifyEscalationBoundaryEvent(
+      final BoundaryEvent element, final Consumer<String> errorCollector) {
+    if (ESCALATION_BOUNDARY_EVENT_SUPPORTED_ACTIVITIES.stream()
+        .noneMatch(activity -> activity.isInstance(element.getAttachedTo()))) {
+      errorCollector.accept(
+          "An escalation boundary event should only be attached to a subprocess, or a call activity.");
     }
   }
 }
