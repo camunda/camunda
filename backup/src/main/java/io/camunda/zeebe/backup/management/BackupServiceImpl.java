@@ -14,10 +14,10 @@ import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -160,7 +160,7 @@ final class BackupServiceImpl {
 
   ActorFuture<Optional<BackupStatus>> getBackupStatus(
       final int partitionId, final long checkpointId, final ConcurrencyControl executor) {
-    final var future = new CompletableActorFuture<Optional<BackupStatus>>();
+    final ActorFuture<Optional<BackupStatus>> future = executor.createFuture();
     executor.run(
         () ->
             backupStore
@@ -215,5 +215,42 @@ final class BackupServiceImpl {
               LOG.warn("Failed to mark backup {} as failed", backupStatus.id(), failed);
               return null;
             });
+  }
+
+  ActorFuture<Void> deleteBackup(
+      final int partitionId, final long checkpointId, final ConcurrencyControl executor) {
+    final ActorFuture<Void> deleteCompleted = executor.createFuture();
+    executor.run(
+        () ->
+            backupStore
+                .list(
+                    new BackupIdentifierWildcardImpl(
+                        Optional.empty(), Optional.of(partitionId), Optional.of(checkpointId)))
+                .thenCompose(
+                    backups ->
+                        CompletableFuture.allOf(
+                            backups.stream()
+                                .map(this::deleteBackupIfExists)
+                                .toArray(CompletableFuture[]::new)))
+                .thenAccept(ignore -> deleteCompleted.complete(null))
+                .exceptionally(
+                    error -> {
+                      LOG.warn("Failed to deleted backups with id {}.", checkpointId, error);
+                      deleteCompleted.completeExceptionally(error);
+                      return null;
+                    }));
+    return deleteCompleted;
+  }
+
+  private CompletableFuture<Void> deleteBackupIfExists(final BackupStatus backupStatus) {
+    LOG.debug("Deleting backup {}", backupStatus.id());
+    if (backupStatus.statusCode() == BackupStatusCode.IN_PROGRESS) {
+      // In progress backups cannot be deleted. So first mark it as failed
+      return backupStore
+          .markFailed(backupStatus.id(), "The backup is going to be deleted.")
+          .thenCompose(ignore -> backupStore.delete(backupStatus.id()));
+    } else {
+      return backupStore.delete(backupStatus.id());
+    }
   }
 }

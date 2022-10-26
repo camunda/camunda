@@ -137,9 +137,7 @@ public final class BackupService extends Actor implements BackupManager {
   public ActorFuture<Void> deleteBackup(final long checkpointId) {
     final var operationMetrics = metrics.startDeleting();
 
-    final CompletableActorFuture<Void> backupDeleted =
-        CompletableActorFuture.completedExceptionally(
-            new UnsupportedOperationException("Not implemented"));
+    final var backupDeleted = internalBackupManager.deleteBackup(partitionId, checkpointId, actor);
 
     backupDeleted.onComplete(operationMetrics::complete);
 
