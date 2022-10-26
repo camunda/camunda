@@ -36,6 +36,54 @@
           "justification": "Ignore Enum order for RejectionType as ordinal() is not used",
           "code": "java.field.enumConstantOrderChanged",
           "match": "io.camunda.zeebe.protocol.record.RejectionType"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue.Builder::addActivatedElementInstanceKey(java.lang.Long)",
+          "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue.Builder::addActivatedElementInstanceKeys(java.lang.Long[])",
+          "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue.Builder::addAllActivatedElementInstanceKeys(java.lang.Iterable<? extends java.lang.Long>)",
+          "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue.Builder::withActivatedElementInstanceKeys(java.lang.Iterable<? extends java.lang.Long>)",
+          "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.Set<java.lang.Long> io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue::getActivatedElementInstanceKeys()",
+          "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue::withActivatedElementInstanceKeys(java.lang.Iterable<? extends java.lang.Long>)",
+          "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue::withActivatedElementInstanceKeys(java.lang.Long[])",
+          "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.Set<java.lang.Long> io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue::getActivatedElementInstanceKeys()",
+          "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
         }
       ]
     }
