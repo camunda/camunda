@@ -10,25 +10,27 @@ package io.camunda.zeebe.gateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.shared.ActorClockConfiguration;
+import io.camunda.zeebe.util.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 @Component
-final class ActorSchedulerComponent {
+@VisibleForTesting
+public final class ActorSchedulerComponent {
 
   private final GatewayCfg config;
   private final ActorClockConfiguration clockConfiguration;
 
   @Autowired
-  ActorSchedulerComponent(
+  public ActorSchedulerComponent(
       final GatewayCfg config, final ActorClockConfiguration clockConfiguration) {
     this.config = config;
     this.clockConfiguration = clockConfiguration;
   }
 
   @Bean(destroyMethod = "close")
-  ActorScheduler actorScheduler() {
+  public ActorScheduler actorScheduler() {
     return ActorScheduler.newActorScheduler()
         .setCpuBoundActorThreadCount(config.getThreads().getManagementThreads())
         .setIoBoundActorThreadCount(0)
