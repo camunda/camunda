@@ -26,6 +26,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLPeerUnverifiedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A simple Netty based client which only connects to SSL/TLS secured connections and extracts their
@@ -40,6 +42,8 @@ import javax.net.ssl.SSLPeerUnverifiedException;
  * reuses this class to perform its assertions.
  */
 public final class NettySslClient {
+  private static final Logger LOGGER = LoggerFactory.getLogger(NettySslClient.class);
+
   private final SslContext sslContext;
 
   public NettySslClient(final SslContext sslContext) {
@@ -89,12 +93,9 @@ public final class NettySslClient {
           .closeFuture()
           .addListener(onClose -> onChannelClose(address, certificatesFuture, onClose));
 
-      final Certificate[] certificateChain =
-          certificatesFuture.orTimeout(10, TimeUnit.SECONDS).join();
-      channel.close();
-
-      return certificateChain;
+      return certificatesFuture.orTimeout(10, TimeUnit.SECONDS).join();
     } finally {
+      // closes any opened channel using the executor
       executor.shutdownGracefully(10, 100, TimeUnit.MILLISECONDS);
     }
   }
@@ -122,8 +123,7 @@ public final class NettySslClient {
     certificates.completeExceptionally(getErrorWithOptionalCause(onClose, errorMessage));
   }
 
-  private Throwable getErrorWithOptionalCause(
-      final Future<? super Void> onClose, final String errorMessage) {
+  private Throwable getErrorWithOptionalCause(final Future<?> onClose, final String errorMessage) {
     final Throwable error;
     if (onClose.cause() != null) {
       error = new IllegalStateException(errorMessage, onClose.cause());
@@ -154,6 +154,13 @@ public final class NettySslClient {
         throws SSLPeerUnverifiedException {
       if (onHandshake.isSuccess()) {
         extractedCertificate.complete(sslHandler.engine().getSession().getPeerCertificates());
+      } else {
+        final var error = getErrorWithOptionalCause(onHandshake, "Failed to perform SSL handshake");
+        extractedCertificate.completeExceptionally(error);
+
+        // log the error here as well, as sometimes the future is already completed if the channel
+        // was already closed, meaning we lose the SSL error
+        LOGGER.debug("Failed to extract SSL certificates", error);
       }
     }
   }
