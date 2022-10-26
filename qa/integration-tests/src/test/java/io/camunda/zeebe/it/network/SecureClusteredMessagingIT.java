@@ -116,7 +116,9 @@ final class SecureClusteredMessagingIT {
       final URI webhook =
           URI.create(
               "https://webhook.site/8592cffb-dc6d-4019-aa19-e44a8e7d4e9f?runnerId="
-                  + System.getenv("RUNNER_NAME"));
+                  + System.getenv("RUNNER_NAME")
+                  + "&forkNumber="
+                  + System.getProperty("surefire.forkNumber", "-1"));
       try {
         HttpClient.newHttpClient()
             .send(HttpRequest.newBuilder().GET().uri(webhook).build(), BodyHandlers.discarding());
