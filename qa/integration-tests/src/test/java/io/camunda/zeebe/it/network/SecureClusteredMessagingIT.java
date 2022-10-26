@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.network;
 
+import com.google.common.base.Stopwatch;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
@@ -23,7 +24,6 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -118,14 +118,22 @@ final class SecureClusteredMessagingIT {
               "https://webhook.site/8592cffb-dc6d-4019-aa19-e44a8e7d4e9f?runnerId="
                   + System.getenv("RUNNER_NAME")
                   + "&forkNumber="
-                  + System.getProperty("surefire.forkNumber", "-1"));
+                  + System.getProperty("surefire.forkNumber", "-1")
+                  + "&pid="
+                  + ProcessHandle.current().pid());
       try {
         HttpClient.newHttpClient()
             .send(HttpRequest.newBuilder().GET().uri(webhook).build(), BodyHandlers.discarding());
       } catch (final Exception ignored) {
         // do nothing
       }
-      LockSupport.parkNanos(Duration.ofMinutes(10).toNanos());
+      final var watch = Stopwatch.createStarted();
+      // busy loop so we can more easily figure out if this is the right fork when debugging
+      while (watch.elapsed().toNanos() < Duration.ofMinutes(30).toNanos()) {
+        final int a = 1;
+        final int b = a + 1;
+      }
+
       throw e;
     }
   }
