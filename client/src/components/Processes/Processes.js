@@ -20,6 +20,7 @@ import KpiSummary from './KpiSummary';
 import ConfigureProcessModal from './ConfigureProcessModal';
 import KpiTooltip from './KpiTooltip';
 import {loadProcesses, updateProcess, loadManagementDashboard} from './service';
+import CreateDashboardModal from './CreateDashboardModal';
 
 import './Processes.scss';
 
@@ -29,6 +30,7 @@ export function Processes({mightFail, user}) {
   const [editProcessConfig, setEditProcessConfig] = useState();
   const [optimizeProfile, setOptimizeProfile] = useState();
   const [dashboard, setDashboard] = useState();
+  const [linkToCreateDashboard, setLinkToCreateDashboard] = useState();
 
   useEffect(() => {
     mightFail(loadManagementDashboard(), setDashboard, showError);
@@ -121,7 +123,15 @@ export function Processes({mightFail, user}) {
         sorting={sorting}
         onChange={loadProcessesList}
         data={processes?.map(
-          ({processDefinitionKey, processDefinitionName, owner, digest, kpis, linkToDashboard}) => {
+          ({
+            processDefinitionKey,
+            processDefinitionName,
+            owner,
+            digest,
+            kpis,
+            linkToDashboard,
+            hasDefaultDashboard,
+          }) => {
             const kpisWithData = kpis.filter(({value, target}) => value && target);
             const timeKpis = kpisWithData?.filter((kpi) => kpi.type === 'time');
             const qualityKpis = kpisWithData?.filter((kpi) => kpi.type === 'quality');
@@ -139,11 +149,23 @@ export function Processes({mightFail, user}) {
             ];
 
             if (isEditor) {
-              meta.push(
-                <Link className="processHoverBtn" to={linkToDashboard} target="_blank">
-                  {t('common.view')} <Icon type="jump" />
-                </Link>
-              );
+              if (!hasDefaultDashboard) {
+                meta.push(
+                  <Button
+                    link
+                    className="processHoverBtn"
+                    onClick={() => setLinkToCreateDashboard(linkToDashboard)}
+                  >
+                    {t('common.view')} <Icon type="jump" />
+                  </Button>
+                );
+              } else {
+                meta.push(
+                  <Link className="processHoverBtn" to={linkToDashboard} target="_blank">
+                    {t('common.view')} <Icon type="jump" />
+                  </Link>
+                );
+              }
             }
 
             if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
@@ -189,6 +211,12 @@ export function Processes({mightFail, user}) {
               showError
             );
           }}
+        />
+      )}
+      {linkToCreateDashboard && (
+        <CreateDashboardModal
+          linkToDashboard={linkToCreateDashboard}
+          onClose={() => setLinkToCreateDashboard()}
         />
       )}
     </div>

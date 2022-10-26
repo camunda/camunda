@@ -182,6 +182,8 @@
     "ownerRemoveWarning": "The '{owner}' Owner will be removed from the process",
     "processOverview": "Processes Overview",
     "configureProcess": "Configure Process",
+    "createDefaultDashboard": "Create New Default Dashboard",
+    "createDashboardMessage": "There is no dashboard for this process yet. Would you like Optimize to automatically create a dashboard based on a process template for you?",
     "emailDigest": "Email Digest",
     "digestInfo": "The process digest sends periodic emails with the existing KPI status to the Process Owner. By default, the digest will be sent every Monday at 9:00 AM (To change the default send time, please contact your administrator).",
     "digestConfigured": "Your process digest has been successfully configured. An email has been sent to {name}.",
