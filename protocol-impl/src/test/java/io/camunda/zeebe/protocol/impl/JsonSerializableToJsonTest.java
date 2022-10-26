@@ -842,7 +842,7 @@ final class JsonSerializableToJsonTest {
                   .setParentElementInstanceKey(22)
                   .setBpmnEventType(BpmnEventType.UNSPECIFIED);
             },
-        "{'bpmnProcessId':'test-process','version':12,'processDefinitionKey':13,'processInstanceKey':1234,'elementId':'activity','flowScopeKey':123,'bpmnElementType':'SERVICE_TASK','parentProcessInstanceKey':11,'parentElementInstanceKey':22,'eventType':'UNSPECIFIED'}"
+        "{'bpmnProcessId':'test-process','version':12,'processDefinitionKey':13,'processInstanceKey':1234,'elementId':'activity','flowScopeKey':123,'bpmnElementType':'SERVICE_TASK','parentProcessInstanceKey':11,'parentElementInstanceKey':22,'bpmnEventType':'UNSPECIFIED'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -851,7 +851,7 @@ final class JsonSerializableToJsonTest {
       {
         "Empty ProcessInstanceRecord",
         (Supplier<UnifiedRecordValue>) ProcessInstanceRecord::new,
-        "{'bpmnProcessId':'','version':-1,'processDefinitionKey':-1,'processInstanceKey':-1,'elementId':'','flowScopeKey':-1,'bpmnElementType':'UNSPECIFIED','parentProcessInstanceKey':-1,'parentElementInstanceKey':-1,'eventType':'UNSPECIFIED'}"
+        "{'bpmnProcessId':'','version':-1,'processDefinitionKey':-1,'processInstanceKey':-1,'elementId':'','flowScopeKey':-1,'bpmnElementType':'UNSPECIFIED','parentProcessInstanceKey':-1,'parentElementInstanceKey':-1,'bpmnEventType':'UNSPECIFIED'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
