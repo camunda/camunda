@@ -129,9 +129,16 @@ final class SecureClusteredMessagingIT {
       }
       final var watch = Stopwatch.createStarted();
       // busy loop so we can more easily figure out if this is the right fork when debugging
-      while (watch.elapsed().toNanos() < Duration.ofMinutes(30).toNanos()) {
+      while (watch.elapsed().toNanos() < Duration.ofHours(1).toNanos()) {
         final int a = 1;
         final int b = a + 1;
+        try {
+          SslAssert.assertThat(socketAddress)
+              .as("node %s is not secured correctly at address %s", nodeId, address)
+              .isSecuredBy(certificate);
+        } catch (final Throwable ignored) {
+          // do nothing
+        }
       }
 
       throw e;
