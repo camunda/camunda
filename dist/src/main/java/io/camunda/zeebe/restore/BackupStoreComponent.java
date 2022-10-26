@@ -27,7 +27,7 @@ final class BackupStoreComponent {
     this.brokerCfg = brokerCfg;
   }
 
-  @Bean(destroyMethod = "close")
+  @Bean(destroyMethod = "closeAsync")
   BackupStore backupStore() {
     return buildBackupStore(brokerCfg.getData().getBackup());
   }
