@@ -18,7 +18,7 @@ package io.camunda.zeebe.protocol.record.value;
 import java.util.Arrays;
 import java.util.Optional;
 
-public enum EventType {
+public enum BpmnEventType {
 
   // Default
   UNSPECIFIED(null),
@@ -36,7 +36,7 @@ public enum EventType {
 
   private final String eventTypeName;
 
-  EventType(final String eventTypeName) {
+  BpmnEventType(final String eventTypeName) {
     this.eventTypeName = eventTypeName;
   }
 
@@ -44,12 +44,13 @@ public enum EventType {
     return Optional.ofNullable(eventTypeName);
   }
 
-  public static EventType eventTypeFor(final String eventTypeName) {
+  public static BpmnEventType bpmnEventTypeFor(final String eventTypeName) {
     return Arrays.stream(values())
         .filter(
-            eventType ->
-                eventType.eventTypeName != null && eventType.eventTypeName.equals(eventTypeName))
+            bpmnEventType ->
+                bpmnEventType.eventTypeName != null
+                    && bpmnEventType.eventTypeName.equals(eventTypeName))
         .findFirst()
-        .orElseThrow(() -> new RuntimeException("Unsupported event of type " + eventTypeName));
+        .orElseThrow(() -> new RuntimeException("Unsupported BPMN event of type " + eventTypeName));
   }
 }

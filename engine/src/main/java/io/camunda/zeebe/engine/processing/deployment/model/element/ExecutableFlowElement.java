@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import org.agrona.DirectBuffer;
 
 public interface ExecutableFlowElement {
@@ -17,4 +18,6 @@ public interface ExecutableFlowElement {
   BpmnElementType getElementType();
 
   ExecutableFlowElement getFlowScope();
+
+  BpmnEventType getEventType();
 }

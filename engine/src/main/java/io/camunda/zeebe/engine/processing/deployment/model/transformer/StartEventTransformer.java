@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.Transf
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 
 public final class StartEventTransformer implements ModelElementTransformer<StartEvent> {
 
@@ -34,6 +35,16 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
         process.getElementById(element.getId(), ExecutableStartEvent.class);
 
     startEvent.setInterrupting(element.isInterrupting());
+
+    startEvent.setEventType(BpmnEventType.NONE);
+
+    if (startEvent.isMessage()) {
+      startEvent.setEventType(BpmnEventType.MESSAGE);
+    } else if (startEvent.isTimer()) {
+      startEvent.setEventType(BpmnEventType.TIMER);
+    } else if (startEvent.isError()) {
+      startEvent.setEventType(BpmnEventType.ERROR);
+    }
 
     if (element.getScope() instanceof FlowNode) {
       final FlowNode scope = (FlowNode) element.getScope();

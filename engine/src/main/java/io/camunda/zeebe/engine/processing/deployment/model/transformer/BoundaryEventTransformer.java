@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelE
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.Activity;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 
 public final class BoundaryEventTransformer implements ModelElementTransformer<BoundaryEvent> {
   @Override
@@ -26,6 +27,14 @@ public final class BoundaryEventTransformer implements ModelElementTransformer<B
     final ExecutableProcess process = context.getCurrentProcess();
     final ExecutableBoundaryEvent element =
         process.getElementById(event.getId(), ExecutableBoundaryEvent.class);
+
+    if (element.isMessage()) {
+      element.setEventType(BpmnEventType.MESSAGE);
+    } else if (element.isTimer()) {
+      element.setEventType(BpmnEventType.TIMER);
+    } else if (element.isError()) {
+      element.setEventType(BpmnEventType.ERROR);
+    }
 
     element.setInterrupting(event.cancelActivity());
 

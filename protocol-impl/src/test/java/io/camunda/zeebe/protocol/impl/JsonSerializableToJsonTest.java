@@ -49,8 +49,8 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
-import io.camunda.zeebe.protocol.record.value.EventType;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -840,7 +840,7 @@ final class JsonSerializableToJsonTest {
                   .setFlowScopeKey(flowScopeKey)
                   .setParentProcessInstanceKey(11)
                   .setParentElementInstanceKey(22)
-                  .setEventType(EventType.UNSPECIFIED);
+                  .setBpmnEventType(BpmnEventType.UNSPECIFIED);
             },
         "{'bpmnProcessId':'test-process','version':12,'processDefinitionKey':13,'processInstanceKey':1234,'elementId':'activity','flowScopeKey':123,'bpmnElementType':'SERVICE_TASK','parentProcessInstanceKey':11,'parentElementInstanceKey':22,'eventType':'UNSPECIFIED'}"
       },

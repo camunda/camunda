@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
-import io.camunda.zeebe.engine.processing.common.EventTypeHandle;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -24,11 +23,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.EventType;
 import io.camunda.zeebe.util.Either;
 import java.util.Arrays;
 import java.util.function.Function;
@@ -52,23 +49,19 @@ public final class BpmnStateTransitionBehavior {
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
 
-  private final ProcessState processState;
-
   public BpmnStateTransitionBehavior(
       final KeyGenerator keyGenerator,
       final BpmnStateBehavior stateBehavior,
       final ProcessEngineMetrics metrics,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookUp,
-      final Writers writers,
-      final ProcessState processState) {
+      final Writers writers) {
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
     this.metrics = metrics;
     this.processorLookUp = processorLookUp;
     stateWriter = writers.state();
     commandWriter = writers.command();
-    this.processState = processState;
   }
 
   /**
@@ -221,12 +214,8 @@ public final class BpmnStateTransitionBehavior {
       final BpmnElementContext context, final ProcessInstanceIntent transition) {
     final var key = context.getElementInstanceKey();
     final var value = context.getRecordValue();
-    final var element =
-        processState.getFlowElement(
-            context.getProcessDefinitionKey(), context.getElementId(), ExecutableFlowElement.class);
 
-    final EventType eventType = EventTypeHandle.getEventType(element);
-    value.setEventType(eventType);
+    value.setBpmnEventType(context.getRecordValue().getBpmnEventType());
 
     stateWriter.appendFollowUpEvent(key, transition, value);
     return context.copy(key, value, transition);
@@ -258,7 +247,7 @@ public final class BpmnStateTransitionBehavior {
     followUpInstanceRecord
         .setElementId(sequenceFlow.getId())
         .setBpmnElementType(sequenceFlow.getElementType())
-        .setEventType(EventType.UNSPECIFIED);
+        .setBpmnEventType(sequenceFlow.getEventType());
 
     // take the sequence flow
     final var sequenceFlowKey = keyGenerator.nextKey();
@@ -287,28 +276,26 @@ public final class BpmnStateTransitionBehavior {
 
   public void activateChildInstance(
       final BpmnElementContext context, final ExecutableFlowElement childElement) {
-    final EventType eventType = EventTypeHandle.getEventType(childElement);
 
     childInstanceRecord.wrap(context.getRecordValue());
     childInstanceRecord
         .setFlowScopeKey(context.getElementInstanceKey())
         .setElementId(childElement.getId())
         .setBpmnElementType(childElement.getElementType())
-        .setEventType(eventType);
+        .setBpmnEventType(childElement.getEventType());
 
     commandWriter.appendNewCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
   }
 
   public long activateChildInstanceWithKey(
       final BpmnElementContext context, final ExecutableFlowElement childElement) {
-    final EventType eventType = EventTypeHandle.getEventType(childElement);
 
     childInstanceRecord.wrap(context.getRecordValue());
     childInstanceRecord
         .setFlowScopeKey(context.getElementInstanceKey())
         .setElementId(childElement.getId())
         .setBpmnElementType(childElement.getElementType())
-        .setEventType(eventType);
+        .setBpmnEventType(childElement.getEventType());
 
     final long childInstanceKey = keyGenerator.nextKey();
     commandWriter.appendFollowUpCommand(
@@ -319,14 +306,13 @@ public final class BpmnStateTransitionBehavior {
 
   public void activateElementInstanceInFlowScope(
       final BpmnElementContext context, final ExecutableFlowElement element) {
-    final EventType eventType = EventTypeHandle.getEventType(element);
 
     followUpInstanceRecord.wrap(context.getRecordValue());
     followUpInstanceRecord
         .setFlowScopeKey(context.getFlowScopeKey())
         .setElementId(element.getId())
         .setBpmnElementType(element.getElementType())
-        .setEventType(eventType);
+        .setBpmnEventType(element.getEventType());
 
     final var elementInstanceKey = keyGenerator.nextKey();
     commandWriter.appendFollowUpCommand(

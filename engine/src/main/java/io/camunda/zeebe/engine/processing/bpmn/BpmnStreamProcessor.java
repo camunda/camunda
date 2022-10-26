@@ -59,8 +59,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             bpmnBehaviors.stateBehavior(),
             processEngineMetrics,
             this::getContainerProcessor,
-            writers,
-            processState);
+            writers);
     processors = new BpmnElementProcessors(bpmnBehaviors, stateTransitionBehavior);
     this.sideEffectQueue = sideEffectQueue;
   }

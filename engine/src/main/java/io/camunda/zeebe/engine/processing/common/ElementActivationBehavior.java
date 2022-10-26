@@ -21,7 +21,6 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.EventType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayDeque;
@@ -255,8 +254,6 @@ public final class ElementActivationBehavior {
       final ExecutableFlowElement elementToActivate,
       final long flowScopeKey) {
 
-    final EventType eventType = EventTypeHandle.getEventType(elementToActivate);
-
     final var elementInstanceRecord = new ProcessInstanceRecord();
     // take the properties from the process instance
     elementInstanceRecord.wrap(processInstanceRecord);
@@ -267,7 +264,7 @@ public final class ElementActivationBehavior {
         .setFlowScopeKey(flowScopeKey)
         .setParentProcessInstanceKey(-1L)
         .setParentElementInstanceKey(-1L)
-        .setEventType(eventType);
+        .setBpmnEventType(elementToActivate.getEventType());
 
     return elementInstanceRecord;
   }

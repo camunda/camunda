@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.TerminateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 
 public final class EndEventTransformer implements ModelElementTransformer<EndEvent> {
 
@@ -30,6 +31,8 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
   public void transform(final EndEvent element, final TransformContext context) {
     final var currentProcess = context.getCurrentProcess();
     final var endEvent = currentProcess.getElementById(element.getId(), ExecutableEndEvent.class);
+
+    endEvent.setEventType(BpmnEventType.NONE);
 
     if (!element.getEventDefinitions().isEmpty()) {
       transformEventDefinition(element, context, endEvent);
@@ -53,6 +56,7 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
 
     } else if (eventDefinition instanceof TerminateEventDefinition) {
       executableElement.setTerminateEndEvent(true);
+      executableElement.setEventType(BpmnEventType.TERMINATE);
     }
   }
 
@@ -64,6 +68,7 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
     final var error = errorEventDefinition.getError();
     final var executableError = context.getError(error.getId());
     executableElement.setError(executableError);
+    executableElement.setEventType(BpmnEventType.ERROR);
   }
 
   private boolean isMessageEvent(final EndEvent element) {

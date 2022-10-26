@@ -18,9 +18,8 @@ import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.EventType;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.function.Consumer;
@@ -28,7 +27,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class EventTypeTest {
+public class BpmnEventTypeTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
@@ -46,6 +45,13 @@ public class EventTypeTest {
 
   private static final BpmnModelInstance SINGLE_START_EVENT_1 =
       singleStartEvent(startEvent -> {}, MESSAGE_NAME_1);
+  private static final BpmnModelInstance RECEIVE_TASK_PROCESS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .receiveTask("receive-message")
+          .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+          .endEvent()
+          .done();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -93,64 +99,68 @@ public class EventTypeTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(
-            r -> r.getValue().getEventType(),
+            r -> r.getValue().getBpmnEventType(),
             r -> r.getValue().getBpmnElementType(),
             Record::getIntent)
         .containsSubsequence(
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SERVICE_TASK,
                 ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SERVICE_TASK,
                 ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(
-                EventType.ERROR,
+                BpmnEventType.ERROR,
                 BpmnElementType.BOUNDARY_EVENT,
                 ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(
-                EventType.ERROR,
+                BpmnEventType.ERROR,
                 BpmnElementType.BOUNDARY_EVENT,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(
-                EventType.ERROR,
+                BpmnEventType.ERROR,
                 BpmnElementType.BOUNDARY_EVENT,
                 ProcessInstanceIntent.COMPLETE_ELEMENT),
             tuple(
-                EventType.ERROR,
+                BpmnEventType.ERROR,
                 BpmnElementType.BOUNDARY_EVENT,
                 ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(
-                EventType.ERROR,
+                BpmnEventType.ERROR,
                 BpmnElementType.BOUNDARY_EVENT,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SEQUENCE_FLOW,
                 ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(
-                EventType.NONE,
+                BpmnEventType.NONE,
                 BpmnElementType.END_EVENT,
                 ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(
-                EventType.NONE, BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+                BpmnEventType.NONE,
+                BpmnElementType.END_EVENT,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(
-                EventType.NONE,
+                BpmnEventType.NONE,
                 BpmnElementType.END_EVENT,
                 ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(
-                EventType.NONE, BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+                BpmnEventType.NONE,
+                BpmnElementType.END_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.COMPLETE_ELEMENT),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
@@ -190,56 +200,42 @@ public class EventTypeTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey1)
-                .limitToProcessInstanceCompleted()
-                .withElementType(BpmnElementType.BOUNDARY_EVENT))
-        .extracting(r -> r.getValue().getElementId())
-        .containsOnly("error-1");
-
-    assertThat(
-            RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(processInstanceKey2)
-                .limitToProcessInstanceCompleted()
-                .withElementType(BpmnElementType.BOUNDARY_EVENT))
-        .extracting(r -> r.getValue().getElementId())
-        .containsOnly("error-2");
-
-    assertThat(
-            RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(processInstanceKey1)
                 .limitToProcessInstanceCompleted())
         .extracting(
-            r -> r.getValue().getEventType(),
+            r -> r.getValue().getBpmnEventType(),
             r -> r.getValue().getBpmnElementType(),
             Record::getIntent)
         .containsSubsequence(
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(
-                EventType.NONE,
+                BpmnEventType.NONE,
                 BpmnElementType.START_EVENT,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SEQUENCE_FLOW,
                 ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SERVICE_TASK,
                 ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(
-                EventType.ERROR,
+                BpmnEventType.ERROR,
                 BpmnElementType.BOUNDARY_EVENT,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SEQUENCE_FLOW,
                 ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(
-                EventType.NONE, BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+                BpmnEventType.NONE,
+                BpmnElementType.END_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_COMPLETED));
 
@@ -248,38 +244,40 @@ public class EventTypeTest {
                 .withProcessInstanceKey(processInstanceKey2)
                 .limitToProcessInstanceCompleted())
         .extracting(
-            r -> r.getValue().getEventType(),
+            r -> r.getValue().getBpmnEventType(),
             r -> r.getValue().getBpmnElementType(),
             Record::getIntent)
         .containsSubsequence(
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(
-                EventType.NONE,
+                BpmnEventType.NONE,
                 BpmnElementType.START_EVENT,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SEQUENCE_FLOW,
                 ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SERVICE_TASK,
                 ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(
-                EventType.ERROR,
+                BpmnEventType.ERROR,
                 BpmnElementType.BOUNDARY_EVENT,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SEQUENCE_FLOW,
                 ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(
-                EventType.NONE, BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+                BpmnEventType.NONE,
+                BpmnElementType.END_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
@@ -332,36 +330,36 @@ public class EventTypeTest {
                 .withProcessInstanceKey(childProcessInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(
-            r -> r.getValue().getEventType(),
+            r -> r.getValue().getBpmnEventType(),
             r -> r.getValue().getBpmnElementType(),
             Record::getIntent)
         .containsSubsequence(
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(
-                EventType.NONE,
+                BpmnEventType.NONE,
                 BpmnElementType.START_EVENT,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SEQUENCE_FLOW,
                 ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SERVICE_TASK,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SERVICE_TASK,
                 ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_TERMINATED));
 
@@ -370,42 +368,44 @@ public class EventTypeTest {
                 .withProcessInstanceKey(parentProcessInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(
-            r -> r.getValue().getEventType(),
+            r -> r.getValue().getBpmnEventType(),
             r -> r.getValue().getBpmnElementType(),
             Record::getIntent)
         .containsSubsequence(
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(
-                EventType.NONE,
+                BpmnEventType.NONE,
                 BpmnElementType.START_EVENT,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SEQUENCE_FLOW,
                 ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.CALL_ACTIVITY,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.CALL_ACTIVITY,
                 ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(
-                EventType.ERROR,
+                BpmnEventType.ERROR,
                 BpmnElementType.BOUNDARY_EVENT,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SEQUENCE_FLOW,
                 ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(
-                EventType.NONE, BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+                BpmnEventType.NONE,
+                BpmnElementType.END_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
@@ -439,42 +439,44 @@ public class EventTypeTest {
                 .limitToProcessInstanceCompleted()
                 .onlyEvents())
         .extracting(
-            r -> r.getValue().getEventType(),
+            r -> r.getValue().getBpmnEventType(),
             r -> r.getValue().getBpmnElementType(),
             Record::getIntent)
         .containsSubsequence(
             tuple(
-                EventType.ERROR,
+                BpmnEventType.ERROR,
                 BpmnElementType.END_EVENT,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SUB_PROCESS,
                 ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(
-                EventType.ERROR,
+                BpmnEventType.ERROR,
                 BpmnElementType.END_EVENT,
                 ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(
-                EventType.ERROR,
+                BpmnEventType.ERROR,
                 BpmnElementType.END_EVENT,
                 ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SUB_PROCESS,
                 ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(
-                EventType.ERROR,
+                BpmnEventType.ERROR,
                 BpmnElementType.BOUNDARY_EVENT,
                 ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(
-                EventType.ERROR,
+                BpmnEventType.ERROR,
                 BpmnElementType.BOUNDARY_EVENT,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.NONE, BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+                BpmnEventType.NONE,
+                BpmnElementType.END_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
@@ -500,28 +502,28 @@ public class EventTypeTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(
-            r -> r.getValue().getEventType(),
+            r -> r.getValue().getBpmnEventType(),
             r -> r.getValue().getBpmnElementType(),
             Record::getIntent)
         .containsSubsequence(
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(
-                EventType.NONE,
+                BpmnEventType.NONE,
                 BpmnElementType.START_EVENT,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SEQUENCE_FLOW,
                 ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(
-                EventType.TERMINATE,
+                BpmnEventType.TERMINATE,
                 BpmnElementType.END_EVENT,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
@@ -546,41 +548,38 @@ public class EventTypeTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(
-            r -> r.getValue().getEventType(),
+            r -> r.getValue().getBpmnEventType(),
             r -> r.getValue().getBpmnElementType(),
             Record::getIntent)
         .containsSubsequence(
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(
-                EventType.NONE,
+                BpmnEventType.NONE,
                 BpmnElementType.START_EVENT,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SEQUENCE_FLOW,
                 ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(
-                EventType.TIMER,
+                BpmnEventType.TIMER,
                 BpmnElementType.INTERMEDIATE_CATCH_EVENT,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SEQUENCE_FLOW,
                 ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(
-                EventType.NONE, BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+                BpmnEventType.NONE,
+                BpmnElementType.END_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_COMPLETED));
-
-    assertThat(
-            RecordingExporter.records().betweenProcessInstance(processInstanceKey).timerRecords())
-        .extracting(Record::getIntent)
-        .containsSubsequence(TimerIntent.CREATED, TimerIntent.TRIGGER, TimerIntent.TRIGGERED);
   }
 
   @Test
@@ -602,25 +601,79 @@ public class EventTypeTest {
                 .withProcessInstanceKey(processInstance.getValue().getProcessInstanceKey())
                 .limitToProcessInstanceCompleted())
         .extracting(
-            r -> r.getValue().getEventType(),
+            r -> r.getValue().getBpmnEventType(),
             r -> r.getValue().getBpmnElementType(),
             Record::getIntent)
         .containsSubsequence(
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.PROCESS,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(
-                EventType.MESSAGE,
+                BpmnEventType.MESSAGE,
                 BpmnElementType.START_EVENT,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SEQUENCE_FLOW,
                 ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(
-                EventType.UNSPECIFIED,
+                BpmnEventType.UNSPECIFIED,
                 BpmnElementType.SERVICE_TASK,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void testReceiveTaskLifeCycle() {
+    // given
+    ENGINE.deployment().withXmlResource(RECEIVE_TASK_PROCESS).deploy();
+    ENGINE.message().withName("message").withCorrelationKey("order-123").publish();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", "order-123")
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            r -> r.getValue().getBpmnEventType(),
+            r -> r.getValue().getBpmnElementType(),
+            Record::getIntent)
+        .containsSubsequence(
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.PROCESS,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnEventType.NONE,
+                BpmnElementType.START_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.SEQUENCE_FLOW,
+                ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(
+                BpmnEventType.MESSAGE,
+                BpmnElementType.RECEIVE_TASK,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.SEQUENCE_FLOW,
+                ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(
+                BpmnEventType.NONE,
+                BpmnElementType.END_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.PROCESS,
+                ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 }

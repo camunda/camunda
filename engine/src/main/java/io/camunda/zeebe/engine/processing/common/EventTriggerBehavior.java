@@ -26,7 +26,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.EventType;
 import org.agrona.DirectBuffer;
 
 public class EventTriggerBehavior {
@@ -233,12 +232,10 @@ public class EventTriggerBehavior {
         eventScopeKey,
         triggeredEvent.getId());
 
-    final EventType eventType = EventTypeHandle.getEventType(triggeredEvent);
-
     eventRecord
         .setBpmnElementType(triggeredEvent.getElementType())
         .setElementId(triggeredEvent.getId())
-        .setEventType(eventType);
+        .setBpmnEventType(triggeredEvent.getEventType());
 
     final var eventInstanceKey = keyGenerator.nextKey();
     // transition to activating and activated directly to pass the variables to this instance

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
@@ -15,11 +16,13 @@ public abstract class AbstractFlowElement implements ExecutableFlowElement {
 
   private final DirectBuffer id;
   private BpmnElementType elementType;
+  private BpmnEventType eventType;
   private ExecutableFlowElement flowScope;
 
   public AbstractFlowElement(final String id) {
     this.id = BufferUtil.wrapString(id);
     elementType = BpmnElementType.UNSPECIFIED;
+    eventType = BpmnEventType.UNSPECIFIED;
   }
 
   @Override
@@ -43,5 +46,14 @@ public abstract class AbstractFlowElement implements ExecutableFlowElement {
 
   public void setFlowScope(final ExecutableFlowElement flowScope) {
     this.flowScope = flowScope;
+  }
+
+  @Override
+  public BpmnEventType getEventType() {
+    return eventType;
+  }
+
+  public void setEventType(final BpmnEventType eventType) {
+    this.eventType = eventType;
   }
 }

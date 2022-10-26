@@ -26,6 +26,7 @@ import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.camunda.zeebe.model.bpmn.util.time.TimeDateTimer;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -80,12 +81,15 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
     final Message message = messageEventDefinition.getMessage();
     final ExecutableMessage executableMessage = context.getMessage(message.getId());
     executableElement.setMessage(executableMessage);
+    executableElement.setEventType(BpmnEventType.MESSAGE);
   }
 
   private void transformTimerEventDefinition(
       final ExpressionLanguage expressionLanguage,
       final ExecutableCatchEventElement executableElement,
       final TimerEventDefinition timerEventDefinition) {
+
+    executableElement.setEventType(BpmnEventType.TIMER);
 
     final Expression expression;
     if (timerEventDefinition.getTimeDuration() != null) {
@@ -138,6 +142,7 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
     final var error = errorEventDefinition.getError();
     final var executableError = context.getError(error.getId());
     executableElement.setError(executableError);
+    executableElement.setEventType(BpmnEventType.ERROR);
   }
 
   public void transformLinkEventDefinition(

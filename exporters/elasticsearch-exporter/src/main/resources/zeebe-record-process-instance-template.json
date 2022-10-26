@@ -40,7 +40,7 @@
             "bpmnElementType": {
               "type": "keyword"
             },
-            "eventType": {
+            "bpmnEventType": {
               "type": "keyword"
             },
             "parentProcessInstanceKey": {
