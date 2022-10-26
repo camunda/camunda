@@ -18,16 +18,11 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
-import io.atomix.cluster.AtomixClusterBuilder;
-import io.atomix.cluster.ClusterConfig;
 import io.atomix.cluster.MemberId;
-import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
-import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.utils.Version;
-import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.ActorSchedulerConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.BrokerClusterConfiguration;
@@ -48,11 +43,12 @@ import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.gateway.ActorSchedulerComponent;
+import io.camunda.zeebe.gateway.BrokerClientComponent;
 import io.camunda.zeebe.gateway.Gateway;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
+import io.camunda.zeebe.gateway.GatewayClusterConfiguration;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -160,6 +156,21 @@ public class ClusteringRule extends ExternalResource {
         clusterSize,
         configurator,
         gatewayCfg -> {},
+        ZeebeClientBuilder::usePlaintext);
+  }
+
+  public ClusteringRule(
+      final int partitionCount,
+      final int replicationFactor,
+      final int clusterSize,
+      final Consumer<BrokerCfg> brokerConfigurator,
+      final Consumer<GatewayCfg> gatewayConfigurator) {
+    this(
+        partitionCount,
+        replicationFactor,
+        clusterSize,
+        brokerConfigurator,
+        gatewayConfigurator,
         ZeebeClientBuilder::usePlaintext);
   }
 
@@ -416,41 +427,18 @@ public class ClusteringRule extends ExternalResource {
 
     gatewayConfigurator.accept(gatewayCfg);
 
-    final ClusterCfg clusterCfg = gatewayCfg.getCluster();
-
-    // copied from StandaloneGateway
-    final AtomixCluster atomixCluster =
-        new AtomixClusterBuilder(new ClusterConfig())
-            .withMemberId(clusterCfg.getMemberId())
-            .withAddress(Address.from(clusterCfg.getHost(), clusterCfg.getPort()))
-            .withClusterId(clusterCfg.getClusterName())
-            .withMembershipProvider(
-                BootstrapDiscoveryProvider.builder()
-                    .withNodes(
-                        clusterCfg.getInitialContactPoints().stream()
-                            .map(Address::from)
-                            .toArray(Address[]::new))
-                    .build())
-            .withMembershipProtocol(
-                SwimMembershipProtocol.builder().withSyncInterval(Duration.ofSeconds(1)).build())
-            .withMessageCompression(gatewayCfg.getCluster().getMessageCompression())
-            .build();
-
+    final GatewayClusterConfiguration clusterFactory = new GatewayClusterConfiguration();
+    final AtomixCluster atomixCluster = clusterFactory.atomixCluster(gatewayCfg);
     atomixCluster.start().join();
 
     final ActorScheduler actorScheduler =
-        ActorScheduler.newActorScheduler().setCpuBoundActorThreadCount(1).build();
-
+        new ActorSchedulerComponent(gatewayCfg, actorClockConfiguration).actorScheduler();
     actorScheduler.start();
 
     final var brokerClient =
-        new BrokerClientImpl(
-            gatewayCfg.getCluster().getRequestTimeout(),
-            atomixCluster.getMessagingService(),
-            atomixCluster.getMembershipService(),
-            atomixCluster.getEventService(),
-            actorScheduler);
+        new BrokerClientComponent(gatewayCfg, atomixCluster, actorScheduler).brokerClient();
     brokerClient.start();
+
     final Gateway gateway = new Gateway(gatewayCfg, brokerClient, actorScheduler);
     closeables.add(actorScheduler);
     closeables.add(gateway::stop);
