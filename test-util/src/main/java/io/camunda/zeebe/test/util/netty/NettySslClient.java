@@ -252,8 +252,13 @@ public final class NettySslClient {
       if (onHandshake.isSuccess()) {
         extractedCertificate.complete(sslHandler.engine().getSession().getPeerCertificates());
       } else {
-        extractedCertificate.completeExceptionally(
-            getErrorWithOptionalCause(onHandshake, "Failed to perform SSL handshake"));
+        final var error = getErrorWithOptionalCause(onHandshake, "Failed to perform SSL handshake");
+        extractedCertificate.completeExceptionally(error);
+
+        // log it as well as sometimes the channel is closed (and the future completed) before the
+        // handshake future is failed, so the cause would be lost otherwise
+        LOGGER.debug(
+            "Could not verify the SSL certificate, error occurred during handshake", error);
       }
     }
   }
