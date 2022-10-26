@@ -12,11 +12,43 @@ const COLOR_FADE_OPACITY = 0.15;
 
 export default function fadeOnHover({visualization, isStacked}) {
   let prevDatasets = [];
+  let delayTimer;
+  let isHoverDelayElapsed = false;
+  let lastUpdater;
 
   function onHover(evt, datasets, chart) {
     if (deepEqual(prevDatasets, datasets)) {
       return;
     }
+
+    const isHoveringStarted = prevDatasets.length === 0 && datasets.length > 0;
+    const isHoveringEnded = prevDatasets.length > 0 && datasets.length === 0;
+
+    if (isHoveringStarted) {
+      delayTimer = setTimeout(() => {
+        isHoverDelayElapsed = true;
+        // if we call updateChartColors directly here,
+        // setimeout will create a closure on an old version of the updateChartColors
+        // thats why, we call a function the stores the latest version of updateChartColors
+        lastUpdater();
+      }, 350);
+    }
+
+    if (isHoveringEnded) {
+      updateChartColors(datasets, chart);
+      clearTimeout(delayTimer);
+      isHoverDelayElapsed = false;
+    }
+
+    if (isHoverDelayElapsed) {
+      updateChartColors(datasets, chart);
+    }
+
+    lastUpdater = () => updateChartColors(datasets, chart);
+    prevDatasets = datasets;
+  }
+
+  function updateChartColors(datasets, chart) {
     const datasetIndexes = datasets.map((el) => el.datasetIndex);
 
     if (visualization === 'pie') {
@@ -60,7 +92,6 @@ export default function fadeOnHover({visualization, isStacked}) {
       });
     }
     chart.update();
-    prevDatasets = datasets;
   }
 
   function getOriginal(dataset, property) {
