@@ -131,7 +131,7 @@ multibranchPipelineJob('camunda-optimize') {
 
             // Disable sending Github status notifications in non-prod envs.
             if (ENVIRONMENT != 'prod') {
-              notificationsSkip()
+              githubSkipNotifications()
             }
           }
         }
