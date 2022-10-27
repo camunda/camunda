@@ -12,18 +12,20 @@ import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.util.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 @Component
-final class BrokerClientComponent {
+@VisibleForTesting
+public final class BrokerClientComponent {
   final GatewayCfg config;
   final AtomixCluster atomixCluster;
   final ActorScheduler actorScheduler;
 
   @Autowired
-  BrokerClientComponent(
+  public BrokerClientComponent(
       final GatewayCfg config,
       final AtomixCluster atomixCluster,
       final ActorScheduler actorScheduler) {
@@ -33,7 +35,7 @@ final class BrokerClientComponent {
   }
 
   @Bean(destroyMethod = "close")
-  BrokerClient brokerClient() {
+  public BrokerClient brokerClient() {
     return new BrokerClientImpl(
         config.getCluster().getRequestTimeout(),
         atomixCluster.getMessagingService(),
