@@ -18,14 +18,26 @@ import io.camunda.zeebe.scheduler.TaskScheduler;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.util.Objects;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 public class ControlledActorSchedulerExtension implements BeforeEachCallback, AfterEachCallback {
 
+  private final Consumer<ActorSchedulerBuilder> configurator;
+
   private ActorScheduler actorScheduler;
   private ControlledActorThread controlledActorTaskRunner;
+
+  public ControlledActorSchedulerExtension() {
+    this(builder -> {});
+  }
+
+  public ControlledActorSchedulerExtension(final Consumer<ActorSchedulerBuilder> configurator) {
+    this.configurator = Objects.requireNonNull(configurator, "must specify a configurator");
+  }
 
   @Override
   public void afterEach(final ExtensionContext extensionContext) throws Exception {
@@ -45,6 +57,7 @@ public class ControlledActorSchedulerExtension implements BeforeEachCallback, Af
             .setActorThreadFactory(actorTaskRunnerFactory)
             .setActorTimerQueue(timerQueue);
 
+    configurator.accept(builder);
     actorScheduler = builder.build();
     controlledActorTaskRunner = actorTaskRunnerFactory.controlledThread;
     actorScheduler.start();
