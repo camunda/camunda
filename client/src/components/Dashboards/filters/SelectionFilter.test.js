@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
@@ -80,7 +80,12 @@ it('should show a hint depending on the operator', () => {
 });
 
 describe('allowCustomValues', () => {
-  const customProps = update(props, {config: {data: {allowCustomValues: {$set: true}}}});
+  const customProps = update(props, {
+    config: {
+      data: {allowCustomValues: {$set: true}},
+      defaultValues: {$set: ['value', null, undefined]},
+    },
+  });
 
   it('should render a button to add values if allowCustomValues is set', () => {
     const node = shallow(<SelectionFilter {...customProps} />);
@@ -103,5 +108,15 @@ describe('allowCustomValues', () => {
     node.find('Typeahead').simulate('open');
 
     expect(getVariableValues).toHaveBeenCalledWith(['reportA'], 'stringVar', 'String', 10, '');
+  });
+
+  it('should display filtered list of custom values', () => {
+    const node = shallow(<SelectionFilter {...customProps} />);
+
+    runAllEffects();
+
+    const customValues = node.find('.customValue');
+
+    expect(customValues.length).toBe(1);
   });
 });
