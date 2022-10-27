@@ -82,7 +82,7 @@
             "type": "keyword"
           },
           "value": {
-            "type": "keyword"
+            "enabled": false
           }
         }
       },
@@ -95,7 +95,7 @@
             "type": "keyword"
           },
           "value": {
-            "type": "keyword"
+            "enabled": false
           },
           "ruleId": {
             "type": "keyword"

@@ -15,10 +15,10 @@
 	<modules>
 		<module>test-fixture-100</module>
 		<module>test-fixture-110</module>
-    	<module>test-fixture-120</module>
-    	<module>test-fixture-130</module>
-    	<module>test-fixture-800</module>
-		<module>test-fixture-810</module>
+    <module>test-fixture-120</module>
+    <module>test-fixture-130</module>
+    <module>test-fixture-800</module>
+    <module>test-fixture-810</module>
 		<module>migration-test</module>
 	</modules>
 

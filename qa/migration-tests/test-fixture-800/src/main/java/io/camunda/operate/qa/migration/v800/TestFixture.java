@@ -8,6 +8,7 @@ package io.camunda.operate.qa.migration.v800;
 
 import io.camunda.operate.qa.util.migration.AbstractTestFixture;
 import io.camunda.operate.qa.util.TestContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -15,12 +16,23 @@ public class TestFixture extends AbstractTestFixture {
 
   public static final String VERSION = "8.0.0";
 
+  @Autowired
+  private DMNDataGenerator dmnDataGenerator;
+
   @Override
   public void setup(TestContext testContext) {
     super.setup(testContext);
     startZeebeAndOperate();
-    //no additional data is needed
+    generateData();
     stopZeebeAndOperate(testContext);
+  }
+
+  private void generateData() {
+    try {
+      dmnDataGenerator.createData(testContext);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override

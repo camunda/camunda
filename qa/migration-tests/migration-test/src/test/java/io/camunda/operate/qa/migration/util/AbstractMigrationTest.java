@@ -41,6 +41,9 @@ public abstract class AbstractMigrationTest {
   protected ListViewTemplate listViewTemplate;
 
   @Autowired
+  protected DecisionInstanceTemplate decisionInstanceTemplate;
+
+  @Autowired
   protected EventTemplate eventTemplate;
 
   @Autowired

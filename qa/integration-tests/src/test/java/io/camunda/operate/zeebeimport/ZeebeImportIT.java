@@ -28,11 +28,7 @@ import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.entities.dmn.DecisionType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
-import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
-import io.camunda.operate.util.TestUtil;
-import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
+import io.camunda.operate.util.*;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
@@ -56,6 +52,8 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -75,9 +73,6 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   private IncidentReader incidentReader;
 
   @Autowired
-  private FlowNodeInstanceReader flowNodeInstanceReader;
-
-  @Autowired
   private RestHighLevelClient esClient;
 
   @Autowired
@@ -86,6 +81,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   @Autowired
   private ObjectMapper objectMapper;
 
+  @Autowired
+  private PayloadUtil payloadUtil;
 
   @Test
   public void testProcessNameAndVersionAreLoaded() {
@@ -507,6 +504,36 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(operatePartitions).allMatch(id -> id <= zeebePartitionsCount && id >= 1);
   }
 
+  @Test
+  public void testDecisionInstanceEvaluatedWithBigInputAndOutput() throws Exception {
+    //given
+    final String bpmnProcessId = "process";
+    final String demoDecisionId2 = "decision";
+
+    final String elementId = "task";
+    final BpmnModelInstance instance = Bpmn.createExecutableProcess(bpmnProcessId).startEvent()
+        .businessRuleTask(elementId, task -> task.zeebeCalledDecisionId(demoDecisionId2).zeebeResultVariable("result"))
+        .done();
+
+    String bigJSONVariablePayload = payloadUtil.readStringFromClasspath("/large-payload.json");
+    String payload = "{\"value\": " + bigJSONVariablePayload + "}";
+    tester.deployProcess(instance, "test.bpmn").deployDecision("largeInputOutput.dmn").waitUntil().processIsDeployed()
+        .and().decisionsAreDeployed(1)
+        //when
+        .startProcessInstance(bpmnProcessId, payload).waitUntil().decisionInstancesAreCreated(1);
+
+    //then
+    final SearchRequest request = new SearchRequest(decisionInstanceTemplate.getAlias()).source(
+        new SearchSourceBuilder().query(matchAllQuery()));
+    final List<DecisionInstanceEntity> decisionEntities = ElasticsearchUtil.scroll(request,
+        DecisionInstanceEntity.class, objectMapper, esClient);
+
+    assertThat(decisionEntities).hasSize(1);
+    assertThat(decisionEntities.get(0).getEvaluatedInputs()).hasSize(1);
+    JSONAssert.assertEquals(decisionEntities.get(0).getEvaluatedInputs().get(0).getValue(), bigJSONVariablePayload, JSONCompareMode.LENIENT);
+    assertThat(decisionEntities.get(0).getEvaluatedOutputs()).hasSize(1);
+    JSONAssert.assertEquals(decisionEntities.get(0).getEvaluatedOutputs().get(0).getValue(), bigJSONVariablePayload, JSONCompareMode.LENIENT);
+  }
 
   @Test
   public void testDecisionInstanceFailed() throws Exception {
