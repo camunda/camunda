@@ -29,6 +29,13 @@ jobs:
           secrets: |
             secret/data/products/operate/ci/operate ARGOCD_TOKEN;
       #########################################################################
+      # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
+      - id: sanitize
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        with:
+          branch: ${{ env.BRANCH_NAME }}
+          max_length: '50'
+      #########################################################################
       # Setup: checkout code. This is required because we are using
       # composite actions and deployment manifests.
       - name: Checkout
@@ -36,8 +43,8 @@ jobs:
       #########################################################################
       # Tear down preview environment
       - name: Tear down Preview Environment
-        uses: ./.github/actions/deploy-preview-destroy
+        uses: camunda/infra-global-github-actions/preview-env/destroy@main
         with:
-          deployment_ref: ${{ env.BRANCH_NAME }} # actual branch name, which is the targetRevision in ArgoCD
+          app_name: operate-${{ steps.sanitize.outputs.branch_name }}
           revision: ${{ env.BRANCH_NAME }}
           argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
