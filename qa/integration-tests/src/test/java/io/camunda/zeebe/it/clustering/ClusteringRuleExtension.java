@@ -8,6 +8,7 @@
 package io.camunda.zeebe.it.clustering;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.test.util.record.RecordLogger;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FileUtil;
@@ -33,6 +34,15 @@ public class ClusteringRuleExtension extends ClusteringRule
       final int clusterSize,
       final Consumer<BrokerCfg> configurator) {
     super(partitionCount, replicationFactor, clusterSize, configurator);
+  }
+
+  public ClusteringRuleExtension(
+      final int partitionCount,
+      final int replicationFactor,
+      final int clusterSize,
+      final Consumer<BrokerCfg> brokerConfigurator,
+      final Consumer<GatewayCfg> gatewayConfigurator) {
+    super(partitionCount, replicationFactor, clusterSize, brokerConfigurator, gatewayConfigurator);
   }
 
   @Override
