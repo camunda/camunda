@@ -25,6 +25,7 @@ import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +33,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 
 public final class OAuthCredentialsCache {
+
   private static final String KEY_AUTH = "auth";
   private static final String KEY_CREDENTIALS = "credentials";
   private static final TypeReference<Map<String, OAuthCachedCredentials>> TYPE_REFERENCE =
@@ -86,12 +88,54 @@ public final class OAuthCredentialsCache {
     if (cacheFile.exists()) {
       return;
     }
-
-    Files.createDirectories(cacheFile.getParentFile().toPath());
+    final File parentDirectory = cacheFile.getParentFile();
+    if (parentDirectory.exists()) {
+      if (!parentDirectory.isDirectory()) {
+        if (Files.isSymbolicLink(parentDirectory.toPath())) {
+          requireSymbolicLinkPointsToDirectory(parentDirectory);
+        } else {
+          throw new IOException(
+              "Expected "
+                  + parentDirectory.getAbsolutePath()
+                  + " to be a directory, but it was a regular file.");
+        }
+      }
+    } else {
+      if (Files.isSymbolicLink(parentDirectory.toPath())) {
+        requireSymbolicLinkPointsToDirectory(parentDirectory);
+      } else {
+        Files.createDirectories(parentDirectory.toPath());
+      }
+    }
     Files.createFile(cacheFile.toPath());
   }
 
+  /**
+   * Makes sure the symbolic link is pointing to a directory.
+   *
+   * @param file fil to check.
+   * @throws IOException if the file pointer is not a symbolic link or is not pointing to a
+   *     directory.
+   */
+  private void requireSymbolicLinkPointsToDirectory(final File file) throws IOException {
+    final Path resolvedPath = Files.readSymbolicLink(file.toPath());
+    if (Files.exists(resolvedPath)) {
+      if (!Files.isDirectory(resolvedPath)) {
+        throw new IOException(
+            "Expected "
+                + file.getAbsolutePath()
+                + " to be a directory, but it was a symbolic link pointing to a regular file.");
+      }
+    } else {
+      throw new IOException(
+          "Expected "
+              + file.getAbsolutePath()
+              + " to be a directory, but it was a symbolic link to unresolvable path.");
+    }
+  }
+
   private static final class OAuthCachedCredentials {
+
     private final ZeebeClientCredentials credentials;
 
     @JsonCreator
