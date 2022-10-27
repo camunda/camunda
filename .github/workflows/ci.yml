@@ -239,7 +239,7 @@ jobs:
           name: Property Tests
   go-client:
     name: Go client tests
-    runs-on: "n1-standard-8-netssd-preempt"
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v3
