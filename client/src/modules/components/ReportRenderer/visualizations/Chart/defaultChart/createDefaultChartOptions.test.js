@@ -172,3 +172,32 @@ it('should switch axis positions when horizontalBar config is eanbled', () => {
 
   expect(chartConfig.scales['groupByAxis'].axis).toBe('y');
 });
+
+it('should switch tooltip alignment of an item when surpassing 70% of the available area', () => {
+  const chartConfig = createDefaultChartOptions({
+    report: {
+      data: {
+        visualization: 'bar',
+        configuration: {horizontalBar: true},
+        view: {properties: ['frequency', 'duration'], entity: 'flowNode'},
+        groupBy: {type: 'flowNodes'},
+      },
+      result: {
+        measures: [{property: 'frequency', data: [{key: 'a', value: 123, label: 'a'}]}],
+      },
+    },
+  });
+
+  const getPixelForValue = jest.fn().mockReturnValueOnce(5);
+  const context = {
+    dataIndex: 0,
+    dataset: {xAxisID: 'axis-0', data: []},
+    chart: {chartArea: {left: 0, right: 20}, scales: {'axis-0': {getPixelForValue}}},
+  };
+
+  const alignment = chartConfig.plugins.datalabels.align(context);
+  expect(alignment).toBe('end');
+  getPixelForValue.mockReturnValueOnce(19);
+  const newAlignment = chartConfig.plugins.datalabels.align(context);
+  expect(newAlignment).toBe('start');
+});

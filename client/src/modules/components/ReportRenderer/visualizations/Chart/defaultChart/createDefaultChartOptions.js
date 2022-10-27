@@ -267,7 +267,19 @@ export function createBarOptions({
     tension: 0.4,
     plugins: {
       datalabels: {
-        align: () => (configuration.horizontalBar ? 'start' : 'end'),
+        align: (context) => {
+          if (!configuration.horizontalBar) {
+            return 'end';
+          }
+
+          const scale = context.chart.scales[context.dataset.xAxisID];
+          const yPosition = scale.getPixelForValue(context.dataset.data[context.dataIndex]);
+
+          const {left, right} = context.chart.chartArea;
+          const center = left + 0.7 * (right - left);
+
+          return yPosition > center ? 'start' : 'end';
+        },
       },
       legend: {
         display: measures.length > 1,
