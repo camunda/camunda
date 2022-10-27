@@ -18,12 +18,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 final class RetryStrategyTest {
 
@@ -33,20 +30,16 @@ final class RetryStrategyTest {
 
   private ActorFuture<Boolean> resultFuture;
 
-  @ParameterizedTest(name = "{0}")
-  @MethodSource({
-    "provideEndlessStrategy",
-    "provideRecoverableStrategy",
-    "provideAbortableStrategy",
-    "provideBackOffStrategy"
-  })
-  void shouldRunUntilDone(final RetryStrategy strategy, final ControllableActor actor) {
+  @ParameterizedTest
+  @ValueSource(strings = {"endless", "recoverable", "abortable", "backoff"})
+  void shouldRunUntilDone(final TestCase<?> test) {
     // given
     final var count = new AtomicInteger(0);
-    schedulerRule.submitActor(actor);
+    schedulerRule.submitActor(test.actor);
 
     // when
-    actor.run(() -> resultFuture = strategy.runWithRetry(() -> count.incrementAndGet() == 10));
+    test.actor.run(
+        () -> resultFuture = test.strategy.runWithRetry(() -> count.incrementAndGet() == 10));
     schedulerRule.workUntilDone();
 
     // then
@@ -54,23 +47,18 @@ final class RetryStrategyTest {
     assertThat(resultFuture).succeedsWithin(Duration.ZERO).isEqualTo(true);
   }
 
-  @ParameterizedTest(name = "{0}")
-  @MethodSource({
-    "provideEndlessStrategy",
-    "provideRecoverableStrategy",
-    "provideAbortableStrategy",
-    "provideBackOffStrategy"
-  })
-  void shouldStopWhenAbortConditionReturnsTrue(
-      final RetryStrategy strategy, final ControllableActor actor) {
+  @ParameterizedTest
+  @ValueSource(strings = {"endless", "recoverable", "abortable", "backoff"})
+  void shouldStopWhenAbortConditionReturnsTrue(final TestCase<?> test) {
     // given
     final AtomicInteger count = new AtomicInteger(0);
-    schedulerRule.submitActor(actor);
+    schedulerRule.submitActor(test.actor);
 
     // when
-    actor.run(
+    test.actor.run(
         () ->
-            resultFuture = strategy.runWithRetry(() -> false, () -> count.incrementAndGet() == 10));
+            resultFuture =
+                test.strategy.runWithRetry(() -> false, () -> count.incrementAndGet() == 10));
     schedulerRule.workUntilDone();
 
     // then
@@ -78,18 +66,18 @@ final class RetryStrategyTest {
     assertThat(resultFuture).succeedsWithin(Duration.ZERO).isEqualTo(false);
   }
 
-  @ParameterizedTest(name = "{0}")
-  @MethodSource({"provideRecoverableStrategy", "provideAbortableStrategy"})
-  void shouldAbortOnOtherException(final RetryStrategy strategy, final ControllableActor actor) {
+  @ParameterizedTest
+  @ValueSource(strings = {"recoverable", "abortable"})
+  void shouldAbortOnOtherException(final TestCase<?> test) {
     // given
     final RuntimeException failure = new RuntimeException("expected");
-    schedulerRule.submitActor(actor);
+    schedulerRule.submitActor(test.actor);
 
     // when
-    actor.run(
+    test.actor.run(
         () ->
             resultFuture =
-                strategy.runWithRetry(
+                test.strategy.runWithRetry(
                     () -> {
                       throw failure;
                     }));
@@ -102,35 +90,31 @@ final class RetryStrategyTest {
         .withCause(failure);
   }
 
-  @ParameterizedTest(name = "{0}")
-  @MethodSource({
-    "provideEndlessStrategy",
-    "provideRecoverableStrategy",
-    "provideAbortableStrategy"
-  })
-  void shouldNotInterleaveRetry(final RetryStrategy strategy, final ControllableActor actor) {
+  @ParameterizedTest
+  @ValueSource(strings = {"endless", "recoverable", "abortable"})
+  void shouldNotInterleaveRetry(final TestCase<?> test) {
     // given
     final AtomicReference<ActorFuture<Boolean>> firstFuture = new AtomicReference<>();
     final AtomicReference<ActorFuture<Boolean>> secondFuture = new AtomicReference<>();
     final AtomicInteger executionAttempt = new AtomicInteger(0);
     final AtomicInteger firstResult = new AtomicInteger();
     final AtomicInteger secondResult = new AtomicInteger();
-    schedulerRule.submitActor(actor);
+    schedulerRule.submitActor(test.actor);
 
     // when
     final var retryCounts = 5;
-    actor.run(
+    test.actor.run(
         () ->
             firstFuture.set(
-                strategy.runWithRetry(
+                test.strategy.runWithRetry(
                     () -> {
                       firstResult.set(executionAttempt.getAndIncrement());
                       return executionAttempt.get() >= retryCounts;
                     })));
-    actor.run(
+    test.actor.run(
         () ->
             secondFuture.set(
-                strategy.runWithRetry(
+                test.strategy.runWithRetry(
                     () -> {
                       secondResult.set(executionAttempt.getAndIncrement());
                       return true;
@@ -144,28 +128,26 @@ final class RetryStrategyTest {
     assertThat(secondResult).hasValue(retryCounts);
   }
 
-  private static Stream<Arguments> provideRecoverableStrategy() {
-    return Stream.of(TestCase.of(RecoverableRetryStrategy::new));
-  }
+  @ParameterizedTest
+  @ValueSource(strings = {"endless", "recoverable", "abortable", "backoff"})
+  void shouldYieldThreadOnRetry() {}
 
-  private static Stream<Arguments> provideAbortableStrategy() {
-    return Stream.of(TestCase.of(AbortableRetryStrategy::new));
-  }
+  private record TestCase<T extends RetryStrategy>(ControllableActor actor, T strategy) {
 
-  private static Stream<Arguments> provideEndlessStrategy() {
-    return Stream.of(TestCase.of(EndlessRetryStrategy::new));
-  }
-
-  private static Stream<Arguments> provideBackOffStrategy() {
-    return Stream.of(
-        TestCase.of(
-            // it's important to use a zero delay as otherwise workUntilDone will not wait for
-            // all timers to be triggered
-            actor -> new BackOffRetryStrategy(actor, Duration.ZERO)));
-  }
-
-  private record TestCase<T extends RetryStrategy>(ControllableActor actor, T strategy)
-      implements Arguments {
+    // actually used by junit 5, see
+    // https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests-argument-conversion-implicit
+    @SuppressWarnings("unused")
+    static TestCase<?> of(final String type) {
+      return switch (type.toLowerCase()) {
+        case "endless" -> TestCase.of(EndlessRetryStrategy::new);
+        case "recoverable" -> TestCase.of(RecoverableRetryStrategy::new);
+        case "abortable" -> TestCase.of(AbortableRetryStrategy::new);
+        case "backoff" -> TestCase.of(actor -> new BackOffRetryStrategy(actor, Duration.ZERO));
+        default -> throw new IllegalArgumentException(
+            "Expected one of ['endless', 'recoverable', 'abortable', or 'backoff'], but got "
+                + type);
+      };
+    }
 
     private static <T extends RetryStrategy> TestCase<T> of(
         final Function<ActorControl, T> provider) {
@@ -173,23 +155,11 @@ final class RetryStrategyTest {
       final var strategy = provider.apply(actor.getActor());
       return new TestCase<>(actor, strategy);
     }
-
-    @Override
-    public Object[] get() {
-      return new Object[] {Named.of(strategy.getClass().getSimpleName(), strategy), actor};
-    }
   }
 
   private static final class ControllableActor extends Actor {
     public ActorControl getActor() {
       return actor;
-    }
-
-    @Override
-    public void close() {
-      // do not wait for the close, as the scheduler is already closed by the time the
-      // actor is closed
-      closeAsync();
     }
   }
 }
