@@ -46,13 +46,15 @@ final class SecureClusteredMessagingIT {
     assertAddressIsSecured("gateway", getGatewayAddress());
   }
 
+  /** Verifies that both the command and internal APIs of the broker are correctly secured. */
   private void assertBrokerMessagingServicesAreSecured(final Broker broker) {
-    assertAddressIsSecured(
-        broker.getConfig().getCluster().getNodeId(),
-        broker.getConfig().getNetwork().getCommandApi().getAdvertisedAddress());
-    assertAddressIsSecured(
-        broker.getConfig().getCluster().getNodeId(),
-        broker.getConfig().getNetwork().getInternalApi().getAdvertisedAddress());
+    final var commandApiAddress =
+        broker.getConfig().getNetwork().getCommandApi().getAdvertisedAddress();
+    final var internalApiAddress =
+        broker.getConfig().getNetwork().getInternalApi().getAdvertisedAddress();
+
+    assertAddressIsSecured(broker.getConfig().getCluster().getNodeId(), commandApiAddress);
+    assertAddressIsSecured(broker.getConfig().getCluster().getNodeId(), internalApiAddress);
   }
 
   private InetSocketAddress getGatewayAddress() {
