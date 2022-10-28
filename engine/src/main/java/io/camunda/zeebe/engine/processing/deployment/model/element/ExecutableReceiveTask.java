@@ -40,6 +40,11 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
   }
 
   @Override
+  public boolean isLink() {
+    return false;
+  }
+
+  @Override
   public ExecutableMessage getMessage() {
     return message;
   }

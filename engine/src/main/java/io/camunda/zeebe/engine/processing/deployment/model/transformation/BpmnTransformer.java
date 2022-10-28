@@ -80,7 +80,6 @@ public final class BpmnTransformer {
     step2Visitor.registerHandler(new ContextProcessTransformer());
     step2Visitor.registerHandler(new EndEventTransformer());
     step2Visitor.registerHandler(new FlowNodeTransformer());
-    step2Visitor.registerHandler(new IntermediateThrowEventTransformer());
     step2Visitor.registerHandler(new JobWorkerElementTransformer<>(ServiceTask.class));
     step2Visitor.registerHandler(new JobWorkerElementTransformer<>(ScriptTask.class));
     step2Visitor.registerHandler(new JobWorkerElementTransformer<>(SendTask.class));
@@ -98,6 +97,7 @@ public final class BpmnTransformer {
     step3Visitor.registerHandler(new SubProcessTransformer());
 
     step4Visitor = new TransformationVisitor();
+    step4Visitor.registerHandler(new IntermediateThrowEventTransformer());
     step4Visitor.registerHandler(new MultiInstanceActivityTransformer());
   }
 

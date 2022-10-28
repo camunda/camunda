@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableLink;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.engine.processing.timer.CronTimer;
 import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.LinkEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
@@ -26,6 +28,7 @@ import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.camunda.zeebe.model.bpmn.util.time.TimeDateTimer;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.format.DateTimeParseException;
 
 public final class CatchEventTransformer implements ModelElementTransformer<CatchEvent> {
@@ -63,6 +66,9 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
     } else if (eventDefinition instanceof ErrorEventDefinition) {
       transformErrorEventDefinition(
           context, executableElement, (ErrorEventDefinition) eventDefinition);
+    } else if (eventDefinition instanceof LinkEventDefinition) {
+      transformLinkEventDefinition(
+          context, executableElement, (LinkEventDefinition) eventDefinition);
     }
   }
 
@@ -132,5 +138,18 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
     final var error = errorEventDefinition.getError();
     final var executableError = context.getError(error.getId());
     executableElement.setError(executableError);
+  }
+
+  public void transformLinkEventDefinition(
+      final TransformContext context,
+      final ExecutableCatchEventElement executableElement,
+      final LinkEventDefinition linkEventDefinition) {
+
+    executableElement.setLink(true);
+
+    final var link = new ExecutableLink(linkEventDefinition.getId());
+    link.setName(BufferUtil.wrapString(linkEventDefinition.getName()));
+    link.setCatchEvent(executableElement);
+    context.addLink(link);
   }
 }

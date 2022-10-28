@@ -28,6 +28,8 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
 
   private boolean isConnectedToEventBasedGateway;
 
+  private boolean isLink;
+
   public ExecutableCatchEventElement(final String id) {
     super(id);
   }
@@ -45,6 +47,11 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   @Override
   public boolean isError() {
     return error != null;
+  }
+
+  @Override
+  public boolean isLink() {
+    return isLink;
   }
 
   @Override
@@ -73,6 +80,10 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
 
   public void setError(final ExecutableError error) {
     this.error = error;
+  }
+
+  public void setLink(final boolean isLink) {
+    this.isLink = isLink;
   }
 
   @Override
