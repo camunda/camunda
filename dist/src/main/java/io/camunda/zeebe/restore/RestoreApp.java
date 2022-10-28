@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
@@ -42,6 +43,7 @@ public class RestoreApp implements ApplicationRunner {
   public static void main(final String[] args) {
     final var application =
         new SpringApplicationBuilder(RestoreApp.class)
+            .web(WebApplicationType.NONE)
             .logStartupInfo(true)
             .profiles(Profile.RESTORE.getId())
             .build();
