@@ -55,7 +55,12 @@ public enum BpmnElementType {
 
   BUSINESS_RULE_TASK("businessRuleTask"),
   SCRIPT_TASK("scriptTask"),
-  SEND_TASK("sendTask");
+  SEND_TASK("sendTask"),
+
+  // Data
+  DATA_OBJECT(null),
+  DATA_OBJECT_REFERENCE(null),
+  DATA_STORE_REFERENCE(null);
 
   private final String elementTypeName;
 
