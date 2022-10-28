@@ -17,6 +17,8 @@ package io.camunda.zeebe.client.impl.oauth;
 
 import static io.camunda.zeebe.client.OAuthCredentialsProviderTest.EXPIRY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertTrue;
 
 import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
 import java.io.File;
@@ -29,6 +31,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class OAuthCredentialsCacheTest {
+
   private static final String WOMBAT_ENDPOINT = "wombat.cloud.camunda.io";
   private static final String AARDVARK_ENDPOINT = "aardvark.cloud.camunda.io";
   private static final String GOLDEN_FILE = "/oauth/credentialsCache.yml";
@@ -38,6 +41,7 @@ public final class OAuthCredentialsCacheTest {
       new ZeebeClientCredentials("aardvark", EXPIRY, "Bearer");
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
   private File cacheFile;
 
   @Before
@@ -46,6 +50,143 @@ public final class OAuthCredentialsCacheTest {
     try (final InputStream input = getClass().getResourceAsStream(GOLDEN_FILE)) {
       Files.copy(input, cacheFile.toPath());
     }
+  }
+
+  @Test
+  public void shouldCreateFileOnlyIfParentIsSymbolicLinkToFolder() throws IOException {
+    final File root = new File(temporaryFolder.getRoot(), "/some/root");
+    Files.createDirectories(root.toPath());
+    assertThat(root.exists()).isTrue();
+
+    final File target = new File(root, "target");
+    Files.createDirectories(target.toPath());
+    assertThat(target.exists()).isTrue();
+
+    final File container = new File(root, ".camunda");
+    assertThat(container.exists()).isFalse();
+    Files.createSymbolicLink(container.toPath(), target.toPath());
+    assertThat(container.exists()).isTrue();
+
+    final File fileInContainer = new File(container, "/credentials");
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(fileInContainer);
+    cache.writeCache();
+
+    assertThat(fileInContainer.exists()).isTrue();
+  }
+
+  @Test
+  public void shouldFailIfParentIsSymbolicLinkToFile() throws IOException {
+    final File root = new File(temporaryFolder.getRoot(), "/some/root");
+    Files.createDirectories(root.toPath());
+    assertThat(root.exists()).isTrue();
+
+    final File target = new File(root, "target");
+    Files.createFile(target.toPath());
+    assertThat(target.exists()).isTrue();
+
+    final File container = new File(root, ".camunda");
+    assertThat(container.exists()).isFalse();
+    Files.createSymbolicLink(container.toPath(), target.toPath());
+    assertThat(container.exists()).isTrue();
+
+    final File fileInContainer = new File(container, "/credentials");
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(fileInContainer);
+
+    assertThatThrownBy(cache::writeCache)
+        .hasMessage(
+            "Expected "
+                + container.getAbsolutePath()
+                + " to be a directory, but it was a symbolic link pointing to a regular file.");
+    assertThat(fileInContainer.exists()).isFalse();
+  }
+
+  @Test
+  public void shouldFailIfParentIsFile() throws IOException {
+    final File root = new File(temporaryFolder.getRoot(), "/some/root");
+    Files.createDirectories(root.toPath());
+    assertThat(root.exists()).isTrue();
+
+    final File target = new File(root, "target");
+    Files.createFile(target.toPath());
+    assertThat(target.exists()).isTrue();
+
+    final File fileInContainer = new File(target, "/credentials");
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(fileInContainer);
+
+    assertThatThrownBy(cache::writeCache)
+        .hasMessage(
+            "Expected "
+                + target.getAbsolutePath()
+                + " to be a directory, but it was a regular file.");
+    assertThat(fileInContainer.exists()).isFalse();
+  }
+
+  @Test
+  public void shouldFailIfParentIsBrokenSymbolicLink() throws IOException {
+    final File root = new File(temporaryFolder.getRoot(), "/some/root");
+    Files.createDirectories(root.toPath());
+    assertThat(root.exists()).isTrue();
+
+    final File target = new File(root, "target");
+    Files.createDirectories(target.toPath());
+    assertThat(target.exists()).isTrue();
+
+    final File container = new File(root, ".camunda");
+    assertThat(container.exists()).isFalse();
+    Files.createSymbolicLink(container.toPath(), target.toPath());
+    assertThat(container.exists()).isTrue();
+
+    // now /some/root/.camunda -> /some/root/target
+    // we will delete target, creating a dead link.
+    assertTrue(target.delete());
+
+    final File fileInContainer = new File(container, "/credentials");
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(fileInContainer);
+
+    assertThatThrownBy(cache::writeCache)
+        .hasMessage(
+            "Expected "
+                + container.getAbsolutePath()
+                + " to be a directory, but it was a symbolic link to unresolvable path.");
+    assertThat(fileInContainer.exists()).isFalse();
+  }
+
+  @Test
+  public void shouldCreateFileOnlyIfParentIsDirectory() throws IOException {
+    final File root = new File(temporaryFolder.getRoot(), "/some/root");
+    Files.createDirectories(root.toPath());
+    assertThat(root.exists()).isTrue();
+
+    final File target = new File(root, "target");
+    Files.createDirectories(target.toPath());
+    assertThat(target.exists()).isTrue();
+
+    final File fileInContainer = new File(target, "/credentials");
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(fileInContainer);
+    cache.writeCache();
+
+    assertThat(target.exists()).isTrue();
+    assertThat(fileInContainer.exists()).isTrue();
+  }
+
+  @Test
+  public void shouldCreateDirectoryIfMissing() throws IOException {
+    final File root = new File(temporaryFolder.getRoot(), "/some/root");
+    Files.createDirectories(root.toPath());
+    assertThat(root.exists()).isTrue();
+
+    final File target = new File(root, "target");
+    Files.createFile(target.toPath());
+    assertThat(target.exists()).isTrue();
+
+    final File container = new File(root, ".camunda");
+    assertThat(container.exists()).isFalse();
+    final File fileInContainer = new File(container, "/credentials");
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(fileInContainer);
+
+    cache.writeCache();
+    assertThat(container.exists()).isTrue();
+    assertThat(fileInContainer.exists()).isTrue();
   }
 
   @Test
