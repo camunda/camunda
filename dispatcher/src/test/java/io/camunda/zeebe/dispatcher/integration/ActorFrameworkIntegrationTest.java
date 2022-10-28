@@ -125,7 +125,7 @@ public final class ActorFrameworkIntegrationTest {
     }
 
     void consume() {
-      subscription.poll(this, Integer.MAX_VALUE);
+      actor.run(() -> subscription.poll(this, Integer.MAX_VALUE));
     }
 
     @Override
@@ -175,9 +175,12 @@ public final class ActorFrameworkIntegrationTest {
     }
 
     void consume() {
-      if (subscription.peekBlock(peek, Integer.MAX_VALUE, true) > 0) {
-        actor.submit(processPeek);
-      }
+      actor.run(
+          () -> {
+            if (subscription.peekBlock(peek, Integer.MAX_VALUE, true) > 0) {
+              actor.submit(processPeek);
+            }
+          });
     }
 
     void processPeek() {
