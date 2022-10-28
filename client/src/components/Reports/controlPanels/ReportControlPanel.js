@@ -140,12 +140,12 @@ export default withErrorHandling(
     copyDefinition = async (idx) => {
       const {data} = this.props.report;
       const definitionToCopy = data.definitions[idx];
-
+      const {tenantIds, versions, name, key, displayName} = definitionToCopy;
       const newDefinition = {
         ...definitionToCopy,
-        tenantIds: [...definitionToCopy.tenantIds],
-        versions: [...definitionToCopy.versions],
-        displayName: definitionToCopy.displayName + ` (${t('common.copyLabel')})`,
+        tenantIds: [...tenantIds],
+        versions: [...versions],
+        displayName: (displayName || name || key) + ` (${t('common.copyLabel')})`,
         identifier: getRandomId(),
       };
 
