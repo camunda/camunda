@@ -172,4 +172,3 @@ global:
     camunda.cloud/source: argocd
     camunda.cloud/managed-by: Helm
     app: preview-tasklist-camunda-cloud # Should be overridden by Argo app
-    branch: main # Should be overridden by Argo app
