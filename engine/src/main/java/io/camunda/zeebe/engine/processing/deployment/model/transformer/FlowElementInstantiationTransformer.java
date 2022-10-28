@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
+import static io.camunda.zeebe.model.bpmn.validation.zeebe.FlowElementValidator.NON_EXECUTABLE_ELEMENT_TYPES;
+
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
@@ -93,16 +95,20 @@ public final class FlowElementInstantiationTransformer
     final ExecutableProcess process = context.getCurrentProcess();
     final Class<?> elementType = element.getElementType().getInstanceType();
 
-    final Function<String, AbstractFlowElement> elementFactory = ELEMENT_FACTORIES.get(elementType);
-    if (elementFactory == null) {
-      throw new IllegalStateException("no transformer found for element type: " + elementType);
+    if (!NON_EXECUTABLE_ELEMENT_TYPES.contains(elementType)) {
+
+      final Function<String, AbstractFlowElement> elementFactory =
+          ELEMENT_FACTORIES.get(elementType);
+      if (elementFactory == null) {
+        throw new IllegalStateException("no transformer found for element type: " + elementType);
+      }
+
+      final AbstractFlowElement executableElement = elementFactory.apply(element.getId());
+
+      executableElement.setElementType(
+          BpmnElementType.bpmnElementTypeFor(element.getElementType().getTypeName()));
+
+      process.addFlowElement(executableElement);
     }
-
-    final AbstractFlowElement executableElement = elementFactory.apply(element.getId());
-
-    executableElement.setElementType(
-        BpmnElementType.bpmnElementTypeFor(element.getElementType().getTypeName()));
-
-    process.addFlowElement(executableElement);
   }
 }
