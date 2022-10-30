@@ -40,6 +40,11 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
   }
 
   @Override
+  public boolean isEscalation() {
+    return false;
+  }
+
+  @Override
   public boolean isLink() {
     return false;
   }
@@ -56,6 +61,11 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
 
   @Override
   public ExecutableError getError() {
+    return null;
+  }
+
+  @Override
+  public ExecutableEscalation getEscalation() {
     return null;
   }
 
