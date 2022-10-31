@@ -170,38 +170,6 @@ public class SearchableIdentityCache implements AutoCloseable {
     return result;
   }
 
-  public List<UserDto> getUsersByEmail(final List<String> emails) {
-    List<UserDto> users = new ArrayList<>();
-    doWithReadLock(() -> {
-      try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
-        final IndexSearcher searcher = new IndexSearcher(indexReader);
-        final BooleanQuery.Builder searchBuilder = new BooleanQuery.Builder();
-        final BooleanQuery.Builder entryFilter = new BooleanQuery.Builder();
-        final List<BytesRef> emailByteRefs = emails.stream()
-          .map(BytesRef::new)
-          .collect(Collectors.toList());
-        entryFilter.add(
-          new TermInSetQuery(UserDto.Fields.email, emailByteRefs),
-          BooleanClause.Occur.MUST
-        );
-        entryFilter.add(
-          new TermQuery(new Term(IdentityDto.Fields.type, IdentityType.USER.name())),
-          BooleanClause.Occur.MUST
-        );
-        searchBuilder.add(entryFilter.build(), BooleanClause.Occur.SHOULD);
-        final TopDocs topDocs = searcher.search(searchBuilder.build(), emails.size());
-        for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-          final Document document = searcher.doc(scoreDoc.doc);
-          final UserDto userDto = mapDocumentToUserDto(document);
-          users.add(userDto);
-        }
-      } catch (IOException e) {
-        throw new OptimizeRuntimeException("Failed searching for users by email.", e);
-      }
-    });
-    return users;
-  }
-
   public IdentitySearchResultResponseDto searchIdentities(final String terms) {
     return searchIdentities(terms, 10);
   }

@@ -10,7 +10,10 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.security.ApplicationAuthorizationService;
 import org.camunda.optimize.service.security.IdentityAuthorizationService;
@@ -33,8 +36,7 @@ import java.util.function.Supplier;
 @Component
 @Slf4j
 @Conditional(CamundaPlatformCondition.class)
-public class PlatformIdentityService extends AbstractCachedIdentityService
-  implements SessionListener {
+public class PlatformIdentityService extends AbstractIdentityService implements SessionListener {
   private static final int CACHE_MAXIMUM_SIZE = 10_000;
 
   private LoadingCache<String, List<GroupDto>> userGroupsCache;
@@ -42,16 +44,18 @@ public class PlatformIdentityService extends AbstractCachedIdentityService
   private final ApplicationAuthorizationService applicationAuthorizationService;
   private final IdentityAuthorizationService identityAuthorizationService;
   private final EngineContextFactory engineContextFactory;
+  private final PlatformUserIdentityCache syncedIdentityCache;
 
   public PlatformIdentityService(final ApplicationAuthorizationService applicationAuthorizationService,
                                  final IdentityAuthorizationService identityAuthorizationService,
                                  final ConfigurationService configurationService,
                                  final EngineContextFactory engineContextFactory,
-                                 final UserIdentityCache syncedIdentityCache) {
-    super(configurationService, syncedIdentityCache);
+                                 final PlatformUserIdentityCache syncedIdentityCache) {
+    super(configurationService);
     this.applicationAuthorizationService = applicationAuthorizationService;
     this.identityAuthorizationService = identityAuthorizationService;
     this.engineContextFactory = engineContextFactory;
+    this.syncedIdentityCache = syncedIdentityCache;
     initUserGroupCache();
   }
 
@@ -130,6 +134,30 @@ public class PlatformIdentityService extends AbstractCachedIdentityService
   @Override
   public void onSessionDestroy(final String userId) {
     userGroupsCache.invalidate(userId);
+  }
+
+  public void addIdentity(final IdentityWithMetadataResponseDto identity) {
+    syncedIdentityCache.addIdentity(identity);
+  }
+
+  public IdentitySearchResultResponseDto searchForIdentitiesAsUser(final String userId,
+                                                                   final String searchString,
+                                                                   final int maxResults,
+                                                                   final boolean excludeUserGroups) {
+    final List<IdentityWithMetadataResponseDto> filteredIdentities = new ArrayList<>();
+    final IdentityType[] identityTypesToSearch = excludeUserGroups ?
+      new IdentityType[]{IdentityType.USER} : IdentityType.values();
+    IdentitySearchResultResponseDto result = syncedIdentityCache.searchIdentities(
+      searchString, identityTypesToSearch, maxResults
+    );
+    while (!result.getResult().isEmpty()
+      && filteredIdentities.size() < maxResults) {
+      // continue searching until either the maxResult number of hits has been found or
+      // the end of the cache has been reached
+      filteredIdentities.addAll(filterIdentitySearchResultByUserAuthorizations(userId, result));
+      result = syncedIdentityCache.searchIdentitiesAfter(searchString, identityTypesToSearch, maxResults, result);
+    }
+    return new IdentitySearchResultResponseDto(filteredIdentities.size(), filteredIdentities);
   }
 
   private void initUserGroupCache() {
