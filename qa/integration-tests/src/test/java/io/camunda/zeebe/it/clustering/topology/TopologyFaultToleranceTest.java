@@ -11,41 +11,43 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
-import io.camunda.zeebe.it.clustering.ClusteringRule;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.Duration;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * Checks that even with brokers connecting/disconnecting, the topology is eventually consistent.
  *
  * <p>NOTE: this could be a good candidate for randomized testing.
  */
-public final class TopologyFaultToleranceTest {
+final class TopologyFaultToleranceTest {
   private final int clusterSize = 3;
   private final int partitionsCount = 3;
   private final int replicationFactor = 3;
 
-  private final ClusteringRule clusterRule =
-      new ClusteringRule(
-          partitionsCount, replicationFactor, clusterSize, this::configureFastGossip);
-  private final GrpcClientRule clientRule = new GrpcClientRule(clusterRule);
-
-  @Rule public final RuleChain ruleChain = RuleChain.outerRule(clusterRule).around(clientRule);
+  @RegisterExtension
+  private final ClusteringRuleExtension clusterRule =
+      new ClusteringRuleExtension(
+          partitionsCount,
+          replicationFactor,
+          clusterSize,
+          this::configureBroker,
+          this::configureGateway);
 
   @Test
-  public void shouldDetectTopologyChanges() {
+  void shouldDetectTopologyChanges() {
     for (int nodeId = 0; nodeId < clusterSize; nodeId++) {
       // when
-      disconnect(nodeId);
+      final var broker = clusterRule.getBroker(nodeId);
+      clusterRule.disconnect(broker);
       awaitBrokerIsRemovedFromTopology(nodeId);
-      connect(nodeId);
+      clusterRule.connect(broker);
 
       // then
       awaitTopologyIsComplete();
@@ -53,13 +55,13 @@ public final class TopologyFaultToleranceTest {
   }
 
   @Test
-  public void shouldDetectIncompleteTopology() {
+  void shouldDetectIncompleteTopology() {
     // when - disconnect two nodes
     IntStream.range(0, clusterSize - 1)
         .parallel()
         .forEach(
             nodeId -> {
-              disconnect(nodeId);
+              clusterRule.disconnect(clusterRule.getBroker(nodeId));
               awaitBrokerIsRemovedFromTopology(nodeId);
             });
 
@@ -81,17 +83,9 @@ public final class TopologyFaultToleranceTest {
                         }));
   }
 
-  private void disconnect(final int nodeId) {
-    clusterRule.disconnect(clusterRule.getBroker(nodeId));
-  }
-
-  private void connect(final int nodeId) {
-    clusterRule.connect(clusterRule.getBroker(nodeId));
-  }
-
   private void awaitTopologyIsComplete() {
     Awaitility.await("fail over occurs and topology is complete")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(Duration.ofSeconds(300))
         .pollInterval(Duration.ofMillis(500))
         .untilAsserted(
             () ->
@@ -112,7 +106,21 @@ public final class TopologyFaultToleranceTest {
                     .doesNotContainBroker(nodeId));
   }
 
-  private void configureFastGossip(final BrokerCfg config) {
+  private void configureBroker(final BrokerCfg config) {
+    // configures the broker for faster detection of failures
+    config
+        .getCluster()
+        .getMembership()
+        .setSyncInterval(Duration.ofSeconds(1))
+        .setFailureTimeout(Duration.ofSeconds(1))
+        .setBroadcastUpdates(true)
+        .setProbeTimeout(Duration.ofMillis(100))
+        .setProbeInterval(Duration.ofMillis(250))
+        .setGossipInterval(Duration.ofMillis(250));
+  }
+
+  private void configureGateway(final GatewayCfg config) {
+    // configures the gateway for faster detection of failures
     config
         .getCluster()
         .getMembership()
