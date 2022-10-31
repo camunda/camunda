@@ -248,22 +248,18 @@ export const diObject = {set: jest.fn()};
 export const createSequenceFlows = () => {
   return [
     {
-      id: '2251799813695632',
       processInstanceId: '2251799813693731',
       activityId: 'SequenceFlow_0drux68',
     },
     {
-      id: '2251799813693749',
       processInstanceId: '2251799813693731',
       activityId: 'SequenceFlow_0j6tsnn',
     },
     {
-      id: '2251799813695543',
       processInstanceId: '2251799813693731',
       activityId: 'SequenceFlow_1dwqvrt',
     },
     {
-      id: '2251799813695629',
       processInstanceId: '2251799813693731',
       activityId: 'SequenceFlow_1fgekwd',
     },

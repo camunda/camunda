@@ -17,19 +17,15 @@ import {
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
-import {fetchProcessInstanceDetailStatistics} from 'modules/api/instances';
+import {
+  fetchProcessInstanceDetailStatistics,
+  StatisticEntity,
+} from 'modules/api/instances';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {modificationsStore} from './modifications';
 import {isProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
 
-type Statistic = {
-  activityId: string;
-  filteredActive: number;
-  active: number;
-  canceled: number;
-  incidents: number;
-  completed: number;
-};
+type Statistic = StatisticEntity & {filteredActive: number};
 
 type State = {
   statistics: Statistic[];

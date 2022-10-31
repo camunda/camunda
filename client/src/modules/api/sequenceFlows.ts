@@ -21,3 +21,4 @@ const fetchSequenceFlows = async (processInstanceId: string) => {
 };
 
 export {fetchSequenceFlows};
+export type {SequenceFlowsDto};

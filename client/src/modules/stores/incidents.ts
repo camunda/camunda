@@ -284,4 +284,4 @@ class Incidents extends NetworkReconnectionHandler {
 }
 
 export const incidentsStore = new Incidents();
-export type {Incident};
+export type {Incident, Response};

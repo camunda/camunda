@@ -24,10 +24,7 @@ import {mockSequenceFlows} from './TopPanel/index.setup';
 import {PAGE_TITLE} from 'modules/constants';
 import {getProcessName} from 'modules/utils/instance';
 import {ProcessInstance} from './index';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {createMultiInstanceFlowNodeInstances} from 'modules/testUtils';
-import {statistics} from 'modules/mocks/statistics';
 import {useNotifications} from 'modules/notifications';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -40,6 +37,17 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {createMemoryHistory} from 'history';
+import {
+  mockFetchVariables,
+  mockFetchProcessInstanceDetailStatistics,
+  mockFetchProcessInstanceIncidents,
+  mockFetchProcessInstance,
+} from 'modules/mocks/api/instances';
+import {mockFetchSequenceFlows} from 'modules/mocks/api/sequenceFlows';
+import {mockFetchFlowNodeInstances} from 'modules/mocks/api/flowNodeInstances';
+import {mockFetchProcessXML} from 'modules/mocks/api/diagram';
+import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/flowNodeMetadata';
+import {modifyProcess} from 'modules/mocks/api/modifications';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -97,68 +105,41 @@ function getWrapper(
 }
 
 const mockRequests = (contextPath: string = '') => {
-  mockServer.use(
-    rest.get(`${contextPath}/api/processes/:processId/xml`, (_, res, ctx) =>
-      res(ctx.text(''))
-    ),
-    rest.get(
-      `${contextPath}/api/process-instances/:instanceId/sequence-flows`,
-      (_, res, ctx) => res(ctx.json(mockSequenceFlows))
-    ),
-    rest.post(`${contextPath}/api/flow-node-instances`, (_, res, ctx) =>
-      res(ctx.json(processInstancesMock.level1))
-    ),
-    rest.get(
-      `${contextPath}/api/process-instances/core-statistics`,
-      (_, res, ctx) => res(ctx.json(statistics))
-    ),
-    rest.get(
-      `${contextPath}/api/process-instances/:processInstanceId/statistics`,
-      (_, res, ctx) =>
-        res(
-          ctx.json([
-            {
-              activityId: 'taskD',
-              active: 1,
-              incidents: 1,
-              completed: 0,
-              canceled: 0,
-            },
-          ])
-        )
-    ),
-    rest.post(
-      `${contextPath}/api/process-instances/:instanceId/variables`,
-      (_, res, ctx) =>
-        res(
-          ctx.json([
-            {
-              id: '2251799813686037-mwst',
-              name: 'newVariable',
-              value: '1234',
-              scopeId: '2251799813686037',
-              processInstanceId: '2251799813686037',
-              hasActiveOperation: false,
-            },
-          ])
-        )
-    ),
-    rest.get(
-      `${contextPath}/api/process-instances/:instanceId/incidents`,
-      (_, res, ctx) =>
-        res(
-          ctx.json({
-            count: 2,
-          })
-        )
-    )
+  mockFetchProcessInstance(contextPath).withSuccess(
+    testData.fetch.onPageLoad.processInstanceWithIncident
   );
+  mockFetchProcessXML(contextPath).withSuccess('');
+  mockFetchSequenceFlows(contextPath).withSuccess(mockSequenceFlows);
+  mockFetchFlowNodeInstances(contextPath).withSuccess(
+    processInstancesMock.level1
+  );
+  mockFetchProcessInstanceDetailStatistics(contextPath).withSuccess([
+    {
+      activityId: 'taskD',
+      active: 1,
+      incidents: 1,
+      completed: 0,
+      canceled: 0,
+    },
+  ]);
+  mockFetchVariables(contextPath).withSuccess([
+    {
+      id: '2251799813686037-mwst',
+      name: 'newVariable',
+      value: '1234',
+      scopeId: '2251799813686037',
+      processInstanceId: '2251799813686037',
+      hasActiveOperation: false,
+    },
+  ]);
+  mockFetchProcessInstanceIncidents(contextPath).withSuccess({
+    count: 2,
+  });
 };
 
 describe('Instance', () => {
   beforeEach(() => {
     mockRequests();
-
     modificationsStore.reset();
   });
 
@@ -168,12 +149,6 @@ describe('Instance', () => {
 
   it('should render and set the page title', async () => {
     jest.useFakeTimers();
-
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
-      )
-    );
 
     render(<ProcessInstance />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(
@@ -187,7 +162,7 @@ describe('Instance', () => {
       expect(screen.getByText('newVariable')).toBeInTheDocument()
     );
     expect(
-      within(screen.getByTestId('instance-header')).getByTestId('ACTIVE-icon')
+      within(screen.getByTestId('instance-header')).getByTestId('INCIDENT-icon')
     ).toBeInTheDocument();
 
     expect(document.title).toBe(
@@ -204,11 +179,7 @@ describe('Instance', () => {
   it('should display skeletons until instance is available', async () => {
     jest.useFakeTimers();
 
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.status(404), ctx.json({}))
-      )
-    );
+    mockFetchProcessInstance().withServerError(404);
 
     render(<ProcessInstance />, {wrapper: getWrapper()});
 
@@ -217,10 +188,8 @@ describe('Instance', () => {
     expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('skeleton-rows')).toBeInTheDocument();
 
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
-      )
+    mockFetchProcessInstance().withSuccess(
+      testData.fetch.onPageLoad.processInstance
     );
 
     jest.runOnlyPendingTimers();
@@ -250,11 +219,7 @@ describe('Instance', () => {
   it('should poll 3 times for not found instance, then redirect to instances page and display notification', async () => {
     jest.useFakeTimers();
 
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res(ctx.status(404), ctx.json({}))
-      )
-    );
+    mockFetchProcessInstance().withServerError(404);
 
     render(<ProcessInstance />, {wrapper: getWrapper('/processes/123')});
 
@@ -263,8 +228,13 @@ describe('Instance', () => {
     expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('skeleton-rows')).toBeInTheDocument();
 
+    mockFetchProcessInstance().withServerError(404);
     jest.runOnlyPendingTimers();
+
+    mockFetchProcessInstance().withServerError(404);
     jest.runOnlyPendingTimers();
+
+    mockFetchProcessInstance().withServerError(404);
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {
@@ -286,12 +256,6 @@ describe('Instance', () => {
   });
 
   it('should display the modifications header and footer when modification mode is enabled', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
-      )
-    );
-
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
@@ -335,12 +299,6 @@ describe('Instance', () => {
   });
 
   it('should display confirmation modal when discard all is clicked during the modification mode', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
-      )
-    );
-
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
@@ -379,12 +337,6 @@ describe('Instance', () => {
   });
 
   it('should display no planned modifications modal when apply modifications is clicked during the modification mode', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
-      )
-    );
-
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
@@ -419,16 +371,6 @@ describe('Instance', () => {
   });
 
   it('should display summary modifications modal when apply modifications is clicked during the modification mode', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
-      ),
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) => res.once(ctx.json(undefined))
-      )
-    );
-
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
@@ -442,6 +384,18 @@ describe('Instance', () => {
         name: /modify instance/i,
       })
     );
+
+    mockFetchFlowNodeMetadata().withSuccess({});
+    mockFetchVariables().withSuccess([
+      {
+        id: '2251799813686037-mwst',
+        name: 'newVariable',
+        value: '1234',
+        scopeId: '2251799813686037',
+        processInstanceId: '2251799813686037',
+        hasActiveOperation: false,
+      },
+    ]);
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'taskD',
@@ -501,12 +455,6 @@ describe('Instance', () => {
       'handlePolling'
     );
 
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
-      )
-    );
-
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
@@ -515,6 +463,8 @@ describe('Instance', () => {
     storeStateLocally({
       [`hideModificationHelperModal`]: true,
     });
+
+    mockRequests();
 
     expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
@@ -549,6 +499,8 @@ describe('Instance', () => {
     );
 
     clearPollingStates();
+    mockRequests();
+
     jest.runOnlyPendingTimers();
 
     expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
@@ -561,6 +513,8 @@ describe('Instance', () => {
     ).toHaveBeenCalledTimes(1);
 
     clearPollingStates();
+    mockRequests();
+
     jest.runOnlyPendingTimers();
 
     expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
@@ -576,6 +530,8 @@ describe('Instance', () => {
     await user.click(screen.getByTestId('discard-button'));
 
     clearPollingStates();
+    mockRequests();
+
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {
@@ -586,7 +542,6 @@ describe('Instance', () => {
 
     expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(2);
     expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(2);
-    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(2);
     expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(2);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(2);
     expect(
@@ -598,20 +553,10 @@ describe('Instance', () => {
   });
 
   it('should display loading overlay when modifications are applied', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(testData.fetch.onPageLoad.processInstance))
-      ),
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) => res.once(ctx.json(undefined))
-      ),
+    mockFetchFlowNodeMetadata().withSuccess({});
+    modifyProcess().withDelay({});
 
-      rest.post(
-        '/api/process-instances/:processInstanceId/modify',
-        (_, res, ctx) => res.once(ctx.delay(1000), ctx.json({}))
-      )
-    );
+    jest.useFakeTimers();
 
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(
@@ -631,7 +576,8 @@ describe('Instance', () => {
       screen.getByText('Process Instance Modification Mode')
     ).toBeInTheDocument();
 
-    jest.useFakeTimers();
+    mockFetchVariables().withSuccess([]);
+    mockFetchFlowNodeMetadata().withSuccess({});
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'taskD',
@@ -647,7 +593,13 @@ describe('Instance', () => {
     await user.click(screen.getByRole('button', {name: 'Apply'}));
     expect(screen.getByText(/applying modifications.../i)).toBeInTheDocument();
 
-    processInstanceDetailsStore.stopPolling();
+    mockRequests();
+
+    mockFetchProcessInstance().withSuccess({
+      ...testData.fetch.onPageLoad.processInstance,
+      state: 'COMPLETED',
+    });
+
     jest.runOnlyPendingTimers();
 
     await waitForElementToBeRemoved(() =>
@@ -670,15 +622,7 @@ describe('Instance', () => {
       'handlePolling'
     );
 
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
-      ),
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) => res.once(ctx.json(undefined))
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess({});
 
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(
@@ -692,6 +636,8 @@ describe('Instance', () => {
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
 
     clearPollingStates();
+
+    mockRequests();
     jest.runOnlyPendingTimers();
 
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
@@ -703,6 +649,8 @@ describe('Instance', () => {
     );
 
     clearPollingStates();
+
+    mockRequests();
     jest.runOnlyPendingTimers();
 
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
@@ -718,6 +666,8 @@ describe('Instance', () => {
     });
 
     clearPollingStates();
+
+    mockRequests();
     jest.runOnlyPendingTimers();
 
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
@@ -729,12 +679,6 @@ describe('Instance', () => {
   });
 
   it('should block navigation when modification mode is enabled', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
-      )
-    );
-
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
@@ -793,12 +737,6 @@ describe('Instance', () => {
     };
 
     mockRequests(contextPath);
-
-    mockServer.use(
-      rest.get('/custom/api/process-instances/:id', (_, res, ctx) =>
-        res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
-      )
-    );
 
     const {user} = render(<ProcessInstance />, {
       wrapper: getWrapper(`${contextPath}/processes/4294980768`, contextPath),
@@ -860,12 +798,6 @@ describe('Instance', () => {
     };
 
     mockRequests(contextPath);
-
-    mockServer.use(
-      rest.get('/custom/api/process-instances/:id', (_, res, ctx) =>
-        res(ctx.json(testData.fetch.onPageLoad.processInstanceWithIncident))
-      )
-    );
 
     const {user} = render(
       <>

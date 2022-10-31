@@ -5,12 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
+import {mockGetRequest} from './mockRequest';
 import {SequenceFlowsDto} from 'modules/api/sequenceFlows';
 
-const getProcessedSequenceFlows = (sequenceFlows: SequenceFlowsDto) => {
-  return sequenceFlows
-    .map((sequenceFlow) => sequenceFlow.activityId)
-    .filter((value, index, self) => self.indexOf(value) === index);
-};
+const mockFetchSequenceFlows = (contextPath = '') =>
+  mockGetRequest<SequenceFlowsDto>(
+    `${contextPath}/api/process-instances/:processInstanceId/sequence-flows`
+  );
 
-export {getProcessedSequenceFlows};
+export {mockFetchSequenceFlows};

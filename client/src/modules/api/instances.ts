@@ -10,6 +10,14 @@ import {RequestFilters} from 'modules/utils/filter';
 
 const URL = '/api/process-instances';
 
+type StatisticEntity = {
+  activityId: string;
+  active: number;
+  canceled: number;
+  incidents: number;
+  completed: number;
+};
+
 type BatchOperationQuery = {
   active?: boolean;
   canceled?: boolean;
@@ -175,7 +183,7 @@ async function fetchVariable(id: VariableEntity['id']) {
   return request({url: `/api/variables/${id}`});
 }
 
-export type {VariablePayload};
+export type {VariablePayload, StatisticEntity};
 export {
   fetchProcessInstances,
   fetchProcessInstance,

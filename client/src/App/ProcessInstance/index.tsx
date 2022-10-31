@@ -95,7 +95,6 @@ const ProcessInstance: React.FC = observer(() => {
           variablesStore.startPolling(processInstanceId);
           sequenceFlowsStore.startPolling(processInstanceId);
           processInstanceDetailsStore.startPolling(processInstanceId);
-          incidentsStore.startPolling(processInstanceId);
           flowNodeInstanceStore.startPolling();
           processInstanceDetailsStatisticsStore.startPolling(processInstanceId);
         }
