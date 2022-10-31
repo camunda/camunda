@@ -12,6 +12,7 @@ import io.camunda.zeebe.dispatcher.ClaimedFragment;
 import io.camunda.zeebe.dispatcher.Dispatcher;
 import io.camunda.zeebe.dispatcher.Dispatchers;
 import io.camunda.zeebe.dispatcher.FragmentHandler;
+import io.camunda.zeebe.dispatcher.Loggers;
 import io.camunda.zeebe.dispatcher.Subscription;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -75,6 +76,11 @@ public final class ActorFrameworkIntegrationTest {
       actor.run(this::produce);
     }
 
+    @Override
+    protected void onActorClosed() {
+      Loggers.DISPATCHER_LOGGER.debug("Producer closed!");
+    }
+
     void produce() {
       if (dispatcher.claimSingleFragment(claim, 4534) >= 0) {
         claim.getBuffer().putInt(claim.getOffset(), counter++);
@@ -94,6 +100,7 @@ public final class ActorFrameworkIntegrationTest {
     final Dispatcher dispatcher;
     Subscription subscription;
     int counter = 0;
+    volatile boolean closed;
 
     Consumer(final Dispatcher dispatcher) {
       this.dispatcher = dispatcher;
@@ -111,8 +118,17 @@ public final class ActorFrameworkIntegrationTest {
           });
     }
 
+    @Override
+    protected void onActorClosed() {
+      closed = true;
+      Loggers.DISPATCHER_LOGGER.debug("Consumer is closed!");
+    }
+
     void consume() {
-      subscription.poll(this, Integer.MAX_VALUE);
+      if (closed) {
+        Loggers.DISPATCHER_LOGGER.debug("Consuming next fragment...");
+      }
+      actor.run(() -> subscription.poll(this, Integer.MAX_VALUE));
     }
 
     @Override
@@ -136,6 +152,7 @@ public final class ActorFrameworkIntegrationTest {
     final BlockPeek peek = new BlockPeek();
     Subscription subscription;
     int counter = 0;
+    volatile boolean closed = false;
     final Runnable processPeek =
         () -> {
           try {
@@ -161,10 +178,22 @@ public final class ActorFrameworkIntegrationTest {
           });
     }
 
+    @Override
+    protected void onActorClosed() {
+      closed = true;
+      Loggers.DISPATCHER_LOGGER.debug("Consumer is closed!");
+    }
+
     void consume() {
-      if (subscription.peekBlock(peek, Integer.MAX_VALUE, true) > 0) {
-        actor.submit(processPeek);
+      if (closed) {
+        Loggers.DISPATCHER_LOGGER.debug("Consuming next fragment...");
       }
+      actor.run(
+          () -> {
+            if (subscription.peekBlock(peek, Integer.MAX_VALUE, true) > 0) {
+              actor.submit(processPeek);
+            }
+          });
     }
 
     void processPeek() {
