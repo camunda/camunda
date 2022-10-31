@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {processResult, getReportResult} from './reportService';
+import {processResult, getReportResult, isCategoricalBar} from './reportService';
 
 import {post} from 'request';
 
@@ -109,5 +109,45 @@ it('should convert group by none distribute by process hypermap report to normal
         ],
       },
     ],
+  });
+});
+
+describe('isCategoricalBar', () => {
+  it('should return false if the visualization is not a bar chart', () => {
+    expect(
+      isCategoricalBar({
+        visualization: 'line',
+        configuration: {xml: 'fooXml'},
+        groupBy: {
+          type: 'variable',
+          value: {type: 'String'},
+        },
+      })
+    ).toBe(false);
+  });
+
+  it('should return false if the grouping is not categorical', () => {
+    expect(
+      isCategoricalBar({
+        visualization: 'bar',
+        configuration: {xml: 'fooXml'},
+        groupBy: {
+          type: 'startDate',
+        },
+      })
+    ).toBe(false);
+  });
+
+  it('should return true for categorical bar chart reports', () => {
+    expect(
+      isCategoricalBar({
+        visualization: 'bar',
+        configuration: {xml: 'fooXml'},
+        groupBy: {
+          type: 'variable',
+          value: {type: 'String'},
+        },
+      })
+    ).toBe(true);
   });
 });

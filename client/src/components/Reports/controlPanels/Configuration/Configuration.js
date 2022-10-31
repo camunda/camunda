@@ -9,6 +9,7 @@ import React from 'react';
 
 import {Popover, Form, Icon, Button, ColorPicker} from 'components';
 import {t} from 'translation';
+import {isCategoricalBar} from 'services';
 
 import * as visualizations from './visualizations';
 import ShowInstanceCount from './ShowInstanceCount';
@@ -29,6 +30,8 @@ function convertToChangeset(config) {
 
 export default class Configuration extends React.Component {
   resetToDefaults = () => {
+    const {data} = this.props.report;
+
     this.updateConfiguration(
       convertToChangeset({
         precision: null,
@@ -71,7 +74,7 @@ export default class Configuration extends React.Component {
           includeNewVariables: true,
           includedColumns: [],
           excludedColumns: [],
-          columnOrder: this.props.report.data.configuration.tableColumns.columnOrder,
+          columnOrder: data.configuration.tableColumns.columnOrder,
         },
         pointMarkers: true,
         xLabel: '',
@@ -98,7 +101,7 @@ export default class Configuration extends React.Component {
           duration: 'line',
         },
         stackedBar: false,
-        horizontalBar: false,
+        horizontalBar: isCategoricalBar(data),
         logScale: false,
       }),
       true

@@ -106,3 +106,16 @@ function convertHyperMapToMap(report) {
 
   return {...report, result: newResult};
 }
+
+export function isCategoricalBar({groupBy, visualization}) {
+  if (
+    visualization === 'bar' &&
+    (['flowNodes', 'userTasks', 'assignee', 'candidateGroup'].includes(groupBy?.type) ||
+      (['variable', 'inputVariable', 'outputVariable'].includes(groupBy?.type) &&
+        ['Boolean', 'String'].includes(groupBy.value.type)))
+  ) {
+    return true;
+  }
+
+  return false;
+}

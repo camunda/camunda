@@ -8,6 +8,7 @@
 import {createReportUpdate} from './reportConfig';
 
 import {getVariableLabel} from 'variables';
+import {isCategoricalBar} from '../reportService';
 
 const report = {
   configuration: {
@@ -33,6 +34,10 @@ const report = {
 
 jest.mock('variables', () => ({
   getVariableLabel: jest.fn(),
+}));
+
+jest.mock('../reportService', () => ({
+  isCategoricalBar: jest.fn(),
 }));
 
 it('should update the payload when selecting a new report setting', () => {
@@ -135,34 +140,18 @@ it('should update sorting', () => {
 });
 
 describe('horizonalBarChart', () => {
-  it('should keep horizontalBar config as false for reports grouped by date', () => {
+  it('should keep horizontalBar config as false for non categorical reports', () => {
+    isCategoricalBar.mockReturnValueOnce(false);
     expect(
       createReportUpdate('process', report, 'group', 'endDate').configuration.$set.horizontalBar
     ).toBe(false);
   });
 
-  it('should set horizontalBar config to true for reports grouped by boolean variable', () => {
-    expect(
-      createReportUpdate('process', report, 'group', 'variable', {
-        groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
-      }).configuration.$set.horizontalBar
-    ).toEqual(true);
-  });
-
-  it('should set horizontalBar config to true for reports grouped by flow node', () => {
-    const heatmapReport = {
-      ...report,
-      view: {entity: 'flowNode', properties: ['duration']},
-      groupBy: {type: 'flowNodes'},
-      visualization: 'heat',
-      configuration: {
-        ...report.configuration,
-        heatmapTargetValue: {active: true, values: {flowNode: {value: 12, unit: 'hours'}}},
-      },
-    };
+  it('should set horizontalBar config to true for catogorical bar chart reports', () => {
+    isCategoricalBar.mockReturnValueOnce(true);
 
     expect(
-      createReportUpdate('process', heatmapReport, 'visualization', 'barChart').configuration.$set
+      createReportUpdate('process', report, 'visualization', 'barChart').configuration.$set
         .horizontalBar
     ).toEqual(true);
   });

@@ -601,9 +601,10 @@
         "legend": "Line points",
         "enableMarkers": "Enable point markers"
       },
-      "stackedBars": {
+      "display": {
         "legend": "Display",
-        "enableStackedBars": "Stacked bars"
+        "enableStackedBars": "Stacked bars",
+        "horizontalBars": "Horizontal bars"
       },
       "limitPrecision": {
         "legend": "Custom Precision",

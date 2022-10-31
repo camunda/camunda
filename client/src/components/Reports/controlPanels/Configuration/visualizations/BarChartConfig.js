@@ -28,6 +28,7 @@ export default function BarChartConfig({onChange, report}) {
     distributedBy.type !== 'none' &&
     groupBy.type !== 'none' &&
     ['barLine', 'bar'].includes(visualization);
+  const isHorizontalPossible = !combined && visualization === 'bar';
   const isStacked = isStackingPossible && configuration.stackedBar;
   const isHorizontal = configuration.horizontalBar;
 
@@ -61,14 +62,24 @@ export default function BarChartConfig({onChange, report}) {
           }}
         />
       </fieldset>
-      {isStackingPossible && (
-        <fieldset className="stackedBars">
-          <legend>{t('report.config.stackedBars.legend')}</legend>
-          <Switch
-            checked={configuration.stackedBar}
-            onChange={({target: {checked}}) => onChange({stackedBar: {$set: checked}})}
-            label={t('report.config.stackedBars.enableStackedBars')}
-          />
+
+      {(isStackingPossible || isHorizontalPossible) && (
+        <fieldset className="display">
+          <legend>{t('report.config.display.legend')}</legend>
+          {isHorizontalPossible && (
+            <Switch
+              checked={configuration.horizontalBar}
+              onChange={({target: {checked}}) => onChange({horizontalBar: {$set: checked}})}
+              label={t('report.config.display.horizontalBars')}
+            />
+          )}
+          {isStackingPossible && (
+            <Switch
+              checked={configuration.stackedBar}
+              onChange={({target: {checked}}) => onChange({stackedBar: {$set: checked}})}
+              label={t('report.config.display.enableStackedBars')}
+            />
+          )}
         </fieldset>
       )}
       <fieldset>

@@ -25,7 +25,8 @@ export default function createPlugins({updateReport, report: {combined, data, re
     !combined &&
     updateReport &&
     ['startDate', 'evaluationDateTime', 'endDate'].includes(data.groupBy.type) &&
-    ['line', 'bar'].includes(data.visualization)
+    ['line', 'bar'].includes(data.visualization) &&
+    !data.configuration.horizontalBar
   ) {
     const dataPoints = result.data.map(({key}) => key);
 

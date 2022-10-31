@@ -601,9 +601,10 @@
         "legend": "Linienpunkte",
         "enableMarkers": "Punktmarkierungen aktivieren"
       },
-      "stackedBars": {
+      "display": {
         "legend": "Anzeige",
-        "enableStackedBars": "Gestapelte Balken"
+        "enableStackedBars": "Gestapelte Balken",
+        "horizontalBars": "Horizontale Balken"
       },
       "limitPrecision": {
         "legend": "Genauigkeit einstellen",
