@@ -14,7 +14,7 @@ import {
   IReactionDisposer,
   override,
 } from 'mobx';
-import {fetchSequenceFlows} from 'modules/api/instances';
+import {fetchSequenceFlows} from 'modules/api/sequenceFlows';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {getProcessedSequenceFlows} from './mappers';
 import {isInstanceRunning} from './utils/isInstanceRunning';
@@ -72,39 +72,27 @@ class SequenceFlows extends NetworkReconnectionHandler {
 
   fetchProcessSequenceFlows = this.retryOnConnectionLost(
     async (instanceId: ProcessInstanceEntity['id']) => {
-      try {
-        const response = await fetchSequenceFlows(instanceId);
+      const response = await fetchSequenceFlows(instanceId);
 
-        if (response.ok) {
-          this.setItems(getProcessedSequenceFlows(await response.json()));
-        } else {
-          logger.error('Failed to fetch Sequence Flows');
-        }
-      } catch (error) {
-        logger.error('Failed to fetch Sequence Flows');
-        logger.error(error);
+      if (response.isSuccess) {
+        this.setItems(getProcessedSequenceFlows(response.data ?? []));
       }
     }
   );
 
   handlePolling = async (instanceId: ProcessInstanceEntity['id']) => {
-    try {
-      this.isPollRequestRunning = true;
-      const response = await fetchSequenceFlows(instanceId);
+    this.isPollRequestRunning = true;
+    const {isSuccess, data} = await fetchSequenceFlows(instanceId);
 
-      if (this.intervalId !== null && response.ok) {
-        this.setItems(getProcessedSequenceFlows(await response.json()));
-      }
-
-      if (!response.ok) {
-        logger.error('Failed to poll Sequence Flows');
-      }
-    } catch (error) {
-      logger.error('Failed to poll Sequence Flows');
-      logger.error(error);
-    } finally {
-      this.isPollRequestRunning = false;
+    if (this.intervalId !== null && isSuccess) {
+      this.setItems(getProcessedSequenceFlows(data ?? []));
     }
+
+    if (!isSuccess) {
+      logger.error('Failed to poll Sequence Flows');
+    }
+
+    this.isPollRequestRunning = false;
   };
 
   startPolling = async (instanceId: ProcessInstanceEntity['id']) => {

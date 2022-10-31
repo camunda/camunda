@@ -72,12 +72,6 @@ async function fetchProcessInstances({
   });
 }
 
-async function fetchSequenceFlows(
-  processInstanceId: ProcessInstanceEntity['id']
-) {
-  return request({url: `${URL}/${processInstanceId}/sequence-flows`});
-}
-
 async function fetchGroupedProcesses() {
   return request({url: '/api/processes/grouped'});
 }
@@ -186,7 +180,6 @@ export {
   fetchProcessInstances,
   fetchProcessInstance,
   fetchProcessInstanceIncidents,
-  fetchSequenceFlows,
   fetchGroupedProcesses,
   fetchProcessCoreStatistics,
   fetchProcessInstancesByIds,

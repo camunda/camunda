@@ -15,7 +15,11 @@ import {
   override,
 } from 'mobx';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {fetchFlowNodeInstances} from 'modules/api/flowNodeInstances';
+import {
+  fetchFlowNodeInstances,
+  FlowNodeInstanceDto,
+  FlowNodeInstancesDto,
+} from 'modules/api/flowNodeInstances';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {isEqual} from 'lodash';
@@ -24,24 +28,8 @@ import {modificationsStore} from './modifications';
 const MAX_PROCESS_INSTANCES_STORED = 200;
 const MAX_INSTANCES_PER_REQUEST = 50;
 
-type FlowNodeInstanceType = {
-  id: string;
-  type: string;
-  state?: InstanceEntityState;
-  flowNodeId: string;
-  startDate: string;
-  endDate: null | string;
-  treePath: string;
-  sortValues: [string, string] | [];
-  isPlaceholder?: boolean;
-};
-
-type FlowNodeInstances = {
-  [treePath: string]: {
-    running: boolean | null;
-    children: FlowNodeInstanceType[];
-  };
-};
+type FlowNodeInstanceType = FlowNodeInstanceDto & {isPlaceholder?: boolean};
+type FlowNodeInstances = FlowNodeInstancesDto<FlowNodeInstanceType>;
 
 type State = {
   status:
@@ -133,22 +121,16 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
       return;
     }
 
-    try {
-      this.isPollRequestRunning = true;
-      const response = await fetchFlowNodeInstances(queries);
+    this.isPollRequestRunning = true;
+    const response = await fetchFlowNodeInstances(queries);
 
-      if (response.ok) {
-        if (this.intervalId !== null) {
-          this.handlePollSuccess(await response.json());
-        }
-      } else {
-        this.handlePollFailure();
+    if (response.isSuccess) {
+      if (this.intervalId !== null) {
+        this.handlePollSuccess(response.data ?? {});
       }
-    } catch (error) {
-      this.handlePollFailure(error);
-    } finally {
-      this.isPollRequestRunning = false;
     }
+
+    this.isPollRequestRunning = false;
   };
 
   fetchNext = async (treePath: string) => {
@@ -286,29 +268,25 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
 
     this.stopPolling();
 
-    try {
-      const response = await fetchFlowNodeInstances([
-        {
-          processInstanceId: processInstanceId,
-          treePath,
-          pageSize,
-          searchAfter,
-          searchBefore,
-        },
-      ]);
+    const response = await fetchFlowNodeInstances([
+      {
+        processInstanceId: processInstanceId,
+        treePath,
+        pageSize,
+        searchAfter,
+        searchBefore,
+      },
+    ]);
 
-      if (response.ok) {
-        return response.json();
-      } else {
-        this.handleFetchFailure();
-      }
-    } catch (error) {
-      this.handleFetchFailure(error);
-    } finally {
-      if (!modificationsStore.isModificationModeEnabled) {
-        this.startPolling();
-      }
+    if (!response.isSuccess) {
+      this.handleFetchFailure();
     }
+
+    if (!modificationsStore.isModificationModeEnabled) {
+      this.startPolling();
+    }
+
+    return response.data;
   };
 
   removeSubTree = ({treePath}: {treePath: string}) => {
@@ -363,7 +341,6 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
 
   handleFetchFailure = (error?: unknown) => {
     this.state.status = 'error';
-    logger.error('Failed to fetch flow node instances');
     if (error !== undefined) {
       logger.error(error);
     }
@@ -399,13 +376,6 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
         }
       }
     );
-  };
-
-  handlePollFailure = (error?: unknown) => {
-    logger.error('Failed to poll flow node instances');
-    if (error !== undefined) {
-      logger.error(error);
-    }
   };
 
   startPolling = () => {

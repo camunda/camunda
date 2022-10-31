@@ -13,8 +13,7 @@ import {
   reaction,
   IReactionDisposer,
 } from 'mobx';
-import {fetchDecisionXML} from 'modules/api/decisions';
-import {logger} from 'modules/logger';
+import {fetchDecisionXML} from 'modules/api/decisions/decisionXml';
 import {decisionInstanceDetailsStore} from './decisionInstanceDetails';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
@@ -60,16 +59,12 @@ class DecisionXml extends NetworkReconnectionHandler {
     this.retryOnConnectionLost(async (decisionDefinitionId: string) => {
       this.startFetching();
 
-      try {
-        const response = await fetchDecisionXML(decisionDefinitionId);
+      const response = await fetchDecisionXML(decisionDefinitionId);
 
-        if (response.ok) {
-          this.handleFetchSuccess(await response.text());
-        } else {
-          this.handleFetchFailure();
-        }
-      } catch (error) {
-        this.handleFetchFailure(error);
+      if (response.isSuccess) {
+        this.handleFetchSuccess(response.data ?? '');
+      } else {
+        this.handleFetchFailure();
       }
     });
 
@@ -78,13 +73,8 @@ class DecisionXml extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchFailure = (error?: unknown) => {
+  handleFetchFailure = () => {
     this.state.status = 'error';
-
-    logger.error('Failed to fetch decision xml');
-    if (error !== undefined) {
-      logger.error(error);
-    }
   };
 
   startFetching = () => {

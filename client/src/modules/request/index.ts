@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {logger} from 'modules/logger';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mergePathname} from './mergePathname';
 
@@ -43,4 +44,37 @@ async function request({url, method, body, headers, signal}: RequestParams) {
   return response;
 }
 
-export {request};
+async function requestAndParse<T>(props: RequestParams) {
+  const {url} = props;
+
+  try {
+    const response = await request(props);
+
+    if (!response.ok) {
+      logger.error(`Failed to fetch ${url}`);
+
+      return {
+        isSuccess: false,
+        statusCode: response.status,
+        data: undefined,
+      };
+    }
+    return {
+      isSuccess: true,
+      statusCode: response.status,
+      data: (response.headers.get('content-type')?.includes('application/json')
+        ? await response.json()
+        : await response.text()) as T,
+    };
+  } catch (error) {
+    logger.error(`Failed to fetch ${url}`);
+    logger.error(error);
+    return {
+      isSuccess: false,
+      status: 0,
+      data: undefined,
+    };
+  }
+}
+
+export {request, requestAndParse};

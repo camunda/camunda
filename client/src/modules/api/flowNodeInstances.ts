@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {request} from 'modules/request';
+import {requestAndParse} from 'modules/request';
 import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 
 type Query = {
@@ -17,8 +17,26 @@ type Query = {
   searchAfterOrEqual?: FlowNodeInstance['sortValues'];
 };
 
+type FlowNodeInstanceDto = {
+  id: string;
+  type: string;
+  state?: InstanceEntityState;
+  flowNodeId: string;
+  startDate: string;
+  endDate: null | string;
+  treePath: string;
+  sortValues: [string, string] | [];
+};
+
+type FlowNodeInstancesDto<T> = {
+  [treePath: string]: {
+    running: boolean | null;
+    children: T[];
+  };
+};
+
 async function fetchFlowNodeInstances(queries: Query[]) {
-  return request({
+  return requestAndParse<FlowNodeInstancesDto<FlowNodeInstanceDto>>({
     url: '/api/flow-node-instances',
     method: 'POST',
     body: {queries},
@@ -26,3 +44,4 @@ async function fetchFlowNodeInstances(queries: Query[]) {
 }
 
 export {fetchFlowNodeInstances};
+export type {FlowNodeInstanceDto, FlowNodeInstancesDto};

@@ -19,13 +19,6 @@ type DecisionInstancesQuery = {
   pageSize?: number;
 };
 
-async function fetchDecisionXML(decisionDefinitionId: string) {
-  return request({
-    url: `/api/decisions/${decisionDefinitionId}/xml`,
-    method: 'GET',
-  });
-}
-
 async function fetchDecisionInstance(decisionInstanceId: string) {
   return request({
     url: `/api/decision-instances/${decisionInstanceId}`,
@@ -54,7 +47,6 @@ async function fetchGroupedDecisions() {
 }
 
 export {
-  fetchDecisionXML,
   fetchDecisionInstance,
   fetchDecisionInstances,
   fetchDrdData,
