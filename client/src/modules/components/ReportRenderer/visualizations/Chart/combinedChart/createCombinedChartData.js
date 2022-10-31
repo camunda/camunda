@@ -129,8 +129,9 @@ export function extractCombinedData({report, theme, targetValue}, measureIdx = 0
   }
 
   const unitedResults = uniteResults(resultArr, keys);
-  const labels =
+  let labels =
     data.visualization === 'number' ? reportsNames : keys.map((key) => labelsMap[key] || key);
+  labels = labels.map((label) => formatters.formatLabel(label));
 
   return {
     labels,

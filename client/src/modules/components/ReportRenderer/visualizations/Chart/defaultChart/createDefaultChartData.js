@@ -75,7 +75,7 @@ export function extractDefaultChartData({report, theme, targetValue}, measureIdx
   const result = processResult({...report, result: report.result.measures[measureIdx]});
   const formattedResult = formatReportResult(data, result.data);
 
-  const labels = formattedResult.map(({key, label}) => label || key);
+  const labels = formattedResult.map(({key, label}) => formatters.formatLabel(label || key));
 
   return {
     labels,

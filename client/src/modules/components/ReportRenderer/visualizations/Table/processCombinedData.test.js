@@ -24,6 +24,7 @@ jest.mock('./service', () => ({
     ['c', 3, '12.3%', 3, '12.3%'],
   ]),
   sortColumns: (head, body) => ({sortedHead: head, sortedBody: body}),
+  formatLabelsForTableBody: (body) => body,
 }));
 
 const singleReport = {

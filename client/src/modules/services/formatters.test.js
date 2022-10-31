@@ -21,6 +21,7 @@ import {
   formatVersions,
   formatTenants,
   convertToDecimalTimeUnit,
+  formatLabel,
 } from './formatters';
 const nbsp = '\u00A0';
 
@@ -502,5 +503,36 @@ describe('formatTenants', () => {
 
   it('should fall back to tenant ids if no name is set', () => {
     expect(formatTenants(['b', 'c'], tenantInfo)).toBe('Tenant B, c');
+  });
+});
+
+describe('formatLabel', () => {
+  it('should shorten to long string label', () => {
+    const string = new Array(55).join('a'); //generates string of length 54 filled with letter 'a'
+    const result = formatLabel(string);
+
+    expect(result.length).toBe(53);
+    expect(result.slice(50)).toBe('...');
+  });
+
+  it('should shorten to long number label', () => {
+    const string = new Array(55).join('1'); //generates string of length 54 filled with letter '1'
+
+    expect(formatLabel(string)).toBe('1.111111111111111e+53');
+  });
+
+  it('should not change object labels and null values', () => {
+    const object = {};
+
+    expect(formatLabel(object)).toBe(object);
+    expect(formatLabel(null)).toBe(null);
+  });
+
+  it('should only format number labels when numberOnly is true', () => {
+    const numberString = new Array(55).join('1');
+    const string = new Array(55).join('a');
+
+    expect(formatLabel(numberString, true)).toBe('1.111111111111111e+53');
+    expect(formatLabel(string, true)).toBe(string);
   });
 });

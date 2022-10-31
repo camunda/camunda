@@ -8,7 +8,7 @@
 import {reportConfig, formatters, processResult} from 'services';
 import {t} from 'translation';
 
-import {sortColumns} from './service';
+import {formatLabelsForTableBody, sortColumns} from './service';
 
 const {formatReportResult, getRelativeValue, frequency, duration} = formatters;
 
@@ -34,7 +34,7 @@ export default function processDefaultData({report}, processVariables) {
   const groupString = config.group.find(({matcher}) => matcher(data)).label();
 
   const head = [];
-  const body = [];
+  let body = [];
 
   if (reportType === 'process' && (groupBy.type === 'duration' || groupBy.type.includes('Date'))) {
     head.push(viewString + ' ' + groupString);
@@ -96,7 +96,9 @@ export default function processDefaultData({report}, processVariables) {
 
   const {sortedHead, sortedBody} = sortColumns(head, body, columnOrder);
 
-  return {head: sortedHead, body: sortedBody};
+  body = formatLabelsForTableBody(sortedBody);
+
+  return {head: sortedHead, body};
 }
 
 function getVariableLabel(variables, {name, type}) {

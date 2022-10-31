@@ -9,6 +9,7 @@ import {post} from 'request';
 import {NoDataNotice} from 'components';
 import {reportConfig, formatters} from 'services';
 import {t} from 'translation';
+import {formatLabel} from 'services/formatters';
 
 const {formatReportResult, getRelativeValue, duration} = formatters;
 
@@ -256,4 +257,8 @@ export async function loadObjectValues(
 
   const values = await response.json();
   return values[0];
+}
+
+export function formatLabelsForTableBody(body) {
+  return body.map((row) => row.map((cell) => formatLabel(cell, true)));
 }

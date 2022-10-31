@@ -416,3 +416,23 @@ export function formatTenantName({id, name}) {
 export function formatFileName(name) {
   return name.replace(/[^a-zA-Z0-9-_.]/gi, '_').toLowerCase();
 }
+
+export function formatLabel(label, numbersOnly) {
+  if (!label || typeof label === 'object') {
+    return label;
+  }
+  const MAX_LENGHT = 50;
+  const tooLong = label.length >= MAX_LENGHT;
+  const parsedLabel = Number.parseFloat(label);
+  const isNan = Number.isNaN(parsedLabel);
+
+  if (!tooLong || (numbersOnly && isNan)) {
+    return label;
+  }
+
+  if (isNan) {
+    return label.slice(0, MAX_LENGHT) + '...';
+  }
+
+  return parsedLabel.toExponential();
+}
