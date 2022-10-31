@@ -170,8 +170,8 @@ export default function EntityList({
               })}
           </div>
         )}
-        {isLoading && <LoadingIndicator />}
       </div>
+      {isLoading && <LoadingIndicator />}
       <div className="content">
         {isEmpty && <div className="empty">{empty}</div>}
         {!isLoading && !isEmpty && !hasResults && (
