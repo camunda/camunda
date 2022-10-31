@@ -48,10 +48,12 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
         actor.run(this::run);
+        actor.yieldThread();
       }
     } catch (final RecoverableException ex) {
       if (!terminateCondition.getAsBoolean()) {
         actor.run(this::run);
+        actor.yieldThread();
       }
     } catch (final Exception exception) {
       currentFuture.completeExceptionally(exception);
