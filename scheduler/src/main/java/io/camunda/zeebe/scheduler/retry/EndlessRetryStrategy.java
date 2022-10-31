@@ -51,12 +51,14 @@ public final class EndlessRetryStrategy implements RetryStrategy {
       final var control = retryMechanism.run();
       if (control == Control.RETRY) {
         actor.run(this::run);
+        actor.yieldThread();
       }
     } catch (final Exception exception) {
       if (terminateCondition.getAsBoolean()) {
         currentFuture.complete(false);
       } else {
         actor.run(this::run);
+        actor.yieldThread();
         LOG.error(
             "Caught exception {} with message {}, will retry...",
             exception.getClass(),
