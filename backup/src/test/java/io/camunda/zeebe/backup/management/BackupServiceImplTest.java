@@ -9,6 +9,8 @@ package io.camunda.zeebe.backup.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -20,6 +22,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -311,6 +314,60 @@ class BackupServiceImplTest {
 
     // then
     verify(backupStore, never()).save(any());
+  }
+
+  @Test
+  void shouldDeleteAllExistingBackupWithSameCheckpointId() {
+    // given
+    final int partitionId = 1;
+    final long checkpointId = 2L;
+    final BackupStatus backupNode1 = mock(BackupStatus.class);
+    when(backupNode1.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
+    when(backupNode1.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, checkpointId));
+
+    final BackupStatus backupNode2 = mock(BackupStatus.class);
+    when(backupNode1.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
+    when(backupNode1.id()).thenReturn(new BackupIdentifierImpl(2, partitionId, checkpointId));
+
+    when(backupStore.list(
+            new BackupIdentifierWildcardImpl(
+                Optional.empty(), Optional.of(partitionId), Optional.of(checkpointId))))
+        .thenReturn(CompletableFuture.completedFuture(List.of(backupNode1, backupNode2)));
+
+    when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    backupService.deleteBackup(partitionId, checkpointId, concurrencyControl).join();
+
+    // then
+    verify(backupStore).delete(backupNode1.id());
+    verify(backupStore).delete(backupNode2.id());
+  }
+
+  @Test
+  void shouldDeleteInProgressBackup() {
+    // given
+    final int partitionId = 1;
+    final long checkpointId = 2L;
+    final BackupStatus backup = mock(BackupStatus.class);
+    when(backup.statusCode()).thenReturn(BackupStatusCode.IN_PROGRESS);
+    when(backup.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, checkpointId));
+
+    when(backupStore.list(
+            new BackupIdentifierWildcardImpl(
+                Optional.empty(), Optional.of(partitionId), Optional.of(checkpointId))))
+        .thenReturn(CompletableFuture.completedFuture(List.of(backup)));
+
+    when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
+    when(backupStore.markFailed(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
+
+    // when
+    backupService.deleteBackup(partitionId, checkpointId, concurrencyControl).join();
+
+    // then
+    verify(backupStore).markFailed(eq(backup.id()), anyString());
+    verify(backupStore).delete(backup.id());
   }
 
   private ActorFuture<Void> failedFuture() {

@@ -55,6 +55,19 @@ final class FileUtilTest {
   }
 
   @Test
+  void shouldNotDeleteContainingFolder() throws IOException {
+    // given
+    Files.createFile(tmpDir.resolve("file1"));
+    Files.createFile(tmpDir.resolve("file2"));
+
+    // when
+    FileUtil.deleteFolderContents(tmpDir);
+
+    // then
+    assertThat(tmpDir).exists().isEmptyDirectory();
+  }
+
+  @Test
   void shouldThrowExceptionWhenCopySnapshotForNonExistingFolder() {
     // given
     final File source = tmpDir.resolve("src").toFile();

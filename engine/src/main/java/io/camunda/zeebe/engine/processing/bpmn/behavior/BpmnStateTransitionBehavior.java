@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableIntermediateThrowEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -126,7 +127,7 @@ public final class BpmnStateTransitionBehavior {
   }
 
   /**
-   * Verifies wether we have been called during incident resolving, which will call again the bpmn
+   * Verifies whether we have been called during incident resolving, which will call again the bpmn
    * processor#process method. This can cause that the transition activating, completing and
    * terminating are called multiple times. In other cases this should not happen, which is the
    * reason why we throw an exception.
@@ -158,6 +159,8 @@ public final class BpmnStateTransitionBehavior {
       // a completing child process is not considered here.
       // the corresponding call activity is informed of the
       // child process completion explicitly by the process processor
+      endOfExecutionPath = false;
+    } else if (isLinkThrowEvent(element)) {
       endOfExecutionPath = false;
     } else {
       endOfExecutionPath = element.getOutgoing().isEmpty();
@@ -226,6 +229,11 @@ public final class BpmnStateTransitionBehavior {
               "Expected to take transition to '%s' but element instance is in state '%s'.",
               transition, context.getIntent()));
     }
+  }
+
+  private <T extends ExecutableFlowNode> boolean isLinkThrowEvent(final T element) {
+    return element instanceof ExecutableIntermediateThrowEvent
+        && ((ExecutableIntermediateThrowEvent) element).isLinkThrowEvent();
   }
 
   public void takeSequenceFlow(

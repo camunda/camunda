@@ -26,7 +26,11 @@ public interface BackupStore {
    */
   CompletableFuture<Collection<BackupStatus>> list(BackupIdentifierWildcard wildcard);
 
-  /** Delete all state related to the backup from the storage */
+  /**
+   * Delete all state related to the backup from the storage. Backups with status{@link
+   * BackupStatusCode#IN_PROGRESS} is not deleted. The caller of this method must first mark it as
+   * failed.
+   */
   CompletableFuture<Void> delete(BackupIdentifier id);
 
   /** Restores the backup */

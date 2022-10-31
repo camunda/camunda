@@ -15,9 +15,14 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
+import java.util.List;
 
 public class IntermediateCatchEventProcessor
     implements BpmnElementProcessor<ExecutableCatchEventElement> {
+
+  private final List<IntermediateCatchEventBehavior> catchEventBehaviors =
+      List.of(
+          new DefaultIntermediateCatchEventBehavior(), new LinkIntermediateCatchEventBehavior());
 
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
@@ -41,12 +46,7 @@ public class IntermediateCatchEventProcessor
   @Override
   public void onActivate(
       final ExecutableCatchEventElement element, final BpmnElementContext activating) {
-    variableMappingBehavior
-        .applyInputMappings(activating, element)
-        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, activating))
-        .ifRightOrLeft(
-            ok -> stateTransitionBehavior.transitionToActivated(activating),
-            failure -> incidentBehavior.createIncident(failure, activating));
+    eventBehaviorOf(element).onActivate(element, activating);
   }
 
   @Override
@@ -72,5 +72,57 @@ public class IntermediateCatchEventProcessor
 
     final var terminated = stateTransitionBehavior.transitionToTerminated(terminating);
     stateTransitionBehavior.onElementTerminated(element, terminated);
+  }
+
+  private IntermediateCatchEventBehavior eventBehaviorOf(
+      final ExecutableCatchEventElement element) {
+    return catchEventBehaviors.stream()
+        .filter(behavior -> behavior.isSuitableForEvent(element))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new UnsupportedOperationException(
+                    "This kind of intermediate catch event is not supported."));
+  }
+
+  private interface IntermediateCatchEventBehavior {
+
+    boolean isSuitableForEvent(final ExecutableCatchEventElement element);
+
+    void onActivate(final ExecutableCatchEventElement element, final BpmnElementContext activating);
+  }
+
+  private class DefaultIntermediateCatchEventBehavior implements IntermediateCatchEventBehavior {
+
+    @Override
+    public boolean isSuitableForEvent(final ExecutableCatchEventElement element) {
+      return !element.isLink();
+    }
+
+    @Override
+    public void onActivate(
+        final ExecutableCatchEventElement element, final BpmnElementContext activating) {
+      variableMappingBehavior
+          .applyInputMappings(activating, element)
+          .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, activating))
+          .ifRightOrLeft(
+              ok -> stateTransitionBehavior.transitionToActivated(activating),
+              failure -> incidentBehavior.createIncident(failure, activating));
+    }
+  }
+
+  private class LinkIntermediateCatchEventBehavior implements IntermediateCatchEventBehavior {
+
+    @Override
+    public boolean isSuitableForEvent(final ExecutableCatchEventElement element) {
+      return element.isLink();
+    }
+
+    @Override
+    public void onActivate(
+        final ExecutableCatchEventElement element, final BpmnElementContext activating) {
+      final var activated = stateTransitionBehavior.transitionToActivated(activating);
+      stateTransitionBehavior.completeElement(activated);
+    }
   }
 }

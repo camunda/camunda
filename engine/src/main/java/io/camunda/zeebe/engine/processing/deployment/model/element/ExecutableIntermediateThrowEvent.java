@@ -12,6 +12,8 @@ public class ExecutableIntermediateThrowEvent extends ExecutableFlowNode
 
   private JobWorkerProperties jobWorkerProperties;
 
+  private ExecutableLink link;
+
   public ExecutableIntermediateThrowEvent(final String id) {
     super(id);
   }
@@ -24,5 +26,25 @@ public class ExecutableIntermediateThrowEvent extends ExecutableFlowNode
   @Override
   public void setJobWorkerProperties(final JobWorkerProperties jobWorkerProperties) {
     this.jobWorkerProperties = jobWorkerProperties;
+  }
+
+  public ExecutableLink getLink() {
+    return link;
+  }
+
+  public void setLink(final ExecutableLink link) {
+    this.link = link;
+  }
+
+  public boolean isNoneThrowEvent() {
+    return !isMessageThrowEvent() && !isLinkThrowEvent();
+  }
+
+  public boolean isMessageThrowEvent() {
+    return jobWorkerProperties != null;
+  }
+
+  public boolean isLinkThrowEvent() {
+    return link != null;
   }
 }

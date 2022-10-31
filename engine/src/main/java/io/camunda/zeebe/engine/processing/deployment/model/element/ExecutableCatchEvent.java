@@ -21,8 +21,10 @@ public interface ExecutableCatchEvent extends ExecutableFlowElement {
 
   boolean isError();
 
+  boolean isLink();
+
   default boolean isNone() {
-    return !isTimer() && !isMessage() && !isError();
+    return !isTimer() && !isMessage() && !isError() && !isLink();
   }
 
   ExecutableMessage getMessage();

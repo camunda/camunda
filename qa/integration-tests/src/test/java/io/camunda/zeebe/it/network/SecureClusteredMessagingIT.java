@@ -8,108 +8,85 @@
 package io.camunda.zeebe.it.network;
 
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.client.api.response.Topology;
-import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
-import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
-import io.zeebe.containers.ZeebeNode;
-import io.zeebe.containers.cluster.ZeebeCluster;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.security.cert.CertificateException;
 import java.util.concurrent.TimeUnit;
-import org.agrona.CloseHelper;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.Network;
-import org.testcontainers.utility.MountableFile;
 
 final class SecureClusteredMessagingIT {
-  private static final Logger LOGGER = LoggerFactory.getLogger(SecureClusteredMessagingIT.class);
+  private final SelfSignedCertificate certificate = newCertificate();
 
-  private Network network;
-  private ZeebeCluster cluster;
-
-  @SuppressWarnings("unused")
   @RegisterExtension
-  final ContainerLogsDumper logsWatcher =
-      new ContainerLogsDumper(() -> cluster.getBrokers(), LOGGER);
-
-  private SelfSignedCertificate certificate;
-
-  @BeforeEach
-  void beforeEach() throws CertificateException {
-    network = Network.newNetwork();
-    certificate = new SelfSignedCertificate();
-  }
-
-  @AfterEach
-  void afterEach() {
-    CloseHelper.quietCloseAll(cluster, network);
-  }
+  private final ClusteringRuleExtension cluster =
+      new ClusteringRuleExtension(1, 2, 2, this::configureBroker, this::configureGateway);
 
   @Test
   void shouldFormAClusterWithTls() {
     // given - a cluster with 2 standalone brokers, and 1 standalone gateway
-    cluster =
-        ZeebeCluster.builder()
-            .withGatewaysCount(1)
-            .withBrokersCount(2)
-            .withReplicationFactor(2)
-            .withEmbeddedGateway(false)
-            .build();
-    cluster.getBrokers().forEach((nodeId, broker) -> configureNode(broker));
-    cluster.getGateways().forEach((nodeId, gateway) -> configureNode(gateway));
-    cluster.start();
 
     // when - note the client is using plaintext since we only care about inter-cluster TLS
-    final Topology topology;
-    try (final var client = cluster.newClientBuilder().usePlaintext().build()) {
-      topology = client.newTopologyRequest().send().join(15, TimeUnit.SECONDS);
-    }
+    final Topology topology =
+        cluster.getClient().newTopologyRequest().send().join(15, TimeUnit.SECONDS);
 
     // then - ensure the cluster is formed correctly and all inter-cluster communication endpoints
     // are secured using the expected certificate
     TopologyAssert.assertThat(topology).hasBrokersCount(2).isComplete(2, 1, 2);
-    cluster
-        .getBrokers()
-        .forEach(
-            (id, broker) -> {
-              assertAddressIsSecured(id, broker.getExternalCommandAddress());
-              assertAddressIsSecured(id, broker.getExternalClusterAddress());
-            });
-    cluster
-        .getGateways()
-        .forEach((id, gateway) -> assertAddressIsSecured(id, gateway.getExternalClusterAddress()));
+    cluster.getBrokers().forEach(this::assertBrokerMessagingServicesAreSecured);
+    assertAddressIsSecured("gateway", getGatewayAddress());
   }
 
-  private void configureNode(final ZeebeNode<?> node) {
-    final var certChainPath = "/tmp/certChain.crt";
-    final var privateKeyPath = "/tmp/private.key";
+  /** Verifies that both the command and internal APIs of the broker are correctly secured. */
+  private void assertBrokerMessagingServicesAreSecured(final Broker broker) {
+    final var commandApiAddress =
+        broker.getConfig().getNetwork().getCommandApi().getAdvertisedAddress();
+    final var internalApiAddress =
+        broker.getConfig().getNetwork().getInternalApi().getAdvertisedAddress();
 
-    // configure both the broker and gateway; it doesn't really matter if one sees the environment
-    // variables of the other
-    node.setDockerImageName(ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString());
-    node.withEnv("ZEEBE_BROKER_NETWORK_SECURITY_ENABLED", "true")
-        .withEnv("ZEEBE_BROKER_NETWORK_SECURITY_CERTIFICATECHAINPATH", certChainPath)
-        .withEnv("ZEEBE_BROKER_NETWORK_SECURITY_PRIVATEKEYPATH", privateKeyPath)
-        .withEnv("ZEEBE_GATEWAY_CLUSTER_SECURITY_ENABLED", "true")
-        .withEnv("ZEEBE_GATEWAY_CLUSTER_SECURITY_CERTIFICATECHAINPATH", certChainPath)
-        .withEnv("ZEEBE_GATEWAY_CLUSTER_SECURITY_PRIVATEKEYPATH", privateKeyPath)
-        .withCopyFileToContainer(
-            MountableFile.forHostPath(certificate.certificate().toPath()), certChainPath)
-        .withCopyFileToContainer(
-            MountableFile.forHostPath(certificate.privateKey().toPath()), privateKeyPath);
+    assertAddressIsSecured(broker.getConfig().getCluster().getNodeId(), commandApiAddress);
+    assertAddressIsSecured(broker.getConfig().getCluster().getNodeId(), internalApiAddress);
   }
 
-  private void assertAddressIsSecured(final Object nodeId, final String address) {
-    final var socketAddress = Address.from(address).socketAddress();
-    SslAssert.assertThat(socketAddress)
-        .as("node %s is not secured correctly", nodeId)
+  private InetSocketAddress getGatewayAddress() {
+    final ClusterCfg clusterConfig = cluster.getGateway().getGatewayCfg().getCluster();
+    final var address =
+        Address.from(clusterConfig.getAdvertisedHost(), clusterConfig.getAdvertisedPort());
+    return address.socketAddress();
+  }
+
+  private void assertAddressIsSecured(final Object nodeId, final SocketAddress address) {
+    SslAssert.assertThat(address)
+        .as("node %s is not secured correctly at address %s", nodeId, address)
         .isSecuredBy(certificate);
+  }
+
+  private SelfSignedCertificate newCertificate() {
+    try {
+      return new SelfSignedCertificate();
+    } catch (final CertificateException e) {
+      throw new IllegalStateException("Failed to create self-signed certificate", e);
+    }
+  }
+
+  private void configureGateway(final GatewayCfg config) {
+    config.getCluster().getSecurity().setEnabled(true);
+    config.getCluster().getSecurity().setCertificateChainPath(certificate.certificate());
+    config.getCluster().getSecurity().setPrivateKeyPath(certificate.privateKey());
+  }
+
+  private void configureBroker(final BrokerCfg config) {
+    config.getNetwork().getSecurity().setEnabled(true);
+    config.getNetwork().getSecurity().setCertificateChainPath(certificate.certificate());
+    config.getNetwork().getSecurity().setPrivateKeyPath(certificate.privateKey());
   }
 }
