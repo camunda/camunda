@@ -95,9 +95,12 @@ import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ClusteringRule extends ExternalResource {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(ClusteringRule.class);
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
   private static final String RAFT_PARTITION_PATH =
@@ -550,6 +553,9 @@ public final class ClusteringRule extends ExternalResource {
   public void disconnect(final Broker broker) {
     final var atomix = broker.getBrokerContext().getAtomixCluster();
 
+    LOGGER.debug(
+        "Disonnecting node {} to cluster",
+        broker.getSystemContext().getBrokerConfiguration().getCluster().getNodeId());
     ((NettyUnicastService) atomix.getUnicastService()).stop().join();
     ((NettyMessagingService) atomix.getMessagingService()).stop().join();
   }
@@ -557,6 +563,9 @@ public final class ClusteringRule extends ExternalResource {
   public void connect(final Broker broker) {
     final var atomix = broker.getBrokerContext().getAtomixCluster();
 
+    LOGGER.debug(
+        "Connecting node {} to cluster",
+        broker.getSystemContext().getBrokerConfiguration().getCluster().getNodeId());
     ((NettyUnicastService) atomix.getUnicastService()).start().join();
     ((NettyMessagingService) atomix.getMessagingService()).start().join();
   }
