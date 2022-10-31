@@ -69,7 +69,7 @@ public class RestoreManager {
       final Path dataDirectory, final Throwable error) {
     LOG.error("Failed to restore broker. Deleting data directory {}", dataDirectory, error);
     try {
-      FileUtil.deleteFolderIfExists(dataDirectory);
+      FileUtil.deleteFolderContents(dataDirectory);
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(e);
     }

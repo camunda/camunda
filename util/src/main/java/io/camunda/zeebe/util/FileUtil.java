@@ -22,7 +22,7 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.agrona.SystemUtil;
 import org.slf4j.Logger;
@@ -117,6 +117,19 @@ public final class FileUtil {
     }
   }
 
+  /**
+   * A variant of {@link #deleteFolder(String)}} which deletes everything but the top level
+   * directory. This can be useful for deleting everything inside a folder that is itself not
+   * delete-able, for example because the folder is mounted as a docker volume
+   *
+   * @param folder the directory which contents should be deleted
+   * @throws IOException on failure to scan the directory and/or delete the file
+   */
+  public static void deleteFolderContents(final Path folder) throws IOException {
+    Files.walkFileTree(
+        folder, new FolderDeleter(Files::delete, Predicate.not(Predicate.isEqual(folder))));
+  }
+
   public static void deleteFolder(final Path folder) throws IOException {
     Files.walkFileTree(folder, new FolderDeleter(Files::delete));
   }
@@ -173,22 +186,32 @@ public final class FileUtil {
 
   private static final class FolderDeleter extends SimpleFileVisitor<Path> {
     private final FileDeleter deleter;
+    private final Predicate<Path> shouldDelete;
 
     private FolderDeleter(final FileDeleter deleter) {
-      this.deleter = Objects.requireNonNull(deleter);
+      this(deleter, (path) -> true);
+    }
+
+    private FolderDeleter(final FileDeleter deleter, final Predicate<Path> shouldDelete) {
+      this.deleter = deleter;
+      this.shouldDelete = shouldDelete;
     }
 
     @Override
     public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
         throws IOException {
-      deleter.delete(file);
+      if (shouldDelete.test(file)) {
+        deleter.delete(file);
+      }
       return CONTINUE;
     }
 
     @Override
     public FileVisitResult postVisitDirectory(final Path dir, final IOException exc)
         throws IOException {
-      deleter.delete(dir);
+      if (shouldDelete.test(dir)) {
+        deleter.delete(dir);
+      }
       return CONTINUE;
     }
   }
