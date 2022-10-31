@@ -30,6 +30,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.stream.Collectors;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 
