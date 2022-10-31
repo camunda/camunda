@@ -97,9 +97,11 @@ import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ClusteringRule extends ExternalResource {
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(ClusteringRule.class);
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
   private static final String RAFT_PARTITION_PATH =
@@ -588,6 +590,10 @@ public class ClusteringRule extends ExternalResource {
 
   public void disconnect(final Broker broker) {
     final var cluster = broker.getSystemContext().getCluster();
+
+    LOGGER.debug(
+        "Disonnecting node {} to cluster",
+        broker.getSystemContext().getBrokerConfiguration().getCluster().getNodeId());
     ((NettyUnicastService) cluster.getUnicastService()).stop().join();
     ((NettyMessagingService) cluster.getMessagingService()).stop().join();
   }
@@ -595,6 +601,9 @@ public class ClusteringRule extends ExternalResource {
   public void connect(final Broker broker) {
     final var cluster = broker.getSystemContext().getCluster();
 
+    LOGGER.debug(
+        "Connecting node {} to cluster",
+        broker.getSystemContext().getBrokerConfiguration().getCluster().getNodeId());
     ((NettyUnicastService) cluster.getUnicastService()).start().join();
     ((NettyMessagingService) cluster.getMessagingService()).start().join();
   }
