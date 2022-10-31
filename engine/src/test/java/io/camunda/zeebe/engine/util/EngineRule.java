@@ -251,7 +251,8 @@ public final class EngineRule extends ExternalResource {
       // the due date checker is scheduled through a post-commit task. When the engine has reached
       // the end of the log, all post-commit tasks have also been applied, because the state machine
       // will have executed them before switching the hasReachEnd flag.
-      Awaitility.await().until(this::hasReachedEnd);
+      Awaitility.await("Expect that engine reaches the end of the log before increasing the time")
+          .until(this::hasReachedEnd);
     }
 
     environmentRule.getClock().addTime(duration);
