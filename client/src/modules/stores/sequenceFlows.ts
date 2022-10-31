@@ -75,7 +75,7 @@ class SequenceFlows extends NetworkReconnectionHandler {
       const response = await fetchSequenceFlows(instanceId);
 
       if (response.isSuccess) {
-        this.setItems(getProcessedSequenceFlows(response.data ?? []));
+        this.setItems(getProcessedSequenceFlows(response.data));
       }
     }
   );
@@ -85,7 +85,7 @@ class SequenceFlows extends NetworkReconnectionHandler {
     const {isSuccess, data} = await fetchSequenceFlows(instanceId);
 
     if (this.intervalId !== null && isSuccess) {
-      this.setItems(getProcessedSequenceFlows(data ?? []));
+      this.setItems(getProcessedSequenceFlows(data));
     }
 
     if (!isSuccess) {

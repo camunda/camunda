@@ -57,7 +57,7 @@ async function requestAndParse<T>(props: RequestParams) {
         isSuccess: false,
         statusCode: response.status,
         data: undefined,
-      };
+      } as const;
     }
     return {
       isSuccess: true,
@@ -65,15 +65,15 @@ async function requestAndParse<T>(props: RequestParams) {
       data: (response.headers.get('content-type')?.includes('application/json')
         ? await response.json()
         : await response.text()) as T,
-    };
+    } as const;
   } catch (error) {
     logger.error(`Failed to fetch ${url}`);
     logger.error(error);
     return {
       isSuccess: false,
-      status: 0,
+      statusCode: 0,
       data: undefined,
-    };
+    } as const;
   }
 }
 
