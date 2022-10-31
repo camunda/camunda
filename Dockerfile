@@ -1,5 +1,5 @@
 # Override this based on the architecture; this is currently pointing to amd64
-ARG BASE_SHA="e7fe469c4e729ff0ed6ff464f41eaff0e4cb9b6fe7efe71754d8935c8118eb87"
+ARG BASE_SHA="4da6bae253f3cb77d87a98e78459ab85ab119a53aa2c66914981588a374f0627"
 
 # Building builder image
 FROM ubuntu:focal as builder
