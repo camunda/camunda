@@ -1284,11 +1284,10 @@ public final class TimerStartEventTest {
     final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
 
     // when
-    engine.stop();
-    final long engineStoppedTime = engine.getClock().getCurrentTimeInMillis();
+    engine.forEachPartition(engine::pauseProcessing);
+    final long enginePausedTime = engine.getClock().getCurrentTimeInMillis();
     engine.increaseTime(Duration.ofMinutes(35));
-    RecordingExporter.reset();
-    engine.start();
+    engine.forEachPartition(engine::resumeProcessing);
 
     // then
     final Record<TimerRecordValue> firstRecord =
@@ -1301,7 +1300,7 @@ public final class TimerStartEventTest {
         .hasTargetElementId("start")
         .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
 
-    assertThat(firstRecord.getTimestamp()).isGreaterThan(engineStoppedTime);
+    assertThat(firstRecord.getTimestamp()).isGreaterThan(enginePausedTime);
 
     final TimerRecordValue secondTimerRecord =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
