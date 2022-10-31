@@ -110,6 +110,25 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
   }
 
   @Test
+  public void ingestExternalVariables_duplicateVariableInBatch() {
+    // given
+    final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, 2)
+      .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("sameId").setValue("value" + i))
+      .collect(toList());
+    final OffsetDateTime ingestionTimestamp = LocalDateUtil.getCurrentDateTime();
+
+    // when
+    final Response response = ingestionClient.ingestVariablesAndReturnResponse(variables);
+
+    // then only the latest value in the batch is persisted
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertExternalVariablesArePersisted(Map.of(
+      ingestionTimestamp.toInstant().toEpochMilli(),
+      variables.subList(1, 2)
+    ));
+  }
+
+  @Test
   public void ingestExternalVariables_ingestTwoDifferentBatches() {
     // given
     final List<ExternalProcessVariableRequestDto> variables1 = IntStream.range(0, 10)
@@ -337,7 +356,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
     });
     expectedVariables.sort(Comparator.comparing(ExternalProcessVariableDto::getIngestionTimestamp).reversed());
     final List<ExternalProcessVariableDto> actualVariables = getAllStoredExternalProcessVariables();
-    assertThat(actualVariables).containsExactlyElementsOf(expectedVariables);
+    assertThat(actualVariables).containsExactlyInAnyOrderElementsOf(expectedVariables);
   }
 
   private List<ExternalProcessVariableDto> getAllStoredExternalProcessVariables() {
