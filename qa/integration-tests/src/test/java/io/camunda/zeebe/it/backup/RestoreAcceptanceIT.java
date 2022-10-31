@@ -94,8 +94,7 @@ final class RestoreAcceptanceIT {
             MINIO.region(),
             MINIO.accessKey(),
             MINIO.secretKey(),
-            Duration.ofSeconds(25),
-            true);
+            Duration.ofSeconds(25));
     try (final var client = S3BackupStore.buildClient(config)) {
       client.createBucket(cfg -> cfg.bucket(BUCKET_NAME)).join();
     }
