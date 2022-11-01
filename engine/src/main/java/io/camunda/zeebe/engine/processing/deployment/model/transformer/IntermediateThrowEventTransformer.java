@@ -14,6 +14,7 @@ import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.camunda.zeebe.model.bpmn.instance.LinkEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 
 public final class IntermediateThrowEventTransformer
     implements ModelElementTransformer<IntermediateThrowEvent> {
@@ -28,11 +29,15 @@ public final class IntermediateThrowEventTransformer
 
   @Override
   public void transform(final IntermediateThrowEvent element, final TransformContext context) {
+    final var process = context.getCurrentProcess();
+    final var throwEvent =
+        process.getElementById(element.getId(), ExecutableIntermediateThrowEvent.class);
 
     if (isMessageEvent(element) && hasTaskDefinition(element)) {
+      throwEvent.setEventType(BpmnEventType.MESSAGE);
       jobWorkerElementTransformer.transform(element, context);
     } else if (isLinkEvent(element)) {
-      transformLinkEventDefinition(element, context);
+      transformLinkEventDefinition(element, context, throwEvent);
     }
   }
 
@@ -50,10 +55,9 @@ public final class IntermediateThrowEventTransformer
   }
 
   private void transformLinkEventDefinition(
-      final IntermediateThrowEvent element, final TransformContext context) {
-    final var process = context.getCurrentProcess();
-    final var executableThrowEventElement =
-        process.getElementById(element.getId(), ExecutableIntermediateThrowEvent.class);
+      final IntermediateThrowEvent element,
+      final TransformContext context,
+      final ExecutableIntermediateThrowEvent executableThrowEventElement) {
 
     final var eventDefinition =
         (LinkEventDefinition) element.getEventDefinitions().iterator().next();
@@ -61,5 +65,6 @@ public final class IntermediateThrowEventTransformer
     final var name = eventDefinition.getName();
     final var executableLink = context.getLink(name);
     executableThrowEventElement.setLink(executableLink);
+    executableThrowEventElement.setEventType(BpmnEventType.LINK);
   }
 }

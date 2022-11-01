@@ -215,8 +215,6 @@ public final class BpmnStateTransitionBehavior {
     final var key = context.getElementInstanceKey();
     final var value = context.getRecordValue();
 
-    value.setBpmnEventType(context.getRecordValue().getBpmnEventType());
-
     stateWriter.appendFollowUpEvent(key, transition, value);
     return context.copy(key, value, transition);
   }

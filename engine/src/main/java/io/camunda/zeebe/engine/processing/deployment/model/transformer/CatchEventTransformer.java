@@ -151,6 +151,7 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
       final LinkEventDefinition linkEventDefinition) {
 
     executableElement.setLink(true);
+    executableElement.setEventType(BpmnEventType.LINK);
 
     final var link = new ExecutableLink(linkEventDefinition.getId());
     link.setName(BufferUtil.wrapString(linkEventDefinition.getName()));

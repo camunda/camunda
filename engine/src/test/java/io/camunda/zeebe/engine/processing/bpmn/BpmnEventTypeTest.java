@@ -14,8 +14,9 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.EndEventBuilder;
+import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
-import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -30,42 +31,19 @@ import org.junit.Test;
 public class BpmnEventTypeTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-
-  private static final String PROCESS_ID = "wf";
+  private static final String PROCESS_ID = "process";
   private static final String JOB_TYPE = "test";
   private static final String ERROR_CODE = "ERROR";
-
-  private static final BpmnModelInstance SINGLE_BOUNDARY_EVENT =
+  private static final String MESSAGE_NAME = "message";
+  private static final String LINK_NAME = "linkA";
+  private static final String CORRELATION_KEY = "key";
+  private static final BpmnModelInstance ERROR_BOUNDARY_EVENT =
       process(
           serviceTask -> serviceTask.boundaryEvent("error", b -> b.error(ERROR_CODE)).endEvent());
-
-  private static final String MESSAGE_NAME_1 = "a";
-
-  private static final String CORRELATION_KEY_1 = "key-1";
-
-  private static final BpmnModelInstance SINGLE_START_EVENT_1 =
-      singleStartEvent(startEvent -> {}, MESSAGE_NAME_1);
-  private static final BpmnModelInstance RECEIVE_TASK_PROCESS =
-      Bpmn.createExecutableProcess(PROCESS_ID)
-          .startEvent()
-          .receiveTask("receive-message")
-          .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
-          .endEvent()
-          .done();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
-
-  private static BpmnModelInstance singleStartEvent(
-      final Consumer<StartEventBuilder> customizer, final String messageName) {
-    final var startEventBuilder =
-        Bpmn.createExecutableProcess("wf").startEvent("start").message(messageName);
-
-    customizer.accept(startEventBuilder);
-
-    return startEventBuilder.serviceTask("task", t -> t.zeebeJobType("test")).done();
-  }
 
   private static BpmnModelInstance process(final Consumer<ServiceTaskBuilder> customizer) {
     final var builder =
@@ -79,9 +57,9 @@ public class BpmnEventTypeTest {
   }
 
   @Test
-  public void shouldTriggerErrorEventOnBoundaryEvent() {
+  public void testErrorBoundaryEvent() {
     // given
-    ENGINE.deployment().withXmlResource(SINGLE_BOUNDARY_EVENT).deploy();
+    ENGINE.deployment().withXmlResource(ERROR_BOUNDARY_EVENT).deploy();
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
@@ -166,17 +144,16 @@ public class BpmnEventTypeTest {
   }
 
   @Test
-  public void shouldCatchErrorEventsByErrorCode() {
+  public void testCatchErrorEventsByErrorCode() {
     // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            process(
-                serviceTask -> {
-                  serviceTask.boundaryEvent("error-1", b -> b.error("error-1").endEvent());
-                  serviceTask.boundaryEvent("error-2", b -> b.error("error-2").endEvent());
-                }))
-        .deploy();
+    final BpmnModelInstance process =
+        process(
+            serviceTask -> {
+              serviceTask.boundaryEvent("error-1", b -> b.error("error-1").endEvent());
+              serviceTask.boundaryEvent("error-2", b -> b.error("error-2").endEvent());
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
 
     final var processInstanceKey1 = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final var processInstanceKey2 = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -283,16 +260,16 @@ public class BpmnEventTypeTest {
   }
 
   @Test
-  public void shouldCatchErrorFromChildInstance() {
+  public void testCatchErrorFromChildInstance() {
     // given
-    final var processChild =
+    final BpmnModelInstance processChild =
         Bpmn.createExecutableProcess("wf-child")
             .startEvent()
             .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
             .endEvent()
             .done();
 
-    final var processParent =
+    final BpmnModelInstance processParent =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .callActivity("call", c -> c.zeebeProcessId("wf-child"))
@@ -411,9 +388,9 @@ public class BpmnEventTypeTest {
   }
 
   @Test
-  public void shouldThrowErrorOnEndEvent() {
+  public void testThrowErrorOnEndEvent() {
     // given
-    final var process =
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .subProcess(
@@ -482,16 +459,14 @@ public class BpmnEventTypeTest {
   }
 
   @Test
-  public void shouldTerminateOnEndEvent() {
+  public void testTerminateOnEndEvent() {
     // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .endEvent("terminate-end", EndEventBuilder::terminate)
-                .done())
-        .deploy();
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .endEvent("terminate-end", EndEventBuilder::terminate)
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
 
     // when
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -529,18 +504,18 @@ public class BpmnEventTypeTest {
   }
 
   @Test
-  public void shouldCatchTimerEvent() {
+  public void testCatchTimerEvent() {
     // given
     final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("testLifeCycle")
+        Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT0S"))
             .endEvent()
             .done();
 
+    // when
     ENGINE.deployment().withXmlResource(process).deploy();
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("testLifeCycle").create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     assertThat(
@@ -583,19 +558,25 @@ public class BpmnEventTypeTest {
   }
 
   @Test
-  public void shouldCorrelateMessageToStartEvent() {
+  public void testMessageStartEvent() {
     // given
-    ENGINE.deployment().withXmlResource(SINGLE_START_EVENT_1).deploy();
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent("start")
+            .message(MESSAGE_NAME)
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    ENGINE.message().withCorrelationKey(CORRELATION_KEY).withName(MESSAGE_NAME).publish();
 
     // when
-    ENGINE.message().withCorrelationKey(CORRELATION_KEY_1).withName(MESSAGE_NAME_1).publish();
-
-    // then
     final var processInstance =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .filterRootScope()
             .getFirst();
 
+    // then
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstance.getValue().getProcessInstanceKey())
@@ -624,17 +605,143 @@ public class BpmnEventTypeTest {
   }
 
   @Test
-  public void testReceiveTaskLifeCycle() {
+  public void testMessageEndEvent() {
     // given
-    ENGINE.deployment().withXmlResource(RECEIVE_TASK_PROCESS).deploy();
-    ENGINE.message().withName("message").withCorrelationKey("order-123").publish();
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .endEvent()
+            .addExtensionElement(ZeebeTaskDefinition.class, e -> e.setType(JOB_TYPE))
+            .message(MESSAGE_NAME)
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
 
     // when
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.message().withCorrelationKey(CORRELATION_KEY).withName(MESSAGE_NAME).publish();
+    ENGINE.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            r -> r.getValue().getBpmnEventType(),
+            r -> r.getValue().getBpmnElementType(),
+            Record::getIntent)
+        .containsSubsequence(
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.PROCESS,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnEventType.NONE,
+                BpmnElementType.START_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.SEQUENCE_FLOW,
+                ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(
+                BpmnEventType.MESSAGE,
+                BpmnElementType.END_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.PROCESS,
+                ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void testMessageThrowEvent() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .manualTask()
+            .intermediateThrowEvent()
+            .addExtensionElement(ZeebeTaskDefinition.class, e -> e.setType(JOB_TYPE))
+            .message(MESSAGE_NAME)
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.message().withCorrelationKey(CORRELATION_KEY).withName(MESSAGE_NAME).publish();
+    ENGINE.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            r -> r.getValue().getBpmnEventType(),
+            r -> r.getValue().getBpmnElementType(),
+            Record::getIntent)
+        .containsSubsequence(
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.PROCESS,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnEventType.NONE,
+                BpmnElementType.START_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.SEQUENCE_FLOW,
+                ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.MANUAL_TASK,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.SEQUENCE_FLOW,
+                ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(
+                BpmnEventType.MESSAGE,
+                BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.SEQUENCE_FLOW,
+                ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(
+                BpmnEventType.NONE,
+                BpmnElementType.END_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.PROCESS,
+                ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void testReceiveTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .receiveTask("receive-message")
+            .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_KEY))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    ENGINE.message().withName(MESSAGE_NAME).withCorrelationKey("order-123").publish();
+
     final var processInstanceKey =
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable("key", "order-123")
+            .withVariable(CORRELATION_KEY, "order-123")
             .create();
 
     // then
@@ -662,6 +769,71 @@ public class BpmnEventTypeTest {
             tuple(
                 BpmnEventType.MESSAGE,
                 BpmnElementType.RECEIVE_TASK,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.SEQUENCE_FLOW,
+                ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(
+                BpmnEventType.NONE,
+                BpmnElementType.END_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.PROCESS,
+                ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void testLinkEvents() {
+    // given
+    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess(PROCESS_ID);
+    processBuilder.startEvent().intermediateThrowEvent("throw", b -> b.link(LINK_NAME));
+    final BpmnModelInstance process =
+        processBuilder.linkCatchEvent("catch").link(LINK_NAME).manualTask().endEvent().done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            r -> r.getValue().getBpmnEventType(),
+            r -> r.getValue().getBpmnElementType(),
+            Record::getIntent)
+        .containsSubsequence(
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.PROCESS,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnEventType.NONE,
+                BpmnElementType.START_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.SEQUENCE_FLOW,
+                ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(
+                BpmnEventType.LINK,
+                BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnEventType.LINK,
+                BpmnElementType.INTERMEDIATE_CATCH_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.SEQUENCE_FLOW,
+                ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(
+                BpmnEventType.UNSPECIFIED,
+                BpmnElementType.MANUAL_TASK,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
                 BpmnEventType.UNSPECIFIED,
