@@ -367,7 +367,8 @@ public final class StreamPlatform {
     }
 
     public Long getLastSuccessfulProcessedRecordPosition() {
-      return new DbLastProcessedPositionState(zeebeDb, zeebeDb.createContext()).getLastSuccessfulProcessedRecordPosition();
+      return new DbLastProcessedPositionState(zeebeDb, zeebeDb.createContext())
+          .getLastSuccessfulProcessedRecordPosition();
     }
 
     @Override
