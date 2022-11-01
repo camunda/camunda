@@ -62,6 +62,14 @@ spec:
           value: "60"
         - name: WAIT_FOR
           value: {{ include "elasticsearchUrl" $ | quote }}
+        - name: CAMUNDA_OPTIMIZE_EMAIL_ENABLED
+          value: "true"
+        - name: CAMUNDA_OPTIMIZE_EMAIL_ADDRESS
+          value: "optimize@camunda.com"
+        - name: CAMUNDA_OPTIMIZE_EMAIL_HOSTNAME
+          value: "localhost"
+        - name: CAMUNDA_OPTIMIZE_EMAIL_PORT
+          value: "1025"
         tty: true
         ports:
         - containerPort: 8090
@@ -140,6 +148,25 @@ spec:
         - name: configuration
           mountPath: /camunda/configure-and-run.sh
           subPath: configure-and-run.sh
+      - name: mailhog
+        image: "{{ .Values.mailhog.image.repository }}:{{ .Values.mailhog.image.tag }}"
+        env:
+        - name: MH_HOSTNAME
+          value: localhost
+        ports:
+          - containerPort: 1025
+            name: smtp
+          - containerPort: 8025
+            name: http
+        readinessProbe:
+          exec:
+            command:
+              - /usr/bin/nc
+              - -v
+              - localhost
+              - "1025"
+          initialDelaySeconds: 30
+          periodSeconds: 30
       {{ if eq .Values.env "stage" }}
       - name: elasticsearch
         image: "{{ .Values.elasticsearch.image.repository }}:{{ .Values.elasticsearch.image.tag }}"

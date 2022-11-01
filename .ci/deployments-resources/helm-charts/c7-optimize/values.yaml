@@ -43,6 +43,11 @@ cambpm:
       cpu: 2
       memory: 2Gi
 
+mailhog:
+  image:
+    repository: mailhog/mailhog
+    tag: v1.0.1
+
 elasticsearch:
   image:
     repository: docker.elastic.co/elasticsearch/elasticsearch
