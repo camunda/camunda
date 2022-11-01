@@ -7,11 +7,10 @@
 
 import {incidentsStore} from './incidents';
 import {processInstanceDetailsStore} from './processInstanceDetails';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from 'modules/testing-library';
 import {createInstance} from 'modules/testUtils';
 import {mockIncidents} from 'modules/mocks/incidents';
+import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 
 describe('stores/incidents', () => {
   afterEach(() => {
@@ -19,11 +18,7 @@ describe('stores/incidents', () => {
     incidentsStore.reset();
   });
   beforeEach(() => {
-    mockServer.use(
-      rest.get('/api/process-instances/123/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidents))
-      )
-    );
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
   });
 
   it('should poll for incidents if instance state is incident', async () => {
@@ -38,11 +33,10 @@ describe('stores/incidents', () => {
       expect(incidentsStore.state.response).toEqual(mockIncidents)
     );
 
-    mockServer.use(
-      rest.get('/api/process-instances/123/incidents', (_, res, ctx) =>
-        res.once(ctx.json({...mockIncidents, count: 2}))
-      )
-    );
+    mockFetchProcessInstanceIncidents().withSuccess({
+      ...mockIncidents,
+      count: 2,
+    });
 
     jest.runOnlyPendingTimers();
 
@@ -53,11 +47,10 @@ describe('stores/incidents', () => {
       })
     );
 
-    mockServer.use(
-      rest.get('/api/process-instances/123/incidents', (_, res, ctx) =>
-        res.once(ctx.json({...mockIncidents, count: 3}))
-      )
-    );
+    mockFetchProcessInstanceIncidents().withSuccess({
+      ...mockIncidents,
+      count: 3,
+    });
 
     jest.runOnlyPendingTimers();
 
@@ -108,7 +101,10 @@ describe('stores/incidents', () => {
       {
         creationTime: '2020-10-08T09:18:58.258+0000',
         errorMessage: 'Cannot connect to server delivery05',
-        errorType: 'No more retries left',
+        errorType: {
+          id: '1',
+          name: 'No more retries left',
+        },
         flowNodeId: 'Task_162x79i',
         flowNodeInstanceId: '2251799813699889',
         flowNodeName: 'Task_162x79i',
@@ -117,6 +113,11 @@ describe('stores/incidents', () => {
         jobId: '2251799813699901',
         lastOperation: null,
         isSelected: false,
+        rootCauseInstance: {
+          instanceId: '2251799813695335',
+          processDefinitionId: '2251799813687515',
+          processDefinitionName: 'Event based gateway with timer start',
+        },
       },
     ]);
   });
@@ -139,7 +140,7 @@ describe('stores/incidents', () => {
     expect(incidentsStore.errorTypes).toEqual([
       {
         id: 'NO_MORE_RETRIES',
-        type: 'No more retries left',
+        name: 'No more retries left',
         count: 1,
       },
     ]);
@@ -171,16 +172,10 @@ describe('stores/incidents', () => {
       expect(incidentsStore.state.response).toEqual(mockIncidents)
     );
 
-    mockServer.use(
-      rest.get('/api/process-instances/123/incidents', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockIncidents,
-            count: 3,
-          })
-        )
-      )
-    );
+    mockFetchProcessInstanceIncidents().withSuccess({
+      ...mockIncidents,
+      count: 3,
+    });
 
     eventListeners.online();
 

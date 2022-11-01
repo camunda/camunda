@@ -6,6 +6,7 @@
  */
 
 import {FlowNodeInstances} from 'modules/stores/flowNodeInstance';
+import {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
 
 /**
  * @returns a jest mock function that resolves with given value
@@ -32,7 +33,9 @@ const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeInstance');
  * @returns a mocked incident Object
  * @param {*} customProps Obj with any type of custom property
  */
-export const createIncident = (options = {}) => {
+export const createIncident = (
+  options: Partial<IncidentDto> = {}
+): IncidentDto => {
   return {
     errorMessage: 'Some Condition error has occurred',
     errorType: {
@@ -41,10 +44,8 @@ export const createIncident = (options = {}) => {
     },
     id: randomIdIterator.next().value,
     jobId: randomJobIdIterator.next().value,
-    state: 'ACTIVE',
     flowNodeId: 'flowNodeId_alwaysFailingTask',
     flowNodeInstanceId: randomFlowNodeInstanceIdIterator.next().value,
-    flowNodeName: 'flowNodeName_alwaysFailingTask',
     creationTime: '2019-03-01T14:26:19',
     hasActiveOperation: false,
     lastOperation: null,

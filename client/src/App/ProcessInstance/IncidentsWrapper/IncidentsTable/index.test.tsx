@@ -22,27 +22,32 @@ const id = 'flowNodeInstanceIdB';
 const shortError = 'No data found for query $.orderId.';
 const longError =
   'Cannot compare values of different types: INTEGER and BOOLEAN';
-const incidentsMock = [
-  createIncident({
-    errorType: {name: 'Error A', id: 'ERROR_A'},
-    errorMessage: shortError,
-    flowNodeName: 'StartEvent_1',
-    flowNodeId: 'StartEvent_1',
-    flowNodeInstanceId: '18239123812938',
-    rootCauseInstance: {
-      instanceId: '111111111111111111',
-      processDefinitionId: 'calledInstance',
-      processDefinitionName: 'Called Instance',
-    },
-  }),
-  createIncident({
-    errorType: {name: 'Error B', id: 'ERROR_A'},
-    errorMessage: longError,
-    flowNodeId: 'Event_1db567d',
-    flowNodeName: 'Event_1db567d',
-    flowNodeInstanceId: id,
-  }),
-] as const;
+
+const firstIncident = createIncident({
+  errorType: {name: 'Error A', id: 'ERROR_A'},
+  errorMessage: shortError,
+  flowNodeId: 'StartEvent_1',
+  flowNodeInstanceId: '18239123812938',
+  rootCauseInstance: {
+    instanceId: '111111111111111111',
+    processDefinitionId: 'calledInstance',
+    processDefinitionName: 'Called Instance',
+  },
+});
+
+const secondIncident = createIncident({
+  errorType: {name: 'Error B', id: 'ERROR_A'},
+  errorMessage: longError,
+  flowNodeId: 'Event_1db567d',
+  flowNodeInstanceId: id,
+});
+
+const incidentsMock = {
+  incidents: [firstIncident, secondIncident],
+  count: 2,
+  errorTypes: [],
+  flowNodes: [],
+};
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
@@ -69,7 +74,7 @@ describe('IncidentsTable', () => {
         res.once(ctx.text(mockCallActivityProcessXML))
       )
     );
-    incidentsStore.setIncidents({incidents: incidentsMock, count: 2});
+    incidentsStore.setIncidents(incidentsMock);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
@@ -85,7 +90,7 @@ describe('IncidentsTable', () => {
   });
 
   it('should render the right column headers for restricted user', () => {
-    incidentsStore.setIncidents({incidents: incidentsMock, count: 2});
+    incidentsStore.setIncidents(incidentsMock);
     authenticationStore.setUser({
       displayName: 'demo',
       permissions: ['read'],
@@ -112,29 +117,25 @@ describe('IncidentsTable', () => {
         res.once(ctx.text(mockCallActivityProcessXML))
       )
     );
-    incidentsStore.setIncidents({incidents: incidentsMock, count: 2});
+    incidentsStore.setIncidents(incidentsMock);
     await processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     render(<IncidentsTable />, {wrapper: Wrapper});
     let withinRow = within(
       screen.getByRole('row', {
-        name: `Incident ${incidentsMock[0].errorType.name}`,
+        name: `Incident ${firstIncident!.errorType.name}`,
       })
     );
 
     expect(
-      withinRow.getByText(incidentsMock[0].errorType.name)
+      withinRow.getByText(firstIncident!.errorType.name)
     ).toBeInTheDocument();
+    expect(withinRow.getByText(firstIncident.flowNodeId)).toBeInTheDocument();
+    expect(withinRow.getByText(firstIncident.jobId!)).toBeInTheDocument();
     expect(
-      withinRow.getByText(incidentsMock[0].flowNodeName)
+      withinRow.getByText(formatDate(firstIncident.creationTime) || '--')
     ).toBeInTheDocument();
-    expect(withinRow.getByText(incidentsMock[0].jobId)).toBeInTheDocument();
-    expect(
-      withinRow.getByText(formatDate(incidentsMock[0].creationTime) || '--')
-    ).toBeInTheDocument();
-    expect(
-      withinRow.getByText(incidentsMock[0].errorMessage)
-    ).toBeInTheDocument();
+    expect(withinRow.getByText(firstIncident.errorMessage)).toBeInTheDocument();
     expect(
       withinRow.getByRole('link', {
         name: /view root cause instance/i,
@@ -145,21 +146,19 @@ describe('IncidentsTable', () => {
     ).not.toBeInTheDocument();
     withinRow = within(
       screen.getByRole('row', {
-        name: `Incident ${incidentsMock[1].errorType.name}`,
+        name: `Incident ${secondIncident.errorType.name}`,
       })
     );
     expect(
-      withinRow.getByText(incidentsMock[1].errorType.name)
+      withinRow.getByText(secondIncident.errorType.name)
+    ).toBeInTheDocument();
+    expect(withinRow.getByText(secondIncident.flowNodeId)).toBeInTheDocument();
+    expect(withinRow.getByText(secondIncident.jobId!)).toBeInTheDocument();
+    expect(
+      withinRow.getByText(formatDate(secondIncident.creationTime) || '--')
     ).toBeInTheDocument();
     expect(
-      withinRow.getByText(incidentsMock[1].flowNodeName)
-    ).toBeInTheDocument();
-    expect(withinRow.getByText(incidentsMock[1].jobId)).toBeInTheDocument();
-    expect(
-      withinRow.getByText(formatDate(incidentsMock[1].creationTime) || '--')
-    ).toBeInTheDocument();
-    expect(
-      withinRow.getByText(incidentsMock[1].errorMessage)
+      withinRow.getByText(secondIncident.errorMessage)
     ).toBeInTheDocument();
     expect(
       withinRow.getByRole('button', {name: 'Retry Incident'})
@@ -167,7 +166,7 @@ describe('IncidentsTable', () => {
   });
 
   it('should render incident details for restricted user', () => {
-    incidentsStore.setIncidents({incidents: incidentsMock, count: 2});
+    incidentsStore.setIncidents(incidentsMock);
     authenticationStore.setUser({
       displayName: 'demo',
       permissions: ['read'],
@@ -180,23 +179,19 @@ describe('IncidentsTable', () => {
     render(<IncidentsTable />, {wrapper: Wrapper});
     let withinRow = within(
       screen.getByRole('row', {
-        name: `Incident ${incidentsMock[0].errorType.name}`,
+        name: `Incident ${firstIncident.errorType.name}`,
       })
     );
 
     expect(
-      withinRow.getByText(incidentsMock[0].errorType.name)
+      withinRow.getByText(firstIncident.errorType.name)
     ).toBeInTheDocument();
+    expect(withinRow.getByText(firstIncident.flowNodeId)).toBeInTheDocument();
+    expect(withinRow.getByText(firstIncident.jobId!)).toBeInTheDocument();
     expect(
-      withinRow.getByText(incidentsMock[0].flowNodeName)
+      withinRow.getByText(formatDate(firstIncident.creationTime) || '--')
     ).toBeInTheDocument();
-    expect(withinRow.getByText(incidentsMock[0].jobId)).toBeInTheDocument();
-    expect(
-      withinRow.getByText(formatDate(incidentsMock[0].creationTime) || '--')
-    ).toBeInTheDocument();
-    expect(
-      withinRow.getByText(incidentsMock[0].errorMessage)
-    ).toBeInTheDocument();
+    expect(withinRow.getByText(firstIncident.errorMessage)).toBeInTheDocument();
 
     expect(
       withinRow.getByRole('link', {
@@ -209,21 +204,19 @@ describe('IncidentsTable', () => {
 
     withinRow = within(
       screen.getByRole('row', {
-        name: `Incident ${incidentsMock[1].errorType.name}`,
+        name: `Incident ${secondIncident.errorType.name}`,
       })
     );
     expect(
-      withinRow.getByText(incidentsMock[1].errorType.name)
+      withinRow.getByText(secondIncident.errorType.name)
+    ).toBeInTheDocument();
+    expect(withinRow.getByText(secondIncident.flowNodeId)).toBeInTheDocument();
+    expect(withinRow.getByText(secondIncident.jobId!)).toBeInTheDocument();
+    expect(
+      withinRow.getByText(formatDate(secondIncident.creationTime) || '--')
     ).toBeInTheDocument();
     expect(
-      withinRow.getByText(incidentsMock[1].flowNodeName)
-    ).toBeInTheDocument();
-    expect(withinRow.getByText(incidentsMock[1].jobId)).toBeInTheDocument();
-    expect(
-      withinRow.getByText(formatDate(incidentsMock[1].creationTime) || '--')
-    ).toBeInTheDocument();
-    expect(
-      withinRow.getByText(incidentsMock[1].errorMessage)
+      withinRow.getByText(secondIncident.errorMessage)
     ).toBeInTheDocument();
     expect(
       withinRow.queryByRole('button', {name: 'Retry Incident'})
@@ -236,25 +229,16 @@ describe('IncidentsTable', () => {
   });
 
   it('should display -- for jobId', () => {
-    const incidents = [
-      createIncident({
-        errorType: 'Error A',
-        errorMessage: shortError,
-        flowNodeName: 'StartEvent_1',
-        flowNodeId: 'StartEvent_1',
-        flowNodeInstanceId: '18239123812938',
-        rootCauseInstance: null,
-        jobId: null,
-      }),
-    ] as const;
+    const incidentMock = {...firstIncident, jobId: null};
+    const incidents = [incidentMock];
 
-    incidentsStore.setIncidents({incidents, count: 1});
+    incidentsStore.setIncidents({...incidentsMock, incidents, count: 1});
 
     render(<IncidentsTable />, {wrapper: Wrapper});
 
     let withinFirstRow = within(
       screen.getByRole('row', {
-        name: `Incident ${incidents[0].errorType.name}`,
+        name: `Incident ${incidentMock.errorType.name}`,
       })
     );
 
@@ -262,11 +246,11 @@ describe('IncidentsTable', () => {
   });
 
   it('should show a more button for long error messages', () => {
-    incidentsStore.setIncidents({incidents: incidentsMock, count: 2});
+    incidentsStore.setIncidents(incidentsMock);
     render(<IncidentsTable />, {wrapper: Wrapper});
     let withinFirstRow = within(
       screen.getByRole('row', {
-        name: `Incident ${incidentsMock[0].errorType.name}`,
+        name: `Incident ${firstIncident.errorType.name}`,
       })
     );
 
@@ -274,7 +258,7 @@ describe('IncidentsTable', () => {
 
     let withinSecondRow = within(
       screen.getByRole('row', {
-        name: `Incident ${incidentsMock[1].errorType.name}`,
+        name: `Incident ${secondIncident.errorType.name}`,
       })
     );
 
@@ -282,12 +266,12 @@ describe('IncidentsTable', () => {
   });
 
   it('should open an modal when clicking on the more button', async () => {
-    incidentsStore.setIncidents({incidents: incidentsMock, count: 2});
+    incidentsStore.setIncidents(incidentsMock);
     const {user} = render(<IncidentsTable />, {wrapper: Wrapper});
 
     let withinSecondRow = within(
       screen.getByRole('row', {
-        name: `Incident ${incidentsMock[1].errorType.name}`,
+        name: `Incident ${secondIncident.errorType.name}`,
       })
     );
 
@@ -299,18 +283,16 @@ describe('IncidentsTable', () => {
 
     const modal = screen.getByTestId('modal');
     expect(
-      within(modal).getByText(
-        `Flow Node "${incidentsMock[1].flowNodeName}" Error`
-      )
+      within(modal).getByText(`Flow Node "${secondIncident.flowNodeId}" Error`)
     ).toBeInTheDocument();
     expect(
-      within(modal).getByText(incidentsMock[1].errorMessage)
+      within(modal).getByText(secondIncident.errorMessage)
     ).toBeInTheDocument();
   });
 
   describe('Sorting', () => {
     it('should enable sorting for all', () => {
-      incidentsStore.setIncidents({incidents: incidentsMock, count: 2});
+      incidentsStore.setIncidents(incidentsMock);
       render(<IncidentsTable />, {wrapper: Wrapper});
 
       expect(screen.getByText('Job Id')).toBeEnabled();
@@ -325,15 +307,19 @@ describe('IncidentsTable', () => {
     it('should disable sorting for jobId', () => {
       const incidents = [
         createIncident({
-          errorType: 'Error A',
+          errorType: {
+            name: 'Error A',
+            id: 'ERROR-A',
+          },
           errorMessage: shortError,
-          flowNodeName: 'Task A',
+          flowNodeId: 'Task A',
           flowNodeInstanceId: 'flowNodeInstanceIdA',
           jobId: null,
         }),
       ];
 
-      incidentsStore.setIncidents({incidents, count: 1});
+      incidentsStore.setIncidents({...incidentsMock, incidents, count: 1});
+
       render(<IncidentsTable />, {wrapper: Wrapper});
       expect(
         screen.getByRole('button', {name: 'Sort by Job Id'})
@@ -343,11 +329,13 @@ describe('IncidentsTable', () => {
 
   describe('Selection', () => {
     it('should deselect selected incident', async () => {
-      const incidents = [createIncident()] as const;
-
-      incidentsStore.setIncidents({incidents, count: 1});
+      incidentsStore.setIncidents({
+        ...incidentsMock,
+        incidents: [firstIncident],
+        count: 1,
+      });
       flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: incidents[0].flowNodeId,
+        flowNodeId: firstIncident.flowNodeId,
         isMultiInstance: false,
       });
 
@@ -362,11 +350,11 @@ describe('IncidentsTable', () => {
       const incidents = [
         createIncident({flowNodeId: 'myTask'}),
         createIncident({flowNodeId: 'myTask'}),
-      ] as const;
+      ];
 
-      incidentsStore.setIncidents({incidents, count: 2});
+      incidentsStore.setIncidents({...incidentsMock, incidents});
       flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: incidents[0].flowNodeId,
+        flowNodeId: 'myTask',
         isMultiInstance: false,
       });
 

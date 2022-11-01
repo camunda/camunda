@@ -16,7 +16,7 @@ const mockIncidents = {
     }),
     createIncident({
       errorType: {id: 'EXTRACT_VALUE_ERROR', name: 'Extract value error'},
-      flowNodeName: 'flowNodeName_alwaysFailingTask',
+      flowNodeId: 'flowNodeName_alwaysFailingTask',
     }),
   ],
   errorTypes: [

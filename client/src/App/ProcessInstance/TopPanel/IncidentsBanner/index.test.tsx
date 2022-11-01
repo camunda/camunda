@@ -12,6 +12,8 @@ import {render, screen} from 'modules/testing-library';
 import {incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {mockIncidents} from 'modules/mocks/incidents';
+import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 
 const mockProps = {
   onClick: jest.fn(),
@@ -39,15 +41,7 @@ const Wrapper: React.FC<Props> = ({children}) => {
 
 describe('IncidentsBanner', () => {
   it('should display incidents banner if banner is not collapsed', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            count: 1,
-          })
-        )
-      )
-    );
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
 
     await fetchIncidents('1');
 

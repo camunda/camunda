@@ -41,6 +41,7 @@ import {
 } from 'modules/mocks/metadata';
 import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -97,12 +98,10 @@ describe('MetadataPopover', () => {
       rest.post(
         `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
         (_, res, ctx) => res.once(ctx.json(incidentFlowNodeMetaData))
-      ),
-      rest.get(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/incidents`,
-        (_, res, ctx) => res.once(ctx.json(mockIncidents))
       )
     );
+
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
@@ -337,12 +336,11 @@ describe('MetadataPopover', () => {
       rest.post(
         `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
         (_, res, ctx) => res.once(ctx.json(rootIncidentFlowNodeMetaData))
-      ),
-      rest.get(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/incidents`,
-        (_, res, ctx) => res.once(ctx.json(mockIncidents))
       )
     );
+
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,

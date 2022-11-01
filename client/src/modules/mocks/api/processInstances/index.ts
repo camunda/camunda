@@ -11,16 +11,9 @@ import {StatisticEntity} from 'modules/api/processInstances';
 const mockFetchVariables = (contextPath = '') =>
   mockPostRequest(`${contextPath}/api/process-instances/:instanceId/variables`);
 
-const mockFetchProcessInstanceIncidents = (contextPath = '') =>
-  mockGetRequest(`${contextPath}/api/process-instances/:instanceId/incidents`);
-
 const mockFetchProcessInstanceDetailStatistics = (contextPath = '') =>
   mockGetRequest<StatisticEntity[]>(
     `${contextPath}/api/process-instances/:processInstanceId/statistics`
   );
 
-export {
-  mockFetchVariables,
-  mockFetchProcessInstanceIncidents,
-  mockFetchProcessInstanceDetailStatistics,
-};
+export {mockFetchVariables, mockFetchProcessInstanceDetailStatistics};

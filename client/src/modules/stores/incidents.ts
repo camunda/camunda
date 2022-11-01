@@ -14,52 +14,27 @@ import {
   IReactionDisposer,
   override,
 } from 'mobx';
-import {fetchProcessInstanceIncidents} from 'modules/api/processInstances';
+import {
+  fetchProcessInstanceIncidents,
+  ProcessInstanceIncidentsDto,
+  IncidentDto,
+} from 'modules/api/processInstances/fetchProcessInstanceIncidents';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {tracking} from 'modules/tracking';
 import {flowNodeSelectionStore} from './flowNodeSelection';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
-type FlowNode = {
-  id: string;
-  count: number;
-};
-type ErrorType = {
-  id: string;
-  name: string;
-  count: number;
-};
-type Incident = {
-  id: string;
-  errorType: {
-    id: string;
-    name: string;
-  };
-  errorMessage: string;
-  flowNodeId: string;
-  flowNodeInstanceId: string;
-  flowNodeName: string;
-  jobId: string | null;
-  creationTime: string;
-  hasActiveOperation: boolean;
-  lastOperation: null | unknown;
-  rootCauseInstance: null | {
-    instanceId: string;
-    processDefinitionId: string;
-    processDefinitionName: string;
-  };
-  isSelected: boolean;
-};
-type Response = {
-  count: number;
+type Incident = IncidentDto & {isSelected: boolean; flowNodeName: string};
+type ProcessInstanceIncidents = Omit<
+  ProcessInstanceIncidentsDto,
+  'incidents'
+> & {
   incidents: Incident[];
-  errorTypes: ErrorType[];
-  flowNodes: FlowNode[];
 };
 
 type State = {
-  response: null | Response;
+  response: null | ProcessInstanceIncidentsDto;
   isLoaded: boolean;
   selectedErrorTypes: string[];
   selectedFlowNodes: string[];
@@ -127,8 +102,8 @@ class Incidents extends NetworkReconnectionHandler {
 
   fetchIncidents = this.retryOnConnectionLost(async (id: string) => {
     const response = await fetchProcessInstanceIncidents(id);
-    if (response.ok) {
-      this.setIncidents(await response.json());
+    if (response.isSuccess) {
+      this.setIncidents(response.data);
     }
   });
 
@@ -142,18 +117,17 @@ class Incidents extends NetworkReconnectionHandler {
   };
 
   handlePolling = async (id: string) => {
-    try {
-      this.isPollRequestRunning = true;
-      const response = await fetchProcessInstanceIncidents(id);
-      if (this.intervalId !== null && response.ok) {
-        this.setIncidents(await response.json());
-      }
-    } finally {
-      this.isPollRequestRunning = false;
+    this.isPollRequestRunning = true;
+    const response = await fetchProcessInstanceIncidents(id);
+
+    if (this.intervalId !== null && response.isSuccess) {
+      this.setIncidents(response.data);
     }
+
+    this.isPollRequestRunning = false;
   };
 
-  setIncidents = (response: any) => {
+  setIncidents = (response: ProcessInstanceIncidentsDto) => {
     this.state.response = response;
     this.state.isLoaded = true;
   };
@@ -284,4 +258,4 @@ class Incidents extends NetworkReconnectionHandler {
 }
 
 export const incidentsStore = new Incidents();
-export type {Incident, Response};
+export type {ProcessInstanceIncidents, Incident};

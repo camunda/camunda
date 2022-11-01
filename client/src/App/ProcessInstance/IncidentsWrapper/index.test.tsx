@@ -11,9 +11,8 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockIncidents, mockResolvedIncidents} from './index.setup';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {incidentsStore} from 'modules/stores/incidents';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 
 jest.unmock('modules/utils/date/formatDate');
 jest.mock('modules/components/IncidentOperation', () => {
@@ -65,11 +64,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('IncidentsFilter', () => {
   beforeEach(async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidents))
-      )
-    );
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
 
     await incidentsStore.fetchIncidents('1');
   });
@@ -238,12 +233,7 @@ describe('IncidentsFilter', () => {
       expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
 
       // incident is resolved
-      mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/incidents',
-          (_, res, ctx) => res.once(ctx.json(mockResolvedIncidents))
-        )
-      );
+      mockFetchProcessInstanceIncidents().withSuccess(mockResolvedIncidents);
 
       await incidentsStore.fetchIncidents('1');
 

@@ -36,13 +36,19 @@ const mockIncidents = () => {
     count: 1,
     incidents: [
       createIncident({
-        errorType: 'Condition error',
+        errorType: {
+          name: 'Condition error',
+          id: 'CONDITION_ERROR',
+        },
         flowNodeId: 'Service5678',
       }),
     ],
     errorTypes: [
       {
-        errorType: 'Condition error',
+        errorType: {
+          name: 'Condition error',
+          id: 'CONDITION_ERROR',
+        },
         count: 1,
       },
     ],

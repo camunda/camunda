@@ -40,14 +40,15 @@ import {createMemoryHistory} from 'history';
 import {
   mockFetchVariables,
   mockFetchProcessInstanceDetailStatistics,
-  mockFetchProcessInstanceIncidents,
 } from 'modules/mocks/api/processInstances';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchSequenceFlows} from 'modules/mocks/api/sequenceFlows';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/flowNodeInstances';
 import {mockFetchProcessXML} from 'modules/mocks/api/diagram';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/flowNodeMetadata';
 import {modifyProcess} from 'modules/mocks/api/modifications';
+import {mockIncidents} from 'modules/mocks/incidents';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -133,6 +134,7 @@ const mockRequests = (contextPath: string = '') => {
     },
   ]);
   mockFetchProcessInstanceIncidents(contextPath).withSuccess({
+    ...mockIncidents,
     count: 2,
   });
 };

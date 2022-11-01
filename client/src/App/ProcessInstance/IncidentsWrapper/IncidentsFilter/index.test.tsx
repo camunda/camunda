@@ -10,9 +10,8 @@ import {render, screen} from 'modules/testing-library';
 
 import {mockIncidents, mockIncidentsWithManyErrors} from './index.setup';
 import {incidentsStore} from 'modules/stores/incidents';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 
 const {reset, fetchIncidents} = incidentsStore;
 
@@ -22,11 +21,7 @@ describe('IncidentsFilter', () => {
   });
 
   it('should render pills by incident type', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidents))
-      )
-    );
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
 
     await fetchIncidents('1');
 
@@ -44,11 +39,8 @@ describe('IncidentsFilter', () => {
   });
 
   it('should render pills by flow node', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidents))
-      )
-    );
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+
     await fetchIncidents('1');
 
     render(<IncidentsFilter />, {
@@ -64,11 +56,10 @@ describe('IncidentsFilter', () => {
   });
 
   it('should show a more button', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidentsWithManyErrors))
-      )
+    mockFetchProcessInstanceIncidents().withSuccess(
+      mockIncidentsWithManyErrors
     );
+
     await fetchIncidents('1');
 
     const {user} = render(<IncidentsFilter />, {
@@ -86,11 +77,8 @@ describe('IncidentsFilter', () => {
   });
 
   it('should disable/enable clear all button depending on selected pills', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidents))
-      )
-    );
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+
     await fetchIncidents('1');
 
     const {user} = render(<IncidentsFilter />, {
