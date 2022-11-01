@@ -565,6 +565,11 @@
                 "id": 3,
                 "name": "errorMessage",
                 "type": "string"
+              },
+              {
+                "id": 4,
+                "name": "variables",
+                "type": "string"
               }
             ]
           },
