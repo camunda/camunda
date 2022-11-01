@@ -8,34 +8,29 @@
 import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {
   createEventSubProcessFlowNodeInstances,
+  createInstance,
   createMultiInstanceFlowNodeInstances,
 } from 'modules/testUtils';
 
-const multiInstanceProcessInstance = Object.freeze({
-  id: '2251799813686118',
-  processId: '2251799813686038',
-  processName: 'Multi-Instance Process',
-  version: 1,
-  startDate: '2020-08-18T12:07:33.854+0000',
-  endDate: null,
-  state: 'INCIDENT',
-  bpmnProcessId: 'multiInstanceProcess',
-  hasActiveOperation: false,
-  operations: [],
-});
+const multiInstanceProcessInstance: ProcessInstanceEntity = Object.freeze(
+  createInstance({
+    id: '2251799813686118',
+    processId: '2251799813686038',
+    processName: 'Multi-Instance Process',
+    state: 'INCIDENT',
+    bpmnProcessId: 'multiInstanceProcess',
+  })
+);
 
-const nestedSubProcessesInstance = Object.freeze({
-  id: '227539842356787',
-  processId: '39480256723678',
-  processName: 'Nested Sub Processes',
-  version: 1,
-  startDate: '2020-08-18T12:07:33.854+0000',
-  endDate: null,
-  state: 'ACTIVE',
-  bpmnProcessId: 'NestedSubProcesses',
-  hasActiveOperation: false,
-  operations: [],
-});
+const nestedSubProcessesInstance = Object.freeze(
+  createInstance({
+    id: '227539842356787',
+    processId: '39480256723678',
+    processName: 'Nested Sub Processes',
+    state: 'ACTIVE',
+    bpmnProcessId: 'NestedSubProcesses',
+  })
+);
 
 const nestedSubProcessFlowNodeInstances = {
   [nestedSubProcessesInstance.id]: {

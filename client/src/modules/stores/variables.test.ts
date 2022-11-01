@@ -12,6 +12,7 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from 'modules/testing-library';
 import {createInstance} from 'modules/testUtils';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
 jest.mock('modules/constants/variables', () => ({
   ...jest.requireActual('modules/constants/variables'),
@@ -66,10 +67,11 @@ describe('stores/variables', () => {
   };
 
   beforeEach(async () => {
+    mockFetchProcessInstance().withSuccess(
+      createInstance({id: '123', state: 'ACTIVE'})
+    );
+
     mockServer.use(
-      rest.get('/api/process-instances/:instanceId', (_, res, ctx) =>
-        res.once(ctx.json({id: '123', state: 'ACTIVE'}))
-      ),
       rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res.once(ctx.json(mockVariables))
       ),

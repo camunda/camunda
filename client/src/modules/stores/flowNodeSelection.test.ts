@@ -5,26 +5,22 @@
  * except in compliance with the proprietary license.
  */
 
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {processInstanceDetailsStore} from './processInstanceDetails';
 import {flowNodeSelectionStore} from './flowNodeSelection';
 import {modificationsStore} from './modifications';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {createInstance} from 'modules/testUtils';
 
 const PROCESS_INSTANCE_ID = '2251799813689404';
 
 describe('stores/flowNodeSelection', () => {
   beforeAll(async () => {
-    mockServer.use(
-      rest.get(`/api/process-instances/:id`, (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            id: PROCESS_INSTANCE_ID,
-            state: 'ACTIVE',
-            processName: 'some process name',
-          })
-        )
-      )
+    mockFetchProcessInstance().withSuccess(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+        processName: 'some process name',
+      })
     );
 
     await processInstanceDetailsStore.fetchProcessInstance(PROCESS_INSTANCE_ID);

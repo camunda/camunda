@@ -33,6 +33,7 @@ import {mockCallActivityProcessXML, mockProcessXML} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -70,10 +71,9 @@ describe('InstanceHeader', () => {
   });
 
   it('should show skeleton before instance data is available', async () => {
+    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+
     mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(mockInstanceWithActiveOperation))
-      ),
       rest.get('/api/processes/:id/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))
       )
@@ -94,10 +94,9 @@ describe('InstanceHeader', () => {
   });
 
   it('should render instance data', async () => {
+    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+
     mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(mockInstanceWithActiveOperation))
-      ),
       rest.get('/api/processes/:id/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))
       )
@@ -146,10 +145,9 @@ describe('InstanceHeader', () => {
   });
 
   it('should render "View All" link for call activity process', async () => {
+    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+
     mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(mockInstanceWithActiveOperation))
-      ),
       rest.get('/api/processes/:id/xml', (_, res, ctx) =>
         res.once(ctx.text(mockCallActivityProcessXML))
       )
@@ -172,10 +170,9 @@ describe('InstanceHeader', () => {
   it('should navigate to Instances Page and expand Filters Panel on "View All" click', async () => {
     panelStatesStore.toggleFiltersPanel();
 
+    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+
     mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(mockInstanceWithActiveOperation))
-      ),
       rest.get('/api/processes/:id/xml', (_, res, ctx) =>
         res.once(ctx.text(mockCallActivityProcessXML))
       )
@@ -203,10 +200,9 @@ describe('InstanceHeader', () => {
   });
 
   it('should render parent Process Instance Key', async () => {
+    mockFetchProcessInstance().withSuccess(mockInstanceWithParentInstance);
+
     mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(mockInstanceWithParentInstance))
-      ),
       rest.get('/api/processes/:id/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))
       )
@@ -229,13 +225,9 @@ describe('InstanceHeader', () => {
   it('should show spinner based on instance having active operations', async () => {
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
+    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
+
     mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(mockInstanceWithoutOperations))
-      ),
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(mockInstanceWithActiveOperation))
-      ),
       rest.get('/api/processes/:id/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))
       )
@@ -250,6 +242,8 @@ describe('InstanceHeader', () => {
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
+    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+
     jest.runOnlyPendingTimers();
 
     expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
@@ -259,10 +253,9 @@ describe('InstanceHeader', () => {
   });
 
   it('should show spinner when operation is applied', async () => {
+    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
+
     mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(mockInstanceWithoutOperations))
-      ),
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(ctx.json(mockOperationCreated))
       ),
@@ -294,10 +287,9 @@ describe('InstanceHeader', () => {
       hasActiveOperation: false,
     };
 
+    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
+
     mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(mockInstanceWithoutOperations))
-      ),
       rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res.once(ctx.json([mockVariable]))
       ),
@@ -340,10 +332,9 @@ describe('InstanceHeader', () => {
   });
 
   it('should remove spinner when operation fails', async () => {
+    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
+
     mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(mockInstanceWithoutOperations))
-      ),
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(ctx.status(500), ctx.json({error: 'an error occurred'}))
       ),
@@ -368,10 +359,9 @@ describe('InstanceHeader', () => {
   });
 
   it('should show operation buttons when user has permission', async () => {
+    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+
     mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(mockInstanceWithActiveOperation))
-      ),
       rest.get('/api/processes/:id/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))
       )
@@ -409,10 +399,9 @@ describe('InstanceHeader', () => {
   });
 
   it('should hide operation buttons when user has no permission', async () => {
+    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+
     mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(mockInstanceWithActiveOperation))
-      ),
       rest.get('/api/processes/:id/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))
       )
@@ -451,10 +440,10 @@ describe('InstanceHeader', () => {
 
   it('should call onPollingFailure if delete operation is performed', async () => {
     jest.useFakeTimers();
+
+    mockFetchProcessInstance().withSuccess(mockCanceledInstance);
+
     mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(mockCanceledInstance))
-      ),
       rest.get('/api/processes/:id/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))
       )
@@ -493,11 +482,7 @@ describe('InstanceHeader', () => {
       screen.getByText(/About to delete Instance/)
     );
 
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.status(404), ctx.json({}))
-      )
-    );
+    mockFetchProcessInstance().withServerError(404);
 
     jest.runOnlyPendingTimers();
 

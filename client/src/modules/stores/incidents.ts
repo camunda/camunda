@@ -14,7 +14,7 @@ import {
   IReactionDisposer,
   override,
 } from 'mobx';
-import {fetchProcessInstanceIncidents} from 'modules/api/instances';
+import {fetchProcessInstanceIncidents} from 'modules/api/processInstances';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {tracking} from 'modules/tracking';

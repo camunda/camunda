@@ -22,7 +22,7 @@ import {
   fetchVariables,
   VariablePayload,
   fetchVariable,
-} from 'modules/api/instances';
+} from 'modules/api/processInstances';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {

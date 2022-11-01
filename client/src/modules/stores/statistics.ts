@@ -12,7 +12,7 @@ import {
   IReactionDisposer,
   override,
 } from 'mobx';
-import {fetchProcessCoreStatistics} from 'modules/api/instances';
+import {fetchProcessCoreStatistics} from 'modules/api/processInstances';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 

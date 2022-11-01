@@ -23,13 +23,13 @@ import {
 } from './mocks';
 import {eventSubProcess} from 'modules/testUtils';
 import {createRef} from 'react';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
 describe('FlowNodeInstancesTree - Event Subprocess', () => {
   beforeEach(async () => {
+    mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
+
     mockServer.use(
-      rest.get(`/api/process-instances/:processInstanceId`, (_, res, ctx) =>
-        res.once(ctx.json(multiInstanceProcessInstance))
-      ),
       rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
         res.once(ctx.text(eventSubProcess))
       )

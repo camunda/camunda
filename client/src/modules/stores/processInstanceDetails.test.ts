@@ -7,10 +7,9 @@
 
 import {processInstanceDetailsStore} from './processInstanceDetails';
 import {createInstance} from 'modules/testUtils';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from 'modules/testing-library';
 import {createOperation} from 'modules/utils/instance';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
 const currentInstanceMock = createInstance();
 
@@ -20,11 +19,7 @@ describe('stores/currentInstance', () => {
   });
 
   beforeEach(() => {
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(currentInstanceMock))
-      )
-    );
+    mockFetchProcessInstance().withSuccess(currentInstanceMock);
   });
 
   it('should fetch current instance on init state', async () => {
@@ -47,11 +42,7 @@ describe('stores/currentInstance', () => {
 
     const secondCurrentInstanceMock = createInstance();
 
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(secondCurrentInstanceMock))
-      )
-    );
+    mockFetchProcessInstance().withSuccess(secondCurrentInstanceMock);
 
     jest.runOnlyPendingTimers();
 
@@ -63,11 +54,7 @@ describe('stores/currentInstance', () => {
 
     const thirdCurrentInstanceMock = createInstance();
 
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(thirdCurrentInstanceMock))
-      )
-    );
+    mockFetchProcessInstance().withSuccess(thirdCurrentInstanceMock);
 
     jest.runOnlyPendingTimers();
 
@@ -79,11 +66,7 @@ describe('stores/currentInstance', () => {
 
     const finishedCurrentInstanceMock = createInstance({state: 'CANCELED'});
 
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(finishedCurrentInstanceMock))
-      )
-    );
+    mockFetchProcessInstance().withSuccess(finishedCurrentInstanceMock);
 
     jest.runOnlyPendingTimers();
 
@@ -235,11 +218,10 @@ describe('stores/currentInstance', () => {
       )
     );
 
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json({...currentInstanceMock, state: 'INCIDENT'}))
-      )
-    );
+    mockFetchProcessInstance().withSuccess({
+      ...currentInstanceMock,
+      state: 'INCIDENT',
+    });
 
     eventListeners.online();
 

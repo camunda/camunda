@@ -20,7 +20,7 @@ import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {
   fetchProcessInstanceDetailStatistics,
   StatisticEntity,
-} from 'modules/api/instances';
+} from 'modules/api/processInstances';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {modificationsStore} from './modifications';
 import {isProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';

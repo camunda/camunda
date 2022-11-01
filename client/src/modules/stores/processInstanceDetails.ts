@@ -14,7 +14,7 @@ import {
   IReactionDisposer,
   override,
 } from 'mobx';
-import {fetchProcessInstance} from 'modules/api/instances';
+import {fetchProcessInstance} from 'modules/api/processInstances/fetchProcessInstance';
 import {createOperation, getProcessName} from 'modules/utils/instance';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 import {PAGE_TITLE} from 'modules/constants';
@@ -100,21 +100,17 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
   fetchProcessInstance = this.retryOnConnectionLost(
     async (id: ProcessInstanceEntity['id']) => {
       this.startFetch();
-      try {
-        const response = await fetchProcessInstance(id);
+      const response = await fetchProcessInstance(id);
 
-        if (response.ok) {
-          this.handleFetchSuccess(await response.json());
-          this.resetRefetch();
+      if (response.isSuccess) {
+        this.handleFetchSuccess(response.data);
+        this.resetRefetch();
+      } else {
+        if (response.statusCode === 404) {
+          this.handleRefetch(id);
         } else {
-          if (response.status === 404) {
-            this.handleRefetch(id);
-          } else {
-            this.handleFetchFailure();
-          }
+          this.handleFetchFailure();
         }
-      } catch (error) {
-        this.handleFetchFailure(error);
       }
     }
   );
@@ -179,13 +175,8 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchFailure = (error?: unknown) => {
+  handleFetchFailure = () => {
     this.state.status = 'error';
-
-    logger.error('Failed to fetch process instance');
-    if (error !== undefined) {
-      logger.error(error);
-    }
   };
 
   handleRefetch = (id: ProcessInstanceEntity['id']) => {
@@ -203,29 +194,24 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
   };
 
   handlePolling = async (instanceId: any) => {
-    try {
-      this.isPollRequestRunning = true;
-      const response = await fetchProcessInstance(instanceId);
+    this.isPollRequestRunning = true;
+    const response = await fetchProcessInstance(instanceId);
 
-      if (this.intervalId !== null) {
-        if (response.ok) {
-          this.setProcessInstance(await response.json());
-        } else {
-          if (
-            !isInstanceRunning(this.state.processInstance) &&
-            response.status === 404
-          ) {
-            this.onPollingFailure?.();
-          }
-          logger.error('Failed to poll process instance');
+    if (this.intervalId !== null) {
+      if (response.isSuccess) {
+        this.setProcessInstance(response.data);
+      } else {
+        if (
+          !isInstanceRunning(this.state.processInstance) &&
+          response.statusCode === 404
+        ) {
+          this.onPollingFailure?.();
         }
+        logger.error('Failed to poll process instance');
       }
-    } catch (error) {
-      logger.error('Failed to poll process instance');
-      logger.error(error);
-    } finally {
-      this.isPollRequestRunning = false;
     }
+
+    this.isPollRequestRunning = false;
   };
 
   startPolling = async (instanceId: any) => {

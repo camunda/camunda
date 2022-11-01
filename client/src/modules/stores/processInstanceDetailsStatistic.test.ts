@@ -14,6 +14,8 @@ import {modificationsStore} from './modifications';
 import {mockComplexProcess} from 'modules/mocks/mockComplexProcess';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {mockSubProcesses} from 'modules/mocks/mockSubProcesses';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {createInstance} from 'modules/testUtils';
 
 const PROCESS_INSTANCE_ID = '2251799813686320';
 
@@ -70,14 +72,14 @@ describe('stores/processInstanceDetailsStatistics', () => {
         (_, res, ctx) =>
           res.once(ctx.json(mockProcessInstanceDetailsStatistics))
       ),
-      rest.get(`/api/process-instances/:id`, (_, res, ctx) =>
-        res.once(ctx.json({id: PROCESS_INSTANCE_ID, state: 'INCIDENT'}))
-      ),
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockComplexProcess))
       )
     );
 
+    mockFetchProcessInstance().withSuccess(
+      createInstance({id: PROCESS_INSTANCE_ID, state: 'INCIDENT'})
+    );
     processInstanceDetailsStore.fetchProcessInstance(PROCESS_INSTANCE_ID);
     processInstanceDetailsDiagramStore.fetchProcessXml(PROCESS_INSTANCE_ID);
   });
@@ -208,10 +210,8 @@ describe('stores/processInstanceDetailsStatistics', () => {
       );
     });
 
-    mockServer.use(
-      rest.get(`/api/process-instances/:id`, (_, res, ctx) =>
-        res.once(ctx.json({id: PROCESS_INSTANCE_ID, state: 'COMPLETED'}))
-      )
+    mockFetchProcessInstance().withSuccess(
+      createInstance({id: PROCESS_INSTANCE_ID, state: 'COMPLETED'})
     );
 
     expect(processInstanceDetailsStatisticsStore.intervalId).not.toBeNull();
@@ -309,12 +309,13 @@ describe('stores/processInstanceDetailsStatistics', () => {
         `/api/process-instances/${PROCESS_INSTANCE_ID}/statistics`,
         (_, res, ctx) => res.once(ctx.json(subProcessStatistics))
       ),
-      rest.get(`/api/process-instances/:id`, (_, res, ctx) =>
-        res.once(ctx.json({id: PROCESS_INSTANCE_ID, state: 'INCIDENT'}))
-      ),
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockSubProcesses))
       )
+    );
+
+    mockFetchProcessInstance().withSuccess(
+      createInstance({id: PROCESS_INSTANCE_ID, state: 'INCIDENT'})
     );
 
     processInstanceDetailsStore.fetchProcessInstance(PROCESS_INSTANCE_ID);

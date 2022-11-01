@@ -17,7 +17,7 @@ import {
 import {
   fetchProcessInstances,
   fetchProcessInstancesByIds,
-} from 'modules/api/instances';
+} from 'modules/api/processInstances';
 import {logger} from 'modules/logger';
 import {
   getProcessInstancesRequestFilters,

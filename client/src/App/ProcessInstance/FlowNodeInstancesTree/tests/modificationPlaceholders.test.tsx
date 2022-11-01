@@ -30,13 +30,12 @@ import {
 } from './mocks';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
 describe('FlowNodeInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
+    mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
     mockServer.use(
-      rest.get(`/api/process-instances/:processInstanceId`, (_, res, ctx) =>
-        res.once(ctx.json(multiInstanceProcessInstance))
-      ),
       rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
         res.once(ctx.text(multiInstanceProcess))
       )

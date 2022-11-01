@@ -22,13 +22,12 @@ import {
   processId,
   processInstanceId,
 } from './mocks';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
 describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {
+    mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
     mockServer.use(
-      rest.get(`/api/process-instances/:processInstanceId`, (_, res, ctx) =>
-        res.once(ctx.json(multiInstanceProcessInstance))
-      ),
       rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
         res.once(ctx.text(multiInstanceProcess))
       )
@@ -185,10 +184,9 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     ).not.toBeInTheDocument();
 
     // poll request
+    mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
+
     mockServer.use(
-      rest.get(`/api/process-instances/:processInstanceId`, (_, res, ctx) =>
-        res.once(ctx.json({...multiInstanceProcessInstance}))
-      ),
       rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
         res.once(ctx.json(flowNodeInstances.level1Poll))
       )

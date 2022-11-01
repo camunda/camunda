@@ -7,7 +7,7 @@
 
 import {makeObservable, action, observable, override, computed} from 'mobx';
 import {DiagramModel} from 'bpmn-moddle';
-import {fetchProcessInstancesStatistics} from 'modules/api/instances';
+import {fetchProcessInstancesStatistics} from 'modules/api/processInstances';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';

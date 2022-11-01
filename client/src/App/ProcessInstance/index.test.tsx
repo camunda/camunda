@@ -41,8 +41,8 @@ import {
   mockFetchVariables,
   mockFetchProcessInstanceDetailStatistics,
   mockFetchProcessInstanceIncidents,
-  mockFetchProcessInstance,
-} from 'modules/mocks/api/instances';
+} from 'modules/mocks/api/processInstances';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchSequenceFlows} from 'modules/mocks/api/sequenceFlows';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/flowNodeInstances';
 import {mockFetchProcessXML} from 'modules/mocks/api/diagram';

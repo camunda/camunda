@@ -57,10 +57,6 @@ type VariablePayload = {
   searchBeforeOrEqual?: ReadonlyArray<string>;
 };
 
-async function fetchProcessInstance(id: ProcessInstanceEntity['id']) {
-  return request({url: `${URL}/${id}`});
-}
-
 async function fetchProcessInstanceIncidents(id: ProcessInstanceEntity['id']) {
   return request({url: `${URL}/${id}/incidents`});
 }
@@ -186,7 +182,6 @@ async function fetchVariable(id: VariableEntity['id']) {
 export type {VariablePayload, StatisticEntity};
 export {
   fetchProcessInstances,
-  fetchProcessInstance,
   fetchProcessInstanceIncidents,
   fetchGroupedProcesses,
   fetchProcessCoreStatistics,

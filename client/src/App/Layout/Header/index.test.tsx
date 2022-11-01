@@ -15,6 +15,8 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {authenticationStore} from 'modules/stores/authentication';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {createInstance} from 'modules/testUtils';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
 function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
@@ -39,15 +41,11 @@ describe('Header', () => {
             permissions: ['read', 'write'],
           })
         )
-      ),
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            id: 'first_instance_id',
-            state: 'ACTIVE',
-          })
-        )
       )
+    );
+
+    mockFetchProcessInstance().withSuccess(
+      createInstance({id: 'first_instance_id', state: 'ACTIVE'})
     );
 
     authenticationStore.authenticate();

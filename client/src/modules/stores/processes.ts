@@ -6,7 +6,7 @@
  */
 
 import {makeObservable, action, observable, computed, override} from 'mobx';
-import {fetchGroupedProcesses} from 'modules/api/instances';
+import {fetchGroupedProcesses} from 'modules/api/processInstances';
 import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {logger} from 'modules/logger';

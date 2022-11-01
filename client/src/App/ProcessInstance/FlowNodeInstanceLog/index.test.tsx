@@ -20,7 +20,11 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {createMultiInstanceFlowNodeInstances} from 'modules/testUtils';
+import {
+  createInstance,
+  createMultiInstanceFlowNodeInstances,
+} from 'modules/testUtils';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
 jest.mock('modules/utils/bpmn');
 
@@ -28,17 +32,13 @@ const processInstancesMock = createMultiInstanceFlowNodeInstances('1');
 
 describe('FlowNodeInstanceLog', () => {
   beforeAll(async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            id: '1',
-            state: 'ACTIVE',
-            processName: 'processName',
-            bpmnProcessId: 'processName',
-          })
-        )
-      )
+    mockFetchProcessInstance().withSuccess(
+      createInstance({
+        id: '1',
+        state: 'ACTIVE',
+        processName: 'processName',
+        bpmnProcessId: 'processName',
+      })
     );
 
     processInstanceDetailsStore.init({id: '1'});
@@ -157,20 +157,33 @@ describe('FlowNodeInstanceLog', () => {
     expect(await screen.findAllByTestId('INCIDENT-icon')).toHaveLength(1);
     expect(await screen.findAllByTestId('COMPLETED-icon')).toHaveLength(1);
 
+    // first poll
+    mockFetchProcessInstance().withSuccess(
+      createInstance({
+        id: '1',
+        state: 'ACTIVE',
+        processName: 'processName',
+        bpmnProcessId: 'processName',
+      })
+    );
     mockServer.use(
-      // processInstanceDetailsStore poll
-      rest.get('/api/process-instances/:id', (_, res, ctx) =>
-        res(ctx.json({id: '1', state: 'ACTIVE', processName: 'processName'}))
-      ),
-      // first poll
       rest.post('/api/flow-node-instances', (_, res, ctx) =>
         res.once(ctx.status(500), ctx.text(''))
       )
     );
+
     jest.runOnlyPendingTimers();
 
+    // second poll
+    mockFetchProcessInstance().withSuccess(
+      createInstance({
+        id: '1',
+        state: 'ACTIVE',
+        processName: 'processName',
+        bpmnProcessId: 'processName',
+      })
+    );
     mockServer.use(
-      // second poll
       rest.post('/api/flow-node-instances', (_, res, ctx) =>
         res.once(ctx.json(processInstancesMock.level1Poll))
       )

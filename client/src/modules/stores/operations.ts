@@ -15,7 +15,10 @@ import {
   override,
 } from 'mobx';
 import * as operationsApi from 'modules/api/batchOperations';
-import {applyBatchOperation, applyOperation} from 'modules/api/instances';
+import {
+  applyBatchOperation,
+  applyOperation,
+} from 'modules/api/processInstances';
 import {sortOperations} from './utils/sortOperations';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
