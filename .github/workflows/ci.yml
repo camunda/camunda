@@ -21,7 +21,7 @@ defaults:
 jobs:
   integration-tests:
     name: Integration tests
-    runs-on: [ self-hosted, linux, "16" ]
+    runs-on: "n1-standard-16-netssd-preempt"
     timeout-minutes: 45
     env:
       TC_CLOUD_LOGS_VERBOSE: true
@@ -79,7 +79,7 @@ jobs:
           name: Integration Tests
   qa-update-tests:
     name: QA Update tests
-    runs-on: [ self-hosted, linux, "16" ]
+    runs-on: "n1-standard-16-netssd-preempt"
     timeout-minutes: 45
     env:
       TC_CLOUD_LOGS_VERBOSE: true
@@ -136,7 +136,7 @@ jobs:
           name: QA Update Tests
   unit-tests:
     name: Unit tests
-    runs-on: [ self-hosted, linux, "16" ]
+    runs-on: "n1-standard-16-netssd-preempt"
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
@@ -206,7 +206,7 @@ jobs:
           name: Smoke Tests ${{ matrix.os }}
   property-tests:
     name: Property Tests
-    runs-on: [ self-hosted, linux, "16" ]
+    runs-on: "n1-standard-16-netssd-preempt"
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v3
@@ -312,7 +312,7 @@ jobs:
           name: Java 8 Client
   codeql:
     name: CodeQL
-    runs-on: [ self-hosted, linux, "16" ]
+    runs-on: "n1-standard-16-netssd-preempt"
     permissions:
       security-events: write
     steps:
