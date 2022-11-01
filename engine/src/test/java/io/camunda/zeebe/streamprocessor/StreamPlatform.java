@@ -36,6 +36,7 @@ import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.streamprocessor.state.DbLastProcessedPositionState;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
@@ -297,6 +298,10 @@ public final class StreamPlatform {
     return processorContext.getCurrentKey();
   }
 
+  public long getLastSuccessfulProcessedRecordPosition() {
+    return processorContext.getLastSuccessfulProcessedRecordPosition();
+  }
+
   public RecordProcessor getDefaultMockedRecordProcessor() {
     return defaultMockedRecordProcessor;
   }
@@ -359,6 +364,10 @@ public final class StreamPlatform {
 
     public Long getCurrentKey() {
       return new DbKeyGenerator(1, zeebeDb, zeebeDb.createContext()).getCurrentKey();
+    }
+
+    public Long getLastSuccessfulProcessedRecordPosition() {
+      return new DbLastProcessedPositionState(zeebeDb, zeebeDb.createContext()).getLastSuccessfulProcessedRecordPosition();
     }
 
     @Override
