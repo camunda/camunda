@@ -98,7 +98,7 @@ import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class ClusteringRule extends ExternalResource {
+public class ClusteringRule extends ExternalResource {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusteringRule.class);
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
@@ -157,6 +157,21 @@ public final class ClusteringRule extends ExternalResource {
         clusterSize,
         configurator,
         gatewayCfg -> {},
+        ZeebeClientBuilder::usePlaintext);
+  }
+
+  public ClusteringRule(
+      final int partitionCount,
+      final int replicationFactor,
+      final int clusterSize,
+      final Consumer<BrokerCfg> brokerConfigurator,
+      final Consumer<GatewayCfg> gatewayConfigurator) {
+    this(
+        partitionCount,
+        replicationFactor,
+        clusterSize,
+        brokerConfigurator,
+        gatewayConfigurator,
         ZeebeClientBuilder::usePlaintext);
   }
 
@@ -351,7 +366,7 @@ public final class ClusteringRule extends ExternalResource {
     return brokerCfg;
   }
 
-  private File getBrokerBase(final int nodeId) {
+  protected File getBrokerBase(final int nodeId) {
     final var base = new File(temporaryFolder.getRoot(), String.valueOf(nodeId));
     if (!base.exists()) {
       base.mkdir();
