@@ -19,8 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.client.util.JsonUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import java.time.Duration;
+import java.util.Collections;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -95,5 +97,25 @@ public final class ThrowErrorTest extends ClientTest {
 
     // then
     rule.verifyRequestTimeout(requestTimeout);
+  }
+
+  @Test
+  public void shouldThrowErrorWithJsonStringVariables() {
+    // given
+    final long jobKey = 12;
+    final String errorCode = "errorCode";
+    final String json = JsonUtil.toJson(Collections.singletonMap("key", "val"));
+
+    // when
+    client.newThrowErrorCommand(jobKey).errorCode(errorCode).variables(json).send().join();
+
+    // then
+    final ThrowErrorRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobKey()).isEqualTo(jobKey);
+    assertThat(request.getErrorCode()).isEqualTo(errorCode);
+
+    JsonUtil.assertEquality(request.getVariables(), json);
+
+    rule.verifyDefaultRequestTimeout();
   }
 }

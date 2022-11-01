@@ -119,7 +119,8 @@ public final class BpmnVariableMappingBehavior {
       variableBehavior.mergeDocument(
           elementInstanceKey, processDefinitionKey, processInstanceKey, bpmnProcessId, variables);
     } else if (isConnectedToEventBasedGateway(element)
-        || element.getElementType() == BpmnElementType.BOUNDARY_EVENT
+        || (element.getElementType() == BpmnElementType.BOUNDARY_EVENT
+            && !isConnectedToErrorEvent(element))
         || element.getElementType() == BpmnElementType.START_EVENT) {
       // event variables are set local variables instead of temporary variables
       final var localVariables = variablesState.getVariablesLocalAsDocument(elementInstanceKey);
@@ -144,6 +145,15 @@ public final class BpmnVariableMappingBehavior {
     if (element instanceof ExecutableCatchEventElement) {
       final var catchEvent = (ExecutableCatchEventElement) element;
       return catchEvent.isConnectedToEventBasedGateway();
+    } else {
+      return false;
+    }
+  }
+
+  private boolean isConnectedToErrorEvent(final ExecutableFlowNode element) {
+    if (element instanceof ExecutableCatchEventElement) {
+      final var catchEvent = (ExecutableCatchEventElement) element;
+      return catchEvent.isError();
     } else {
       return false;
     }
