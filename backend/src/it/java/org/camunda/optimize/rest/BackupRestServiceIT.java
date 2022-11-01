@@ -34,10 +34,9 @@ public class BackupRestServiceIT extends AbstractIT {
   @SuppressWarnings(UNUSED)
   private static Stream<Supplier<OptimizeRequestExecutor>> backupApiRequestExecutorSuppliers() {
     return Stream.of(
-      () -> embeddedOptimizeExtension.getRequestExecutor()
-        .buildTriggerBackupRequest(new BackupRequestDto(VALID_BACKUP_ID)),
-      () -> embeddedOptimizeExtension.getRequestExecutor()
-        .buildGetBackupStateRequest(VALID_BACKUP_ID)
+      () -> embeddedOptimizeExtension.getRequestExecutor().buildTriggerBackupRequest(new BackupRequestDto(VALID_BACKUP_ID)),
+      () -> embeddedOptimizeExtension.getRequestExecutor().buildGetBackupStateRequest(VALID_BACKUP_ID),
+      () -> embeddedOptimizeExtension.getRequestExecutor().buildDeleteBackupRequest(VALID_BACKUP_ID)
     );
   }
 }

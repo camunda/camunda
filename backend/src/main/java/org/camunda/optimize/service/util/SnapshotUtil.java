@@ -12,7 +12,8 @@ import static org.camunda.optimize.service.metadata.Version.VERSION;
 @UtilityClass
 public class SnapshotUtil {
   // Backup constants
-  public static final String SNAPSHOT_PREFIX = "camunda_optimize_{backupId}";
+  public static final String SNAPSHOT_PREFIX = "camunda_optimize_{backupId}_"; // trailing underscore required to avoid
+  // matching backupIds starting with the same characters
   public static final String SNAPSHOT_1_NAME_TEMPLATE = "{prefix}_{version}_part_1_of_2"; // import indices
   public static final String SNAPSHOT_2_NAME_TEMPLATE = "{prefix}_{version}_part_2_of_2"; // other indices
   public static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "type=repository_missing_exception";

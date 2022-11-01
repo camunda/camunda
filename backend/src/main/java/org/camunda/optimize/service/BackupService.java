@@ -78,6 +78,11 @@ public class BackupService {
     return new BackupStateResponseDto(determineBackupState(snapshotInfosPerState));
   }
 
+  public void deleteBackup(final String backupId) {
+    validateRepositoryExists();
+    backupWriter.deleteOptimizeSnapshots(backupId);
+  }
+
   private BackupState determineBackupState(final Map<SnapshotState, List<SnapshotInfo>> snapshotInfosPerState) {
     if (snapshotInfosPerState.getOrDefault(SnapshotState.SUCCESS, Collections.emptyList())
       .size() == EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP) {

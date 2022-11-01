@@ -63,9 +63,10 @@ public class BackupServiceTest {
   }
 
   @Test
-  public void triggerBackupWithoutSnapshotConfig() {
-    // when/then
+  public void triggerBackupWithoutSnapshotRepositoryConfig() {
+    // given mock no repository in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(true);
+    // when/then
     final OptimizeConfigurationException thrown = assertThrows(
       OptimizeConfigurationException.class,
       () -> backupService.triggerBackup("backupid")
@@ -76,7 +77,7 @@ public class BackupServiceTest {
   }
 
   @Test
-  public void triggerBackupWithIncorrectSnapshotConfig() {
+  public void triggerBackupWithIncorrectSnapshotRepositoryConfig() {
     // given
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
@@ -114,8 +115,8 @@ public class BackupServiceTest {
   }
 
   @Test
-  public void getBackupStateWithoutSnapshotConfig() {
-    // given
+  public void getBackupStateWithoutSnapshotRepositoryConfig() {
+    // given mock no repository in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(true);
 
     // when/then
@@ -129,7 +130,7 @@ public class BackupServiceTest {
   }
 
   @Test
-  public void useBackupApiWithIncorrectSnapshotConfig() {
+  public void getBackupStateWithIncorrectSnapshotRepositoryConfig() {
     // given
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
@@ -200,5 +201,36 @@ public class BackupServiceTest {
       "Unable to determine backup state because unexpected number of snapshots exist for backupID [backupid]. Expected [2] " +
         "snapshots but found [3]. Found snapshots: [repoName:snapshotid1/123, repoName:snapshotid2/456, " +
         "repoName:snapshotid3/789].");
+  }
+
+  @Test
+  public void deleteBackupWithoutSnapshotRepositoryConfig(){
+    // given mock no repository in config
+    stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(true);
+
+    // when/then
+    final OptimizeConfigurationException thrown = assertThrows(
+      OptimizeConfigurationException.class,
+      () -> backupService.deleteBackup("backupid")
+    );
+    assertThat(thrown.getMessage()).isEqualTo(
+      "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize " +
+        "configuration.");
+  }
+
+  @Test
+  public void deleteBackupWithIncorrectSnapshotRepositoryConfig() {
+    // given
+    // Mock existence of repository name field in config
+    stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
+    doThrow(new OptimizeSnapshotRepositoryNotFoundException("No repository with name [does_not_exist] could be found."))
+      .when(backupReader).validateRepositoryExistsOrFail();
+
+    // when/then
+    final OptimizeRuntimeException thrown = assertThrows(
+      OptimizeRuntimeException.class,
+      () -> backupService.deleteBackup("backupid")
+    );
+    assertThat(thrown.getMessage()).isEqualTo("No repository with name [does_not_exist] could be found.");
   }
 }

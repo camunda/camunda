@@ -15,6 +15,8 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotResponse;
+import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotRequest;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.snapshots.SnapshotInfo;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.camunda.optimize.service.util.SnapshotUtil.getSnapshotNameForImportIndices;
 import static org.camunda.optimize.service.util.SnapshotUtil.getSnapshotNameForNonImportIndices;
+import static org.camunda.optimize.service.util.SnapshotUtil.getSnapshotPrefixWithBackupId;
 
 @RequiredArgsConstructor
 @Component
@@ -42,6 +45,13 @@ public class BackupWriter {
     return List.of(snapshot1Name, snapshot2Name);
   }
 
+  public void deleteOptimizeSnapshots(final String backupId) {
+    final DeleteSnapshotRequest deleteSnapshotRequest = new DeleteSnapshotRequest()
+      .repository(configurationService.getEsSnapshotRepositoryName())
+      .snapshots(getSnapshotPrefixWithBackupId(backupId) + "*");
+    esClient.deleteSnapshotAsync(deleteSnapshotRequest, getDeleteSnapshotActionListener(backupId));
+  }
+
   private void triggerSnapshot(final String snapshotName, final String[] indexNames) {
     log.info("Triggering async snapshot {}.", snapshotName);
     esClient.triggerSnapshotAsync(
@@ -51,11 +61,11 @@ public class BackupWriter {
         .indices(indexNames)
         .includeGlobalState(false)
         .waitForCompletion(true),
-      getSnapshotActionListener(snapshotName)
+      getCreateSnapshotActionListener(snapshotName)
     );
   }
 
-  private ActionListener<CreateSnapshotResponse> getSnapshotActionListener(final String snapshotName) {
+  private ActionListener<CreateSnapshotResponse> getCreateSnapshotActionListener(final String snapshotName) {
     return new ActionListener<>() {
       @Override
       public void onResponse(CreateSnapshotResponse createSnapshotResponse) {
@@ -88,6 +98,35 @@ public class BackupWriter {
       @Override
       public void onFailure(Exception e) {
         String reason = String.format("Failed to take snapshot [%s]", snapshotName);
+        log.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
+      }
+    };
+  }
+
+  private ActionListener<AcknowledgedResponse> getDeleteSnapshotActionListener(final String backupId) {
+    return new ActionListener<>() {
+      @Override
+      public void onResponse(AcknowledgedResponse deleteSnapshotResponse) {
+        if (deleteSnapshotResponse.isAcknowledged()) {
+          String reason = String.format(
+            "Request to delete all Optimize snapshots with the backupID [%s] successfully submitted",
+            backupId
+          );
+          log.info(reason);
+        } else {
+          String reason = String.format(
+            "Request to delete all Optimize snapshots with the backupID [%s] was not acknowledged by Elasticsearch.",
+            backupId
+          );
+          log.error(reason);
+          throw new OptimizeRuntimeException(reason);
+        }
+      }
+
+      @Override
+      public void onFailure(Exception e) {
+        String reason = String.format("Failed to delete snapshots for backupID [%s]", backupId);
         log.error(reason, e);
         throw new OptimizeRuntimeException(reason, e);
       }

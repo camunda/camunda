@@ -1844,6 +1844,13 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildDeleteBackupRequest(final String backupId) {
+    setActuatorWebTarget();
+    this.path = BACKUP_ENDPOINT + backupId;
+    this.method = DELETE;
+    return this;
+  }
+
   private void setAccessToken(final String accessToken) {
     Optional.ofNullable(accessToken)
       .ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token));
