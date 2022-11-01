@@ -103,25 +103,4 @@ public final class StreamProcessorContinouslyReplayModeTest {
     inOrder.verifyNoMoreInteractions();
   }
 
-  @Test
-  public void shouldProcessAfterReplay() {
-    // given
-    streamPlatform.writeBatch(
-        command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
-
-    // when
-    streamPlatform.startStreamProcessor();
-
-    streamPlatform.writeBatch(
-        command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
-
-    // then
-    final RecordProcessor recordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
-    final InOrder inOrder = inOrder(recordProcessor);
-    inOrder.verify(recordProcessor, TIMEOUT).replay(any());
-    inOrder.verify(recordProcessor, TIMEOUT).process(any(), any());
-    inOrder.verifyNoMoreInteractions();
-  }
 }
