@@ -429,28 +429,28 @@ alerting:
 
 email:
   # A switch to control email sending process.
-  enabled: false
+  enabled: ${CAMUNDA_OPTIMIZE_EMAIL_ENABLED:false}
   # Email address that can be used to send alerts or email digests
-  address: ''
+  address: ${CAMUNDA_OPTIMIZE_EMAIL_ADDRESS:}
   # The smtp server name
-  hostname: ''
+  hostname: ${CAMUNDA_OPTIMIZE_EMAIL_HOSTNAME:}
   # The smtp server port. This one is also used as SSL port for the security connection.
-  port: 587
+  port: ${CAMUNDA_OPTIMIZE_EMAIL_PORT:587}
   # This is the company name that will be shown in the subject and body of e-mails sent by Optimize
   # This configuration's setting is subject to any legal agreements between Camunda and the user's organization.
   # Changes are only permitted with formal, written approval by Camunda.
-  companyBranding: Camunda
+  companyBranding: ${CAMUNDA_OPTIMIZE_EMAIL_COMPANY_BRANDING:Camunda}
   # Define configuration properties for the authentication of the email server
   authentication:
     # A switch to control whether the email server requires authentication
-    enabled: true
+    enabled: ${CAMUNDA_OPTIMIZE_EMAIL_AUTHENTICATION_ENABLED:true}
     # Username of your smtp server
-    username: ''
+    username: ${CAMUNDA_OPTIMIZE_EMAIL_AUTHENTICATION_USERNAME:}
     # Corresponding password to the given user of your smtp server
-    password: ''
+    password: ${CAMUNDA_OPTIMIZE_EMAIL_AUTHENTICATION_PASSWORD:}
     # States how the connection to the server should be secured.
     # Possible values are 'NONE', 'STARTTLS' or 'SSL/TLS'
-    securityProtocol: 'NONE'
+    securityProtocol: ${CAMUNDA_OPTIMIZE_EMAIL_AUTHENTICATION_SECURITY_PROTOCOL:NONE}
 
 webhookAlerting:
   webhooks:
