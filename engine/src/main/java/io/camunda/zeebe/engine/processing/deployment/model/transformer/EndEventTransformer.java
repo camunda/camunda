@@ -38,9 +38,11 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
       transformEventDefinition(element, context, endEvent);
     }
 
-    if (isMessageEvent(element) && hasTaskDefinition(element)) {
+    if (isMessageEvent(element)) {
       endEvent.setEventType(BpmnEventType.MESSAGE);
-      jobWorkerElementTransformer.transform(element, context);
+      if (hasTaskDefinition(element)) {
+        jobWorkerElementTransformer.transform(element, context);
+      }
     }
   }
 

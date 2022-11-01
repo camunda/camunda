@@ -33,9 +33,13 @@ public final class IntermediateThrowEventTransformer
     final var throwEvent =
         process.getElementById(element.getId(), ExecutableIntermediateThrowEvent.class);
 
-    if (isMessageEvent(element) && hasTaskDefinition(element)) {
+    throwEvent.setEventType(BpmnEventType.NONE);
+
+    if (isMessageEvent(element)) {
       throwEvent.setEventType(BpmnEventType.MESSAGE);
-      jobWorkerElementTransformer.transform(element, context);
+      if (hasTaskDefinition(element)) {
+        jobWorkerElementTransformer.transform(element, context);
+      }
     } else if (isLinkEvent(element)) {
       transformLinkEventDefinition(element, context, throwEvent);
     }
