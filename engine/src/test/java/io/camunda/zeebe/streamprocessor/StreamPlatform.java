@@ -67,11 +67,9 @@ public final class StreamPlatform {
   private LogContext logContext;
   private ProcessorContext processorContext;
   private boolean snapshotWasTaken = false;
-  private final StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
+  private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private List<RecordProcessor> recordProcessors;
-
   private final RecordProcessor defaultMockedRecordProcessor;
-
   private final WriteActor writeActor = new WriteActor();
   private final ZeebeDbFactory zeebeDbFactory;
   private final StreamProcessorLifecycleAware mockProcessorLifecycleAware;
@@ -123,8 +121,16 @@ public final class StreamPlatform {
         defaultMockedRecordProcessor);
   }
 
+  public void setStreamProcessorMode(final StreamProcessorMode streamProcessorMode) {
+    this.streamProcessorMode = streamProcessorMode;
+  }
+
   public CommandResponseWriter getMockCommandResponseWriter() {
     return mockCommandResponseWriter;
+  }
+
+  public void resetLogContext() {
+    setLogContext(createLogContext(new ListLogStorage(), DEFAULT_PARTITION));
   }
 
   /**
