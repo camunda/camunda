@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
+import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
@@ -277,6 +278,10 @@ public final class StreamPlatform {
     LOG.info("Snapshot database for processor {}", processorContext.streamProcessor.getName());
   }
 
+  public long getCurrentKey() {
+    return processorContext.getCurrentKey();
+  }
+
   public RecordProcessor getDefaultMockedRecordProcessor() {
     return defaultMockedRecordProcessor;
   }
@@ -335,6 +340,10 @@ public final class StreamPlatform {
 
     public void snapshot() {
       zeebeDb.createSnapshot(snapshotPath.toFile());
+    }
+
+    public Long getCurrentKey() {
+      return new DbKeyGenerator(1, zeebeDb, zeebeDb.createContext()).getCurrentKey();
     }
 
     @Override

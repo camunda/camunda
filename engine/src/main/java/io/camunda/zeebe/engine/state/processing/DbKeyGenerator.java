@@ -41,6 +41,10 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
     return nextValueManager.getNextValue(LATEST_KEY);
   }
 
+  public long getCurrentKey() {
+    return nextValueManager.getCurrentValue(LATEST_KEY);
+  }
+
   @Override
   public void setKeyIfHigher(final long key) {
     final var currentKey = nextValueManager.getCurrentValue(LATEST_KEY);
