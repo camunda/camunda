@@ -10,7 +10,7 @@ import update from 'immutability-helper';
 import {t} from 'translation';
 import {getVariableLabel} from 'variables';
 
-import {isCategoricalBar} from '../reportService';
+import {isCategoricalBar, isCategorical} from '../reportService';
 
 import * as processOptions from './process';
 import * as decisionOptions from './decision';
@@ -193,9 +193,10 @@ function isProcessInstanceDuration({view}) {
   return view && view.entity === 'processInstance' && view.properties[0] === 'duration';
 }
 
-function getDefaultSorting({reportType, data: {view, groupBy, visualization}}) {
-  if (visualization !== 'table') {
-    return null;
+function getDefaultSorting({reportType, data}) {
+  const {view, groupBy, visualization} = data;
+  if (visualization === 'table' && ['flowNodes', 'userTasks'].includes(groupBy?.type)) {
+    return {by: 'label', order: 'asc'};
   }
 
   if ((view?.properties?.[0] ?? view?.property) === 'rawData') {
@@ -203,13 +204,13 @@ function getDefaultSorting({reportType, data: {view, groupBy, visualization}}) {
     return {by, order: 'desc'};
   }
 
-  if (['flowNodes', 'userTasks'].includes(groupBy?.type)) {
-    return {by: 'label', order: 'asc'};
+  if (visualization !== 'table' && isCategorical(data)) {
+    return {by: 'value', order: 'desc'};
   }
 
   if (groupBy?.type.toLowerCase().includes('variable')) {
     // Descending for Date and Boolean
-    // Ascending for Integer, Double, Long, Date
+    // Ascending for Integer, Double, Long
     const order = ['Date', 'Boolean'].includes(groupBy.value.type) ? 'desc' : 'asc';
     return {by: 'key', order};
   }

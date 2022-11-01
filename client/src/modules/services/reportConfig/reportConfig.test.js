@@ -8,7 +8,7 @@
 import {createReportUpdate} from './reportConfig';
 
 import {getVariableLabel} from 'variables';
-import {isCategoricalBar} from '../reportService';
+import {isCategoricalBar, isCategorical} from '../reportService';
 
 const report = {
   configuration: {
@@ -38,6 +38,7 @@ jest.mock('variables', () => ({
 
 jest.mock('../reportService', () => ({
   isCategoricalBar: jest.fn(),
+  isCategorical: jest.fn(),
 }));
 
 it('should update the payload when selecting a new report setting', () => {
@@ -130,15 +131,58 @@ it('should update x axis labels', () => {
   ).toBe('boolVarLabel');
 });
 
-it('should update sorting', () => {
-  expect(
-    createReportUpdate('process', report, 'view', 'rawData').configuration.$set.sorting
-  ).toEqual({
-    by: 'startDate',
-    order: 'desc',
+describe('default sorting', () => {
+  it('should sort raw data a descending order by the start date', () => {
+    expect(
+      createReportUpdate('process', report, 'view', 'rawData').configuration.$set.sorting
+    ).toEqual({
+      by: 'startDate',
+      order: 'desc',
+    });
+  });
+
+  it('should sort categorical chart reports by value in a descending order', () => {
+    isCategorical.mockReturnValueOnce(true);
+    expect(
+      createReportUpdate('process', report, 'visualization', 'barChart').configuration.$set.sorting
+    ).toEqual({
+      by: 'value',
+      order: 'desc',
+    });
+  });
+
+  it('should sort number variable by key in ascending order', () => {
+    expect(
+      createReportUpdate(
+        'process',
+        {...report, groupBy: {type: 'variable', value: {type: 'Double'}}},
+        'visualization',
+        'barChart'
+      ).configuration.$set.sorting
+    ).toEqual({
+      by: 'key',
+      order: 'asc',
+    });
+  });
+
+  it('should sort flow node table report by label in ascending order', () => {
+    expect(
+      createReportUpdate(
+        'process',
+        {
+          ...report,
+          view: {entity: 'flowNode', properties: ['frequency']},
+          groupBy: {type: 'flowNodes'},
+        },
+        'visualization',
+        'table'
+      ).configuration.$set.sorting
+    ).toEqual({
+      by: 'label',
+      order: 'asc',
+    });
   });
 });
-
 describe('horizonalBarChart', () => {
   it('should keep horizontalBar config as false for non categorical reports', () => {
     isCategoricalBar.mockReturnValueOnce(false);

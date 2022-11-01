@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {processResult, getReportResult, isCategoricalBar} from './reportService';
+import {processResult, getReportResult, isCategoricalBar, isCategorical} from './reportService';
 
 import {post} from 'request';
 
@@ -146,6 +146,49 @@ describe('isCategoricalBar', () => {
         groupBy: {
           type: 'variable',
           value: {type: 'String'},
+        },
+      })
+    ).toBe(true);
+  });
+});
+
+describe('isCategorical', () => {
+  it('should return true for flow node groupBy', () => {
+    expect(
+      isCategorical({
+        groupBy: {
+          type: 'flowNodes',
+        },
+      })
+    ).toBe(true);
+  });
+
+  it('should return false for double variable groupBy', () => {
+    expect(
+      isCategorical({
+        groupBy: {
+          type: 'variabe',
+          value: {type: 'Double'},
+        },
+      })
+    ).toBe(false);
+  });
+
+  it('should return true for group by assignee', () => {
+    expect(
+      isCategorical({
+        groupBy: {
+          type: 'assignee',
+        },
+      })
+    ).toBe(true);
+  });
+
+  it('should return true for distributed by process', () => {
+    expect(
+      isCategorical({
+        distributedBy: {
+          type: 'process',
         },
       })
     ).toBe(true);

@@ -38,6 +38,7 @@ export {
   processResult,
   isAlertCompatibleReport,
   isCategoricalBar,
+  isCategorical,
 } from './reportService';
 
 // unfortunately, there is no syntax like "export * as formatters from './formatters'"
