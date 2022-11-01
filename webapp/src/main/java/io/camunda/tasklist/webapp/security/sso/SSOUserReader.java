@@ -44,7 +44,7 @@ public class SSOUserReader implements UserReader {
       final String email = claims.get(tasklistProperties.getAuth0().getEmailKey()).asString();
       return Optional.of(
           new UserDTO()
-              .setUserId(authentication.getName())
+              .setUserId(email)
               .setDisplayName(name)
               .setApiUser(false)
               .setPermissions(tokenAuthentication.getPermissions())
