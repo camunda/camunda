@@ -222,6 +222,9 @@
         <groupId>com.google.cloud.tools</groupId>
         <artifactId>jib-maven-plugin</artifactId>
         <configuration>
+          <from>
+            <image>eclipse-temurin:17-jre-focal</image>
+          </from>
           <to>
             <image>docker.io/camunda/tasklist</image>
           </to>
