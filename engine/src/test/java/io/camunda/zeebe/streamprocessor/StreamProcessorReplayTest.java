@@ -149,8 +149,7 @@ final class StreamProcessorReplayTest {
                     .isEqualTo(2L));
 
     // state has to be updated
-    Assertions.assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition())
-        .isEqualTo(1);
+    Assertions.assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition()).isEqualTo(1);
     Assertions.assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey()))
         .isEqualTo(19L);
   }
@@ -196,8 +195,7 @@ final class StreamProcessorReplayTest {
                     .isEqualTo(2L));
 
     // state has to be updated
-    Assertions.assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition())
-        .isEqualTo(1);
+    Assertions.assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition()).isEqualTo(1);
     Assertions.assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey()))
         .isEqualTo(19L);
   }

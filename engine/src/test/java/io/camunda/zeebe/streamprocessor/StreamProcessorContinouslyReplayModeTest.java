@@ -264,10 +264,7 @@ public final class StreamProcessorContinouslyReplayModeTest {
     // on replay the positions and keys are restored
     streamPlatform.writeBatch(
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        event()
-            .processInstance(ELEMENT_ACTIVATING, RECORD)
-            .key(eventKeyBeforeSnapshot)
-            .causedBy(0),
+        event().processInstance(ELEMENT_ACTIVATING, RECORD).key(eventKeyBeforeSnapshot).causedBy(0),
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
         event()
             .processInstance(ELEMENT_ACTIVATING, RECORD)
@@ -301,8 +298,7 @@ public final class StreamProcessorContinouslyReplayModeTest {
                 Assertions.assertThat(streamProcessor.getLastProcessedPositionAsync().join())
                     .isEqualTo(3L));
 
-    Assertions.assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition())
-        .isEqualTo(3);
+    Assertions.assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition()).isEqualTo(3);
     Assertions.assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey()))
         .isEqualTo(19L);
   }
