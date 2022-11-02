@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
@@ -242,6 +243,18 @@ public final class EngineRule extends ExternalResource {
   }
 
   public void increaseTime(final Duration duration) {
+    final var streamProcessor = environmentRule.getStreamProcessor(PARTITION_ID);
+    if (streamProcessor.getCurrentPhase().join() == Phase.PROCESSING) {
+      // When time traveling, we're generally want to make sure that the entire state machine cycle
+      // for processing a record is completed, including the execution of post-commit tasks. For
+      // example, we're often interested in scheduled timers when time traveling in tests, for which
+      // the due date checker is scheduled through a post-commit task. When the engine has reached
+      // the end of the log, all post-commit tasks have also been applied, because the state machine
+      // will have executed them before switching the hasReachEnd flag.
+      Awaitility.await("Expect that engine reaches the end of the log before increasing the time")
+          .until(this::hasReachedEnd);
+    }
+
     environmentRule.getClock().addTime(duration);
   }
 
