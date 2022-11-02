@@ -91,7 +91,8 @@ public class ConfigurationService {
   private Integer elasticsearchConnectionTimeout;
   private Integer elasticsearchResponseConsumerBufferLimitInMb;
   private String elasticsearchPathPrefix;
-  private ProxyConfiguration elasticSearchProxyConfig;
+  private ProxyConfiguration elasticsearchProxyConfig;
+  private Boolean elasticsearchSkipHostnameVerification;
 
   // elasticsearch connection security
   private String elasticsearchSecurityUsername;
@@ -396,14 +397,23 @@ public class ConfigurationService {
     return elasticsearchResponseConsumerBufferLimitInMb;
   }
 
-  public ProxyConfiguration getElasticSearchProxyConfig() {
-    if (elasticSearchProxyConfig == null) {
-      elasticSearchProxyConfig = configJsonContext.read(
+  public ProxyConfiguration getElasticsearchProxyConfig() {
+    if (elasticsearchProxyConfig == null) {
+      elasticsearchProxyConfig = configJsonContext.read(
         ConfigurationServiceConstants.ELASTICSEARCH_PROXY, ProxyConfiguration.class
       );
-      elasticSearchProxyConfig.validate();
+      elasticsearchProxyConfig.validate();
     }
-    return elasticSearchProxyConfig;
+    return elasticsearchProxyConfig;
+  }
+
+  public boolean getElasticsearchSkipHostnameVerification() {
+    if (elasticsearchSkipHostnameVerification == null) {
+      elasticsearchSkipHostnameVerification = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTICSEARCH_SKIP_HOSTNAME_VERIFICATION, Boolean.class
+      );
+    }
+    return elasticsearchSkipHostnameVerification;
   }
 
   public String getElasticsearchPathPrefix() {

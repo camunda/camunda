@@ -168,7 +168,7 @@ public class ConfigurationServiceTest {
   public void invalidElasticsearchProxyConfigThrowsError() {
     String[] locations = {defaultConfigFile(), "config-samples/config-invalid-elasticsearch-proxy-config.yaml"};
     ConfigurationService underTest = createConfiguration(locations);
-    assertThatThrownBy(underTest::getElasticSearchProxyConfig).isInstanceOf(OptimizeConfigurationException.class);
+    assertThatThrownBy(underTest::getElasticsearchProxyConfig).isInstanceOf(OptimizeConfigurationException.class);
   }
 
   @Test

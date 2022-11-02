@@ -335,8 +335,12 @@ es:
       port: null
       # whether this proxy is using a secured connection
       sslEnabled: false
+    # Determines whether the hostname verification should be skipped
+    skipHostnameVerification: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_CONNECTION_SKIP_HOSTNAME_VERIFICATION:false}
+  # Configuration relating to ES backup
   backup:
-      repositoryName: ${CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME:}
+    # The repository name in which the backups should be stored
+    repositoryName: ${CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME:}
 
 
   # Elasticsearch security settings

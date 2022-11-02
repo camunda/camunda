@@ -67,6 +67,7 @@ public class ConfigurationServiceConstants {
   public static final String ELASTICSEARCH_SCROLL_TIMEOUT_IN_SECONDS = "$.es.scrollTimeoutInSeconds";
   public static final String ELASTICSEARCH_CONNECTION_NODES = "$.es.connection.nodes";
   public static final String ELASTICSEARCH_PROXY = "$.es.connection.proxy";
+  public static final String ELASTICSEARCH_SKIP_HOSTNAME_VERIFICATION = "$.es.connection.skipHostnameVerification";
   public static final String ELASTICSEARCH_PATH_PREFIX = "$.es.connection.pathPrefix";
   public static final String ELASTICSEARCH_SNAPSHOT_REPO = "$.es.backup.repositoryName";
 
