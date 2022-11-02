@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.NextValueManager;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.util.VisibleForTesting;
 
 public final class DbKeyGenerator implements KeyGeneratorControls {
 
@@ -39,6 +40,17 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
   @Override
   public long nextKey() {
     return nextValueManager.getNextValue(LATEST_KEY);
+  }
+
+  /**
+   * Retrieve the current key from the state, since it is only used in tests it is not part of the
+   * interface.
+   *
+   * @return the current key from the state
+   */
+  @VisibleForTesting
+  public long getCurrentKey() {
+    return nextValueManager.getCurrentValue(LATEST_KEY);
   }
 
   @Override
