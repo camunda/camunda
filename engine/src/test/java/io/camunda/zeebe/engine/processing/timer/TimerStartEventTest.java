@@ -30,7 +30,6 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.stream.Collectors;
-import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -1090,45 +1089,28 @@ public final class TimerStartEventTest {
     // when
     engine.increaseTime(Duration.ofSeconds(5));
 
-    // disable because we'll await with Awaitility
-    RecordingExporter.disableAwaitingIncomingRecords();
-
     // then
-    Awaitility.await()
-        .untilAsserted(
-            () -> {
-              // due timers are only checked if the engine is not currently processing #10112
-              // so we may need to move the clock slightly for each check
-              engine.increaseTime(Duration.ofMillis(100));
-              assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(4))
-                  .extracting(record -> record.getValue().getProcessDefinitionKey())
-                  .containsExactly(
-                      firstDeploymentProcessDefinitionKey,
-                      secondDeploymentProcessDefinitionKey,
-                      firstDeploymentProcessDefinitionKey,
-                      secondDeploymentProcessDefinitionKey);
-            });
+    assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(4))
+        .extracting(record -> record.getValue().getProcessDefinitionKey())
+        .containsExactly(
+            firstDeploymentProcessDefinitionKey,
+            secondDeploymentProcessDefinitionKey,
+            firstDeploymentProcessDefinitionKey,
+            secondDeploymentProcessDefinitionKey);
 
     // when
     engine.increaseTime(Duration.ofSeconds(10));
 
     // then
-    Awaitility.await()
-        .untilAsserted(
-            () -> {
-              // due timers are only checked if the engine is not currently processing #10112
-              // so we may need to move the clock slightly for each check
-              engine.increaseTime(Duration.ofMillis(100));
-              assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(5))
-                  .describedAs("Expect that start_1 triggered twice and start_2 triggered thrice")
-                  .extracting(record -> record.getValue().getProcessDefinitionKey())
-                  .containsExactly(
-                      firstDeploymentProcessDefinitionKey,
-                      secondDeploymentProcessDefinitionKey,
-                      firstDeploymentProcessDefinitionKey,
-                      secondDeploymentProcessDefinitionKey,
-                      secondDeploymentProcessDefinitionKey);
-            });
+    assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(5))
+        .describedAs("Expect that start_1 triggered twice and start_2 triggered thrice")
+        .extracting(record -> record.getValue().getProcessDefinitionKey())
+        .containsExactly(
+            firstDeploymentProcessDefinitionKey,
+            secondDeploymentProcessDefinitionKey,
+            firstDeploymentProcessDefinitionKey,
+            secondDeploymentProcessDefinitionKey,
+            secondDeploymentProcessDefinitionKey);
   }
 
   @Test
@@ -1284,11 +1266,10 @@ public final class TimerStartEventTest {
     final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
 
     // when
-    engine.stop();
-    final long engineStoppedTime = engine.getClock().getCurrentTimeInMillis();
+    engine.forEachPartition(engine::pauseProcessing);
+    final long enginePausedTime = engine.getClock().getCurrentTimeInMillis();
     engine.increaseTime(Duration.ofMinutes(35));
-    RecordingExporter.reset();
-    engine.start();
+    engine.forEachPartition(engine::resumeProcessing);
 
     // then
     final Record<TimerRecordValue> firstRecord =
@@ -1301,7 +1282,7 @@ public final class TimerStartEventTest {
         .hasTargetElementId("start")
         .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
 
-    assertThat(firstRecord.getTimestamp()).isGreaterThan(engineStoppedTime);
+    assertThat(firstRecord.getTimestamp()).isGreaterThan(enginePausedTime);
 
     final TimerRecordValue secondTimerRecord =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
