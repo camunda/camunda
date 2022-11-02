@@ -57,57 +57,6 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.withEventApplierFactory(state -> mockEventApplier);
   }
 
-  @Test
-  public void shouldStopProcessingWhenPaused() throws Exception {
-    // given - bunch of records
-    IntStream.range(0, 5000)
-        .forEach(i -> streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, i));
-
-    streamProcessorRule.writeBatch(
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, PROCESS_INSTANCE_RECORD),
-        RecordToWrite.event()
-            .processInstance(ELEMENT_ACTIVATED, PROCESS_INSTANCE_RECORD)
-            .causedBy(0));
-
-    Awaitility.await()
-        .until(
-            () ->
-                streamProcessorRule
-                    .events()
-                    .onlyProcessInstanceRecords()
-                    .withIntent(ELEMENT_ACTIVATED),
-            StreamWrapper::exists);
-
-    final var onRecoveredLatch = new CountDownLatch(1);
-    final var typedRecordProcessor = mock(TypedRecordProcessor.class);
-    final var streamProcessor =
-        streamProcessorRule.startTypedStreamProcessor(
-            (processors, context) ->
-                processors
-                    .onCommand(ValueType.PROCESS_INSTANCE, ACTIVATE_ELEMENT, typedRecordProcessor)
-                    .withListener(
-                        new StreamProcessorLifecycleAware() {
-                          @Override
-                          public void onRecovered(final ReadonlyStreamProcessorContext context) {
-                            onRecoveredLatch.countDown();
-                          }
-                        }));
-
-    // when
-    streamProcessor.pauseProcessing().join();
-    final var success = onRecoveredLatch.await(15, TimeUnit.SECONDS);
-
-    // then
-    assertThat(success).isTrue();
-    Mockito.clearInvocations(typedRecordProcessor);
-
-    streamProcessorRule.writeCommand(
-        ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(0xcafe));
-
-    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any(), any());
-    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any(), any());
-    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any(), any());
-  }
 
   @Test
   public void shouldContinueProcessingWhenResumed() throws Exception {
