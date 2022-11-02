@@ -28,7 +28,7 @@ type FailJobResponseWrapper struct {
 }
 
 func (f FailJobResponseWrapper) human() (string, error) {
-	return fmt.Sprint("Failed job with key '", failJobKey, "' and set remaining retries to '", failJobRetriesFlag, "' with retry backoff '", failJobRetryBackoffFlag, "'"), nil
+	return fmt.Sprint("Failed job with key '", failJobKey, "' and set remaining retries to '", failJobRetriesFlag, "' and variables '", failJobVariables, "' with retry backoff '", failJobRetryBackoffFlag, "'"), nil
 }
 
 func (f FailJobResponseWrapper) json() (string, error) {
@@ -40,6 +40,7 @@ var (
 	failJobRetriesFlag      int32
 	failJobRetryBackoffFlag time.Duration
 	failJobErrorMessage     string
+	failJobVariables        string
 )
 
 var failJobCmd = &cobra.Command{
@@ -48,15 +49,21 @@ var failJobCmd = &cobra.Command{
 	Args:    keyArg(&failJobKey),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
-		defer cancel()
-
-		resp, err := client.NewFailJobCommand().
+		request, err := client.NewFailJobCommand().
 			JobKey(failJobKey).
 			Retries(failJobRetriesFlag).
 			RetryBackoff(failJobRetryBackoffFlag).
 			ErrorMessage(failJobErrorMessage).
-			Send(ctx)
+			VariablesFromString(failJobVariables)
+		if err != nil {
+			return err
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
+		defer cancel()
+
+		var resp *pb.FailJobResponse
+		resp, err = request.Send(ctx)
 		if err != nil {
 			return err
 		}
@@ -75,5 +82,6 @@ func init() {
 	failJobCmd.Flags().DurationVar(&failJobRetryBackoffFlag, "retryBackoff", time.Second*0, "Specify retry backoff of job. Example values: 300ms, 50s or 1m")
 
 	failJobCmd.Flags().StringVar(&failJobErrorMessage, "errorMessage", "", "Specify failure error message")
+	failJobCmd.Flags().StringVar(&failJobVariables, "variables", "{}", "Specify variables as JSON object string")
 
 }

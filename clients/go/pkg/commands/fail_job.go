@@ -17,6 +17,8 @@ package commands
 
 import (
 	"context"
+	"fmt"
+	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 	"time"
 )
@@ -37,6 +39,12 @@ type FailJobCommandStep3 interface {
 	DispatchFailJobCommand
 	RetryBackoff(retryBackoff time.Duration) FailJobCommandStep3
 	ErrorMessage(string) FailJobCommandStep3
+
+	VariablesFromString(string) (DispatchFailJobCommand, error)
+	VariablesFromStringer(fmt.Stringer) (DispatchFailJobCommand, error)
+	VariablesFromMap(map[string]interface{}) (DispatchFailJobCommand, error)
+	VariablesFromObject(interface{}) (DispatchFailJobCommand, error)
+	VariablesFromObjectIgnoreOmitempty(interface{}) (DispatchFailJobCommand, error)
 }
 
 type FailJobCommand struct {
@@ -64,6 +72,44 @@ func (cmd *FailJobCommand) ErrorMessage(errorMessage string) FailJobCommandStep3
 	return cmd
 }
 
+func (cmd *FailJobCommand) VariablesFromString(variables string) (DispatchFailJobCommand, error) {
+	err := cmd.mixin.Validate("variables", variables)
+	if err != nil {
+		return nil, err
+	}
+
+	cmd.request.Variables = variables
+	return cmd, nil
+}
+
+func (cmd *FailJobCommand) VariablesFromStringer(variables fmt.Stringer) (DispatchFailJobCommand, error) {
+	return cmd.VariablesFromString(variables.String())
+}
+
+func (cmd *FailJobCommand) VariablesFromObject(variables interface{}) (DispatchFailJobCommand, error) {
+	value, err := cmd.mixin.AsJSON("variables", variables, false)
+	if err != nil {
+		return nil, err
+	}
+
+	cmd.request.Variables = value
+	return cmd, nil
+}
+
+func (cmd *FailJobCommand) VariablesFromObjectIgnoreOmitempty(variables interface{}) (DispatchFailJobCommand, error) {
+	value, err := cmd.mixin.AsJSON("variables", variables, true)
+	if err != nil {
+		return nil, err
+	}
+
+	cmd.request.Variables = value
+	return cmd, nil
+}
+
+func (cmd *FailJobCommand) VariablesFromMap(variables map[string]interface{}) (DispatchFailJobCommand, error) {
+	return cmd.VariablesFromObject(variables)
+}
+
 func (cmd *FailJobCommand) Send(ctx context.Context) (*pb.FailJobResponse, error) {
 	response, err := cmd.gateway.FailJob(ctx, &cmd.request)
 	if cmd.shouldRetry(ctx, err) {
@@ -75,7 +121,9 @@ func (cmd *FailJobCommand) Send(ctx context.Context) (*pb.FailJobResponse, error
 
 func NewFailJobCommand(gateway pb.GatewayClient, pred retryPredicate) FailJobCommandStep1 {
 	return &FailJobCommand{
-		Command: Command{gateway: gateway,
+		Command: Command{
+			mixin:       utils.NewJSONStringSerializer(),
+			gateway:     gateway,
 			shouldRetry: pred,
 		},
 	}
