@@ -253,6 +253,7 @@ public final class ElementActivationBehavior {
       final ProcessInstanceRecord processInstanceRecord,
       final ExecutableFlowElement elementToActivate,
       final long flowScopeKey) {
+
     final var elementInstanceRecord = new ProcessInstanceRecord();
     // take the properties from the process instance
     elementInstanceRecord.wrap(processInstanceRecord);
@@ -262,7 +263,8 @@ public final class ElementActivationBehavior {
         .setBpmnElementType(elementToActivate.getElementType())
         .setFlowScopeKey(flowScopeKey)
         .setParentProcessInstanceKey(-1L)
-        .setParentElementInstanceKey(-1L);
+        .setParentElementInstanceKey(-1L)
+        .setBpmnEventType(elementToActivate.getEventType());
 
     return elementInstanceRecord;
   }

@@ -49,6 +49,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.JsonUtil;
@@ -838,9 +839,10 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(processInstanceKey)
                   .setFlowScopeKey(flowScopeKey)
                   .setParentProcessInstanceKey(11)
-                  .setParentElementInstanceKey(22);
+                  .setParentElementInstanceKey(22)
+                  .setBpmnEventType(BpmnEventType.UNSPECIFIED);
             },
-        "{'bpmnProcessId':'test-process','version':12,'processDefinitionKey':13,'processInstanceKey':1234,'elementId':'activity','flowScopeKey':123,'bpmnElementType':'SERVICE_TASK','parentProcessInstanceKey':11,'parentElementInstanceKey':22}"
+        "{'bpmnProcessId':'test-process','version':12,'processDefinitionKey':13,'processInstanceKey':1234,'elementId':'activity','flowScopeKey':123,'bpmnElementType':'SERVICE_TASK','parentProcessInstanceKey':11,'parentElementInstanceKey':22,'bpmnEventType':'UNSPECIFIED'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -849,7 +851,7 @@ final class JsonSerializableToJsonTest {
       {
         "Empty ProcessInstanceRecord",
         (Supplier<UnifiedRecordValue>) ProcessInstanceRecord::new,
-        "{'bpmnProcessId':'','version':-1,'processDefinitionKey':-1,'processInstanceKey':-1,'elementId':'','flowScopeKey':-1,'bpmnElementType':'UNSPECIFIED','parentProcessInstanceKey':-1,'parentElementInstanceKey':-1}"
+        "{'bpmnProcessId':'','version':-1,'processDefinitionKey':-1,'processInstanceKey':-1,'elementId':'','flowScopeKey':-1,'bpmnElementType':'UNSPECIFIED','parentProcessInstanceKey':-1,'parentElementInstanceKey':-1,'bpmnEventType':'UNSPECIFIED'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////

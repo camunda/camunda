@@ -244,7 +244,8 @@ public final class BpmnStateTransitionBehavior {
     followUpInstanceRecord.wrap(context.getRecordValue());
     followUpInstanceRecord
         .setElementId(sequenceFlow.getId())
-        .setBpmnElementType(sequenceFlow.getElementType());
+        .setBpmnElementType(sequenceFlow.getElementType())
+        .setBpmnEventType(sequenceFlow.getEventType());
 
     // take the sequence flow
     final var sequenceFlowKey = keyGenerator.nextKey();
@@ -278,7 +279,8 @@ public final class BpmnStateTransitionBehavior {
     childInstanceRecord
         .setFlowScopeKey(context.getElementInstanceKey())
         .setElementId(childElement.getId())
-        .setBpmnElementType(childElement.getElementType());
+        .setBpmnElementType(childElement.getElementType())
+        .setBpmnEventType(childElement.getEventType());
 
     commandWriter.appendNewCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
   }
@@ -290,7 +292,8 @@ public final class BpmnStateTransitionBehavior {
     childInstanceRecord
         .setFlowScopeKey(context.getElementInstanceKey())
         .setElementId(childElement.getId())
-        .setBpmnElementType(childElement.getElementType());
+        .setBpmnElementType(childElement.getElementType())
+        .setBpmnEventType(childElement.getEventType());
 
     final long childInstanceKey = keyGenerator.nextKey();
     commandWriter.appendFollowUpCommand(
@@ -306,7 +309,8 @@ public final class BpmnStateTransitionBehavior {
     followUpInstanceRecord
         .setFlowScopeKey(context.getFlowScopeKey())
         .setElementId(element.getId())
-        .setBpmnElementType(element.getElementType());
+        .setBpmnElementType(element.getElementType())
+        .setBpmnEventType(element.getEventType());
 
     final var elementInstanceKey = keyGenerator.nextKey();
     commandWriter.appendFollowUpCommand(

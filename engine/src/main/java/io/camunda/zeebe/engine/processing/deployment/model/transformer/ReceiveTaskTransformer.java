@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelE
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.ReceiveTask;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 
 public final class ReceiveTaskTransformer implements ModelElementTransformer<ReceiveTask> {
 
@@ -29,8 +30,8 @@ public final class ReceiveTaskTransformer implements ModelElementTransformer<Rec
         process.getElementById(element.getId(), ExecutableReceiveTask.class);
 
     final Message message = element.getMessage();
-
     final ExecutableMessage executableMessage = context.getMessage(message.getId());
     executableElement.setMessage(executableMessage);
+    executableElement.setEventType(BpmnEventType.MESSAGE);
   }
 }
