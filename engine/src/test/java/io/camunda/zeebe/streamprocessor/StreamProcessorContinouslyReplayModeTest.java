@@ -16,7 +16,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.util.Records;
@@ -26,7 +25,6 @@ import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
@@ -44,11 +42,6 @@ public final class StreamProcessorContinouslyReplayModeTest {
   @SuppressWarnings("unused") // injected by the extension
   private StreamPlatform streamPlatform;
 
-  @BeforeEach
-  public void setup() {
-    streamPlatform.setStreamProcessorMode(StreamProcessorMode.REPLAY);
-  }
-
   @Test
   public void shouldReplayContinuously() {
     // given
@@ -57,7 +50,7 @@ public final class StreamProcessorContinouslyReplayModeTest {
         event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
 
     // when
-    final var streamProcessor = streamPlatform.startStreamProcessorNotAwaitOpening();
+    final var streamProcessor = streamPlatform.startStreamProcessorInReplayOnlyMode();
 
     streamPlatform.writeBatch(
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
@@ -79,7 +72,6 @@ public final class StreamProcessorContinouslyReplayModeTest {
     streamPlatform.writeBatch(
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
         event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
-    streamPlatform.setStreamProcessorMode(StreamProcessorMode.PROCESSING);
     streamPlatform.startStreamProcessor();
     streamPlatform.snapshot();
     streamPlatform.closeStreamProcessor();
@@ -89,8 +81,7 @@ public final class StreamProcessorContinouslyReplayModeTest {
     // clear log
     streamPlatform.resetLogContext();
     // restart with snapshot, but the events in the snapshot are not available at startup
-    streamPlatform.setStreamProcessorMode(StreamProcessorMode.REPLAY);
-    streamPlatform.startStreamProcessorNotAwaitOpening();
+    streamPlatform.startStreamProcessorInReplayOnlyMode();
 
     streamPlatform.writeBatch(
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
@@ -111,7 +102,7 @@ public final class StreamProcessorContinouslyReplayModeTest {
   @Test
   public void shouldNotReplayWhenPaused() {
     // given
-    streamPlatform.startStreamProcessorNotAwaitOpening();
+    streamPlatform.startStreamProcessorInReplayOnlyMode();
     streamPlatform.pauseProcessing();
 
     // when
@@ -130,7 +121,7 @@ public final class StreamProcessorContinouslyReplayModeTest {
   @Test
   public void shouldPauseReplay() {
     // given
-    final var streamProcessor = streamPlatform.startStreamProcessorNotAwaitOpening();
+    final var streamProcessor = streamPlatform.startStreamProcessorInReplayOnlyMode();
     streamPlatform.writeBatch(
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
         event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
@@ -157,7 +148,7 @@ public final class StreamProcessorContinouslyReplayModeTest {
   @Test
   public void shouldReplayAfterResumed() {
     // given
-    final var streamProcessor = streamPlatform.startStreamProcessorNotAwaitOpening();
+    final var streamProcessor = streamPlatform.startStreamProcessorInReplayOnlyMode();
     streamPlatform.pauseProcessing();
     streamPlatform.writeBatch(
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
@@ -179,7 +170,7 @@ public final class StreamProcessorContinouslyReplayModeTest {
   @Test
   public void shouldReplayMoreAfterResumed() {
     // given
-    final var streamProcessor = streamPlatform.startStreamProcessorNotAwaitOpening();
+    final var streamProcessor = streamPlatform.startStreamProcessorInReplayOnlyMode();
     streamPlatform.writeBatch(
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
         event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
@@ -208,7 +199,7 @@ public final class StreamProcessorContinouslyReplayModeTest {
   @Test
   public void shouldUpdateLastProcessedAndWrittenPositionOnReplay() {
     // given
-    final var streamProcessor = streamPlatform.startStreamProcessorNotAwaitOpening();
+    final var streamProcessor = streamPlatform.startStreamProcessorInReplayOnlyMode();
 
     // when
     streamPlatform.writeBatch(
@@ -237,7 +228,7 @@ public final class StreamProcessorContinouslyReplayModeTest {
   @Test
   public void shouldSetLastProcessedPositionOnStateToSourcePosition() {
     // given
-    final var streamProcessor = streamPlatform.startStreamProcessorNotAwaitOpening();
+    final var streamProcessor = streamPlatform.startStreamProcessorInReplayOnlyMode();
 
     // when
     streamPlatform.writeBatch(
@@ -270,9 +261,7 @@ public final class StreamProcessorContinouslyReplayModeTest {
             .processInstance(ELEMENT_ACTIVATING, RECORD)
             .key(eventKeyBeforeSnapshot)
             .causedBy(2));
-
-    streamPlatform.startStreamProcessorNotAwaitOpening();
-    verify(streamPlatform.getDefaultMockedRecordProcessor(), TIMEOUT.times(2)).replay(any());
+    streamPlatform.startStreamProcessor();
 
     // the snapshot will contain the key and the position (in the metadata)
     streamPlatform.snapshot();
@@ -280,7 +269,7 @@ public final class StreamProcessorContinouslyReplayModeTest {
     Mockito.clearInvocations(streamPlatform.getDefaultMockedRecordProcessor());
 
     // when - restoring from snapshot
-    final var streamProcessor = streamPlatform.startStreamProcessorNotAwaitOpening();
+    final var streamProcessor = streamPlatform.startStreamProcessorInReplayOnlyMode();
 
     // then - we expect that we DON'T replay events which are part of the snapshot
     final RecordProcessor recordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
