@@ -37,7 +37,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
-import org.mockito.MockitoAnnotations;
 
 public final class EngineErrorHandlingTest {
 
@@ -57,8 +56,6 @@ public final class EngineErrorHandlingTest {
 
   @Before
   public void setUp() {
-    MockitoAnnotations.initMocks(this);
-
     streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
     mockCommandResponseWriter = streams.getMockedResponseWriter();
     stream = streams.createLogStream(STREAM_NAME);
