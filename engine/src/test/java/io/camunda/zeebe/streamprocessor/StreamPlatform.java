@@ -68,7 +68,7 @@ public final class StreamPlatform {
   private LogContext logContext;
   private ProcessorContext processorContext;
   private boolean snapshotWasTaken = false;
-  private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
+  private final StreamProcessorMode defaultStreamProcessorMode = StreamProcessorMode.PROCESSING;
   private List<RecordProcessor> recordProcessors;
   private final RecordProcessor defaultMockedRecordProcessor;
   private final WriteActor writeActor = new WriteActor();
@@ -120,10 +120,6 @@ public final class StreamPlatform {
         mockProcessorLifecycleAware,
         mockStreamProcessorListener,
         defaultMockedRecordProcessor);
-  }
-
-  public void setStreamProcessorMode(final StreamProcessorMode streamProcessorMode) {
-    this.streamProcessorMode = streamProcessorMode;
   }
 
   public CommandResponseWriter getMockCommandResponseWriter() {
@@ -234,12 +230,22 @@ public final class StreamPlatform {
     return buildStreamProcessor(stream, false);
   }
 
+  public StreamProcessor startStreamProcessorInReplayOnlyMode() {
+    final SynchronousLogStream stream = getLogStream();
+    return buildStreamProcessor(stream, false, StreamProcessorMode.REPLAY);
+  }
+
   public StreamProcessorLifecycleAware getMockProcessorLifecycleAware() {
     return mockProcessorLifecycleAware;
   }
 
   public StreamProcessor buildStreamProcessor(
       final SynchronousLogStream stream, final boolean awaitOpening) {
+    return buildStreamProcessor(stream, awaitOpening, defaultStreamProcessorMode);
+  }
+
+  public StreamProcessor buildStreamProcessor(
+      final SynchronousLogStream stream, final boolean awaitOpening, final StreamProcessorMode processorMode) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
 
@@ -258,7 +264,7 @@ public final class StreamPlatform {
             .commandResponseWriter(mockCommandResponseWriter)
             .recordProcessors(recordProcessors)
             .eventApplierFactory(EventAppliers::new) // todo remove this soon
-            .streamProcessorMode(streamProcessorMode)
+            .streamProcessorMode(processorMode)
             .listener(mockStreamProcessorListener)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
