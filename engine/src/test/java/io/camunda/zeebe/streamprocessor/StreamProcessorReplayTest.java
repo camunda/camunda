@@ -28,7 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
-import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
 
 @ExtendWith(StreamPlatformExtension.class)
@@ -169,7 +168,7 @@ final class StreamProcessorReplayTest {
     // the snapshot will contain the key and the position (in the metadata)
     streamPlatform.snapshot();
     streamPlatform.closeStreamProcessor();
-    Mockito.clearInvocations(streamPlatform.getDefaultMockedRecordProcessor());
+    streamPlatform.resetMockInvocations();
 
     // when
     final var streamProcessor = streamPlatform.startStreamProcessor();
@@ -213,7 +212,7 @@ final class StreamProcessorReplayTest {
     // the snapshot will contain the key and the position (in the metadata)
     streamPlatform.snapshot();
     streamPlatform.closeStreamProcessor();
-    Mockito.clearInvocations(streamPlatform.getDefaultMockedRecordProcessor());
+    streamPlatform.resetMockInvocations();
 
     // when
     streamPlatform.writeBatch(

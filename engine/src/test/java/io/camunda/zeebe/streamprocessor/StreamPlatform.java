@@ -50,6 +50,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 
 public final class StreamPlatform {
@@ -112,6 +113,14 @@ public final class StreamPlatform {
 
     logContext = createLogContext(new ListLogStorage(), DEFAULT_PARTITION);
     closeables.add(logContext);
+  }
+
+  public void resetMockInvocations() {
+    Mockito.clearInvocations(
+        mockCommandResponseWriter,
+        mockProcessorLifecycleAware,
+        mockStreamProcessorListener,
+        defaultMockedRecordProcessor);
   }
 
   public CommandResponseWriter getMockCommandResponseWriter() {
