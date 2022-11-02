@@ -29,8 +29,6 @@ import java.util.concurrent.CountDownLatch;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
 
 public final class StreamProcessorReprocessingTest {
@@ -46,56 +44,6 @@ public final class StreamProcessorReprocessingTest {
   public void setup() {
     final var mockEventApplier = mock(EventApplier.class);
     streamProcessorRule.withEventApplierFactory(state -> mockEventApplier);
-  }
-
-  @Test
-  public void shouldStartAfterLastProcessedEventInSnapshot() {
-    // given
-    streamProcessorRule.startTypedStreamProcessor(
-        (processors, context) ->
-            processors.onCommand(
-                ValueType.PROCESS_INSTANCE,
-                ACTIVATE_ELEMENT,
-                new TypedRecordProcessor<>() {
-                  @Override
-                  public void processRecord(final TypedRecord<UnifiedRecordValue> record) {}
-                }));
-
-    streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
-    streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, Records.processInstance(2));
-
-    verify(streamProcessorRule.getMockStreamProcessorListener(), TIMEOUT.times(2))
-        .onProcessed(any());
-
-    streamProcessorRule.snapshot();
-    streamProcessorRule.closeStreamProcessor();
-
-    Mockito.clearInvocations(streamProcessorRule.getMockStreamProcessorListener());
-
-    // when
-    // The processor restarts with a snapshot that was the state of the processor before it
-    // was closed.
-    streamProcessorRule.startTypedStreamProcessor(
-        (processors, context) ->
-            processors.onCommand(
-                ValueType.PROCESS_INSTANCE,
-                ACTIVATE_ELEMENT,
-                new TypedRecordProcessor<>() {
-                  @Override
-                  public void processRecord(final TypedRecord<UnifiedRecordValue> record) {}
-                }));
-
-    final long position =
-        streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, Records.processInstance(3));
-
-    // then
-    final var processedCommandCaptor = ArgumentCaptor.forClass(TypedRecord.class);
-    verify(streamProcessorRule.getMockStreamProcessorListener(), TIMEOUT)
-        .onProcessed(processedCommandCaptor.capture());
-
-    assertThat(processedCommandCaptor.getAllValues())
-        .extracting(TypedRecord::getPosition)
-        .containsExactly(position);
   }
 
   @Test
