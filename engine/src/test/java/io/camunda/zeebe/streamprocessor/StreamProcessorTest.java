@@ -38,6 +38,7 @@ import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
 import io.camunda.zeebe.engine.util.Records;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -554,9 +555,7 @@ public final class StreamProcessorTest {
   public void shouldWriteResponseOnFailedEventProcessing() {
     // given
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
-    when(defaultMockedRecordProcessor.process(any(), any()))
-        .thenThrow(new RuntimeException())
-        .thenReturn(EmptyProcessingResult.INSTANCE);
+    when(defaultMockedRecordProcessor.process(any(), any())).thenThrow(new RuntimeException());
 
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
     resultBuilder.withResponse(
@@ -570,7 +569,33 @@ public final class StreamProcessorTest {
         1,
         12);
     when(defaultMockedRecordProcessor.onProcessingError(any(), any(), any()))
-        .thenReturn(resultBuilder.build())
+        .thenReturn(resultBuilder.build());
+
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(command().processInstance(ACTIVATE_ELEMENT, RECORD));
+
+    // then
+    verify(defaultMockedRecordProcessor, TIMEOUT.times(1)).process(any(), any());
+    verify(defaultMockedRecordProcessor, TIMEOUT.times(1)).onProcessingError(any(), any(), any());
+
+    final var commandResponseWriter = streamPlatform.getMockCommandResponseWriter();
+
+    verify(commandResponseWriter, TIMEOUT.times(1)).key(3);
+    verify(commandResponseWriter, TIMEOUT.times(1))
+        .intent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    verify(commandResponseWriter, TIMEOUT.times(1)).recordType(RecordType.EVENT);
+    verify(commandResponseWriter, TIMEOUT.times(1)).valueType(ValueType.PROCESS_INSTANCE);
+    verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(anyInt(), anyLong());
+  }
+
+  @Test
+  public void shouldContinueProcessingAfterFailedProcessing() {
+    // given
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultMockedRecordProcessor.process(any(), any()))
+        .thenThrow(new RuntimeException())
         .thenReturn(EmptyProcessingResult.INSTANCE);
 
     streamPlatform.startStreamProcessor();
@@ -583,15 +608,38 @@ public final class StreamProcessorTest {
     // then
     verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
     verify(defaultMockedRecordProcessor, TIMEOUT.times(1)).onProcessingError(any(), any(), any());
+  }
 
-    final var commandResponseWriter = streamPlatform.getMockCommandResponseWriter();
+  @Test
+  public void shouldBeAbleToWriteRejectionOnErrorHandling() {
+    // given
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultMockedRecordProcessor.process(any(), any())).thenThrow(new RuntimeException());
 
-    verify(commandResponseWriter, TIMEOUT.times(1)).key(3);
-    verify(commandResponseWriter, TIMEOUT.times(1))
-        .intent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
-    verify(commandResponseWriter, TIMEOUT.times(1)).recordType(RecordType.EVENT);
-    verify(commandResponseWriter, TIMEOUT.times(1)).valueType(ValueType.PROCESS_INSTANCE);
-    verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(anyInt(), anyLong());
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    resultBuilder.appendRecordReturnEither(
+        1, RecordType.COMMAND_REJECTION, ACTIVATE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
+    when(defaultMockedRecordProcessor.onProcessingError(any(), any(), any()))
+        .thenReturn(resultBuilder.build());
+
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(command().processInstance(ACTIVATE_ELEMENT, RECORD));
+
+    // then
+    verify(defaultMockedRecordProcessor, TIMEOUT.times(1)).process(any(), any());
+    verify(defaultMockedRecordProcessor, TIMEOUT.times(1)).onProcessingError(any(), any(), any());
+
+    final var logStreamReader = streamPlatform.getLogStream().newLogStreamReader();
+    logStreamReader.seekToFirstEvent();
+    logStreamReader.next(); // command
+    assertThat(logStreamReader.hasNext()).isTrue(); // rejection
+    final var record = logStreamReader.next();
+    final var recordMetadata = new RecordMetadata();
+    record.readMetadata(recordMetadata);
+    assertThat(recordMetadata.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(record.getSourceEventPosition()).isEqualTo(1);
   }
 
   @Test
