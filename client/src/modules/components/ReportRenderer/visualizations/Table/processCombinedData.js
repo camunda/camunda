@@ -17,7 +17,7 @@ import {
 
 export default function processCombinedData({report}) {
   const {
-    configuration: {hideAbsoluteValue, hideRelativeValue, tableColumns},
+    configuration: {hideAbsoluteValue, hideRelativeValue, tableColumns, precision},
   } = report.data;
   const {view, groupBy} = Object.values(report.result.data)[0].data;
 
@@ -63,6 +63,7 @@ export default function processCombinedData({report}) {
     displayAbsoluteValue,
     flowNodeNames,
     groupedByDuration: groupBy.type === 'duration',
+    precision,
   });
 
   let head = [{id: keysLabel, label: ' ', columns: [keysLabel]}, ...formattedLabels];

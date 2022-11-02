@@ -32,7 +32,13 @@ export function Heatmap({report, context, user}) {
     result,
     data: {
       view: {properties},
-      configuration: {alwaysShowAbsolute, alwaysShowRelative, heatmapTargetValue: targetValue, xml},
+      configuration: {
+        alwaysShowAbsolute,
+        alwaysShowRelative,
+        heatmapTargetValue: targetValue,
+        xml,
+        precision,
+      },
     },
   } = report;
 
@@ -65,7 +71,8 @@ export function Heatmap({report, context, user}) {
 
           const targetDuration = (
             <>
-              {t('report.heatTarget.targetDuration')}: <b>{formatters.duration(target)}</b>
+              {t('report.heatTarget.targetDuration')}:{' '}
+              <b>{formatters.duration(target, precision)}</b>
               <br />
             </>
           );
@@ -79,7 +86,7 @@ export function Heatmap({report, context, user}) {
                 {targetDuration}
                 {t(`report.heatTarget.duration.${type}`)}
                 {t('report.heatTarget.actualDuration', {
-                  duration: formatters.duration(real),
+                  duration: formatters.duration(real, precision),
                   percentage: relation < 1 ? '< 1' : Math.round(relation),
                 })}
               </>
@@ -148,7 +155,8 @@ export function Heatmap({report, context, user}) {
                           result.instanceCount,
                           alwaysShowAbsolute,
                           alwaysShowRelative,
-                          measure.property === 'duration'
+                          measure.property === 'duration',
+                          precision
                         )}
                       </td>
                     </tr>

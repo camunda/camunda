@@ -18,7 +18,6 @@ export default function NumberConfig({report, onChange}) {
   const targetValue = configuration.targetValue;
   const isPercentageReport = view.properties.includes('percentage');
 
-  const precisionSet = typeof configuration.precision === 'number';
   const countOperation =
     view.properties.includes('frequency') || isPercentageReport || view.entity === 'variable';
   const isMultiMeasure = report.result?.measures.length > 1;
@@ -76,31 +75,6 @@ export default function NumberConfig({report, onChange}) {
               <p>{t('report.config.goal.kpiDescription')}</p>
             </>
           )}
-        </fieldset>
-      )}
-      {!isPercentageReport && (
-        <fieldset>
-          <legend>
-            <Switch
-              checked={precisionSet}
-              onChange={(evt) => onChange({precision: {$set: evt.target.checked ? 1 : null}})}
-              label={t('report.config.limitPrecision.legend')}
-            />
-          </legend>
-          <LabeledInput
-            className="precision"
-            label={t(
-              `report.config.limitPrecision.numberOf.${countOperation ? 'digits' : 'units'}`
-            )}
-            disabled={typeof configuration.precision !== 'number'}
-            onKeyDown={(evt) => {
-              const number = parseInt(evt.key, 10);
-              if (number) {
-                onChange({precision: {$set: number}});
-              }
-            }}
-            value={precisionSet ? configuration.precision : 1}
-          />
         </fieldset>
       )}
     </div>

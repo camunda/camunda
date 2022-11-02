@@ -611,7 +611,8 @@
         "numberOf": {
           "digits": "Nachkommastellen",
           "units": "Anzahl der Einheiten"
-        }
+        },
+        "tooltip": "Genauigkeit der im Diagramm-Tooltips angezeigten Werte."
       },
       "includeTableColumn": "Zu berücksichtigende Tabellenspalten",
       "includeNewVariables": "Daten von neuen Variablen anzeigen",

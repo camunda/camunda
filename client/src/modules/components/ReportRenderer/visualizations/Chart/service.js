@@ -11,7 +11,7 @@ import {t} from 'translation';
 export function formatTooltip({
   dataset,
   dataIndex,
-  configuration: {alwaysShowAbsolute, alwaysShowRelative},
+  configuration: {alwaysShowAbsolute, alwaysShowRelative, precision},
   formatter,
   instanceCount,
   isDuration,
@@ -27,7 +27,8 @@ export function formatTooltip({
     instanceCount,
     alwaysShowAbsolute,
     alwaysShowRelative,
-    isDuration
+    isDuration,
+    precision
   );
 
   if (!tooltipText) {

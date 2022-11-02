@@ -296,7 +296,7 @@ test('should only enable valid combinations for process instance count grouped b
   await t.expect(e.reportNumber.visible).ok();
 });
 
-test('Limit the precsion in number report', async (t) => {
+test('Limit the precision in number report', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
@@ -316,6 +316,31 @@ test('Limit the precsion in number report', async (t) => {
     .maximizeWindow();
 
   await t.expect(e.reportNumber.visible).ok();
+});
+
+test('Limit the precision in chart type reports', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
+
+  await t.typeText(e.nameEditField, 'Chart Report', {replace: true});
+
+  await u.selectView(t, 'Flow Node', 'Duration');
+  await u.selectVisualization(t, 'Bar Chart');
+
+  await t.click(e.configurationButton);
+  await t.click(e.limitPrecisionSwitch);
+  await t.typeText(e.limitPrecisionInput, '2', {replace: true});
+
+  await u.selectVisualization(t, 'Bar Chart');
+  await t.click(e.configurationButton);
+  await t.expect(e.limitPrecisionInput.visible).ok();
+  await t.expect(e.reportChart.visible).ok();
+
+  // Heatmap
+  await u.selectVisualization(t, 'Heatmap');
+  await t.click(e.configurationButton);
+  await t.expect(e.limitPrecisionInput.visible).ok();
+  await t.expect(e.reportDiagram.visible).ok();
 });
 
 test('Disable absolute and relative values for table reports', async (t) => {
@@ -641,7 +666,7 @@ test('heatmap target values', async (t) => {
 
   await t.hover(e.flowNode('approveInvoice'));
 
-  await t.expect(e.tooltip.textContent).contains('Target duration: 1h');
+  await t.expect(e.tooltip.textContent).contains('Target duration: 1\u00A0hour');
 
   await addAnnotation(e.targetValueButton, 'Toggle Target Value Mode');
   await addAnnotation(e.tooltip, 'Target Value Tooltip', {x: -50, y: 0});
@@ -1169,4 +1194,50 @@ test('create report with two versions of the same process', async (t) => {
     .takeScreenshot('additional-features/img/report-with-process-variants.png', {
       fullPage: true,
     });
+});
+
+test('Display precision properly', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
+
+  await t.typeText(e.nameEditField, 'Precision Report', {replace: true});
+
+  await u.selectView(t, 'Flow Node', 'Duration');
+  await t.click(e.addMeasureButton);
+  await t.click(e.dropdownOption('Count'));
+  await u.selectVisualization(t, 'Table');
+
+  await u.selectGroupby(t, 'Start Date', 'Automatic');
+
+  let a = e.tableCell(19, 1);
+  let b = e.tableCell(19, 2);
+  let c = e.tableCell(19, 3);
+
+  // Default precision for duration is 3
+  // shouldn't affect percentage values
+  await t.expect(a.textContent).match(/\d+/);
+  await t.expect(b.textContent).match(/\d\.\d%/);
+  await t.expect(c.textContent).match(/\d+.[a-zA-Z]*.\d+.[a-zA-Z]*.\d+.[a-zA-Z]*/);
+
+  await t.click(e.configurationButton);
+  await t.click(e.limitPrecisionSwitch);
+  await t.typeText(e.limitPrecisionInput, '4', {replace: true});
+
+  a = e.tableCell(19, 1);
+  b = e.tableCell(19, 2);
+  c = e.tableCell(19, 3);
+
+  await t.expect(a.textContent).match(/\d+/);
+  await t.expect(b.textContent).match(/\d\.\d%/);
+  await t.expect(c.textContent).match(/\d+.[a-zA-Z]*.\d+.[a-zA-Z]*.\d+.[a-zA-Z]*.\d+.[a-zA-Z]*/);
+
+  await t.typeText(e.limitPrecisionInput, '1', {replace: true});
+
+  a = e.tableCell(19, 1);
+  b = e.tableCell(19, 2);
+  c = e.tableCell(19, 3);
+
+  await t.expect(a.textContent).match(/\d+/);
+  await t.expect(b.textContent).match(/\d\.\d%/);
+  await t.expect(c.textContent).match(/\d+.[a-zA-Z]*/);
 });

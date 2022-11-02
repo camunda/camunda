@@ -67,7 +67,10 @@ function ReportRenderer(props) {
           {report.data.configuration.showInstanceCount && (
             <div className="additionalInfo">
               {t(`report.totalCount.${isDecision ? 'evaluation' : 'instance'}`, {
-                count: formatters.frequency(report.result.instanceCount || 0),
+                count: formatters.frequency(
+                  report.result.instanceCount || 0,
+                  report.data.configuration.precision
+                ),
               })}
             </div>
           )}

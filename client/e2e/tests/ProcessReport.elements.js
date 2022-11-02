@@ -86,7 +86,9 @@ export const collectionsDropdown = Selector(`.CollectionsDropdown`);
 export const createCollectionButton = Selector('.Modal button').withText('Create Collection');
 export const collectionOption = (text) =>
   Selector('.CollectionsDropdown.is-open .DropdownOption').withText(text);
-export const limitPrecisionSwitch = Selector('.NumberConfig .Switch').withText('Custom Precision');
+export const limitPrecisionSwitch = Selector('.PrecisionConfig .Switch').withText(
+  'Custom Precision'
+);
 export const limitPrecisionInput = Selector('.precision input');
 export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
 export const nodeTableCell = (text) => Selector('.Table tbody td').withText(text);

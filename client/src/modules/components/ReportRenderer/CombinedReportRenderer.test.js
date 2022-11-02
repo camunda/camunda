@@ -15,12 +15,6 @@ import {Chart, Table} from './visualizations';
 
 const CombinedReportRenderer = CombinedReportRendererWithErrorHandling.WrappedComponent;
 
-jest.mock('./service', () => {
-  return {
-    getFormatter: (view) => (v) => v,
-  };
-});
-
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {

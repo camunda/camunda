@@ -13,12 +13,6 @@ import {processResult} from 'services';
 import ProcessReportRenderer from './ProcessReportRenderer';
 import {Number, Table} from './visualizations';
 
-jest.mock('./service', () => {
-  return {
-    getFormatter: (view) => (v) => v,
-  };
-});
-
 jest.mock('services', () => {
   return {
     ...jest.requireActual('services'),

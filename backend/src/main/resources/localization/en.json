@@ -611,7 +611,8 @@
         "numberOf": {
           "digits": "No. of digits",
           "units": "No. of units"
-        }
+        },
+        "tooltip": "Precision of values displayed in the chart tooltips."
       },
       "includeTableColumn": "Table columns to include",
       "includeNewVariables": "Display data from new variables",

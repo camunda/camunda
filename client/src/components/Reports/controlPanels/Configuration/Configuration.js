@@ -15,6 +15,7 @@ import * as visualizations from './visualizations';
 import ShowInstanceCount from './ShowInstanceCount';
 import DateVariableUnit from './DateVariableUnit';
 import BucketSize from './BucketSize';
+import PrecisionConfig from './visualizations/PrecisionConfig';
 
 import './Configuration.scss';
 
@@ -114,7 +115,13 @@ export default class Configuration extends React.Component {
 
   render() {
     const {report, type, disabled} = this.props;
+    const {configuration, view} = report.data;
     const Component = visualizations[type];
+
+    const isRawDataReport = !report.combined && report.data.view?.properties[0] === 'rawData';
+
+    const isPercentageOnly =
+      view?.properties.includes('percentage') && view.properties.length === 1;
 
     const enablePopover =
       Component && !disabled && (!Component.isDisabled || !Component.isDisabled(report));
@@ -129,7 +136,7 @@ export default class Configuration extends React.Component {
           <Form className="content" compact>
             {!report.combined && (
               <ShowInstanceCount
-                configuration={report.data.configuration}
+                configuration={configuration}
                 onChange={this.updateConfiguration}
                 label={report.reportType === 'decision' ? 'evaluation' : 'instance'}
               />
@@ -137,6 +144,14 @@ export default class Configuration extends React.Component {
             <DateVariableUnit report={report} onChange={this.updateConfiguration} />
             <BucketSize report={report} onChange={this.updateConfiguration} />
             {Component && <Component report={report} onChange={this.updateConfiguration} />}
+            {(configuration.showInstanceCount || (!isPercentageOnly && !isRawDataReport)) && (
+              <PrecisionConfig
+                configuration={configuration}
+                onChange={this.updateConfiguration}
+                view={view}
+                type={type}
+              />
+            )}
           </Form>
           <Button className="resetButton" onClick={this.resetToDefaults}>
             {t('report.config.reset')}

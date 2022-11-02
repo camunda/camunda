@@ -115,10 +115,18 @@ describe('durationFormatter', () => {
   });
 
   it('should use a precision', () => {
-    expect(durationFormatter(123456789, 2)).toBe(`1 day${nbsp}10 hours`);
-    expect(durationFormatter(29009802502, 3)).toBe(`11 months${nbsp}5 days${nbsp}18 hours`);
+    expect(durationFormatter(123456789, 2)).toBe(`1${nbsp}day${nbsp}10${nbsp}hours`);
+    expect(durationFormatter(29009802502, 3)).toBe(
+      `11${nbsp}months${nbsp}5${nbsp}days${nbsp}18${nbsp}hours`
+    );
     expect(durationFormatter(123456789, 4)).toBe(
-      `1 day${nbsp}10 hours${nbsp}17 minutes${nbsp}37 seconds`
+      `1${nbsp}day${nbsp}10${nbsp}hours${nbsp}17${nbsp}minutes${nbsp}37${nbsp}seconds`
+    );
+  });
+
+  it('should use default precision of 3 when the precision is turned off in the report', () => {
+    expect(durationFormatter(29009802502, null)).toBe(
+      `11${nbsp}months${nbsp}5${nbsp}days${nbsp}18${nbsp}hours`
     );
   });
 

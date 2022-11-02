@@ -7,6 +7,7 @@
 
 import {reportConfig, formatters, processResult} from 'services';
 import {t} from 'translation';
+import {formatValue} from '../../service';
 
 import {formatLabelsForTableBody, sortColumns} from './service';
 
@@ -14,15 +15,13 @@ const {formatReportResult, getRelativeValue, frequency, duration} = formatters;
 
 export default function processDefaultData({report}, processVariables) {
   const {data, result, reportType} = report;
+  const {configuration, view, groupBy} = data;
   const {
-    configuration: {
-      hideAbsoluteValue,
-      hideRelativeValue,
-      tableColumns: {columnOrder},
-    },
-    view,
-    groupBy,
-  } = data;
+    hideAbsoluteValue,
+    hideRelativeValue,
+    tableColumns: {columnOrder},
+    precision,
+  } = configuration;
 
   const groupedByDuration = groupBy.type === 'duration';
   const instanceCount = result.instanceCount || 0;
@@ -57,7 +56,7 @@ export default function processDefaultData({report}, processVariables) {
     const formattedResult = formatReportResult(data, result.data);
     if (body.length === 0) {
       formattedResult.forEach(({label, key}) => {
-        body.push([groupedByDuration ? duration(label) : label || key]);
+        body.push([groupedByDuration ? duration(label, precision) : label || key]);
       });
     }
 
@@ -66,7 +65,7 @@ export default function processDefaultData({report}, processVariables) {
         const title = t('report.view.count');
         head.push({label: title, id: title, sortable: !isMultiMeasure});
         formattedResult.forEach(({value}, idx) => {
-          body[idx].push(frequency(value));
+          body[idx].push(frequency(value, precision));
         });
       }
       if (!hideRelativeValue) {
@@ -84,12 +83,12 @@ export default function processDefaultData({report}, processVariables) {
       }${
         view.entity === 'incident' ? t('report.view.resolutionDuration') : t('report.view.duration')
       } - ${t('report.config.aggregationShort.' + measure.aggregationType.type, {
-        value: measure.aggregationType.value,
+        value: formatValue(measure.aggregationType.value, measure.property, precision),
       })}`;
 
       head.push({label: title, id: title, sortable: !isMultiMeasure});
       formattedResult.forEach(({value}, idx) => {
-        body[idx].push(duration(value));
+        body[idx].push(duration(value, precision));
       });
     }
   });

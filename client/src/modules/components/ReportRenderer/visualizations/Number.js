@@ -17,6 +17,7 @@ import {showError} from 'notifications';
 import ProgressBar from './ProgressBar';
 
 import './Number.scss';
+import {formatValue} from '../service';
 
 export function Number({report, formatter, mightFail}) {
   const {data, result, reportType} = report;
@@ -79,7 +80,7 @@ export function Number({report, formatter, mightFail}) {
         isBelow={isBelow}
         value={result.data}
         formatter={formatter}
-        precision={calculatePrecision(precision, result.measures?.[0]?.property)}
+        precision={precision}
       />
     );
   }
@@ -119,14 +120,9 @@ export function Number({report, formatter, mightFail}) {
             viewString += ' - ' + t('report.config.aggregationShort.' + type, {value});
           }
 
-          const formatter =
-            formatters[typeof measure.property === 'string' ? measure.property : 'frequency'];
-
           return (
             <React.Fragment key={idx}>
-              <div className="data">
-                {formatter(measure.data, calculatePrecision(precision, measure.property))}
-              </div>
+              <div className="data">{formatValue(measure.data, measure.property, precision)}</div>
               <div className="label">{viewString}</div>
             </React.Fragment>
           );
@@ -137,11 +133,3 @@ export function Number({report, formatter, mightFail}) {
 }
 
 export default withErrorHandling(Number);
-
-function calculatePrecision(precision, measure) {
-  if (measure === 'duration') {
-    return precision || 3;
-  }
-
-  return precision;
-}
