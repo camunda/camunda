@@ -55,43 +55,6 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.withEventApplierFactory(state -> mockEventApplier);
   }
 
-  @Test
-  public void shouldCallOnPausedAfterOnRecovered() {
-    // given - bunch of records
-    IntStream.range(0, 5000)
-        .forEach(i -> streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, i));
-
-    streamProcessorRule.writeBatch(
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, PROCESS_INSTANCE_RECORD),
-        RecordToWrite.event()
-            .processInstance(ELEMENT_ACTIVATED, PROCESS_INSTANCE_RECORD)
-            .causedBy(0));
-
-    Awaitility.await()
-        .until(
-            () ->
-                streamProcessorRule
-                    .events()
-                    .onlyProcessInstanceRecords()
-                    .withIntent(ELEMENT_ACTIVATED),
-            StreamWrapper::exists);
-
-    // when
-    final var lifecycleAware = mock(StreamProcessorLifecycleAware.class);
-    final var streamProcessor =
-        streamProcessorRule.startTypedStreamProcessor(
-            (processors, context) -> processors.withListener(lifecycleAware));
-    streamProcessor.pauseProcessing();
-    streamProcessor.resumeProcessing();
-
-    // then
-    final InOrder inOrder = inOrder(lifecycleAware);
-    // reprocessing
-    inOrder.verify(lifecycleAware, TIMEOUT.times(1)).onRecovered(any());
-    inOrder.verify(lifecycleAware, TIMEOUT.times(1)).onPaused();
-    inOrder.verify(lifecycleAware, TIMEOUT.times(1)).onResumed();
-    inOrder.verifyNoMoreInteractions();
-  }
 
   @Test
   public void shouldCallOnPausedBeforeOnResumedNoMatterWhenResumedWasCalled() {
