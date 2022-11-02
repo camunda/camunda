@@ -32,7 +32,7 @@ import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
 
 @ExtendWith(StreamPlatformExtension.class)
-public final class StreamProcessorReplayTest {
+final class StreamProcessorReplayTest {
 
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
@@ -43,7 +43,7 @@ public final class StreamProcessorReplayTest {
   private StreamPlatform streamPlatform;
 
   @Test
-  public void shouldReplayEvents() {
+  void shouldReplayEvents() {
     // given
     streamPlatform.writeBatch(
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
@@ -60,7 +60,7 @@ public final class StreamProcessorReplayTest {
   }
 
   @Test
-  public void shouldProcessAfterReplay() {
+  void shouldProcessAfterReplay() {
     // given
     streamPlatform.writeBatch(
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
@@ -82,7 +82,7 @@ public final class StreamProcessorReplayTest {
   }
 
   @Test
-  public void shouldSkipCommands() {
+  void shouldSkipCommands() {
     // given
     streamPlatform.writeBatch(
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
@@ -99,7 +99,7 @@ public final class StreamProcessorReplayTest {
   }
 
   @Test
-  public void shouldSkipRejections() {
+  void shouldSkipRejections() {
     // given
     streamPlatform.writeBatch(
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
@@ -116,7 +116,7 @@ public final class StreamProcessorReplayTest {
   }
 
   @Test
-  public void shouldRestoreFromLog() {
+  void shouldRestoreFromLog() {
     // given
     final var eventKeyBeforeSnapshot = Protocol.encodePartitionId(1, 19);
 
@@ -153,7 +153,7 @@ public final class StreamProcessorReplayTest {
   }
 
   @Test
-  public void shouldRestoreFromSnapshot() throws Exception {
+  void shouldRestoreFromSnapshot() throws Exception {
     // given
     final var eventKeyBeforeSnapshot = Protocol.encodePartitionId(1, 19);
 
@@ -196,7 +196,7 @@ public final class StreamProcessorReplayTest {
   }
 
   @Test
-  public void shouldNotReplayEventIfAlreadyApplied() throws Exception {
+  void shouldNotReplayEventIfAlreadyApplied() throws Exception {
     // given
     final var eventKeyBeforeSnapshot = Protocol.encodePartitionId(1, 19);
     final var eventKeyAfterSnapshot = Protocol.encodePartitionId(1, 21);
@@ -245,7 +245,7 @@ public final class StreamProcessorReplayTest {
   }
 
   @Test
-  public void shouldIgnoreKeysFromDifferentPartition() {
+  void shouldIgnoreKeysFromDifferentPartition() {
     // given
     final var keyOfThisPartition = Protocol.encodePartitionId(1, 19L);
     final var keyOfOtherPartition = Protocol.encodePartitionId(2, 21L);
