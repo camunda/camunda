@@ -14,5 +14,8 @@ spec:
     - name: optimize
       port: 8090
       targetPort: optimize-http
+    - name: mailhog
+      port: 8025
+      targetPort: mailhog-http
   selector:
     app: {{ .Values.global.labels.app }}

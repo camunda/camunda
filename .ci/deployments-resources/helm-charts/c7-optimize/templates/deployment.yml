@@ -150,14 +150,11 @@ spec:
           subPath: configure-and-run.sh
       - name: mailhog
         image: "{{ .Values.mailhog.image.repository }}:{{ .Values.mailhog.image.tag }}"
-        env:
-        - name: MH_HOSTNAME
-          value: localhost
         ports:
           - containerPort: 1025
-            name: smtp
+            name: mailhog-smtp
           - containerPort: 8025
-            name: http
+            name: mailhog-http
         readinessProbe:
           exec:
             command:
