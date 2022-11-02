@@ -204,8 +204,6 @@ public final class TimerCatchEventTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    ENGINE.increaseTime(Duration.ofSeconds(1));
-
     // then
     final Record<TimerRecordValue> triggeredEvent =
         RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
@@ -215,7 +213,7 @@ public final class TimerCatchEventTest {
     assertThat(triggeredEvent.getKey()).isEqualTo(createdEvent.getKey());
     assertThat(triggeredEvent.getValue()).isEqualTo(createdEvent.getValue());
     assertThat(Duration.ofMillis(triggeredEvent.getTimestamp() - createdEvent.getTimestamp()))
-        .isGreaterThanOrEqualTo(Duration.ofSeconds(1));
+        .isBetween(Duration.ofMillis(100), Duration.ofMillis(150));
   }
 
   @Test
