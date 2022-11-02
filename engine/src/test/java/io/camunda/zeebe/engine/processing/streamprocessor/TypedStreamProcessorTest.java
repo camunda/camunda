@@ -71,41 +71,6 @@ public final class TypedStreamProcessorTest {
     keyGenerator = () -> key.getAndIncrement();
   }
 
-  @Test
-  public void shouldWriteSourceEventAndProducerOnBatch() {
-    // given
-    streams.startStreamProcessor(
-        STREAM_NAME,
-        DefaultZeebeDbFactory.defaultFactory(),
-        (processingContext) ->
-            TypedRecordProcessors.processors(keyGenerator, processingContext.getWriters())
-                .onCommand(
-                    ValueType.DEPLOYMENT,
-                    DeploymentIntent.CREATE,
-                    new BatchProcessor(processingContext.getWriters())));
-    final long firstEventPosition =
-        streams
-            .newRecord(STREAM_NAME)
-            .event(deployment("foo"))
-            .recordType(RecordType.COMMAND)
-            .intent(DeploymentIntent.CREATE)
-            .write();
-
-    // when
-    final LoggedEvent writtenEvent =
-        TestUtil.doRepeatedly(
-                () ->
-                    streams
-                        .events(STREAM_NAME)
-                        .filter(
-                            e -> Records.isEvent(e, ValueType.DEPLOYMENT, DeploymentIntent.CREATED))
-                        .findFirst())
-            .until(o -> o.isPresent())
-            .get();
-
-    // then
-    assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(firstEventPosition);
-  }
 
   @Test
   public void shouldSkipFailingEvent() {

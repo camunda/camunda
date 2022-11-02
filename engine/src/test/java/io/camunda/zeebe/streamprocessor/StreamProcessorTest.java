@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.util.RecordToWrite.command;
 import static io.camunda.zeebe.engine.util.RecordToWrite.event;
 import static io.camunda.zeebe.engine.util.RecordToWrite.rejection;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.COMPLETE_ELEMENT;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -255,6 +256,39 @@ public final class StreamProcessorTest {
                 assertThat(
                         streamPlatform.getStreamProcessor().getLastProcessedPositionAsync().join())
                     .isEqualTo(3));
+  }
+
+  @Test
+  public void shouldSetSourcePointerForFollowUpRecords() {
+    // given
+    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, v) -> true);
+    resultBuilder.appendRecordReturnEither(
+        1, RecordType.EVENT, ACTIVATE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
+    resultBuilder.appendRecordReturnEither(
+        2, RecordType.COMMAND, COMPLETE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
+
+    when(defaultRecordProcessor.process(any(), any()))
+        .thenReturn(resultBuilder.build())
+        .thenReturn(EmptyProcessingResult.INSTANCE);
+
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(command().processInstance(ACTIVATE_ELEMENT, RECORD));
+
+    // then
+    verify(defaultRecordProcessor, TIMEOUT.times(2)).process(any(), any());
+
+    final var logStreamReader = streamPlatform.getLogStream().newLogStreamReader();
+    logStreamReader.seekToFirstEvent();
+    final var firstRecord = logStreamReader.next();
+    assertThat(firstRecord.getSourceEventPosition()).isEqualTo(-1);
+    final var firstRecordPosition = firstRecord.getPosition();
+    while (logStreamReader.hasNext()) {
+      final var followUpRecord = logStreamReader.next();
+      assertThat(followUpRecord.getSourceEventPosition()).isEqualTo(firstRecordPosition);
+    }
   }
 
   @Test
