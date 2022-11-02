@@ -96,6 +96,7 @@ public final class BpmnTransformer {
     step3Visitor.registerHandler(new SubProcessTransformer());
 
     step4Visitor = new TransformationVisitor();
+    step4Visitor.registerHandler(new ContextProcessTransformer());
     step4Visitor.registerHandler(new MultiInstanceActivityTransformer());
   }
 
