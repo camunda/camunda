@@ -19,18 +19,16 @@ import {
 import {statistics} from 'modules/mocks/statistics';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
+import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances/fetchProcessCoreStatistics';
 
 const mockInstance = createInstance({id: '2251799813685625'});
 
 describe('stores/statistics', () => {
   beforeEach(() => {
     // mock for initial fetch when statistics store is initialized
-    mockServer.use(
-      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(ctx.json(statistics))
-      )
-    );
+    mockFetchProcessCoreStatistics().withSuccess(statistics);
   });
+
   afterEach(() => {
     processInstanceDetailsStore.reset();
     statisticsStore.reset();
@@ -51,16 +49,7 @@ describe('stores/statistics', () => {
   });
 
   it('should fetch statistics with error', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(
-          ctx.status(500),
-          ctx.json({
-            error: 'an error occurred',
-          })
-        )
-      )
-    );
+    mockFetchProcessCoreStatistics().withServerError();
 
     expect(statisticsStore.state.status).toBe('initial');
 
@@ -99,12 +88,8 @@ describe('stores/statistics', () => {
     statisticsStore.init();
     await waitFor(() => expect(statisticsStore.state.status).toBe('fetched'));
 
-    mockServer.use(
-      // mock for when current instance is set
-      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(ctx.json(statistics))
-      )
-    );
+    // mock for when current instance is set
+    mockFetchProcessCoreStatistics().withSuccess(statistics);
 
     expect(statisticsStore.state.running).toBe(1087);
     expect(statisticsStore.state.active).toBe(210);
@@ -160,18 +145,16 @@ describe('stores/statistics', () => {
       totalCount: 1,
     });
 
-    mockServer.use(
-      // mock for next poll
-      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(ctx.json(statistics))
-      ),
-      // mock for when there are completed operations
-      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(ctx.json({...statistics, running: 1088}))
-      )
-    );
+    // mock for next poll
+    mockFetchProcessCoreStatistics().withSuccess(statistics);
 
     jest.runOnlyPendingTimers();
+
+    // mock for when there are completed operations
+    mockFetchProcessCoreStatistics().withSuccess({
+      ...statistics,
+      running: 1088,
+    });
 
     mockFetchProcessInstances().withSuccess({
       processInstances: [{...mockInstance}],
@@ -201,11 +184,10 @@ describe('stores/statistics', () => {
 
     await waitFor(() => expect(statisticsStore.state.running).toBe(1087));
 
-    mockServer.use(
-      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(ctx.json({...statistics, running: 1000}))
-      )
-    );
+    mockFetchProcessCoreStatistics().withSuccess({
+      ...statistics,
+      running: 1000,
+    });
 
     eventListeners.online();
 

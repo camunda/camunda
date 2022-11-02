@@ -12,17 +12,14 @@ import {
   IReactionDisposer,
   override,
 } from 'mobx';
-import {fetchProcessCoreStatistics} from 'modules/api/processInstances';
+import {
+  fetchProcessCoreStatistics,
+  CoreStatisticsDto,
+} from 'modules/api/processInstances/fetchProcessCoreStatistics';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
-type StatisticsType = {
-  running: number;
-  active: number;
-  withIncidents: number;
-};
-
-type State = StatisticsType & {
+type State = CoreStatisticsDto & {
   status: 'initial' | 'first-fetch' | 'fetched' | 'error';
 };
 
@@ -65,15 +62,11 @@ class Statistics extends NetworkReconnectionHandler {
       this.startFirstFetch();
     }
 
-    try {
-      const response = await fetchProcessCoreStatistics();
+    const response = await fetchProcessCoreStatistics();
 
-      if (response.ok) {
-        this.setStatistics(await response.json());
-      } else {
-        this.setError();
-      }
-    } catch {
+    if (response.isSuccess) {
+      this.setStatistics(response.data);
+    } else {
       this.setError();
     }
   });
@@ -86,7 +79,7 @@ class Statistics extends NetworkReconnectionHandler {
     this.state.status = 'error';
   };
 
-  setStatistics = ({running, active, withIncidents}: StatisticsType) => {
+  setStatistics = ({running, active, withIncidents}: CoreStatisticsDto) => {
     this.state.running = running;
     this.state.active = active;
     this.state.withIncidents = withIncidents;
@@ -94,24 +87,18 @@ class Statistics extends NetworkReconnectionHandler {
   };
 
   handlePolling = async () => {
-    try {
-      this.isPollRequestRunning = true;
-      const response = await fetchProcessCoreStatistics();
+    this.isPollRequestRunning = true;
+    const response = await fetchProcessCoreStatistics();
 
-      if (this.intervalId !== null) {
-        if (response.ok) {
-          this.setStatistics(await response.json());
-        } else {
-          this.setError();
-        }
-      }
-    } catch {
-      if (this.intervalId !== null) {
+    if (this.intervalId !== null) {
+      if (response.isSuccess) {
+        this.setStatistics(response.data);
+      } else {
         this.setError();
       }
-    } finally {
-      this.isPollRequestRunning = false;
     }
+
+    this.isPollRequestRunning = false;
   };
 
   startPolling = () => {

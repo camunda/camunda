@@ -45,10 +45,6 @@ type VariablePayload = {
   searchBeforeOrEqual?: ReadonlyArray<string>;
 };
 
-async function fetchProcessCoreStatistics() {
-  return request({url: `${URL}/core-statistics`});
-}
-
 async function fetchProcessInstancesStatistics(payload: any) {
   return request({
     url: `${URL}/statistics`,
@@ -122,7 +118,6 @@ async function fetchVariable(id: VariableEntity['id']) {
 
 export type {VariablePayload, StatisticEntity};
 export {
-  fetchProcessCoreStatistics,
   fetchProcessInstancesStatistics,
   applyBatchOperation,
   applyOperation,

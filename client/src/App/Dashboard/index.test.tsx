@@ -17,6 +17,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockIncidentsByError} from './IncidentsByError/index.setup';
 import {mockWithSingleVersion} from './InstancesByProcess/index.setup';
 import {statistics} from 'modules/mocks/statistics';
+import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances/fetchProcessCoreStatistics';
 
 type Props = {
   children?: React.ReactNode;
@@ -36,10 +37,8 @@ describe('Dashboard', () => {
   });
 
   it('should render', async () => {
+    mockFetchProcessCoreStatistics().withSuccess(statistics);
     mockServer.use(
-      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(ctx.json(statistics))
-      ),
       rest.get('/api/incidents/byError', (_, res, ctx) =>
         res.once(ctx.json(mockIncidentsByError))
       ),

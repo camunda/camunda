@@ -13,11 +13,10 @@ import {
 } from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MetricPanel} from './index';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {statistics} from 'modules/mocks/statistics';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances/fetchProcessCoreStatistics';
 
 function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -40,11 +39,7 @@ function createWrapper(initialPath: string = '/') {
 describe('<MetricPanel />', () => {
   beforeEach(() => {
     panelStatesStore.toggleFiltersPanel();
-    mockServer.use(
-      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(ctx.json(statistics))
-      )
-    );
+    mockFetchProcessCoreStatistics().withSuccess(statistics);
   });
 
   afterEach(() => {
@@ -145,11 +140,8 @@ describe('<MetricPanel />', () => {
   });
 
   it('should handle server errors', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.json({}))
-      )
-    );
+    mockFetchProcessCoreStatistics().withServerError();
+
     render(<MetricPanel />, {
       wrapper: createWrapper(),
     });
@@ -160,11 +152,8 @@ describe('<MetricPanel />', () => {
   });
 
   it('should handle networks errors', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/core-statistics', (_, res) =>
-        res.networkError('A network error')
-      )
-    );
+    mockFetchProcessCoreStatistics().withNetworkError();
+
     render(<MetricPanel />, {
       wrapper: createWrapper(),
     });
