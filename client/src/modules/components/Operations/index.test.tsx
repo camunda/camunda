@@ -22,6 +22,7 @@ import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {modificationsStore} from 'modules/stores/modifications';
 import {storeStateLocally} from 'modules/utils/localStorage';
+import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 
 const instanceMock: ProcessInstanceEntity = {
   id: 'instance_1',
@@ -261,12 +262,12 @@ describe('Operations', () => {
     it('should display spinner if incident id is included in instances with active operations', async () => {
       jest.useFakeTimers();
 
+      mockFetchProcessInstances().withSuccess({
+        processInstances: [ACTIVE_INSTANCE],
+        totalCount: 1,
+      });
+
       mockServer.use(
-        rest.post('/api/process-instances', (_, res, ctx) =>
-          res.once(
-            ctx.json({processInstances: [ACTIVE_INSTANCE], totalCount: 1})
-          )
-        ),
         rest.get('/api/processes/grouped', (_, res, ctx) =>
           res.once(ctx.json(groupedProcessesMock))
         )
@@ -294,16 +295,17 @@ describe('Operations', () => {
         await screen.findByTestId('operation-spinner')
       ).toBeInTheDocument();
 
-      mockServer.use(
-        rest.post('/api/process-instances', (_, res, ctx) =>
-          res.once(ctx.json({processInstances: [INSTANCE], totalCount: 1}))
-        ),
-        rest.post('/api/process-instances', (_, res, ctx) =>
-          res.once(ctx.json({processInstances: [INSTANCE], totalCount: 2}))
-        )
-      );
+      mockFetchProcessInstances().withSuccess({
+        processInstances: [INSTANCE],
+        totalCount: 1,
+      });
 
       jest.runOnlyPendingTimers();
+
+      mockFetchProcessInstances().withSuccess({
+        processInstances: [INSTANCE],
+        totalCount: 1,
+      });
 
       await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
 

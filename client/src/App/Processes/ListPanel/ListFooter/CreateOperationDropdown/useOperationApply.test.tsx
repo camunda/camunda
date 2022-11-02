@@ -23,6 +23,7 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {isEqual} from 'lodash';
 import {getSearchString} from 'modules/utils/getSearchString';
+import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 
 jest.mock('modules/utils/getSearchString');
 
@@ -38,10 +39,9 @@ function renderUseOperationApply() {
 
 describe('useOperationApply', () => {
   beforeEach(async () => {
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+
     mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      ),
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
       ),
@@ -109,11 +109,7 @@ describe('useOperationApply', () => {
       expect(processInstancesStore.state.status).toBe('fetched')
     );
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      )
-    );
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
     await waitFor(() =>
       expect(processInstancesStore.state.status).toBe('fetched')
@@ -151,11 +147,7 @@ describe('useOperationApply', () => {
       expect(processInstancesStore.state.status).toBe('fetched')
     );
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      )
-    );
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
     await waitFor(() =>
       expect(processInstancesStore.state.status).toBe('fetched')
@@ -193,11 +185,7 @@ describe('useOperationApply', () => {
       expect(processInstancesStore.state.status).toBe('fetched')
     );
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      )
-    );
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
     await waitFor(() =>
       expect(processInstancesStore.state.status).toBe('fetched')
@@ -238,11 +226,7 @@ describe('useOperationApply', () => {
     await waitFor(() =>
       expect(processInstancesStore.state.status).toBe('fetched')
     );
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      )
-    );
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
     await waitFor(() =>
       expect(processInstancesStore.state.status).toBe('fetched')
@@ -271,24 +255,10 @@ describe('useOperationApply', () => {
       expect(processInstancesStore.state.processInstances).toHaveLength(3)
     );
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            totalCount: 100,
-            processInstances: mockProcessInstances.processInstances,
-          })
-        )
-      ),
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            totalCount: 200,
-            processInstances: mockProcessInstances.processInstances,
-          })
-        )
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      ...mockProcessInstances,
+      totalCount: 100,
+    });
 
     // @ts-expect-error ts-migrate(2554) FIXME: Expected 0 arguments, but got 1.
     renderUseOperationApply(context);
@@ -298,6 +268,11 @@ describe('useOperationApply', () => {
     ).toEqual(['2251799813685594', '2251799813685596', '2251799813685598']);
 
     jest.runOnlyPendingTimers();
+
+    mockFetchProcessInstances().withSuccess({
+      ...mockProcessInstances,
+      totalCount: 200,
+    });
 
     await waitFor(() => {
       expect(
@@ -329,26 +304,18 @@ describe('useOperationApply', () => {
     expect(
       processInstancesStore.processInstanceIdsWithActiveOperations
     ).toEqual(['2251799813685594']);
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            totalCount: 100,
-            processInstances: mockProcessInstances.processInstances,
-          })
-        )
-      ),
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            totalCount: 200,
-            processInstances: mockProcessInstances.processInstances,
-          })
-        )
-      )
-    );
+
+    mockFetchProcessInstances().withSuccess({
+      ...mockProcessInstances,
+      totalCount: 100,
+    });
 
     jest.runOnlyPendingTimers();
+
+    mockFetchProcessInstances().withSuccess({
+      ...mockProcessInstances,
+      totalCount: 200,
+    });
 
     await waitFor(() => {
       expect(

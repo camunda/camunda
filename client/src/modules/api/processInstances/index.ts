@@ -6,7 +6,6 @@
  */
 
 import {request} from 'modules/request';
-import {RequestFilters} from 'modules/utils/filter';
 
 const URL = '/api/process-instances';
 
@@ -29,17 +28,6 @@ type BatchOperationQuery = {
   running?: boolean;
 };
 
-type ProcessInstancesQuery = {
-  query: RequestFilters;
-  sorting?: {
-    sortBy: string;
-    sortOrder: 'desc' | 'asc';
-  };
-  searchAfter?: ReadonlyArray<string>;
-  searchBefore?: ReadonlyArray<string>;
-  pageSize?: number;
-};
-
 type OperationPayload = {
   operationType: OperationEntityType;
   variableName?: string;
@@ -57,51 +45,12 @@ type VariablePayload = {
   searchBeforeOrEqual?: ReadonlyArray<string>;
 };
 
-async function fetchProcessInstances({
-  payload,
-  signal,
-}: {
-  payload: ProcessInstancesQuery;
-  signal?: AbortSignal;
-}) {
-  return request({
-    url: `${URL}`,
-    method: 'POST',
-    body: payload,
-    signal,
-  });
-}
-
 async function fetchGroupedProcesses() {
   return request({url: '/api/processes/grouped'});
 }
 
 async function fetchProcessCoreStatistics() {
   return request({url: `${URL}/core-statistics`});
-}
-
-async function fetchProcessInstancesByIds({
-  ids,
-  signal,
-}: {
-  ids: ProcessInstanceEntity['id'][];
-  signal?: AbortSignal;
-}) {
-  return fetchProcessInstances({
-    payload: {
-      pageSize: ids.length,
-      query: {
-        running: true,
-        finished: true,
-        active: true,
-        incidents: true,
-        completed: true,
-        canceled: true,
-        ids,
-      },
-    },
-    signal,
-  });
 }
 
 async function fetchProcessInstancesStatistics(payload: any) {
@@ -177,10 +126,8 @@ async function fetchVariable(id: VariableEntity['id']) {
 
 export type {VariablePayload, StatisticEntity};
 export {
-  fetchProcessInstances,
   fetchGroupedProcesses,
   fetchProcessCoreStatistics,
-  fetchProcessInstancesByIds,
   fetchProcessInstancesStatistics,
   applyBatchOperation,
   applyOperation,

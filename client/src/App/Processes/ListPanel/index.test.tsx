@@ -23,6 +23,7 @@ import {NotificationProvider} from 'modules/notifications';
 import {authenticationStore} from 'modules/stores/authentication';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {ListFooter} from './ListFooter';
+import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 
 function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -51,11 +52,10 @@ describe('ListPanel', () => {
 
   describe('messages', () => {
     it('should display a message for empty list when no filter is selected', async () => {
-      mockServer.use(
-        rest.post('/api/process-instances', (_, res, ctx) =>
-          res.once(ctx.json({processInstances: [], totalCount: 0}))
-        )
-      );
+      mockFetchProcessInstances().withSuccess({
+        processInstances: [],
+        totalCount: 0,
+      });
 
       processInstancesStore.fetchProcessInstancesFromFilters();
 
@@ -76,11 +76,10 @@ describe('ListPanel', () => {
     });
 
     it('should display a message for empty list when at least one filter is selected', async () => {
-      mockServer.use(
-        rest.post('/api/process-instances', (_, res, ctx) =>
-          res.once(ctx.json({processInstances: [], totalCount: 0}))
-        )
-      );
+      mockFetchProcessInstances().withSuccess({
+        processInstances: [],
+        totalCount: 0,
+      });
 
       processInstancesStore.fetchProcessInstancesFromFilters();
 
@@ -107,11 +106,11 @@ describe('ListPanel', () => {
     });
 
     it('should render a skeleton', async () => {
-      mockServer.use(
-        rest.post('/api/process-instances', (_, res, ctx) =>
-          res.once(ctx.json({processInstances: [], totalCount: 0}))
-        )
-      );
+      mockFetchProcessInstances().withSuccess({
+        processInstances: [],
+        totalCount: 0,
+      });
+
       processInstancesStore.fetchProcessInstancesFromFilters();
 
       render(<ListPanel />, {
@@ -123,16 +122,10 @@ describe('ListPanel', () => {
     });
 
     it('should render table body and footer', async () => {
-      mockServer.use(
-        rest.post('/api/process-instances', (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              processInstances: [INSTANCE, ACTIVE_INSTANCE],
-              totalCount: 2,
-            })
-          )
-        )
-      );
+      mockFetchProcessInstances().withSuccess({
+        processInstances: [INSTANCE, ACTIVE_INSTANCE],
+        totalCount: 2,
+      });
 
       processInstancesStore.fetchProcessInstancesFromFilters();
 
@@ -151,11 +144,10 @@ describe('ListPanel', () => {
     });
 
     it('should render Footer when list is empty', async () => {
-      mockServer.use(
-        rest.post('/api/process-instances', (_, res, ctx) =>
-          res.once(ctx.json({processInstances: [], totalCount: 0}))
-        )
-      );
+      mockFetchProcessInstances().withSuccess({
+        processInstances: [],
+        totalCount: 0,
+      });
 
       processInstancesStore.fetchProcessInstancesFromFilters();
 
@@ -181,16 +173,10 @@ describe('ListPanel', () => {
         salesPlanType: null,
       });
 
-      mockServer.use(
-        rest.post('/api/process-instances', (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              processInstances: [INSTANCE, ACTIVE_INSTANCE],
-              totalCount: 0,
-            })
-          )
-        )
-      );
+      mockFetchProcessInstances().withSuccess({
+        processInstances: [INSTANCE, ACTIVE_INSTANCE],
+        totalCount: 2,
+      });
 
       processInstancesStore.fetchProcessInstancesFromFilters();
 
@@ -210,10 +196,12 @@ describe('ListPanel', () => {
   it('should start operation on an instance from list', async () => {
     jest.useFakeTimers();
 
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [INSTANCE],
+      totalCount: 1,
+    });
+
     mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json({processInstances: [INSTANCE], totalCount: 1}))
-      ),
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(
           ctx.json({
@@ -252,20 +240,18 @@ describe('ListPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json({processInstances: [INSTANCE], totalCount: 1}))
-      ),
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            processInstances: [INSTANCE],
-            totalCount: 2,
-          })
-        )
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [INSTANCE],
+      totalCount: 1,
+    });
+
     jest.runOnlyPendingTimers();
+
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [INSTANCE],
+      totalCount: 1,
+    });
+
     await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
 
     jest.clearAllTimers();
@@ -276,10 +262,9 @@ describe('ListPanel', () => {
     it('should display spinners on batch operation', async () => {
       jest.useFakeTimers();
 
+      mockFetchProcessInstances().withSuccess(mockProcessInstances);
+
       mockServer.use(
-        rest.post('/api/process-instances', (_, res, ctx) =>
-          res.once(ctx.json(mockProcessInstances))
-        ),
         rest.post('/api/process-instances/batch-operation', (_, res, ctx) =>
           res.once(ctx.json({}))
         )
@@ -302,11 +287,7 @@ describe('ListPanel', () => {
       await user.click(screen.getByText(/^apply$/i));
       expect(screen.getAllByTestId('operation-spinner')).toHaveLength(3);
 
-      mockServer.use(
-        rest.post('/api/process-instances', (_, res, ctx) =>
-          res.once(ctx.json(mockProcessInstances))
-        )
-      );
+      mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
       processInstancesStore.fetchProcessInstancesFromFilters();
 
@@ -321,15 +302,11 @@ describe('ListPanel', () => {
     });
 
     it('should remove spinners after batch operation if a server error occurs', async () => {
+      mockFetchProcessInstances().withSuccess(mockProcessInstances);
+
       mockServer.use(
-        rest.post('/api/process-instances', (_, res, ctx) =>
-          res.once(ctx.json(mockProcessInstances))
-        ),
         rest.post('/api/process-instances/batch-operation', (_, res, ctx) =>
           res.once(ctx.status(500), ctx.json({}))
-        ),
-        rest.post('/api/process-instances', (_, res, ctx) =>
-          res(ctx.json({...mockProcessInstances, totalCount: 1000}))
         )
       );
 
@@ -342,6 +319,11 @@ describe('ListPanel', () => {
       await waitFor(() =>
         expect(processInstancesStore.state.status).toBe('fetched')
       );
+
+      mockFetchProcessInstances().withSuccess({
+        ...mockProcessInstances,
+        totalCount: 1000,
+      });
 
       await user.click(screen.getByLabelText(/select all instances/i));
       await user.click(screen.getByText(/apply operation on/i));
@@ -359,16 +341,12 @@ describe('ListPanel', () => {
       jest.useFakeTimers();
 
       mockServer.use(
-        rest.post('/api/process-instances', (_, res, ctx) =>
-          res.once(ctx.json(mockProcessInstances))
-        ),
         rest.post('/api/process-instances/batch-operation', (_, res) =>
           res.networkError('A network error')
-        ),
-        rest.post('/api/process-instances', (_, res, ctx) =>
-          res.once(ctx.json({...mockProcessInstances, totalCount: 1000}))
         )
       );
+
+      mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
       processInstancesStore.fetchProcessInstancesFromFilters();
 
@@ -380,9 +358,15 @@ describe('ListPanel', () => {
         expect(processInstancesStore.state.status).toBe('fetched')
       );
 
+      mockFetchProcessInstances().withSuccess({
+        ...mockProcessInstances,
+        totalCount: 1000,
+      });
+
       await user.click(screen.getByLabelText(/select all instances/i));
       await user.click(screen.getByText(/apply operation on/i));
       await user.click(screen.getByText(/cancel/i));
+
       await user.click(screen.getByText(/^apply$/i));
       expect(screen.getAllByTestId('operation-spinner')).toHaveLength(3);
 
@@ -396,11 +380,7 @@ describe('ListPanel', () => {
   });
 
   it('should show an error message', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json({}), ctx.status(500))
-      )
-    );
+    mockFetchProcessInstances().withServerError();
 
     const {unmount} = render(<ListPanel />, {
       wrapper: createWrapper(),
@@ -418,11 +398,7 @@ describe('ListPanel', () => {
     unmount();
     processInstancesStore.reset();
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.networkError('A network error')
-      )
-    );
+    mockFetchProcessInstances().withNetworkError();
 
     processInstancesStore.fetchProcessInstancesFromFilters();
 

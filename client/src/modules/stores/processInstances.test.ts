@@ -11,6 +11,7 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from 'modules/testing-library';
 import {createOperation} from 'modules/utils/instance';
+import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 
 const instance: ProcessInstanceEntity = {
   id: '2251799813685625',
@@ -72,11 +73,7 @@ describe('stores/processInstances', () => {
   });
 
   it('should fetch initial instances', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      )
-    );
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
     expect(processInstancesStore.state.status).toBe('initial');
 
@@ -98,11 +95,7 @@ describe('stores/processInstances', () => {
   });
 
   it('should fetch next instances', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      )
-    );
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
     expect(processInstancesStore.state.status).toBe('initial');
 
@@ -112,19 +105,13 @@ describe('stores/processInstances', () => {
       expect(processInstancesStore.state.status).toBe('fetched')
     );
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockProcessInstances,
-            processInstances: [
-              {...instance, id: '100'},
-              {...instance, hasActiveOperation: true, id: '101'},
-            ],
-          })
-        )
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      ...mockProcessInstances,
+      processInstances: [
+        {...instance, id: '100'},
+        {...instance, hasActiveOperation: true, id: '101'},
+      ],
+    });
 
     processInstancesStore.fetchNextInstances();
 
@@ -140,16 +127,11 @@ describe('stores/processInstances', () => {
       fetchType: 'next',
       processInstancesCount: 2,
     });
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockProcessInstances,
-            processInstances: [{...instance, id: '200'}],
-          })
-        )
-      )
-    );
+
+    mockFetchProcessInstances().withSuccess({
+      ...mockProcessInstances,
+      processInstances: [{...instance, id: '200'}],
+    });
 
     processInstancesStore.fetchNextInstances();
 
@@ -171,11 +153,7 @@ describe('stores/processInstances', () => {
   });
 
   it('should fetch previous instances', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      )
-    );
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
     expect(processInstancesStore.state.status).toBe('initial');
 
@@ -185,16 +163,10 @@ describe('stores/processInstances', () => {
       expect(processInstancesStore.state.status).toBe('fetched')
     );
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockProcessInstances,
-            processInstances: [{...instance, id: '100'}],
-          })
-        )
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      ...mockProcessInstances,
+      processInstances: [{...instance, id: '100'}],
+    });
 
     processInstancesStore.fetchPreviousInstances();
 
@@ -209,16 +181,11 @@ describe('stores/processInstances', () => {
       fetchType: 'prev',
       processInstancesCount: 1,
     });
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockProcessInstances,
-            processInstances: [{...instance, id: '200'}],
-          })
-        )
-      )
-    );
+
+    mockFetchProcessInstances().withSuccess({
+      ...mockProcessInstances,
+      processInstances: [{...instance, id: '200'}],
+    });
 
     processInstancesStore.fetchPreviousInstances();
 
@@ -241,11 +208,7 @@ describe('stores/processInstances', () => {
   });
 
   it('should refresh all instances', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      )
-    );
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
     processInstancesStore.fetchProcessInstancesFromFilters();
 
@@ -256,19 +219,13 @@ describe('stores/processInstances', () => {
       processInstancesStore.processInstanceIdsWithActiveOperations
     ).toEqual(['2251799813685627']);
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            processInstances: [
-              instance,
-              {...instanceWithActiveOperation, hasActiveOperation: false},
-            ],
-            totalCount: 100,
-          })
-        )
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [
+        instance,
+        {...instanceWithActiveOperation, hasActiveOperation: false},
+      ],
+      totalCount: 100,
+    });
 
     processInstancesStore.refreshAllInstances();
     await waitFor(() =>
@@ -277,19 +234,13 @@ describe('stores/processInstances', () => {
       ).toEqual([])
     );
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            processInstances: [
-              {...instance, hasActiveOperation: true},
-              {...instanceWithActiveOperation},
-            ],
-            totalCount: 100,
-          })
-        )
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [
+        {...instance, hasActiveOperation: true},
+        {...instanceWithActiveOperation},
+      ],
+      totalCount: 100,
+    });
 
     processInstancesStore.refreshAllInstances();
     await waitFor(() =>
@@ -300,11 +251,7 @@ describe('stores/processInstances', () => {
   });
 
   it('should reset store', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      )
-    );
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
     await processInstancesStore.fetchInstances({
       fetchType: 'initial',
@@ -325,11 +272,7 @@ describe('stores/processInstances', () => {
   });
 
   it('should get visible ids in list panel', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      )
-    );
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
     await processInstancesStore.fetchInstances({
       fetchType: 'initial',
@@ -342,11 +285,7 @@ describe('stores/processInstances', () => {
   });
 
   it('should get areProcessInstancesEmpty', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      )
-    );
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
     await processInstancesStore.fetchInstances({
       fetchType: 'initial',
@@ -355,11 +294,10 @@ describe('stores/processInstances', () => {
 
     expect(processInstancesStore.areProcessInstancesEmpty).toBe(false);
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json({processInstances: [], totalCount: 0}))
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
 
     await processInstancesStore.fetchInstances({
       fetchType: 'initial',
@@ -371,20 +309,14 @@ describe('stores/processInstances', () => {
 
   it('should mark instances with active operations', async () => {
     const cancelOperation = createOperation('CANCEL_PROCESS_INSTANCE');
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            totalCount: 100,
-            processInstances: [
-              {...instance, id: '1'},
-              {...instance, id: '2'},
-              {...instance, id: '3'},
-            ],
-          })
-        )
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      totalCount: 100,
+      processInstances: [
+        {...instance, id: '1'},
+        {...instance, id: '2'},
+        {...instance, id: '3'},
+      ],
+    });
 
     await processInstancesStore.fetchInstances({
       fetchType: 'initial',
@@ -468,20 +400,14 @@ describe('stores/processInstances', () => {
       },
     ]);
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            totalCount: 100,
-            processInstances: [
-              {...instance, id: '1'},
-              {...instance, id: '2'},
-              {...instance, id: '3'},
-            ],
-          })
-        )
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      totalCount: 100,
+      processInstances: [
+        {...instance, id: '1'},
+        {...instance, id: '2'},
+        {...instance, id: '3'},
+      ],
+    });
 
     await processInstancesStore.fetchInstances({
       fetchType: 'initial',
@@ -557,20 +483,14 @@ describe('stores/processInstances', () => {
 
   it('should unmark instances with active operations', async () => {
     // when polling all visible instances
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            totalCount: 100,
-            processInstances: [
-              {...instanceWithActiveOperation, id: '1'},
-              {...instanceWithActiveOperation, id: '2'},
-              {...instanceWithActiveOperation, id: '3'},
-            ],
-          })
-        )
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      totalCount: 100,
+      processInstances: [
+        {...instanceWithActiveOperation, id: '1'},
+        {...instanceWithActiveOperation, id: '2'},
+        {...instanceWithActiveOperation, id: '3'},
+      ],
+    });
 
     processInstancesStore.fetchProcessInstancesFromFilters();
 
@@ -581,20 +501,14 @@ describe('stores/processInstances', () => {
       processInstancesStore.processInstanceIdsWithActiveOperations
     ).toEqual(['1', '2', '3']);
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            totalCount: 100,
-            processInstances: [
-              {...instance, id: '1'},
-              {...instance, id: '2'},
-              {...instance, id: '3'},
-            ],
-          })
-        )
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      totalCount: 100,
+      processInstances: [
+        {...instance, id: '1'},
+        {...instance, id: '2'},
+        {...instance, id: '3'},
+      ],
+    });
 
     processInstancesStore.unmarkProcessInstancesWithActiveOperations({
       instanceIds: ['1', '2', '3'],
@@ -609,20 +523,14 @@ describe('stores/processInstances', () => {
     );
 
     // when not polling all visible instances
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            totalCount: 100,
-            processInstances: [
-              {...instanceWithActiveOperation, id: '1'},
-              {...instanceWithActiveOperation, id: '2'},
-              {...instanceWithActiveOperation, id: '3'},
-            ],
-          })
-        )
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      totalCount: 100,
+      processInstances: [
+        {...instanceWithActiveOperation, id: '1'},
+        {...instanceWithActiveOperation, id: '2'},
+        {...instanceWithActiveOperation, id: '3'},
+      ],
+    });
 
     processInstancesStore.fetchProcessInstancesFromFilters();
     await waitFor(() =>
@@ -643,33 +551,27 @@ describe('stores/processInstances', () => {
   });
 
   it('should not set active operation state to false if there are still running operations', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            totalCount: 100,
-            processInstances: [
-              {
-                ...instanceWithActiveOperation,
-                id: '1',
-                operations: [
-                  {
-                    errorMessage: 'string',
-                    state: 'SENT',
-                    type: 'RESOLVE_INCIDENT',
-                  },
-                  {
-                    errorMessage: 'string',
-                    state: 'SENT',
-                    type: 'CANCEL_PROCESS_INSTANCE',
-                  },
-                ],
-              },
-            ],
-          })
-        )
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      totalCount: 100,
+      processInstances: [
+        {
+          ...instanceWithActiveOperation,
+          id: '1',
+          operations: [
+            {
+              errorMessage: 'string',
+              state: 'SENT',
+              type: 'RESOLVE_INCIDENT',
+            },
+            {
+              errorMessage: 'string',
+              state: 'SENT',
+              type: 'CANCEL_PROCESS_INSTANCE',
+            },
+          ],
+        },
+      ],
+    });
 
     processInstancesStore.fetchProcessInstancesFromFilters();
 
@@ -699,11 +601,7 @@ describe('stores/processInstances', () => {
     const handlerMock = jest.fn();
     processInstancesStore.addCompletedOperationsHandler(handlerMock);
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      )
-    );
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
@@ -715,33 +613,24 @@ describe('stores/processInstances', () => {
       processInstancesStore.processInstanceIdsWithActiveOperations
     ).toEqual(['2251799813685627']);
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            processInstances: [
-              instance,
-              {...instanceWithActiveOperation, hasActiveOperation: false},
-            ],
-            totalCount: 2,
-          })
-        )
-      ),
-      //refresh
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            processInstances: [
-              instance,
-              {...instanceWithActiveOperation, hasActiveOperation: false},
-            ],
-            totalCount: 3,
-          })
-        )
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [
+        instance,
+        {...instanceWithActiveOperation, hasActiveOperation: false},
+      ],
+      totalCount: 2,
+    });
 
     jest.runOnlyPendingTimers();
+
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [
+        instance,
+        {...instanceWithActiveOperation, hasActiveOperation: false},
+      ],
+      totalCount: 3,
+    });
+
     await waitFor(() =>
       expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(3)
     );
@@ -753,19 +642,13 @@ describe('stores/processInstances', () => {
   });
 
   it('should poll instances by id when there are instances with active operations', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            totalCount: 100,
-            processInstances: [
-              {...instance, id: '1'},
-              {...instanceWithActiveOperation, id: '2'},
-            ],
-          })
-        )
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      totalCount: 100,
+      processInstances: [
+        {...instance, id: '1'},
+        {...instanceWithActiveOperation, id: '2'},
+      ],
+    });
 
     jest.useFakeTimers();
 
@@ -778,41 +661,33 @@ describe('stores/processInstances', () => {
     expect(
       processInstancesStore.processInstanceIdsWithActiveOperations
     ).toEqual(['2']);
-    mockServer.use(
-      // mock for fetching instances when there is an active operation
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            processInstances: [
-              {
-                ...instanceWithActiveOperation,
-                hasActiveOperation: false,
-                id: '2',
-              },
-            ],
-            totalCount: 100,
-          })
-        )
-      ),
-      // mock for refreshing instances when an instance operation is completed
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            processInstances: [
-              {...instance, id: '1'},
-              {
-                ...instanceWithActiveOperation,
-                id: '2',
-                hasActiveOperation: false,
-              },
-            ],
-            totalCount: 2,
-          })
-        )
-      )
-    );
+
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [
+        {
+          ...instanceWithActiveOperation,
+          hasActiveOperation: false,
+          id: '2',
+        },
+      ],
+      totalCount: 100,
+    });
 
     jest.runOnlyPendingTimers();
+
+    // mock for refreshing instances when an instance operation is completed
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [
+        {...instance, id: '1'},
+        {
+          ...instanceWithActiveOperation,
+          id: '2',
+          hasActiveOperation: false,
+        },
+      ],
+      totalCount: 2,
+    });
+
     await waitFor(() => {
       expect(processInstancesStore.state.filteredProcessInstancesCount).toEqual(
         2
@@ -838,11 +713,7 @@ describe('stores/processInstances', () => {
       totalCount: 1,
     };
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockedProcessInstances))
-      )
-    );
+    mockFetchProcessInstances().withSuccess(mockedProcessInstances);
 
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
@@ -858,11 +729,7 @@ describe('stores/processInstances', () => {
       totalCount: 2,
     };
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(newProcessInstancesResponse))
-      )
-    );
+    mockFetchProcessInstances().withSuccess(newProcessInstancesResponse);
 
     eventListeners.online();
 

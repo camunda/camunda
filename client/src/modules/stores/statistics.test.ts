@@ -11,22 +11,15 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from 'modules/testing-library';
 import {processInstancesStore} from './processInstances';
-import {mockProcessXML, groupedProcessesMock} from 'modules/testUtils';
+import {
+  mockProcessXML,
+  groupedProcessesMock,
+  createInstance,
+} from 'modules/testUtils';
 import {statistics} from 'modules/mocks/statistics';
+import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 
-const mockInstance = {
-  id: '2251799813685625',
-  processId: '2251799813685623',
-  processName: 'Without Incidents Process',
-  processVersion: 1,
-  startDate: '2020-11-19T08:14:05.406+0000',
-  endDate: null,
-  state: 'ACTIVE',
-  bpmnProcessId: 'withoutIncidentsProcess',
-  hasActiveOperation: false,
-  operations: [],
-  sortValues: ['withoutIncidentsProcess', '2251799813685625'],
-} as const;
+const mockInstance = createInstance({id: '2251799813685625'});
 
 describe('stores/statistics', () => {
   beforeEach(() => {
@@ -143,16 +136,14 @@ describe('stores/statistics', () => {
       ),
       rest.get('/api/processes/grouped', (_, res, ctx) =>
         res.once(ctx.json(groupedProcessesMock))
-      ),
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            processInstances: [{...mockInstance, hasActiveOperation: true}],
-            totalCount: 1,
-          })
-        )
       )
     );
+
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [{...mockInstance, hasActiveOperation: true}],
+      totalCount: 1,
+    });
+
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
 
@@ -164,15 +155,12 @@ describe('stores/statistics', () => {
     expect(statisticsStore.state.active).toBe(210);
     expect(statisticsStore.state.withIncidents).toBe(877);
 
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [{...mockInstance}],
+      totalCount: 1,
+    });
+
     mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            processInstances: [{...mockInstance}],
-            totalCount: 1,
-          })
-        )
-      ),
       // mock for next poll
       rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
         res.once(ctx.json(statistics))
@@ -180,18 +168,15 @@ describe('stores/statistics', () => {
       // mock for when there are completed operations
       rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
         res.once(ctx.json({...statistics, running: 1088}))
-      ),
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            processInstances: [{...mockInstance}],
-            totalCount: 2,
-          })
-        )
       )
     );
 
     jest.runOnlyPendingTimers();
+
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [{...mockInstance}],
+      totalCount: 2,
+    });
 
     await waitFor(() =>
       expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(2)

@@ -17,7 +17,8 @@ import {
 import {
   fetchProcessInstances,
   fetchProcessInstancesByIds,
-} from 'modules/api/processInstances';
+  ProcessInstancesDto,
+} from 'modules/api/processInstances/fetchProcessInstances';
 import {logger} from 'modules/logger';
 import {
   getProcessInstancesRequestFilters,
@@ -33,7 +34,7 @@ type Payload = Parameters<typeof fetchProcessInstances>['0']['payload'];
 type FetchType = 'initial' | 'prev' | 'next';
 type State = {
   filteredProcessInstancesCount: number;
-  processInstances: ProcessInstanceEntity[];
+  processInstances: ProcessInstancesDto['processInstances'];
   latestFetch: {
     fetchType: FetchType;
     processInstancesCount: number;
@@ -240,62 +241,50 @@ class ProcessInstances extends NetworkReconnectionHandler {
     fetchType: FetchType;
     payload: Payload;
   }) => {
-    try {
-      const response = await fetchProcessInstances({payload});
+    const response = await fetchProcessInstances({payload});
 
-      if (response.ok) {
-        const {processInstances, totalCount} = await response.json();
+    if (response.isSuccess) {
+      const {processInstances, totalCount} = response.data;
 
-        tracking.track({
-          eventName: 'instances-loaded',
-          filters: Object.keys(payload.query),
-          ...payload.sorting,
-        });
+      tracking.track({
+        eventName: 'instances-loaded',
+        filters: Object.keys(payload.query),
+        ...payload.sorting,
+      });
 
-        this.setProcessInstances({
-          filteredProcessInstancesCount: totalCount,
-          processInstances: this.getProcessInstances(
-            fetchType,
-            processInstances
-          ),
-        });
+      this.setProcessInstances({
+        filteredProcessInstancesCount: totalCount,
+        processInstances: this.getProcessInstances(fetchType, processInstances),
+      });
 
-        this.setLatestFetchDetails(fetchType, processInstances.length);
+      this.setLatestFetchDetails(fetchType, processInstances.length);
 
-        this.handleFetchSuccess();
-      } else {
-        this.handleFetchError();
-      }
-    } catch (error) {
-      this.handleFetchError(error);
+      this.handleFetchSuccess();
+    } else {
+      this.handleFetchError();
     }
   };
 
   refreshAllInstances = async () => {
-    try {
-      const response = await fetchProcessInstances({
-        payload: {
-          query: getProcessInstancesRequestFilters(),
-          sorting: this.getSorting(),
-          pageSize:
-            this.state.processInstances.length > 0
-              ? this.state.processInstances.length
-              : MAX_INSTANCES_PER_REQUEST,
-        },
-      });
+    const response = await fetchProcessInstances({
+      payload: {
+        query: getProcessInstancesRequestFilters(),
+        sorting: this.getSorting(),
+        pageSize:
+          this.state.processInstances.length > 0
+            ? this.state.processInstances.length
+            : MAX_INSTANCES_PER_REQUEST,
+      },
+    });
 
-      if (response.ok) {
-        const {processInstances, totalCount} = await response.json();
-        this.setProcessInstances({
-          filteredProcessInstancesCount: totalCount,
-          processInstances,
-        });
-      } else {
-        logger.error('Failed to refresh instances');
-      }
-    } catch (error) {
+    if (response.isSuccess) {
+      const {processInstances, totalCount} = response.data;
+      this.setProcessInstances({
+        filteredProcessInstancesCount: totalCount,
+        processInstances,
+      });
+    } else {
       logger.error('Failed to refresh instances');
-      logger.error(error);
     }
   };
 
@@ -320,15 +309,10 @@ class ProcessInstances extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchError = (error?: unknown) => {
+  handleFetchError = () => {
     this.state.status = 'error';
     this.state.filteredProcessInstancesCount = 0;
     this.state.processInstances = [];
-
-    logger.error('Failed to fetch instances');
-    if (error !== undefined) {
-      logger.error(error);
-    }
   };
 
   setProcessInstances = ({
@@ -377,46 +361,41 @@ class ProcessInstances extends NetworkReconnectionHandler {
   };
 
   handlePollingActiveInstances = async () => {
-    try {
-      if (this.pollingAbortController?.signal.aborted) {
-        this.pollingAbortController = new AbortController();
-      }
-
-      this.isPollRequestRunning = true;
-      const response = await fetchProcessInstancesByIds({
-        ids: this.processInstanceIdsWithActiveOperations,
-        signal: this.pollingAbortController?.signal,
-      });
-
-      if (response.ok) {
-        if (this.intervalId !== null) {
-          const {
-            processInstances,
-          }: {
-            processInstances: ProcessInstanceEntity[];
-          } = await response.json();
-
-          if (
-            this.processInstanceIdsWithActiveOperations.length >
-              processInstances.length ||
-            processInstances.some(({hasActiveOperation}) => !hasActiveOperation)
-          ) {
-            this.completedOperationsHandlers.forEach((handler: () => void) => {
-              handler();
-            });
-
-            this.refreshAllInstances();
-          }
-        }
-      } else {
-        logger.error('Failed to poll instances');
-      }
-    } catch (error) {
-      logger.error('Failed to poll instances');
-      logger.error(error);
-    } finally {
-      this.isPollRequestRunning = false;
+    if (this.pollingAbortController?.signal.aborted) {
+      this.pollingAbortController = new AbortController();
     }
+
+    this.isPollRequestRunning = true;
+    const response = await fetchProcessInstancesByIds({
+      ids: this.processInstanceIdsWithActiveOperations,
+      signal: this.pollingAbortController?.signal,
+    });
+
+    if (response.isSuccess) {
+      if (this.intervalId !== null) {
+        const {
+          processInstances,
+        }: {
+          processInstances: ProcessInstanceEntity[];
+        } = response.data;
+
+        if (
+          this.processInstanceIdsWithActiveOperations.length >
+            processInstances.length ||
+          processInstances.some(({hasActiveOperation}) => !hasActiveOperation)
+        ) {
+          this.completedOperationsHandlers.forEach((handler: () => void) => {
+            handler();
+          });
+
+          this.refreshAllInstances();
+        }
+      }
+    } else {
+      logger.error('Failed to poll instances');
+    }
+
+    this.isPollRequestRunning = false;
   };
 
   unmarkProcessInstancesWithActiveOperations = ({

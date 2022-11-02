@@ -22,6 +22,7 @@ import {processesStore} from 'modules/stores/processes';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {processDiagramStore} from 'modules/stores/processDiagram';
+import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 
 jest.mock('modules/utils/bpmn');
 
@@ -39,10 +40,9 @@ function getWrapper(initialPath: string = '/') {
 
 describe('DiagramPanel', () => {
   beforeEach(() => {
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+
     mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      ),
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
       ),

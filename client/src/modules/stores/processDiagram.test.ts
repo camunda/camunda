@@ -7,7 +7,8 @@
 
 import {waitFor} from '@testing-library/react';
 import {mockServer} from 'modules/mock-server/node';
-import {mockProcessInstances} from 'modules/mocks/mockProcessInstances';
+import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
+import {mockProcessInstances} from 'modules/testUtils';
 import {mockProcessStatistics} from 'modules/mocks/mockProcessStatistics';
 import {mockProcessXml} from 'modules/mocks/mockProcessXml';
 import {rest} from 'msw';
@@ -206,21 +207,11 @@ describe('stores/processDiagram', () => {
   });
 
   it('should fetch process statistics depending on completed operations', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            processInstances: [
-              {
-                ...mockProcessInstances.processInstances[0],
-                hasActiveOperation: true,
-              },
-            ],
-            totalCount: 1,
-          })
-        )
-      )
-    );
+    const processInstance = mockProcessInstances.processInstances[0]!;
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [{...processInstance, hasActiveOperation: true}],
+      totalCount: 1,
+    });
 
     processDiagramStore.init();
     processInstancesStore.init();
@@ -232,15 +223,12 @@ describe('stores/processDiagram', () => {
 
     expect(processDiagramStore.state.statistics).toEqual([]);
 
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [{...processInstance}],
+      totalCount: 1,
+    });
+
     mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            processInstances: [{...mockProcessInstances.processInstances[0]}],
-            totalCount: 1,
-          })
-        )
-      ),
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXml))
       ),
@@ -259,21 +247,13 @@ describe('stores/processDiagram', () => {
   });
 
   it('should not fetch process statistics depending on completed operations if process and version filter does not exist', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            processInstances: [
-              {
-                ...mockProcessInstances.processInstances[0],
-                hasActiveOperation: true,
-              },
-            ],
-            totalCount: 1,
-          })
-        )
-      )
-    );
+    const processInstance = mockProcessInstances.processInstances[0]!;
+
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [{...processInstance, hasActiveOperation: true}],
+      totalCount: 1,
+    });
+
     processDiagramStore.init();
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
@@ -283,16 +263,10 @@ describe('stores/processDiagram', () => {
     );
     expect(processDiagramStore.state.statistics).toEqual([]);
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            processInstances: [{...mockProcessInstances.processInstances[0]}],
-            totalCount: 2,
-          })
-        )
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [{...processInstance}],
+      totalCount: 2,
+    });
 
     processInstancesStore.fetchProcessInstancesFromFilters();
 

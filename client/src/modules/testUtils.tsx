@@ -407,48 +407,17 @@ export const mockCallActivityProcessXML = `<?xml version="1.0" encoding="UTF-8"?
 
 export const mockProcessInstances = {
   processInstances: [
-    {
-      id: '2251799813685594',
-      processId: '2251799813685592',
-      parentInstanceId: '1183299813610247',
-      processName: 'Without Incidents Process',
-      processVersion: 1,
-      startDate: '2020-09-03T15:42:25.107+0000',
-      endDate: null,
-      state: 'ACTIVE',
-      bpmnProcessId: 'withoutIncidentsProcess',
-      hasActiveOperation: false,
-      operations: [],
-      rootInstanceId: null,
-    },
-    {
+    createInstance({id: '2251799813685594', processId: '2251799813685592'}),
+    createInstance({
       id: '2251799813685596',
       processId: '2251799813685592',
-      parentInstanceId: null,
-      processName: 'Without Incidents Process',
-      processVersion: 1,
-      startDate: '2020-09-03T15:42:25.200+0000',
-      endDate: null,
       state: 'INCIDENT',
-      bpmnProcessId: 'withoutIncidentsProcess',
-      hasActiveOperation: false,
-      operations: [],
-      rootInstanceId: null,
-    },
-    {
+    }),
+    createInstance({
       id: '2251799813685598',
       processId: '2251799813685592',
-      parentInstanceId: null,
-      processName: 'Without Incidents Process',
-      processVersion: 1,
-      startDate: '2020-09-03T15:42:25.200+0000',
-      endDate: '2020-09-03T15:50:25.200+0000',
       state: 'CANCELED',
-      bpmnProcessId: 'withoutIncidentsProcess',
-      hasActiveOperation: false,
-      operations: [],
-      rootInstanceId: null,
-    },
+    }),
   ],
   totalCount: 912,
 };

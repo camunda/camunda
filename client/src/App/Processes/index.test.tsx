@@ -30,6 +30,7 @@ import {operationsStore} from 'modules/stores/operations';
 import {processesStore} from 'modules/stores/processes';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Header} from 'App/Layout/Header';
+import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 
 jest.mock('modules/utils/bpmn');
 
@@ -57,10 +58,8 @@ function getWrapper(initialPath: string = '/processes') {
 
 describe('Instances', () => {
   beforeEach(() => {
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      ),
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))
       ),
@@ -124,14 +123,7 @@ describe('Instances', () => {
   });
 
   it('should reset selected instances when filters change', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      ),
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      )
-    );
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
     const {user} = render(<Processes />, {
       wrapper: getWrapper('/processes?active=true&incidents=true'),
@@ -152,6 +144,7 @@ describe('Instances', () => {
       screen.getByLabelText(/select instance 2251799813685594/i)
     ).toBeChecked();
 
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
     await user.click(screen.getByText(/go to active/i));
 
     await waitFor(() =>
@@ -162,14 +155,7 @@ describe('Instances', () => {
   });
 
   it('should not reset selected instances when table is sorted', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      ),
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      )
-    );
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
     const {user} = render(<Processes />, {
       wrapper: getWrapper('/processes?active=true&incidents=true'),
@@ -190,6 +176,7 @@ describe('Instances', () => {
       screen.getByLabelText(/select instance 2251799813685594/i)
     ).toBeChecked();
 
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
     await user.click(screen.getByRole('button', {name: 'Sort by Name'}));
     await waitForElementToBeRemoved(screen.getByTestId('instances-loader'));
 
@@ -208,10 +195,9 @@ describe('Instances', () => {
         completed: 10,
       },
     ];
+
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      ),
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))
       ),
@@ -245,11 +231,10 @@ describe('Instances', () => {
     expect(processDiagramStore.state.diagramModel).not.toBe(null);
     expect(processDiagramStore.state.statistics).toEqual(mockProcessStatistics);
 
-    mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json({processInstances: []}))
-      )
-    );
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
 
     await user.click(screen.getByText(/go to no filters/i));
 
@@ -259,13 +244,9 @@ describe('Instances', () => {
   });
 
   it('should refetch data when navigated from header', async () => {
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+
     mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      ),
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessInstances))
-      ),
       rest.get('/api/processes/grouped', (_, res, ctx) =>
         res.once(ctx.json(groupedProcessesMock))
       ),
@@ -286,6 +267,7 @@ describe('Instances', () => {
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
     await user.click(screen.getByRole('link', {name: 'View Processes'}));
 
     await waitFor(() =>

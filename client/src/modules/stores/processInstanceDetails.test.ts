@@ -179,7 +179,7 @@ describe('stores/currentInstance', () => {
     ).toEqual([
       {
         errorMessage: 'string',
-        id: 'id_17',
+        id: 'id_23',
         state: 'SENT',
         type: 'RESOLVE_INCIDENT',
       },
@@ -196,7 +196,7 @@ describe('stores/currentInstance', () => {
     ).toEqual([
       {
         errorMessage: 'string',
-        id: 'id_17',
+        id: 'id_23',
         state: 'SENT',
         type: 'RESOLVE_INCIDENT',
       },
