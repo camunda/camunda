@@ -451,7 +451,7 @@ public class ListViewZeebeRecordProcessor {
         + "ctx._source." + ListViewTemplate.PENDING_INCIDENT + " = params.pendingIncident;"
         + "if (params.incidentKey != null){"
         + "  if (ctx._source." + ListViewTemplate.INCIDENT_KEYS + " == null) {"
-        + "    ctx._source." + ListViewTemplate.INCIDENT_KEYS + " = new String[]{params.incidentKey};"
+        + "    ctx._source." + ListViewTemplate.INCIDENT_KEYS + " = new Long[]{params.incidentKey};"
         + "  } else {"
         + "    if (!ctx._source." + ListViewTemplate.INCIDENT_KEYS + ".contains(params.incidentKey)) { "
         + "      ctx._source." + ListViewTemplate.INCIDENT_KEYS + ".add(params.incidentKey);"

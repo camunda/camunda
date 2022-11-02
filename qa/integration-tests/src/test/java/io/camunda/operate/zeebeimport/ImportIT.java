@@ -6,9 +6,11 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import static io.camunda.operate.schema.templates.ListViewTemplate.*;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
@@ -18,10 +20,8 @@ import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
-import io.camunda.operate.util.ConversionUtils;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
-import io.camunda.operate.util.TestUtil;
-import io.camunda.operate.util.ZeebeTestUtil;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.util.*;
 import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
@@ -35,11 +35,19 @@ import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -57,6 +65,12 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private ListViewReader listViewReader;
+
+  @Autowired
+  private RestHighLevelClient esClient;
+
+  @Autowired
+  private ListViewTemplate listViewTemplate;
 
   @Test
   public void testProcessInstanceCreated() {
@@ -296,6 +310,64 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(activity.getState()).isEqualTo(FlowNodeState.ACTIVE);
     assertThat(activity.getIncidentKey()).isNotNull();
     assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
+  }
+
+  @Test
+  public void testIncidentCreatedForFlowNodeInstanceBefore8_1_0() {
+    // having
+    String activityId = "taskA";
+    final String errorMessage = "Error occurred when working on the job";
+
+    String processId = "demoProcess";
+    Long processDefinitionKey = tester.deployProcess("demoProcess_v_1.bpmn").getProcessDefinitionKey();
+    Long processInstanceKey = tester
+        .startProcessInstance(processId, "{\"a\": \"b\"}").waitUntil().flowNodeIsActive(activityId)
+        .getProcessInstanceKey();
+
+    updateIncidentKeyToNull();
+
+    //when
+    //create an incident
+    failTaskWithNoRetriesLeft(activityId, processInstanceKey, errorMessage);
+
+    //then
+    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
+    assertThat(allIncidents).hasSize(1);
+    IncidentEntity incidentEntity = allIncidents.get(0);
+    assertThat(incidentEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
+    assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
+    assertThat(incidentEntity.getErrorMessage()).isEqualTo(errorMessage);
+    assertThat(incidentEntity.getErrorType()).isNotNull();
+    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
+
+    //assert list view data
+    final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
+    assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.INCIDENT);
+
+    //assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
+        .getAllFlowNodeInstances(processInstanceKey);
+    assertThat(allFlowNodeInstances).hasSize(2);
+    final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
+    assertThat(activity.getState()).isEqualTo(FlowNodeState.ACTIVE);
+    assertThat(activity.getIncidentKey()).isNotNull();
+    assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
+  }
+
+  private void updateIncidentKeyToNull() {
+    UpdateByQueryRequest request = new UpdateByQueryRequest(listViewTemplate.getFullQualifiedName())
+        .setQuery(termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION))
+        .setScript(new Script(
+            ScriptType.INLINE, "painless",
+            "ctx._source.incidentKeys = null",
+            Collections.emptyMap()));
+    try {
+      BulkByScrollResponse response = esClient.updateByQuery(request, RequestOptions.DEFAULT);
+      assertThat(response.getUpdated()).isGreaterThan(0);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Test
