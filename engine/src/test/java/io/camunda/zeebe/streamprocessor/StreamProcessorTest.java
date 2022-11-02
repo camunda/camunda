@@ -86,6 +86,28 @@ public final class StreamProcessorTest {
   }
 
   @Test
+  public void shouldCallOnPausedBeforeOnResumedNoMatterWhenResumedWasCalled() throws Exception {
+    // given
+
+    // when
+    streamPlatform.startStreamProcessor();
+    streamPlatform.resumeProcessing();
+    streamPlatform.pauseProcessing();
+    streamPlatform.resumeProcessing();
+    streamPlatform.closeStreamProcessor();
+
+    // then
+    final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
+
+    final InOrder inOrder = inOrder(mockProcessorLifecycleAware);
+    inOrder.verify(mockProcessorLifecycleAware, TIMEOUT).onRecovered(ArgumentMatchers.any());
+    inOrder.verify(mockProcessorLifecycleAware, TIMEOUT).onPaused();
+    inOrder.verify(mockProcessorLifecycleAware, TIMEOUT).onResumed();
+    inOrder.verify(mockProcessorLifecycleAware, TIMEOUT).onClose();
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
   public void shouldCallStreamProcessorLifecycleOnFail() {
     // given
     final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();

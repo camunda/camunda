@@ -8,12 +8,10 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -22,21 +20,16 @@ import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.test.util.stream.StreamWrapper;
 import java.util.concurrent.CountDownLatch;
-import java.util.stream.IntStream;
-import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
 
@@ -53,46 +46,6 @@ public final class StreamProcessorReprocessingTest {
   public void setup() {
     final var mockEventApplier = mock(EventApplier.class);
     streamProcessorRule.withEventApplierFactory(state -> mockEventApplier);
-  }
-
-
-  @Test
-  public void shouldCallOnPausedBeforeOnResumedNoMatterWhenResumedWasCalled() {
-    // given - bunch of records
-    IntStream.range(0, 5000)
-        .forEach(i -> streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, i));
-
-    streamProcessorRule.writeBatch(
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, PROCESS_INSTANCE_RECORD),
-        RecordToWrite.event()
-            .processInstance(ELEMENT_ACTIVATED, PROCESS_INSTANCE_RECORD)
-            .causedBy(0));
-
-    Awaitility.await()
-        .until(
-            () ->
-                streamProcessorRule
-                    .events()
-                    .onlyProcessInstanceRecords()
-                    .withIntent(ELEMENT_ACTIVATED),
-            StreamWrapper::exists);
-
-    // when
-    final var lifecycleAware = mock(StreamProcessorLifecycleAware.class);
-    final var streamProcessor =
-        streamProcessorRule.startTypedStreamProcessor(
-            (processors, context) -> processors.withListener(lifecycleAware));
-    streamProcessor.resumeProcessing();
-    streamProcessor.pauseProcessing();
-    streamProcessor.resumeProcessing();
-
-    // then
-    final InOrder inOrder = inOrder(lifecycleAware);
-    // reprocessing
-    inOrder.verify(lifecycleAware, TIMEOUT.times(1)).onRecovered(any());
-    inOrder.verify(lifecycleAware, TIMEOUT.times(1)).onPaused();
-    inOrder.verify(lifecycleAware, TIMEOUT.times(1)).onResumed();
-    inOrder.verifyNoMoreInteractions();
   }
 
   @Test
