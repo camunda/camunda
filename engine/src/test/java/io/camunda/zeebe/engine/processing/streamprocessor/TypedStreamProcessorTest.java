@@ -9,14 +9,10 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.KeyGenerator;
@@ -34,13 +30,13 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.TestUtil;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockitoAnnotations;
 
 public final class TypedStreamProcessorTest {
@@ -71,9 +67,8 @@ public final class TypedStreamProcessorTest {
     keyGenerator = () -> key.getAndIncrement();
   }
 
-
   @Test
-  public void shouldSkipFailingEvent() {
+  public void shouldAutoRejectCommandOnProcessingFailure() {
     // given
     streams.startStreamProcessor(
         STREAM_NAME,
@@ -84,20 +79,6 @@ public final class TypedStreamProcessorTest {
                     ValueType.DEPLOYMENT,
                     DeploymentIntent.CREATE,
                     new ErrorProneProcessor(processingContext.getWriters())));
-    final AtomicLong requestId = new AtomicLong(0);
-    final AtomicInteger requestStreamId = new AtomicInteger(0);
-
-    when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong()))
-        .then(
-            (invocationOnMock -> {
-              final int streamIdArg = invocationOnMock.getArgument(0);
-              final long requestIdArg = invocationOnMock.getArgument(1);
-
-              requestId.set(requestIdArg);
-              requestStreamId.set(streamIdArg);
-
-              return true;
-            }));
 
     final long failingKey = keyGenerator.nextKey();
     streams
@@ -135,10 +116,13 @@ public final class TypedStreamProcessorTest {
     assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(secondEventPosition);
 
     // error response
-    verify(mockCommandResponseWriter).tryWriteResponse(anyInt(), anyLong());
+    final ArgumentCaptor<Long> requestIdCaptor = ArgumentCaptor.forClass(Long.class);
+    final ArgumentCaptor<Integer> requestStreamIdCaptor = ArgumentCaptor.forClass(Integer.class);
+    verify(mockCommandResponseWriter)
+        .tryWriteResponse(requestStreamIdCaptor.capture(), requestIdCaptor.capture());
 
-    assertThat(requestId.get()).isEqualTo(255L);
-    assertThat(requestStreamId.get()).isEqualTo(99);
+    assertThat(requestIdCaptor.getValue()).isEqualTo(255L);
+    assertThat(requestStreamIdCaptor.getValue()).isEqualTo(99);
 
     final Record<DeploymentRecord> deploymentRejection =
         new RecordStream(streams.events(STREAM_NAME))
@@ -173,21 +157,6 @@ public final class TypedStreamProcessorTest {
       writers
           .state()
           .appendFollowUpEvent(record.getKey(), DeploymentIntent.CREATED, record.getValue());
-    }
-  }
-
-  protected class BatchProcessor implements TypedRecordProcessor<DeploymentRecord> {
-
-    private final StateWriter stateWriter;
-
-    public BatchProcessor(final Writers writers) {
-      stateWriter = writers.state();
-    }
-
-    @Override
-    public void processRecord(final TypedRecord<DeploymentRecord> record) {
-      stateWriter.appendFollowUpEvent(
-          keyGenerator.nextKey(), DeploymentIntent.CREATED, record.getValue());
     }
   }
 }
