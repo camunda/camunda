@@ -59,7 +59,9 @@
   }
 
   > * {
-    width: 190px;
+    min-width: 190px;
+    width: max-content;
+    max-width: 350px;
     margin-right: 14px;
     display: inline-block;
 
@@ -81,14 +83,8 @@
   }
 
   > .VariableFilter__Dashboard {
-    .BooleanFilter,
-    .SelectionFilter,
     .DateFilter__Dashboard {
-      width: 180px;
-    }
-
-    .DateFilter__Dashboard.fixed {
-      width: max-content;
+      width: 100%;
     }
   }
 

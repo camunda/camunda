@@ -1,7 +1,10 @@
 .VariableFilter__Dashboard {
-  .title {
+  line-height: 1;
+  .title > span {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: inline-block;
+    width: 100%;
   }
 }

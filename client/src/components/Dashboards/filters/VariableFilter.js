@@ -62,7 +62,7 @@ export function VariableFilter({
     <div className="VariableFilter__Dashboard">
       <Tooltip content={title}>
         <div className="title">
-          {title}
+          <span>{title}</span>
           {children}
         </div>
       </Tooltip>
