@@ -24,6 +24,7 @@ import {mockServer} from 'modules/mock-server/node';
 import {processDiagramStore} from 'modules/stores/processDiagram';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
+import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 
 jest.mock('modules/utils/bpmn');
 
@@ -43,13 +44,11 @@ describe('DiagramPanel', () => {
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
 
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
-      ),
-      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessStatistics))
       )
     );
 
@@ -130,12 +129,11 @@ describe('DiagramPanel', () => {
   });
 
   it('should show an error message', async () => {
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
+
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res) =>
         res.networkError('A network error')
-      ),
-      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessStatistics))
       )
     );
 
@@ -152,12 +150,11 @@ describe('DiagramPanel', () => {
       screen.queryByText(/There is no Process selected/)
     ).not.toBeInTheDocument();
 
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
+
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
-      ),
-      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessStatistics))
       )
     );
 
@@ -169,12 +166,11 @@ describe('DiagramPanel', () => {
       screen.queryByText('Diagram could not be fetched')
     ).not.toBeInTheDocument();
 
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
+
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''), ctx.status(500))
-      ),
-      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessStatistics))
       )
     );
 

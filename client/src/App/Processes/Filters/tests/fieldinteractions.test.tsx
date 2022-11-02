@@ -12,21 +12,24 @@ import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {Filters} from '../index';
 import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
-import {groupedProcessesMock, mockProcessXML} from 'modules/testUtils';
+import {
+  groupedProcessesMock,
+  mockProcessStatistics,
+  mockProcessXML,
+} from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes';
 import {processDiagramStore} from 'modules/stores/processDiagram';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
+import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 
 describe('Interaction with other fields during validation', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
 
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))
-      ),
-      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
-        res.once(ctx.json({}))
       )
     );
 

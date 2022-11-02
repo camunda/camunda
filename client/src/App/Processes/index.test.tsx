@@ -32,6 +32,7 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {Header} from 'App/Layout/Header';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
+import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 
 jest.mock('modules/utils/bpmn');
 
@@ -61,13 +62,11 @@ describe('Instances', () => {
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
 
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))
-      ),
-      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
-        res.once(ctx.json(mockProcessStatistics))
       ),
       rest.post('/api/batch-operations', (_, res, ctx) =>
         res.once(ctx.json(operations))
@@ -183,25 +182,21 @@ describe('Instances', () => {
     ).toBeChecked();
   });
 
-  it('should fetch diagram and diagram statistics', async () => {
+  it.only('should fetch diagram and diagram statistics', async () => {
     const firstProcessStatisticsResponse = [
-      {
-        activityId: 'ServiceTask_0kt6c5i',
-        active: 1,
-        canceled: 0,
-        incidents: 0,
-        completed: 10,
-      },
+      {...mockProcessStatistics[0]!, completed: 10},
     ];
 
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
+
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))
-      ),
-      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
-        res.once(ctx.json(firstProcessStatisticsResponse))
       )
+    );
+
+    mockFetchProcessInstancesStatistics().withSuccess(
+      firstProcessStatisticsResponse
     );
 
     const {user} = render(<Processes />, {

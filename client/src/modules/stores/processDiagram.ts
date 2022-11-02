@@ -7,7 +7,10 @@
 
 import {makeObservable, action, observable, override, computed} from 'mobx';
 import {DiagramModel} from 'bpmn-moddle';
-import {fetchProcessInstancesStatistics} from 'modules/api/processInstances';
+import {
+  fetchProcessInstancesStatistics,
+  ProcessInstancesStatisticsDto,
+} from 'modules/api/processInstances/fetchProcessInstancesStatistics';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
@@ -22,16 +25,8 @@ import {
   INCIDENTS_BADGE,
 } from 'modules/bpmn-js/badgePositions';
 
-type NodeStatistics = {
-  active: number;
-  activityId: string;
-  canceled: number;
-  completed: number;
-  incidents: number;
-};
-
 type State = {
-  statistics: NodeStatistics[];
+  statistics: ProcessInstancesStatisticsDto[];
   diagramModel: DiagramModel | null;
   xml: string | null;
   status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
@@ -106,8 +101,8 @@ class ProcessDiagram extends NetworkReconnectionHandler {
       getProcessInstancesRequestFilters()
     );
 
-    if (response.ok) {
-      this.handleFetchStatisticsSuccess(await response.json());
+    if (response.isSuccess) {
+      this.handleFetchStatisticsSuccess(response.data);
     } else {
       this.handleFetchError();
     }
@@ -122,11 +117,11 @@ class ProcessDiagram extends NetworkReconnectionHandler {
         fetchProcessInstancesStatistics(getProcessInstancesRequestFilters()),
       ]);
 
-    if (processXMLResponse.ok && processInstancesStatisticsResponse.ok) {
+    if (processXMLResponse.ok && processInstancesStatisticsResponse.isSuccess) {
       const xml = await processXMLResponse.text();
       const [diagramModel, statistics] = await Promise.all([
         parseDiagramXML(xml),
-        processInstancesStatisticsResponse.json(),
+        processInstancesStatisticsResponse.data,
       ]);
 
       this.handleFetchSuccess(xml, diagramModel, statistics);
@@ -150,7 +145,7 @@ class ProcessDiagram extends NetworkReconnectionHandler {
   handleFetchSuccess = (
     xml: string,
     diagramModel: DiagramModel,
-    statistics: NodeStatistics[]
+    statistics: ProcessInstancesStatisticsDto[]
   ) => {
     this.state.xml = xml;
     this.state.diagramModel = diagramModel;
@@ -158,7 +153,9 @@ class ProcessDiagram extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchStatisticsSuccess = (statistics: NodeStatistics[]) => {
+  handleFetchStatisticsSuccess = (
+    statistics: ProcessInstancesStatisticsDto[]
+  ) => {
     this.state.statistics = statistics;
     this.state.status = 'fetched';
   };
