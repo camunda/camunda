@@ -8,8 +8,6 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
-import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -44,89 +42,6 @@ public final class StreamProcessorReprocessingTest {
   public void setup() {
     final var mockEventApplier = mock(EventApplier.class);
     streamProcessorRule.withEventApplierFactory(state -> mockEventApplier);
-  }
-
-  @Test
-  public void shouldUpdateLastProcessedPositionAfterReplay() throws Exception {
-    // given
-    final long recordKey = 1L;
-    final var record = PROCESS_INSTANCE_RECORD;
-
-    final long firstPosition =
-        streamProcessorRule.writeCommand(recordKey, ACTIVATE_ELEMENT, record);
-
-    streamProcessorRule.writeEvent(
-        ELEMENT_ACTIVATING,
-        record,
-        event -> event.key(recordKey).sourceRecordPosition(firstPosition));
-
-    waitUntil(
-        () ->
-            streamProcessorRule
-                .events()
-                .onlyProcessInstanceRecords()
-                .withIntent(ELEMENT_ACTIVATING)
-                .exists());
-
-    // when
-    final CountDownLatch recoveredLatch = new CountDownLatch(1);
-    final var streamProcessor =
-        streamProcessorRule.startTypedStreamProcessor(
-            (processors, context) ->
-                processors.withListener(
-                    new StreamProcessorLifecycleAware() {
-                      @Override
-                      public void onRecovered(final ReadonlyStreamProcessorContext context) {
-                        recoveredLatch.countDown();
-                      }
-                    }));
-
-    // then
-    recoveredLatch.await();
-
-    assertThat(streamProcessor.getLastProcessedPositionAsync().get()).isEqualTo(firstPosition);
-  }
-
-  @Test
-  public void shouldUpdateLastWrittenPositionAfterReplay() throws Exception {
-    // given
-    final long recordKey = 1L;
-    final var record = PROCESS_INSTANCE_RECORD;
-
-    final long firstPosition =
-        streamProcessorRule.writeCommand(recordKey, ACTIVATE_ELEMENT, record);
-
-    final var secondPosition =
-        streamProcessorRule.writeEvent(
-            ELEMENT_ACTIVATING,
-            record,
-            event -> event.key(recordKey).sourceRecordPosition(firstPosition));
-
-    waitUntil(
-        () ->
-            streamProcessorRule
-                .events()
-                .onlyProcessInstanceRecords()
-                .withIntent(ELEMENT_ACTIVATING)
-                .exists());
-
-    // when
-    final CountDownLatch recoveredLatch = new CountDownLatch(1);
-    final var streamProcessor =
-        streamProcessorRule.startTypedStreamProcessor(
-            (processors, context) ->
-                processors.withListener(
-                    new StreamProcessorLifecycleAware() {
-                      @Override
-                      public void onRecovered(final ReadonlyStreamProcessorContext context) {
-                        recoveredLatch.countDown();
-                      }
-                    }));
-
-    // then
-    recoveredLatch.await();
-
-    assertThat(streamProcessor.getLastWrittenPositionAsync().get()).isEqualTo(secondPosition);
   }
 
   @Test
