@@ -28,7 +28,7 @@ export function Table(props) {
   const {
     reportType,
     combined,
-    data: {view, groupBy, configuration, definitions},
+    data: {view, groupBy, configuration, definitions, distributedBy},
     result,
   } = report;
 
@@ -123,12 +123,13 @@ export function Table(props) {
       tableData = processDefaultData(props, processVariables);
       tableData.loading = loading;
     }
-
+    const isDisrtibutedByProcess = distributedBy?.type === 'process';
     tableProps = {
       ...tableData,
       resultType: result.type,
-      sorting: configuration && configuration.sorting,
-      updateSorting: context !== 'shared' && context !== 'dashboard' && updateSorting,
+      sorting: !isDisrtibutedByProcess && configuration && configuration.sorting,
+      updateSorting:
+        !isDisrtibutedByProcess && context !== 'shared' && context !== 'dashboard' && updateSorting,
       sortByLabel: ['flowNodes', 'userTasks'].includes(groupBy.type),
     };
   }
