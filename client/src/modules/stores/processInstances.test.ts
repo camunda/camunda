@@ -12,6 +12,7 @@ import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from 'modules/testing-library';
 import {createOperation} from 'modules/utils/instance';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
 
 const instance: ProcessInstanceEntity = {
   id: '2251799813685625',
@@ -55,13 +56,12 @@ const mockProcessInstances = {
 };
 
 describe('stores/processInstances', () => {
+  mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
   beforeEach(async () => {
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
-      ),
-      rest.get('/api/processes/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedProcessesMock))
       ),
       rest.post('/api/process-instances/statistics', (_, res, ctx) =>
         res.once(ctx.json({}))

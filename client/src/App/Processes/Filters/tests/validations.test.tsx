@@ -6,24 +6,24 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {getWrapper, GROUPED_PROCESSES} from './mocks';
+import {getWrapper} from './mocks';
 import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
-import {mockProcessXML} from 'modules/testUtils';
+import {groupedProcessesMock, mockProcessXML} from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes';
 import {processDiagramStore} from 'modules/stores/processDiagram';
 
 import {Filters} from '../index';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
 
 describe('Validations', () => {
   beforeEach(async () => {
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))
-      ),
-      rest.get('/api/processes/grouped', (_, res, ctx) =>
-        res.once(ctx.json(GROUPED_PROCESSES))
       ),
       rest.post('/api/process-instances/statistics', (_, res, ctx) =>
         res.once(ctx.json({}))

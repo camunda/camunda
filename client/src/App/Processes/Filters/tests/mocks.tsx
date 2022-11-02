@@ -22,34 +22,6 @@ const GROUPED_BIG_VARIABLE_PROCESS = {
   ],
 };
 
-const GROUPED_PROCESSES = [
-  GROUPED_BIG_VARIABLE_PROCESS,
-  {
-    bpmnProcessId: 'complexProcess',
-    name: null,
-    processes: [
-      {
-        id: '2251799813687825',
-        name: null,
-        version: 3,
-        bpmnProcessId: 'complexProcess',
-      },
-      {
-        id: '2251799813686926',
-        name: null,
-        version: 2,
-        bpmnProcessId: 'complexProcess',
-      },
-      {
-        id: '2251799813685540',
-        name: null,
-        version: 1,
-        bpmnProcessId: 'complexProcess',
-      },
-    ],
-  },
-] as const;
-
 function getWrapper(initialPath: string = '/') {
   const MockApp: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
@@ -67,4 +39,4 @@ function getWrapper(initialPath: string = '/') {
   return MockApp;
 }
 
-export {GROUPED_BIG_VARIABLE_PROCESS, GROUPED_PROCESSES, getWrapper};
+export {GROUPED_BIG_VARIABLE_PROCESS, getWrapper};

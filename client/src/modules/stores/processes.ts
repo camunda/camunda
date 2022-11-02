@@ -6,28 +6,19 @@
  */
 
 import {makeObservable, action, observable, computed, override} from 'mobx';
-import {fetchGroupedProcesses} from 'modules/api/processInstances';
+
+import {
+  fetchGroupedProcesses,
+  ProcessDto,
+  ProcessVersionDto,
+} from 'modules/api/fetchGroupedProcesses';
 import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {getSearchString} from 'modules/utils/getSearchString';
-import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {sortOptions} from 'modules/utils/sortOptions';
 
-type ProcessVersion = {
-  bpmnProcessId: string;
-  id: string;
-  name: string;
-  version: number;
-};
-
-type Process = {
-  bpmnProcessId: string;
-  name: string;
-  processes: ProcessVersion[];
-};
-
 type State = {
-  processes: Process[];
+  processes: ProcessDto[];
   status: 'initial' | 'fetching' | 'fetched' | 'fetch-error';
 };
 
@@ -59,27 +50,22 @@ class Processes extends NetworkReconnectionHandler {
 
     const {process} = getProcessInstanceFilters(getSearchString());
 
-    try {
-      const response = await fetchGroupedProcesses();
+    const response = await fetchGroupedProcesses();
 
-      if (response.ok) {
-        const processes: Process[] = await response.json();
+    if (response.isSuccess) {
+      const processes = response.data;
 
-        if (
-          process !== undefined &&
-          processes.filter((item) => item.bpmnProcessId === process).length ===
-            0
-        ) {
-          this.handleRefetch(processes);
-        } else {
-          this.resetRetryProcessesFetch();
-          this.handleFetchSuccess(processes);
-        }
+      if (
+        process !== undefined &&
+        processes.filter((item) => item.bpmnProcessId === process).length === 0
+      ) {
+        this.handleRefetch(processes);
       } else {
-        this.handleFetchError();
+        this.resetRetryProcessesFetch();
+        this.handleFetchSuccess(processes);
       }
-    } catch (error) {
-      this.handleFetchError(error);
+    } else {
+      this.handleFetchError();
     }
   });
 
@@ -87,21 +73,16 @@ class Processes extends NetworkReconnectionHandler {
     this.state.status = 'fetching';
   };
 
-  handleFetchError = (error?: unknown) => {
+  handleFetchError = () => {
     this.state.status = 'fetch-error';
-    logger.error('Failed to fetch processes');
-
-    if (error !== undefined) {
-      logger.error(error);
-    }
   };
 
-  handleFetchSuccess = (processes: Process[]) => {
+  handleFetchSuccess = (processes: ProcessDto[]) => {
     this.state.processes = processes;
     this.state.status = 'fetched';
   };
 
-  handleRefetch = (processes: Process[]) => {
+  handleRefetch = (processes: ProcessDto[]) => {
     if (this.retryCount < 3) {
       this.retryCount += 1;
 
@@ -124,10 +105,10 @@ class Processes extends NetworkReconnectionHandler {
   }
 
   get versionsByProcess(): {
-    [bpmnProcessId: string]: ProcessVersion[];
+    [bpmnProcessId: string]: ProcessVersionDto[];
   } {
     return this.state.processes.reduce<{
-      [bpmnProcessId: string]: ProcessVersion[];
+      [bpmnProcessId: string]: ProcessVersionDto[];
     }>(
       (accumulator, {bpmnProcessId, processes}) => ({
         ...accumulator,

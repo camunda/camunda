@@ -23,6 +23,7 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {modificationsStore} from 'modules/stores/modifications';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
 
 const instanceMock: ProcessInstanceEntity = {
   id: 'instance_1',
@@ -267,11 +268,7 @@ describe('Operations', () => {
         totalCount: 1,
       });
 
-      mockServer.use(
-        rest.get('/api/processes/grouped', (_, res, ctx) =>
-          res.once(ctx.json(groupedProcessesMock))
-        )
-      );
+      mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
       processInstancesStore.init();
       processInstancesStore.fetchProcessInstancesFromFilters();

@@ -45,10 +45,6 @@ type VariablePayload = {
   searchBeforeOrEqual?: ReadonlyArray<string>;
 };
 
-async function fetchGroupedProcesses() {
-  return request({url: '/api/processes/grouped'});
-}
-
 async function fetchProcessCoreStatistics() {
   return request({url: `${URL}/core-statistics`});
 }
@@ -126,7 +122,6 @@ async function fetchVariable(id: VariableEntity['id']) {
 
 export type {VariablePayload, StatisticEntity};
 export {
-  fetchGroupedProcesses,
   fetchProcessCoreStatistics,
   fetchProcessInstancesStatistics,
   applyBatchOperation,

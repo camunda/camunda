@@ -6,10 +6,9 @@
  */
 
 import {processesStore} from './processes';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from 'modules/testing-library';
 import {groupedProcessesMock} from 'modules/testUtils';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
 
 describe('stores/processes', () => {
   afterEach(() => {
@@ -23,11 +22,7 @@ describe('stores/processes', () => {
       eventListeners[event] = cb;
     });
 
-    mockServer.use(
-      rest.get('/api/processes/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedProcessesMock))
-      )
-    );
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
     processesStore.fetchProcesses();
 
@@ -35,13 +30,10 @@ describe('stores/processes', () => {
       expect(processesStore.state.processes).toEqual(groupedProcessesMock)
     );
 
-    const newGroupedProcessesResponse = [groupedProcessesMock[0]];
+    const firstGroupedProcess = groupedProcessesMock[0]!;
+    const newGroupedProcessesResponse = [firstGroupedProcess];
 
-    mockServer.use(
-      rest.get('/api/processes/grouped', (_, res, ctx) =>
-        res.once(ctx.json(newGroupedProcessesResponse))
-      )
-    );
+    mockFetchGroupedProcesses().withSuccess(newGroupedProcessesResponse);
 
     eventListeners.online();
 
@@ -55,11 +47,7 @@ describe('stores/processes', () => {
   });
 
   it('should get process id', async () => {
-    mockServer.use(
-      rest.get('/api/processes/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedProcessesMock))
-      )
-    );
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
     processesStore.fetchProcesses();
 
@@ -85,11 +73,7 @@ describe('stores/processes', () => {
   });
 
   it('should get versions by process', async () => {
-    mockServer.use(
-      rest.get('/api/processes/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedProcessesMock))
-      )
-    );
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
     processesStore.fetchProcesses();
 

@@ -23,6 +23,7 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {processDiagramStore} from 'modules/stores/processDiagram';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
 
 jest.mock('modules/utils/bpmn');
 
@@ -41,13 +42,11 @@ function getWrapper(initialPath: string = '/') {
 describe('DiagramPanel', () => {
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
-      ),
-      rest.get('/api/processes/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedProcessesMock))
       ),
       rest.post('/api/process-instances/statistics', (_, res, ctx) =>
         res.once(ctx.json(mockProcessStatistics))

@@ -31,6 +31,7 @@ import {processesStore} from 'modules/stores/processes';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Header} from 'App/Layout/Header';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
 
 jest.mock('modules/utils/bpmn');
 
@@ -59,12 +60,11 @@ function getWrapper(initialPath: string = '/processes') {
 describe('Instances', () => {
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))
-      ),
-      rest.get('/api/processes/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedProcessesMock))
       ),
       rest.post('/api/process-instances/statistics', (_, res, ctx) =>
         res.once(ctx.json(mockProcessStatistics))
@@ -155,8 +155,6 @@ describe('Instances', () => {
   });
 
   it('should not reset selected instances when table is sorted', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-
     const {user} = render(<Processes />, {
       wrapper: getWrapper('/processes?active=true&incidents=true'),
     });
@@ -244,12 +242,7 @@ describe('Instances', () => {
   });
 
   it('should refetch data when navigated from header', async () => {
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-
     mockServer.use(
-      rest.get('/api/processes/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedProcessesMock))
-      ),
       rest.post('/api/batch-operations', (_, res, ctx) =>
         res.once(ctx.json(operations))
       )
@@ -268,6 +261,8 @@ describe('Instances', () => {
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
     await user.click(screen.getByRole('link', {name: 'View Processes'}));
 
     await waitFor(() =>

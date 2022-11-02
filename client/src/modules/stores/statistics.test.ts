@@ -18,6 +18,7 @@ import {
 } from 'modules/testUtils';
 import {statistics} from 'modules/mocks/statistics';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
 
 const mockInstance = createInstance({id: '2251799813685625'});
 
@@ -130,12 +131,11 @@ describe('stores/statistics', () => {
     expect(statisticsStore.state.active).toBe(210);
     expect(statisticsStore.state.withIncidents).toBe(877);
 
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))
-      ),
-      rest.get('/api/processes/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedProcessesMock))
       )
     );
 
