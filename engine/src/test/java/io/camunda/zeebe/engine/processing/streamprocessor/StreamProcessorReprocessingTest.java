@@ -28,10 +28,8 @@ import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.stream.StreamWrapper;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.Before;
@@ -55,57 +53,6 @@ public final class StreamProcessorReprocessingTest {
   public void setup() {
     final var mockEventApplier = mock(EventApplier.class);
     streamProcessorRule.withEventApplierFactory(state -> mockEventApplier);
-  }
-
-
-  @Test
-  public void shouldContinueProcessingWhenResumed() throws Exception {
-    // given - bunch of records
-    IntStream.range(0, 5000)
-        .forEach(i -> streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, i));
-
-    streamProcessorRule.writeBatch(
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, PROCESS_INSTANCE_RECORD),
-        RecordToWrite.event()
-            .processInstance(ELEMENT_ACTIVATED, PROCESS_INSTANCE_RECORD)
-            .causedBy(0));
-
-    Awaitility.await()
-        .until(
-            () ->
-                streamProcessorRule
-                    .events()
-                    .onlyProcessInstanceRecords()
-                    .withIntent(ELEMENT_ACTIVATED),
-            StreamWrapper::exists);
-
-    // when
-    final var countDownLatch = new CountDownLatch(1);
-    final var typedRecordProcessor = mock(TypedRecordProcessor.class);
-    final var streamProcessor =
-        streamProcessorRule.startTypedStreamProcessor(
-            (processors, context) ->
-                processors
-                    .onCommand(ValueType.PROCESS_INSTANCE, ACTIVATE_ELEMENT, typedRecordProcessor)
-                    .withListener(
-                        new StreamProcessorLifecycleAware() {
-                          @Override
-                          public void onRecovered(final ReadonlyStreamProcessorContext context) {
-                            countDownLatch.countDown();
-                          }
-                        }));
-    streamProcessor.pauseProcessing();
-    streamProcessor.resumeProcessing();
-    final var success = countDownLatch.await(15, TimeUnit.SECONDS);
-
-    // then
-    assertThat(success).isTrue();
-    Mockito.clearInvocations(typedRecordProcessor);
-
-    streamProcessorRule.writeCommand(
-        ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(0xcafe));
-
-    verify(typedRecordProcessor, TIMEOUT.times(1)).processRecord(any(), any());
   }
 
   @Test
