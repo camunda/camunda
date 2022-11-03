@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.api.CommandResponseWriter;
@@ -20,7 +21,6 @@ import io.camunda.zeebe.engine.util.RecordStream;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.TestStreams;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
-import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -36,12 +36,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
-import org.mockito.ArgumentCaptor;
 
 public final class EngineErrorHandlingTest {
 
   private static final String STREAM_NAME = "foo";
-  protected SynchronousLogStream stream;
+
   private final TemporaryFolder tempFolder = new TemporaryFolder();
   private final AutoCloseableRule closeables = new AutoCloseableRule();
   private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
@@ -58,7 +57,7 @@ public final class EngineErrorHandlingTest {
   public void setUp() {
     streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
     mockCommandResponseWriter = streams.getMockedResponseWriter();
-    stream = streams.createLogStream(STREAM_NAME);
+    streams.createLogStream(STREAM_NAME);
 
     final AtomicLong key = new AtomicLong();
     keyGenerator = () -> key.getAndIncrement();
@@ -113,13 +112,7 @@ public final class EngineErrorHandlingTest {
     assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(secondEventPosition);
 
     // error response
-    final ArgumentCaptor<Long> requestIdCaptor = ArgumentCaptor.forClass(Long.class);
-    final ArgumentCaptor<Integer> requestStreamIdCaptor = ArgumentCaptor.forClass(Integer.class);
-    verify(mockCommandResponseWriter)
-        .tryWriteResponse(requestStreamIdCaptor.capture(), requestIdCaptor.capture());
-
-    assertThat(requestIdCaptor.getValue()).isEqualTo(255L);
-    assertThat(requestStreamIdCaptor.getValue()).isEqualTo(99);
+    verify(mockCommandResponseWriter).tryWriteResponse(eq(99), eq(255L));
 
     final Record<DeploymentRecord> deploymentRejection =
         new RecordStream(streams.events(STREAM_NAME))
@@ -132,7 +125,7 @@ public final class EngineErrorHandlingTest {
     assertThat(deploymentRejection.getRejectionType()).isEqualTo(RejectionType.PROCESSING_ERROR);
   }
 
-  protected DeploymentRecord deployment(final String name) {
+  DeploymentRecord deployment(final String name) {
     final DeploymentRecord event = new DeploymentRecord();
     event.resources().add().setResource(wrapString("foo")).setResourceName(wrapString(name));
     return event;
