@@ -1,3 +1,50 @@
+# v8.2.0-alpha1
+## 💊 Bugfixes
+* **backend**: fix incident import for migrated flow node instances ([#3503](https://github.com/camunda/operate/issues/3503))
+* **dmn**: disable ELS indexing of DMN input and output values ([#3541](https://github.com/camunda/operate/issues/3541))
+* Fix Identity authentication for non-empty context path (#3515) ([#3521](https://github.com/camunda/operate/issues/3521))
+* Add audience check of JWT for SaaS ([#3502](https://github.com/camunda/operate/issues/3502))
+* **backend**: add null check for JWT payload scope ([#3500](https://github.com/camunda/operate/issues/3500))
+* **backend**: add AccessDeniedHandler to Error ([#3511](https://github.com/camunda/operate/issues/3511))
+* **deps**: update dependency bpmn-moddle to v8 ([#3458](https://github.com/camunda/operate/issues/3458))
+* enable adding variables for new parent scopes ([#3494](https://github.com/camunda/operate/issues/3494))
+* **backend**: use Zeebe 8.1.0 for tests ([#3492](https://github.com/camunda/operate/issues/3492))
+* **preview-env**: Add missing input for teardown worflow
+* **preview-env**: Add missing env
+
+## 🧹 Chore
+* **backend**: update Zeebe and Identity to 8.2.0-alpha1 ([#3581](https://github.com/camunda/operate/issues/3581))
+* type fetchProcessesInstancesStatistics API and refactor tests #3576 ([#3577](https://github.com/camunda/operate/issues/3577))
+* type fetchProcessesCoreStatistics API and refactor tests ([#3576](https://github.com/camunda/operate/issues/3576))
+* type fetchGroupedProcesses API and refactor tests ([#3575](https://github.com/camunda/operate/issues/3575))
+* type fetchProcessInstances API and refactor tests ([#3573](https://github.com/camunda/operate/issues/3573))
+* **Dockerfile**: update Docker base image to be temurin 17 ([#3544](https://github.com/camunda/operate/issues/3544))
+* type fetchProcessInstanceIncidents API and refactor tests ([#3572](https://github.com/camunda/operate/issues/3572))
+* type fetchProcessInstance API and refactor tests ([#3571](https://github.com/camunda/operate/issues/3571))
+* implement api mocks and refactor detail page tests ([#3489](https://github.com/camunda/operate/issues/3489))
+* improve typing for requestAndParse method ([#3570](https://github.com/camunda/operate/issues/3570))
+* Update Browserlist DB
+* type api functions ([#3528](https://github.com/camunda/operate/issues/3528))
+* **preview-env**: Cleanup old preview env actions ([#3536](https://github.com/camunda/operate/issues/3536))
+* **preview-env**: Use the new global preview env teardown action ([#3530](https://github.com/camunda/operate/issues/3530))
+* **qa**: fix migration test setup ([#3540](https://github.com/camunda/operate/issues/3540))
+* **seed**: rename notification skip trait to comply with new plugin version ([#3518](https://github.com/camunda/operate/issues/3518))
+* **preview-env**: Use the new global preview env action ([#3508](https://github.com/camunda/operate/issues/3508))
+* Update Browserlist DB
+* refactor bpmn flow node types ([#3505](https://github.com/camunda/operate/issues/3505))
+* **deps**: update all non-major dependencies ([#3493](https://github.com/camunda/operate/issues/3493))
+* Update Browserlist DB
+* **deps**: bump java-jwt from 4.0.0 to 4.1.0 ([#3498](https://github.com/camunda/operate/issues/3498))
+* **deps**: bump zeebe-test-container from 3.5.0 to 3.5.2 ([#3426](https://github.com/camunda/operate/issues/3426))
+* **deps**: bump version.micrometer from 1.9.4 to 1.9.5 ([#3490](https://github.com/camunda/operate/issues/3490))
+* **deps**: bump elasticsearch from 1.17.3 to 1.17.5 ([#3462](https://github.com/camunda/operate/issues/3462))
+* **deps**: update bobheadxi/deployments digest to 9d4477f ([#3160](https://github.com/camunda/operate/issues/3160))
+* improve types for bpmn-js modules ([#3477](https://github.com/camunda/operate/issues/3477))
+* **qa**: fix test conditions in integration tests ([#3474](https://github.com/camunda/operate/issues/3474))
+* **backend**: Adjust importer modules add 8.2 remove 8.0 ([#3475](https://github.com/camunda/operate/issues/3475))
+* Update Browserlist DB
+* fix flaky variable panel tests ([#3464](https://github.com/camunda/operate/issues/3464))
+* **preview-env**: Split the deploy-preview actions into create and destroy actions ([#3472](https://github.com/camunda/operate/issues/3472))
 # v8.1.0
 ## 🚀 New Features
 * **backend**: Get Backup State endpoint ([#3417](https://github.com/camunda/operate/issues/3417))
