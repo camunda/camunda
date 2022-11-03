@@ -28,7 +28,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
           new NoneEndEventBehavior(),
           new ErrorEndEventBehavior(),
           new MessageEndEventBehavior(),
-          new TerminateEndEventBehavior());
+          new TerminateEndEventBehavior(),
+          new EscalationEndEventBehavior());
 
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
@@ -201,6 +202,36 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
                 final var flowScopeContext = stateBehavior.getFlowScopeContext(completed);
                 stateTransitionBehavior.terminateChildInstances(flowScopeContext);
               },
+              failure -> incidentBehavior.createIncident(failure, completing));
+    }
+  }
+
+  private class EscalationEndEventBehavior implements EndEventBehavior {
+    @Override
+    public boolean isSuitableForEvent(final ExecutableEndEvent element) {
+      return element.isEscalationEndEvent();
+    }
+
+    @Override
+    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+
+      final var activated = stateTransitionBehavior.transitionToActivated(activating);
+      final boolean canBeCompleted =
+          eventPublicationBehavior.throwEscalationEvent(
+              element.getId(), element.getEscalation(), activated);
+
+      if (canBeCompleted) {
+        stateTransitionBehavior.completeElement(activated);
+      }
+    }
+
+    @Override
+    public void onComplete(final ExecutableEndEvent element, final BpmnElementContext completing) {
+      variableMappingBehavior
+          .applyOutputMappings(completing, element)
+          .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
+          .ifRightOrLeft(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
               failure -> incidentBehavior.createIncident(failure, completing));
     }
   }
