@@ -23,7 +23,6 @@ import io.camunda.zeebe.engine.api.EmptyProcessingResult;
 import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
@@ -265,7 +264,6 @@ public final class StreamPlatform {
             .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
             .recordProcessors(recordProcessors)
-            .eventApplierFactory(EventAppliers::new) // todo remove this soon
             .streamProcessorMode(processorMode)
             .listener(mockStreamProcessorListener)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));

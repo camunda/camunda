@@ -24,9 +24,6 @@ import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
-import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.engine.state.appliers.EventAppliers;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -62,7 +59,6 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.rules.TemporaryFolder;
@@ -88,7 +84,6 @@ public final class TestStreams {
   private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
   private boolean snapshotWasTaken = false;
 
-  private Function<MutableZeebeState, EventApplier> eventApplierFactory = EventAppliers::new;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
 
   public TestStreams(
@@ -111,11 +106,6 @@ public final class TestStreams {
 
     when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     mockStreamProcessorListener = mock(StreamProcessorListener.class);
-  }
-
-  public void withEventApplierFactory(
-      final Function<MutableZeebeState, EventApplier> eventApplierFactory) {
-    this.eventApplierFactory = eventApplierFactory;
   }
 
   public void withStreamProcessorMode(final StreamProcessorMode streamProcessorMode) {
@@ -293,7 +283,6 @@ public final class TestStreams {
             .commandResponseWriter(mockCommandResponseWriter)
             .listener(new StreamProcessorListenerRelay(streamProcessorListeners))
             .recordProcessors(List.of(new Engine(wrappedFactory)))
-            .eventApplierFactory(eventApplierFactory)
             .streamProcessorMode(streamProcessorMode)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
