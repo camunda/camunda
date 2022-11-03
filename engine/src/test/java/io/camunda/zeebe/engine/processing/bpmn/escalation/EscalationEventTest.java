@@ -488,6 +488,106 @@ public class EscalationEventTest {
     assertIsEscalated(processInstanceKey, "catch-2", "throw-2", "escalation-2");
   }
 
+  @Test
+  public void shouldCatchEscalationOnNonInterruptingBoundaryEventWithEscalationCode() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess(
+                "subprocess",
+                s ->
+                    s.embeddedSubProcess()
+                        .startEvent()
+                        .intermediateThrowEvent(
+                            THROW_ELEMENT_ID, i -> i.escalation(ESCALATION_CODE))
+                        .manualTask(TASK_ELEMENT_ID))
+            .boundaryEvent(CATCH_ELEMENT_ID, b -> b.escalation(ESCALATION_CODE))
+            .cancelActivity(false)
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(
+                BpmnElementType.INTERMEDIATE_THROW_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(
+                BpmnElementType.INTERMEDIATE_THROW_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.INTERMEDIATE_THROW_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(
+                BpmnElementType.INTERMEDIATE_THROW_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.MANUAL_TASK, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.MANUAL_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    assertIsEscalated(processInstanceKey, CATCH_ELEMENT_ID, THROW_ELEMENT_ID, ESCALATION_CODE);
+  }
+
+  @Test
+  public void shouldCatchEscalationOnNonInterruptingBoundaryEventWithoutEscalationCode() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess(
+                "subprocess",
+                s ->
+                    s.embeddedSubProcess()
+                        .startEvent()
+                        .intermediateThrowEvent(
+                            THROW_ELEMENT_ID, i -> i.escalation(ESCALATION_CODE)))
+            .boundaryEvent(CATCH_ELEMENT_ID, AbstractBoundaryEventBuilder::escalation)
+            .cancelActivity(false)
+            .manualTask(TASK_ELEMENT_ID)
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.INTERMEDIATE_THROW_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(
+                BpmnElementType.INTERMEDIATE_THROW_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.MANUAL_TASK, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.MANUAL_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    assertIsEscalated(processInstanceKey, CATCH_ELEMENT_ID, THROW_ELEMENT_ID, ESCALATION_CODE);
+  }
+
   private void assertIsNotEscalated(final String throwElementId, final String escalationCode) {
     assertThat(
             RecordingExporter.escalationRecords(EscalationIntent.NOT_ESCALATED)
