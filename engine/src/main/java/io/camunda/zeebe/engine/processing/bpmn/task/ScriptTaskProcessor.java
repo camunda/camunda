@@ -13,14 +13,18 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableScriptTask;
-import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 
 public final class ScriptTaskProcessor implements BpmnElementProcessor<ExecutableScriptTask> {
 
@@ -72,10 +76,10 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
     private final BpmnStateTransitionBehavior stateTransitionBehavior;
     private final BpmnVariableMappingBehavior variableMappingBehavior;
     private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
-    private final BpmnJobBehavior jobBehavior;
     private final BpmnStateBehavior stateBehavior;
     private final ExpressionProcessor expressionProcessor;
-    private final VariableBehavior variableBehavior;
+
+    private final EventTriggerBehavior eventTriggerBehavior;
 
     public ZeebeScriptBehavior(
         final BpmnBehaviors bpmnBehaviors,
@@ -84,17 +88,16 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
       incidentBehavior = bpmnBehaviors.incidentBehavior();
       this.stateTransitionBehavior = stateTransitionBehavior;
       variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
-      jobBehavior = bpmnBehaviors.jobBehavior();
       stateBehavior = bpmnBehaviors.stateBehavior();
       expressionProcessor = bpmnBehaviors.expressionBehavior();
-      variableBehavior = bpmnBehaviors.variableBehavior();
+      eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
     }
 
     @Override
     public void onActivate(final ExecutableScriptTask element, final BpmnElementContext context) {
       variableMappingBehavior
           .applyInputMappings(context, element)
-          .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
+          .flatMap(ok -> evaluateScript(element, context))
           .ifRightOrLeft(
               ok -> {
                 final var activated = stateTransitionBehavior.transitionToActivated(context);
@@ -105,32 +108,9 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
 
     @Override
     public void onComplete(final ExecutableScriptTask element, final BpmnElementContext context) {
-
-      final long scopeKey = variableMappingBehavior.getVariableScopeKey(context);
-
-      expressionProcessor
-          .evaluateAnyExpression(element.getExpression(), context.getElementInstanceKey())
-          .map(
-              result -> {
-                variableBehavior.setLocalVariable(
-                    scopeKey,
-                    context.getProcessDefinitionKey(),
-                    context.getProcessInstanceKey(),
-                    context.getBpmnProcessId(),
-                    BufferUtil.wrapString(element.getResultVariable()),
-                    result,
-                    0,
-                    result.capacity());
-                return null;
-              });
-
       variableMappingBehavior
           .applyOutputMappings(context, element)
-          .flatMap(
-              ok -> {
-                eventSubscriptionBehavior.unsubscribeFromEvents(context);
-                return stateTransitionBehavior.transitionToCompleted(element, context);
-              })
+          .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
           .ifRightOrLeft(
               completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
               failure -> incidentBehavior.createIncident(failure, context));
@@ -140,7 +120,6 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
     public void onTerminate(final ExecutableScriptTask element, final BpmnElementContext context) {
       final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
-      eventSubscriptionBehavior.unsubscribeFromEvents(context);
       incidentBehavior.resolveIncidents(context);
 
       eventSubscriptionBehavior
@@ -159,6 +138,50 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
                 final var terminated = stateTransitionBehavior.transitionToTerminated(context);
                 stateTransitionBehavior.onElementTerminated(element, terminated);
               });
+    }
+
+    private void triggerProcessEventWithResultVariable(
+        final BpmnElementContext context,
+        final String resultVariableName,
+        final DirectBuffer result) {
+      final DirectBuffer resultVariable = serializeToNamedVariable(resultVariableName, result);
+      eventTriggerBehavior.triggeringProcessEvent(
+          context.getProcessDefinitionKey(),
+          context.getProcessInstanceKey(),
+          context.getElementInstanceKey(),
+          context.getElementId(),
+          resultVariable);
+    }
+
+    private static DirectBuffer serializeToNamedVariable(
+        final String name, final DirectBuffer value) {
+      final var resultBuffer = new ExpandableArrayBuffer();
+      final var writer = new MsgPackWriter();
+      writer.wrap(resultBuffer, 0);
+      writer.writeMapHeader(1);
+      writer.writeString(BufferUtil.wrapString(name));
+      writer.writeRaw(value);
+      return resultBuffer;
+    }
+
+    private Either<Failure, DirectBuffer> evaluateScript(
+        final ExecutableScriptTask element, final BpmnElementContext context) {
+      final var resultOrFailure =
+          expressionProcessor
+              .evaluateAnyExpression(element.getExpression(), context.getElementInstanceKey())
+              .mapLeft(
+                  failure ->
+                      new Failure(
+                          "Expected to evaluate script '%s', but %s"
+                              .formatted(
+                                  BufferUtil.bufferAsString(element.getId()),
+                                  failure.getMessage())));
+
+      resultOrFailure.ifRight(
+          result ->
+              triggerProcessEventWithResultVariable(context, element.getResultVariable(), result));
+
+      return resultOrFailure;
     }
   }
 

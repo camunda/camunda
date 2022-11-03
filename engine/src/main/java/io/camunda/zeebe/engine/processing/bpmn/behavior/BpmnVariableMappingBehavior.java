@@ -130,7 +130,7 @@ public final class BpmnVariableMappingBehavior {
     return Either.right(null);
   }
 
-  public long getVariableScopeKey(final BpmnElementContext context) {
+  private long getVariableScopeKey(final BpmnElementContext context) {
     final var elementInstanceKey = context.getElementInstanceKey();
 
     // an inner multi-instance activity needs to read from/write to its own scope
