@@ -15,6 +15,7 @@ import {getOptimizeProfile} from 'config';
 import {Processes} from './Processes';
 import {loadProcesses, updateProcess, loadManagementDashboard} from './service';
 import ConfigureProcessModal from './ConfigureProcessModal';
+import CreateDashboardModal from './CreateDashboardModal';
 
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
 
@@ -26,6 +27,7 @@ jest.mock('./service', () => ({
       kpis: [],
       owner: {id: null},
       linkToDashboard: 'dashboardLink',
+      hasDefaultDashboard: false,
     },
   ]),
   updateProcess: jest.fn(),
@@ -183,4 +185,42 @@ it('display the search info correctly', async () => {
 
   const textWithQuery = node.find(EntityList).prop('displaySearchInfo')('def', 1).props.children;
   expect(textWithQuery).toBe('1 of 1 process listed');
+});
+
+it('should show create default dashboard modal when there is no default dashboard yet', async () => {
+  const node = shallow(<Processes {...props} />);
+
+  await runAllEffects();
+
+  const defaultDashboardBtn = node.find(EntityList).prop('data')[0].meta[3];
+  defaultDashboardBtn.props.onClick();
+
+  expect(node.find(CreateDashboardModal)).toExist();
+
+  node.find(CreateDashboardModal).simulate('confirm');
+
+  expect(node.find(CreateDashboardModal)).not.toExist();
+
+  const defaultDashboardLink = node.find(EntityList).prop('data')[0].meta[3];
+
+  expect(defaultDashboardLink.props.to).toBe('dashboardLink');
+});
+
+it('should render view link instead of button when there is default dashboard', async () => {
+  loadProcesses.mockReturnValueOnce([
+    {
+      processDefinitionKey: 'defKey',
+      processDefinitionName: 'defName',
+      kpis: [],
+      owner: {id: null},
+      linkToDashboard: 'dashboardLink',
+      hasDefaultDashboard: true,
+    },
+  ]);
+  const node = shallow(<Processes {...props} />);
+
+  await runAllEffects();
+
+  const defaultDashboardLink = node.find(EntityList).prop('data')[0].meta[3];
+  expect(defaultDashboardLink.props.to).toBe('dashboardLink');
 });

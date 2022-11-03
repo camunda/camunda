@@ -11,7 +11,7 @@ import {Link} from 'react-router-dom';
 import {Button, Modal} from 'components';
 import {t} from 'translation';
 
-export default function CreateDashboardModal({onClose, linkToDashboard}) {
+export default function CreateDashboardModal({onClose, onConfirm, linkToDashboard}) {
   return (
     <Modal open onClose={onClose} className="CreateDashboardModal">
       <Modal.Header>{t('processes.createDefaultDashboard')}</Modal.Header>
@@ -24,7 +24,7 @@ export default function CreateDashboardModal({onClose, linkToDashboard}) {
           className="Button primary main"
           to={linkToDashboard}
           target="_blank"
-          onClick={onClose}
+          onClick={onConfirm}
         >
           {t('dashboard.create')}
         </Link>

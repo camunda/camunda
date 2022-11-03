@@ -31,6 +31,7 @@ export function Processes({mightFail, user}) {
   const [optimizeProfile, setOptimizeProfile] = useState();
   const [dashboard, setDashboard] = useState();
   const [linkToCreateDashboard, setLinkToCreateDashboard] = useState();
+  const [viewedProcesses, setViewedProcesses] = useState([]);
 
   useEffect(() => {
     mightFail(loadManagementDashboard(), setDashboard, showError);
@@ -149,12 +150,14 @@ export function Processes({mightFail, user}) {
             ];
 
             if (isEditor) {
-              if (!hasDefaultDashboard) {
+              if (!hasDefaultDashboard && !viewedProcesses.includes(linkToDashboard)) {
                 meta.push(
                   <Button
                     link
                     className="processHoverBtn"
-                    onClick={() => setLinkToCreateDashboard(linkToDashboard)}
+                    onClick={() => {
+                      setLinkToCreateDashboard(linkToDashboard);
+                    }}
                   >
                     {t('common.view')} <Icon type="jump" />
                   </Button>
@@ -217,6 +220,10 @@ export function Processes({mightFail, user}) {
         <CreateDashboardModal
           linkToDashboard={linkToCreateDashboard}
           onClose={() => setLinkToCreateDashboard()}
+          onConfirm={() => {
+            setLinkToCreateDashboard();
+            setViewedProcesses((prev) => [...prev, linkToCreateDashboard]);
+          }}
         />
       )}
     </div>
