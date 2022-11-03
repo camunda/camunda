@@ -21,7 +21,7 @@ defaults:
 jobs:
   integration-tests:
     name: Integration tests
-    runs-on: "dev-n1-standard-16-netssd-preempt-quick"
+    runs-on: "n1-standard-16-netssd-preempt-quick"
     timeout-minutes: 45
     env:
       TC_CLOUD_LOGS_VERBOSE: true
@@ -79,7 +79,7 @@ jobs:
           name: Integration Tests
   qa-update-tests:
     name: QA Update tests
-    runs-on: "stage-n1-standard-16-netssd-preempt-quick"
+    runs-on: "n1-standard-16-netssd-preempt-quick"
     timeout-minutes: 45
     env:
       TC_CLOUD_LOGS_VERBOSE: true
