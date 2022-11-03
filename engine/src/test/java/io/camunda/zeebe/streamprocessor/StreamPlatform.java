@@ -36,6 +36,7 @@ import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.streamprocessor.state.DbLastProcessedPositionState;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
@@ -67,11 +68,9 @@ public final class StreamPlatform {
   private LogContext logContext;
   private ProcessorContext processorContext;
   private boolean snapshotWasTaken = false;
-  private final StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
+  private final StreamProcessorMode defaultStreamProcessorMode = StreamProcessorMode.PROCESSING;
   private List<RecordProcessor> recordProcessors;
-
   private final RecordProcessor defaultMockedRecordProcessor;
-
   private final WriteActor writeActor = new WriteActor();
   private final ZeebeDbFactory zeebeDbFactory;
   private final StreamProcessorLifecycleAware mockProcessorLifecycleAware;
@@ -125,6 +124,10 @@ public final class StreamPlatform {
 
   public CommandResponseWriter getMockCommandResponseWriter() {
     return mockCommandResponseWriter;
+  }
+
+  public void resetLogContext() {
+    setLogContext(createLogContext(new ListLogStorage(), DEFAULT_PARTITION));
   }
 
   /**
@@ -227,12 +230,24 @@ public final class StreamPlatform {
     return buildStreamProcessor(stream, false);
   }
 
+  public StreamProcessor startStreamProcessorInReplayOnlyMode() {
+    final SynchronousLogStream stream = getLogStream();
+    return buildStreamProcessor(stream, false, StreamProcessorMode.REPLAY);
+  }
+
   public StreamProcessorLifecycleAware getMockProcessorLifecycleAware() {
     return mockProcessorLifecycleAware;
   }
 
   public StreamProcessor buildStreamProcessor(
       final SynchronousLogStream stream, final boolean awaitOpening) {
+    return buildStreamProcessor(stream, awaitOpening, defaultStreamProcessorMode);
+  }
+
+  public StreamProcessor buildStreamProcessor(
+      final SynchronousLogStream stream,
+      final boolean awaitOpening,
+      final StreamProcessorMode processorMode) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
 
@@ -251,7 +266,7 @@ public final class StreamPlatform {
             .commandResponseWriter(mockCommandResponseWriter)
             .recordProcessors(recordProcessors)
             .eventApplierFactory(EventAppliers::new) // todo remove this soon
-            .streamProcessorMode(streamProcessorMode)
+            .streamProcessorMode(processorMode)
             .listener(mockStreamProcessorListener)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
@@ -289,6 +304,10 @@ public final class StreamPlatform {
 
   public long getCurrentKey() {
     return processorContext.getCurrentKey();
+  }
+
+  public long getLastSuccessfulProcessedRecordPosition() {
+    return processorContext.getLastSuccessfulProcessedRecordPosition();
   }
 
   public RecordProcessor getDefaultMockedRecordProcessor() {
@@ -353,6 +372,11 @@ public final class StreamPlatform {
 
     public Long getCurrentKey() {
       return new DbKeyGenerator(1, zeebeDb, zeebeDb.createContext()).getCurrentKey();
+    }
+
+    public Long getLastSuccessfulProcessedRecordPosition() {
+      return new DbLastProcessedPositionState(zeebeDb, zeebeDb.createContext())
+          .getLastSuccessfulProcessedRecordPosition();
     }
 
     @Override
