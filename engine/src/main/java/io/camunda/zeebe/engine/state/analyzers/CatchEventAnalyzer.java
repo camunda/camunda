@@ -136,10 +136,74 @@ public final class CatchEventAnalyzer {
 
   public Optional<CatchEventTuple> findEscalationCatchEvent(
       final DirectBuffer escalationCode, final ElementInstance instance) {
-    // TODO walk through the scope hierarchy and look for a matching catch event
+    // walk through the scope hierarchy and look for a matching catch event
+    final var instanceRecord = instance.getValue();
+    final var process = getProcess(instanceRecord.getProcessDefinitionKey());
+
+    return findEscalationCatchEventInProcess(escalationCode, process, instance)
+        .or(
+            () -> {
+              // find in parent process instance if exists
+              final ElementInstance parentElementInstance =
+                  elementInstanceState.getInstance(instanceRecord.getParentElementInstanceKey());
+              if (parentElementInstance != null && parentElementInstance.isActive()) {
+                return findEscalationCatchEvent(escalationCode, parentElementInstance);
+              } else {
+                return Optional.empty();
+              }
+            });
+  }
+
+  private Optional<CatchEventTuple> findEscalationCatchEventInProcess(
+      final DirectBuffer escalationCode,
+      final ExecutableProcess process,
+      final ElementInstance instance) {
+    return findEscalationCatchEventInScope(escalationCode, process, instance)
+        .or(
+            () -> {
+              // find in parent scope if exists
+              final ElementInstance parentElementInstance =
+                  elementInstanceState.getInstance(instance.getParentKey());
+              if (parentElementInstance != null
+                  && instance.isActive()
+                  && !instance.isInterrupted()) {
+                return findEscalationCatchEventInProcess(
+                    escalationCode, process, parentElementInstance);
+              } else {
+                return Optional.empty();
+              }
+            });
+  }
+
+  private Optional<CatchEventTuple> findEscalationCatchEventInScope(
+      final DirectBuffer escalationCode,
+      final ExecutableProcess process,
+      final ElementInstance instance) {
+    final var processInstanceRecord = instance.getValue();
+    final var elementId = processInstanceRecord.getElementIdBuffer();
+    final var elementType = processInstanceRecord.getBpmnElementType();
+
+    final var element = process.getElementById(elementId, elementType, ExecutableActivity.class);
+    final Optional<ExecutableCatchEvent> catchEvent =
+        element.getEvents().stream()
+            .filter(ExecutableCatchEvent::isEscalation)
+            .filter(event -> matchesEscalationCode(event, escalationCode))
+            .findFirst();
+
+    if (catchEvent.isPresent()) {
+      catchEventTuple.instance = instance;
+      catchEventTuple.catchEvent = catchEvent.get();
+      return Optional.of(catchEventTuple);
+    }
 
     // no matching catch event found
     return Optional.empty();
+  }
+
+  public boolean matchesEscalationCode(
+      final ExecutableCatchEvent catchEvent, final DirectBuffer escalationCode) {
+    final var eventEscalationCode = catchEvent.getEscalation().getEscalationCode();
+    return eventEscalationCode.capacity() == 0 || eventEscalationCode.equals(escalationCode);
   }
 
   private ExecutableProcess getProcess(final long processDefinitionKey) {
