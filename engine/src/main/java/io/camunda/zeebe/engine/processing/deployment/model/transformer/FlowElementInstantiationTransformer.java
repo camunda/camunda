@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
-import static io.camunda.zeebe.model.bpmn.validation.zeebe.FlowElementValidator.NON_EXECUTABLE_ELEMENT_TYPES;
-
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
@@ -32,6 +30,9 @@ import io.camunda.zeebe.model.bpmn.instance.Activity;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
+import io.camunda.zeebe.model.bpmn.instance.DataObject;
+import io.camunda.zeebe.model.bpmn.instance.DataObjectReference;
+import io.camunda.zeebe.model.bpmn.instance.DataStoreReference;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.EventBasedGateway;
 import io.camunda.zeebe.model.bpmn.instance.ExclusiveGateway;
@@ -50,13 +51,16 @@ import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 public final class FlowElementInstantiationTransformer
     implements ModelElementTransformer<FlowElement> {
 
   private static final Map<Class<?>, Function<String, AbstractFlowElement>> ELEMENT_FACTORIES;
+  private static final Set<Class<?>> NON_EXECUTABLE_ELEMENT_TYPES = new HashSet<>();
 
   static {
     ELEMENT_FACTORIES = new HashMap<>();
@@ -80,6 +84,10 @@ public final class FlowElementInstantiationTransformer
     ELEMENT_FACTORIES.put(StartEvent.class, ExecutableStartEvent::new);
     ELEMENT_FACTORIES.put(SubProcess.class, ExecutableFlowElementContainer::new);
     ELEMENT_FACTORIES.put(UserTask.class, ExecutableJobWorkerTask::new);
+
+    NON_EXECUTABLE_ELEMENT_TYPES.add(DataObject.class);
+    NON_EXECUTABLE_ELEMENT_TYPES.add(DataObjectReference.class);
+    NON_EXECUTABLE_ELEMENT_TYPES.add(DataStoreReference.class);
   }
 
   @Override

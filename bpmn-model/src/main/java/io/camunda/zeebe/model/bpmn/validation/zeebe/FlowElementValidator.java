@@ -44,9 +44,9 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class FlowElementValidator implements ModelElementValidator<FlowElement> {
 
-  public static final Set<Class<?>> NON_EXECUTABLE_ELEMENT_TYPES = new HashSet<>();
-
   private static final Set<Class<?>> SUPPORTED_ELEMENT_TYPES = new HashSet<>();
+
+  private static final Set<Class<?>> NON_EXECUTABLE_ELEMENT_TYPES = new HashSet<>();
 
   static {
     SUPPORTED_ELEMENT_TYPES.add(BoundaryEvent.class);

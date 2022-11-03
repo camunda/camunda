@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -49,9 +50,6 @@ public class DataObjectTest {
   @Parameters(name = "{0}")
   public static Collection<Object[]> data() {
     return Arrays.asList(
-        new Object[] {
-          "data-object-and-data-store", deploy("/processes/data-object-and-data-store.bpmn")
-        },
         new Object[] {"non-executable-elements", deploy("/processes/non-executable-elements.bpmn")},
         new Object[] {
           "collaboration-with-lanes", deploy("/processes/collaboration-with-lanes.bpmn")
@@ -63,19 +61,18 @@ public class DataObjectTest {
     // given
     final var deployment = performDeployment.apply(engine.deployment());
 
-    // then
-    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
-    assertThat(deployment.getValue().getProcessesMetadata()).hasSize(1);
-
     // when
     final long processInstanceKey = engine.processInstance().ofBpmnProcessId("process").create();
 
-    // then
     final List<Record<ProcessInstanceRecordValue>> processInstanceEvents =
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
             .limitToProcessInstanceCompleted()
-            .asList();
+            .collect(Collectors.toList());
+
+    // then
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
+    assertThat(deployment.getValue().getProcessesMetadata()).hasSize(1);
 
     assertThat(processInstanceEvents)
         .extracting(e -> e.getValue().getBpmnElementType(), Record::getIntent)
