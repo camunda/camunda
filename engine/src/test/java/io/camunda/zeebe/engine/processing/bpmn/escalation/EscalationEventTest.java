@@ -71,6 +71,35 @@ public class EscalationEventTest {
     assertIsNotEscalated("throw", ESCALATION_CODE);
   }
 
+  @Test
+  public void shouldThrowEscalationFromEndEvent() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .endEvent("end", e -> e.escalation(ESCALATION_CODE))
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    assertIsNotEscalated("end", ESCALATION_CODE);
+  }
+
   private void assertIsNotEscalated(final String throwElementId, final String escalationCode) {
     assertThat(
             RecordingExporter.escalationRecords(EscalationIntent.NOT_ESCALATED)
