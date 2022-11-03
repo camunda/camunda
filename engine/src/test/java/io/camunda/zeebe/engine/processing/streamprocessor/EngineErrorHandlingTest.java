@@ -35,7 +35,6 @@ import io.camunda.zeebe.engine.util.RecordStream;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.TestStreams;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
-import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -75,10 +74,7 @@ import org.junit.rules.TemporaryFolder;
 public final class EngineErrorHandlingTest {
 
   private static final String STREAM_NAME = "foo";
-  private static final ProcessInstanceRecord PROCESS_INSTANCE_RECORD = Records.processInstance(1);
-  private static final JobRecord JOB_RECORD = Records.job(1);
 
-  protected SynchronousLogStream stream;
   private final TemporaryFolder tempFolder = new TemporaryFolder();
   private final AutoCloseableRule closeables = new AutoCloseableRule();
   private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
@@ -203,7 +199,7 @@ public final class EngineErrorHandlingTest {
     final long failingEventPosition =
         streams
             .newRecord(STREAM_NAME)
-            .event(PROCESS_INSTANCE_RECORD)
+            .event(Records.processInstance(1))
             .recordType(RecordType.COMMAND)
             .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
             .key(keyGenerator.nextKey())
@@ -248,7 +244,7 @@ public final class EngineErrorHandlingTest {
     final long failingEventPosition =
         streams
             .newRecord(STREAM_NAME)
-            .event(PROCESS_INSTANCE_RECORD)
+            .event(Records.processInstance(1))
             .recordType(RecordType.COMMAND)
             .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
             .key(keyGenerator.nextKey())
@@ -291,14 +287,14 @@ public final class EngineErrorHandlingTest {
 
     streams
         .newRecord(STREAM_NAME)
-        .event(PROCESS_INSTANCE_RECORD)
+        .event(Records.processInstance(1))
         .recordType(RecordType.COMMAND)
         .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
         .key(keyGenerator.nextKey())
         .write();
     streams
         .newRecord(STREAM_NAME)
-        .event(PROCESS_INSTANCE_RECORD)
+        .event(Records.processInstance(1))
         .recordType(RecordType.COMMAND)
         .intent(ProcessInstanceIntent.COMPLETE_ELEMENT)
         .key(keyGenerator.nextKey())
@@ -325,7 +321,7 @@ public final class EngineErrorHandlingTest {
     final RecordMetadata metadata = new RecordMetadata();
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
+        new MockTypedRecord<>(0, metadata, Records.processInstance(1));
     Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isTrue();
 
     verify(dumpProcessorRef.get(), times(1)).processRecord(any(), any());
@@ -340,14 +336,14 @@ public final class EngineErrorHandlingTest {
     final long failedPos =
         streams
             .newRecord(STREAM_NAME)
-            .event(PROCESS_INSTANCE_RECORD)
+            .event(Records.processInstance(1))
             .recordType(RecordType.COMMAND)
             .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
             .key(keyGenerator.nextKey())
             .write();
     streams
         .newRecord(STREAM_NAME)
-        .event(Records.error((int) PROCESS_INSTANCE_RECORD.getProcessInstanceKey(), failedPos))
+        .event(Records.error((int) Records.processInstance(1).getProcessInstanceKey(), failedPos))
         .recordType(RecordType.EVENT)
         .sourceRecordPosition(failedPos)
         .intent(ErrorIntent.CREATED)
@@ -382,7 +378,7 @@ public final class EngineErrorHandlingTest {
     final RecordMetadata metadata = new RecordMetadata();
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
+        new MockTypedRecord<>(0, metadata, Records.processInstance(1));
     waitUntil(() -> zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord));
   }
 
@@ -433,14 +429,14 @@ public final class EngineErrorHandlingTest {
 
     streams
         .newRecord(STREAM_NAME)
-        .event(JOB_RECORD)
+        .event(Records.job(1))
         .recordType(RecordType.COMMAND)
         .intent(JobIntent.COMPLETE)
         .key(keyGenerator.nextKey())
         .write();
     streams
         .newRecord(STREAM_NAME)
-        .event(JOB_RECORD)
+        .event(Records.job(1))
         .recordType(RecordType.COMMAND)
         .intent(JobIntent.THROW_ERROR)
         .key(keyGenerator.nextKey())
@@ -465,7 +461,7 @@ public final class EngineErrorHandlingTest {
     final RecordMetadata metadata = new RecordMetadata();
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
+        new MockTypedRecord<>(0, metadata, Records.processInstance(1));
     Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isFalse();
 
     verify(dumpProcessorRef.get(), timeout(1000).times(2)).processRecord(any(), any());
