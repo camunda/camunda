@@ -13,7 +13,6 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
 import io.camunda.zeebe.engine.util.TestStreams.FluentLogWriter;
@@ -36,7 +35,6 @@ import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import org.junit.rules.ExternalResource;
@@ -121,12 +119,6 @@ public final class StreamProcessorRule implements TestRule {
   @Override
   public Statement apply(final Statement base, final Description description) {
     return chain.apply(base, description);
-  }
-
-  public StreamProcessorRule withEventApplierFactory(
-      final Function<MutableZeebeState, EventApplier> eventApplierFactory) {
-    streams.withEventApplierFactory(eventApplierFactory);
-    return this;
   }
 
   public StreamProcessorRule withStreamProcessorMode(

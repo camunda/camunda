@@ -12,14 +12,11 @@ import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 
 public final class StreamProcessorBuilder {
 
@@ -27,7 +24,6 @@ public final class StreamProcessorBuilder {
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private ActorSchedulingService actorSchedulingService;
   private ZeebeDb zeebeDb;
-  private Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private int nodeId;
 
   private List<RecordProcessor> recordProcessors;
@@ -73,12 +69,6 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder eventApplierFactory(
-      final Function<MutableZeebeState, EventApplier> eventApplierFactory) {
-    this.eventApplierFactory = eventApplierFactory;
-    return this;
-  }
-
   public StreamProcessorBuilder streamProcessorMode(final StreamProcessorMode streamProcessorMode) {
     streamProcessorContext.processorMode(streamProcessorMode);
     return this;
@@ -114,10 +104,6 @@ public final class StreamProcessorBuilder {
     return recordProcessors;
   }
 
-  public Function<MutableZeebeState, EventApplier> getEventApplierFactory() {
-    return eventApplierFactory;
-  }
-
   public StreamProcessor build() {
     validate();
 
@@ -128,7 +114,6 @@ public final class StreamProcessorBuilder {
     Objects.requireNonNull(actorSchedulingService, "No task scheduler provided.");
     Objects.requireNonNull(streamProcessorContext.getLogStream(), "No log stream provided.");
     Objects.requireNonNull(zeebeDb, "No database provided.");
-    Objects.requireNonNull(eventApplierFactory, "No factory for the event supplier provided.");
     if (streamProcessorContext.getProcessorMode() == StreamProcessorMode.PROCESSING) {
       Objects.requireNonNull(
           streamProcessorContext.getPartitionCommandSender(),
