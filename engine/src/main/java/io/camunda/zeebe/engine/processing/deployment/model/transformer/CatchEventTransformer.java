@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEscalation;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableLink;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.Transf
 import io.camunda.zeebe.engine.processing.timer.CronTimer;
 import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.LinkEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Message;
@@ -70,6 +72,9 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
     } else if (eventDefinition instanceof LinkEventDefinition) {
       transformLinkEventDefinition(
           context, executableElement, (LinkEventDefinition) eventDefinition);
+    } else if (eventDefinition instanceof EscalationEventDefinition) {
+      transformEscalationEventDefinition(
+          context, executableElement, (EscalationEventDefinition) eventDefinition);
     }
   }
 
@@ -157,5 +162,24 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
     link.setName(BufferUtil.wrapString(linkEventDefinition.getName()));
     link.setCatchEvent(executableElement);
     context.addLink(link);
+  }
+
+  private void transformEscalationEventDefinition(
+      final TransformContext context,
+      final ExecutableCatchEventElement executableElement,
+      final EscalationEventDefinition escalationEventDefinition) {
+
+    final var escalation = escalationEventDefinition.getEscalation();
+    final ExecutableEscalation executableEscalation;
+
+    // If 'escalationRef' is omitted, an empty escalation without escalationCode will be created
+    // for the boundary event to facilitate finding the corresponding catch event
+    if (escalation == null) {
+      executableEscalation = new ExecutableEscalation("");
+      executableEscalation.setEscalationCode(BufferUtil.wrapString(""));
+    } else {
+      executableEscalation = context.getEscalation(escalation.getId());
+    }
+    executableElement.setEscalation(executableEscalation);
   }
 }

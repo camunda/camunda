@@ -134,6 +134,14 @@ public final class CatchEventAnalyzer {
     return availableCatchEvents;
   }
 
+  public Optional<CatchEventTuple> findEscalationCatchEvent(
+      final DirectBuffer escalationCode, final ElementInstance instance) {
+    // TODO walk through the scope hierarchy and look for a matching catch event
+
+    // no matching catch event found
+    return Optional.empty();
+  }
+
   private ExecutableProcess getProcess(final long processDefinitionKey) {
 
     final var deployedProcess = processState.getProcessByKey(processDefinitionKey);

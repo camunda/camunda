@@ -23,6 +23,7 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
 
   private ExecutableMessage message;
   private ExecutableError error;
+  private ExecutableEscalation escalation;
   private boolean interrupting;
   private BiFunction<ExpressionProcessor, Long, Either<Failure, Timer>> timerFactory;
 
@@ -47,6 +48,11 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   @Override
   public boolean isError() {
     return error != null;
+  }
+
+  @Override
+  public boolean isEscalation() {
+    return escalation != null;
   }
 
   @Override
@@ -80,6 +86,15 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
 
   public void setError(final ExecutableError error) {
     this.error = error;
+  }
+
+  @Override
+  public ExecutableEscalation getEscalation() {
+    return escalation;
+  }
+
+  public void setEscalation(final ExecutableEscalation escalation) {
+    this.escalation = escalation;
   }
 
   public void setLink(final boolean isLink) {

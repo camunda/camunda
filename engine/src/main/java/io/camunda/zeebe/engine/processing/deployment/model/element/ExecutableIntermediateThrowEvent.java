@@ -14,6 +14,8 @@ public class ExecutableIntermediateThrowEvent extends ExecutableFlowNode
 
   private ExecutableLink link;
 
+  private ExecutableEscalation escalation;
+
   public ExecutableIntermediateThrowEvent(final String id) {
     super(id);
   }
@@ -36,8 +38,16 @@ public class ExecutableIntermediateThrowEvent extends ExecutableFlowNode
     this.link = link;
   }
 
+  public ExecutableEscalation getEscalation() {
+    return escalation;
+  }
+
+  public void setEscalation(final ExecutableEscalation escalation) {
+    this.escalation = escalation;
+  }
+
   public boolean isNoneThrowEvent() {
-    return !isMessageThrowEvent() && !isLinkThrowEvent();
+    return !isMessageThrowEvent() && !isLinkThrowEvent() && !isEscalationThrowEvent();
   }
 
   public boolean isMessageThrowEvent() {
@@ -46,5 +56,9 @@ public class ExecutableIntermediateThrowEvent extends ExecutableFlowNode
 
   public boolean isLinkThrowEvent() {
     return link != null;
+  }
+
+  public boolean isEscalationThrowEvent() {
+    return escalation != null;
   }
 }

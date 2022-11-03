@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableError;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEscalation;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableLink;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
@@ -25,6 +26,7 @@ public final class TransformContext {
   private final Map<DirectBuffer, ExecutableProcess> processes = new HashMap<>();
   private final Map<DirectBuffer, ExecutableMessage> messages = new HashMap<>();
   private final Map<DirectBuffer, ExecutableError> errors = new HashMap<>();
+  private final Map<DirectBuffer, ExecutableEscalation> escalations = new HashMap<>();
   private final Map<DirectBuffer, ExecutableLink> links = new HashMap<>();
 
   private ExpressionLanguage expressionLanguage;
@@ -68,6 +70,14 @@ public final class TransformContext {
 
   public ExecutableError getError(final String id) {
     return errors.get(wrapString(id));
+  }
+
+  public void addEscalation(final ExecutableEscalation escalation) {
+    escalations.put(escalation.getId(), escalation);
+  }
+
+  public ExecutableEscalation getEscalation(final String id) {
+    return escalations.get(wrapString(id));
   }
 
   public void addLink(final ExecutableLink link) {

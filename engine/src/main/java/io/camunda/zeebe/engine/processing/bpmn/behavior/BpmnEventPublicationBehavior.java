@@ -7,11 +7,16 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import static io.camunda.zeebe.util.EnsureUtil.ensureNotNull;
+import static io.camunda.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
+
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableIntermediateThrowEvent;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
@@ -19,7 +24,10 @@ import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTupl
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
+import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -28,6 +36,8 @@ public final class BpmnEventPublicationBehavior {
   private final ElementInstanceState elementInstanceState;
   private final EventHandle eventHandle;
   private final CatchEventAnalyzer catchEventAnalyzer;
+  private final StateWriter stateWriter;
+  private final KeyGenerator keyGenerator;
 
   public BpmnEventPublicationBehavior(
       final ZeebeState zeebeState,
@@ -43,6 +53,8 @@ public final class BpmnEventPublicationBehavior {
             zeebeState.getProcessState(),
             eventTriggerBehavior);
     catchEventAnalyzer = new CatchEventAnalyzer(zeebeState.getProcessState(), elementInstanceState);
+    stateWriter = writers.state();
+    this.keyGenerator = keyGenerator;
   }
 
   /**
@@ -78,5 +90,75 @@ public final class BpmnEventPublicationBehavior {
       final DirectBuffer errorCode, final BpmnElementContext context) {
     final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
     return catchEventAnalyzer.findCatchEvent(errorCode, flowScopeInstance, Optional.empty());
+  }
+
+  /**
+   * Finds the right catch event for the given escalation. This is done by going up through the
+   * scope hierarchy recursively until a matching catch event is found. Otherwise, it returns {@link
+   * Optional#empty()}.
+   *
+   * @param escalationCode the escalation code of the escalation event
+   * @param context the current element context
+   * @return a valid {@link CatchEventTuple} if a catch event is found, Otherwise, it returns {@link
+   *     Optional#empty()}
+   */
+  public Optional<CatchEventTuple> findEscalationCatchEvent(
+      final DirectBuffer escalationCode, final BpmnElementContext context) {
+    final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
+    return catchEventAnalyzer.findEscalationCatchEvent(escalationCode, flowScopeInstance);
+  }
+
+  /**
+   * Throws an escalation event to the given element instance/catch event pair. Only throws the
+   * event if the given element instance is exists and is accepting events, e.g. isn't terminating,
+   * wasn't interrupted, etc.
+   *
+   * @param element the instance of the intermediate throw event
+   * @param activated process instance-related data of the element that is executed
+   * @return returns true if the escalation throw event can be completed, false otherwise
+   */
+  public boolean throwEscalationEvent(
+      final ExecutableIntermediateThrowEvent element, final BpmnElementContext activated) {
+    final var escalation = element.getEscalation();
+    ensureNotNull("escalation", escalation);
+
+    final var escalationCode = escalation.getEscalationCode();
+    ensureNotNullOrEmpty("escalationCode", escalationCode);
+
+    final var record = new EscalationRecord();
+    record.setThrowElementId(element.getId());
+    record.setEscalationCode(BufferUtil.bufferAsString(escalationCode));
+    record.setProcessInstanceKey(activated.getProcessInstanceKey());
+
+    final var escalationCatchEvent = findEscalationCatchEvent(escalationCode, activated);
+
+    boolean canBeCompleted = true;
+    boolean escalated = false;
+    final var key = keyGenerator.nextKey();
+
+    if (escalationCatchEvent.isPresent()) {
+      final var catchEventTuple = escalationCatchEvent.get();
+      final var eventScopeInstance = catchEventTuple.getElementInstance();
+      final ExecutableCatchEvent catchEvent = catchEventTuple.getCatchEvent();
+      // update catch element id
+      record.setCatchElementId(catchEvent.getId());
+
+      // if the escalation catch event is interrupt event, then throw event is not allowed to
+      // complete.
+      canBeCompleted = !catchEvent.isInterrupting();
+
+      if (eventHandle.canTriggerElement(eventScopeInstance, catchEvent.getId())) {
+        eventHandle.activateElement(
+            catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue());
+        stateWriter.appendFollowUpEvent(key, EscalationIntent.ESCALATED, record);
+        escalated = true;
+      }
+    }
+
+    if (!escalated) {
+      stateWriter.appendFollowUpEvent(key, EscalationIntent.NOT_ESCALATED, record);
+    }
+
+    return canBeCompleted;
   }
 }
