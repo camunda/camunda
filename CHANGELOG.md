@@ -1,3 +1,68 @@
+# v8.2.0-alpha1
+## 💊 Bugfixes
+* **backend**: Use email, username as assignee ([#2158](https://github.com/camunda/tasklist/issues/2158))
+* **deps**: update all non-major dependencies ([#2173](https://github.com/camunda/tasklist/issues/2173))
+* **deps**: update dependency @carbon/react to v1.15.0 ([#2166](https://github.com/camunda/tasklist/issues/2166))
+* **deps**: update dependency @carbon/elements to v11.12.0 ([#2165](https://github.com/camunda/tasklist/issues/2165))
+* **deps**: update dependency @bpmn-io/form-js to v0.9.7 ([#2152](https://github.com/camunda/tasklist/issues/2152))
+* **deps**: update dependency sass to v1.55.0 ([#2145](https://github.com/camunda/tasklist/issues/2145))
+* **deps**: update dependency @carbon/elements to v11.11.0 ([#2144](https://github.com/camunda/tasklist/issues/2144))
+* **deps**: update dependency react-router-dom to v6.4.2 ([#2087](https://github.com/camunda/tasklist/issues/2087))
+* **deps**: update dependency @bpmn-io/form-js to v0.9.6 ([#2143](https://github.com/camunda/tasklist/issues/2143))
+* **deps**: update all non-major dependencies ([#2137](https://github.com/camunda/tasklist/issues/2137))
+* **deps**: update dependency @carbon/react to v1.14.0 ([#2091](https://github.com/camunda/tasklist/issues/2091))
+* **preview-env**: Add missing input for teardown workflow
+* **preview-env**: Add missing env var ([#2139](https://github.com/camunda/tasklist/issues/2139))
+* Revert dep update
+
+## 🧹 Chore
+* **backend**: update Zeebe abd Identity to 8.2.0-alpha1 ([#2225](https://github.com/camunda/tasklist/issues/2225))
+* **pom**: update Spring Boot to 2.6.13 ([#2223](https://github.com/camunda/tasklist/issues/2223))
+* **Dockerfile**: update Docker base image to be temurin 17 ([#2208](https://github.com/camunda/tasklist/issues/2208))
+* Update Browserlist DB
+* **preview-env**: Escape special characters from branch names ([#2209](https://github.com/camunda/tasklist/issues/2209))
+* **deps**: update actions/add-to-project digest to c7ca843 ([#2205](https://github.com/camunda/tasklist/issues/2205))
+* **preview-env**: Cleanup old preview env actions ([#2198](https://github.com/camunda/tasklist/issues/2198))
+* **preview-env**: test the new global preview env teardown action ([#2199](https://github.com/camunda/tasklist/issues/2199))
+* **deps**: update hashicorp/vault-action digest to 132f1c6 ([#2201](https://github.com/camunda/tasklist/issues/2201))
+* **deps**: update actions/add-to-project digest to 9eaa856 ([#2200](https://github.com/camunda/tasklist/issues/2200))
+* **seed**: rename notification skip trait to comply with new plugin version ([#2177](https://github.com/camunda/tasklist/issues/2177))
+* **deps**: update actions/add-to-project digest to 8f9378c ([#2197](https://github.com/camunda/tasklist/issues/2197))
+* **preview-env**: test the new global preview env action ([#2168](https://github.com/camunda/tasklist/issues/2168))
+* **deps**: update dependency @types/node to v18 ([#2193](https://github.com/camunda/tasklist/issues/2193))
+* **deps**: update hashicorp/vault-action digest to 32d00a1 ([#2192](https://github.com/camunda/tasklist/issues/2192))
+* **deps**: update actions/add-to-project digest to 73dbef5 ([#2190](https://github.com/camunda/tasklist/issues/2190))
+* **deps**: update dependency @testing-library/testcafe to v5 ([#2185](https://github.com/camunda/tasklist/issues/2185))
+* **deps**: update dependency @types/node to v16.18.0 ([#2187](https://github.com/camunda/tasklist/issues/2187))
+* Update Browserlist DB
+* **deps**: update actions/add-to-project digest to 7e0e2c5 ([#2179](https://github.com/camunda/tasklist/issues/2179))
+* Remove Operate team issue to board automation
+* **deps**: update actions/add-to-project digest to 394bc02 ([#2172](https://github.com/camunda/tasklist/issues/2172))
+* **deps**: update all non-major dependencies ([#2167](https://github.com/camunda/tasklist/issues/2167))
+* **deps**: update dependency @types/jest to v29.2.0 ([#2170](https://github.com/camunda/tasklist/issues/2170))
+* add add_to_hto_project action ([#2169](https://github.com/camunda/tasklist/issues/2169))
+* Update Browserlist DB
+* **deps**: update hashicorp/vault-action digest to 32838a0 ([#2163](https://github.com/camunda/tasklist/issues/2163))
+* **deps**: update all non-major dependencies ([#2160](https://github.com/camunda/tasklist/issues/2160))
+* bump zeebe-test-container from 3.5.0 to 3.5.2 ([#2116](https://github.com/camunda/tasklist/issues/2116))
+* bump netty-bom from 4.1.82.Final to 4.1.84.Final ([#2156](https://github.com/camunda/tasklist/issues/2156))
+* **deps**: update node.js to v16.18.0 ([#2157](https://github.com/camunda/tasklist/issues/2157))
+* bump elasticsearch from 1.17.3 to 1.17.5 ([#2129](https://github.com/camunda/tasklist/issues/2129))
+* bump byte-buddy from 1.12.17 to 1.12.18 ([#2150](https://github.com/camunda/tasklist/issues/2150))
+* bump version.micrometer from 1.9.4 to 1.9.5 ([#2151](https://github.com/camunda/tasklist/issues/2151))
+* **deps**: update amannn/action-semantic-pull-request action to v5 ([#2155](https://github.com/camunda/tasklist/issues/2155))
+* **backend**: adjust importer modules add 8.2 remove 8.0  ([#2141](https://github.com/camunda/tasklist/issues/2141))
+* **deps**: update dependency @types/node to v16.11.65 ([#2149](https://github.com/camunda/tasklist/issues/2149))
+* **deps**: update dependency @types/jest to v29 ([#2148](https://github.com/camunda/tasklist/issues/2148))
+* Update Zeebe for E2E tests
+* Fix deploy action ([#2146](https://github.com/camunda/tasklist/issues/2146))
+* **deps**: update bobheadxi/deployments digest to 9d4477f ([#2006](https://github.com/camunda/tasklist/issues/2006))
+* **deps**: update dependency zeebe-node to v8.1.2 ([#2142](https://github.com/camunda/tasklist/issues/2142))
+* **deps**: update dependency testcafe to v2 ([#2092](https://github.com/camunda/tasklist/issues/2092))
+* Update Browserlist DB
+* **preview-env**: Split the deploy-preview actions into create and destroy actions ([#2134](https://github.com/camunda/tasklist/issues/2134))
+* Fix version on package.json
+* **deps**: update definitelytyped ([#2049](https://github.com/camunda/tasklist/issues/2049))
 # v8.1.0
 ## 🚀 New Features
 * **backend**: Get backup state endpoint ([#2117](https://github.com/camunda/tasklist/issues/2117))
