@@ -25,9 +25,10 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
+@Ignore("https://github.com/camunda/operate/issues/3583")
 public class ProcessInstanceWriterIT extends OperateZeebeIntegrationTest {
 
   @Autowired

@@ -74,6 +74,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@Ignore("https://github.com/camunda/operate/issues/3583")
 public class ArchiverIT extends OperateZeebeIntegrationTest {
 
   @Autowired

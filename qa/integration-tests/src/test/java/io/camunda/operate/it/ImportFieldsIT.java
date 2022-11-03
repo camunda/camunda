@@ -13,11 +13,12 @@ import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.PayloadUtil;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
+@Ignore("https://github.com/camunda/operate/issues/3583")
 public class ImportFieldsIT extends OperateZeebeIntegrationTest {
 
   private static final Logger logger = LoggerFactory.getLogger(ImportFieldsIT.class);
@@ -52,8 +53,8 @@ public class ImportFieldsIT extends OperateZeebeIntegrationTest {
     // then
     assertThat(tester.hasIncidentWithErrorMessage(errorMessageMoreThan32KB)).isTrue();
   }
-  
-  @Test 
+
+  @Test
   // OPE-900
   // See also: https://discuss.elastic.co/t/error-document-contains-at-least-one-immense-term-in-field/66486
   public void testVariableValueSizeCanBeHigherThan32KB() throws Exception {

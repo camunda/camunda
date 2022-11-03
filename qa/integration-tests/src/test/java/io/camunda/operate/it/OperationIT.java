@@ -57,11 +57,12 @@ import java.util.stream.Collectors;
 import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-
+@Ignore("https://github.com/camunda/operate/issues/3583")
 public class OperationIT extends OperateZeebeIntegrationTest {
 
   private static final String QUERY_INSTANCES_URL = PROCESS_INSTANCE_URL;
