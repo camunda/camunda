@@ -12,7 +12,7 @@ import {t} from 'translation';
 import './AppliedToInfo.scss';
 
 export default function AppliedToInfo({filter, definitions}) {
-  const {appliedTo} = filter;
+  const {appliedTo = []} = filter;
   const appliedToAll = appliedTo?.[0] === 'all';
 
   const selectedDefinitions = appliedToAll
