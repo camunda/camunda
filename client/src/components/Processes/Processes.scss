@@ -73,7 +73,7 @@
         }
       }
 
-      .meta:last-child span {
+      .meta span > .hidden {
         visibility: hidden;
       }
     }

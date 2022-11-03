@@ -63,17 +63,17 @@ export function Processes({mightFail, user}) {
     <>
       {t('processes.qualityKpi')} <KpiTooltip />
     </>,
-    t('common.configure'),
   ];
+
+  const isEditor = user?.authorizations.includes('entity_editor');
+  if (isEditor) {
+    columns.push(t('dashboard.label'));
+  }
 
   if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
     const ownerColumn = t('processes.owner');
     columns.splice(1, 0, ownerColumn);
-  }
-
-  const isEditor = user?.authorizations.includes('entity_editor');
-  if (isEditor) {
-    columns.splice(-1, 0, t('dashboard.label'));
+    columns.push(<span className="hidden">{t('common.configure')}</span>);
   }
 
   const processesLabel =
