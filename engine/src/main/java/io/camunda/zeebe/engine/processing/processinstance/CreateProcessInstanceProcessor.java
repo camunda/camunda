@@ -175,7 +175,7 @@ public final class CreateProcessInstanceProcessor
       final ExecutableProcess process,
       final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
 
-    if (process.getNoneStartEvent() != null || !startInstructions.isEmpty()) {
+    if (process.getStartEvents() != null || !startInstructions.isEmpty()) {
       return VALID;
     } else {
       return Either.left(

@@ -19,8 +19,10 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.Either;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -108,13 +110,18 @@ public final class ProcessProcessor
 
   private void activateNoneStartEvent(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    final List<ExecutableStartEvent> startEvents = element.getStartEvents();
     final var noneStartEvent = element.getNoneStartEvent();
     if (noneStartEvent == null) {
-      throw new BpmnProcessingException(
-          context, "Expected to activate the none start event of the process but not found.");
+      if (startEvents.size() >= 1) {
+        stateTransitionBehavior.activateChildInstance(context, startEvents.get(0));
+      } else {
+        throw new BpmnProcessingException(
+            context, "Expected to activate the none start event of the process but not found.");
+      }
+    } else {
+      stateTransitionBehavior.activateChildInstance(context, noneStartEvent);
     }
-
-    stateTransitionBehavior.activateChildInstance(context, noneStartEvent);
   }
 
   @Override
