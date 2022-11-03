@@ -222,4 +222,86 @@ public final class CreateProcessInstanceTest {
             tuple(BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
+
+  @Test
+  public void shouldCreateTimerStartEventProcess() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .timerWithCycle("R1/PT30S")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.PROCESS))
+        .extracting(Record::getIntent)
+        .containsSequence(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    final Record<ProcessInstanceRecordValue> process =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+
+    Assertions.assertThat(process.getValue())
+        .hasElementId("process")
+        .hasBpmnElementType(BpmnElementType.PROCESS)
+        .hasFlowScopeKey(-1)
+        .hasBpmnProcessId("process")
+        .hasProcessInstanceKey(processInstanceKey);
+  }
+
+  @Test
+  public void shouldCreateMessageStartEventProcess() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .message("messageName")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.PROCESS))
+        .extracting(Record::getIntent)
+        .containsSequence(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    final Record<ProcessInstanceRecordValue> process =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+
+    Assertions.assertThat(process.getValue())
+        .hasElementId("process")
+        .hasBpmnElementType(BpmnElementType.PROCESS)
+        .hasFlowScopeKey(-1)
+        .hasBpmnProcessId("process")
+        .hasProcessInstanceKey(processInstanceKey);
+  }
 }
