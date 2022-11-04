@@ -1,0 +1,69 @@
+name: Run E2E Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      maxTestDuration:
+        description: 'Test duration (Eg: PT2H, P3D)'
+        required: true
+        default: 'PT1D'
+        type: string
+      generation:
+        description: 'Specifies the generation template which should be used by the testbench run'
+        required: false
+        default: 'Zeebe SNAPSHOT'
+        type: string
+      branch:
+        description: 'Specifies the branch, for which the E2E tests should be executed'
+        default: 'main'
+        required: false
+  schedule:
+    # Run at 7:00 on every monday
+    - cron:  '0 7 * * 1'
+env:
+  BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+jobs:
+  e2e-testbench:
+    name: E2E Testbench run
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: "${{ github.event.inputs.branch || 'main' }}"
+
+      - name: Build and push docker
+        id: build-docker
+        uses: ./.github/actions/build-push-docker-gcr
+        with:
+          branch: ${{ github.event.inputs.branch }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.4.2
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CLIENT_SECRET;
+            secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CONTACT_POINT;
+        # Start e2e test instance, do not wait for the result
+      - name: Run E2E Tests
+        run: .ci/scripts/distribution/e2e-testbench.sh
+        env:
+          ZEEBE_CLIENT_SECRET: ${{ steps.secrets.outputs.TESTBENCH_PROD_CLIENT_SECRET }}
+          ZEEBE_ADDRESS: ${{ steps.secrets.outputs.TESTBENCH_PROD_CONTACT_POINT }}
+          ZEEBE_IMAGE: ${{ steps.build-docker.outputs.image }}
+          GENERATION_TEMPLATE: "${{ github.event.inputs.generation || 'Zeebe SNAPSHOT'}}"
+          # Weekly e2e test run for 5 days.
+          MAX_TEST_DURATION: "${{ github.event.inputs.maxTestDuration || 'PT5D'}}"
+          BRANCH_NAME: "${{ github.event.inputs.branch }}"
+          ZEEBE_AUTHORIZATION_SERVER_URL: 'https://login.cloud.ultrawombat.com/oauth/token'
+          ZEEBE_CLIENT_ID: 'S7GNoVCE6J-8L~OdFiI59kWM19P.wvKo'
